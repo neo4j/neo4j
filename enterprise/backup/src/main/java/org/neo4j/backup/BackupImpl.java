@@ -69,20 +69,9 @@ class BackupImpl implements TheBackupInterface
             ResponsePacker responsePacker = new StoreCopyResponsePacker( logicalTransactionStore,
                     transactionIdStore, logFileInformation, storeId,
                     copyStartContext.lastAppliedTransaction() + 1 ); // mandatory transaction id
-            long optionalTransactionId = boBackACoupleOfTransactionsIfRequired(
-                    copyStartContext.lastAppliedTransaction() ); // optional transaction id
+            long optionalTransactionId = copyStartContext.lastAppliedTransaction();
             return responsePacker.packResponse( anonymous( optionalTransactionId ), null/*no response object*/ );
         }
-    }
-
-    private long boBackACoupleOfTransactionsIfRequired( long transactionWhenStartingCopy )
-    {
-        int atLeast = 10;
-        if ( transactionIdStore.getLastCommittedTransactionId() - transactionWhenStartingCopy < atLeast )
-        {
-            return max( 1, transactionIdStore.getLastCommittedTransactionId() - atLeast );
-        }
-        return transactionWhenStartingCopy;
     }
 
     @Override
