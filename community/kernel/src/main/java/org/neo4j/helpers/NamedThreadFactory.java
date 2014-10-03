@@ -26,46 +26,54 @@ public class NamedThreadFactory implements ThreadFactory
 {
     public interface Monitor
     {
-        void threadCreated(String threadNamePrefix);
-        void threadFinished(String threadNamePrefix);
+        void threadCreated( String threadNamePrefix );
+
+        void threadFinished( String threadNamePrefix );
     }
+
+    private static final Monitor NO_OP_MONITOR = new Monitor()
+    {
+        @Override
+        public void threadCreated( String threadNamePrefix )
+        {
+        }
+
+        @Override
+        public void threadFinished( String threadNamePrefix )
+        {
+        }
+    };
+
+    private static final int DEFAULT_THREAD_PRIORITY = Thread.NORM_PRIORITY;
 
     private final ThreadGroup group;
     private final AtomicInteger threadCounter = new AtomicInteger( 1 );
     private String threadNamePrefix;
     private final int priority;
-    private boolean daemon = false;
+    private final boolean daemon;
     private final Monitor monitor;
 
     public NamedThreadFactory( String threadNamePrefix )
     {
-        this( threadNamePrefix, Thread.NORM_PRIORITY );
+        this( threadNamePrefix, DEFAULT_THREAD_PRIORITY );
     }
 
     public NamedThreadFactory( String threadNamePrefix, int priority )
     {
-        this(threadNamePrefix, priority, new Monitor()
-        {
-            @Override
-            public void threadCreated(String threadNamePrefix)
-            {
-
-            }
-
-            @Override
-            public void threadFinished(String threadNamePrefix)
-            {
-
-            }
-        });
+        this( threadNamePrefix, priority, NO_OP_MONITOR );
     }
 
     public NamedThreadFactory( String threadNamePrefix, Monitor monitor )
     {
-        this( threadNamePrefix, Thread.NORM_PRIORITY, monitor );
+        this( threadNamePrefix, DEFAULT_THREAD_PRIORITY, monitor );
     }
 
     public NamedThreadFactory( String threadNamePrefix, int priority, Monitor monitor )
+    {
+        this( threadNamePrefix, priority, monitor, false );
+    }
+
+    public NamedThreadFactory( String threadNamePrefix, int priority, Monitor monitor, boolean daemon )
     {
         this.threadNamePrefix = threadNamePrefix;
         SecurityManager securityManager = System.getSecurityManager();
@@ -73,18 +81,14 @@ public class NamedThreadFactory implements ThreadFactory
                 securityManager.getThreadGroup() :
                 Thread.currentThread().getThreadGroup();
         this.priority = priority;
-        this.monitor = monitor;
-    }
-
-    public NamedThreadFactory setDaemon(boolean daemon)
-    {
         this.daemon = daemon;
-        return this;
+        this.monitor = monitor;
     }
 
     public Thread newThread( Runnable runnable )
     {
-        final int id = threadCounter.getAndIncrement();
+        int id = threadCounter.getAndIncrement();
+
         Thread result = new Thread( group, runnable, threadNamePrefix + "-" + id )
         {
             @Override
@@ -93,26 +97,37 @@ public class NamedThreadFactory implements ThreadFactory
                 try
                 {
                     super.run();
-                } finally
+                }
+                finally
                 {
-                    monitor.threadFinished(threadNamePrefix);
+                    monitor.threadFinished( threadNamePrefix );
                 }
             }
         };
 
         result.setDaemon( daemon );
         result.setPriority( priority );
-        monitor.threadCreated(threadNamePrefix);
+        monitor.threadCreated( threadNamePrefix );
         return result;
     }
 
-    public static ThreadFactory named( String threadNamePrefix )
+    public static NamedThreadFactory named( String threadNamePrefix )
     {
         return new NamedThreadFactory( threadNamePrefix );
     }
 
-    public static ThreadFactory named( String threadNamePrefix, int priority )
+    public static NamedThreadFactory named( String threadNamePrefix, int priority )
     {
         return new NamedThreadFactory( threadNamePrefix, priority );
+    }
+
+    public static NamedThreadFactory daemon( String threadNamePrefix )
+    {
+        return daemon( threadNamePrefix, NO_OP_MONITOR );
+    }
+
+    public static NamedThreadFactory daemon( String threadNamePrefix, Monitor monitor )
+    {
+        return new NamedThreadFactory( threadNamePrefix, DEFAULT_THREAD_PRIORITY, monitor, true );
     }
 }
