@@ -25,7 +25,7 @@ import java.nio.CharBuffer;
 import java.util.concurrent.locks.LockSupport;
 
 import static java.lang.Math.min;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * Like an ordinary {@link Readable}, it's just that the reading happens in a separate thread, so when
@@ -33,7 +33,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  */
 public class ThreadAheadReadable extends Thread implements Readable, Closeable
 {
-    private static final long PARK_TIME = NANOSECONDS.toMillis( 100 );
+    private static final long PARK_TIME = MILLISECONDS.toNanos( 100 );
 
     private final Readable actual;
     private final Thread owner;
@@ -106,6 +106,13 @@ public class ThreadAheadReadable extends Thread implements Readable, Closeable
         catch ( InterruptedException e )
         {
             throw new IOException( e );
+        }
+        finally
+        {
+            if ( actual instanceof Closeable )
+            {
+                ((Closeable) actual).close();
+            }
         }
     }
 

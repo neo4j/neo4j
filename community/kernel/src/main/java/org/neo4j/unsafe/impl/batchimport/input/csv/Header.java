@@ -108,7 +108,16 @@ public class Header
                 return false;
             }
             Entry other = (Entry) obj;
-            return name.equals( other.name ) && type == other.type && extractor.equals( other.extractor );
+            return name.equals( other.name ) && type == other.type && extractorEquals( extractor, other.extractor );
+        }
+
+        private boolean extractorEquals( Extractor<?> first, Extractor<?> other )
+        {
+            if ( first == null || other == null )
+            {
+                return first == other;
+            }
+            return first.equals( other );
         }
     }
 }

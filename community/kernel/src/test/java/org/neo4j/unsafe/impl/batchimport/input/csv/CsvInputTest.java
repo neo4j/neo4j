@@ -28,6 +28,7 @@ import org.junit.Test;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
+import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.csv.reader.BufferedCharSeeker;
@@ -38,11 +39,12 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.reader.Extractors;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import static org.neo4j.unsafe.impl.batchimport.input.csv.CsvInput.COMMAS;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
 
 public class CsvInputTest
 {
@@ -102,6 +104,29 @@ public class CsvInputTest
         // THEN
         verify( nodeData, times( 1 ) ).close();
         verify( relationshipData, times( 1 ) ).close();
+    }
+
+    @Test
+    public void shouldFailForDataThatLacksEntries() throws Exception
+    {
+        // GIVEN
+        IdType idType = IdType.ACTUAL;
+        Input input = new CsvInput( data( "10" ),
+                header( entry( "id", Type.ID, idType.extractor() ),
+                        entry( "name", Type.PROPERTY, idType.extractor() ) ),
+                null, null, idType, COMMAS );
+
+        // WHEN/THEN
+        Iterator<InputNode> nodes = input.nodes().iterator();
+        try
+        {
+            nodes.next();
+            fail( "Should fail" );
+        }
+        catch ( InputException e )
+        {
+            // Good
+        }
     }
 
     private DataFactory given( final CharSeeker data )

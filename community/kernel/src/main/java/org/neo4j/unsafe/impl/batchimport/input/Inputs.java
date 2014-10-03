@@ -23,6 +23,7 @@ import java.io.File;
 
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapping;
+import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.CsvInput;
 import org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
@@ -58,19 +59,12 @@ public class Inputs
         };
     }
 
-    public static Input csv( File nodes, File relationships )
+    public static Input csv( File nodes, File relationships, IdType idType,
+            Configuration configuration )
     {
         return new CsvInput(
                 DataFactories.file( nodes ), DataFactories.defaultFormatNodeFileHeader(),
                 DataFactories.file( relationships ), DataFactories.defaultFormatRelationshipFileHeader(),
-                IdType.STRING, CsvInput.COMMAS );
-    }
-
-    public static Input tsv( File nodes, File relationships )
-    {
-        return new CsvInput(
-                DataFactories.file( nodes ), DataFactories.defaultFormatNodeFileHeader(),
-                DataFactories.file( relationships ), DataFactories.defaultFormatRelationshipFileHeader(),
-                IdType.STRING, CsvInput.TABS );
+                idType, configuration );
     }
 }

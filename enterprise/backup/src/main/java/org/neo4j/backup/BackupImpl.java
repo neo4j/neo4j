@@ -32,8 +32,6 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.monitoring.BackupMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
-import static java.lang.Math.max;
-
 import static org.neo4j.com.RequestContext.anonymous;
 
 class BackupImpl implements TheBackupInterface

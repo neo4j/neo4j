@@ -19,13 +19,19 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input.csv.reader;
 
+import java.io.IOException;
 import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
+import org.junit.Ignore;
 import org.junit.Test;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import static org.neo4j.unsafe.impl.batchimport.input.csv.reader.Extractors.LONG;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.reader.Extractors.STRING;
@@ -215,6 +221,58 @@ public class BufferedCharSeekerTest
         assertEquals( 23, seeker.extract( mark, Extractors.INT ).intValue() );
 
         assertFalse( seeker.seek( mark, COMMA ) );
+    }
+
+    @Test
+    public void shouldSkipEmptyLastValue() throws Exception
+    {
+        // GIVEN
+        CharSeeker seeker = new BufferedCharSeeker( new StringReader( "one,two,three," ), 100 );
+        Mark mark = new Mark();
+
+        // WHEN
+        assertTrue( seeker.seek( mark, COMMA ) ); // one
+        assertTrue( seeker.seek( mark, COMMA ) ); // two
+        assertTrue( seeker.seek( mark, COMMA ) ); // three
+
+        // THEN
+        assertFalse( seeker.seek( mark, COMMA ) );
+    }
+
+    @Test
+    public void shouldContinueThroughCompletelyEmptyLines() throws Exception
+    {
+        // GIVEN
+        CharSeeker seeker = new BufferedCharSeeker( new StringReader(
+                "one,two,three\n\n\nfour,five,six" ), 200 );
+        Mark mark = new Mark();
+
+        // WHEN/THEN
+        assertArrayEquals( new String[] {"one", "two", "three"}, nextLineOfAllStrings( seeker, mark ) );
+        assertArrayEquals( new String[] {"four", "five", "six"}, nextLineOfAllStrings( seeker, mark ) );
+    }
+
+    private String[] nextLineOfAllStrings( CharSeeker seeker, Mark mark ) throws IOException
+    {
+        List<String> line = new ArrayList<>();
+        while ( seeker.seek( mark, COMMA ) )
+        {
+            line.add( seeker.extract( mark, Extractors.STRING ) );
+            if ( mark.isEndOfLine() )
+            {
+                break;
+            }
+        }
+        return line.toArray( new String[line.size()] );
+    }
+
+    @Ignore( "TODO add test for characters with surrogate code points or whatever they are called," +
+             " basically consisting of two char values instead of one. Add such a test when adding " +
+             "support for reading such characters in the BufferedCharSeeker" )
+    @Test
+    public void shouldHandleDoubleCharValues()
+    {
+        fail( "Test not implemented" );
     }
 
     private String[][] randomWeirdValues( int cols, int rows, char... except )

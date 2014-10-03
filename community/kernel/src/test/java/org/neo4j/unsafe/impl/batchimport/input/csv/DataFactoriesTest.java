@@ -23,16 +23,20 @@ import java.io.StringReader;
 
 import org.junit.Test;
 
+import org.neo4j.unsafe.impl.batchimport.input.DuplicateHeaderException;
+import org.neo4j.unsafe.impl.batchimport.input.MissingHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.reader.BufferedCharSeeker;
 import org.neo4j.unsafe.impl.batchimport.input.csv.reader.CharSeeker;
 import org.neo4j.unsafe.impl.batchimport.input.csv.reader.Extractor;
 import org.neo4j.unsafe.impl.batchimport.input.csv.reader.Extractors;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 import static org.neo4j.helpers.collection.IteratorUtil.array;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.CsvInput.COMMAS;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.CsvInput.TABS;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.TABS;
 
 public class DataFactoriesTest
 {
@@ -76,6 +80,86 @@ public class DataFactoriesTest
                 entry( "type", Type.RELATIONSHIP_TYPE, Extractors.STRING ),
                 entry( "date", Type.PROPERTY, Extractors.LONG ),
                 entry( "more", Type.PROPERTY, extractors.longArray() ) ), header.entries() );
+    }
+
+    @Test
+    public void shouldHaveEmptyHeadersBeInterpretedAsIgnored() throws Exception
+    {
+        // GIVEN
+        CharSeeker seeker = new BufferedCharSeeker( new StringReader(
+                "one:id\ttwo\t\tdate:long" ) );
+        IdType idType = IdType.ACTUAL;
+
+        // WHEN
+        Header header = DataFactories.defaultFormatNodeFileHeader().create( seeker, TABS, idType.extractor() );
+
+        // THEN
+        assertArrayEquals( array(
+                entry( "one", Type.ID, Extractors.LONG ),
+                entry( "two", Type.PROPERTY, Extractors.STRING ),
+                entry( "", Type.IGNORE, null ),
+                entry( "date", Type.PROPERTY, Extractors.LONG ) ), header.entries() );
+    }
+
+    @Test
+    public void shouldFailForDuplicatePropertyHeaderEntries() throws Exception
+    {
+        // GIVEN
+        CharSeeker seeker = new BufferedCharSeeker( new StringReader(
+                "one:id\tname\tname:long" ) );
+        IdType idType = IdType.ACTUAL;
+
+        // WHEN
+        try
+        {
+            DataFactories.defaultFormatNodeFileHeader().create( seeker, TABS, idType.extractor() );
+            fail( "Should fail" );
+        }
+        catch ( DuplicateHeaderException e )
+        {
+            assertEquals( entry( "name", Type.PROPERTY, Extractors.STRING ), e.getFirst() );
+            assertEquals( entry( "name", Type.PROPERTY, Extractors.LONG ), e.getOther() );
+        }
+    }
+
+    @Test
+    public void shouldFailForDuplicateIdHeaderEntries() throws Exception
+    {
+        // GIVEN
+        CharSeeker seeker = new BufferedCharSeeker( new StringReader(
+                "one:id\ttwo:id" ) );
+        IdType idType = IdType.ACTUAL;
+
+        // WHEN
+        try
+        {
+            DataFactories.defaultFormatNodeFileHeader().create( seeker, TABS, idType.extractor() );
+            fail( "Should fail" );
+        }
+        catch ( DuplicateHeaderException e )
+        {
+            assertEquals( entry( "one", Type.ID, Extractors.LONG ), e.getFirst() );
+            assertEquals( entry( "two", Type.ID, Extractors.LONG ), e.getOther() );
+        }
+    }
+
+    @Test
+    public void shouldFailForMissingIdHeaderEntry() throws Exception
+    {
+        // GIVEN
+        CharSeeker seeker = new BufferedCharSeeker( new StringReader(
+                "one\ttwo" ) );
+
+        // WHEN
+        try
+        {
+            DataFactories.defaultFormatNodeFileHeader().create( seeker, TABS, Extractors.LONG );
+            fail( "Should fail" );
+        }
+        catch ( MissingHeaderException e )
+        {
+            assertEquals( Type.ID, e.getMissingType() );
+        }
     }
 
     private Header.Entry entry( String name, Type type, Extractor<?> extractor )

@@ -61,7 +61,7 @@ public interface Configuration
         }
     }
 
-    public static class Commas extends Default
+    public static final Configuration COMMAS = new Default()
     {
         @Override
         public char delimiter()
@@ -74,9 +74,9 @@ public interface Configuration
         {
             return ';';
         }
-    }
+    };
 
-    public static class Tabs extends Default
+    public static final Configuration TABS = new Default()
     {
         @Override
         public char delimiter()
@@ -89,5 +89,5 @@ public interface Configuration
         {
             return ',';
         }
-    }
+    };
 }

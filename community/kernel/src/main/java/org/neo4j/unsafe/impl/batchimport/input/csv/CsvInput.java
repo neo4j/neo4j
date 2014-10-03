@@ -34,9 +34,6 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.reader.CharSeeker;
  */
 public class CsvInput implements Input
 {
-    public static final Configuration COMMAS = new Configuration.Commas();
-    public static final Configuration TABS = new Configuration.Tabs();
-
     private final DataFactory nodeDataFactory;
     private final Header.Factory nodeHeaderFactory;
     private final DataFactory relationshipDataFactory;
