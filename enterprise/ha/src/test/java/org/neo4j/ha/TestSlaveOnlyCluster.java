@@ -104,6 +104,8 @@ public class TestSlaveOnlyCluster
 
             electedLatch.await();
 
+            clusterManager.getDefaultCluster().await( ClusterManager.allSeesAllAsAvailable() );
+
             HighlyAvailableGraphDatabase slaveDatabase = clusterManager.getDefaultCluster().getAnySlave(  );
             Transaction tx = slaveDatabase.beginTx();
             Node node = slaveDatabase.createNode();
