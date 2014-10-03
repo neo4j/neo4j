@@ -24,8 +24,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-
+import io.netty.buffer.ByteBuf;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 /**
@@ -45,13 +44,13 @@ public class BlockLogBuffer implements Closeable
     static final int MAX_SIZE = 256; /* soft limit, incl. header */
     static final int DATA_SIZE = MAX_SIZE-1;
 
-    private final ChannelBuffer target;
+    private final ByteBuf target;
     private final ByteCounterMonitor monitor;
     // MAX_SIZE can be overcome by one primitive put(), the largest is 8 bytes
     private final byte[] byteArray = new byte[MAX_SIZE + 8/*largest atom*/];
     private final ByteBuffer byteBuffer = ByteBuffer.wrap( byteArray );
 
-    public BlockLogBuffer( ChannelBuffer target, ByteCounterMonitor monitor )
+    public BlockLogBuffer( ByteBuf target, ByteCounterMonitor monitor )
     {
         this.target = target;
         this.monitor = monitor;

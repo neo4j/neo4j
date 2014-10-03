@@ -24,13 +24,11 @@ import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelPipeline;
-import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder;
-import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
-import org.jboss.netty.handler.queue.BlockingReadHandler;
-
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelPipeline;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import io.netty.handler.codec.LengthFieldPrepender;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.NeoStoreDataSource;
@@ -68,7 +66,7 @@ public abstract class Protocol
         this.internalProtocolVersion = internalProtocolVersion;
     }
 
-    public void serializeRequest( Channel channel, ChannelBuffer buffer, RequestType<?> type, RequestContext ctx,
+    public void serializeRequest( Channel channel, ByteBuf buffer, RequestType<?> type, RequestContext ctx,
                                   Serializer payload ) throws IOException
     {
         buffer.clear();
@@ -80,7 +78,7 @@ public abstract class Protocol
         chunkingBuffer.done();
     }
 
-    public <PAYLOAD> Response<PAYLOAD> deserializeResponse( BlockingReadHandler<ChannelBuffer> reader,
+    public <PAYLOAD> Response<PAYLOAD> deserializeResponse( BlockingReadHandler<ByteBuf> reader,
             ByteBuffer input, long timeout, Deserializer<PAYLOAD> payloadDeserializer,
             ResourceReleaser channelReleaser) throws IOException
     {
@@ -109,9 +107,9 @@ public abstract class Protocol
         return new Response<>( response, storeId, transactions, channelReleaser );
     }
 
-    protected abstract StoreId readStoreId( ChannelBuffer source, ByteBuffer byteBuffer );
+    protected abstract StoreId readStoreId( ByteBuf source, ByteBuffer byteBuffer );
 
-    private void writeContext( RequestContext context, ChannelBuffer targetBuffer )
+    private void writeContext( RequestContext context, ByteBuf targetBuffer )
     {
         targetBuffer.writeLong( context.getEpoch() );
         targetBuffer.writeInt( context.machineId() );
@@ -130,7 +128,7 @@ public abstract class Protocol
     {
         @Override
         @SuppressWarnings( "boxing" )
-        public void write( Integer responseObject, ChannelBuffer result ) throws IOException
+        public void write( Integer responseObject, ByteBuf result ) throws IOException
         {
             result.writeInt( responseObject );
         }
@@ -139,7 +137,7 @@ public abstract class Protocol
     {
         @Override
         @SuppressWarnings( "boxing" )
-        public void write( Long responseObject, ChannelBuffer result ) throws IOException
+        public void write( Long responseObject, ByteBuf result ) throws IOException
         {
             result.writeLong( responseObject );
         }
@@ -147,14 +145,14 @@ public abstract class Protocol
     public static final ObjectSerializer<Void> VOID_SERIALIZER = new ObjectSerializer<Void>()
     {
         @Override
-        public void write( Void responseObject, ChannelBuffer result ) throws IOException
+        public void write( Void responseObject, ByteBuf result ) throws IOException
         {
         }
     };
     public static final Deserializer<Integer> INTEGER_DESERIALIZER = new Deserializer<Integer>()
     {
         @Override
-        public Integer read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
+        public Integer read( ByteBuf buffer, ByteBuffer temporaryBuffer ) throws IOException
         {
             return buffer.readInt();
         }
@@ -162,7 +160,7 @@ public abstract class Protocol
     public static final Deserializer<Void> VOID_DESERIALIZER = new Deserializer<Void>()
     {
         @Override
-        public Void read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
+        public Void read( ByteBuf buffer, ByteBuffer temporaryBuffer ) throws IOException
         {
             return null;
         }
@@ -170,7 +168,7 @@ public abstract class Protocol
     public static final Serializer EMPTY_SERIALIZER = new Serializer()
     {
         @Override
-        public void write( ChannelBuffer buffer ) throws IOException
+        public void write( ByteBuf buffer ) throws IOException
         {
         }
     };
@@ -183,9 +181,9 @@ public abstract class Protocol
             this.writer = writer;
         }
 
-        // NOTICE: this assumes a "smart" ChannelBuffer that continues to next chunk
+        // NOTICE: this assumes a "smart" ByteBuf that continues to next chunk
         @Override
-        public Void read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
+        public Void read( ByteBuf buffer, ByteBuffer temporaryBuffer ) throws IOException
         {
             int pathLength;
             while ( 0 != ( pathLength = buffer.readUnsignedShort() ) )
@@ -209,7 +207,7 @@ public abstract class Protocol
         }
 
         @Override
-        public void write( ChannelBuffer buffer ) throws IOException
+        public void write( ByteBuf buffer ) throws IOException
         {
             NetworkWritableLogChannel channel = new NetworkWritableLogChannel( buffer );
 
@@ -229,7 +227,7 @@ public abstract class Protocol
             new Deserializer<TransactionRepresentation>()
     {
         @Override
-        public TransactionRepresentation read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws
+        public TransactionRepresentation read( ByteBuf buffer, ByteBuffer temporaryBuffer ) throws
                 IOException
         {
             LogEntryReader<ReadableLogChannel> reader = new LogEntryReaderFactory().create();
@@ -267,14 +265,14 @@ public abstract class Protocol
         pipeline.addLast( "frameEncoder", new LengthFieldPrepender( 4 ) );
     }
 
-    public static void writeString( ChannelBuffer buffer, String name )
+    public static void writeString( ByteBuf buffer, String name )
     {
         char[] chars = name.toCharArray();
         buffer.writeInt( chars.length );
         writeChars( buffer, chars );
     }
 
-    public static void writeChars( ChannelBuffer buffer, char[] chars )
+    public static void writeChars( ByteBuf buffer, char[] chars )
     {
         // TODO optimize?
         for ( char ch : chars )
@@ -283,12 +281,12 @@ public abstract class Protocol
         }
     }
 
-    public static String readString( ChannelBuffer buffer )
+    public static String readString( ByteBuf buffer )
     {
         return readString( buffer, buffer.readInt() );
     }
 
-    public static boolean readBoolean( ChannelBuffer buffer )
+    public static boolean readBoolean( ByteBuf buffer )
     {
         byte value = buffer.readByte();
         switch ( value )
@@ -299,7 +297,7 @@ public abstract class Protocol
         }
     }
 
-    public static String readString( ChannelBuffer buffer, int length )
+    public static String readString( ByteBuf buffer, int length )
     {
         char[] chars = new char[length];
         for ( int i = 0; i < length; i++ )

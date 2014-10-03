@@ -21,12 +21,12 @@ package org.neo4j.com;
 
 import java.nio.ByteBuffer;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.channel.Channel;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.impl.util.StringLogger;
 
-public class LoggingResourcePoolMonitor extends ResourcePool.Monitor.Adapter<Triplet<Channel, ChannelBuffer, ByteBuffer>>
+public class LoggingResourcePoolMonitor extends ResourcePool.Monitor.Adapter<Triplet<Channel, ByteBuf, ByteBuffer>>
 {
     private final StringLogger msgLog;
     private int lastCurrentPeakSize = -1;
@@ -48,7 +48,7 @@ public class LoggingResourcePoolMonitor extends ResourcePool.Monitor.Adapter<Tri
     }
 
     @Override
-    public void created( Triplet <Channel, ChannelBuffer, ByteBuffer> resource  )
+    public void created( Triplet <Channel, ByteBuf, ByteBuffer> resource  )
     {
         msgLog.debug( "ResourcePool create resource " + resource );
     }

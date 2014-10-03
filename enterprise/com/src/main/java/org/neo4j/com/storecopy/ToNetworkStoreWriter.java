@@ -23,8 +23,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-
+import io.netty.buffer.ByteBuf;
 import org.neo4j.com.BlockLogBuffer;
 import org.neo4j.com.Protocol;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
@@ -32,10 +31,10 @@ import org.neo4j.kernel.monitoring.Monitors;
 
 public class ToNetworkStoreWriter implements StoreWriter
 {
-    private final ChannelBuffer targetBuffer;
+    private final ByteBuf targetBuffer;
     private final ByteCounterMonitor bufferMonitor;
 
-    public ToNetworkStoreWriter( ChannelBuffer targetBuffer, Monitors monitors )
+    public ToNetworkStoreWriter( ByteBuf targetBuffer, Monitors monitors )
     {
         this.targetBuffer = targetBuffer;
         bufferMonitor = monitors.newMonitor( ByteCounterMonitor.class, getClass(), "storeCopier" );
