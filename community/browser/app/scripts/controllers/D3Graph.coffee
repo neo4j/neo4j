@@ -28,11 +28,12 @@ angular.module('neo4jApp.controllers')
     '$window'
     '$rootScope'
     '$scope'
+    '$interval'
     'CircularLayout'
     'GraphExplorer'
     'GraphStyle'
     'CypherGraphModel'
-    ($attrs, $element, $parse, $window, $rootScope, $scope, CircularLayout, GraphExplorer, GraphStyle, CypherGraphModel) ->
+    ($attrs, $element, $parse, $window, $rootScope, $scope, $interval, CircularLayout, GraphExplorer, GraphStyle, CypherGraphModel) ->
       graphView = null
 
       measureSize = ->
@@ -122,6 +123,13 @@ angular.module('neo4jApp.controllers')
           .on('updated', ->
             $rootScope.$broadcast 'graph:changed', graph
           )
+
+          emitStats = ->
+            stats = graphView.collectStats()
+            if stats.frameCount > 0
+              $rootScope.$emit 'visualization:stats', stats
+
+          $interval emitStats, 1000
 
           graphView.resize()
           $rootScope.$broadcast 'graph:changed', graph

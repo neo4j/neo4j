@@ -43,7 +43,7 @@ do ->
 
   nodeRing = new neo.Renderer(
     onGraphChange: (selection) ->
-      circles = selection.selectAll('circle.ring').data((node) ->[node])
+      circles = selection.selectAll('circle.ring').data((node) -> [node])
       circles.enter()
       .insert('circle', '.outline')
       .classed('ring', true)
@@ -62,6 +62,7 @@ do ->
   )
 
   arrowPath = new neo.Renderer(
+    name: 'arrowPath'
     onGraphChange: (selection, viz) ->
       paths = selection.selectAll('path.outline').data((rel) -> [rel])
 
@@ -81,6 +82,7 @@ do ->
   )
 
   relationshipType = new neo.Renderer(
+    name: 'relationshipType'
     onGraphChange: (selection, viz) ->
       texts = selection.selectAll("text").data((rel) -> [rel])
 
@@ -106,6 +108,7 @@ do ->
   )
 
   relationshipOverlay = new neo.Renderer(
+    name: 'relationshipOverlay'
     onGraphChange: (selection) ->
       rects = selection.selectAll('path.overlay').data((rel) -> [rel])
 

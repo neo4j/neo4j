@@ -29,3 +29,6 @@ class neo.graphView
   resize: ->
     @viz.resize()
     @
+
+  collectStats: ->
+    @viz.collectStats()

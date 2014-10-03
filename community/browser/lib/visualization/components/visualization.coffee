@@ -63,8 +63,52 @@ neo.viz = (el, measureSize, graph, layout, style) ->
       .on("wheel.zoom", null)
       .on("mousewheel.zoom", null)
 
+  newStatsBucket = ->
+    bucket =
+      frameCount: 0
+      geometry: 0
+      relationshipRenderers: do ->
+        timings = {}
+        neo.renderers.relationship.forEach((r) ->
+          timings[r.name] = 0
+        )
+        timings
+    bucket.duration = ->
+      bucket.lastFrame - bucket.firstFrame
+    bucket.fps = ->
+      (1000 * bucket.frameCount / bucket.duration()).toFixed(1)
+    bucket.lps = ->
+      (1000 * bucket.layout.layoutSteps / bucket.duration()).toFixed(1)
+    bucket.top = ->
+      renderers = []
+      for name, time of bucket.relationshipRenderers
+        renderers.push {
+          name: name
+          time: time
+        }
+      renderers.push
+        name: 'forceLayout'
+        time: bucket.layout.layoutTime
+      renderers.sort (a, b) -> b.time - a.time
+      totalRenderTime = renderers.reduce ((prev, current) -> prev + current.time), 0
+      renderers.map((d) -> "#{d.name}: #{(100 * d.time / totalRenderTime).toFixed(1)}%").join(', ')
+    bucket
+
+  currentStats = newStatsBucket()
+
+  now = if window.performance
+    () ->
+      window.performance.now()
+  else
+    () ->
+      Date.now()
+
   render = ->
+    currentStats.firstFrame = now() unless currentStats.firstFrame
+    currentStats.frameCount++
+    startRender = now()
     geometry.onTick(graph)
+    currentStats.geometry += (now() - startRender)
 
     nodeGroups = container.selectAll('g.node')
     .attr('transform', (d) ->
@@ -78,8 +122,11 @@ neo.viz = (el, measureSize, graph, layout, style) ->
           "translate(#{ d.source.x } #{ d.source.y }) rotate(#{ d.naturalAngle + 180 })")
 
     for renderer in neo.renderers.relationship
+      startRenderer = now()
       relationshipGroups.call(renderer.onTick, viz)
+      currentStats.relationshipRenderers[renderer.name] += (now() - startRenderer)
 
+    currentStats.lastFrame = now()
 
   force = layout.init(render)
     
@@ -89,6 +136,12 @@ neo.viz = (el, measureSize, graph, layout, style) ->
   ).on('dragend.node', () ->
     onNodeDragToggle()
   )
+
+  viz.collectStats = ->
+    latestStats = currentStats
+    latestStats.layout = force.collectStats()
+    currentStats = newStatsBucket()
+    latestStats
 
   viz.update = ->
     return unless graph
