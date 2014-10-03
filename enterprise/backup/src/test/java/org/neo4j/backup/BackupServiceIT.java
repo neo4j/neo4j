@@ -60,8 +60,11 @@ import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.TransactionMetadata;
+import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.BackupMonitor;
@@ -312,6 +315,30 @@ public class BackupServiceIT
         // then
         assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
         assertNotNull( getLastMasterForCommittedTx() );
+    }
+
+    @Test
+    public void shouldFindValidPreviousCommittedTxIdInFirstNeoStoreLog() throws Throwable
+    {
+        // given
+        GraphDatabaseAPI db = (GraphDatabaseAPI) createDb( storeDir, defaultBackupPortHostParams() );
+        createAndIndexNode( db, 1 );
+        createAndIndexNode( db, 2 );
+        createAndIndexNode( db, 3 );
+        createAndIndexNode( db, 4 );
+
+        NeoStore neoStore = db.getDependencyResolver().resolveDependency( NeoStore.class );
+        neoStore.flush();
+        long txId = neoStore.getLastCommittedTransactionId();
+
+        // when
+        BackupService backupService = new BackupService( fileSystem );
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false,
+                new Config( defaultBackupPortHostParams() ) );
+        db.shutdown();
+
+        // then
+        checkPreviousCommittedTxIdFromFirstLog( txId );
     }
 
     @Test
@@ -635,6 +662,13 @@ public class BackupServiceIT
                 description.appendText( String.format( "[%s] in list of copied files", fileName ) );
             }
         };
+    }
+
+    private void checkPreviousCommittedTxIdFromFirstLog( long txId ) throws IOException
+    {
+        final PhysicalLogFiles logFiles = new PhysicalLogFiles( backupDir, fileSystem );
+        final LogHeader logHeader = LogHeaderReader.readLogHeader( fileSystem, logFiles.getLogFileForVersion( 1 ) );
+        assertEquals( txId, logHeader.lastCommittedTxId );
     }
 
     private Pair<Integer,Long> getLastMasterForCommittedTx() throws IOException
