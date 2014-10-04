@@ -38,9 +38,9 @@ case class TypeRange(lower: CypherType, upper: Option[CypherType]) {
   }
 
   def &(that: TypeRange): Option[TypeRange] = this intersect that
-  def intersect(that: TypeRange): Option[TypeRange] = (lower mergeDown that.lower).flatMap {
+  def intersect(that: TypeRange): Option[TypeRange] = (lower greatestLowerBound that.lower).flatMap {
     newLower =>
-      val newUpper = upper.fold(that.upper)(t => Some(that.upper.fold(t)(_ mergeUp t)))
+      val newUpper = upper.fold(that.upper)(t => Some(that.upper.fold(t)(_ leastUpperBound t)))
       if (newUpper.isDefined && !(newLower isAssignableFrom newUpper.get))
         None
       else
@@ -49,11 +49,11 @@ case class TypeRange(lower: CypherType, upper: Option[CypherType]) {
 
   def constrain(aType: CypherType): Option[TypeRange] = this & TypeRange(aType, None)
 
-  def mergeUp(other: TypeRange): Seq[TypeRange] = {
-    val newLower = lower mergeUp other.lower
+  def leastUpperBound(other: TypeRange): Seq[TypeRange] = {
+    val newLower = lower leastUpperBound other.lower
     (upper, other.upper) match {
       case (Some(u1), Some(u2)) =>
-        Vector(TypeRange(newLower, Some(u1 mergeUp u2)))
+        Vector(TypeRange(newLower, Some(u1 leastUpperBound u2)))
       case (Some(u1), None)     =>
         if ((u1 isAssignableFrom other.lower) || (other.lower isAssignableFrom u1))
           Vector(TypeRange(newLower, Some(u1)))

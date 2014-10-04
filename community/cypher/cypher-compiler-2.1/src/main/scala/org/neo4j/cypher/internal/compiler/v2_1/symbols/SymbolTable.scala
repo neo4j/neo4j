@@ -27,7 +27,14 @@ case class SymbolTable(identifiers: Map[String, CypherType] = Map.empty) {
   def size: Int = identifiers.size
   def isEmpty: Boolean = identifiers.isEmpty
 
-  def add(key: String, typ: CypherType): SymbolTable = SymbolTable(identifiers + (key -> typ))
+  def add(key: String, typ: CypherType): SymbolTable = identifiers.get(key) match {
+    case Some(existingType) if typ.isAssignableFrom(existingType) =>
+      SymbolTable(identifiers + (key -> typ.leastUpperBound(existingType)))
+    case Some(existingType)                                       =>
+      throw new CypherTypeException("An identifier is used with different types. The identifier `%s` is used both as %s and as %s".format(key, typ, existingType))
+    case None                                                     =>
+      SymbolTable(identifiers + (key -> typ))
+  }
 
   def add(value: Map[String, CypherType]): SymbolTable = {
     value.foldLeft(this) {

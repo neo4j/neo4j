@@ -83,8 +83,8 @@ class TypeSpec private (private val ranges: Seq[TypeRange]) extends Equals {
       coercions constrain that
   }
 
-  def mergeUp(that: TypeSpec): TypeSpec = TypeSpec(ranges.flatMap {
-    r => that.ranges.flatMap(r mergeUp)
+  def leastUpperBound(that: TypeSpec): TypeSpec = TypeSpec(ranges.flatMap {
+    r => that.ranges.flatMap(r leastUpperBound)
   })
 
   def wrapInCollection: TypeSpec = TypeSpec(ranges.map(_.reparent(CTCollection)))
