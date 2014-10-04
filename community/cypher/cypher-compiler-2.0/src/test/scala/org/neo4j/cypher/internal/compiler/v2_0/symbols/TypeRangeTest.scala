@@ -167,26 +167,26 @@ class TypeRangeTest extends CypherFunSuite {
     assertEquals(None, rangeOfNumber & rangeOfAny)
   }
 
-  test("mergeUp with sub type") {
+  test("leastCommonBound with sub type") {
     val rangeFromAny = TypeRange(CTAny, None)
     val rangeOfAny = TypeRange(CTAny, CTAny)
-    assertEquals(Seq(rangeOfAny), rangeFromAny.mergeUp(rangeOfAny))
+    assertEquals(Seq(rangeOfAny), rangeFromAny.leastUpperBound(rangeOfAny))
 
     val rangeOfInteger = TypeRange(CTInteger, None)
-    assertEquals(Seq(rangeOfAny), rangeOfInteger.mergeUp(rangeOfAny))
+    assertEquals(Seq(rangeOfAny), rangeOfInteger.leastUpperBound(rangeOfAny))
 
     val rangeOfNumber = TypeRange(CTNumber, CTNumber)
-    assertEquals(Seq(rangeOfNumber), rangeOfInteger.mergeUp(rangeOfNumber))
+    assertEquals(Seq(rangeOfNumber), rangeOfInteger.leastUpperBound(rangeOfNumber))
   }
 
-  test("mergeUp with nested type") {
+  test("leastCommonBound with nested type") {
     val rangeFromCollectionAny = TypeRange(CTCollection(CTAny), None)
     val rangeOfCollectionAny = TypeRange(CTCollection(CTAny), CTCollection(CTAny))
-    assertEquals(Seq(rangeOfCollectionAny), rangeFromCollectionAny.mergeUp(rangeOfCollectionAny))
+    assertEquals(Seq(rangeOfCollectionAny), rangeFromCollectionAny.leastUpperBound(rangeOfCollectionAny))
 
     val rangeFromCollectionString = TypeRange(CTCollection(CTString), None)
     assertEquals(Seq(TypeRange(CTCollection(CTAny), CTCollection(CTString)), TypeRange(CTCollection(CTString), None)),
-      rangeFromCollectionAny.mergeUp(rangeFromCollectionString))
+      rangeFromCollectionAny.leastUpperBound(rangeFromCollectionString))
   }
 
   test("should have indefinite size when allowing unbound any at any depth") {

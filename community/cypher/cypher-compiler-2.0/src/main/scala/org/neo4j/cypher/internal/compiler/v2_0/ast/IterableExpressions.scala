@@ -164,5 +164,5 @@ case class ReduceExpression(accumulator: Identifier, init: Expression, identifie
       expression.semanticCheck(SemanticContext.Simple)
     } then
     expression.expectType(init.types, AccumulatorExpressionTypeMismatchMessageGenerator) then
-    this.specifyType(s => init.types(s) mergeUp expression.types(s))
+    this.specifyType(s => init.types(s) leastUpperBound expression.types(s))
 }
