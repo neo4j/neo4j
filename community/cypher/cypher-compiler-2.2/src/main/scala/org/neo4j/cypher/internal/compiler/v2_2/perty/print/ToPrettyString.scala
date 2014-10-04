@@ -21,17 +21,15 @@ package org.neo4j.cypher.internal.compiler.v2_2.perty.print
 
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
 
-trait ToPrettyString {
-  prettySelf: DocFormatting =>
+import scala.reflect.runtime.universe._
 
-  private var _toString: String = null
+trait ToPrettyString[T] {
+  prettySelf: T with DocFormatting =>
 
-  def toPrettyString(formatter: DocFormatter): String
+  def toDefaultPrettyString(formatter: DocFormatter): String
 
-  override def toString = {
-    if (_toString == null) {
-      _toString = toPrettyString(docFormatter)
-    }
-    _toString
-  }
+  def toPrettyString(formatter: DocFormatter)(docGen: DocGenStrategy[Any])(implicit valTag: TypeTag[T]) =
+    pprintToString[T, Any](prettySelf, formatter)(docGen)
+
+  override def toString = toDefaultPrettyString(docFormatter)
 }

@@ -22,19 +22,26 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.docgen.InternalDocHandler
-import org.neo4j.cypher.internal.compiler.v2_2.perty.PageDocFormatting
+import org.neo4j.cypher.internal.compiler.v2_2.perty.print.ToPrettyString
+import org.neo4j.cypher.internal.compiler.v2_2.perty.{DocFormatter, PageDocFormatting}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 import org.neo4j.helpers.ThisShouldNotHappenError
 
-case class Predicate(dependencies: Set[IdName], expr: Expression) {
-//  extends InternalDocHandler.ToString[Predicate] with PageDocFormatting {
+case class Predicate(dependencies: Set[IdName], expr: Expression) extends PageDocFormatting with ToPrettyString[Predicate] {
+
+  def toDefaultPrettyString(formatter: DocFormatter) =
+    toPrettyString(formatter)(InternalDocHandler.docGen)
 
   def hasDependenciesMet(symbols: Set[IdName]): Boolean =
     (dependencies -- symbols).isEmpty
 }
 
-case class Selections(predicates: Set[Predicate] = Set.empty) {
-//  extends InternalDocHandler.ToString[Selections] with PageDocFormatting {
+case class Selections(predicates: Set[Predicate] = Set.empty) extends PageDocFormatting with ToPrettyString[Selections] {
+
+  def toDefaultPrettyString(formatter: DocFormatter) =
+    toPrettyString(formatter)(InternalDocHandler.docGen)
+
+  def isEmpty = predicates.isEmpty
 
   def predicatesGiven(ids: Set[IdName]): Seq[Expression] = predicates.collect {
     case p@Predicate(_, predicate) if p.hasDependenciesMet(ids) => predicate

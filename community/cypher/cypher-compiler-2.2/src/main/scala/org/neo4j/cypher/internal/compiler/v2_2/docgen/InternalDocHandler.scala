@@ -27,12 +27,10 @@ case object InternalDocHandler extends CustomDocHandler[Any] {
 
   // Remove all except for DefaultDocHandler if you hit any problems with pretty printing
   val docGen: DocGenStrategy[Any] =
-    ???
-  // Hook in to see both ast and details
-//    AstStructureDocGen.lift[Any] ++
-//    AstDocHandler.docGen.lift[Any] ++
-
-//    logicalPlanDocGen.lift[Any] ++
-//    plannerDocGen.lift[Any] ++
-//    DefaultDocHandler.docGen
+    // Hook in to see both ast and details
+//    AstStructureDocGen.lift[Any] orElse
+    AstDocHandler.docGen.lift[Any] orElse
+    logicalPlanDocGen.lift[Any] orElse
+    plannerDocGen orElse
+    DefaultDocHandler.docGen
 }

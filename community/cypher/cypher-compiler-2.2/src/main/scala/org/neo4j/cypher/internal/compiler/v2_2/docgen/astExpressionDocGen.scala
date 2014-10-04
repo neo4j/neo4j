@@ -20,81 +20,87 @@
 package org.neo4j.cypher.internal.compiler.v2_2.docgen
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
+import org.neo4j.cypher.internal.compiler.v2_2.perty.recipe.Pretty
 
-case object astExpressionDocGen { // extends CustomDocGen[ASTNode] {
-  def drill = {
-    ???
-//    val exprDocDrill = mkDocDrill[Expression]() {
-//      case identifier: Identifier => identifier.asDoc
-//      case literal: Literal => literal.asDoc
-//      case hasLabels: HasLabels => hasLabels.asDoc
-//      case property: Property => property.asDoc
-//      case param: Parameter => param.asDoc
-//      case binOp: BinaryOperatorExpression => binOp.asDoc
-//      case leftOp: LeftUnaryOperatorExpression => leftOp.asDoc
-//      case rightOp: RightUnaryOperatorExpression => rightOp.asDoc
-//      case multiOp: MultiOperatorExpression => multiOp.asDoc
-//      case fun: FunctionInvocation => fun.asDoc
-//      case coll: Collection => coll.asDoc
-//      case countStar: CountStar => countStar.asDoc
-//    }
-//
-//    {
-//      case expr: Expression => inner => exprDocDrill(expr)(inner)
-//      case _                => inner => None
-//    }
+import scala.reflect.runtime.universe.TypeTag
+
+case object astExpressionDocGen  extends CustomDocGen[ASTNode] {
+
+  import org.neo4j.cypher.internal.compiler.v2_2.perty.recipe.Pretty._
+
+  def apply[X <: Any : TypeTag](x: X): Option[DocRecipe[Any]] = x match {
+    case identifier: Identifier => identifier.asPretty
+    case literal: Literal => literal.asPretty
+    case hasLabels: HasLabels => hasLabels.asPretty
+    case property: Property => property.asPretty
+    case param: Parameter => param.asPretty
+    case binOp: BinaryOperatorExpression => binOp.asPretty
+    case leftOp: LeftUnaryOperatorExpression => leftOp.asPretty
+    case rightOp: RightUnaryOperatorExpression => rightOp.asPretty
+    case multiOp: MultiOperatorExpression => multiOp.asPretty
+    case fun: FunctionInvocation => fun.asPretty
+    case coll: Collection => coll.asPretty
+    case countStar: CountStar => countStar.asPretty
+    case _ => None
   }
 
-//  implicit class IdentifierConverter(identifier: Identifier) {
-//    def asDoc(pretty: DocConverter[Any]) = AstNameConverter(identifier.name).asDoc
-//  }
-//
-//  implicit class LiteralConverter(literal: Literal) {
-//    def asDoc(pretty: DocConverter[Any]) = literal.asCanonicalStringVal
-//  }
-//
-//  implicit class HasLabelsConverter(hasLabels: HasLabels) {
-//    def asDoc(pretty: DocConverter[Any]) = group(pretty(hasLabels.expression) :: breakList(hasLabels.labels.map(pretty), break = breakSilent))
-//  }
-//
-//  implicit class PropertyConverter(property: Property) {
-//    def asDoc(pretty: DocConverter[Any]) = group(pretty(property.map) :: "." :: pretty(property.propertyKey))
-//  }
-//
-//  implicit class ParameterConverter(param: Parameter) {
-//    def asDoc(pretty: DocConverter[Any]) = braces(param.name)
-//  }
-//
-//  implicit class BinOpConverter(binOp: BinaryOperatorExpression) {
-//    def asDoc(pretty: DocConverter[Any]) = group(pretty(binOp.lhs) :/: binOp.canonicalOperatorSymbol :/: pretty(binOp.rhs))
-//  }
-//
-//  implicit class LeftOpConverter(leftOp: LeftUnaryOperatorExpression) {
-//    def asDoc(pretty: DocConverter[Any]) = group(leftOp.canonicalOperatorSymbol :/: pretty(leftOp.rhs))
-//  }
-//
-//  implicit class RightOpConverter(rightOp: RightUnaryOperatorExpression) {
-//    def asDoc(pretty: DocConverter[Any]) = group(pretty(rightOp.lhs) :/: rightOp.canonicalOperatorSymbol)
-//  }
-//
-//  implicit class MultiOpConverter(multiOp: MultiOperatorExpression) {
-//    def asDoc(pretty: DocConverter[Any]) = group(groupedSepList(multiOp.exprs.map(pretty), sep = break :: multiOp.canonicalOperatorSymbol))
-//  }
-//
-//  implicit class FunctionInvocationConverter(fun: FunctionInvocation) {
-//    def asDoc(pretty: DocConverter[Any]) = {
-//      val callDoc = block(pretty(fun.functionName))(sepList(fun.args.map(pretty)))
-//      if (fun.distinct) group("DISTINCT" :/: callDoc) else callDoc
-//    }
-//  }
-//
-//  implicit class CollectionConverter(coll: Collection) {
-//    def asDoc(pretty: DocConverter[Any]) = brackets(sepList(coll.expressions.map(pretty)))
-//  }
-//
-//  implicit class CountStarConverter(countStar: CountStar) {
-//    def asDoc(pretty: DocConverter[Any]): Doc = "count(*)"
-//  }
+  implicit class IdentifierConverter(identifier: Identifier) {
+    def asPretty: Option[DocRecipe[Any]] = AstNameConverter(identifier.name).asPretty
+  }
+
+  implicit class LiteralConverter(literal: Literal) {
+    def asPretty: Option[DocRecipe[Any]] = Pretty(literal.asCanonicalStringVal)
+  }
+
+  implicit class HasLabelsConverter(hasLabels: HasLabels) {
+    def asPretty: Option[DocRecipe[Any]] =
+      Pretty(group(pretty(hasLabels.expression) :: breakList(hasLabels.labels.map(pretty[LabelName]), break = silentBreak)))
+  }
+
+  implicit class PropertyConverter(property: Property) {
+    def asPretty: Option[DocRecipe[Any]] =
+      Pretty(group(pretty(property.map) :: "." :: pretty(property.propertyKey)))
+  }
+
+  implicit class ParameterConverter(param: Parameter) {
+    def asPretty: Option[DocRecipe[Any]] =
+      Pretty(braces(param.name))
+  }
+
+  implicit class BinOpConverter(binOp: BinaryOperatorExpression) {
+    def asPretty: Option[DocRecipe[Any]] =
+      Pretty(group(pretty(binOp.lhs) :/: binOp.canonicalOperatorSymbol :/: pretty(binOp.rhs)))
+  }
+
+  implicit class LeftOpConverter(leftOp: LeftUnaryOperatorExpression) {
+    def asPretty: Option[DocRecipe[Any]] =
+      Pretty(group(leftOp.canonicalOperatorSymbol :/: pretty(leftOp.rhs)))
+  }
+
+  implicit class RightOpConverter(rightOp: RightUnaryOperatorExpression) {
+    def asPretty: Option[DocRecipe[Any]] =
+      Pretty(group(pretty(rightOp.lhs) :/: rightOp.canonicalOperatorSymbol))
+  }
+
+  implicit class MultiOpConverter(multiOp: MultiOperatorExpression) {
+    def asPretty: Option[DocRecipe[Any]] =
+      Pretty(group(groupedSepList(multiOp.exprs.map(pretty[Expression]), sep = break :: multiOp.canonicalOperatorSymbol)))
+  }
+
+  implicit class FunctionInvocationConverter(fun: FunctionInvocation) {
+    def asPretty: Option[DocRecipe[Any]] ={
+      val callDoc = block(pretty(fun.functionName))(sepList(fun.args.map(pretty[Expression])))
+      Pretty(if (fun.distinct) group("DISTINCT" :/: callDoc) else callDoc)
+    }
+  }
+
+  implicit class CollectionConverter(coll: Collection) {
+    def asPretty: Option[DocRecipe[Any]] =
+      Pretty(brackets(sepList(coll.expressions.map(pretty[Expression]))))
+  }
+
+  implicit class CountStarConverter(countStar: CountStar) {
+    def asPretty: Option[DocRecipe[Any]] = Pretty("count(*)")
+  }
 }

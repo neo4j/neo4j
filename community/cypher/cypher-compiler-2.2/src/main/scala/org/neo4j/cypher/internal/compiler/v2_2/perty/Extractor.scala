@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.perty
 
+import org.neo4j.cypher.internal.compiler.v2_2.perty.helpers.TypeTagSupport
+
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.language.{higherKinds, implicitConversions}
@@ -68,7 +70,7 @@ object Extractor {
 
   def fromFilteredInput[I : TypeTag, O : TypeTag]  = new SimpleExtractor[I, O] {
     def apply[X <: I : TypeTag](x: X): Option[O] = {
-      val typeX: Type = typeOf[X]
+      val typeX: Type = TypeTagSupport.mostSpecificRuntimeTypeTag(x, typeTag[X]).tpe
       val typeO: Type = typeOf[O]
       if (typeX <:< typeO) Some(x.asInstanceOf[O]) else None
     }

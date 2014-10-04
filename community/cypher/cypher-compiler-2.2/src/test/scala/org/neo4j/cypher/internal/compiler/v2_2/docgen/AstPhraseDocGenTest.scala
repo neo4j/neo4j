@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.perty.gen.DocHandlerTestSuite
 
 class AstPhraseDocGenTest extends DocHandlerTestSuite[ASTNode] with AstConstructionTestSupport {
 
-  val docGen = ??? // astPhraseDocGen // ++ astExpressionDocGen ++ astParticleDocGen
+  val docGen = astPhraseDocGen orElse astExpressionDocGen orElse astParticleDocGen
 
   test("RETURN *") {
     val astNode: ASTNode = Return(distinct = false, ReturnItems(includeExisting = true, Seq())_, None, None, None)_

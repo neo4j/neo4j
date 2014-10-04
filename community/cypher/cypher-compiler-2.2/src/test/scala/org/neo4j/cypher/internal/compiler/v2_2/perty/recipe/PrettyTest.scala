@@ -56,7 +56,7 @@ class PrettyTest extends CypherFunSuite {
     val recipe = Pretty(literal(TextDoc("a")))
 
     recipe.size should equal(1)
-    recipe.head.asInstanceOf[AddPretty[Any]].content should equal(DocLiteral(TextDoc("a")))
+    recipe.head.asInstanceOf[AddPretty[Any]].value should equal(DocLiteral(TextDoc("a")))
   }
 
   test("Pretty.break") {

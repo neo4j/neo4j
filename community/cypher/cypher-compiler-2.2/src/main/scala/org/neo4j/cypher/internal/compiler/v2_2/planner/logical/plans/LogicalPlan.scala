@@ -25,7 +25,8 @@ import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
 import org.neo4j.cypher.internal.compiler.v2_2.Rewritable
 import org.neo4j.cypher.internal.compiler.v2_2.docgen.InternalDocHandler
-import org.neo4j.cypher.internal.compiler.v2_2.perty.PageDocFormatting
+import org.neo4j.cypher.internal.compiler.v2_2.perty._
+import org.neo4j.cypher.internal.compiler.v2_2.perty.print.{pprintToString, ToPrettyString}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
 import Rewritable._
 
@@ -39,8 +40,11 @@ abstract class LogicalPlan
   extends Product
   with Rewritable
   with PageDocFormatting
-//  with InternalDocHandler.ToString[LogicalPlan]
-{
+  with ToPrettyString[LogicalPlan] {
+
+  def toDefaultPrettyString(formatter: DocFormatter) =
+    toPrettyString(formatter)(InternalDocHandler.docGen)
+
   def lhs: Option[LogicalPlan]
   def rhs: Option[LogicalPlan]
   def solved: PlannerQuery
@@ -80,5 +84,7 @@ abstract class LogicalLeafPlan extends LogicalPlan {
   final val rhs = None
 }
 
-final case class IdName(name: String)
-// extends InternalDocHandler.ToString[IdName] with PageDocFormatting
+final case class IdName(name: String) extends PageDocFormatting with ToPrettyString[IdName] {
+  def toDefaultPrettyString(formatter: DocFormatter) =
+    toPrettyString(formatter)(InternalDocHandler.docGen)
+}

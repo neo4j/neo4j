@@ -22,10 +22,17 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.docgen.InternalDocHandler
-import org.neo4j.cypher.internal.compiler.v2_2.perty.PageDocFormatting
+import org.neo4j.cypher.internal.compiler.v2_2.perty._
+import org.neo4j.cypher.internal.compiler.v2_2.perty.print.ToPrettyString
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 
-sealed trait QueryHorizon { // extends InternalDocHandler.ToString[QueryHorizon] with PageDocFormatting {
+sealed trait QueryHorizon
+
+  extends PageDocFormatting with ToPrettyString[QueryHorizon] {
+
+  def toDefaultPrettyString(formatter: DocFormatter) =
+    toPrettyString(formatter)(InternalDocHandler.docGen)
+
   def exposedSymbols: Set[IdName]
 
   def dependingExpressions: Seq[Expression]
@@ -67,8 +74,11 @@ object QueryProjection {
 final case class QueryShuffle(sortItems: Seq[SortItem] = Seq.empty,
                               skip: Option[Expression] = None,
                               limit: Option[Expression] = None)
-//  extends InternalDocHandler.ToString[QueryShuffle] with PageDocFormatting
-{
+  extends PageDocFormatting with ToPrettyString[QueryShuffle] {
+
+  def toDefaultPrettyString(formatter: DocFormatter) =
+    toPrettyString(formatter)(InternalDocHandler.docGen)
+
   def withSortItems(sortItems: Seq[SortItem]) = copy(sortItems = sortItems)
   def withSkip(skip: Option[Skip]) = copy(skip = skip.map(_.expression))
   def withSkipExpression(skip: Expression) = copy(skip = Some(skip))

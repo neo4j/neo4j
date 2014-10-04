@@ -32,20 +32,20 @@ class DocStructureDocGenTest  extends DocHandlerTestSuite[Doc] {
     pprintToString(nil) should equal("ø")
   }
 
-  test("break => \"_\"") {
-    pprintToString(break) should equal("_")
+  test("break => \"·\"") {
+    pprintToString(break) should equal("·")
   }
 
-  test("breakWith(...) => \"_..._\"") {
-    pprintToString(breakWith("...")) should equal("_..._")
+  test("breakWith(...) => \"·...·\"") {
+    pprintToString(breakWith("...")) should equal("·...·")
   }
 
   test("text(...) => \"...\"") {
     pprintToString[Doc]("...") should equal("\"...\"")
   }
 
-  test("text(\"a\")·text(\"b\") => \"a\"·\"b\"·ø") {
-    pprintToString("a" :: "b" :: nil) should equal("\"a\"·\"b\"·ø")
+  test("text(\"a\")·text(\"b\") => \"a\" \u2E2C \"b\" \u2E2C ø") {
+    pprintToString("a" :: "b" :: nil) should equal("\"a\" \u2E2C \"b\" \u2E2C ø")
   }
 
   test("group(text(\"a\")) => [\"a\"]") {

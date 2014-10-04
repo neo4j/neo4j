@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.perty.gen
 
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import org.neo4j.cypher.internal.compiler.v2_2.perty.format.{quoteChar, quoteString}
+import org.neo4j.cypher.internal.compiler.v2_2.perty.helpers.{HasContainerType, HasMapType, HasType}
 import org.neo4j.cypher.internal.compiler.v2_2.perty.recipe.{Pretty, RecipeAppender}
 
 import scala.collection.{immutable, mutable}
@@ -28,7 +29,7 @@ import scala.reflect.runtime.universe._
 
 case object scalaDocGen extends CustomDocGen[Any] {
 
-  import Pretty._
+  import org.neo4j.cypher.internal.compiler.v2_2.perty.recipe.Pretty._
 
   def apply[X <: Any : TypeTag](x: X): Option[DocRecipe[Any]] =
     handleStringType(x) orElse
@@ -61,6 +62,8 @@ case object scalaDocGen extends CustomDocGen[Any] {
       val elems = data.map(pretty(_)(elemTag))
       Pretty(block("Array")(sepList(elems)))
     }
+
+    def mapEmpty[E](data: Array[E]) = Pretty(text("Array()"))
   }
 
   case object handleImmutableMapType extends HasMapType[immutable.Map, DocRecipe[Any]] {
@@ -72,6 +75,8 @@ case object scalaDocGen extends CustomDocGen[Any] {
       }
       Pretty(block("Map")(sepList(elems)))
     }
+
+    def mapEmpty[K, V](data: immutable.Map[K, V]) = Pretty(text("Map()"))
   }
 
   case object handleMutableMapType extends HasMapType[mutable.Map, DocRecipe[Any]] {
@@ -84,6 +89,8 @@ case object scalaDocGen extends CustomDocGen[Any] {
       }
       Pretty(block(mapType)(sepList(elems)))
     }
+
+    def mapEmpty[K, V](data: mutable.Map[K, V]) = Pretty(text(s"${data.getClass.getSimpleName}()"))
   }
 
   case object handleListType extends HasContainerType[List, DocRecipe[Any]] {
@@ -94,36 +101,40 @@ case object scalaDocGen extends CustomDocGen[Any] {
       }
       Pretty(group(elems))
     }
+
+    def mapEmpty[E](data: List[E]) = Pretty("⬨")
   }
 
   case object handleImmutableSetType extends HasContainerType[immutable.Set, DocRecipe[Any]] {
     def mapTyped[E : TypeTag](data: immutable.Set[E]) = {
       val elemTag = typeTag[E]
-      val elems = data.map(pretty(_)(elemTag))
+      val elems = data.map(pretty[E](_)(elemTag))
       Pretty(block("Set")(sepList(elems)))
     }
+
+    def mapEmpty[E](data: immutable.Set[E]) = Pretty(text("Set()"))
   }
 
   case object handleMutableSetType extends HasContainerType[mutable.Set, DocRecipe[Any]] {
     def mapTyped[E : TypeTag](data: mutable.Set[E]) = {
       val setType = data.getClass.getSimpleName
       val elemTag = typeTag[E]
-      val elems = data.map(pretty(_)(elemTag))
+      val elems = data.map(pretty[E](_)(elemTag))
       Pretty(block(setType)(sepList(elems)))
     }
+
+    def mapEmpty[E](data: mutable.Set[E]) = Pretty(text(s"${data.getClass.getSimpleName}()"))
   }
 
   case object handleSeqType extends HasContainerType[Seq, DocRecipe[Any]] {
     def mapTyped[E : TypeTag](data: Seq[E]) = {
       val seqType = data.getClass.getSimpleName
       val elemTag = typeTag[E]
-      val elems = data.map(pretty(_)(elemTag))
+      val elems = data.map(pretty[E](_)(elemTag))
       Pretty(block(seqType)(sepList(elems)))
     }
-  }
 
-  case object handleProductArgs extends HasProductType[RecipeAppender[Any]] {
-    def mapElem[X : TypeTag](v: X): RecipeAppender[Any] = pretty(v)
+    def mapEmpty[E](data: Seq[E]) = Pretty(text(s"${data.getClass.getSimpleName}()"))
   }
 
   case object handleProduct extends HasType[Product, DocRecipe[Any]] {
@@ -134,10 +145,8 @@ case object scalaDocGen extends CustomDocGen[Any] {
         Pretty(productName)
       } else {
         val productName = if (prefix.startsWith("Tuple")) "" else prefix
-        handleProductArgs(product).map {
-          elems =>
-            Pretty(block(productName)(sepList(elems)))
-        }
+        val elems = product.productIterator.toSeq.map(pretty[Any])
+        Pretty(block(productName)(sepList(elems)))
       }
     }
   }

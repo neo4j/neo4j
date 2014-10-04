@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.docgen.InternalDocHandler
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.handler.SimpleDocHandler
+import org.neo4j.cypher.internal.compiler.v2_2.perty.handler.DefaultDocHandler
+import org.neo4j.cypher.internal.compiler.v2_2.perty.print.{ToPrettyString, pprintToString}
 
 trait ASTNode
   extends Product
@@ -30,12 +31,15 @@ trait ASTNode
   with Rewritable
   with PageDocFormatting /* multi line */
   // with LineDocFormatting  /* single line */
-  // with SimpleDocHandler.ToString[ASTNode] /* like default toString() */ {
-  // with InternalDocHandler.ToString[ASTNode] /* see InternalDocHandler for more choices */
+  with ToPrettyString[ASTNode]
 {
 
   import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
   import org.neo4j.cypher.internal.compiler.v2_2.Rewritable._
+
+  def toDefaultPrettyString(formatter: DocFormatter): String =
+//    toPrettyString(formatter)(DefaultDocHandler.docGen) /* scala like */
+    toPrettyString(formatter)(InternalDocHandler.docGen) /* see there for more choices */
 
   def position: InputPosition
 

@@ -39,23 +39,24 @@ case object DocRecipe {
         @tailrec
         def expand(remaining: DocRecipe[Any], result: PrintableDocRecipe): PrintableDocRecipe = {
           remaining match {
-            case Seq(hd: AddPretty[_], tl@_*) if hd.tag.tpe <:< tpe =>
-              formatErrors {
-                extractContent(hd.asInstanceOf[AddPretty[_ <: T]])
-              } match {
-                case Some(recipe) =>
-                  expand(recipe ++ tl, result)
-
-                case None =>
-                  throw new IllegalArgumentException(
-                    s"Extractor failed to expand value of type: ${hd.tag.tpe} (extractor: $extractor)"
-                  )
-              }
-
             case Seq(hd: AddPretty[_], tl@_*) =>
-              throw new IllegalArgumentException(
-                s"Cannot expand value of type ${typeOf[T]}, it is not within the extractor's supported type bound <:< ${hd.tag.tpe} (extractor: $extractor)"
-              )
+              if (hd.tpe <:< tpe) {
+                formatErrors {
+                  hd.asInstanceOf[AddPretty[_ <: T]](extractor)
+                } match {
+                  case Some(recipe) =>
+                    expand(recipe ++ tl, result)
+
+                  case None =>
+                    throw new IllegalArgumentException(
+                      s"Extractor failed to expand value of type: ${hd.tpe} (extractor: $extractor)"
+                    )
+                }
+              } else {
+                throw new IllegalArgumentException(
+                  s"Cannot expand value of type ${hd.tpe}, it is not within the extractor's supported type bound <:< $tpe (extractor: $extractor)"
+                )
+              }
 
             case Seq(hd: PrintableDocStep, tl@_*) =>
               expand(tl, result :+ hd)
@@ -68,7 +69,10 @@ case object DocRecipe {
         expand(input, Seq.empty)
       }
     }
+  }
 
-    def extractContent[U <: T](hd: AddPretty[U]): Option[DocRecipe[Any]] = hd(extractor)
+  case object IsEmpty extends (DocRecipe[Any] => Boolean) {
+    override def apply(recipe: DocRecipe[Any]): Boolean =
+      recipe.isEmpty
   }
 }

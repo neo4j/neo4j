@@ -20,18 +20,17 @@
 package org.neo4j.cypher.internal.compiler.v2_2.docgen
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast.ASTNode
-import org.neo4j.cypher.internal.compiler.v2_2.perty.DocHandler
+import org.neo4j.cypher.internal.compiler.v2_2.perty.{DocRecipe, ExtractorSeq, DocHandler}
 import org.neo4j.cypher.internal.compiler.v2_2.perty.handler.DefaultDocHandler
 
 // Doc gen for printing any kind of ast node
 case object AstDocHandler extends DocHandler[ASTNode] {
-  val docGen =
-    ???
-//    astPhraseDocGen.lift[ASTNode] ++
-//    astParticleDocGen.lift[ASTNode] ++
-//    astExpressionDocGen.lift[ASTNode]
+  val docGen: ExtractorSeq[ASTNode, DocRecipe[Any]] =
+    astPhraseDocGen orElse
+    astParticleDocGen orElse
+    astExpressionDocGen
 }
 
 case object AstDocHandlerWithFallback extends DocHandler[ASTNode] {
-  val docGen = AstDocHandler.docGen // ++ DefaultDocHandler.docGen
+  val docGen = AstDocHandler.docGen orElse DefaultDocHandler.docGen
 }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.docgen
 
-import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc
+import org.neo4j.cypher.internal.compiler.v2_2.perty.recipe.Pretty
 
 object AstNameConverter {
   def isJavaIdentifier(name: String) =
@@ -29,10 +29,13 @@ object AstNameConverter {
 }
 
 case class AstNameConverter(name: String) {
-  def asDoc: Doc =
+
+  import Pretty._
+
+  def asPretty =
     if (AstNameConverter.isJavaIdentifier(name))
-      name
+      Pretty(name)
     else
-      s"`$name`"
+      Pretty(s"`$name`")
 }
 

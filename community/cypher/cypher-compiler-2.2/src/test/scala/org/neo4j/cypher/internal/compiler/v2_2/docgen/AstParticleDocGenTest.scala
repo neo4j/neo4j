@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.perty.gen.DocHandlerTestSuite
 
 class AstParticleDocGenTest extends DocHandlerTestSuite[ASTNode] with AstConstructionTestSupport {
 
-  val docGen = ??? // astParticleDocGen
+  val docGen = astParticleDocGen
 
   test("LabelName(a) => :a") {
     pprintToString[LabelName](LabelName("a")_) should equal(":a")

@@ -30,9 +30,7 @@ object pprintToString {
                                           formatter: DocFormatter = DocFormatters.defaultPageFormatter)
                                          (docGen: DocGenStrategy[S] = DefaultDocHandler.docGen): String = {
     val doc = pprintToDoc[T, S](value)(docGen)
-    val formatted = formatter(doc)
-    val condensed = condense(formatted)
-    val text = printCommandsToString(condensed)
+    val text = pprintDocToString(doc, formatter)
     text
   }
 }

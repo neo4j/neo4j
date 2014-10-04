@@ -19,13 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.perty.recipe
 
-import org.neo4j.cypher.internal.compiler.v2_2.perty.DocRecipe
-import org.neo4j.cypher.internal.compiler.v2_2.perty.step.AddBreak
+import org.neo4j.cypher.internal.compiler.v2_2.perty.recipe.DocRecipe.IsEmpty
+import org.neo4j.cypher.internal.compiler.v2_2.perty.{DocLiteral, Doc, DocGenStrategy, DocRecipe}
+import org.neo4j.cypher.internal.compiler.v2_2.perty.gen.toStringDocGen
+import org.neo4j.cypher.internal.compiler.v2_2.perty.print.{pprintToDoc, pprint}
+import org.neo4j.cypher.internal.compiler.v2_2.perty.step.{DocStep, AddPretty, AddBreak}
+
+import scala.reflect.runtime.universe.TypeTag
 
 // RecipeAppenders are DocRecipe[T] producers that take an
 // additional argument that gets appended to the produces
 // representation
-trait RecipeAppender[T] extends (DocRecipe[T] => DocRecipe[T]) {
+abstract class RecipeAppender[T : TypeTag] extends (DocRecipe[T] => DocRecipe[T]) {
   self =>
 
   def ::(hd: RecipeAppender[T]): RecipeAppender[T] = new RecipeAppender[T] {
@@ -34,5 +39,36 @@ trait RecipeAppender[T] extends (DocRecipe[T] => DocRecipe[T]) {
 
   def :/:(hd: RecipeAppender[T]): RecipeAppender[T] = new RecipeAppender[T] {
     def apply(append: DocRecipe[T]) = hd(AddBreak +: self(append))
+  }
+
+  def :?:(hd: RecipeAppender[T]): RecipeAppender[T] = {
+    // Drop empty rhs argument
+    test(IsEmpty)(_ => hd)(doc => RecipeAppender(hd(doc)))
+  }
+
+  def :/?:(hd: RecipeAppender[T]): RecipeAppender[T] = {
+    // Drop any empty argument, or if both are non-empty, insert break
+    hd.test(IsEmpty)(_ => self)(hdDoc => test(IsEmpty)(_ => RecipeAppender(hdDoc))(_ => RecipeAppender(hdDoc) :/: self))
+  }
+
+  def test(cond: DocRecipe[T] => Boolean = IsEmpty)
+          (ifEmpty: DocRecipe[T] => RecipeAppender[T])
+          (ifNonEmpty: DocRecipe[T] => RecipeAppender[T]): RecipeAppender[T] = {
+    val recipe = asRecipe
+    if (cond(recipe)) ifEmpty(recipe) else ifNonEmpty(recipe)
+  }
+
+  def asRecipe = self(Seq.empty)
+
+  def asDoc(docGen: DocGenStrategy[Any] = toStringDocGen): Doc =
+    PrintableDocRecipe.evalUsingStrategy[T, Any](docGen).apply(asRecipe)
+
+  def asDocString(docGen: DocGenStrategy[Any] = toStringDocGen) =
+    DocLiteral(asDoc(docGen)).toString
+}
+
+object RecipeAppender {
+  def apply[T : TypeTag](doc: DocRecipe[T]) = new RecipeAppender[T] {
+    def apply(append: DocRecipe[T]) = doc ++ append
   }
 }

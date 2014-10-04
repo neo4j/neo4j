@@ -17,46 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.perty.gen
+package org.neo4j.cypher.internal.compiler.v2_2.perty.helpers
 
 import org.neo4j.cypher.internal.compiler.v2_2.perty.SimpleExtractor
-import org.neo4j.cypher.internal.compiler.v2_2.perty.gen.TypeTagSupport._
+import org.neo4j.cypher.internal.compiler.v2_2.perty.helpers.TypeTagSupport._
 
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe._
 
-// Helper class for working with type tags. It provides
-//
-// - Construct TypeTag given it's Type and defining mirror
-//   (if these don't match, all hell breaks loose)
-// - Recover elem (or key, val) type tags from container (or map-like) type tags
-//
-object TypeTagSupport {
-
-  def fromType[T](tpe: Type, mirror: reflect.api.Mirror[reflect.runtime.universe.type]): TypeTag[T] = {
-    TypeTag(mirror, new reflect.api.TypeCreator {
-      def apply[U <: reflect.api.Universe with Singleton](m: reflect.api.Mirror[U]) = {
-        assert(m eq mirror, s"TypeTag[$tpe] was defined in mirror $mirror. It is invalid to migrate it to mirror $m.")
-        tpe.asInstanceOf[U#Type]
-      }
-    })
-  }
-
-  def fromContainerElem[K[X], E](tag: TypeTag[K[E]]): TypeTag[E] = tag.tpe match {
-    case TypeRef(_, _, List(tpe)) => fromType(tpe, tag.mirror)
-  }
-
-  def fromMapElem[K[X, Y], A, B](tag: TypeTag[K[A, B]]): (TypeTag[A], TypeTag[B]) = tag.tpe match {
-    case TypeRef(_, _, List(keyTpe, valTpe)) =>
-      (fromType(keyTpe, tag.mirror), fromType(valTpe, tag.mirror))
-  }
-}
 
 abstract class HasType[I : TypeTag, +O : TypeTag] extends SimpleExtractor[Any, O] {
   val expectedTpe = typeOf[I]
 
   def apply[X <: Any : TypeTag](x: X): Option[O] = {
-    val givenTpe = typeOf[X]
+    val givenTpe = TypeTagSupport.mostSpecificRuntimeTypeTag(x, typeTag[X]).tpe
     if (givenTpe <:< expectedTpe) mapTyped(x.asInstanceOf[I]) else None
   }
 
@@ -65,7 +39,7 @@ abstract class HasType[I : TypeTag, +O : TypeTag] extends SimpleExtractor[Any, O
 
 abstract class HasProductType[O : TypeTag] extends HasType[Product, Seq[O]] {
   def mapTyped[X <: Product : TypeTag](product: X): Option[Seq[O]] = {
-    val tag = implicitly[TypeTag[X]]
+    val tag = TypeTagSupport.mostSpecificRuntimeTypeTag(product, typeTag[X])
     val mirror = tag.mirror
     val builder = Seq.newBuilder[O]
     product.productIterator.foreach { elem =>
@@ -85,14 +59,17 @@ abstract class HasContainerType[K[X], O](implicit val weakTag: WeakTypeTag[K[_]]
   extends SimpleExtractor[Any, O] {
 
   def apply[X <: Any : TypeTag](x: X): Option[O] = {
-    val givenTag = typeTag[X]
+    val givenTag = TypeTagSupport.mostSpecificRuntimeTypeTag(x, typeTag[X])
     if (givenTag.tpe <:< weakTag.tpe) {
       val elemTag = fromContainerElem[K, Any](givenTag.asInstanceOf[TypeTag[K[Any]]])
-      mapTyped[Any](x.asInstanceOf[K[Any]])(elemTag)
+      elemTag
+        .map { tag => mapTyped[Any](x.asInstanceOf[K[Any]])(tag) }
+        .getOrElse { mapEmpty(x.asInstanceOf[K[Any]]) }
     } else
       None
   }
 
+  def mapEmpty[E](data: K[E]): Option[O]
   def mapTyped[E : TypeTag](data: K[E]): Option[O]
 }
 
@@ -100,13 +77,20 @@ abstract class HasMapType[M[X, Y], O](implicit val weakTag: WeakTypeTag[M[_, _]]
   extends SimpleExtractor[Any, O] {
 
   def apply[X <: Any : TypeTag](x: X): Option[O] = {
-    val givenTag = typeTag[X]
+    val givenTag = TypeTagSupport.mostSpecificRuntimeTypeTag(x, typeTag[X])
     if (givenTag.tpe <:< weakTag.tpe) {
-      val (keyTag, valTag) = fromMapElem[M, Nothing, Any](givenTag.asInstanceOf[TypeTag[M[Nothing, Any]]])
-      mapTyped[Nothing, Any](x.asInstanceOf[M[Nothing, Any]])(keyTag, valTag)
+      val optTags = fromMapElem[M, Nothing, Any](givenTag.asInstanceOf[TypeTag[M[Nothing, Any]]])
+      optTags
+        .map { tags => mapTyped[Nothing, Any](x.asInstanceOf[M[Nothing, Any]])(tags._1, tags._2) }
+        .getOrElse { mapEmpty(x.asInstanceOf[M[Nothing, Any]]) }
     } else
       None
   }
 
+  def mapEmpty[K, V](data: M[K, V]): Option[O]
   def mapTyped[K : TypeTag, V : TypeTag](data: M[K, V]): Option[O]
 }
+
+
+
+

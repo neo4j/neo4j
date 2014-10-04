@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.perty.step
 
+import org.neo4j.cypher.internal.compiler.v2_2.perty.helpers.{LazyVal, StrictVal, TypedVal}
 import org.neo4j.cypher.internal.compiler.v2_2.perty.{Doc, Extractor}
 
 import scala.reflect.runtime.universe.TypeTag
@@ -30,18 +31,22 @@ sealed trait DocStep[+T]
 // Uses lazy field content to be able to recover from errors
 // during pretty-printing conversion
 //
-sealed abstract class AddPretty[T](implicit val tag: TypeTag[T]) extends DocStep[T] {
-  def content: T
-  def apply[I >: T, O](extractor: Extractor[I, O]): Option[O] = extractor(content)
+final class AddPretty[T](content: TypedVal[T]) extends DocStep[T] {
+  def value = content.value
+  def tpe = content.tag.tpe
+
+  def apply[I >: T, O](extractor: Extractor[I, O]): Option[O] = content(extractor)
 
   // for debugging
   override def toString = content.toString
 }
 
 case object AddPretty {
-  def apply[T : TypeTag](value: => T) = new AddPretty[T] {
-    def content: T = value
-  }
+  def apply[T : TypeTag](value: T) = new AddPretty[T](StrictVal(value))
+}
+
+case object AddPrettyLazy {
+  def apply[T : TypeTag](value: => T) = new AddPretty[T](LazyVal(value))
 }
 
 sealed trait PrintableDocStep extends DocStep[Nothing]

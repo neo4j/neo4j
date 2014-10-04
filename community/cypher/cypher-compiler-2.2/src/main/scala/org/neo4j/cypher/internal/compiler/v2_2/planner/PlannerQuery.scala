@@ -22,15 +22,19 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Hint
 import org.neo4j.cypher.internal.compiler.v2_2.docgen.InternalDocHandler
-import org.neo4j.cypher.internal.compiler.v2_2.perty.PageDocFormatting
+import org.neo4j.cypher.internal.compiler.v2_2.perty._
+import org.neo4j.cypher.internal.compiler.v2_2.perty.print.ToPrettyString
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, PatternRelationship}
 
 case class UnionQuery(queries: Seq[PlannerQuery], distinct: Boolean)
 
 case class PlannerQuery(graph: QueryGraph = QueryGraph.empty,
                         horizon: QueryHorizon = QueryProjection.empty,
-                        tail: Option[PlannerQuery] = None) {
-//  extends InternalDocHandler.ToString[PlannerQuery] with PageDocFormatting {
+                        tail: Option[PlannerQuery] = None)
+  extends PageDocFormatting with ToPrettyString[PlannerQuery] {
+
+  def toDefaultPrettyString(formatter: DocFormatter) =
+    toPrettyString(formatter)(InternalDocHandler.docGen)
 
   def lastQueryGraph: QueryGraph = tail.map(_.lastQueryGraph).getOrElse(graph)
 

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.perty.recipe
 
+import org.neo4j.cypher.internal.compiler.v2_2.perty.helpers.{LazyVal, StrictVal, TypedVal}
 import org.neo4j.cypher.internal.compiler.v2_2.perty.step._
 import org.neo4j.cypher.internal.compiler.v2_2.perty.{BreakingDoc, DocLiteral, Doc, DocRecipe}
 
@@ -53,8 +54,8 @@ import scala.reflect.runtime.universe._
 // To use Pretty, import Pretty._ where needed and call DSL helpers
 // from inside a call to Pretty.apply.
 //
-class Pretty[T] extends MidPriorityPrettyImplicits[T] {
-  def apply(appender: RecipeAppender[T]): DocRecipe[T] = appender(Seq.empty)
+class Pretty[T : TypeTag] extends MidPriorityPrettyImplicits[T] {
+  def apply(appender: RecipeAppender[T]): DocRecipe[T] = appender.asRecipe
 
   case object nothing extends RecipeAppender[T] {
     def apply(append: DocRecipe[T]) = append
@@ -69,11 +70,8 @@ class Pretty[T] extends MidPriorityPrettyImplicits[T] {
   }
 
   case class breakBefore(doc: RecipeAppender[T], break: RecipeAppender[T] = break) extends RecipeAppender[T] {
-    def apply(append: DocRecipe[T]) = {
-      val afterDoc = doc(Seq.empty)
-      val brokenDoc = if (afterDoc.isEmpty) doc else break :: doc
-      brokenDoc(append)
-    }
+    def apply(append: DocRecipe[T]) =
+      doc.test(DocRecipe.IsEmpty)(doc => RecipeAppender(doc))(doc => break :: doc)(append)
   }
 
   val silentBreak: RecipeAppender[T] = breakWith("")
@@ -108,7 +106,9 @@ class Pretty[T] extends MidPriorityPrettyImplicits[T] {
 
   implicit class listAppender(recipes: TraversableOnce[RecipeAppender[T]]) extends RecipeAppender[T] {
     def apply(append: DocRecipe[T]) =
-      recipes.foldRight(append) { _.apply(_) }
+      recipes.foldRight(append) {
+        _.apply(_)
+      }
   }
 
   case object list {
@@ -149,11 +149,8 @@ class Pretty[T] extends MidPriorityPrettyImplicits[T] {
     }
   }
 
-
-  // TODO: Test these
-
   def block(name: RecipeAppender[T], open: RecipeAppender[T] = "(", close: RecipeAppender[T] = ")")(innerDoc: RecipeAppender[T]): RecipeAppender[T] =
-    group( name :: surrounded(open, close, silentBreak, silentBreak )(innerDoc) )
+    group(name :: surrounded(open, close, silentBreak, silentBreak)(innerDoc))
 
   def brackets(innerDoc: RecipeAppender[T], break: RecipeAppender[T] = silentBreak) =
     surrounded(open = "[", close = "]", break, break)(innerDoc)
@@ -172,12 +169,34 @@ class Pretty[T] extends MidPriorityPrettyImplicits[T] {
                         openBreak: RecipeAppender[T] = break,
                         closeBreak: RecipeAppender[T] = break)(innerDoc: RecipeAppender[T])
     extends RecipeAppender[T] {
-      def apply(append: DocRecipe[T]) =
-        group(open :: nest(group(breakBefore(innerDoc, openBreak))) :: breakBefore(close, closeBreak))(append)
+    def apply(append: DocRecipe[T]) = {
+      val begin: RecipeAppender[T] = open
+      val middle: RecipeAppender[T] = breakBefore(innerDoc, openBreak)
+      val end: RecipeAppender[T] = breakBefore(close, closeBreak)
+      group(begin :: nest(group(middle)) :: end)(append)
+    }
+  }
+
+  case class section(start: RecipeAppender[T])(inner: RecipeAppender[T], innerBreak: RecipeAppender[T] = break)
+    extends RecipeAppender[T] {
+    def apply(append: DocRecipe[T]): DocRecipe[T] = {
+      val innerDoc = inner(Seq.empty)
+      if (innerDoc.isEmpty)
+        innerDoc
+      else
+        group(start :: nest(innerBreak :: inner))(append)
+    }
+  }
+
+  def prettyOption[S <: T : TypeTag](content: Option[S]) = content.map(pretty[S]).getOrElse(nothing)
+
+  def prettyEither[L <: T : TypeTag, R <: T : TypeTag](content: Either[L, R]) = content match {
+    case Left(left) => pretty(left)
+    case Right(right) => pretty(right)
   }
 }
 
-protected class MidPriorityPrettyImplicits[T] extends LowPriorityPrettyImplicits[T] {
+protected class MidPriorityPrettyImplicits[T : TypeTag] extends LowPriorityPrettyImplicits[T] {
   implicit class textAppender(text: String) extends RecipeAppender[T] {
     def apply(append: DocRecipe[T]) = AddText(text) +: append
   }
@@ -190,20 +209,21 @@ protected class MidPriorityPrettyImplicits[T] extends LowPriorityPrettyImplicits
   implicit def liftDocRecipe(opts: DocRecipe[T]): Some[DocRecipe[T]] = Some(opts)
 }
 
-protected class LowPriorityPrettyImplicits[T] {
+protected class LowPriorityPrettyImplicits[T : TypeTag] {
   // Abstract "content" that still needs to be rendered into PrintableDocSteps
   //
   // The actual value is taken as a by name closure to be able to perform error
   // handling when dealing with buggy / partially unimplemented classes.
   //
-  implicit class prettyAppender[+S <: T : TypeTag](content: => S) extends RecipeAppender[T] {
-    def apply(append: DocRecipe[T]) = AddPretty(content) +: append
+  class prettyAppender[+S <: T : TypeTag](content: TypedVal[S]) extends RecipeAppender[T] {
+    def apply(append: DocRecipe[T]) = new AddPretty(content) +: append
   }
 
-  case object pretty {
-    def apply[S <: T : TypeTag](content: => S): prettyAppender[S] =
-      new prettyAppender(content)
-  }
+  implicit def pretty[S <: T : TypeTag](value: S) =
+    new prettyAppender(StrictVal(value))
+
+  def prettyLazy[S <: T : TypeTag](value: => S) =
+    new prettyAppender(LazyVal(value))
 }
 
 object Pretty extends Pretty[Any] {

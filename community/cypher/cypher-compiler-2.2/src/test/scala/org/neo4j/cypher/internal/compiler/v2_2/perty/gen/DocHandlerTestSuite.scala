@@ -37,8 +37,8 @@ abstract class DocHandlerTestSuite[S : TypeTag]
     print.pprintToString[T, S](value, formatter)(docGen)
 
   def convert[T <: S : TypeTag](value: T, formatter: DocFormatter = docFormatter): Doc =
-    pprintToDoc(value)(docGen)
+    pprintToDoc[T, S](value)(docGen)
 
   def format[T <: S : TypeTag](value: T, formatter: DocFormatter = docFormatter): Seq[PrintCommand] =
-    formatter(convert(value))
+    formatter(convert[T](value))
 }

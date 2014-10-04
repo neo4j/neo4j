@@ -40,17 +40,17 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       case _                                   => Double.MaxValue
     })
 
-    (new given {
+    val result= (new given {
       cardinality = PartialFunction(myCardinality)
-    } planFor "MATCH (a:X)<-[r1]-(b)-[r2]->(c:X) RETURN b").plan.toString should equal(
+    } planFor "MATCH (a:X)<-[r1]-(b)-[r2]->(c:X) RETURN b").plan
+
+    result.toString should equal(
       """Projection[b](Map("b" → b))
-         |↳ Selection[r2,r1,a,b,c](Vector(NotEquals(r1, r2)))
-         |↳ NodeHashJoin[r2,r1,a,b,c](Set(b))
-         |  ↳ left =
-         |    Expand[a,r1,b](a, INCOMING, INCOMING, ⬨, b, r1, , Vector())
-         |    ↳ NodeByLabelScan[a](a, Left("X"), Set())
-         |  ↳ right =
-         |    Expand[c,r2,b](c, INCOMING, OUTGOING, ⬨, b, r2, , Vector())
-         |    ↳ NodeByLabelScan[c](c, Left("X"), Set())""".stripMargin)
+        |↳ Selection[a,r2,b,c,r1](Vector(r1 <> r2))
+        |↳ NodeHashJoin[a,r2,c,b,r1](Set(b))
+        |  ↳ left = Expand[a,r1,b](a, INCOMING, INCOMING, ⬨, b, r1, , Vector())
+        |    ↳ NodeByLabelScan[a](a, Left("X"), Set())
+        |  ↳ right = Expand[c,r2,b](c, INCOMING, OUTGOING, ⬨, b, r2, , Vector())
+        |    ↳ NodeByLabelScan[c](c, Left("X"), Set())""".stripMargin)
   }
 }

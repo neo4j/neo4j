@@ -129,7 +129,7 @@ class SimpleDocGenTest extends DocHandlerTestSuite[Any] {
   }
 
   test("simpleDocGen formats literal docs") {
-    pprintToString(literal("a" :: "b")) should equal("DocLiteral(\"a\"·\"b\")")
+    pprintToString(literal("a" :: "b")) should equal("DocLiteral(\"a\" ⸬ \"b\")")
   }
 }
 

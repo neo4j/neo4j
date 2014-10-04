@@ -22,29 +22,27 @@ package org.neo4j.cypher.internal.compiler.v2_2.docgen
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
+import org.neo4j.cypher.internal.compiler.v2_2.perty.recipe.Pretty
 
 import scala.util.Try
 
-case object astParticleDocGen { // extends CustomDocGen[ASTNode] {
+import scala.reflect.runtime.universe.TypeTag
 
-  def drill = {
-    ???
-//    val particleDocDrill = mkDocDrill[ASTParticle]() {
-//      case labelName: LabelName => labelName.asDoc
-//      case symbolicName: SymbolicName => symbolicName.asDoc
-//    }
-//
-//    {
-//      case particle: ASTParticle => inner => particleDocDrill(particle)(inner)
-//      case _                     => inner => None
-//    }
+case object astParticleDocGen extends CustomDocGen[ASTNode] {
+
+  import Pretty._
+
+  def apply[X <: Any : TypeTag](x: X): Option[DocRecipe[Any]] = x match {
+      case labelName: LabelName => labelName.asPretty
+      case symbolicName: SymbolicName => symbolicName.asPretty
+      case _ => None
+    }
+
+  implicit class SymbolicNameConverter(symbolicName: SymbolicName) {
+    def asPretty = AstNameConverter(symbolicName.name).asPretty
   }
 
-//  implicit class SymbolicNameConverter(symbolicName: SymbolicName) {
-//    def asDoc(pretty: DocConverter[Any]) = AstNameConverter(symbolicName.name).asDoc
-//  }
-//
-//  implicit class LabelNameConverter(labelName: LabelName) {
-//    def asDoc(pretty: DocConverter[Any]) = group(":" :: AstNameConverter(labelName.name).asDoc)
-//  }
+  implicit class LabelNameConverter(labelName: LabelName) {
+    def asPretty = Pretty(group(":" :: AstNameConverter(labelName.name).asPretty))
+  }
 }

@@ -19,6 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.perty
 
+import org.neo4j.cypher.internal.compiler.v2_2.docgen.InternalDocHandler
+import org.neo4j.cypher.internal.compiler.v2_2.perty.print.ToPrettyString
+
 trait DocHandler[-S] {
   def docGen: DocGenStrategy[S]
 }

@@ -21,125 +21,123 @@
 package org.neo4j.cypher.internal.compiler.v2_2.docgen
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
+import org.neo4j.cypher.internal.compiler.v2_2.perty.recipe.{Pretty, RecipeAppender}
 
-import scala.util.Try
+import scala.reflect.runtime.universe.TypeTag
 
-case object astPhraseDocGen { // extends CustomDocGen[ASTNode] {
+case object astPhraseDocGen extends CustomDocGen[ASTNode] {
 
-  def drill = {
-    ???
-//    val phraseDocDrill = mkDocDrill[ASTPhrase]() {
-//      case clause: Clause => clause.asDoc
-//      case item: ReturnItem => item.asDoc
-//      case items: ReturnItems => items.asDoc
-//      case where: Where => where.asDoc
-//      case hint: Hint => hint.asDoc
-//      case orderBy: OrderBy => orderBy.asDoc
-//      case sortItem: SortItem => sortItem.asDoc
-//      case slice: ASTSlicingPhrase => slice.asDoc
-//    }
-//
-//    {
-//      case phrase: ASTPhrase => inner => phraseDocDrill(phrase)(inner)
-//      case _                 => inner => None
-//    }
+  import org.neo4j.cypher.internal.compiler.v2_2.perty.recipe.Pretty._
+
+  def apply[X <: Any : TypeTag](x: X): Option[DocRecipe[Any]] = x match {
+    case clause: Clause => clause.asPretty
+    case item: ReturnItem => item.asPretty
+    case items: ReturnItems => items.asPretty
+    case where: Where => where.asPretty
+    case hint: Hint => hint.asPretty
+    case orderBy: OrderBy => orderBy.asPretty
+    case sortItem: SortItem => sortItem.asPretty
+    case slice: ASTSlicingPhrase => slice.asPretty
+    case _ => None
   }
-//
-//  implicit class ClauseConverter(clause: Clause) {
-//    def asDoc(pretty: DocConverter[Any]): Doc = clause match {
-//      case clause: Return => clause.asDoc(pretty)
-//      case clause: With   => clause.asDoc(pretty)
-//      case clause: Unwind => clause.asDoc(pretty)
-//      case _              => TextDoc(clause.toString)
-//    }
-//  }
-//  abstract class ProjectionClauseConverter {
-//    def clause: ProjectionClause
-//    def where: Option[Where]
-//
-//    def asDoc(pretty: DocConverter[Any]): Doc = {
-//      val distinct: Doc = if (clause.distinct) "DISTINCT" else nil
-//      val items: Doc = pretty(clause.returnItems)
-//      val orderBy: Doc = clause.orderBy.map(pretty)
-//      val skip: Doc = clause.skip.map(pretty)
-//      val limit: Doc = clause.limit.map(pretty)
-//      val predicate: Doc = where.map(pretty)
-//      section(clause.name, distinct :+: items :+: predicate :+: orderBy :+: skip :+: limit)
-//    }
-//  }
-//
-//  implicit class ReturnConverter(val clause: Return) extends ProjectionClauseConverter {
-//    def where = None
-//  }
-//
-//  implicit class WithConverter(val clause: With) extends ProjectionClauseConverter {
-//    def where = clause.where
-//  }
-//
-//  implicit class ReturnItemsConverter(returnItems: ReturnItems) {
-//    def asDoc(pretty: DocConverter[Any]): Doc = if (returnItems.includeExisting && returnItems.items.isEmpty)
-//      text("*")
-//    else if (returnItems.includeExisting)
-//      text("*,") :/: sepList(returnItems.items.map(pretty))
-//    else
-//      sepList(returnItems.items.map(pretty))
-//  }
-//
-//  implicit class ReturnItemConverter(item: ReturnItem) {
-//    def asDoc(pretty: DocConverter[Any]): Doc = item match {
-//      case aliasedItem: AliasedReturnItem => aliasedItem.asDoc(pretty)
-//      case unAliasedItem: UnaliasedReturnItem => unAliasedItem.asDoc(pretty)
-//    }
-//  }
-//
-//  implicit class AliasedReturnItemConverter(item: AliasedReturnItem) {
-//    def asDoc(pretty: DocConverter[Any]) = group(pretty(item.expression) :/: "AS" :/: pretty(item.identifier))
-//  }
-//
-//  implicit class UnaliasedReturnItemConverter(item: UnaliasedReturnItem) {
-//    def asDoc(pretty: DocConverter[Any]) = text(item.inputText)
-//  }
-//
-//  implicit class WhereConverter(where: Where) {
-//    def asDoc(pretty: DocConverter[Any]) = section("WHERE", pretty(where.expression))
-//  }
-//
-//  implicit class OrderByConverter(orderBy: OrderBy) {
-//    def asDoc(pretty: DocConverter[Any]) =
-//      group("ORDER BY" :/: groupedSepList(orderBy.sortItems.map(pretty)))
-//  }
-//
-//  implicit class SortItemConverter(sortIem: SortItem) {
-//    def asDoc(pretty: DocConverter[Any]): Doc = sortIem match {
-//      case AscSortItem(expression) => pretty(expression)
-//      case DescSortItem(expression) => group(pretty(expression) :/: "DESC")
-//    }
-//  }
-//
-//  implicit class HintConverter(hint: Hint) {
-//    def asDoc(pretty: DocConverter[Any]) = hint match {
-//      case UsingIndexHint(identifier, label, property) =>
-//        group("USING" :/: "INDEX" :/: group(pretty(identifier) :: block(pretty(label))(pretty(property))))
-//
-//      case UsingScanHint(identifier, label) =>
-//        group("USING" :/: "SCAN" :/: group(pretty(identifier) :: pretty(label)))
-//    }
-//  }
-//
-//  implicit class SlicingPhraseConverter(slice: ASTSlicingPhrase) {
-//    def asDoc(pretty: DocConverter[Any]) = slice match {
-//      case Skip(expr) => section("SKIP", pretty(expr))
-//      case Limit(expr) => section("LIMIT", pretty(expr))
-//    }
-//  }
-//
-//  implicit class UnwindConverter(unwind: Unwind) {
-//    def asDoc(pretty: DocConverter[Any]) = {
-//      val input: Doc = pretty(unwind.expression)
-//      val output: Doc = pretty(unwind.identifier)
-//      section("UNWIND", input :/: "AS" :/: output)
-//    }
-//  }
+
+  implicit class ClauseConverter(clause: Clause) {
+    def asPretty: DocRecipe[Any] = clause match {
+      case clause: Return => clause.asPretty
+      case clause: With   => clause.asPretty
+      case clause: Unwind => clause.asPretty
+      case _              => Pretty(text(clause.toString))
+    }
+  }
+  abstract class ProjectionClauseConverter {
+    def clause: ProjectionClause
+    def where: Option[Where]
+
+    def asPretty: DocRecipe[Any] = {
+      val distinct: RecipeAppender[Any] = if (clause.distinct) Pretty("DISTINCT") else nothing
+      val items = pretty[ReturnItems](clause.returnItems)
+      val orderBy = prettyOption(clause.orderBy)
+      val skip = prettyOption(clause.skip)
+      val limit = prettyOption(clause.limit)
+      val predicate = prettyOption(where)
+      Pretty(section(clause.name)(distinct :/?: items :/?: predicate :/?: orderBy :/?: skip :/?: limit))
+    }
+  }
+
+  implicit class ReturnConverter(val clause: Return) extends ProjectionClauseConverter {
+    def where = None
+  }
+
+  implicit class WithConverter(val clause: With) extends ProjectionClauseConverter {
+    def where = clause.where
+  }
+
+  implicit class ReturnItemsConverter(returnItems: ReturnItems) {
+    def asPretty: DocRecipe[Any] = if (returnItems.includeExisting && returnItems.items.isEmpty)
+      Pretty("*")
+    else if (returnItems.includeExisting)
+      Pretty("*," :/: sepList(returnItems.items.map(pretty[ReturnItem])))
+    else
+      Pretty(sepList(returnItems.items.map(pretty[ReturnItem])))
+  }
+
+  implicit class ReturnItemConverter(item: ReturnItem) {
+    def asPretty: DocRecipe[Any] = item match {
+      case aliasedItem: AliasedReturnItem => aliasedItem.asPretty
+      case unAliasedItem: UnaliasedReturnItem => unAliasedItem.asPretty
+    }
+  }
+
+  implicit class AliasedReturnItemConverter(item: AliasedReturnItem) {
+    def asPretty = Pretty(group(pretty(item.expression) :/: "AS" :/: pretty(item.identifier)))
+  }
+
+  implicit class UnaliasedReturnItemConverter(item: UnaliasedReturnItem) {
+    def asPretty = Pretty(item.inputText)
+  }
+
+  implicit class WhereConverter(where: Where) {
+    def asPretty = Pretty(section("WHERE")(pretty(where.expression)))
+  }
+
+  implicit class OrderByConverter(orderBy: OrderBy) {
+    def asPretty =
+      Pretty(group("ORDER BY" :/: groupedSepList(orderBy.sortItems.map(pretty[SortItem]))))
+  }
+
+  implicit class SortItemConverter(sortIem: SortItem) {
+    def asPretty: DocRecipe[Any] = sortIem match {
+      case AscSortItem(expression) => Pretty(pretty(expression))
+      case DescSortItem(expression) => Pretty(group(pretty(expression) :/: "DESC"))
+    }
+  }
+
+  implicit class HintConverter(hint: Hint) {
+    def asPretty: Option[DocRecipe[Any]] = hint match {
+      case UsingIndexHint(identifier, label, property) =>
+        Pretty(group("USING" :/: "INDEX" :/: group(pretty(identifier) :: block(pretty(label))(pretty(property)))))
+
+      case UsingScanHint(identifier, label) =>
+        Pretty(group("USING" :/: "SCAN" :/: group(pretty(identifier) :: pretty(label))))
+
+      case _ =>
+        None
+    }
+  }
+
+  implicit class SlicingPhraseConverter(slice: ASTSlicingPhrase) {
+    def asPretty = slice match {
+      case Skip(expr) => Pretty(section("SKIP")(pretty(expr)))
+      case Limit(expr) => Pretty(section("LIMIT")(pretty(expr)))
+    }
+  }
+
+  implicit class UnwindConverter(unwind: Unwind) {
+    def asPretty = {
+      val input = pretty(unwind.expression)
+      val output = pretty(unwind.identifier)
+      Pretty(section("UNWIND")(input :/: "AS" :/: output))
+    }
+  }
 }
