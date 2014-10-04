@@ -19,20 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.symbols
 
-import org.junit.Test
-import org.scalatest.Assertions
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-class CypherTypeTest extends Assertions {
-  @Test
-  def testParents() {
+class CypherTypeTest extends CypherFunSuite {
+  test("test parents") {
     assert(CTInteger.parents === Seq(CTNumber, CTAny))
     assert(CTNumber.parents === Seq(CTAny))
     assert(CTAny.parents === Seq())
     assert(CTCollection(CTString).parents === Seq(CTCollection(CTAny), CTAny))
   }
 
-  @Test
-  def testTypesAreAssignable() {
+  test("test types are assignable") {
     assert(CTNumber.isAssignableFrom(CTInteger) === true)
     assert(CTAny.isAssignableFrom(CTString) === true)
     assert(CTCollection(CTString).isAssignableFrom(CTCollection(CTString)) === true)
@@ -41,8 +38,7 @@ class CypherTypeTest extends Assertions {
     assert(CTCollection(CTInteger).isAssignableFrom(CTCollection(CTString)) === false)
   }
 
-  @Test
-  def testTypeMergeUp() {
+  test("test type mergeUp") {
     assertCorrectTypeMergeUp(CTNumber, CTNumber, CTNumber)
     assertCorrectTypeMergeUp(CTNumber, CTAny, CTAny)
     assertCorrectTypeMergeUp(CTNumber, CTString, CTAny)
@@ -51,8 +47,7 @@ class CypherTypeTest extends Assertions {
     assertCorrectTypeMergeUp(CTMap, CTFloat, CTAny)
   }
 
-  @Test
-  def testTypeMergeDown() {
+  test("test type mergeDown") {
     assertCorrectTypeMergeDown(CTNumber, CTNumber, Some(CTNumber))
     assertCorrectTypeMergeDown(CTNumber, CTAny, Some(CTNumber))
     assertCorrectTypeMergeDown(CTCollection(CTNumber), CTCollection(CTInteger), Some(CTCollection(CTInteger)))
