@@ -20,12 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_0.symbols
 
 import org.junit.Assert._
-import org.junit.Test
-import org.scalatest.Assertions
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-class TypeRangeTest extends Assertions {
-  @Test
-  def typeRangeOfSingleTypeShouldContainOnlyThatType() {
+class TypeRangeTest extends CypherFunSuite {
+  test("TypeRange of single type should contain only that type") {
     val rangeOfInteger = TypeRange(CTInteger, CTInteger)
     assertTrue(rangeOfInteger.contains(CTInteger))
     assertFalse(rangeOfInteger.contains(CTNumber))
@@ -50,8 +48,7 @@ class TypeRangeTest extends Assertions {
     assertFalse(rangeOfCollectionAny.contains(CTAny))
   }
 
-  @Test
-  def unboundedTypeRangeRootedAtAnyShouldContainAll() {
+  test("unbounded TypeRange rooted at CTAny should contain all") {
     val rangeRootedAtAny = TypeRange(CTAny, None)
     assertTrue(rangeRootedAtAny.contains(CTAny))
     assertTrue(rangeRootedAtAny.contains(CTString))
@@ -64,8 +61,7 @@ class TypeRangeTest extends Assertions {
     assertTrue(rangeRootedAtAny.contains(CTCollection(CTCollection(CTFloat))))
   }
 
-  @Test
-  def unboundedTypeRangeRootedAtLeafTypeShouldContainLeaf() {
+  test("unbounded TypeRange rooted at leaf type should contain leaf") {
     val rangeRootedAtInteger = TypeRange(CTInteger, None)
     assertTrue(rangeRootedAtInteger.contains(CTInteger))
     assertFalse(rangeRootedAtInteger.contains(CTNumber))
@@ -80,8 +76,7 @@ class TypeRangeTest extends Assertions {
     assertFalse(rangeRootedAtCollectionOfNumber.contains(CTAny))
   }
 
-  @Test
-  def unboundedTypeRangeRootedAtBranchTypeShouldContainAllMoreSpecificTypes() {
+  test("unbounded TypeRange rooted at branch type should contain all more specific types") {
     val rangeRootedAtInteger = TypeRange(CTNumber, None)
     assertTrue(rangeRootedAtInteger.contains(CTInteger))
     assertTrue(rangeRootedAtInteger.contains(CTFloat))
@@ -98,8 +93,7 @@ class TypeRangeTest extends Assertions {
     assertFalse(rangeRootedAtCollectionAny.contains(CTAny))
   }
 
-  @Test
-  def typeRangeShouldContainOverlappingRange() {
+  test("should contain overlapping range") {
     val rangeRootedAtNumber = TypeRange(CTNumber, None)
     val rangeRootedAtInteger = TypeRange(CTInteger, None)
     assertTrue(rangeRootedAtNumber.contains(rangeRootedAtInteger))
@@ -122,8 +116,7 @@ class TypeRangeTest extends Assertions {
     assertFalse(rangeRootedAtInteger.contains(rangeRootedAtDouble))
   }
 
-  @Test
-  def intersectRangeWithOverlappingRangeShouldNotChangeRange() {
+  test("intersection of range with overlapping range should not change range") {
     val rangeRootedAtInteger = TypeRange(CTInteger, None)
     assertEquals(Some(rangeRootedAtInteger), rangeRootedAtInteger & TypeRange(CTNumber, None))
 
@@ -134,8 +127,7 @@ class TypeRangeTest extends Assertions {
     assertEquals(Some(rangeOfNumber), rangeOfNumber & TypeRange(CTNumber, None))
   }
 
-  @Test
-  def intersectRangeWithIntersectingRangeShouldReturnIntersection() {
+  test("intersection of range with intersecting range should return intersection") {
     val rangeOfNumber = TypeRange(CTNumber, None)
     assertEquals(Some(TypeRange(CTNumber, CTNumber)), rangeOfNumber & TypeRange(CTAny, CTNumber))
 
@@ -143,8 +135,7 @@ class TypeRangeTest extends Assertions {
     assertEquals(Some(TypeRange(CTNumber, CTNumber)), rangeToNumber & TypeRange(CTNumber, None))
   }
 
-  @Test
-  def intersectRangeToSubRangeShouldReturnSubRange() {
+  test("intersection of range to sub range should return sub range") {
     val rangeOfAll = TypeRange(CTAny, None)
     assertEquals(Some(TypeRange(CTAny, CTNumber)), rangeOfAll & TypeRange(CTAny, CTNumber))
     assertEquals(Some(TypeRange(CTNumber, CTNumber)), rangeOfAll & TypeRange(CTNumber, CTNumber))
@@ -155,15 +146,13 @@ class TypeRangeTest extends Assertions {
     assertEquals(Some(TypeRange(CTInteger, CTInteger)), rangeOfNumberToInteger & TypeRange(CTInteger, CTInteger))
   }
 
-  @Test
-  def intersectRangeWithinCollection() {
+  test("intersection of range within collection") {
     val rangeFromCollectionAny = TypeRange(CTCollection(CTAny), None)
     assertEquals(Some(TypeRange(CTCollection(CTString), None)), rangeFromCollectionAny & TypeRange(CTCollection(CTString), None))
     assertEquals(Some(TypeRange(CTCollection(CTString), CTCollection(CTString))), rangeFromCollectionAny & TypeRange(CTCollection(CTString), CTCollection(CTString)))
   }
 
-  @Test
-  def intersectRangeWithNonOverlappingRangeShouldReturnNone() {
+  test("intersection of range with non overlapping range should return none") {
     val rangeFromNumber = TypeRange(CTNumber, None)
     assertEquals(None, rangeFromNumber & TypeRange(CTString, None))
 
@@ -178,32 +167,29 @@ class TypeRangeTest extends Assertions {
     assertEquals(None, rangeOfNumber & rangeOfAny)
   }
 
-  @Test
-  def mergeUpWithSubType() {
+  test("leastCommonBound with sub type") {
     val rangeFromAny = TypeRange(CTAny, None)
     val rangeOfAny = TypeRange(CTAny, CTAny)
-    assertEquals(Seq(rangeOfAny), rangeFromAny.mergeUp(rangeOfAny))
+    assertEquals(Seq(rangeOfAny), rangeFromAny.leastUpperBound(rangeOfAny))
 
     val rangeOfInteger = TypeRange(CTInteger, None)
-    assertEquals(Seq(rangeOfAny), rangeOfInteger.mergeUp(rangeOfAny))
+    assertEquals(Seq(rangeOfAny), rangeOfInteger.leastUpperBound(rangeOfAny))
 
     val rangeOfNumber = TypeRange(CTNumber, CTNumber)
-    assertEquals(Seq(rangeOfNumber), rangeOfInteger.mergeUp(rangeOfNumber))
+    assertEquals(Seq(rangeOfNumber), rangeOfInteger.leastUpperBound(rangeOfNumber))
   }
 
-  @Test
-  def mergeUpWithNestedType() {
+  test("leastCommonBound with nested type") {
     val rangeFromCollectionAny = TypeRange(CTCollection(CTAny), None)
     val rangeOfCollectionAny = TypeRange(CTCollection(CTAny), CTCollection(CTAny))
-    assertEquals(Seq(rangeOfCollectionAny), rangeFromCollectionAny.mergeUp(rangeOfCollectionAny))
+    assertEquals(Seq(rangeOfCollectionAny), rangeFromCollectionAny.leastUpperBound(rangeOfCollectionAny))
 
     val rangeFromCollectionString = TypeRange(CTCollection(CTString), None)
     assertEquals(Seq(TypeRange(CTCollection(CTAny), CTCollection(CTString)), TypeRange(CTCollection(CTString), None)),
-      rangeFromCollectionAny.mergeUp(rangeFromCollectionString))
+      rangeFromCollectionAny.leastUpperBound(rangeFromCollectionString))
   }
 
-  @Test
-  def shouldHaveIndefiniteSizeWhenAllowingUnboundAnyAtAnyDepth() {
+  test("should have indefinite size when allowing unbound any at any depth") {
     assertFalse(TypeRange(CTAny, None).hasDefiniteSize)
     assertFalse(TypeRange(CTCollection(CTAny), None).hasDefiniteSize)
 
@@ -216,8 +202,7 @@ class TypeRangeTest extends Assertions {
     assertTrue(TypeRange(CTCollection(CTCollection(CTString)), None).hasDefiniteSize)
   }
 
-  @Test
-  def shouldReparentIntoCollection() {
+  test("should reparent into collection") {
     assertEquals(TypeRange(CTCollection(CTString), None), TypeRange(CTString, None).reparent(CTCollection))
     assertEquals(TypeRange(CTCollection(CTAny), CTCollection(CTNumber)), TypeRange(CTAny, CTNumber).reparent(CTCollection))
   }

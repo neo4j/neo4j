@@ -19,16 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.ast
 
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_0._
 import symbols._
-import org.junit.Test
-import org.scalatest.Assertions
-import org.neo4j.cypher.internal.compiler.v2_0._
 
-class CaseExpressionTest extends Assertions {
+class CaseExpressionTest extends CypherFunSuite {
 
-  @Test
-  def shouldHaveMergedTypesOfAllAlternativesInSimpleCase() {
+  test("Simple: Should merge types of alternatives") {
     val caseExpression = CaseExpression(
       expression = Some(DummyExpression(CTString)),
       alternatives = Seq(
@@ -48,8 +45,7 @@ class CaseExpressionTest extends Assertions {
     assert(caseExpression.types(result.state) === CTNumber.invariant)
   }
 
-  @Test
-  def shouldHaveMergedTypesOfAllAlternativesInGenericCase() {
+  test("Generic: Should merge types of alternatives") {
     val caseExpression = CaseExpression(
       None,
       Seq(
@@ -69,8 +65,7 @@ class CaseExpressionTest extends Assertions {
     assert(caseExpression.types(result.state) === (CTNumber | CTAny))
   }
 
-  @Test
-  def shouldTypeCheckPredicatesInGenericCase() {
+  test("Generic: should type check predicates") {
     val caseExpression = CaseExpression(
       None,
       Seq(
