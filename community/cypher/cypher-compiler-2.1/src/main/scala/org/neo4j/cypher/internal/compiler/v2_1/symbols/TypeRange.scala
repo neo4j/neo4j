@@ -23,6 +23,13 @@ object TypeRange {
   def apply(lower: CypherType, upper: CypherType): TypeRange = TypeRange(lower, Some(upper))
 }
 
+/**
+ * A TypeRange represents a path through the type tree, or an entire branch.
+ * E.g. (CTAny)<-[*]-(CTInteger), or (CTNumber)<-[*]-()
+ *
+ * @param lower The root of the path or the branch
+ * @param upper Some(type), if the TypeRange is a path through the type tree, or None, if the TypeRange is an entire branch
+ */
 case class TypeRange(lower: CypherType, upper: Option[CypherType]) {
   assert(upper.isEmpty || (lower isAssignableFrom upper.get), "Incompatible TypeRange bounds")
 
@@ -38,9 +45,9 @@ case class TypeRange(lower: CypherType, upper: Option[CypherType]) {
   }
 
   def &(that: TypeRange): Option[TypeRange] = this intersect that
-  def intersect(that: TypeRange): Option[TypeRange] = (lower mergeDown that.lower).flatMap {
+  def intersect(that: TypeRange): Option[TypeRange] = (lower greatestLowerBound that.lower).flatMap {
     newLower =>
-      val newUpper = upper.fold(that.upper)(t => Some(that.upper.fold(t)(_ mergeUp t)))
+      val newUpper = upper.fold(that.upper)(t => Some(that.upper.fold(t)(_ leastUpperBound t)))
       if (newUpper.isDefined && !(newLower isAssignableFrom newUpper.get))
         None
       else
@@ -49,11 +56,15 @@ case class TypeRange(lower: CypherType, upper: Option[CypherType]) {
 
   def constrain(aType: CypherType): Option[TypeRange] = this & TypeRange(aType, None)
 
-  def mergeUp(other: TypeRange): Seq[TypeRange] = {
-    val newLower = lower mergeUp other.lower
+  /**
+   * @param other the other range to determine LUBs in combination with
+   * @return a set of TypeRanges that cover the LUBs for all combinations of individual types between both TypeRanges
+   */
+  def leastUpperBounds(other: TypeRange): Seq[TypeRange] = {
+    val newLower = lower leastUpperBound other.lower
     (upper, other.upper) match {
       case (Some(u1), Some(u2)) =>
-        Vector(TypeRange(newLower, Some(u1 mergeUp u2)))
+        Vector(TypeRange(newLower, Some(u1 leastUpperBound u2)))
       case (Some(u1), None)     =>
         if ((u1 isAssignableFrom other.lower) || (other.lower isAssignableFrom u1))
           Vector(TypeRange(newLower, Some(u1)))

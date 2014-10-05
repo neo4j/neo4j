@@ -22,15 +22,14 @@ package org.neo4j.cypher.internal.compiler.v2_1.symbols
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 
 class CypherTypeTest extends CypherFunSuite {
-
-  test("testParents") {
+  test("parents should be full path up type tree branch") {
     CTInteger.parents should equal(Seq(CTNumber, CTAny))
     CTNumber.parents should equal(Seq(CTAny))
     CTAny.parents should equal(Seq())
     CTCollection(CTString).parents should equal(Seq(CTCollection(CTAny), CTAny))
   }
 
-  test("testTypesAreAssignable") {
+  test("should be assignable from sub-type") {
     CTNumber.isAssignableFrom(CTInteger) should equal(true)
     CTAny.isAssignableFrom(CTString) should equal(true)
     CTCollection(CTString).isAssignableFrom(CTCollection(CTString)) should equal(true)
@@ -39,38 +38,37 @@ class CypherTypeTest extends CypherFunSuite {
     CTCollection(CTInteger).isAssignableFrom(CTCollection(CTString)) should equal(false)
   }
 
-  test("testTypeMergeUp") {
-    assertCorrectTypeMergeUp(CTNumber, CTNumber, CTNumber)
-    assertCorrectTypeMergeUp(CTNumber, CTAny, CTAny)
-    assertCorrectTypeMergeUp(CTNumber, CTString, CTAny)
-    assertCorrectTypeMergeUp(CTNumber, CTCollection(CTAny), CTAny)
-    assertCorrectTypeMergeUp(CTInteger, CTFloat, CTNumber)
-    assertCorrectTypeMergeUp(CTMap, CTFloat, CTAny)
+  test("should find leastUpperBound") {
+    assertLeastUpperBound(CTNumber, CTNumber, CTNumber)
+    assertLeastUpperBound(CTNumber, CTAny, CTAny)
+    assertLeastUpperBound(CTNumber, CTString, CTAny)
+    assertLeastUpperBound(CTNumber, CTCollection(CTAny), CTAny)
+    assertLeastUpperBound(CTInteger, CTFloat, CTNumber)
+    assertLeastUpperBound(CTMap, CTFloat, CTAny)
   }
 
-  test("testTypeMergeDown") {
-    assertCorrectTypeMergeDown(CTNumber, CTNumber, Some(CTNumber))
-    assertCorrectTypeMergeDown(CTNumber, CTAny, Some(CTNumber))
-    assertCorrectTypeMergeDown(CTCollection(CTNumber), CTCollection(CTInteger), Some(CTCollection(CTInteger)))
-    assertCorrectTypeMergeDown(CTNumber, CTString, None)
-    assertCorrectTypeMergeDown(CTNumber, CTCollection(CTAny), None)
-    assertCorrectTypeMergeDown(CTInteger, CTFloat, None)
-    assertCorrectTypeMergeDown(CTMap, CTFloat, None)
-    assertCorrectTypeMergeDown(CTBoolean, CTCollection(CTAny), None)
-  }
-
-  private def assertCorrectTypeMergeDown(a: CypherType, b: CypherType, result: Option[CypherType]) {
-    val simpleMergedType: Option[CypherType] = a mergeDown b
+  private def assertLeastUpperBound(a: CypherType, b: CypherType, result: CypherType) {
+    val simpleMergedType: CypherType = a leastUpperBound b
     simpleMergedType should equal(result)
-    val collectionMergedType: Option[CypherType] = CTCollection(a) mergeDown CTCollection(b)
-    collectionMergedType should equal(for (t <- result) yield CTCollection(t))
-  }
-
-  private def assertCorrectTypeMergeUp(a: CypherType, b: CypherType, result: CypherType) {
-    val simpleMergedType: CypherType = a mergeUp b
-    simpleMergedType should equal(result)
-    val collectionMergedType: CypherType = CTCollection(a) mergeUp CTCollection(b)
+    val collectionMergedType: CypherType = CTCollection(a) leastUpperBound CTCollection(b)
     collectionMergedType should equal(CTCollection(result))
   }
 
+  test("should find greatestLowerBound") {
+    assertGreatestLowerBound(CTNumber, CTNumber, Some(CTNumber))
+    assertGreatestLowerBound(CTNumber, CTAny, Some(CTNumber))
+    assertGreatestLowerBound(CTCollection(CTNumber), CTCollection(CTInteger), Some(CTCollection(CTInteger)))
+    assertGreatestLowerBound(CTNumber, CTString, None)
+    assertGreatestLowerBound(CTNumber, CTCollection(CTAny), None)
+    assertGreatestLowerBound(CTInteger, CTFloat, None)
+    assertGreatestLowerBound(CTMap, CTFloat, None)
+    assertGreatestLowerBound(CTBoolean, CTCollection(CTAny), None)
+  }
+
+  private def assertGreatestLowerBound(a: CypherType, b: CypherType, result: Option[CypherType]) {
+    val simpleMergedType: Option[CypherType] = a greatestLowerBound b
+    simpleMergedType should equal(result)
+    val collectionMergedType: Option[CypherType] = CTCollection(a) greatestLowerBound CTCollection(b)
+    collectionMergedType should equal(for (t <- result) yield CTCollection(t))
+  }
 }

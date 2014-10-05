@@ -39,15 +39,27 @@ object TypeSpec {
   )
 
   private def apply(range: TypeRange): TypeSpec = new TypeSpec(Vector(range))
-  private def apply(ranges: TraversableOnce[TypeRange]): TypeSpec = new TypeSpec(ranges.foldLeft(Vector.empty[TypeRange]) {
-    case (set, range) =>
-      if (set.exists(_ contains range))
-        set
-      else
-        set.filterNot(range contains) :+ range
-  })
+  private def apply(ranges: TraversableOnce[TypeRange]): TypeSpec = new TypeSpec(minimalRanges(ranges))
+
+  /**
+   * @param ranges a set of TypeRanges
+   * @return a minimal set of TypeRanges that have the same intersection of types
+   */
+  private def minimalRanges(ranges: TraversableOnce[TypeRange]): Vector[TypeRange] =
+    ranges.foldLeft(Vector.empty[TypeRange]) {
+      case (set, range) =>
+        if (set.exists(_ contains range))
+          set
+        else
+          set.filterNot(range contains) :+ range
+    }
 }
 
+/**
+ * A specification of types, that can match any set of types.
+ *
+ * @param ranges A set of TypeRanges, the intersection of which constitutes the entire set of types matched by this specification
+ */
 class TypeSpec private (private val ranges: Seq[TypeRange]) extends Equals {
   def contains(that: CypherType): Boolean = contains(that, ranges)
   private def contains(that: CypherType, rs: Seq[TypeRange]): Boolean = rs.exists(_ contains that)
@@ -83,8 +95,8 @@ class TypeSpec private (private val ranges: Seq[TypeRange]) extends Equals {
       coercions constrain that
   }
 
-  def mergeUp(that: TypeSpec): TypeSpec = TypeSpec(ranges.flatMap {
-    r => that.ranges.flatMap(r mergeUp)
+  def leastUpperBounds(that: TypeSpec): TypeSpec = TypeSpec(ranges.flatMap {
+    r => that.ranges.flatMap(r leastUpperBounds)
   })
 
   def wrapInCollection: TypeSpec = TypeSpec(ranges.map(_.reparent(CTCollection)))

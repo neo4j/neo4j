@@ -164,5 +164,5 @@ case class ReduceExpression(accumulator: Identifier, init: Expression, identifie
       accumulator.declare(accType) chain
       expression.semanticCheck(SemanticContext.Simple)
     } chain expression.expectType(init.types, AccumulatorExpressionTypeMismatchMessageGenerator) chain
-    this.specifyType(s => init.types(s) mergeUp expression.types(s))
+    this.specifyType(s => init.types(s) leastUpperBounds expression.types(s))
 }
