@@ -164,63 +164,63 @@ class TypeSpecTest extends CypherFunSuite {
 
   test("should find leastUpperBound of TypeSpecs") {
     assertEquals(CTNode | CTNumber | CTAny,
-      (CTNode | CTNumber) leastUpperBounds (CTNode | CTNumber))
+      (CTNode | CTNumber) leastUpperBound (CTNode | CTNumber))
 
     assertEquals(CTNode | CTNumber | CTAny,
-      (CTNode | CTNumber) leastUpperBounds (CTNode | CTNumber))
+      (CTNode | CTNumber) leastUpperBound (CTNode | CTNumber))
     assertEquals(CTNumber | CTAny,
-      (CTNode | CTNumber) leastUpperBounds CTNumber)
+      (CTNode | CTNumber) leastUpperBound CTNumber)
     assertEquals(CTNode | CTNumber | CTMap | CTAny,
-      (CTNode | CTNumber) leastUpperBounds (CTNode | CTNumber | CTRelationship))
+      (CTNode | CTNumber) leastUpperBound (CTNode | CTNumber | CTRelationship))
     assertEquals(CTAny.invariant,
-      (CTNode | CTNumber) leastUpperBounds CTAny)
+      (CTNode | CTNumber) leastUpperBound CTAny)
     assertEquals(CTAny.invariant,
-      CTAny leastUpperBounds (CTNode | CTNumber))
+      CTAny leastUpperBound (CTNode | CTNumber))
 
     assertEquals(CTMap.invariant,
-      CTRelationship.invariant leastUpperBounds CTNode.invariant)
+      CTRelationship.invariant leastUpperBound CTNode.invariant)
     assertEquals(CTMap | CTNumber | CTAny,
-      (CTRelationship | CTInteger) leastUpperBounds (CTNode | CTNumber))
+      (CTRelationship | CTInteger) leastUpperBound (CTNode | CTNumber))
 
     assertEquals(CTNumber | CTCollection(CTAny) | CTAny,
-      (CTInteger | CTCollection(CTString)) leastUpperBounds (CTNumber | CTCollection(CTInteger)))
+      (CTInteger | CTCollection(CTString)) leastUpperBound (CTNumber | CTCollection(CTInteger)))
   }
 
   test("leastUpperBound with root type") {
-    assertEquals(CTAny.invariant, TypeSpec.all leastUpperBounds CTAny)
-    assertEquals(CTAny.invariant, CTAny leastUpperBounds TypeSpec.all)
-    assertEquals(CTAny.invariant, CTCollection(CTAny).covariant leastUpperBounds CTAny)
-    assertEquals(CTAny.invariant, CTAny leastUpperBounds CTCollection(CTAny).covariant)
+    assertEquals(CTAny.invariant, TypeSpec.all leastUpperBound CTAny)
+    assertEquals(CTAny.invariant, CTAny leastUpperBound TypeSpec.all)
+    assertEquals(CTAny.invariant, CTCollection(CTAny).covariant leastUpperBound CTAny)
+    assertEquals(CTAny.invariant, CTAny leastUpperBound CTCollection(CTAny).covariant)
   }
 
   test("leastUpperBound with leaf type") {
-    assertEquals(CTAny | CTNumber | CTInteger, TypeSpec.all leastUpperBounds CTInteger)
+    assertEquals(CTAny | CTNumber | CTInteger, TypeSpec.all leastUpperBound CTInteger)
   }
 
   test("leastUpperBound with collection") {
     assertEquals(CTAny | CTCollection(CTAny),
-      TypeSpec.all leastUpperBounds CTCollection(CTAny))
+      TypeSpec.all leastUpperBound CTCollection(CTAny))
     assertEquals(CTAny | CTCollection(CTAny) | CTCollection(CTString),
-      TypeSpec.all leastUpperBounds CTCollection(CTString))
+      TypeSpec.all leastUpperBound CTCollection(CTString))
   }
 
   test("leastUpperBound with multiple types") {
     assertEquals(CTAny | CTNumber | CTInteger | CTString,
-      TypeSpec.all leastUpperBounds (CTInteger | CTString))
+      TypeSpec.all leastUpperBound (CTInteger | CTString))
     assertEquals(CTAny | CTNumber | CTInteger | CTCollection(CTAny) | CTCollection(CTString),
-      TypeSpec.all leastUpperBounds (CTCollection(CTString) | CTInteger))
+      TypeSpec.all leastUpperBound (CTCollection(CTString) | CTInteger))
   }
 
   test("leastUpperBound with some super types") {
     assertEquals(CTAny | CTNumber,
-      (CTCollection(CTString) | CTInteger) leastUpperBounds CTNumber)
+      (CTCollection(CTString) | CTInteger) leastUpperBound CTNumber)
     assertEquals(CTAny | CTCollection(CTAny),
-      (CTCollection(CTString) | CTInteger) leastUpperBounds CTCollection(CTAny))
+      (CTCollection(CTString) | CTInteger) leastUpperBound CTCollection(CTAny))
 
     assertEquals(CTNumber | CTInteger,
-      CTInteger leastUpperBounds CTNumber.covariant)
+      CTInteger leastUpperBound CTNumber.covariant)
 
-    val mergedSet = CTCollection(CTCollection(CTAny)).covariant leastUpperBounds TypeSpec.all
+    val mergedSet = CTCollection(CTCollection(CTAny)).covariant leastUpperBound TypeSpec.all
     assertTrue(mergedSet.contains(CTCollection(CTCollection(CTString))))
     assertTrue(mergedSet.contains(CTCollection(CTCollection(CTInteger))))
     assertTrue(mergedSet.contains(CTCollection(CTCollection(CTNumber))))
@@ -233,53 +233,53 @@ class TypeSpecTest extends CypherFunSuite {
     assertTrue(mergedSet.contains(CTAny))
 
     assertEquals(CTAny | CTNumber,
-      CTNumber.contravariant leastUpperBounds CTInteger.contravariant)
+      CTNumber.contravariant leastUpperBound CTInteger.contravariant)
   }
 
   test("leastUpperBound with some sub types") {
     assertEquals(CTAny | CTNumber,
-      (CTCollection(CTString) | CTNumber) leastUpperBounds CTInteger)
+      (CTCollection(CTString) | CTNumber) leastUpperBound CTInteger)
     assertEquals(CTInteger | CTNumber,
-      CTNumber.covariant leastUpperBounds CTInteger)
+      CTNumber.covariant leastUpperBound CTInteger)
 
     val numberOrCollectionT = CTNumber.covariant | CTCollection(CTAny).covariant
     assertEquals(CTAny | CTNumber | CTInteger,
-      numberOrCollectionT leastUpperBounds CTInteger)
+      numberOrCollectionT leastUpperBound CTInteger)
     assertEquals(CTAny | CTCollection(CTAny) | CTCollection(CTNumber) | CTCollection(CTInteger),
-      numberOrCollectionT leastUpperBounds CTCollection(CTInteger))
+      numberOrCollectionT leastUpperBound CTCollection(CTInteger))
 
     val collectionOfCollectionOfAny = CTCollection(CTCollection(CTAny)).covariant
-    assertTrue((TypeSpec.all leastUpperBounds collectionOfCollectionOfAny) contains CTCollection(CTCollection(CTString)))
-    assertTrue((TypeSpec.all leastUpperBounds collectionOfCollectionOfAny) contains CTCollection(CTCollection(CTInteger)))
-    assertTrue((TypeSpec.all leastUpperBounds collectionOfCollectionOfAny) contains CTCollection(CTCollection(CTNumber)))
-    assertTrue((TypeSpec.all leastUpperBounds collectionOfCollectionOfAny) contains CTCollection(CTCollection(CTAny)))
-    assertFalse((TypeSpec.all leastUpperBounds collectionOfCollectionOfAny) contains CTCollection(CTString))
-    assertFalse((TypeSpec.all leastUpperBounds collectionOfCollectionOfAny) contains CTCollection(CTNumber))
-    assertTrue((TypeSpec.all leastUpperBounds collectionOfCollectionOfAny) contains CTCollection(CTAny))
-    assertFalse((TypeSpec.all leastUpperBounds collectionOfCollectionOfAny) contains CTString)
-    assertFalse((TypeSpec.all leastUpperBounds collectionOfCollectionOfAny) contains CTNumber)
-    assertTrue((TypeSpec.all leastUpperBounds collectionOfCollectionOfAny) contains CTAny)
+    assertTrue((TypeSpec.all leastUpperBound collectionOfCollectionOfAny) contains CTCollection(CTCollection(CTString)))
+    assertTrue((TypeSpec.all leastUpperBound collectionOfCollectionOfAny) contains CTCollection(CTCollection(CTInteger)))
+    assertTrue((TypeSpec.all leastUpperBound collectionOfCollectionOfAny) contains CTCollection(CTCollection(CTNumber)))
+    assertTrue((TypeSpec.all leastUpperBound collectionOfCollectionOfAny) contains CTCollection(CTCollection(CTAny)))
+    assertFalse((TypeSpec.all leastUpperBound collectionOfCollectionOfAny) contains CTCollection(CTString))
+    assertFalse((TypeSpec.all leastUpperBound collectionOfCollectionOfAny) contains CTCollection(CTNumber))
+    assertTrue((TypeSpec.all leastUpperBound collectionOfCollectionOfAny) contains CTCollection(CTAny))
+    assertFalse((TypeSpec.all leastUpperBound collectionOfCollectionOfAny) contains CTString)
+    assertFalse((TypeSpec.all leastUpperBound collectionOfCollectionOfAny) contains CTNumber)
+    assertTrue((TypeSpec.all leastUpperBound collectionOfCollectionOfAny) contains CTAny)
   }
 
   test("leastUpperBound of branch with sub type") {
-    assertEquals(CTNumber | CTInteger, CTNumber.covariant leastUpperBounds CTInteger)
+    assertEquals(CTNumber | CTInteger, CTNumber.covariant leastUpperBound CTInteger)
   }
 
   test("leastUpperBound of branch to branch root") {
-    assertEquals(CTNumber.invariant, CTNumber.covariant leastUpperBounds CTNumber)
+    assertEquals(CTNumber.invariant, CTNumber.covariant leastUpperBound CTNumber)
   }
 
   test("leastUpperBound of  branch to super type") {
-    assertEquals(CTNumber.invariant, CTInteger.covariant leastUpperBounds CTNumber)
+    assertEquals(CTNumber.invariant, CTInteger.covariant leastUpperBound CTNumber)
   }
 
   test("leastUpperBound of branch to unrelated type") {
-    assertEquals(CTAny.invariant, CTNumber.covariant leastUpperBounds CTString)
-    assertEquals(CTAny.invariant, CTInteger.covariant leastUpperBounds CTString)
+    assertEquals(CTAny.invariant, CTNumber.covariant leastUpperBound CTString)
+    assertEquals(CTAny.invariant, CTInteger.covariant leastUpperBound CTString)
   }
 
   test("leastUpperBound with equivalent") {
-    assertEquals(CTNumber.covariant, CTNumber.covariant leastUpperBounds (CTNumber | CTInteger | CTFloat))
+    assertEquals(CTNumber.covariant, CTNumber.covariant leastUpperBound (CTNumber | CTInteger | CTFloat))
   }
 
   test("should wrap in collection") {
@@ -363,7 +363,7 @@ class TypeSpecTest extends CypherFunSuite {
     assertTrue(CTCollection(CTCollection(CTString)).covariant.hasDefiniteSize)
 
     assertTrue(CTAny.contravariant.hasDefiniteSize)
-    assertTrue((CTCollection(CTAny).covariant leastUpperBounds CTCollection(CTAny)).hasDefiniteSize)
+    assertTrue((CTCollection(CTAny).covariant leastUpperBound CTCollection(CTAny)).hasDefiniteSize)
   }
 
   test("should be empty when no possibilities remain") {
