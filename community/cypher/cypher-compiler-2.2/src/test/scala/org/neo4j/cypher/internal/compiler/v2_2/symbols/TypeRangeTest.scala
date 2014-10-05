@@ -19,191 +19,190 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.symbols
 
-import org.junit.Assert._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 
 class TypeRangeTest extends CypherFunSuite {
-  test("TypeRange of single type should contain only that type") {
+
+  test("typeRangeOfSingleTypeShouldContainOnlyThatType") {
     val rangeOfInteger = TypeRange(CTInteger, CTInteger)
-    assertTrue(rangeOfInteger.contains(CTInteger))
-    assertFalse(rangeOfInteger.contains(CTNumber))
-    assertFalse(rangeOfInteger.contains(CTFloat))
-    assertFalse(rangeOfInteger.contains(CTString))
-    assertFalse(rangeOfInteger.contains(CTAny))
+    rangeOfInteger.contains(CTInteger) should equal(true)
+    rangeOfInteger.contains(CTNumber) should equal(false)
+    rangeOfInteger.contains(CTFloat) should equal(false)
+    rangeOfInteger.contains(CTString) should equal(false)
+    rangeOfInteger.contains(CTAny) should equal(false)
 
     val rangeOfNumber = TypeRange(CTNumber, CTNumber)
-    assertFalse(rangeOfNumber.contains(CTInteger))
-    assertTrue(rangeOfNumber.contains(CTNumber))
-    assertFalse(rangeOfNumber.contains(CTFloat))
-    assertFalse(rangeOfNumber.contains(CTString))
-    assertFalse(rangeOfNumber.contains(CTAny))
+    rangeOfNumber.contains(CTInteger) should equal(false)
+    rangeOfNumber.contains(CTNumber) should equal(true)
+    rangeOfNumber.contains(CTFloat) should equal(false)
+    rangeOfNumber.contains(CTString) should equal(false)
+    rangeOfNumber.contains(CTAny) should equal(false)
 
     val rangeOfCollectionAny = TypeRange(CTCollection(CTAny), CTCollection(CTAny))
-    assertFalse(rangeOfCollectionAny.contains(CTInteger))
-    assertFalse(rangeOfCollectionAny.contains(CTNumber))
-    assertFalse(rangeOfCollectionAny.contains(CTString))
-    assertFalse(rangeOfCollectionAny.contains(CTCollection(CTString)))
-    assertFalse(rangeOfCollectionAny.contains(CTCollection(CTNumber)))
-    assertTrue(rangeOfCollectionAny.contains(CTCollection(CTAny)))
-    assertFalse(rangeOfCollectionAny.contains(CTAny))
+    rangeOfCollectionAny.contains(CTInteger) should equal(false)
+    rangeOfCollectionAny.contains(CTNumber) should equal(false)
+    rangeOfCollectionAny.contains(CTString) should equal(false)
+    rangeOfCollectionAny.contains(CTCollection(CTString)) should equal(false)
+    rangeOfCollectionAny.contains(CTCollection(CTNumber)) should equal(false)
+    rangeOfCollectionAny.contains(CTCollection(CTAny)) should equal(true)
+    rangeOfCollectionAny.contains(CTAny) should equal(false)
   }
 
-  test("unbounded TypeRange rooted at CTAny should contain all") {
+  test("unboundedTypeRangeRootedAtAnyShouldContainAll") {
     val rangeRootedAtAny = TypeRange(CTAny, None)
-    assertTrue(rangeRootedAtAny.contains(CTAny))
-    assertTrue(rangeRootedAtAny.contains(CTString))
-    assertTrue(rangeRootedAtAny.contains(CTNumber))
-    assertTrue(rangeRootedAtAny.contains(CTInteger))
-    assertTrue(rangeRootedAtAny.contains(CTFloat))
-    assertTrue(rangeRootedAtAny.contains(CTNode))
-    assertTrue(rangeRootedAtAny.contains(CTCollection(CTAny)))
-    assertTrue(rangeRootedAtAny.contains(CTCollection(CTFloat)))
-    assertTrue(rangeRootedAtAny.contains(CTCollection(CTCollection(CTFloat))))
+    rangeRootedAtAny.contains(CTAny) should equal(true)
+    rangeRootedAtAny.contains(CTString) should equal(true)
+    rangeRootedAtAny.contains(CTNumber) should equal(true)
+    rangeRootedAtAny.contains(CTInteger) should equal(true)
+    rangeRootedAtAny.contains(CTFloat) should equal(true)
+    rangeRootedAtAny.contains(CTNode) should equal(true)
+    rangeRootedAtAny.contains(CTCollection(CTAny)) should equal(true)
+    rangeRootedAtAny.contains(CTCollection(CTFloat)) should equal(true)
+    rangeRootedAtAny.contains(CTCollection(CTCollection(CTFloat))) should equal(true)
   }
 
-  test("unbounded TypeRange rooted at leaf type should contain leaf") {
+  test("unboundedTypeRangeRootedAtLeafTypeShouldContainLeaf") {
     val rangeRootedAtInteger = TypeRange(CTInteger, None)
-    assertTrue(rangeRootedAtInteger.contains(CTInteger))
-    assertFalse(rangeRootedAtInteger.contains(CTNumber))
-    assertFalse(rangeRootedAtInteger.contains(CTFloat))
-    assertFalse(rangeRootedAtInteger.contains(CTAny))
+    rangeRootedAtInteger.contains(CTInteger) should equal(true)
+    rangeRootedAtInteger.contains(CTNumber) should equal(false)
+    rangeRootedAtInteger.contains(CTFloat) should equal(false)
+    rangeRootedAtInteger.contains(CTAny) should equal(false)
 
     val rangeRootedAtCollectionOfNumber = TypeRange(CTCollection(CTNumber), None)
-    assertTrue(rangeRootedAtCollectionOfNumber.contains(CTCollection(CTInteger)))
-    assertTrue(rangeRootedAtCollectionOfNumber.contains(CTCollection(CTFloat)))
-    assertTrue(rangeRootedAtCollectionOfNumber.contains(CTCollection(CTNumber)))
-    assertFalse(rangeRootedAtCollectionOfNumber.contains(CTCollection(CTString)))
-    assertFalse(rangeRootedAtCollectionOfNumber.contains(CTAny))
+    rangeRootedAtCollectionOfNumber.contains(CTCollection(CTInteger)) should equal(true)
+    rangeRootedAtCollectionOfNumber.contains(CTCollection(CTFloat)) should equal(true)
+    rangeRootedAtCollectionOfNumber.contains(CTCollection(CTNumber)) should equal(true)
+    rangeRootedAtCollectionOfNumber.contains(CTCollection(CTString)) should equal(false)
+    rangeRootedAtCollectionOfNumber.contains(CTAny) should equal(false)
   }
 
-  test("unbounded TypeRange rooted at branch type should contain all more specific types") {
+  test("unboundedTypeRangeRootedAtBranchTypeShouldContainAllMoreSpecificTypes") {
     val rangeRootedAtInteger = TypeRange(CTNumber, None)
-    assertTrue(rangeRootedAtInteger.contains(CTInteger))
-    assertTrue(rangeRootedAtInteger.contains(CTFloat))
-    assertTrue(rangeRootedAtInteger.contains(CTNumber))
-    assertFalse(rangeRootedAtInteger.contains(CTString))
-    assertFalse(rangeRootedAtInteger.contains(CTAny))
+    rangeRootedAtInteger.contains(CTInteger) should equal(true)
+    rangeRootedAtInteger.contains(CTFloat) should equal(true)
+    rangeRootedAtInteger.contains(CTNumber) should equal(true)
+    rangeRootedAtInteger.contains(CTString) should equal(false)
+    rangeRootedAtInteger.contains(CTAny) should equal(false)
 
     val rangeRootedAtCollectionAny = TypeRange(CTCollection(CTAny), None)
-    assertTrue(rangeRootedAtCollectionAny.contains(CTCollection(CTString)))
-    assertTrue(rangeRootedAtCollectionAny.contains(CTCollection(CTInteger)))
-    assertTrue(rangeRootedAtCollectionAny.contains(CTCollection(CTAny)))
-    assertTrue(rangeRootedAtCollectionAny.contains(CTCollection(CTCollection(CTInteger))))
-    assertFalse(rangeRootedAtCollectionAny.contains(CTBoolean))
-    assertFalse(rangeRootedAtCollectionAny.contains(CTAny))
+    rangeRootedAtCollectionAny.contains(CTCollection(CTString)) should equal(true)
+    rangeRootedAtCollectionAny.contains(CTCollection(CTInteger)) should equal(true)
+    rangeRootedAtCollectionAny.contains(CTCollection(CTAny)) should equal(true)
+    rangeRootedAtCollectionAny.contains(CTCollection(CTCollection(CTInteger))) should equal(true)
+    rangeRootedAtCollectionAny.contains(CTBoolean) should equal(false)
+    rangeRootedAtCollectionAny.contains(CTAny) should equal(false)
   }
 
-  test("should contain overlapping range") {
+  test("typeRangeShouldContainOverlappingRange") {
     val rangeRootedAtNumber = TypeRange(CTNumber, None)
     val rangeRootedAtInteger = TypeRange(CTInteger, None)
-    assertTrue(rangeRootedAtNumber.contains(rangeRootedAtInteger))
+    rangeRootedAtNumber.contains(rangeRootedAtInteger) should equal(true)
 
     val rangeOfNumberToDouble = TypeRange(CTNumber, CTFloat)
-    assertFalse(rangeOfNumberToDouble.contains(rangeRootedAtInteger))
-    assertFalse(rangeOfNumberToDouble.contains(rangeRootedAtNumber))
+    rangeOfNumberToDouble.contains(rangeRootedAtInteger) should equal(false)
+    rangeOfNumberToDouble.contains(rangeRootedAtNumber) should equal(false)
 
     val rangeOfDouble = TypeRange(CTFloat, CTFloat)
     val rangeOfNumber = TypeRange(CTNumber, CTNumber)
     val rangeOfInteger = TypeRange(CTInteger, CTInteger)
-    assertTrue(rangeOfNumberToDouble.contains(rangeOfDouble))
-    assertTrue(rangeOfNumberToDouble.contains(rangeOfNumber))
-    assertFalse(rangeOfNumberToDouble.contains(rangeOfInteger))
+    rangeOfNumberToDouble.contains(rangeOfDouble) should equal(true)
+    rangeOfNumberToDouble.contains(rangeOfNumber) should equal(true)
+    rangeOfNumberToDouble.contains(rangeOfInteger) should equal(false)
 
     val rangeRootedAtDouble = TypeRange(CTFloat, None)
-    assertFalse(rangeOfNumberToDouble.contains(rangeRootedAtDouble))
-    assertTrue(rangeRootedAtDouble.contains(rangeOfDouble))
+    rangeOfNumberToDouble.contains(rangeRootedAtDouble) should equal(false)
+    rangeRootedAtDouble.contains(rangeOfDouble) should equal(true)
 
-    assertFalse(rangeRootedAtInteger.contains(rangeRootedAtDouble))
+    rangeRootedAtInteger.contains(rangeRootedAtDouble) should equal(false)
   }
 
-  test("intersection of range with overlapping range should not change range") {
+  test("intersectRangeWithOverlappingRangeShouldNotChangeRange") {
     val rangeRootedAtInteger = TypeRange(CTInteger, None)
-    assertEquals(Some(rangeRootedAtInteger), rangeRootedAtInteger & TypeRange(CTNumber, None))
+    rangeRootedAtInteger & TypeRange(CTNumber, None) should equal(Some(rangeRootedAtInteger))
 
     val rangeOfInteger = TypeRange(CTInteger, CTInteger)
-    assertEquals(Some(rangeOfInteger), rangeOfInteger & TypeRange(CTNumber, None))
+    rangeOfInteger & TypeRange(CTNumber, None) should equal(Some(rangeOfInteger))
 
     val rangeOfNumber = TypeRange(CTNumber, CTNumber)
-    assertEquals(Some(rangeOfNumber), rangeOfNumber & TypeRange(CTNumber, None))
+    rangeOfNumber & TypeRange(CTNumber, None) should equal(Some(rangeOfNumber))
   }
 
-  test("intersection of range with intersecting range should return intersection") {
+  test("intersectRangeWithIntersectingRangeShouldReturnIntersection") {
     val rangeOfNumber = TypeRange(CTNumber, None)
-    assertEquals(Some(TypeRange(CTNumber, CTNumber)), rangeOfNumber & TypeRange(CTAny, CTNumber))
+    rangeOfNumber & TypeRange(CTAny, CTNumber) should equal(Some(TypeRange(CTNumber, CTNumber)))
 
     val rangeToNumber = TypeRange(CTAny, CTNumber)
-    assertEquals(Some(TypeRange(CTNumber, CTNumber)), rangeToNumber & TypeRange(CTNumber, None))
+    rangeToNumber & TypeRange(CTNumber, None) should equal(Some(TypeRange(CTNumber, CTNumber)))
   }
 
-  test("intersection of range to sub range should return sub range") {
+  test("intersectRangeToSubRangeShouldReturnSubRange") {
     val rangeOfAll = TypeRange(CTAny, None)
-    assertEquals(Some(TypeRange(CTAny, CTNumber)), rangeOfAll & TypeRange(CTAny, CTNumber))
-    assertEquals(Some(TypeRange(CTNumber, CTNumber)), rangeOfAll & TypeRange(CTNumber, CTNumber))
-    assertEquals(Some(TypeRange(CTNumber, CTInteger)), rangeOfAll & TypeRange(CTNumber, CTInteger))
+    rangeOfAll & TypeRange(CTAny, CTNumber) should equal(Some(TypeRange(CTAny, CTNumber)))
+    rangeOfAll & TypeRange(CTNumber, CTNumber) should equal(Some(TypeRange(CTNumber, CTNumber)))
+    rangeOfAll & TypeRange(CTNumber, CTInteger) should equal(Some(TypeRange(CTNumber, CTInteger)))
 
     val rangeOfNumberToInteger = TypeRange(CTNumber, CTInteger)
-    assertEquals(Some(TypeRange(CTNumber, CTNumber)), rangeOfNumberToInteger & TypeRange(CTNumber, CTNumber))
-    assertEquals(Some(TypeRange(CTInteger, CTInteger)), rangeOfNumberToInteger & TypeRange(CTInteger, CTInteger))
+    rangeOfNumberToInteger & TypeRange(CTNumber, CTNumber) should equal(Some(TypeRange(CTNumber, CTNumber)))
+    rangeOfNumberToInteger & TypeRange(CTInteger, CTInteger) should equal(Some(TypeRange(CTInteger, CTInteger)))
   }
 
-  test("intersection of range within collection") {
+  test("intersectRangeWithinCollection") {
     val rangeFromCollectionAny = TypeRange(CTCollection(CTAny), None)
-    assertEquals(Some(TypeRange(CTCollection(CTString), None)), rangeFromCollectionAny & TypeRange(CTCollection(CTString), None))
-    assertEquals(Some(TypeRange(CTCollection(CTString), CTCollection(CTString))), rangeFromCollectionAny & TypeRange(CTCollection(CTString), CTCollection(CTString)))
+    rangeFromCollectionAny & TypeRange(CTCollection(CTString), None) should equal(Some(TypeRange(CTCollection(CTString), None)))
+    rangeFromCollectionAny & TypeRange(CTCollection(CTString), CTCollection(CTString)) should equal(Some(TypeRange(CTCollection(CTString), CTCollection(CTString))))
   }
 
-  test("intersection of range with non overlapping range should return none") {
+  test("intersectRangeWithNonOverlappingRangeShouldReturnNone") {
     val rangeFromNumber = TypeRange(CTNumber, None)
-    assertEquals(None, rangeFromNumber & TypeRange(CTString, None))
+    rangeFromNumber & TypeRange(CTString, None) should equal(None)
 
     val rangeOfNumber = TypeRange(CTNumber, CTNumber)
-    assertEquals(None, rangeOfNumber & TypeRange(CTString, None))
-    assertEquals(None, rangeOfNumber & TypeRange(CTBoolean, CTBoolean))
+    rangeOfNumber & TypeRange(CTString, None) should equal(None)
+    rangeOfNumber & TypeRange(CTBoolean, CTBoolean) should equal(None)
 
     val rangeOfAny = TypeRange(CTAny, CTAny)
-    assertEquals(None, rangeOfAny & rangeFromNumber)
-    assertEquals(None, rangeOfAny & rangeOfNumber)
-    assertEquals(None, rangeFromNumber & rangeOfAny)
-    assertEquals(None, rangeOfNumber & rangeOfAny)
+    rangeOfAny & rangeFromNumber should equal(None)
+    rangeOfAny & rangeOfNumber should equal(None)
+    rangeFromNumber & rangeOfAny should equal(None)
+    rangeOfNumber & rangeOfAny should equal(None)
   }
 
-  test("leastCommonBound with sub type") {
+  test("mergeUpWithSubType") {
     val rangeFromAny = TypeRange(CTAny, None)
     val rangeOfAny = TypeRange(CTAny, CTAny)
-    assertEquals(Seq(rangeOfAny), rangeFromAny.leastUpperBound(rangeOfAny))
+    rangeFromAny.mergeUp(rangeOfAny) should equal(Seq(rangeOfAny))
 
     val rangeOfInteger = TypeRange(CTInteger, None)
-    assertEquals(Seq(rangeOfAny), rangeOfInteger.leastUpperBound(rangeOfAny))
+    rangeOfInteger.mergeUp(rangeOfAny) should equal(Seq(rangeOfAny))
 
     val rangeOfNumber = TypeRange(CTNumber, CTNumber)
-    assertEquals(Seq(rangeOfNumber), rangeOfInteger.leastUpperBound(rangeOfNumber))
+    rangeOfInteger.mergeUp(rangeOfNumber) should equal(Seq(rangeOfNumber))
   }
 
-  test("leastCommonBound with nested type") {
+  test("mergeUpWithNestedType") {
     val rangeFromCollectionAny = TypeRange(CTCollection(CTAny), None)
     val rangeOfCollectionAny = TypeRange(CTCollection(CTAny), CTCollection(CTAny))
-    assertEquals(Seq(rangeOfCollectionAny), rangeFromCollectionAny.leastUpperBound(rangeOfCollectionAny))
+    rangeFromCollectionAny.mergeUp(rangeOfCollectionAny) should equal(Seq(rangeOfCollectionAny))
 
     val rangeFromCollectionString = TypeRange(CTCollection(CTString), None)
-    assertEquals(Seq(TypeRange(CTCollection(CTAny), CTCollection(CTString)), TypeRange(CTCollection(CTString), None)),
-      rangeFromCollectionAny.leastUpperBound(rangeFromCollectionString))
+    rangeFromCollectionAny.mergeUp(rangeFromCollectionString) should equal(Seq(TypeRange(CTCollection(CTAny), CTCollection(CTString)), TypeRange(CTCollection(CTString), None)))
   }
 
-  test("should have indefinite size when allowing unbound any at any depth") {
-    assertFalse(TypeRange(CTAny, None).hasDefiniteSize)
-    assertFalse(TypeRange(CTCollection(CTAny), None).hasDefiniteSize)
+  test("shouldHaveIndefiniteSizeWhenAllowingUnboundAnyAtAnyDepth") {
+    TypeRange(CTAny, None).hasDefiniteSize should equal(false)
+    TypeRange(CTCollection(CTAny), None).hasDefiniteSize should equal(false)
 
-    assertTrue(TypeRange(CTString, None).hasDefiniteSize)
-    assertTrue(TypeRange(CTNumber, None).hasDefiniteSize)
+    TypeRange(CTString, None).hasDefiniteSize should equal(true)
+    TypeRange(CTNumber, None).hasDefiniteSize should equal(true)
 
-    assertTrue(TypeRange(CTAny, CTInteger).hasDefiniteSize)
+    TypeRange(CTAny, CTInteger).hasDefiniteSize should equal(true)
 
-    assertFalse(TypeRange(CTCollection(CTCollection(CTAny)), None).hasDefiniteSize)
-    assertTrue(TypeRange(CTCollection(CTCollection(CTString)), None).hasDefiniteSize)
+    TypeRange(CTCollection(CTCollection(CTAny)), None).hasDefiniteSize should equal(false)
+    TypeRange(CTCollection(CTCollection(CTString)), None).hasDefiniteSize should equal(true)
   }
 
-  test("should reparent into collection") {
-    assertEquals(TypeRange(CTCollection(CTString), None), TypeRange(CTString, None).reparent(CTCollection))
-    assertEquals(TypeRange(CTCollection(CTAny), CTCollection(CTNumber)), TypeRange(CTAny, CTNumber).reparent(CTCollection))
+  test("shouldReparentIntoCollection") {
+    TypeRange(CTString, None).reparent(CTCollection) should equal(TypeRange(CTCollection(CTString), None))
+    TypeRange(CTAny, CTNumber).reparent(CTCollection) should equal(TypeRange(CTCollection(CTAny), CTCollection(CTNumber)))
   }
 }

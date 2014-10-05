@@ -45,7 +45,7 @@ case class Literal(v: Any) extends Expression {
     case _: Boolean                         => CTBoolean
     case IsMap(_)                           => CTMap
     case IsCollection(coll) if coll.isEmpty => CTCollection(CTAny)
-    case IsCollection(coll)                 => CTCollection(coll.map(deriveType).reduce(_ leastUpperBound _))
+    case IsCollection(coll)                 => CTCollection(coll.map(deriveType).reduce(_ mergeUp _))
     case _                                  => CTAny
   }
 }
