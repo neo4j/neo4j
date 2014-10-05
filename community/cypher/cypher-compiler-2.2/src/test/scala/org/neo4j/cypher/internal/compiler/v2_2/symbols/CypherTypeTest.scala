@@ -23,14 +23,14 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 
 class CypherTypeTest extends CypherFunSuite {
 
-  test("parents should be full path up type tree branch") {
+  test("test parents") {
     assert(CTInteger.parents === Seq(CTNumber, CTAny))
     assert(CTNumber.parents === Seq(CTAny))
     assert(CTAny.parents === Seq())
     assert(CTCollection(CTString).parents === Seq(CTCollection(CTAny), CTAny))
   }
 
-  test("should be assignable from sub-type") {
+  test("test types are assignable") {
     assert(CTNumber.isAssignableFrom(CTInteger) === true)
     assert(CTAny.isAssignableFrom(CTString) === true)
     assert(CTCollection(CTString).isAssignableFrom(CTCollection(CTString)) === true)
@@ -39,7 +39,7 @@ class CypherTypeTest extends CypherFunSuite {
     assert(CTCollection(CTInteger).isAssignableFrom(CTCollection(CTString)) === false)
   }
 
-  test("should find leastUpperBound") {
+  test("test type leastUpperBound") {
     assertLeastUpperBound(CTNumber, CTNumber, CTNumber)
     assertLeastUpperBound(CTNumber, CTAny, CTAny)
     assertLeastUpperBound(CTNumber, CTString, CTAny)
@@ -48,14 +48,7 @@ class CypherTypeTest extends CypherFunSuite {
     assertLeastUpperBound(CTMap, CTFloat, CTAny)
   }
 
-  private def assertLeastUpperBound(a: CypherType, b: CypherType, result: CypherType) {
-    val simpleMergedType: CypherType = a leastUpperBound b
-    assert(simpleMergedType === result)
-    val collectionMergedType: CypherType = CTCollection(a) leastUpperBound CTCollection(b)
-    assert(collectionMergedType === CTCollection(result))
-  }
-
-  test("should find greatestLowerBound") {
+  test("test type greatestLowerBound") {
     assertGreatestLowerBound(CTNumber, CTNumber, Some(CTNumber))
     assertGreatestLowerBound(CTNumber, CTAny, Some(CTNumber))
     assertGreatestLowerBound(CTCollection(CTNumber), CTCollection(CTInteger), Some(CTCollection(CTInteger)))
@@ -72,4 +65,12 @@ class CypherTypeTest extends CypherFunSuite {
     val collectionMergedType: Option[CypherType] = CTCollection(a) greatestLowerBound CTCollection(b)
     assert(collectionMergedType === (for (t <- result) yield CTCollection(t)))
   }
+
+  private def assertLeastUpperBound(a: CypherType, b: CypherType, result: CypherType) {
+    val simpleMergedType: CypherType = a leastUpperBound b
+    assert(simpleMergedType === result)
+    val collectionMergedType: CypherType = CTCollection(a) leastUpperBound CTCollection(b)
+    assert(collectionMergedType === CTCollection(result))
+  }
+
 }
