@@ -46,11 +46,11 @@ object Expression {
   }
 
   implicit class InferrableTypeTraversableOnce[A <: Expression](traversable: TraversableOnce[A]) {
-    def leastUpperBoundOfTypes: TypeGenerator =
+    def mergeUpTypes: TypeGenerator =
       if (traversable.isEmpty)
         _ => CTAny.invariant
       else
-        (state: SemanticState) => traversable.map { _.types(state) } reduce { _ leastUpperBound _ }
+        (state: SemanticState) => traversable.map { _.types(state) } reduce { _ mergeUp _ }
 
     def expectType(possibleTypes: => TypeSpec): SemanticCheck =
       traversable.foldSemanticCheck { _.expectType(possibleTypes) }

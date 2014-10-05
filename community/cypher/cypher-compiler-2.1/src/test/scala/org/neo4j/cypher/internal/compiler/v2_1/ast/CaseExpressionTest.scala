@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
 class CaseExpressionTest extends CypherFunSuite {
 
-  test("Simple: Should merge types of alternatives") {
+  test("shouldHaveMergedTypesOfAllAlternativesInSimpleCase") {
     val caseExpression = CaseExpression(
       expression = Some(DummyExpression(CTString)),
       alternatives = Seq(
@@ -45,7 +45,7 @@ class CaseExpressionTest extends CypherFunSuite {
     caseExpression.types(result.state) should equal(CTNumber.invariant)
   }
 
-  test("Generic: Should merge types of alternatives") {
+  test("shouldHaveMergedTypesOfAllAlternativesInGenericCase") {
     val caseExpression = CaseExpression(
       None,
       Seq(
@@ -65,7 +65,7 @@ class CaseExpressionTest extends CypherFunSuite {
     caseExpression.types(result.state) should equal(CTNumber | CTAny)
   }
 
-  test("Generic: should type check predicates") {
+  test("shouldTypeCheckPredicatesInGenericCase") {
     val caseExpression = CaseExpression(
       None,
       Seq(

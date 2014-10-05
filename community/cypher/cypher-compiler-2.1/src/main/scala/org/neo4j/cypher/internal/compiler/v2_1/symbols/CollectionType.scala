@@ -41,18 +41,18 @@ object CollectionType {
         super.isAssignableFrom(other)
     }
 
-    override def leastUpperBound(other: CypherType) = other match {
+    override def mergeUp(other: CypherType) = other match {
       case otherCollection: CollectionType =>
-        copy(innerType leastUpperBound otherCollection.innerType)
+        copy(innerType mergeUp otherCollection.innerType)
       case _ =>
-        super.leastUpperBound(other)
+        super.mergeUp(other)
     }
 
-    override def greatestLowerBound(other: CypherType) = other match {
+    override def mergeDown(other: CypherType) = other match {
       case otherCollection: CollectionType =>
-        (innerType greatestLowerBound otherCollection.innerType).map(copy)
+        (innerType mergeDown otherCollection.innerType).map(copy)
       case _ =>
-        super.greatestLowerBound(other)
+        super.mergeDown(other)
     }
 
     override def rewrite(f: CypherType => CypherType) = f(copy(innerType.rewrite(f)))

@@ -68,7 +68,7 @@ abstract class Expression extends Typed with TypeSafe with EffectfulAstNode[Expr
   }
 
   protected def calculateUpperTypeBound(expectedType: CypherType, symbols: SymbolTable, exprs: Seq[Expression]): CypherType =
-    exprs.map(_.evaluateType(expectedType, symbols)).reduce(_ leastUpperBound _)
+    exprs.map(_.evaluateType(expectedType, symbols)).reduce(_ mergeUp _)
 
   override def toString = this match {
     case p: Product => scala.runtime.ScalaRunTime._toString(p)

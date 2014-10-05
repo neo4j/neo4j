@@ -44,7 +44,7 @@ case class CoalesceFunction(arguments: Expression*) extends Expression {
   def calculateType(symbols: SymbolTable) = {
     arguments.map(_.getType(symbols)) match {
       case Seq() => CTAny
-      case types => types.reduceLeft(_ leastUpperBound _)
+      case types => types.reduceLeft(_ mergeUp _)
     }
   }
 

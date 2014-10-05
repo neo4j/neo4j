@@ -19,414 +19,358 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.symbols
 
-import org.junit.Assert._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 
 class TypeSpecTest extends CypherFunSuite {
 
-  test("all types should contain all") {
-    assertTrue(TypeSpec.all contains CTAny)
-    assertTrue(TypeSpec.all contains CTString)
-    assertTrue(TypeSpec.all contains CTNumber)
-    assertTrue(TypeSpec.all contains CTInteger)
-    assertTrue(TypeSpec.all contains CTFloat)
-    assertTrue(TypeSpec.all contains CTNode)
-    assertTrue(TypeSpec.all contains CTCollection(CTAny))
-    assertTrue(TypeSpec.all contains CTCollection(CTFloat))
-    assertTrue(TypeSpec.all contains CTCollection(CTCollection(CTFloat)))
+  test("allTypesShouldContainAll") {
+    TypeSpec.all contains CTAny should equal(true)
+    TypeSpec.all contains CTString should equal(true)
+    TypeSpec.all contains CTNumber should equal(true)
+    TypeSpec.all contains CTInteger should equal(true)
+    TypeSpec.all contains CTFloat should equal(true)
+    TypeSpec.all contains CTNode should equal(true)
+    TypeSpec.all contains CTCollection(CTAny) should equal(true)
+    TypeSpec.all contains CTCollection(CTFloat) should equal(true)
+    TypeSpec.all contains CTCollection(CTCollection(CTFloat)) should equal(true)
   }
 
-  test("should return true if contains") {
-    assertTrue(CTNumber.covariant contains CTInteger)
-    assertFalse(CTNumber.covariant contains CTString)
+  test("shouldReturnTrueIfContains") {
+    CTNumber.covariant contains CTInteger should equal(true)
+    CTNumber.covariant contains CTString should equal(false)
 
     val anyCollection = CTCollection(CTAny).covariant
-    assertTrue(anyCollection contains CTCollection(CTString))
-    assertTrue(anyCollection contains CTCollection(CTInteger))
-    assertTrue(anyCollection contains CTCollection(CTAny))
-    assertTrue(anyCollection contains CTCollection(CTCollection(CTInteger)))
-    assertFalse(anyCollection contains CTBoolean)
-    assertFalse(anyCollection contains CTAny)
+    anyCollection contains CTCollection(CTString) should equal(true)
+    anyCollection contains CTCollection(CTInteger) should equal(true)
+    anyCollection contains CTCollection(CTAny) should equal(true)
+    anyCollection contains CTCollection(CTCollection(CTInteger)) should equal(true)
+    anyCollection contains CTBoolean should equal(false)
+    anyCollection contains CTAny should equal(false)
   }
 
-  test("should return true if contains CTAny") {
-    assertTrue(TypeSpec.all containsAny TypeSpec.all)
-    assertTrue(TypeSpec.all containsAny CTNumber.covariant)
-    assertTrue(TypeSpec.all containsAny CTNode.invariant)
-    assertTrue(CTNumber.covariant containsAny TypeSpec.all)
+  test("shouldReturnTrueIfContainsAny") {
+    TypeSpec.all containsAny TypeSpec.all should equal(true)
+    TypeSpec.all containsAny CTNumber.covariant should equal(true)
+    TypeSpec.all containsAny CTNode.invariant should equal(true)
+    CTNumber.covariant containsAny TypeSpec.all should equal(true)
 
-    assertTrue(CTNumber.covariant containsAny CTInteger)
-    assertTrue(CTInteger.covariant containsAny (CTInteger | CTString))
-    assertTrue(CTInteger.covariant containsAny CTNumber.covariant)
-    assertTrue(CTInteger.covariant containsAny TypeSpec.all)
+    CTNumber.covariant containsAny CTInteger should equal(true)
+    CTInteger.covariant containsAny (CTInteger | CTString) should equal(true)
+    CTInteger.covariant containsAny CTNumber.covariant should equal(true)
+    CTInteger.covariant containsAny TypeSpec.all should equal(true)
 
-    assertFalse(CTInteger.covariant containsAny CTString)
-    assertFalse(CTNumber.covariant containsAny CTString)
+    CTInteger.covariant containsAny CTString should equal(false)
+    CTNumber.covariant containsAny CTString should equal(false)
   }
 
-  test("should union") {
-    assertEquals(CTNumber | CTFloat | CTInteger | CTString,
-      CTNumber.covariant | CTString.covariant)
-    assertEquals(CTNumber | CTFloat | CTInteger | CTBoolean,
-      CTNumber.covariant | CTBoolean)
+  test("shouldUnion") {
+    CTNumber.covariant | CTString.covariant should equal(CTNumber | CTFloat | CTInteger | CTString)
+    CTNumber.covariant | CTBoolean should equal(CTNumber | CTFloat | CTInteger | CTBoolean)
 
-    assertEquals(CTNumber | CTFloat | CTInteger | CTCollection(CTString),
-      CTNumber.covariant union CTCollection(CTString).covariant)
-    assertEquals(CTCollection(CTNumber) | CTCollection(CTString),
-      CTCollection(CTNumber) union CTCollection(CTString).covariant)
+    CTNumber.covariant union CTCollection(CTString).covariant should equal(CTNumber | CTFloat | CTInteger | CTCollection(CTString))
+    CTCollection(CTNumber) union CTCollection(CTString).covariant should equal(CTCollection(CTNumber) | CTCollection(CTString))
   }
 
-  test("should intersect") {
-    assertEquals(CTInteger.invariant, TypeSpec.all & CTInteger)
-    assertEquals(CTInteger.invariant, CTNumber.covariant & CTInteger)
-    assertEquals(TypeSpec.none, CTNumber.covariant & CTString)
+  test("shouldIntersect") {
+    TypeSpec.all & CTInteger should equal(CTInteger.invariant)
+    CTNumber.covariant & CTInteger should equal(CTInteger.invariant)
+    CTNumber.covariant & CTString should equal(TypeSpec.none)
 
-    assertEquals(CTNumber.invariant, (CTNumber | CTInteger) & (CTAny | CTNumber))
-    assertEquals(CTNumber.invariant, CTNumber.contravariant & CTNumber.covariant)
-    assertEquals(CTNumber.invariant, (CTNumber | CTInteger) & (CTNumber | CTFloat))
+    (CTNumber | CTInteger) & (CTAny | CTNumber) should equal(CTNumber.invariant)
+    CTNumber.contravariant & CTNumber.covariant should equal(CTNumber.invariant)
+    (CTNumber | CTInteger) & (CTNumber | CTFloat) should equal(CTNumber.invariant)
 
-    assertEquals(CTCollection(CTAny) | CTCollection(CTCollection(CTAny)),
-      CTCollection(CTCollection(CTAny)).contravariant intersect CTCollection(CTAny).covariant)
+    CTCollection(CTCollection(CTAny)).contravariant intersect CTCollection(CTAny).covariant should equal(CTCollection(CTAny) | CTCollection(CTCollection(CTAny)))
 
-    assertEquals(CTNumber.covariant,
-      (CTNumber.covariant | CTCollection(CTAny).covariant) intersect (CTNumber.covariant | CTString.covariant))
+    (CTNumber.covariant | CTCollection(CTAny).covariant) intersect (CTNumber.covariant | CTString.covariant) should equal(CTNumber.covariant)
   }
 
-  test("should constrain") {
-    assertEquals(CTInteger.invariant, CTInteger.covariant)
-    assertEquals(CTNumber | CTFloat | CTInteger, CTNumber.covariant)
+  test("shouldConstrain") {
+    CTInteger.covariant should equal(CTInteger.invariant)
+    CTNumber.covariant should equal(CTNumber | CTFloat | CTInteger)
 
-    assertEquals(CTInteger.invariant, CTInteger constrain CTNumber)
-    assertEquals(CTInteger.invariant, CTNumber.covariant constrain CTInteger)
-    assertEquals(TypeSpec.none, CTNumber constrain CTInteger)
+    CTInteger constrain CTNumber should equal(CTInteger.invariant)
+    CTNumber.covariant constrain CTInteger should equal(CTInteger.invariant)
+    CTNumber constrain CTInteger should equal(TypeSpec.none)
 
-    assertEquals(CTInteger.invariant,
-      (CTInteger | CTString | CTMap) constrain CTNumber)
-    assertEquals(CTCollection(CTString).invariant,
-      (CTInteger | CTCollection(CTString)) constrain CTCollection(CTAny))
-    assertEquals(TypeSpec.none,
-      (CTInteger | CTCollection(CTMap)) constrain CTCollection(CTNode))
-    assertEquals(CTInteger | CTCollection(CTString),
-      (CTInteger | CTCollection(CTString)) constrain CTAny)
+    (CTInteger | CTString | CTMap) constrain CTNumber should equal(CTInteger.invariant)
+    (CTInteger | CTCollection(CTString)) constrain CTCollection(CTAny) should equal(CTCollection(CTString).invariant)
+    (CTInteger | CTCollection(CTMap)) constrain CTCollection(CTNode) should equal(TypeSpec.none)
+    (CTInteger | CTCollection(CTString)) constrain CTAny should equal(CTInteger | CTCollection(CTString))
   }
 
-  test("constrain to branch type within collection contains") {
-    assertEquals(
-      CTCollection(CTNumber) | CTCollection(CTInteger) | CTCollection(CTFloat),
-      TypeSpec.all constrain CTCollection(CTNumber))
+  test("constrainToBranchTypeWithinCollectionContains") {
+    TypeSpec.all constrain CTCollection(CTNumber) should equal(CTCollection(CTNumber) | CTCollection(CTInteger) | CTCollection(CTFloat))
   }
 
-  test("constrain to sub type within collection") {
-    assertEquals(CTCollection(CTString).invariant,
-      CTCollection(CTAny).covariant constrain CTCollection(CTString))
+  test("constrainToSubTypeWithinCollection") {
+    CTCollection(CTAny).covariant constrain CTCollection(CTString) should equal(CTCollection(CTString).invariant)
   }
 
-  test("constrain to another branch") {
-    assertEquals(TypeSpec.none,
-      CTNumber.covariant constrain CTString)
+  test("constrainToAnotherBranch") {
+    CTNumber.covariant constrain CTString should equal(TypeSpec.none)
 
-    assertEquals(TypeSpec.none, CTString.covariant constrain CTNumber)
+    CTString.covariant constrain CTNumber should equal(TypeSpec.none)
   }
 
-  test("union two branches") {
-    assertEquals(CTNumber | CTInteger | CTFloat | CTString,
-      CTNumber.covariant | CTString.covariant)
+  test("unionTwoBranches") {
+    CTNumber.covariant | CTString.covariant should equal(CTNumber | CTInteger | CTFloat | CTString)
   }
 
-  test("constrain to super type of some") {
-    assertEquals(CTInteger.invariant,
-      (CTInteger | CTString) constrain CTNumber)
-    assertEquals(CTNumber | CTInteger,
-      CTInteger.contravariant constrain CTNumber)
-    assertEquals(CTNumber.invariant,
-      CTNumber.contravariant constrain CTNumber)
-    assertEquals(CTAny | CTNumber,
-      CTNumber.contravariant constrain CTAny)
+  test("constrainToSuperTypeOfSome") {
+    (CTInteger | CTString) constrain CTNumber should equal(CTInteger.invariant)
+    CTInteger.contravariant constrain CTNumber should equal(CTNumber | CTInteger)
+    CTNumber.contravariant constrain CTNumber should equal(CTNumber.invariant)
+    CTNumber.contravariant constrain CTAny should equal(CTAny | CTNumber)
   }
 
-  test("constrain to CTAny") {
-    assertEquals(TypeSpec.all, TypeSpec.all constrain CTAny)
-    assertEquals(CTNumber.covariant, CTNumber.covariant constrain CTAny)
+  test("constrainToAny") {
+    TypeSpec.all constrain CTAny should equal(TypeSpec.all)
+    CTNumber.covariant constrain CTAny should equal(CTNumber.covariant)
   }
 
-  test("constrain to sub type of some") {
+  test("constrainToSubTypeOfSome") {
     val constrainedToNumberOrCollectionT = CTNumber.covariant | CTCollection(CTAny).covariant
-    assertEquals(CTCollection(CTNumber) | CTCollection(CTFloat) | CTCollection(CTInteger),
-      constrainedToNumberOrCollectionT constrain CTCollection(CTNumber))
+    constrainedToNumberOrCollectionT constrain CTCollection(CTNumber) should equal(CTCollection(CTNumber) | CTCollection(CTFloat) | CTCollection(CTInteger))
   }
 
-  test("constrain to super type of none") {
-    assertEquals(TypeSpec.none,
-      CTNumber.contravariant constrain CTInteger)
-    assertEquals(TypeSpec.none,
-      CTNumber.contravariant constrain CTString)
+  test("constrainToSuperTypeOfNone") {
+    CTNumber.contravariant constrain CTInteger should equal(TypeSpec.none)
+    CTNumber.contravariant constrain CTString should equal(TypeSpec.none)
   }
 
-  test("should find leastUpperBound of TypeSpecs") {
-    assertEquals(CTNode | CTNumber | CTAny,
-      (CTNode | CTNumber) leastUpperBound (CTNode | CTNumber))
+  test("shouldMergeUpTypeSpecs") {
+    (CTNode | CTNumber) mergeUp (CTNode | CTNumber) should equal(CTNode | CTNumber | CTAny)
 
-    assertEquals(CTNode | CTNumber | CTAny,
-      (CTNode | CTNumber) leastUpperBound (CTNode | CTNumber))
-    assertEquals(CTNumber | CTAny,
-      (CTNode | CTNumber) leastUpperBound CTNumber)
-    assertEquals(CTNode | CTNumber | CTMap | CTAny,
-      (CTNode | CTNumber) leastUpperBound (CTNode | CTNumber | CTRelationship))
-    assertEquals(CTAny.invariant,
-      (CTNode | CTNumber) leastUpperBound CTAny)
-    assertEquals(CTAny.invariant,
-      CTAny leastUpperBound (CTNode | CTNumber))
+    (CTNode | CTNumber) mergeUp (CTNode | CTNumber) should equal(CTNode | CTNumber | CTAny)
+    (CTNode | CTNumber) mergeUp CTNumber should equal(CTNumber | CTAny)
+    (CTNode | CTNumber) mergeUp (CTNode | CTNumber | CTRelationship) should equal(CTNode | CTNumber | CTMap | CTAny)
+    (CTNode | CTNumber) mergeUp CTAny should equal(CTAny.invariant)
+    CTAny mergeUp (CTNode | CTNumber) should equal(CTAny.invariant)
 
-    assertEquals(CTMap.invariant,
-      CTRelationship.invariant leastUpperBound CTNode.invariant)
-    assertEquals(CTMap | CTNumber | CTAny,
-      (CTRelationship | CTInteger) leastUpperBound (CTNode | CTNumber))
+    CTRelationship.invariant mergeUp CTNode.invariant should equal(CTMap.invariant)
+    (CTRelationship | CTInteger) mergeUp (CTNode | CTNumber) should equal(CTMap | CTNumber | CTAny)
 
-    assertEquals(CTNumber | CTCollection(CTAny) | CTAny,
-      (CTInteger | CTCollection(CTString)) leastUpperBound (CTNumber | CTCollection(CTInteger)))
+    (CTInteger | CTCollection(CTString)) mergeUp (CTNumber | CTCollection(CTInteger)) should equal(CTNumber | CTCollection(CTAny) | CTAny)
   }
 
-  test("leastUpperBound with root type") {
-    assertEquals(CTAny.invariant, TypeSpec.all leastUpperBound CTAny)
-    assertEquals(CTAny.invariant, CTAny leastUpperBound TypeSpec.all)
-    assertEquals(CTAny.invariant, CTCollection(CTAny).covariant leastUpperBound CTAny)
-    assertEquals(CTAny.invariant, CTAny leastUpperBound CTCollection(CTAny).covariant)
+  test("mergeUpToRootType") {
+    TypeSpec.all mergeUp CTAny should equal(CTAny.invariant)
+    CTAny mergeUp TypeSpec.all should equal(CTAny.invariant)
+    CTCollection(CTAny).covariant mergeUp CTAny should equal(CTAny.invariant)
+    CTAny mergeUp CTCollection(CTAny).covariant should equal(CTAny.invariant)
   }
 
-  test("leastUpperBound with leaf type") {
-    assertEquals(CTAny | CTNumber | CTInteger, TypeSpec.all leastUpperBound CTInteger)
+  test("mergeUpWithLeafType") {
+    TypeSpec.all mergeUp CTInteger should equal(CTAny | CTNumber | CTInteger)
   }
 
-  test("leastUpperBound with collection") {
-    assertEquals(CTAny | CTCollection(CTAny),
-      TypeSpec.all leastUpperBound CTCollection(CTAny))
-    assertEquals(CTAny | CTCollection(CTAny) | CTCollection(CTString),
-      TypeSpec.all leastUpperBound CTCollection(CTString))
+  test("mergeUpWithCollection") {
+    TypeSpec.all mergeUp CTCollection(CTAny) should equal(CTAny | CTCollection(CTAny))
+    TypeSpec.all mergeUp CTCollection(CTString) should equal(CTAny | CTCollection(CTAny) | CTCollection(CTString))
   }
 
-  test("leastUpperBound with multiple types") {
-    assertEquals(CTAny | CTNumber | CTInteger | CTString,
-      TypeSpec.all leastUpperBound (CTInteger | CTString))
-    assertEquals(CTAny | CTNumber | CTInteger | CTCollection(CTAny) | CTCollection(CTString),
-      TypeSpec.all leastUpperBound (CTCollection(CTString) | CTInteger))
+  test("mergeUpWithMultipleTypes") {
+    TypeSpec.all mergeUp (CTInteger | CTString) should equal(CTAny | CTNumber | CTInteger | CTString)
+    TypeSpec.all mergeUp (CTCollection(CTString) | CTInteger) should equal(CTAny | CTNumber | CTInteger | CTCollection(CTAny) | CTCollection(CTString))
   }
 
-  test("leastUpperBound with some super types") {
-    assertEquals(CTAny | CTNumber,
-      (CTCollection(CTString) | CTInteger) leastUpperBound CTNumber)
-    assertEquals(CTAny | CTCollection(CTAny),
-      (CTCollection(CTString) | CTInteger) leastUpperBound CTCollection(CTAny))
+  test("mergeUpWithSuperTypeOfSome") {
+    (CTCollection(CTString) | CTInteger) mergeUp CTNumber should equal(CTAny | CTNumber)
+    (CTCollection(CTString) | CTInteger) mergeUp CTCollection(CTAny) should equal(CTAny | CTCollection(CTAny))
 
-    assertEquals(CTNumber | CTInteger,
-      CTInteger leastUpperBound CTNumber.covariant)
+    CTInteger mergeUp CTNumber.covariant should equal(CTNumber | CTInteger)
 
-    val mergedSet = CTCollection(CTCollection(CTAny)).covariant leastUpperBound TypeSpec.all
-    assertTrue(mergedSet.contains(CTCollection(CTCollection(CTString))))
-    assertTrue(mergedSet.contains(CTCollection(CTCollection(CTInteger))))
-    assertTrue(mergedSet.contains(CTCollection(CTCollection(CTNumber))))
-    assertTrue(mergedSet.contains(CTCollection(CTCollection(CTAny))))
-    assertFalse(mergedSet.contains(CTCollection(CTString)))
-    assertFalse(mergedSet.contains(CTCollection(CTNumber)))
-    assertTrue(mergedSet.contains(CTCollection(CTAny)))
-    assertFalse(mergedSet.contains(CTString))
-    assertFalse(mergedSet.contains(CTNumber))
-    assertTrue(mergedSet.contains(CTAny))
+    val mergedSet = CTCollection(CTCollection(CTAny)).covariant mergeUp TypeSpec.all
+    mergedSet.contains(CTCollection(CTCollection(CTString))) should equal(true)
+    mergedSet.contains(CTCollection(CTCollection(CTInteger))) should equal(true)
+    mergedSet.contains(CTCollection(CTCollection(CTNumber))) should equal(true)
+    mergedSet.contains(CTCollection(CTCollection(CTAny))) should equal(true)
+    mergedSet.contains(CTCollection(CTString)) should equal(false)
+    mergedSet.contains(CTCollection(CTNumber)) should equal(false)
+    mergedSet.contains(CTCollection(CTAny)) should equal(true)
+    mergedSet.contains(CTString) should equal(false)
+    mergedSet.contains(CTNumber) should equal(false)
+    mergedSet.contains(CTAny) should equal(true)
 
-    assertEquals(CTAny | CTNumber,
-      CTNumber.contravariant leastUpperBound CTInteger.contravariant)
+    CTNumber.contravariant mergeUp CTInteger.contravariant should equal(CTAny | CTNumber)
   }
 
-  test("leastUpperBound with some sub types") {
-    assertEquals(CTAny | CTNumber,
-      (CTCollection(CTString) | CTNumber) leastUpperBound CTInteger)
-    assertEquals(CTInteger | CTNumber,
-      CTNumber.covariant leastUpperBound CTInteger)
+  test("mergeUpWithSubTypeOfSome") {
+    (CTCollection(CTString) | CTNumber) mergeUp CTInteger should equal(CTAny | CTNumber)
+    CTNumber.covariant mergeUp CTInteger should equal(CTInteger | CTNumber)
 
     val numberOrCollectionT = CTNumber.covariant | CTCollection(CTAny).covariant
-    assertEquals(CTAny | CTNumber | CTInteger,
-      numberOrCollectionT leastUpperBound CTInteger)
-    assertEquals(CTAny | CTCollection(CTAny) | CTCollection(CTNumber) | CTCollection(CTInteger),
-      numberOrCollectionT leastUpperBound CTCollection(CTInteger))
+    numberOrCollectionT mergeUp CTInteger should equal(CTAny | CTNumber | CTInteger)
+    numberOrCollectionT mergeUp CTCollection(CTInteger) should equal(CTAny | CTCollection(CTAny) | CTCollection(CTNumber) | CTCollection(CTInteger))
 
     val collectionOfCollectionOfAny = CTCollection(CTCollection(CTAny)).covariant
-    assertTrue((TypeSpec.all leastUpperBound collectionOfCollectionOfAny) contains CTCollection(CTCollection(CTString)))
-    assertTrue((TypeSpec.all leastUpperBound collectionOfCollectionOfAny) contains CTCollection(CTCollection(CTInteger)))
-    assertTrue((TypeSpec.all leastUpperBound collectionOfCollectionOfAny) contains CTCollection(CTCollection(CTNumber)))
-    assertTrue((TypeSpec.all leastUpperBound collectionOfCollectionOfAny) contains CTCollection(CTCollection(CTAny)))
-    assertFalse((TypeSpec.all leastUpperBound collectionOfCollectionOfAny) contains CTCollection(CTString))
-    assertFalse((TypeSpec.all leastUpperBound collectionOfCollectionOfAny) contains CTCollection(CTNumber))
-    assertTrue((TypeSpec.all leastUpperBound collectionOfCollectionOfAny) contains CTCollection(CTAny))
-    assertFalse((TypeSpec.all leastUpperBound collectionOfCollectionOfAny) contains CTString)
-    assertFalse((TypeSpec.all leastUpperBound collectionOfCollectionOfAny) contains CTNumber)
-    assertTrue((TypeSpec.all leastUpperBound collectionOfCollectionOfAny) contains CTAny)
+    (TypeSpec.all mergeUp collectionOfCollectionOfAny) contains CTCollection(CTCollection(CTString)) should equal(true)
+    (TypeSpec.all mergeUp collectionOfCollectionOfAny) contains CTCollection(CTCollection(CTInteger)) should equal(true)
+    (TypeSpec.all mergeUp collectionOfCollectionOfAny) contains CTCollection(CTCollection(CTNumber)) should equal(true)
+    (TypeSpec.all mergeUp collectionOfCollectionOfAny) contains CTCollection(CTCollection(CTAny)) should equal(true)
+    (TypeSpec.all mergeUp collectionOfCollectionOfAny) contains CTCollection(CTString) should equal(false)
+    (TypeSpec.all mergeUp collectionOfCollectionOfAny) contains CTCollection(CTNumber) should equal(false)
+    (TypeSpec.all mergeUp collectionOfCollectionOfAny) contains CTCollection(CTAny) should equal(true)
+    (TypeSpec.all mergeUp collectionOfCollectionOfAny) contains CTString should equal(false)
+    (TypeSpec.all mergeUp collectionOfCollectionOfAny) contains CTNumber should equal(false)
+    (TypeSpec.all mergeUp collectionOfCollectionOfAny) contains CTAny should equal(true)
   }
 
-  test("leastUpperBound of branch with sub type") {
-    assertEquals(CTNumber | CTInteger, CTNumber.covariant leastUpperBound CTInteger)
+  test("mergeUpFromConstrainedBranchToSubType") {
+    CTNumber.covariant mergeUp CTInteger should equal(CTNumber | CTInteger)
   }
 
-  test("leastUpperBound of branch to branch root") {
-    assertEquals(CTNumber.invariant, CTNumber.covariant leastUpperBound CTNumber)
+  test("mergeUpFromConstrainedBranchToConstraintRoot") {
+    CTNumber.covariant mergeUp CTNumber should equal(CTNumber.invariant)
   }
 
-  test("leastUpperBound of  branch to super type") {
-    assertEquals(CTNumber.invariant, CTInteger.covariant leastUpperBound CTNumber)
+  test("mergeUpFromConstrainedBranchToSuperType") {
+    CTInteger.covariant mergeUp CTNumber should equal(CTNumber.invariant)
   }
 
-  test("leastUpperBound of branch to unrelated type") {
-    assertEquals(CTAny.invariant, CTNumber.covariant leastUpperBound CTString)
-    assertEquals(CTAny.invariant, CTInteger.covariant leastUpperBound CTString)
+  test("mergeUpFromConstrainedBranchToUnrelated") {
+    CTNumber.covariant mergeUp CTString should equal(CTAny.invariant)
+    CTInteger.covariant mergeUp CTString should equal(CTAny.invariant)
   }
 
-  test("leastUpperBound with equivalent") {
-    assertEquals(CTNumber.covariant, CTNumber.covariant leastUpperBound (CTNumber | CTInteger | CTFloat))
+  test("mergeUpWithEquivalent") {
+    CTNumber.covariant mergeUp (CTNumber | CTInteger | CTFloat) should equal(CTNumber.covariant)
   }
 
-  test("should wrap in collection") {
-    assertEquals(CTCollection(CTString) | CTCollection(CTCollection(CTNumber)),
-      (CTString | CTCollection(CTNumber)).wrapInCollection)
-    assertEquals(CTCollection(CTAny).covariant,
-      TypeSpec.all.wrapInCollection)
+  test("shouldWrapInCollection") {
+    (CTString | CTCollection(CTNumber)).wrapInCollection should equal(CTCollection(CTString) | CTCollection(CTCollection(CTNumber)))
+    TypeSpec.all.wrapInCollection should equal(CTCollection(CTAny).covariant)
   }
 
-  test("should identify coercions") {
-    assertEquals(CTBoolean.invariant, CTFloat.covariant.coercions)
-    assertEquals(CTBoolean | CTFloat, CTInteger.covariant.coercions)
-    assertEquals(CTBoolean | CTFloat, (CTFloat | CTInteger).coercions)
-    assertEquals(CTBoolean.invariant, CTCollection(CTAny).covariant.coercions)
-    assertEquals(CTBoolean.invariant, TypeSpec.exact(CTCollection(CTPath)).coercions)
-    assertEquals(CTBoolean | CTFloat, TypeSpec.all.coercions)
-    assertEquals(CTBoolean.invariant, CTCollection(CTAny).covariant.coercions)
+  test("shouldIdentifyCoercions") {
+    CTFloat.covariant.coercions should equal(CTBoolean.invariant)
+    CTInteger.covariant.coercions should equal(CTBoolean | CTFloat)
+    (CTFloat | CTInteger).coercions should equal(CTBoolean | CTFloat)
+    CTCollection(CTAny).covariant.coercions should equal(CTBoolean.invariant)
+    TypeSpec.exact(CTCollection(CTPath)).coercions should equal(CTBoolean.invariant)
+    TypeSpec.all.coercions should equal(CTBoolean | CTFloat)
+    CTCollection(CTAny).covariant.coercions should equal(CTBoolean.invariant)
   }
 
-  test("should intersect with coercions") {
-    assertEquals(CTInteger.invariant, TypeSpec.all intersectOrCoerce CTInteger)
-    assertEquals(CTFloat.invariant, CTInteger intersectOrCoerce CTFloat)
-    assertEquals(TypeSpec.none, CTNumber intersectOrCoerce CTFloat)
-    assertEquals(CTBoolean.invariant, CTCollection(CTAny).covariant intersectOrCoerce CTBoolean)
-    assertEquals(CTBoolean.invariant, CTNumber.covariant intersectOrCoerce CTBoolean)
-    assertEquals(CTBoolean.invariant, CTCollection(CTAny).covariant intersectOrCoerce CTBoolean)
-    assertEquals(TypeSpec.none, CTInteger intersectOrCoerce CTString)
+  test("shouldIntersectWithCoercions") {
+    TypeSpec.all intersectOrCoerce CTInteger should equal(CTInteger.invariant)
+    CTInteger intersectOrCoerce CTFloat should equal(CTFloat.invariant)
+    CTNumber intersectOrCoerce CTFloat should equal(TypeSpec.none)
+    CTCollection(CTAny).covariant intersectOrCoerce CTBoolean should equal(CTBoolean.invariant)
+    CTNumber.covariant intersectOrCoerce CTBoolean should equal(CTBoolean.invariant)
+    CTCollection(CTAny).covariant intersectOrCoerce CTBoolean should equal(CTBoolean.invariant)
+    CTInteger intersectOrCoerce CTString should equal(TypeSpec.none)
   }
 
-  test("should constrain with coercions") {
-    assertEquals(CTInteger.invariant, TypeSpec.all constrainOrCoerce CTInteger)
-    assertEquals(CTFloat.invariant, CTInteger constrainOrCoerce CTFloat)
-    assertEquals(TypeSpec.none, CTNumber constrainOrCoerce CTFloat)
-    assertEquals(CTBoolean.invariant, CTCollection(CTAny).covariant constrainOrCoerce CTBoolean)
-    assertEquals(CTBoolean.invariant, CTNumber.covariant constrainOrCoerce CTBoolean)
-    assertEquals(CTBoolean.invariant, CTCollection(CTAny).covariant constrainOrCoerce CTBoolean)
-    assertEquals(TypeSpec.none, CTInteger constrainOrCoerce CTString)
+  test("shouldConstrainWithCoercions") {
+    TypeSpec.all constrainOrCoerce CTInteger should equal(CTInteger.invariant)
+    CTInteger constrainOrCoerce CTFloat should equal(CTFloat.invariant)
+    CTNumber constrainOrCoerce CTFloat should equal(TypeSpec.none)
+    CTCollection(CTAny).covariant constrainOrCoerce CTBoolean should equal(CTBoolean.invariant)
+    CTNumber.covariant constrainOrCoerce CTBoolean should equal(CTBoolean.invariant)
+    CTCollection(CTAny).covariant constrainOrCoerce CTBoolean should equal(CTBoolean.invariant)
+    CTInteger constrainOrCoerce CTString should equal(TypeSpec.none)
   }
 
-  test("equal TypeSpecs should equal") {
-    assertEquals(CTString.invariant, CTString.invariant)
+  test("equalTypeSpecsShouldEqual") {
+    CTString.invariant should equal(CTString.invariant)
 
-    assertEquals(CTString.covariant, CTString.invariant)
-    assertEquals(CTString.invariant, CTString.covariant)
+    CTString.invariant should equal(CTString.covariant)
+    CTString.covariant should equal(CTString.invariant)
 
-    assertEquals(CTNumber | CTInteger | CTFloat, CTFloat | CTInteger | CTNumber)
-    assertEquals(CTNumber | CTInteger | CTFloat, CTNumber.covariant)
-    assertEquals(CTNumber.covariant, CTNumber | CTInteger | CTFloat)
+    CTFloat | CTInteger | CTNumber should equal(CTNumber | CTInteger | CTFloat)
+    CTNumber.covariant should equal(CTNumber | CTInteger | CTFloat)
+    CTNumber | CTInteger | CTFloat should equal(CTNumber.covariant)
 
-    assertEquals(CTNumber.covariant, CTNumber.covariant | CTInteger.covariant)
-    assertNotEquals(CTNumber.covariant, CTNumber.covariant | CTString.covariant)
+    CTNumber.covariant | CTInteger.covariant should equal(CTNumber.covariant)
+    CTNumber.covariant | CTString.covariant should not equal(CTNumber.covariant)
 
-    assertEquals(TypeSpec.all, TypeSpec.all)
-    assertEquals(TypeSpec.all, CTAny.covariant)
-    assertEquals(CTCollection(CTAny).covariant, CTCollection(CTAny).covariant)
-    assertEquals(CTCollection(CTAny).covariant, CTCollection(CTAny).covariant)
+    TypeSpec.all should equal(TypeSpec.all)
+    CTAny.covariant should equal(TypeSpec.all)
+    CTCollection(CTAny).covariant should equal(CTCollection(CTAny).covariant)
+    CTCollection(CTAny).covariant should equal(CTCollection(CTAny).covariant)
 
-    assertEquals(TypeSpec.all, TypeSpec.all | CTString.covariant)
-    assertEquals(TypeSpec.all, TypeSpec.all | TypeSpec.all)
+    TypeSpec.all | CTString.covariant should equal(TypeSpec.all)
+    TypeSpec.all | TypeSpec.all should equal(TypeSpec.all)
   }
 
-  test("different TypeSpecs should not equal") {
-    assertNotEquals(CTNumber.covariant, TypeSpec.all)
-    assertNotEquals(TypeSpec.all, CTNumber.covariant)
+  test("differentTypeSpecsShouldNotEqual") {
+    TypeSpec.all should not equal(CTNumber.covariant)
+    CTNumber.covariant should not equal(TypeSpec.all)
 
-    assertNotEquals(CTNumber.covariant, CTCollection(CTAny).covariant)
-    assertNotEquals(CTCollection(CTAny).covariant, CTNumber.covariant)
+    CTCollection(CTAny).covariant should not equal(CTNumber.covariant)
+    CTNumber.covariant should not equal(CTCollection(CTAny).covariant)
 
-    assertNotEquals(TypeSpec.all, CTNumber.invariant)
-    assertNotEquals(CTNumber.invariant, TypeSpec.all)
+    CTNumber.invariant should not equal(TypeSpec.all)
+    TypeSpec.all should not equal(CTNumber.invariant)
   }
 
-  test("should have indefinite size when allowing unconstrained any at any depth") {
-    assertFalse(TypeSpec.all.hasDefiniteSize)
-    assertFalse(CTCollection(CTAny).covariant.hasDefiniteSize)
+  test("shouldHaveIndefiniteSizeWhenAllowingUnconstrainedAnyAtAnyDepth") {
+    TypeSpec.all.hasDefiniteSize should equal(false)
+    CTCollection(CTAny).covariant.hasDefiniteSize should equal(false)
 
-    assertTrue((CTString | CTNumber).hasDefiniteSize)
-    assertTrue(CTCollection(CTString).covariant.hasDefiniteSize)
+    (CTString | CTNumber).hasDefiniteSize should equal(true)
+    CTCollection(CTString).covariant.hasDefiniteSize should equal(true)
 
-    assertFalse(CTCollection(CTCollection(CTAny)).covariant.hasDefiniteSize)
-    assertTrue(CTCollection(CTCollection(CTString)).covariant.hasDefiniteSize)
+    CTCollection(CTCollection(CTAny)).covariant.hasDefiniteSize should equal(false)
+    CTCollection(CTCollection(CTString)).covariant.hasDefiniteSize should equal(true)
 
-    assertTrue(CTAny.contravariant.hasDefiniteSize)
-    assertTrue((CTCollection(CTAny).covariant leastUpperBound CTCollection(CTAny)).hasDefiniteSize)
+    CTAny.contravariant.hasDefiniteSize should equal(true)
+    (CTCollection(CTAny).covariant mergeUp CTCollection(CTAny)).hasDefiniteSize should equal(true)
   }
 
-  test("should be empty when no possibilities remain") {
-    assertFalse(TypeSpec.all.isEmpty)
-    assertTrue(TypeSpec.none.isEmpty)
-    assertTrue((CTNumber.contravariant intersect CTInteger).isEmpty)
+  test("shouldBeEmptyWhenNoPossibilitiesRemain") {
+    TypeSpec.all.isEmpty should equal(false)
+    TypeSpec.none.isEmpty should equal(true)
+    (CTNumber.contravariant intersect CTInteger).isEmpty should equal(true)
   }
 
-  test("should format none") {
-    assertEquals("()", TypeSpec.none.mkString("(", ", ", " or ", ")"))
+  test("shouldFormatNone") {
+    TypeSpec.none.mkString("(", ", ", " or ", ")") should equal("()")
   }
 
-  test("should format single type") {
-    assertEquals("(Any)", CTAny.invariant.mkString("(", ", ", " or ", ")"))
-    assertEquals("<Node>", CTNode.invariant.mkString("<", ", ", " and ", ">"))
+  test("shouldFormatSingleType") {
+    CTAny.invariant.mkString("(", ", ", " or ", ")") should equal("(Any)")
+    CTNode.invariant.mkString("<", ", ", " and ", ">") should equal("<Node>")
   }
 
-  test("should format two types") {
-    assertEquals("Any or Node", (CTAny | CTNode).mkString("", ", ", " or ", ""))
-    assertEquals("-Node or Relationship-", (CTRelationship | CTNode).mkString("-", ", ", " or ", "-"))
+  test("shouldFormatTwoTypes") {
+    (CTAny | CTNode).mkString("", ", ", " or ", "") should equal("Any or Node")
+    (CTRelationship | CTNode).mkString("-", ", ", " or ", "-") should equal("-Node or Relationship-")
   }
 
-  test("should format three types") {
-    assertEquals("Integer, Node, Relationship", (CTRelationship | CTInteger | CTNode).mkString(", "))
-    assertEquals("(Integer, Node, Relationship)", (CTRelationship | CTInteger | CTNode).mkString("(", ", ", ")"))
-    assertEquals("(Any, Node or Relationship)", (CTRelationship | CTAny | CTNode).mkString("(", ", ", " or ", ")"))
-    assertEquals("[Integer, Node and Relationship]", (CTRelationship | CTInteger | CTNode).mkString("[", ", ", " and ", "]"))
+  test("shouldFormatThreeTypes") {
+    (CTRelationship | CTInteger | CTNode).mkString(", ") should equal("Integer, Node, Relationship")
+    (CTRelationship | CTInteger | CTNode).mkString("(", ", ", ")") should equal("(Integer, Node, Relationship)")
+    (CTRelationship | CTAny | CTNode).mkString("(", ", ", " or ", ")") should equal("(Any, Node or Relationship)")
+    (CTRelationship | CTInteger | CTNode).mkString("[", ", ", " and ", "]") should equal("[Integer, Node and Relationship]")
   }
 
-  test("should format to string for indefinite sized set") {
-    assertEquals("T", TypeSpec.all.mkString(", "))
-    assertEquals("Collection<T>", CTCollection(CTAny).covariant.mkString(", "))
-    assertEquals("Boolean, Collection<T>", (CTCollection(CTAny).covariant | CTBoolean).mkString(", "))
-    assertEquals("Boolean, Collection<String>, Collection<Collection<T>>",
-      (CTCollection(CTCollection(CTAny)).covariant | CTBoolean | CTCollection(CTString)).mkString(", "))
+  test("shouldFormatToStringForIndefiniteSizedSet") {
+    TypeSpec.all.mkString(", ") should equal("T")
+    CTCollection(CTAny).covariant.mkString(", ") should equal("Collection<T>")
+    (CTCollection(CTAny).covariant | CTBoolean).mkString(", ") should equal("Boolean, Collection<T>")
+    (CTCollection(CTCollection(CTAny)).covariant | CTBoolean | CTCollection(CTString)).mkString(", ") should equal("Boolean, Collection<String>, Collection<Collection<T>>")
   }
 
-  test("should format to string for definite sized set") {
-    assertEquals("Any", CTAny.invariant.mkString(", "))
-    assertEquals("String", CTString.invariant.mkString(", "))
-    assertEquals("Float, Integer, Number", CTNumber.covariant.mkString(", "))
-    assertEquals("Boolean, Float, Integer, Number",
-      (CTNumber.covariant | CTBoolean.covariant).mkString(", "))
-    assertEquals("Any, Number", CTNumber.contravariant.mkString(", "))
-    assertEquals("Boolean, String, Collection<Boolean>, Collection<String>",
-      (CTBoolean.covariant | CTString.covariant | CTCollection(CTBoolean).covariant | CTCollection(CTString).covariant).mkString(", "))
-    assertEquals("Boolean, String, Collection<Boolean>, Collection<Collection<String>>",
-      (CTBoolean.covariant | CTString.covariant | CTCollection(CTBoolean).covariant | CTCollection(CTCollection(CTString)).covariant).mkString(", "))
-    assertEquals("Any, Collection<Any>", CTCollection(CTAny).contravariant.mkString(", "))
+  test("shouldFormatToStringForDefiniteSizedSet") {
+    CTAny.invariant.mkString(", ") should equal("Any")
+    CTString.invariant.mkString(", ") should equal("String")
+    CTNumber.covariant.mkString(", ") should equal("Float, Integer, Number")
+    (CTNumber.covariant | CTBoolean.covariant).mkString(", ") should equal("Boolean, Float, Integer, Number")
+    CTNumber.contravariant.mkString(", ") should equal("Any, Number")
+    (CTBoolean.covariant | CTString.covariant | CTCollection(CTBoolean).covariant | CTCollection(CTString).covariant).mkString(", ") should equal("Boolean, String, Collection<Boolean>, Collection<String>")
+    (CTBoolean.covariant | CTString.covariant | CTCollection(CTBoolean).covariant | CTCollection(CTCollection(CTString)).covariant).mkString(", ") should equal("Boolean, String, Collection<Boolean>, Collection<Collection<String>>")
+    CTCollection(CTAny).contravariant.mkString(", ") should equal("Any, Collection<Any>")
   }
 
-  test("should iterate over definite sized set") {
-    assertEquals(Seq(CTString),
-      CTString.invariant.iterator.toSeq)
-    assertEquals(Seq(CTFloat, CTInteger, CTNumber),
-      CTNumber.covariant.iterator.toSeq)
-    assertEquals(Seq(CTBoolean, CTFloat, CTInteger, CTNumber),
-      (CTNumber.covariant | CTBoolean.covariant).iterator.toSeq)
-    assertEquals(Seq(CTAny, CTNumber),
-      CTNumber.contravariant.iterator.toSeq)
-    assertEquals(Seq(CTBoolean, CTString, CTCollection(CTBoolean), CTCollection(CTString)),
-      (CTBoolean | CTString | CTCollection(CTBoolean) | CTCollection(CTString)).iterator.toSeq)
-    assertEquals(Seq(CTBoolean, CTString, CTCollection(CTBoolean), CTCollection(CTCollection(CTString))),
-      (CTBoolean | CTString | CTCollection(CTBoolean) | CTCollection(CTCollection(CTString))).iterator.toSeq)
+  test("shouldIterateOverDefiniteSizedSet") {
+    CTString.invariant.iterator.toSeq should equal(Seq(CTString))
+    CTNumber.covariant.iterator.toSeq should equal(Seq(CTFloat, CTInteger, CTNumber))
+    (CTNumber.covariant | CTBoolean.covariant).iterator.toSeq should equal(Seq(CTBoolean, CTFloat, CTInteger, CTNumber))
+    CTNumber.contravariant.iterator.toSeq should equal(Seq(CTAny, CTNumber))
+    (CTBoolean | CTString | CTCollection(CTBoolean) | CTCollection(CTString)).iterator.toSeq should equal(Seq(CTBoolean, CTString, CTCollection(CTBoolean), CTCollection(CTString)))
+    (CTBoolean | CTString | CTCollection(CTBoolean) | CTCollection(CTCollection(CTString))).iterator.toSeq should equal(Seq(CTBoolean, CTString, CTCollection(CTBoolean), CTCollection(CTCollection(CTString))))
   }
 }

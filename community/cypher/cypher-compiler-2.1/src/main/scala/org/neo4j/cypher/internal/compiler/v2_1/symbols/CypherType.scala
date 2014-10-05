@@ -48,19 +48,19 @@ abstract class CypherType {
 
   def legacyIteratedType: CypherType = this
 
-  def leastUpperBound(other: CypherType): CypherType =
+  def mergeUp(other: CypherType): CypherType =
     if (this.isAssignableFrom(other)) this
     else if (other.isAssignableFrom(this)) other
-    else parentType leastUpperBound other.parentType
+    else parentType mergeUp other.parentType
 
-  def greatestLowerBound(other: CypherType): Option[CypherType] =
+  def mergeDown(other: CypherType): Option[CypherType] =
     if (this.isAssignableFrom(other)) Some(other)
     else if (other.isAssignableFrom(this)) Some(this)
     else None
 
   lazy val covariant: TypeSpec = TypeSpec.all constrain this
   lazy val invariant: TypeSpec = TypeSpec.exact(this)
-  lazy val contravariant: TypeSpec = TypeSpec.all leastUpperBound this
+  lazy val contravariant: TypeSpec = TypeSpec.all mergeUp this
 
   def rewrite(f: CypherType => CypherType) = f(this)
 }
