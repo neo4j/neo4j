@@ -23,6 +23,13 @@ object TypeRange {
   def apply(lower: CypherType, upper: CypherType): TypeRange = TypeRange(lower, Some(upper))
 }
 
+/**
+ * A TypeRange represents a path through the type tree, or an entire branch.
+ * E.g. (CTAny)<-[*]-(CTInteger), or (CTNumber)<-[*]-()
+ *
+ * @param lower The root of the path or the branch
+ * @param upper Some(type), if the TypeRange is a path through the type tree, or None, if the TypeRange is an entire branch
+ */
 case class TypeRange(lower: CypherType, upper: Option[CypherType]) {
   assert(upper.isEmpty || (lower isAssignableFrom upper.get), "Incompatible TypeRange bounds")
 
@@ -49,7 +56,11 @@ case class TypeRange(lower: CypherType, upper: Option[CypherType]) {
 
   def constrain(aType: CypherType): Option[TypeRange] = this & TypeRange(aType, None)
 
-  def leastUpperBound(other: TypeRange): Seq[TypeRange] = {
+  /**
+   * @param other the other range to determine LUBs in combination with
+   * @return a set of TypeRanges that cover the LUBs for all combinations of individual types between both TypeRanges
+   */
+  def leastUpperBounds(other: TypeRange): Seq[TypeRange] = {
     val newLower = lower leastUpperBound other.lower
     (upper, other.upper) match {
       case (Some(u1), Some(u2)) =>
