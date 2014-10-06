@@ -72,8 +72,8 @@ class GreedyQueryGraphSolver(config: PlanningStrategyConfiguration = PlanningStr
     }
 
     def solveOptionalAndCartesianProducts: PlanTable => PlanTable = { incoming: PlanTable =>
-        val solvedOptionalMatches = solveOptionalMatches(incoming, queryGraph)
-        findBestPlan(cartesianProduct)(solvedOptionalMatches)
+      val solvedOptionalMatches = solveOptionalMatches(incoming, queryGraph)
+      findBestPlan(cartesianProduct)(solvedOptionalMatches)
     }
 
     val leaves: PlanTable = generateLeafPlanTable()

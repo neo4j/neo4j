@@ -24,7 +24,7 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.HardcodedGraphStatistics
 import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{CartesianProduct, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Candidates, Cost, PlanTable}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport, QueryGraph}
@@ -43,14 +43,16 @@ class CartesianProductTest extends CypherFunSuite with LogicalPlanningTestSuppor
     cartesianProduct(table, qg) should equal(Candidates())
   }
 
-  test("cartesian product produces all possible combinations") {
+  test("cartesian product produces the best possible combination") {
     val plan1 = newMockedLogicalPlan("a")
     val plan2 = newMockedLogicalPlan("b")
-    val cost = Map(plan1 -> 1.0, plan2 -> 2.0)
-
+    def cost(plan: LogicalPlan): Double = plan match {
+      case p if p == plan1 => 1.0
+      case p if p == plan2 => 2.0
+      case CartesianProduct(a, b) => cost(a) + 10 * cost(b)
+    }
     implicit val (table, context) = prepare(cost, plan1, plan2)
-
-    cartesianProduct(table, qg).plans.toSet should equal(Set(planCartesianProduct(plan1, plan2), planCartesianProduct(plan2, plan1)))
+    cartesianProduct(table, qg).plans.toSet should equal(Set(planCartesianProduct(plan2, plan1)))
   }
 
   private def prepare(cost: LogicalPlan => Double, plans: LogicalPlan*) = {

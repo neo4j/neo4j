@@ -51,6 +51,7 @@ case class Cost(gummyBears: Double) extends Ordered[Cost] {
   def *(other: Multiplier): Cost = gummyBears * other.coefficient
   def +(other: CostPerRow): CostPerRow = other.cost * gummyBears
   def compare(that: Cost): Int = gummyBears.compare(that.gummyBears)
+  def unary_-(): Cost = Cost(-gummyBears)
 }
 
 object Cost {

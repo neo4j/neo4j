@@ -294,10 +294,6 @@ class SolveOptionalMatchesTest extends CypherFunSuite with LogicalPlanningTestSu
     resultingPlanTable.plans.head should equal(expectedResult)
   }
 
-  ignore("should not introduce optional expand until predicates have their dependencies satisfied") {
-    // MATCH (a), (b) OPTIONAL MATCH (a)-[r1]->(x) WHERE x.foo = b.foo
-  }
-
 
   private def createLogicalPlanContext(): LogicalPlanningContext = {
     val factory = newMockedMetricsFactory

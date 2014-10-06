@@ -44,13 +44,13 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       cardinality = PartialFunction(myCardinality)
     } planFor "MATCH (a:X)<-[r1]-(b)-[r2]->(c:X) RETURN b").plan.toString should equal(
       """Projection[b](Map("b" → b))
-         |↳ Selection[r2,r1,a,b,c](ArrayBuffer(NotEquals(r1, r2)))
+         |↳ Selection[r2,r1,a,b,c](Vector(NotEquals(r1, r2)))
          |↳ NodeHashJoin[r2,r1,a,b,c](Set(b))
          |  ↳ left =
-         |    Expand[a,r1,b](a, INCOMING, INCOMING, ⬨, b, r1, , ArrayBuffer())
+         |    Expand[a,r1,b](a, INCOMING, INCOMING, ⬨, b, r1, , Vector())
          |    ↳ NodeByLabelScan[a](a, Left("X"), Set())
          |  ↳ right =
-         |    Expand[c,r2,b](c, INCOMING, OUTGOING, ⬨, b, r2, , ArrayBuffer())
+         |    Expand[c,r2,b](c, INCOMING, OUTGOING, ⬨, b, r2, , Vector())
          |    ↳ NodeByLabelScan[c](c, Left("X"), Set())""".stripMargin)
   }
 }

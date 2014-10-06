@@ -48,7 +48,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
     )
   }
 
-  ignore("should build simple optional match plans") { // This should be built using plan rewriting
+  test("should build simple optional match plans") { // This should be built using plan rewriting
     planFor("OPTIONAL MATCH a RETURN a").plan should equal(
       Optional(AllNodesScan("a", Set.empty)(PlannerQuery.empty))(PlannerQuery.empty)
     )

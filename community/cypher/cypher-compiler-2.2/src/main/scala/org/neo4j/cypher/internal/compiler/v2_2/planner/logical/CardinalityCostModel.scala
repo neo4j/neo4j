@@ -66,10 +66,14 @@ case class CardinalityCostModel(cardinality: CardinalityModel) extends CostModel
     case _                  => plan.lhs.map(cardinality).getOrElse(cardinality(plan))
   }
 
-  def apply(plan: LogicalPlan): Cost = {
-    val totalCost = cardinalityForPlan(plan) * costPerRow(plan) +
-    plan.lhs.map(this).getOrElse(Cost(0)) +
-    plan.rhs.map(this).getOrElse(Cost(0))
-    totalCost
+  def apply(plan: LogicalPlan): Cost = plan match {
+    case CartesianProduct(lhs, rhs) =>
+      apply(lhs) + cardinality(lhs) * apply(rhs)
+
+    case _ =>
+      val totalCost = cardinalityForPlan(plan) * costPerRow(plan) +
+      plan.lhs.map(this).getOrElse(Cost(0)) +
+      plan.rhs.map(this).getOrElse(Cost(0))
+      totalCost
   }
 }
