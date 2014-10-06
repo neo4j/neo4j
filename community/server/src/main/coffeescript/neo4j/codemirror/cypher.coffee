@@ -42,7 +42,7 @@ define ['lib/amd/CodeMirror'], (CodeMirror) ->
       'abs','round','sqrt','sign'])
     keywords = wordRegexp([
       'START','MATCH','RELATE','WHERE','CREATE','RETURN','MATCH',
-      'LIMIT','ORDER BY','SKIP',
+      'LIMIT','ORDER BY','SKIP_EXECUTE_STATEMENT',
       'COUND','SUM','AVG','MAX','MIN','COLLECT','DISCINCT','WITH'])
     operatorChars = /[*+\-<>=&|]/
 
