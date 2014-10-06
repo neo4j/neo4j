@@ -96,7 +96,7 @@ public class DummyXaDataSource extends XaDataSource
     }
 
     @Override
-    public void stop()
+    public void stop() throws IOException
     {
         xaContainer.close();
         // cleanup dummy resource log
