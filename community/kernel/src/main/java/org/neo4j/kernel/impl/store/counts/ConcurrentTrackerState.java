@@ -35,8 +35,7 @@ class ConcurrentTrackerState implements CountsTracker.State
 {
     private static final int INITIAL_CHANGES_CAPACITY = 1024;
     private final CountsStore store;
-    private final ConcurrentMap<CountsKey, AtomicLong> cache = new ConcurrentHashMap<>( INITIAL_CHANGES_CAPACITY );
-    private boolean changed = false;
+    private final ConcurrentMap<CountsKey, AtomicLong> state = new ConcurrentHashMap<>( INITIAL_CHANGES_CAPACITY );
 
     ConcurrentTrackerState( CountsStore store )
     {
@@ -51,34 +50,31 @@ class ConcurrentTrackerState implements CountsTracker.State
 
     public boolean hasChanges()
     {
-        return changed;
+        return !state.isEmpty();
     }
 
     @Override
     public long getCount( CountsKey key )
     {
-        AtomicLong count = cache.get( key );
-        if ( count == null )
-        {
-            AtomicLong proposal = new AtomicLong( store.get( key ) );
-            count = cache.putIfAbsent( key, proposal );
-            if ( count == null )
-            {
-                count = proposal;
-            }
-        }
-        return count.get();
+        /*
+         * no need to copy values in the state since we delegate the caching to the page cache in CountStore.get(key)
+         * moreover it will be faster to sort entries in the state if we do not add extra value when reading there
+         * (see Merger)
+         */
+        final AtomicLong count = state.get( key );
+        return count == null
+                ? store.get( key )
+                : count.get();
     }
 
     @Override
     public long updateCount( CountsKey key, long delta )
     {
-        changed = true;
-        AtomicLong count = cache.get( key );
+        AtomicLong count = state.get( key );
         if ( count == null )
         {
             AtomicLong proposal = new AtomicLong( store.get( key ) );
-            count = cache.putIfAbsent( key, proposal );
+            count = state.putIfAbsent( key, proposal );
             if ( count == null )
             {
                 count = proposal;
@@ -108,7 +104,7 @@ class ConcurrentTrackerState implements CountsTracker.State
     @Override
     public void accept( RecordVisitor visitor )
     {
-        try ( Merger merger = new Merger( visitor, sortedUpdates( cache ) ) )
+        try ( Merger merger = new Merger( visitor, sortedUpdates( state ) ) )
         {
             store.accept( merger );
         }
