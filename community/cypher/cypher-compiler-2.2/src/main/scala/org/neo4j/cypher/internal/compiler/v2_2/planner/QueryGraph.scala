@@ -154,4 +154,15 @@ object QueryGraph {
     val patternRelIds = patternRels.flatMap(_.coveredIds)
     patternNodeIds ++ patternRelIds
   }
+
+  implicit object byCoveredIds extends Ordering[QueryGraph] {
+
+    import scala.math.Ordering.Implicits
+
+    def compare(x: QueryGraph, y: QueryGraph): Int = {
+      val xs = x.coveredIds.toSeq.sorted(IdName.byName)
+      val ys = y.coveredIds.toSeq.sorted(IdName.byName)
+      Implicits.seqDerivedOrdering[Seq, IdName](IdName.byName).compare(xs, ys)
+    }
+  }
 }

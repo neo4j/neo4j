@@ -280,7 +280,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     }
   }
 
-  def fakeLogicalPlanFor(id: String*): FakePlan = FakePlan(id.map(IdName).toSet)(PlannerQuery.empty)
+  def fakeLogicalPlanFor(id: String*): FakePlan = FakePlan(id.map(IdName(_)).toSet)(PlannerQuery.empty)
 
   def planFor(queryString: String): SemanticPlan = new given().planFor(queryString)
 

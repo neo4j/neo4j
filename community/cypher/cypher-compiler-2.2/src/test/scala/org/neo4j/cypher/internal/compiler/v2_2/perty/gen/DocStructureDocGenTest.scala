@@ -24,47 +24,45 @@ import org.neo4j.cypher.internal.compiler.v2_2.perty._
 
 class DocStructureDocGenTest  extends DocHandlerTestSuite[Doc] {
 
-  import Doc._
-
   val docGen = docStructureDocGen
 
   test("nil => \"ø\"") {
-    pprintToString(nil) should equal("ø")
+    pprintToString(NilDoc) should equal("ø")
   }
 
   test("break => \"·\"") {
-    pprintToString(break) should equal("·")
+    pprintToString(BreakDoc) should equal("·")
   }
 
   test("breakWith(...) => \"·...·\"") {
-    pprintToString(breakWith("...")) should equal("·...·")
+    pprintToString(BreakWith("...")) should equal("·...·")
   }
 
   test("text(...) => \"...\"") {
-    pprintToString[Doc]("...") should equal("\"...\"")
+    pprintToString[Doc](TextDoc("...")) should equal("\"...\"")
   }
 
-  test("text(\"a\")·text(\"b\") => \"a\" \u2E2C \"b\" \u2E2C ø") {
-    pprintToString("a" :: "b" :: nil) should equal("\"a\" \u2E2C \"b\" \u2E2C ø")
+  test("text(\"a\")·text(\"b\") => \"a\" ⸬ \"b\" ⸬ ø") {
+    pprintToString(ConsDoc(TextDoc("a"), ConsDoc(TextDoc("b"), NilDoc))) should equal("\"a\" ⸬ \"b\" ⸬ ø")
   }
 
   test("group(text(\"a\")) => [\"a\"]") {
-    pprintToString(group("a")) should equal("[\"a\"]")
+    pprintToString(GroupDoc(TextDoc("a"))) should equal("[\"a\"]")
   }
 
   test("nest(3, text(\"a\")) => (3)<\"a\">") {
-    pprintToString(nest(3, "a")) should equal("(3)<\"a\">")
+    pprintToString(NestWith(3, TextDoc("a"))) should equal("(3)<\"a\">")
   }
 
   test("nest(text(\"a\")) => (3)<\"a\">") {
-    pprintToString(nest("a")) should equal("<\"a\">")
+    pprintToString(NestDoc(TextDoc("a"))) should equal("<\"a\">")
   }
 
   test("page(group(\"a\"))) => (|[\"a\"]|)") {
-    pprintToString(page(group("a"))) should equal("(|[\"a\"]|)")
+    pprintToString(PageDoc(GroupDoc(TextDoc("a")))) should equal("(|[\"a\"]|)")
   }
 
   test("group(page(\"a\"))) => [(|\"a\"|)]") {
-    pprintToString(group(page("a"))) should equal("[(|\"a\"|)]")
+    pprintToString(GroupDoc(PageDoc(TextDoc("a")))) should equal("[(|\"a\"|)]")
   }
 }

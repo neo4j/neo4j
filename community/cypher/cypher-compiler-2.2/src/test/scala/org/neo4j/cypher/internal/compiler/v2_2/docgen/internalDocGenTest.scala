@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryGraph, PlannerQuery
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, AllNodesScan}
 
 class InternalDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTestSupport {
-  val docGen = ??? // plannerDocGen ++ AstDocHandler.docGen.lift[Any] ++ SimpleDocHandler.docGen
+  val docGen =  plannerDocGen orElse AstDocHandler.docGen.lift[Any] orElse SimpleDocHandler.docGen
 
   case class Container(v: Any)
 
@@ -35,5 +35,4 @@ class InternalDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTe
     val result = pprintToString(Container(AllNodesScan(IdName("a"), Set.empty)(PlannerQuery.empty)))
     result should equal("Container(AllNodesScan(a, Set()))")
   }
-
 }

@@ -20,11 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_2.docgen
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.gen.DocHandlerTestSuite
+import org.neo4j.cypher.internal.compiler.v2_2.perty.gen.{SimpleDocGenTest, toStringDocGen, DocHandlerTestSuite}
+import org.neo4j.cypher.internal.compiler.v2_2.perty.handler.SimpleDocHandler
 
-class AstExpressionDocGenTest extends DocHandlerTestSuite[ASTNode] with AstConstructionTestSupport {
+class AstExpressionDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTestSupport {
 
-  val docGen = astExpressionDocGen orElse astParticleDocGen
+  val docGen = astExpressionDocGen.lift[Any] orElse astParticleDocGen.lift[Any] orElse SimpleDocHandler.docGen
 
   test("Identifier(\"a\") => a") {
     pprintToString(ident("a")) should equal("a")

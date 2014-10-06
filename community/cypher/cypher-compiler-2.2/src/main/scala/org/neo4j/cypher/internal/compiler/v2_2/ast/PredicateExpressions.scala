@@ -21,9 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast
 
 import Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import symbols._
-import Doc._
 
 case class And(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
   val signatures = Vector(

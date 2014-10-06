@@ -39,7 +39,7 @@ class DocRecipeTest extends CypherFunSuite {
   test("replaces content in doc ops") {
     import Pretty._
 
-    val docAppender = Pretty(1 :/: "y")
+    val docAppender = Pretty(pretty(1) :/: "y")
 
     val expander = strategyExpander[Any, Any](pick {
       case (a: Int)    => Pretty("1")

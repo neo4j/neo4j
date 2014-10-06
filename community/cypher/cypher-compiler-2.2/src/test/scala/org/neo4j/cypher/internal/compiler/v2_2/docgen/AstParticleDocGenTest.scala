@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_2.docgen
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.gen.DocHandlerTestSuite
+import org.neo4j.cypher.internal.compiler.v2_2.perty.gen.{toStringDocGen, DocHandlerTestSuite}
 
-class AstParticleDocGenTest extends DocHandlerTestSuite[ASTNode] with AstConstructionTestSupport {
+class AstParticleDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTestSupport {
 
-  val docGen = astParticleDocGen
+  val docGen = astParticleDocGen.lift[Any] orElse toStringDocGen
 
   test("LabelName(a) => :a") {
     pprintToString[LabelName](LabelName("a")_) should equal(":a")

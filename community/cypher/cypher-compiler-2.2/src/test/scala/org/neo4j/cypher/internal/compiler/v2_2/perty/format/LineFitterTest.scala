@@ -20,43 +20,41 @@
 package org.neo4j.cypher.internal.compiler.v2_2.perty.format
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc
+import org.neo4j.cypher.internal.compiler.v2_2.perty._
 
 class LineFitterTest extends CypherFunSuite {
 
-  import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
-
   test("fits cons") {
-    LineFitter.fitsDoc(2, cons(text("m"), cons(text("e")))) should equal(true)
-    LineFitter.fitsDoc(2, cons(text("y"), cons(text("ou")))) should equal(false)
+    LineFitter.fitsDoc(2, ConsDoc(TextDoc("m"), ConsDoc(TextDoc("e")))) should equal(true)
+    LineFitter.fitsDoc(2, ConsDoc(TextDoc("y"), ConsDoc(TextDoc("ou")))) should equal(false)
   }
 
   test("fits end") {
-    LineFitter.fitsDoc(0, nil) should equal(true)
+    LineFitter.fitsDoc(0, NilDoc) should equal(true)
   }
 
   test("fits text") {
-    LineFitter.fitsDoc(2, text("me")) should equal(true)
-    LineFitter.fitsDoc(2, text("you")) should equal(false)
+    LineFitter.fitsDoc(2, TextDoc("me")) should equal(true)
+    LineFitter.fitsDoc(2, TextDoc("you")) should equal(false)
   }
 
   test("fits breaks") {
-    LineFitter.fitsDoc(1, break) should equal(true)
-    LineFitter.fitsDoc(0, break) should equal(false)
+    LineFitter.fitsDoc(1, BreakDoc) should equal(true)
+    LineFitter.fitsDoc(0, BreakDoc) should equal(false)
   }
 
   test("fits breakWith") {
-    LineFitter.fitsDoc(2, breakWith("me")) should equal(true)
-    LineFitter.fitsDoc(2, breakWith("you")) should equal(false)
+    LineFitter.fitsDoc(2, BreakWith("me")) should equal(true)
+    LineFitter.fitsDoc(2, BreakWith("you")) should equal(false)
   }
 
   test("fits group") {
-    LineFitter.fitsDoc(2, group(cons(text("m"), cons(text("e"))))) should equal(true)
-    LineFitter.fitsDoc(2, group(cons(text("y"), cons(text("ou"))))) should equal(false)
+    LineFitter.fitsDoc(2, GroupDoc(ConsDoc(TextDoc("m"), ConsDoc(TextDoc("e"), NilDoc)))) should equal(true)
+    LineFitter.fitsDoc(2, GroupDoc(ConsDoc(TextDoc("y"), ConsDoc(TextDoc("ou"), NilDoc)))) should equal(false)
   }
 
   test("fits nest") {
-    LineFitter.fitsDoc(4, nest(2, cons(text("m"), cons(text("e"))))) should equal(true)
-    LineFitter.fitsDoc(4, nest(2, cons(text("y"), cons(text("ou"))))) should equal(true)
+    LineFitter.fitsDoc(4, NestWith(2, ConsDoc(TextDoc("m"), ConsDoc(TextDoc("e"), NilDoc)))) should equal(true)
+    LineFitter.fitsDoc(4, NestWith(2, ConsDoc(TextDoc("y"), ConsDoc(TextDoc("ou"), NilDoc)))) should equal(true)
   }
 }

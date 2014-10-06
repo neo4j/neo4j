@@ -23,11 +23,4 @@ import scala.reflect.runtime.universe._
 
 import org.neo4j.cypher.internal.compiler.v2_2.perty.print.{ToPrettyString, pprintToString}
 
-abstract class CustomDocHandler[T : TypeTag] extends DocHandler[T] {
-//  trait ToString[S <: T] extends ToStringSupport[S] {
-//    prettySelf: S with DocFormatting =>
-//
-//    override def toPrettyString(formatter: DocFormatter = docFormatter) =
-//      pprintToString[T](prettySelf, formatter = formatter)(docGen)
-//  }
-}
+abstract class CustomDocHandler[T : TypeTag] extends DocHandler[T]

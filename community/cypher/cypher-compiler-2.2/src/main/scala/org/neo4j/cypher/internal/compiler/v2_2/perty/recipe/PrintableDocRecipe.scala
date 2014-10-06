@@ -101,7 +101,7 @@ case object PrintableDocRecipe {
       def content = docs match {
         case Seq()    => NilDoc
         case Seq(doc) => doc
-        case _        => Doc.list(docs)
+        case _        =>  docs.foldRight[Doc](NilDoc)(ConsDoc)
       }
 
       def asDoc: Doc =

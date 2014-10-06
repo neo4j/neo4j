@@ -27,5 +27,5 @@ case class Projection(left: LogicalPlan, expressions: Map[String, Expression])(v
   val rhs = None
 
   def numExpressions = expressions.size
-  val availableSymbols = expressions.keySet.map(IdName)
+  val availableSymbols = expressions.keySet.map(IdName(_))
 }

@@ -36,6 +36,11 @@ case class Predicate(dependencies: Set[IdName], expr: Expression) extends PageDo
     (dependencies -- symbols).isEmpty
 }
 
+
+object Predicate {
+  implicit val byPosition = Ordering.by { (predicate: Predicate) => predicate.expr.position }
+}
+
 case class Selections(predicates: Set[Predicate] = Set.empty) extends PageDocFormatting with ToPrettyString[Selections] {
 
   def toDefaultPrettyString(formatter: DocFormatter) =

@@ -54,8 +54,8 @@ import scala.reflect.runtime.universe._
 // To use Pretty, import Pretty._ where needed and call DSL helpers
 // from inside a call to Pretty.apply.
 //
-class Pretty[T : TypeTag] extends MidPriorityPrettyImplicits[T] {
-  def apply(appender: RecipeAppender[T]): DocRecipe[T] = appender.asRecipe
+class Pretty[T : TypeTag] extends LowPriorityPrettyImplicits[T] {
+  def apply(appender: RecipeAppender[T]): DocRecipe[T] = appender(Seq.empty)
 
   case object nothing extends RecipeAppender[T] {
     def apply(append: DocRecipe[T]) = append
@@ -71,7 +71,7 @@ class Pretty[T : TypeTag] extends MidPriorityPrettyImplicits[T] {
 
   case class breakBefore(doc: RecipeAppender[T], break: RecipeAppender[T] = break) extends RecipeAppender[T] {
     def apply(append: DocRecipe[T]) =
-      doc.test(DocRecipe.IsEmpty)(doc => RecipeAppender(doc))(doc => break :: doc)(append)
+      doc.test(DocRecipe.IsEmpty)(recipe => quote(recipe))(recipe => break :: doc)(append)
   }
 
   val silentBreak: RecipeAppender[T] = breakWith("")
@@ -92,19 +92,17 @@ class Pretty[T : TypeTag] extends MidPriorityPrettyImplicits[T] {
     def apply(append: DocRecipe[T]) = PushNestFrame +: ops(PopFrame +: append)
   }
 
+  case class nestWith(indent: Int, ops: RecipeAppender[T]) extends RecipeAppender[T] {
+    def apply(append: DocRecipe[T]) = PushNestFrame(Some(indent)) +: ops(PopFrame +: append)
+  }
+
   case class page(ops: RecipeAppender[T]) extends RecipeAppender[T] {
     def apply(append: DocRecipe[T]) = PushPageFrame +: ops(PopFrame +: append)
   }
 
-  implicit class splicingAppender(recipe: DocRecipe[T]) extends RecipeAppender[T] {
-    def apply(append: DocRecipe[T]) = recipe ++ append
-  }
+  def quote(recipe: DocRecipe[T]) = RecipeAppender(recipe)
 
-  case object splice {
-    def apply(recipe: DocRecipe[T]) = new splicingAppender(recipe)
-  }
-
-  implicit class listAppender(recipes: TraversableOnce[RecipeAppender[T]]) extends RecipeAppender[T] {
+  class listAppender(recipes: TraversableOnce[RecipeAppender[T]]) extends RecipeAppender[T] {
     def apply(append: DocRecipe[T]) =
       recipes.foldRight(append) {
         _.apply(_)
@@ -194,9 +192,34 @@ class Pretty[T : TypeTag] extends MidPriorityPrettyImplicits[T] {
     case Left(left) => pretty(left)
     case Right(right) => pretty(right)
   }
+
+  // Abstract "content" that still needs to be rendered into PrintableDocSteps
+  //
+  // The actual value is taken as a by name closure to be able to perform error
+  // handling when dealing with buggy / partially unimplemented classes.
+  //
+  class prettyAppender[+S <: T : TypeTag](content: TypedVal[S]) extends RecipeAppender[T] {
+    def apply(append: DocRecipe[T]) = new AddPretty(content) +: append
+  }
+
+  def pretty[S <: T : TypeTag](value: S) =
+    new prettyAppender(StrictVal(value))
+
+  def prettyLazy[S <: T : TypeTag](value: => S) =
+    new prettyAppender(LazyVal(value))
+
+  trait PartialConverter {
+    def unquote: Option[RecipeAppender[T]]
+    def asPretty: Option[DocRecipe[T]] = unquote.map(apply)
+  }
+
+  trait Converter {
+    def unquote: RecipeAppender[T]
+    def asPretty: DocRecipe[T] = apply(unquote)
+  }
 }
 
-protected class MidPriorityPrettyImplicits[T : TypeTag] extends LowPriorityPrettyImplicits[T] {
+protected class LowPriorityPrettyImplicits[T : TypeTag] {
   implicit class textAppender(text: String) extends RecipeAppender[T] {
     def apply(append: DocRecipe[T]) = AddText(text) +: append
   }
@@ -207,23 +230,6 @@ protected class MidPriorityPrettyImplicits[T : TypeTag] extends LowPriorityPrett
 
   // This allows writing Pretty(...) instead of Some(Pretty(...) when defining DocGens
   implicit def liftDocRecipe(opts: DocRecipe[T]): Some[DocRecipe[T]] = Some(opts)
-}
-
-protected class LowPriorityPrettyImplicits[T : TypeTag] {
-  // Abstract "content" that still needs to be rendered into PrintableDocSteps
-  //
-  // The actual value is taken as a by name closure to be able to perform error
-  // handling when dealing with buggy / partially unimplemented classes.
-  //
-  class prettyAppender[+S <: T : TypeTag](content: TypedVal[S]) extends RecipeAppender[T] {
-    def apply(append: DocRecipe[T]) = new AddPretty(content) +: append
-  }
-
-  implicit def pretty[S <: T : TypeTag](value: S) =
-    new prettyAppender(StrictVal(value))
-
-  def prettyLazy[S <: T : TypeTag](value: => S) =
-    new prettyAppender(LazyVal(value))
 }
 
 object Pretty extends Pretty[Any] {

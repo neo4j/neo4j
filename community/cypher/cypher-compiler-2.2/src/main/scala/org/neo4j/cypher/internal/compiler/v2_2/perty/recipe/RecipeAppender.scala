@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.perty.recipe.DocRecipe.IsEmpty
 import org.neo4j.cypher.internal.compiler.v2_2.perty.{DocLiteral, Doc, DocGenStrategy, DocRecipe}
 import org.neo4j.cypher.internal.compiler.v2_2.perty.gen.toStringDocGen
 import org.neo4j.cypher.internal.compiler.v2_2.perty.print.{pprintToDoc, pprint}
-import org.neo4j.cypher.internal.compiler.v2_2.perty.step.{DocStep, AddPretty, AddBreak}
+import org.neo4j.cypher.internal.compiler.v2_2.perty.step.{AddDoc, DocStep, AddPretty, AddBreak}
 
 import scala.reflect.runtime.universe.TypeTag
 
@@ -54,14 +54,14 @@ abstract class RecipeAppender[T : TypeTag] extends (DocRecipe[T] => DocRecipe[T]
   def test(cond: DocRecipe[T] => Boolean = IsEmpty)
           (ifEmpty: DocRecipe[T] => RecipeAppender[T])
           (ifNonEmpty: DocRecipe[T] => RecipeAppender[T]): RecipeAppender[T] = {
-    val recipe = asRecipe
+    val recipe = self(Seq.empty)
     if (cond(recipe)) ifEmpty(recipe) else ifNonEmpty(recipe)
   }
 
-  def asRecipe = self(Seq.empty)
+  override def toString() = s"Doc(asDocString())"
 
   def asDoc(docGen: DocGenStrategy[Any] = toStringDocGen): Doc =
-    PrintableDocRecipe.evalUsingStrategy[T, Any](docGen).apply(asRecipe)
+    PrintableDocRecipe.evalUsingStrategy[T, Any](docGen).apply(self(Seq.empty))
 
   def asDocString(docGen: DocGenStrategy[Any] = toStringDocGen) =
     DocLiteral(asDoc(docGen)).toString

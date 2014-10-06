@@ -46,11 +46,11 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
 
     result.toString should equal(
       """Projection[b](Map("b" → b))
-        |↳ Selection[a,r2,b,c,r1](Vector(r1 <> r2))
-        |↳ NodeHashJoin[a,r2,c,b,r1](Set(b))
-        |  ↳ left = Expand[a,r1,b](a, INCOMING, INCOMING, ⬨, b, r1, , Vector())
+        |↳ Selection[a,b,c,r1,r2](Vector(r1 <> r2))
+        |↳ NodeHashJoin[a,b,c,r1,r2](Set(b))
+        |  ↳ left = Expand[a,b,r1](a, INCOMING, INCOMING, ⬨, b, r1, , Vector())
         |    ↳ NodeByLabelScan[a](a, Left("X"), Set())
-        |  ↳ right = Expand[c,r2,b](c, INCOMING, OUTGOING, ⬨, b, r2, , Vector())
+        |  ↳ right = Expand[b,c,r2](c, INCOMING, OUTGOING, ⬨, b, r2, , Vector())
         |    ↳ NodeByLabelScan[c](c, Left("X"), Set())""".stripMargin)
   }
 }

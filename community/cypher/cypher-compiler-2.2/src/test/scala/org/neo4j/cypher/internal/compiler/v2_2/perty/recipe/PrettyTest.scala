@@ -27,11 +27,11 @@ class PrettyTest extends CypherFunSuite {
 
   import Pretty._
 
-  val innerRecipe: DocRecipe[Any] = Pretty("a" :/: "b")
+  val innerRecipe: RecipeAppender[Any] = "a" :/: "b"
   val innerDoc: ConsDoc = ConsDoc(TextDoc("a"), ConsDoc(BreakDoc, ConsDoc(TextDoc("b"), NilDoc)))
 
   test("Sane preconditions of the test class") {
-    pprintRecipeToDoc(innerRecipe) should equal(innerDoc)
+    pprintRecipeToDoc(Pretty(innerRecipe)) should equal(innerDoc)
   }
 
   test("Pretty.nothing") {

@@ -60,28 +60,30 @@ case object logicalPlanDocGen extends CustomDocGen[LogicalPlan] {
         .toSeq
         .map(pretty[Any])
 
-    val deps = sepList(plan.availableSymbols.map(pretty[IdName]), break = silentBreak)
+    val sortedDeps = plan.availableSymbols.toSeq.sorted(IdName.byName)
+    val deps = sepList(sortedDeps.map(pretty[IdName]), break = silentBreak)
     val prefix = plan.productPrefix :: brackets(deps, break = noBreak)
     val head = block(prefix)(sepList(arguments))
 
     val result = (optLeft, optRight) match {
       case (None, None) =>
-        Pretty(head)
+        head
 
       case (Some(left), None) =>
         val leftAppender = group("↳ " :: pretty(left))
-        Pretty(group(page(head :/: leftAppender)))
+        group(page(head :/: leftAppender))
 
       case (Some(left), Some(right)) =>
         val leftAppender = section("↳ left =")(pretty(left))
         val rightAppender = section("↳ right =")(pretty(right))
-        Pretty(group(page(
+        group(page(
           nest(head :/: group(page(leftAppender :/: rightAppender)))
-        )))
+        ))
 
       case (None, Some(right)) =>
         throw new IllegalArgumentException("Right-leaning plans are not supported")
     }
-    result
+
+    Pretty(result)
   }
 }

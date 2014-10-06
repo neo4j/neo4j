@@ -88,3 +88,7 @@ final case class IdName(name: String) extends PageDocFormatting with ToPrettyStr
   def toDefaultPrettyString(formatter: DocFormatter) =
     toPrettyString(formatter)(InternalDocHandler.docGen)
 }
+
+object IdName {
+  implicit val byName = Ordering[String].on[IdName](_.name)
+}

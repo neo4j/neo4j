@@ -48,6 +48,10 @@ final case class PatternRelationship(name: IdName, nodes: (IdName, IdName), dir:
   }
 }
 
+object PatternRelationship {
+  implicit val byName = Ordering.by { (patternRel: PatternRelationship) => patternRel.name }
+}
+
 // TODO: Remove ast representation
 final case class ShortestPathPattern(name: Option[IdName], rel: PatternRelationship, single: Boolean)(val expr: ast.ShortestPaths)
   extends PageDocFormatting with ToPrettyString[ShortestPathPattern] {
@@ -58,6 +62,10 @@ final case class ShortestPathPattern(name: Option[IdName], rel: PatternRelations
   def isFindableFrom(symbols: Set[IdName]) = symbols.contains(rel.left) && symbols.contains(rel.right)
 
   def availableSymbols: Set[IdName] = name.toSet ++ rel.coveredIds
+}
+
+object ShortestPathPattern {
+  implicit val byRelName = Ordering.by { (sp: ShortestPathPattern) => sp.rel }
 }
 
 trait PatternLength extends PageDocFormatting with ToPrettyString[PatternLength] {

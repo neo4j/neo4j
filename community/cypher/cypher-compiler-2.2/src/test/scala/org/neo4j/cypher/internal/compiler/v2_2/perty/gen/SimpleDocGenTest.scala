@@ -20,13 +20,12 @@
 
 package org.neo4j.cypher.internal.compiler.v2_2.perty.gen
 
+import org.neo4j.cypher.internal.compiler.v2_2.perty.{NilDoc, TextDoc, ConsDoc, DocLiteral}
 import org.neo4j.cypher.internal.compiler.v2_2.perty.handler.SimpleDocHandler
 
 import scala.collection.mutable
 
 class SimpleDocGenTest extends DocHandlerTestSuite[Any] {
-
-  import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
 
   val docGen = SimpleDocHandler.docGen
 
@@ -129,7 +128,9 @@ class SimpleDocGenTest extends DocHandlerTestSuite[Any] {
   }
 
   test("simpleDocGen formats literal docs") {
-    pprintToString(literal("a" :: "b")) should equal("DocLiteral(\"a\" ⸬ \"b\")")
+    val result = pprintToString(DocLiteral(ConsDoc(TextDoc("a"), ConsDoc(TextDoc("b"), NilDoc))))
+
+    result should equal("DocLiteral(\"a\" ⸬ \"b\" ⸬ ø)")
   }
 }
 

@@ -44,3 +44,10 @@ case class Identifier(name: String)(val position: InputPosition) extends Express
   def ensureDefined() =
     (_: SemanticState).ensureIdentifierDefined(this)
 }
+
+object Identifier {
+  implicit val byName =
+    Ordering.by { (identifier: Identifier) =>
+      (identifier.name, identifier.position)
+    }(Ordering.Tuple2(implicitly[Ordering[String]], InputPosition.byOffset))
+}

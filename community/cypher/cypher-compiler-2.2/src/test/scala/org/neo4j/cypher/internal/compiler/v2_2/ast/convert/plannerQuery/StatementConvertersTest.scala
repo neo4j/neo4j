@@ -1,5 +1,3 @@
-package org.neo4j.cypher.internal.compiler.v2_2.planner
-
 /**
  * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -19,11 +17,13 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport, _}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.{SemanticCheckMonitor, SemanticChecker, inSequence}
 import org.neo4j.graphdb.Direction
@@ -436,13 +436,9 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val UnionQuery(query :: Nil, _) = buildPlannerQuery("match n return n.prop order by n.prop2 DESC")
     val result = query.toString
     val expectation =
-      """GIVEN * MATCH (n)
-        |WITH n AS `n`, Property(n, PropertyKeyName("prop2")) AS `  FRESHID33`
-        |GIVEN n, `  FRESHID33`
-        |WITH
-        |  n AS `n`, `  FRESHID33` AS `  FRESHID33`
-        |  ORDER BY DescSortItem(`  FRESHID33`)
-        |GIVEN n RETURN Property(n, PropertyKeyName("prop")) AS `n.prop`""".stripMargin
+      """GIVEN * MATCH (n) WITH n.prop2 AS `  FRESHID33`, n AS `n`
+        |GIVEN n, `  FRESHID33` WITH `  FRESHID33` AS `  FRESHID33`, n AS `n` ORDER BY `  FRESHID33` DESC
+        |GIVEN n RETURN n.prop AS `n.prop`""".stripMargin
 
     result should equal(expectation)
   }
@@ -465,7 +461,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val UnionQuery(query :: Nil, _) = buildPlannerQuery("MATCH (a) WITH a WHERE TRUE RETURN a")
     val result = query.toString
     val expectation =
-      """GIVEN * MATCH (a) WHERE Predicate[](True) RETURN a AS `a`""".stripMargin
+      """GIVEN * MATCH (a) WHERE Predicate[](true) RETURN a AS `a`""".stripMargin
 
     result should equal(expectation)
   }
@@ -866,7 +862,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val UnionQuery(query :: Nil, _) = buildPlannerQuery("MATCH (owner) WITH owner, COUNT(*) AS collected WHERE (owner)--() RETURN owner")
     val result = query.toString
     val expectation =
-      """GIVEN * MATCH (owner) WITH owner AS `owner`, count(*) AS `collected`
+      """GIVEN * MATCH (owner) WITH count(*) AS `collected`, owner AS `owner`
         |GIVEN owner
         |WHERE
         |  Predicate[owner](
@@ -885,8 +881,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     result should equal(expectation)
   }
 
-  //TODO needs perty
-  ignore("Funny query from boostingRecommendations") {
+  // TODO: Check that this is actually correct
+  test("Funny query from boostingRecommendations") {
     val UnionQuery(query :: Nil, _) = buildPlannerQuery(
       """MATCH (origin)-[r1:KNOWS|WORKS_AT]-(c)-[r2:KNOWS|WORKS_AT]-(candidate)
         |WHERE origin.name = "Clark Kent"
@@ -897,21 +893,41 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     val result = query.toString
     val expectation =
-      """GIVEN * MATCH (owner) WITH owner AS `owner`, count(*) AS `xyz`
-        |GIVEN owner
+      """GIVEN *
+        |MATCH
+        |  (`  candidate@60`),
+        |  (`  origin@7`),
+        |  (c),
+        |  (`  origin@7`)-[r1:KNOWS|WORKS_AT]-(c),
+        |  (c)-[r2:KNOWS|WORKS_AT]-(`  candidate@60`)
         |WHERE
-        |  Predicate[owner](
+        |  Predicate[r1,r2](r1 <> r2),
+        |  Predicate[`  origin@7`](`  origin@7`.name IN ["Clark Kent"]),
+        |  Predicate[r1,r2](type(r1) = type(r2)),
+        |  Predicate[`  candidate@60`,
+        |    `  origin@7`](
+        |    NOT
         |    PatternExpression(
         |      RelationshipsPattern(
         |        RelationshipChain(
-        |          NodePattern(Some(owner), ⬨, None, false),
-        |          RelationshipPattern(Some(`  UNNAMED89`), false, ⬨, None, None, BOTH),
-        |          NodePattern(Some(`  UNNAMED92`), ⬨, None, false)
+        |          NodePattern(Some(`  origin@7`), ⬨, None, false),
+        |          RelationshipPattern(Some(`  UNNAMED143`), false, KNOWS ⸬ ⬨, None, None, BOTH),
+        |          NodePattern(Some(`  candidate@60`), ⬨, None, false)
         |        )
         |      )
         |    )
         |  )
-        |RETURN owner AS `owner`""".stripMargin
+        |WITH
+        |  `  candidate@60`.name AS `  candidate@212`,
+        |  `  origin@7`.name AS `  origin@186`,
+        |  SUM(ROUND(Add(r2.weight, Multiply(COALESCE(r2.activity, 0), 2)))) AS `boost`
+        |GIVEN `  origin@186`, boost, `  candidate@212`
+        |WITH
+        |  `  candidate@212` AS `  candidate@212`, `  origin@186` AS `  origin@186`, boost AS `boost`
+        |  ORDER BY boost DESC
+        |  LIMIT 10
+        |GIVEN `  origin@186`, `  candidate@212`, boost
+        |RETURN boost AS `boost`, `  candidate@212` AS `candidate`, `  origin@186` AS `origin`""".stripMargin
 
     result should equal(expectation)
   }
@@ -1045,10 +1061,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     val result = query.toString
     val expectation =
-      """GIVEN * MATCH (a1), (b1), (a1)-[r]->(b1)
-        |WITH r AS `r`, a1 AS `a1` LIMIT UnsignedDecimalIntegerLiteral("1")
-        |GIVEN a1, r OPTIONAL { GIVEN a1, r MATCH (a1), (b2), (a1)<-[r]-(b2) }
-        |RETURN a1 AS `a1`, r AS `r`, b2 AS `b2`""".stripMargin
+      """GIVEN * MATCH (a1), (b1), (a1)-[r]->(b1) WITH a1 AS `a1`, r AS `r` LIMIT 1
+        |GIVEN a1, r OPTIONAL { GIVEN a1, r MATCH (a1), (b2), (a1)<-[r]-(b2) } RETURN a1 AS `a1`, b2 AS `b2`, r AS `r`""".stripMargin
 
     result should equal(expectation)
   }
@@ -1060,16 +1074,9 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     val result = query.toString
     val expectation =
-      """GIVEN * MATCH (a1), (b1), (a1)-[r]->(b1)
-        |WITH r AS `r`, a1 AS `a1` LIMIT UnsignedDecimalIntegerLiteral("1")
-        |GIVEN a1, r
-        |OPTIONAL
-        |  {
-        |    GIVEN a1, r
-        |    MATCH (a2), (b2), (a2)<-[r]-(b2)
-        |    WHERE Predicate[a1,a2](Equals(a1, a2))
-        |   }
-        |RETURN a1 AS `a1`, r AS `r`, b2 AS `b2`, a2 AS `a2`""".stripMargin
+      """GIVEN * MATCH (a1), (b1), (a1)-[r]->(b1) WITH a1 AS `a1`, r AS `r` LIMIT 1
+        |GIVEN a1, r OPTIONAL { GIVEN a1, r MATCH (a2), (b2), (a2)<-[r]-(b2) WHERE Predicate[a1,a2](a1 = a2) }
+        |RETURN a1 AS `a1`, a2 AS `a2`, b2 AS `b2`, r AS `r`""".stripMargin
 
     result should equal(expectation)
   }

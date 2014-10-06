@@ -21,61 +21,61 @@ package org.neo4j.cypher.internal.compiler.v2_2.perty.format
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.perty.print.{PrintNewLine, PrintText}
-import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc
+import org.neo4j.cypher.internal.compiler.v2_2.perty._
 
 class PageDocFormatterTest extends CypherFunSuite {
 
-  import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
-
   test("format ConsDoc") {
-    PageDocFormatter(10)(cons("a", cons("b"))) should equal(Seq(PrintText("a"), PrintText("b")))
+    PageDocFormatter(10)(ConsDoc(TextDoc("a"), ConsDoc(TextDoc("b"), NilDoc))) should equal(Seq(PrintText("a"), PrintText("b")))
   }
 
   test("format NilDoc") {
-    PageDocFormatter(10)(nil) should equal(Seq.empty)
+    PageDocFormatter(10)(NilDoc) should equal(Seq.empty)
   }
 
   test("format NoBreak") {
-    PageDocFormatter(10)(noBreak) should equal(Seq.empty)
+    PageDocFormatter(10)(NoBreak) should equal(Seq.empty)
   }
 
   test("format TextDoc") {
-    PageDocFormatter(10)("text") should equal(Seq(PrintText("text")))
+    PageDocFormatter(10)(TextDoc("text")) should equal(Seq(PrintText("text")))
   }
 
   test("format BreakDoc") {
-    PageDocFormatter(10)(break) should equal(Seq(PrintText(" ")))
+    PageDocFormatter(10)(BreakDoc) should equal(Seq(PrintText(" ")))
   }
 
   test("format BreakWith") {
-    PageDocFormatter(10)(breakWith("-")) should equal(Seq(PrintText("-")))
+    PageDocFormatter(10)(BreakWith("-")) should equal(Seq(PrintText("-")))
   }
 
   test("format GroupDoc") {
-    PageDocFormatter(10)(group(cons("a", "b"))) should equal(Seq(PrintText("a"), PrintText("b")))
+    PageDocFormatter(10)(GroupDoc(ConsDoc(TextDoc("a"), ConsDoc(TextDoc("b"), NilDoc)))) should equal(Seq(PrintText("a"), PrintText("b")))
   }
 
   test("format NestDoc") {
-    PageDocFormatter(10)(nest(10, nil)) should equal(Seq.empty)
+    PageDocFormatter(10)(NestWith(10, NilDoc)) should equal(Seq.empty)
   }
 
   test("introduces newlines when group does not fit remaining line") {
-    val result = PageDocFormatter(4)(group("hello" :/: "world"))
+    val result = PageDocFormatter(4)(GroupDoc(ConsDoc(TextDoc("hello"), ConsDoc(BreakDoc, ConsDoc(TextDoc("world"), NilDoc)))))
     result should equal(Seq(PrintText("hello"), PrintNewLine(0), PrintText("world")))
   }
 
   test("honors nesting when introducing newlines") {
-    val result = PageDocFormatter(6)(nest(2, group("hello" :/: "world")))
+    val result = PageDocFormatter(6)(NestWith(2, GroupDoc(ConsDoc(TextDoc("hello"), ConsDoc(BreakDoc, ConsDoc(TextDoc("world"), NilDoc))))))
     result should equal(Seq(PrintText("hello"), PrintNewLine(2), PrintText("world")))
   }
 
   test("converts breaks to newline in page") {
-    val result = PageDocFormatter(100)(page("a" :/: "b"))
+    val result = PageDocFormatter(100)(PageDoc(ConsDoc(TextDoc("a"), ConsDoc(BreakDoc, ConsDoc(TextDoc("b"), NilDoc)))))
     result should equal(Seq(PrintText("a"), PrintNewLine(0), PrintText("b")))
   }
 
   test("does not convert breaks to newline in group in page but on outside of it") {
-    val result = PageDocFormatter(100)(page(group("a" :: "b") :/: "c"))
+    val aAndB = GroupDoc(ConsDoc(TextDoc("a"), ConsDoc(TextDoc("b"), NilDoc)))
+    val aAndBAndC = ConsDoc(aAndB, ConsDoc(BreakDoc, ConsDoc(TextDoc("c"), NilDoc)))
+    val result = PageDocFormatter(100)(PageDoc(aAndBAndC))
     result should equal(Seq(PrintText("a"), PrintText("b"), PrintNewLine(0), PrintText("c")))
   }
 }

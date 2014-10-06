@@ -36,99 +36,98 @@ case object plannerDocGen extends CustomDocGen[Any] {
   import Pretty._
 
   def apply[X <: Any : TypeTag](x: X): Option[DocRecipe[Any]] = x match {
-    case idName: IdName => idName.asPretty
-    case predicate: Predicate => predicate.asPretty
-    case selections: Selections => selections.asPretty
-    case patLength: PatternLength => patLength.asPretty
-    case patRel: PatternRelationship => patRel.asPretty
-    case sp: ShortestPathPattern => sp.asPretty
-    case shuffle: QueryShuffle => shuffle.asPretty
-    case qg: QueryGraph => qg.asPretty
-    case pq: PlannerQuery => pq.asPretty
-    case horizon: QueryHorizon => horizon.asPretty
-    case _ => None
+      case idName: IdName => idName.asPretty
+      case predicate: Predicate => predicate.asPretty
+      case selections: Selections => selections.asPretty
+      case patLength: PatternLength => patLength.asPretty
+      case patRel: PatternRelationship => patRel.asPretty
+      case sp: ShortestPathPattern => sp.asPretty
+      case shuffle: QueryShuffle => shuffle.asPretty
+      case qg: QueryGraph => qg.asPretty
+      case pq: PlannerQuery => pq.asPretty
+      case horizon: QueryHorizon => horizon.asPretty
+      case _ => None
+    }
+
+  implicit class idNameConverter(idName: IdName) extends Converter {
+    def unquote = AstNameConverter(idName.name).unquote
   }
 
-  implicit class idNameConverter(idName: IdName) {
-    def asPretty: Option[DocRecipe[Any]] = AstNameConverter(idName.name).asPretty
-  }
-
-  implicit class predicateConverter(predicate: Predicate) {
-    def asPretty: Option[DocRecipe[Any]] = {
-      val pred = sepList(predicate.dependencies.map(pretty[IdName]), break = silentBreak)
+  implicit class predicateConverter(predicate: Predicate) extends Converter {
+    def unquote = {
+      val pred = sepList(predicate.dependencies.toSeq.sorted(IdName.byName).map(pretty[IdName]), break = silentBreak)
       val predBlock = block("Predicate", open = "[", close = "]")(pred)
-      Pretty(group("Predicate" :: brackets(pred, break = noBreak) :: parens(pretty(predicate.expr))))
+      group("Predicate" :: brackets(pred, break = noBreak) :: parens(pretty(predicate.expr)))
     }
   }
 
-  implicit class selectionsConverter(selections: Selections) {
-    def asPretty: Option[DocRecipe[Any]] = {
-      Pretty(sepList(selections.predicates.map(pretty[Predicate])))
+  implicit class selectionsConverter(selections: Selections) extends Converter {
+    def unquote =
+      sepList(selections.predicates.toSeq.sorted(Predicate.byPosition).map(pretty[Predicate]))
+  }
+
+  implicit class patternLengthConverter(patLength: PatternLength) extends Converter {
+    def unquote = patLength match {
+      case VarPatternLength(min, None)      => s"*${min.toString}.."
+      case VarPatternLength(min, Some(max)) => s"*${min.toString}..${max.toString}"
+      case SimplePatternLength              => nothing
     }
   }
 
-  implicit class patternLengthConverter(patLength: PatternLength) {
-    def asPretty: Option[DocRecipe[Any]] = patLength match {
-      case VarPatternLength(min, None)      => Pretty(s"*${min.toString}..")
-      case VarPatternLength(min, Some(max)) => Pretty(s"*${min.toString}..${max.toString}")
-      case SimplePatternLength              => Pretty(nothing)
-    }
-  }
-
-  implicit class patternRelationshipConverter(patRel: PatternRelationship) {
-    def asPretty: Option[DocRecipe[Any]] = {
+  implicit class patternRelationshipConverter(patRel: PatternRelationship) extends Converter {
+    def unquote = {
       val leftEnd = if (patRel.dir == Direction.INCOMING) "<-[" else "-["
       val rightEnd = if (patRel.dir == Direction.OUTGOING) "]->" else "]-"
 
-      Pretty(group(
+      group(
         "(" :: pretty(patRel.left) :: ")" :: leftEnd ::
           pretty(patRel.name) ::
           relTypeList(patRel.types) ::
           pretty(patRel.length) :: rightEnd ::
           "(" :: pretty(patRel.right) :: ")"
-      ))
+      )
     }
 
-    def relTypeList(list: Seq[RelTypeName]): DocRecipe[Any] = {
+    private def relTypeList(list: Seq[RelTypeName]): RecipeAppender[Any] = {
       if (list.isEmpty)
-        Pretty(nothing)
+        nothing
       else {
         val prettyList = list.map(pretty[RelTypeName])
-        Pretty(":" :: sepList(prettyList, sep = "|", break = noBreak))
+        ":" :: sepList(prettyList, sep = "|", break = noBreak)
       }
     }
   }
 
-  implicit class shortestPathConverter(sp: ShortestPathPattern) {
-    def asPretty: Option[DocRecipe[Any]] = {
+  implicit class shortestPathConverter(sp: ShortestPathPattern) extends Converter {
+    def unquote = {
       val nameDoc = sp.name.fold[RecipeAppender[Any]](nothing)(name => name.name :: " =")
       val relDoc = block(if (sp.single) "shortestPath" else "allShortestPath")(pretty(sp.rel))
-      Pretty(nameDoc :/?: relDoc)
+      nameDoc :/?: relDoc
     }
   }
 
-  implicit class queryShuffleConverter(shuffle: QueryShuffle) {
-    def asPretty: Option[DocRecipe[Any]] = {
+  implicit class queryShuffleConverter(shuffle: QueryShuffle) extends Converter {
+    def unquote = {
       val sortItemDocs = shuffle.sortItems.map(pretty[SortItem])
       val sortItems = if (sortItemDocs.isEmpty) nothing else group("ORDER BY" :/: sepList(sortItemDocs))
       val skip = shuffle.skip.map(skip => group("SKIP" :/: pretty[Expression](skip))).getOrElse(nothing)
       val limit = shuffle.limit.map(limit => group("LIMIT" :/: pretty[Expression](limit))).getOrElse(nothing)
 
-      Pretty(sortItems :/?: skip :/?: limit)
+      sortItems :/?: skip :/?: limit
     }
   }
 
-  implicit class queryGraphConverter(qg: QueryGraph) {
-    def asPretty: Option[DocRecipe[Any]] = {
-      val argIds = qg.argumentIds
+  implicit class queryGraphConverter(qg: QueryGraph) extends Converter {
+    def unquote = {
+      val argIds = qg.argumentIds.toSeq.sorted(IdName.byName)
       val args = section("GIVEN")(if (argIds.isEmpty) "*" else sepList(qg.argumentIds.map(pretty[IdName])))
       val patterns = section("MATCH")(sepList(
-        qg.patternNodes.map(id => "(" :: pretty(id) :: ")") ++
-          qg.patternRelationships.map(pretty[PatternRelationship]) ++
-          qg.shortestPathPatterns.map(pretty[ShortestPathPattern])
+        qg.patternNodes.toSeq.sorted(IdName.byName).map(id => "(" :: pretty(id) :: ")") ++
+          qg.patternRelationships.toSeq.sorted(PatternRelationship.byName).map(pretty[PatternRelationship]) ++
+          qg.shortestPathPatterns.toSeq.sorted(ShortestPathPattern.byRelName).map(pretty[ShortestPathPattern])
       ))
 
-      val optionalMatches = qg.optionalMatches.map(pretty[QueryGraph])
+      val optionalMatches = qg.optionalMatches.toSeq.sorted(QueryGraph.byCoveredIds).map(pretty[QueryGraph])
       val optional =
         if (optionalMatches.isEmpty) nothing
         else section("OPTIONAL")(block("", open = "{ ", close = " }")(sepList(optionalMatches)))
@@ -136,27 +135,30 @@ case object plannerDocGen extends CustomDocGen[Any] {
       val selections = qg.selections
       val where = if (selections.isEmpty) nothing else section("WHERE")(pretty(selections))
 
-      val hints = breakList(qg.hints.map(pretty[Hint]))
+      val hints = breakList(qg.hints.toSeq.sorted(Hint.byIdentifier
 
-      Pretty(group(args :/?: patterns :/?: optional :/?: hints :/?: where))
+      ).map(pretty[Hint]))
+
+      group(args :/?: patterns :/?: optional :/?: hints :/?: where)
     }
   }
 
-  implicit class plannerQueryConverter(pq: PlannerQuery) {
-    def asPretty: Option[DocRecipe[Any]] = {
+  implicit class plannerQueryConverter(pq: PlannerQuery) extends Converter {
+    def unquote = {
       val allQueryDocs = queryDocs(Some(pq), List.empty)
-      Pretty(group(list(allQueryDocs)))
+      val brokenDocs = breakList(allQueryDocs)
+      group(brokenDocs)
     }
 
     @tailrec
-    final def queryDocs(optQuery: Option[PlannerQuery], docs: List[RecipeAppender[Any]]): List[RecipeAppender[Any]] = {
+    private final def queryDocs(optQuery: Option[PlannerQuery], docs: List[RecipeAppender[Any]]): List[RecipeAppender[Any]] = {
       optQuery match {
         case None => docs.reverse
         case Some(query) => queryDocs(query.tail, queryDoc(query) :: docs)
       }
     }
 
-    def queryDoc(query: PlannerQuery): RecipeAppender[Any] = {
+    private def queryDoc(query: PlannerQuery): RecipeAppender[Any] = {
       val graphDoc = pretty(query.graph)
 
       // This is a hack:
@@ -168,44 +170,41 @@ case object plannerDocGen extends CustomDocGen[Any] {
           pretty(unwind)
         case queryProjection: QueryProjection =>
           val projectionPrefix = query.tail.fold("RETURN")(_ => "WITH")
-          section(projectionPrefix)(pretty(queryProjection))
+          section(projectionPrefix)(queryProjection.unquote)
       }
       group(graphDoc :/: projectionDoc)
     }
   }
 
-  implicit class QueryHorizonConverter(horizon: QueryHorizon) {
-    def asPretty: Option[DocRecipe[Any]] = {
-      val appender = horizon match {
-        case queryProjection: AggregatingQueryProjection =>
-          val projectionDoc = generateDoc(queryProjection.projections ++ queryProjection.aggregationExpressions, queryProjection.shuffle)
-          if (queryProjection.aggregationExpressions.isEmpty) "DISTINCT" :/: group(projectionDoc) else projectionDoc
+  implicit class QueryHorizonConverter(horizon: QueryHorizon) extends Converter {
+    def unquote = horizon match {
+      case queryProjection: AggregatingQueryProjection =>
+        val projectionDoc = generateDoc(queryProjection.projections ++ queryProjection.aggregationExpressions, queryProjection.shuffle)
+        if (queryProjection.aggregationExpressions.isEmpty) "DISTINCT" :/: group(projectionDoc) else projectionDoc
 
-        case queryProjection: QueryProjection =>
-          generateDoc(queryProjection.projections, queryProjection.shuffle)
+      case queryProjection: QueryProjection =>
+        generateDoc(queryProjection.projections, queryProjection.shuffle)
 
-        case queryProjection: UnwindProjection =>
-          section("UNWIND")(generateDoc(Map(queryProjection.identifier.name -> queryProjection.exp), QueryShuffle.empty))
-      }
-      Pretty(appender)
+      case queryProjection: UnwindProjection =>
+        section("UNWIND")(generateDoc(Map(queryProjection.identifier.name -> queryProjection.exp), QueryShuffle.empty))
     }
 
     def generateDoc(projections: Map[String, Expression], queryShuffle: QueryShuffle): RecipeAppender[Any] = {
-        val projectionMapDoc = projections.collect {
+        val projectionMapDoc = projections.toSeq.sortBy(_._1).collect {
           case (k, v) => group(pretty(v) :/: "AS " :: s"`$k`")
         }
 
         val projectionDoc = if (projectionMapDoc.isEmpty) text("*") else group(sepList(projectionMapDoc))
-        val shuffleDoc = pretty(queryShuffle)
+        val shuffleDoc = queryShuffle.unquote
 
-        val sortItemDocs = queryShuffle.sortItems.collect {
-          case AscSortItem(expr) => pretty(expr)
-          case DescSortItem(expr) => pretty(expr) :/: "DESC"
+        val sortItemDocSeq = queryShuffle.sortItems.collect {
+          case AscSortItem(expr) => pretty[Expression](expr)
+          case DescSortItem(expr) => pretty[Expression](expr) :/: "DESC"
         }
-        val sortItems = if (sortItemDocs.isEmpty) nothing else group("ORDER BY" :/: sepList(sortItemDocs))
+        val sortItemDoc = if (sortItemDocSeq.isEmpty) nothing else group("ORDER BY" :/: sepList(sortItemDocSeq))
 
-        val skip = queryShuffle.skip.map(skip => group("SKIP" :/: pretty(skip))).getOrElse(nothing)
-        val limit = queryShuffle.limit.map(limit => group("LIMIT" :/: pretty(limit))).getOrElse(nothing)
+        val skipDoc = queryShuffle.skip.map(skip => group("SKIP" :/: pretty(skip))).getOrElse(nothing)
+        val limitDoc = queryShuffle.limit.map(limit => group("LIMIT" :/: pretty(limit))).getOrElse(nothing)
 
         projectionDoc :/?: shuffleDoc
     }

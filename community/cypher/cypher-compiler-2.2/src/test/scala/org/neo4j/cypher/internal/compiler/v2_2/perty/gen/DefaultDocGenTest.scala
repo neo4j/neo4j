@@ -21,22 +21,23 @@ package org.neo4j.cypher.internal.compiler.v2_2.perty.gen
 
 import org.neo4j.cypher.internal.compiler.v2_2.perty.ToPretty
 import org.neo4j.cypher.internal.compiler.v2_2.perty.handler.DefaultDocHandler
+import org.neo4j.cypher.internal.compiler.v2_2.perty.recipe.Pretty
 
 class DefaultDocGenTest extends DocHandlerTestSuite[Any] {
 
-  import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
+  import Pretty._
 
   val docGen = DefaultDocHandler.docGen
 
-//  test("DocGenerator uses toDoc as a fallback") {
-//    object Rick extends Pretty {
-//      def toDoc = inner => Some("NEVER GONNA" :/: "GIVE YOU UP")
-//      override def toString = "Called toString when expected to be rendered using toDoc"
-//    }
-//
-//    val result = pprintToString(Rick)
-//
-//    result should equal("NEVER GONNA GIVE YOU UP")
-//  }
+  test("DocGenerator uses toDoc as a fallback") {
+    object Rick extends ToPretty {
+      def toPretty = Pretty("NEVER GONNA" :/: "GIVE YOU UP")
+      override def toString = "Called toString when expected to be rendered using toPretty"
+    }
+
+    val result = pprintToString(Rick)
+
+    result should equal("NEVER GONNA GIVE YOU UP")
+  }
 
 }
