@@ -1576,4 +1576,16 @@ return b
       result.lastRelationship() should equal (r1)
     }
   }
+
+  test("should not break when using pattern expressions and order by") {
+    val query =
+      """
+        |    MATCH (liker)
+        |    RETURN (liker)-[]-() AS isNew
+        |    ORDER BY liker.time
+      """.stripMargin
+
+    executeWithNewPlanner(query).toList
+  }
+
 }
