@@ -94,16 +94,17 @@ object Planner {
       splitInCollectionsToIsolateConstants,
       CNFNormalizer,
       collapseInCollectionsContainingConstants,
-      namePatternPredicates,
       nameUpdatingClauses,
       projectNamedPaths,
       projectFreshSortExpressions,
-      inlineProjections
+      inlineProjections,
+      namePatternPredicates
     )
   }
 
   def rewriteStatement(statement: Statement, scopeTree: Scope) = {
-    statement.endoRewrite(getRewriter(scopeTree))
+    val result = statement.endoRewrite(getRewriter(scopeTree))
+    result
   }
 }
 
