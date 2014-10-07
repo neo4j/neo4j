@@ -39,4 +39,10 @@ public class TransactionStreamResponse<T> extends Response<T>
     {
         transactions.accept( handler.transactions() );
     }
+
+    @Override
+    public boolean hasTransactionsToBeApplied()
+    {
+        return true;
+    }
 }

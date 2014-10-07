@@ -38,4 +38,10 @@ public class TransactionObligationResponse<T> extends Response<T>
     {
         handler.obligation( obligationTxId );
     }
+
+    @Override
+    public boolean hasTransactionsToBeApplied()
+    {
+        return false;
+    }
 }

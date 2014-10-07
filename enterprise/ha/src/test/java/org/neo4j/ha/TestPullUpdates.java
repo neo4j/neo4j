@@ -20,29 +20,18 @@
 package org.neo4j.ha;
 
 import java.io.File;
-import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
 import org.junit.Test;
 
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.cluster.InstanceId;
-import org.neo4j.cluster.client.ClusterClient;
-import org.neo4j.cluster.protocol.cluster.ClusterListener;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.shell.ShellClient;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellLobby;
@@ -154,91 +143,6 @@ public class TestPullUpdates
             long id = cluster.getMaster().createNode().getId();
             tx.success();
             return id;
-        }
-    }
-
-    @Test
-    public void shouldPullUpdatesOnStartupNoMatterWhat() throws Exception
-    {
-        GraphDatabaseService slave = null;
-        GraphDatabaseService master = null;
-        try
-        {
-            File testRootDir = TargetDirectory.forTest( getClass() ).
-                    cleanDirectory( "shouldPullUpdatesOnStartupNoMatterWhat" );
-            File masterDir = new File( testRootDir, "master" );
-            master = new HighlyAvailableGraphDatabaseFactory().
-                    newHighlyAvailableDatabaseBuilder( masterDir.getAbsolutePath() )
-                    .setConfig( ClusterSettings.server_id, "1" )
-                    .setConfig( ClusterSettings.initial_hosts, ":5001" )
-                    .newGraphDatabase();
-
-            // Copy the store, then shutdown, so update pulling later makes sense
-            File slaveDir = new File( testRootDir, "slave" );
-            slave = new HighlyAvailableGraphDatabaseFactory().
-                    newHighlyAvailableDatabaseBuilder( slaveDir.getAbsolutePath() )
-                    .setConfig( ClusterSettings.server_id, "2" )
-                    .setConfig( ClusterSettings.initial_hosts, ":5001" )
-                    .newGraphDatabase();
-
-            // Required to block until the slave has left for sure
-            final CountDownLatch slaveLeftLatch = new CountDownLatch( 1 );
-
-            final ClusterClient masterClusterClient = ( (HighlyAvailableGraphDatabase) master ).getDependencyResolver()
-                    .resolveDependency( ClusterClient.class );
-
-            masterClusterClient.addClusterListener( new ClusterListener.Adapter()
-            {
-                @Override
-                public void leftCluster( InstanceId instanceId, URI member )
-                {
-                    slaveLeftLatch.countDown();
-                    masterClusterClient.removeClusterListener( this );
-                }
-            } );
-
-            ((GraphDatabaseAPI)master).getDependencyResolver().resolveDependency( StringLogger.class ).info( "SHUTTING DOWN SLAVE" );
-            slave.shutdown();
-
-            // Make sure that the slave has left, because shutdown() may return before the master knows
-            if (!slaveLeftLatch.await(60, TimeUnit.SECONDS))
-                throw new IllegalStateException( "Timeout waiting for slave to leave" );
-
-            long nodeId;
-            try ( Transaction tx = master.beginTx() )
-            {
-                Node node = master.createNode();
-                node.setProperty( "from", "master" );
-                nodeId = node.getId();
-                tx.success();
-            }
-
-            // Store is already in place, should pull updates
-            slave = new HighlyAvailableGraphDatabaseFactory().
-                    newHighlyAvailableDatabaseBuilder( slaveDir.getAbsolutePath() )
-                    .setConfig( ClusterSettings.server_id, "2" )
-                    .setConfig( ClusterSettings.initial_hosts, ":5001" )
-                    .setConfig( HaSettings.pull_interval, "0" ) // no pull updates, should pull on startup
-                    .newGraphDatabase();
-
-            slave.beginTx().close(); // Make sure switch to slave completes and so does the update pulling on startup
-
-            try ( Transaction tx = slave.beginTx() )
-            {
-                assertEquals( "master", slave.getNodeById( nodeId ).getProperty( "from" ) );
-                tx.success();
-            }
-        }
-        finally
-        {
-            if ( slave != null)
-            {
-                slave.shutdown();
-            }
-            if ( master != null )
-            {
-                master.shutdown();
-            }
         }
     }
 

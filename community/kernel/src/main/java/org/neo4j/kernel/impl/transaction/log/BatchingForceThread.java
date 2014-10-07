@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.util.concurrent.locks.LockSupport;
 
 /**
- * Background thread that goes together with {@link BatchingPhysicalTransactionAppender} and performs
+ * Background thread that goes together with {@link ParallelBatchingPhysicalTransactionAppender} and performs
  * and {@link Operation} as fast as it can as until it's {@link #halt() halted}.
  */
 class BatchingForceThread extends Thread

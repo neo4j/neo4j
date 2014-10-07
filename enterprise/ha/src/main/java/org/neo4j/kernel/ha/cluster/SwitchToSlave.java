@@ -31,7 +31,6 @@ import org.neo4j.com.Server;
 import org.neo4j.com.ServerUtil;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.ResponseUnpacker;
-import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
 import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
@@ -70,7 +69,6 @@ import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.UnableToCopyStoreFromOldMasterException;
 import org.neo4j.kernel.impl.store.UnavailableMembersException;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.log.NoSuchLogVersionException;
@@ -300,35 +298,6 @@ public class SwitchToSlave
             checkMyStoreIdAndMastersStoreId( nioneoDataSource, masterIsOld );
             checkDataConsistencyWithMaster( masterUri, masterClient, nioneoDataSource, txIdStore );
             console.log( "Store is consistent" );
-
-            /*
-             * Pull updates, since the store seems happy and everything. No matter how far back we are, this is just
-             * one thread doing the pulling, while the guard is up. This will prevent a race between all transactions
-             * that may start the moment the database becomes available, where all of them will pull the same txs from
-             * the master but eventually only one will get to apply them.
-             */
-            RequestContext catchUpRequestContext = requestContextFactory.newRequestContext();
-            console.log( "Catching up with master. I'm at " + catchUpRequestContext );
-
-            masterClient.pullUpdates( catchUpRequestContext, new TxHandler()
-            {
-                @Override
-                public void accept( CommittedTransactionRepresentation tx )
-                {
-                    long txId = tx.getCommitEntry().getTxId();
-                    if ( txId % 50 == 0 )
-                    {
-                        console.log( "  ...still catching up with master, now at " + txId );
-                    }
-                }
-
-                @Override
-                public void done()
-                {   // We print a message after the pullUpdates call as a whole anyway, so don't do anything here
-                }
-            } );
-
-            console.log( "Now consistent with master" );
         }
         catch ( NoSuchLogVersionException e )
         {

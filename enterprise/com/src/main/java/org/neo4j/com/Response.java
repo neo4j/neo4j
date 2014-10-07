@@ -63,6 +63,12 @@ public abstract class Response<T> implements AutoCloseable
     public abstract void accept( Handler handler ) throws IOException;
 
     /**
+     * @return {@code true} if this response has transactions to be applied as part of unpacking it,
+     * otherwise {@code false}.
+     */
+    public abstract boolean hasTransactionsToBeApplied();
+
+    /**
      * Handler of the transaction data part of a response. Callbacks for whether to await or apply
      * certain transactions.
      */

@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.ha.HaSettings;
@@ -34,6 +35,7 @@ import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.assertEquals;
 
@@ -59,8 +61,10 @@ public class TestInstanceJoin
         HighlyAvailableGraphDatabase slave = null;
         try
         {
-            master = start( dir.cleanDirectory( "master" ).getAbsolutePath(), 0, stringMap( keep_logical_logs.name(),
-                    "1 files", ClusterSettings.initial_hosts.name(), "127.0.0.1:5001" ) );
+            master = start( dir.cleanDirectory( "master" ).getAbsolutePath(), 0,
+                    stringMap( keep_logical_logs.name(), "1 txs",
+                               ClusterSettings.initial_hosts.name(), "127.0.0.1:5001",
+                               GraphDatabaseSettings.logical_log_rotation_threshold.name(), "10" ) );
             createNode( master, "something", "unimportant" );
             // Need to start and shutdown the slave so when we start it up later it verifies instead of copying
             slave = start( dir.cleanDirectory( "slave" ).getAbsolutePath(), 1,
@@ -72,7 +76,6 @@ public class TestInstanceJoin
             // Rotating, moving the above transactions away so they are removed on shutdown.
             master.getDependencyResolver().resolveDependency(NeoStoreDataSource.class).getDependencyResolver().resolveDependency(PhysicalLogFile.class).forceRotate();
 
-
             /*
              * We need to shutdown - rotating is not enough. The problem is that log positions are cached and they
              * are not removed from the cache until we run into the cache limit. This means that the information
@@ -81,13 +84,19 @@ public class TestInstanceJoin
              * restart.
              */
             master.shutdown();
-            master = start( dir.existingDirectory( "master" ).getAbsolutePath(), 0, stringMap( keep_logical_logs.name(),
-                    "1 files", ClusterSettings.initial_hosts.name(), "127.0.0.1:5001" ) );
+            master = start( dir.existingDirectory( "master" ).getAbsolutePath(), 0,
+                    stringMap( keep_logical_logs.name(), "1 txs",
+                               ClusterSettings.initial_hosts.name(), "127.0.0.1:5001",
+                               GraphDatabaseSettings.logical_log_rotation_threshold.name(), "10" ) );
 
             /**
              * The new log on master needs to have at least one transaction, so here we go.
              */
-            createNode(master, key, value);
+            int importantNodeCount = 10;
+            for ( int i = 0; i < importantNodeCount; i++ )
+            {
+                createNode( master, key, value );
+            }
 
             slave = start( dir.existingDirectory( "slave" ).getAbsolutePath(), 1,
                     stringMap( ClusterSettings.initial_hosts.name(), "127.0.0.1:5001,127.0.0.1:5002" ) );
@@ -95,7 +104,7 @@ public class TestInstanceJoin
 
             try ( Transaction ignore = slave.beginTx() )
             {
-                assertEquals( "store contents differ", value, slave.getNodeById( nodeId ).getProperty( key ) );
+                assertEquals( "store contents differ", importantNodeCount+1, nodesHavingProperty( slave, key, value ) );
             }
         }
         finally
@@ -109,6 +118,23 @@ public class TestInstanceJoin
             {
                 master.shutdown();
             }
+        }
+    }
+
+    private int nodesHavingProperty( HighlyAvailableGraphDatabase slave, String key, String value )
+    {
+        try ( Transaction tx = slave.beginTx() )
+        {
+            int count = 0;
+            for ( Node node : GlobalGraphOperations.at( slave ).getAllNodes() )
+            {
+                if ( value.equals( node.getProperty( key, null ) ) )
+                {
+                    count++;
+                }
+            }
+            tx.success();
+            return count;
         }
     }
 

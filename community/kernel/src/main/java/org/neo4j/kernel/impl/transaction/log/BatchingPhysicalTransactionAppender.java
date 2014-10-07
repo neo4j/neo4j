@@ -56,10 +56,7 @@ public class BatchingPhysicalTransactionAppender extends AbstractPhysicalTransac
                 ongoingForceCounter.incrementAndGet();
                 if ( currentTransactionId != lastSeenTransactionId )
                 {
-                    synchronized ( channel )
-                    {
-                        channel.force();
-                    }
+                    BatchingPhysicalTransactionAppender.this.forceChannel();
                 }
                 completedForceCounter.incrementAndGet();
 
@@ -81,7 +78,7 @@ public class BatchingPhysicalTransactionAppender extends AbstractPhysicalTransac
      * Called by the committer that just appended a transaction to the log.
      */
     @Override
-    protected void force( long ticket ) throws IOException
+    protected void forceAfterAppend( long ticket ) throws IOException
     {
         LockSupport.unpark( forceThread );
         while ( (ticket == ongoingForceCounter.get() || ticket == completedForceCounter.get()) &&

@@ -21,26 +21,34 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.util.IdOrderingQueue;
+import org.neo4j.kernel.impl.index.IndexDefineCommand;
+import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 
-public class PhysicalTransactionAppender extends AbstractPhysicalTransactionAppender
+final class IndexCommandDetector extends NeoCommandHandler.Delegator
 {
-    public PhysicalTransactionAppender( LogFile logFile,
-            TransactionMetadataCache transactionMetadataCache, TransactionIdStore transactionIdStore,
-            IdOrderingQueue legacyIndexTransactionOrdering )
+    private boolean hasWrittenAnyLegacyIndexCommand;
+
+    public IndexCommandDetector( NeoCommandHandler delegate )
     {
-        super( logFile, transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering );
+        super( delegate );
     }
 
     @Override
-    protected void forceAfterAppend( long ticket ) throws IOException
+    public boolean visitIndexDefineCommand( IndexDefineCommand command ) throws IOException
     {
-        forceChannel();
+        // If there's any legacy index command in this transaction, there's an index define command
+        // so it's enough to check this command type.
+        hasWrittenAnyLegacyIndexCommand = true;
+        return super.visitIndexDefineCommand( command );
     }
 
-    @Override
-    protected long getCurrentTicket()
+    public void reset()
     {
-        return 0;
+        hasWrittenAnyLegacyIndexCommand = false;
+    }
+
+    public boolean hasWrittenAnyLegacyIndexCommand()
+    {
+        return hasWrittenAnyLegacyIndexCommand;
     }
 }

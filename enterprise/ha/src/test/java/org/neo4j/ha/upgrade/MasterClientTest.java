@@ -129,7 +129,6 @@ public class MasterClientTest
         when( resolver.resolveDependency( LogicalTransactionStore.class ) ).thenReturn( txStore );
         when( resolver.resolveDependency( TransactionRepresentationStoreApplier.class ) ).thenReturn( txApplier );
         when( resolver.resolveDependency( TransactionIdStore.class ) ).thenReturn( txIdStore );
-        when( txAppender.append( any( CommittedTransactionRepresentation.class ) ) ).thenReturn( true );
         when( txStore.getAppender() ).thenReturn( txAppender );
 
         ResponseUnpacker unpacker = initAndStart( new TransactionCommittingResponseUnpacker( resolver ) );
@@ -140,7 +139,7 @@ public class MasterClientTest
         masterClient.newLockSession( new RequestContext( 1, 2, 3, 4, 5, 6 ) );
 
         // Then
-        verify( txAppender, times( TX_LOG_COUNT ) ).append( any( CommittedTransactionRepresentation.class ) );
+        verify( txAppender, times( TX_LOG_COUNT ) ).append( any( TransactionRepresentation.class ), anyLong() );
         verify( txIdStore, times( TX_LOG_COUNT ) ).transactionCommitted( anyLong() );
         verify( txApplier, times( TX_LOG_COUNT ) )
                 .apply( any( TransactionRepresentation.class ), any( LockGroup.class ), anyLong(),

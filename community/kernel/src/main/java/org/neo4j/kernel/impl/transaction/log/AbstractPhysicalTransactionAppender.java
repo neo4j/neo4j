@@ -21,10 +21,8 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.index.IndexDefineCommand;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterv1;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
@@ -61,7 +59,7 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
     /**
      * @return whether or not this transaction contains any legacy index changes.
      */
-    private boolean append( TransactionRepresentation transaction, long transactionId ) throws IOException
+    private boolean append0( TransactionRepresentation transaction, long transactionId ) throws IOException
     {
         channel.getCurrentPosition( positionMarker );
         LogPosition logPosition = positionMarker.newPosition();
@@ -98,22 +96,69 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
             // we generate the next transaction id
             rotated = logFile.checkRotation();
             transactionId = transactionIdStore.nextCommittingTransactionId();
-            hasLegacyIndexChanges = append( transaction, transactionId );
+            hasLegacyIndexChanges = append0( transaction, transactionId );
             ticket = getCurrentTicket();
         }
 
-        force( ticket );
-        afterForce( transactionId, hasLegacyIndexChanges, rotated );
+        forceAfterAppend( ticket );
+        pruneIfRotated( rotated );
+        coordinateMultipleThreadsApplyingLegacyIndexChanges( hasLegacyIndexChanges, transactionId );
         return transactionId;
     }
 
-    private void afterForce( long transactionId, boolean hasLegacyIndexChanges, boolean rotated ) throws IOException
+    @Override
+    public void append( TransactionRepresentation transaction, long expectedTransactionId ) throws IOException
     {
-        if ( rotated )
+        // TODO this method is supposed to only be called from a single thread we should
+        // be able to remove this synchronized block. The only reason it's here now is that LogFile exposes
+        // a checkRotation, which any thread could call at any time. Although that method was added to
+        // be able to test a certain thing, so it should go away actually.
+
+        // Synchronized with logFile to get absolute control over concurrent rotations happening
+        synchronized ( logFile )
         {
-            logFile.prune();
+            long transactionId = transactionIdStore.nextCommittingTransactionId();
+            if ( transactionId != expectedTransactionId )
+            {
+                throw new ThisShouldNotHappenError( "Zhen Li and Mattias Persson",
+                        "Received " + transaction + " with txId:" + expectedTransactionId +
+                        " to be applied, but appending it ended up generating an unexpected txId:" + transactionId );
+            }
+            append0( transaction, transactionId );
+        }
+    }
+
+    @Override
+    public void force() throws IOException
+    {
+        boolean rotated;
+        synchronized ( logFile )
+        {
+            rotated = logFile.checkRotation();
         }
 
+        forceChannel();
+        pruneIfRotated( rotated );
+    }
+
+    protected abstract long getCurrentTicket();
+
+    /**
+     * Called as part of append.
+     */
+    protected abstract void forceAfterAppend( long ticket ) throws IOException;
+
+    protected final void forceChannel() throws IOException
+    {
+        synchronized ( channel )
+        {
+            channel.force();
+        }
+    }
+
+    private void coordinateMultipleThreadsApplyingLegacyIndexChanges( boolean hasLegacyIndexChanges , long transactionId  )
+            throws IOException
+    {
         if ( hasLegacyIndexChanges )
         {
             try
@@ -127,79 +172,16 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
         }
     }
 
-    protected long getCurrentTicket()
+    private void pruneIfRotated( boolean rotated )
     {
-        return 0;
-    }
-
-    protected abstract void force( long ticket ) throws IOException;
-
-    @Override
-    public boolean append( CommittedTransactionRepresentation transaction ) throws IOException
-    {
-        long transactionId;
-        long ticket;
-        boolean hasLegacyIndexChanges, rotated;
-        // Synchronized with logFile to get absolute control over concurrent rotations happening
-        synchronized ( logFile )
+        if ( rotated )
         {
-            rotated = logFile.checkRotation();
-            long lastCommittedTxId = transactionIdStore.getLastCommittedTransactionId();
-            long candidateTransactionId = transaction.getCommitEntry().getTxId();
-            if ( lastCommittedTxId + 1 == candidateTransactionId )
-            {
-                transactionId = transactionIdStore.nextCommittingTransactionId();
-                hasLegacyIndexChanges = append( transaction.getTransactionRepresentation(), transactionId );
-                ticket = getCurrentTicket();
-            }
-            else if ( lastCommittedTxId + 1 < candidateTransactionId )
-            {
-                throw new IOException( "Tried to apply transaction with txId=" + candidateTransactionId +
-                        " but last committed txId=" + lastCommittedTxId );
-            }
-            else
-            {
-                // Return here straight away since we didn't actually append this transaction to the log
-                // so we want to prevent the code below from running.
-                return false;
-            }
+            logFile.prune();
         }
-        force( ticket );
-        afterForce( transactionId, hasLegacyIndexChanges, rotated );
-        return true;
     }
 
     @Override
     public void close()
     {   // do nothing
-    }
-
-    private static final class IndexCommandDetector extends NeoCommandHandler.Delegator
-    {
-        private boolean hasWrittenAnyLegacyIndexCommand;
-
-        public IndexCommandDetector( NeoCommandHandler delegate )
-        {
-            super( delegate );
-        }
-
-        @Override
-        public boolean visitIndexDefineCommand( IndexDefineCommand command ) throws IOException
-        {
-            // If there's any legacy index command in this transaction, there's an index define command
-            // so it's enough to check this command type.
-            hasWrittenAnyLegacyIndexCommand = true;
-            return super.visitIndexDefineCommand( command );
-        }
-
-        public void reset()
-        {
-            hasWrittenAnyLegacyIndexCommand = false;
-        }
-
-        public boolean hasWrittenAnyLegacyIndexCommand()
-        {
-            return hasWrittenAnyLegacyIndexCommand;
-        }
     }
 }

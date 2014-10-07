@@ -85,7 +85,8 @@ public class ResponsePacker
 
     public <T> Response<T> packEmptyResponse( T response )
     {
-        return new TransactionObligationResponse<>( response, storeId.instance(), -1, ResourceReleaser.NO_OP );
+        return new TransactionObligationResponse<>( response, storeId.instance(), TransactionIdStore.BASE_TX_ID,
+                ResourceReleaser.NO_OP );
     }
 
     protected Visitor<CommittedTransactionRepresentation, IOException> filterVisitor(

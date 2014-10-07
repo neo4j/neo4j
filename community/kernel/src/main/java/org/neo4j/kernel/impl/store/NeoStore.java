@@ -875,6 +875,13 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         return lastCommittedTx.get();
     }
 
+    @Override
+    public long getLastClosedTransactionId()
+    {
+        checkInitialized( lastCommittingTxField.get() );
+        return lastClosedTx.get();
+    }
+
     // Ensures that all fields are read from the store, by checking the initial value of the field in question
     private void checkInitialized( long field )
     {

@@ -66,10 +66,12 @@ import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyInt;
@@ -82,7 +84,6 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import static org.neo4j.helpers.Exceptions.contains;
-import static org.neo4j.helpers.Exceptions.exceptionWithMessage;
 import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
 
 public class PhysicalTransactionAppenderTest
@@ -145,34 +146,34 @@ public class PhysicalTransactionAppenderTest
         // WHEN
         final byte[] additionalHeader = new byte[]{1, 2, 5};
         final int masterId = 2, authorId = 1;
-        final long timeStarted = 12345, latestCommittedTxWhenStarted = 4545, timeCommitted = timeStarted+10;
+        final long timeStarted = 12345, latestCommittedTxWhenStarted = nextTxId-5, timeCommitted = timeStarted+10;
         PhysicalTransactionRepresentation transactionRepresentation = new PhysicalTransactionRepresentation(
                 singleCreateNodeCommand() );
         transactionRepresentation.setHeader( additionalHeader, masterId, authorId, timeStarted,
                 latestCommittedTxWhenStarted, timeCommitted );
 
-        when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( latestCommittedTxWhenStarted );
-
         LogEntryStart start = new LogEntryStart( 0, 0, 0l, latestCommittedTxWhenStarted, null,
                 LogPosition.UNSPECIFIED );
-        LogEntryCommit commit = new OnePhaseCommit( latestCommittedTxWhenStarted + 1, 0l );
+        LogEntryCommit commit = new OnePhaseCommit( nextTxId, 0l );
         CommittedTransactionRepresentation transaction =
                 new CommittedTransactionRepresentation( start, transactionRepresentation, commit );
 
-        appender.append( transaction );
+        appender.append( transaction.getTransactionRepresentation(), transaction.getCommitEntry().getTxId() );
 
         // THEN
         LogEntryReader<ReadableVersionableLogChannel> logEntryReader = new LogEntryReaderFactory().versionable();
-        PhysicalTransactionCursor<ReadableVersionableLogChannel> reader =
-                new PhysicalTransactionCursor<>( channel, logEntryReader );
-        reader.next();
-        TransactionRepresentation result = reader.get().getTransactionRepresentation();
-        assertArrayEquals( additionalHeader, result.additionalHeader() );
-        assertEquals( masterId, result.getMasterId() );
-        assertEquals( authorId, result.getAuthorId() );
-        assertEquals( timeStarted, result.getTimeStarted() );
-        assertEquals( timeCommitted, result.getTimeCommitted() );
-        assertEquals( latestCommittedTxWhenStarted, result.getLatestCommittedTxWhenStarted() );
+        try ( PhysicalTransactionCursor<ReadableVersionableLogChannel> reader =
+                new PhysicalTransactionCursor<>( channel, logEntryReader ) )
+        {
+            reader.next();
+            TransactionRepresentation result = reader.get().getTransactionRepresentation();
+            assertArrayEquals( additionalHeader, result.additionalHeader() );
+            assertEquals( masterId, result.getMasterId() );
+            assertEquals( authorId, result.getAuthorId() );
+            assertEquals( timeStarted, result.getTimeStarted() );
+            assertEquals( timeCommitted, result.getTimeCommitted() );
+            assertEquals( latestCommittedTxWhenStarted, result.getLatestCommittedTxWhenStarted() );
+        }
     }
 
     @Test
@@ -206,14 +207,12 @@ public class PhysicalTransactionAppenderTest
 
         try
         {
-            appender.append( transaction );
+            appender.append( transaction.getTransactionRepresentation(), transaction.getCommitEntry().getTxId() );
             fail( "should have thrown" );
         }
-        catch ( IOException e )
+        catch ( Throwable e )
         {
-            assertTrue( contains( e, exceptionWithMessage(
-                    "Tried to apply transaction with txId=" + (latestCommittedTxWhenStarted + 2) +
-                    " but last committed txId=" + latestCommittedTxWhenStarted ) ) );
+            assertThat( e.getMessage(), containsString( "to be applied, but appending it ended up generating an" ) );
         }
     }
 

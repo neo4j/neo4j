@@ -130,18 +130,29 @@ public class UpdatePuller implements Lifecycle, TransactionObligationFulfiller
     {
         if ( !updatePuller.isActive() )
         {
-            return;
+            throw new IllegalStateException( "Update puller not active " + updatePuller );
         }
 
-        updatePuller.poke();
-        await( new Condition()
+        Condition condition = new Condition()
         {
             @Override
             public boolean evaluate()
             {
-                return transactionIdStore.getLastCommittedTransactionId() >= toTxId;
+                /**
+                 * We need to await last *closed* transaction id, not last *committed* transaction id since
+                 * right after leaving this method we might read records off of disk, and they had better
+                 * be up to date, otherwise we read stale data.
+                 */
+                return transactionIdStore.getLastClosedTransactionId() >= toTxId;
             }
-        } );
+        };
+        if ( condition.evaluate() )
+        {   // We're already there
+            return;
+        }
+
+        updatePuller.poke();
+        await( condition );
     }
 
     private void startUpdatePuller()

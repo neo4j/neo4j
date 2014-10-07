@@ -36,11 +36,16 @@ public class DeadSimpleTransactionIdStore implements TransactionIdStore
     private final OutOfOrderSequence committedTransactionId = new ArrayQueueOutOfOrderSequence( -1, 100 );
     private final OutOfOrderSequence closedTransactionId = new ArrayQueueOutOfOrderSequence( -1, 100 );
 
+    public DeadSimpleTransactionIdStore()
+    {
+        this( TransactionIdStore.BASE_TX_ID );
+    }
+
     public DeadSimpleTransactionIdStore( long initialTransactionId )
     {
         setLastCommittedAndClosedTransactionId( initialTransactionId );
     }
-    
+
     // Only exposed in tests that needs it
     public long getLastCommittingTransactionId()
     {
@@ -52,7 +57,7 @@ public class DeadSimpleTransactionIdStore implements TransactionIdStore
     {
         return committingTransactionId.incrementAndGet();
     }
-    
+
     @Override
     public void transactionCommitted( long transactionId )
     {
@@ -63,6 +68,12 @@ public class DeadSimpleTransactionIdStore implements TransactionIdStore
     public long getLastCommittedTransactionId()
     {
         return committedTransactionId.get();
+    }
+
+    @Override
+    public long getLastClosedTransactionId()
+    {
+        return closedTransactionId.get();
     }
 
     @Override
