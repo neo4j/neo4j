@@ -102,9 +102,9 @@ class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSuppor
   }
 
   test("test order by scoping & shadowing 2") {
-    // GIVEN MATCH n WITH n AS n ORDER BY n + 2
+    // GIVEN MATCH n WITH n AS n ORDER BY n - 2
     val orderBy: OrderBy = OrderBy(Seq(
-      AscSortItem(Add(ident("n"), SignedDecimalIntegerLiteral("2")_)_)_
+      AscSortItem(Subtract(ident("n"), SignedDecimalIntegerLiteral("2")_)_)_
     ))_
 
     val returnItem = AliasedReturnItem(ident("n"), ident("n"))_

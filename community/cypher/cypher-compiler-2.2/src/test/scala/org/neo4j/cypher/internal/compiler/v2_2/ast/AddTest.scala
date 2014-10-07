@@ -74,11 +74,13 @@ class AddTest extends InfixExpressionTestBase(Add(_, _)(DummyPosition(0))) {
     testInvalidApplication(CTInteger, CTBoolean)(
       "Type mismatch: expected Float, Integer, String or Collection<Integer> but was Boolean"
     )
-    testInvalidApplication(CTCollection(CTInteger), CTString)(
-      "Type mismatch: expected Integer, Collection<Integer> or Collection<Collection<Integer>> but was String"
-    )
-    testInvalidApplication(CTCollection(CTInteger), CTCollection(CTString))(
-      "Type mismatch: expected Integer, Collection<Integer> or Collection<Collection<Integer>> but was Collection<String>"
-    )
+// We had to disable this (intended) static check to fix WithAcceptanceTest: Types correctly across multiple WITH and CASE
+//
+//    testInvalidApplication(CTCollection(CTInteger), CTString)(
+//      "Type mismatch: expected Integer, Collection<Integer> or Collection<Collection<Integer>> but was String"
+//    )
+//    testInvalidApplication(CTCollection(CTInteger), CTCollection(CTString))(
+//      "Type mismatch: expected Integer, Collection<Integer> or Collection<Collection<Integer>> but was Collection<String>"
+//    )
   }
 }

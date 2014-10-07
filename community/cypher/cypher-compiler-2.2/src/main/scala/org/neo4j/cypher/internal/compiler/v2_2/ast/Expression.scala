@@ -100,7 +100,7 @@ abstract class Expression extends ASTNode with ASTExpression with SemanticChecki
   def expectType(typeGen: TypeGenerator, messageGen: (String, String) => String): SemanticState => SemanticCheckResult =
     s => expectType(typeGen(s), messageGen)(s)
 
-  def expectType(possibleTypes: => TypeSpec, messageGen: (String, String) => String = DefaultTypeMismatchMessageGenerator): SemanticState => SemanticCheckResult = s => {
+  def expectType(possibleTypes: TypeSpec, messageGen: (String, String) => String = DefaultTypeMismatchMessageGenerator): SemanticState => SemanticCheckResult = s => {
     s.expectType(this, possibleTypes) match {
       case (ss, TypeSpec.none) =>
         val existingTypesString = ss.expressionType(this).specified.mkString(", ", " or ")
