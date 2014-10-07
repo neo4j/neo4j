@@ -21,8 +21,7 @@ package org.neo4j.kernel.ha;
 
 import java.io.IOException;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-
+import io.netty.buffer.ByteBuf;
 import org.neo4j.com.ObjectSerializer;
 import org.neo4j.com.Protocol;
 import org.neo4j.com.RequestContext;
@@ -55,8 +54,8 @@ public enum HaRequestType210 implements RequestType<Master>
     ALLOCATE_IDS( new TargetCaller<Master, IdAllocation>()
     {
         @Override
-        public Response<IdAllocation> call( Master master, RequestContext context, ChannelBuffer input,
-                ChannelBuffer target )
+        public Response<IdAllocation> call( Master master, RequestContext context, ByteBuf input,
+                ByteBuf target )
         {
             IdType idType = IdType.values()[input.readByte()];
             return master.allocateIds( context, idType );
@@ -64,7 +63,7 @@ public enum HaRequestType210 implements RequestType<Master>
     }, new ObjectSerializer<IdAllocation>()
     {
         @Override
-        public void write( IdAllocation idAllocation, ChannelBuffer result ) throws IOException
+        public void write( IdAllocation idAllocation, ByteBuf result ) throws IOException
         {
             IdRange idRange = idAllocation.getIdRange();
             result.writeInt( idRange.getDefragIds().length );
@@ -84,8 +83,8 @@ public enum HaRequestType210 implements RequestType<Master>
     CREATE_RELATIONSHIP_TYPE( new TargetCaller<Master, Integer>()
     {
         @Override
-        public Response<Integer> call( Master master, RequestContext context, ChannelBuffer input,
-                ChannelBuffer target )
+        public Response<Integer> call( Master master, RequestContext context, ByteBuf input,
+                ByteBuf target )
         {
             return master.createRelationshipType( context, readString( input ) );
         }
@@ -134,8 +133,8 @@ public enum HaRequestType210 implements RequestType<Master>
     COMMIT( new TargetCaller<Master, Long>()
     {
         @Override
-        public Response<Long> call( Master master, RequestContext context, ChannelBuffer input,
-                                    ChannelBuffer target ) throws IOException, TransactionFailureException
+        public Response<Long> call( Master master, RequestContext context, ByteBuf input,
+                                    ByteBuf target ) throws IOException, TransactionFailureException
         {
             readString( input ); // Always neostorexadatasource
 
@@ -157,8 +156,8 @@ public enum HaRequestType210 implements RequestType<Master>
     PULL_UPDATES( new TargetCaller<Master, Void>()
     {
         @Override
-        public Response<Void> call( Master master, RequestContext context, ChannelBuffer input,
-                ChannelBuffer target )
+        public Response<Void> call( Master master, RequestContext context, ByteBuf input,
+                ByteBuf target )
         {
             return master.pullUpdates( context );
         }
@@ -168,8 +167,8 @@ public enum HaRequestType210 implements RequestType<Master>
     END_LOCK_SESSION( new TargetCaller<Master, Void>()
     {
         @Override
-        public Response<Void> call( Master master, RequestContext context, ChannelBuffer input,
-                ChannelBuffer target )
+        public Response<Void> call( Master master, RequestContext context, ByteBuf input,
+                ByteBuf target )
         {
             return master.endLockSession( context, readBoolean( input ) );
         }
@@ -179,15 +178,15 @@ public enum HaRequestType210 implements RequestType<Master>
     HANDSHAKE( new TargetCaller<Master, HandshakeResult>()
     {
         @Override
-        public Response<HandshakeResult> call( Master master, RequestContext context, ChannelBuffer input,
-                ChannelBuffer target )
+        public Response<HandshakeResult> call( Master master, RequestContext context, ByteBuf input,
+                ByteBuf target )
         {
             return master.handshake( input.readLong(), null );
         }
     }, new ObjectSerializer<HandshakeResult>()
     {
         @Override
-        public void write( HandshakeResult responseObject, ChannelBuffer result ) throws IOException
+        public void write( HandshakeResult responseObject, ByteBuf result ) throws IOException
         {
             result.writeInt( responseObject.txAuthor() );
             result.writeLong( responseObject.txChecksum() );
@@ -199,8 +198,8 @@ public enum HaRequestType210 implements RequestType<Master>
     COPY_STORE( new TargetCaller<Master, Void>()
     {
         @Override
-        public Response<Void> call( Master master, RequestContext context, ChannelBuffer input,
-                final ChannelBuffer target )
+        public Response<Void> call( Master master, RequestContext context, ByteBuf input,
+                final ByteBuf target )
         {
             return master.copyStore( context, new ToNetworkStoreWriter( target, new Monitors() ) );
         }
@@ -218,8 +217,8 @@ public enum HaRequestType210 implements RequestType<Master>
     PLACEHOLDER_FOR_COPY_TRANSACTIONS( new TargetCaller<Master, Void>()
     {
         @Override
-        public Response<Void> call( Master master, RequestContext context, ChannelBuffer input,
-                final ChannelBuffer target )
+        public Response<Void> call( Master master, RequestContext context, ByteBuf input,
+                final ByteBuf target )
         {
             throw new UnsupportedOperationException( "Not used anymore, merely here to keep the ordinal ids of the others" );
         }
@@ -230,8 +229,8 @@ public enum HaRequestType210 implements RequestType<Master>
     NEW_LOCK_SESSION( new TargetCaller<Master, Void>()
     {
         @Override
-        public Response<Void> call( Master master, RequestContext context, ChannelBuffer input,
-                ChannelBuffer target )
+        public Response<Void> call( Master master, RequestContext context, ByteBuf input,
+                ByteBuf target )
         {
             return master.newLockSession( context );
         }
@@ -241,8 +240,8 @@ public enum HaRequestType210 implements RequestType<Master>
     PLACEHOLDER_FOR_PUSH_TRANSACTION( new TargetCaller<Master, Void>()
     {
         @Override
-        public Response<Void> call( Master master, RequestContext context, ChannelBuffer input,
-                ChannelBuffer target )
+        public Response<Void> call( Master master, RequestContext context, ByteBuf input,
+                ByteBuf target )
         {
             throw new UnsupportedOperationException( "Not used anymore, merely here to keep the ordinal ids of the others" );
         }
@@ -252,8 +251,8 @@ public enum HaRequestType210 implements RequestType<Master>
     CREATE_PROPERTY_KEY( new TargetCaller<Master, Integer>()
     {
         @Override
-        public Response<Integer> call( Master master, RequestContext context, ChannelBuffer input,
-                ChannelBuffer target )
+        public Response<Integer> call( Master master, RequestContext context, ByteBuf input,
+                ByteBuf target )
         {
             return master.createPropertyKey( context, readString( input ) );
         }
@@ -263,8 +262,8 @@ public enum HaRequestType210 implements RequestType<Master>
     CREATE_LABEL( new TargetCaller<Master, Integer>()
     {
         @Override
-        public Response<Integer> call( Master master, RequestContext context, ChannelBuffer input,
-                                       ChannelBuffer target )
+        public Response<Integer> call( Master master, RequestContext context, ByteBuf input,
+                                       ByteBuf target )
         {
             return master.createLabel( context, readString( input ) );
         }
@@ -317,7 +316,7 @@ public enum HaRequestType210 implements RequestType<Master>
     {
         @Override
         public Response<LockResult> call( Master master, RequestContext context,
-                                          ChannelBuffer input, ChannelBuffer target )
+                                          ByteBuf input, ByteBuf target )
         {
             Locks.ResourceType type = ResourceTypes.fromId( input.readInt() );
             long[] ids = new long[input.readInt()];

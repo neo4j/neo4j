@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.ha.com.slave;
 
-import org.jboss.netty.channel.Channel;
-
+import io.netty.channel.Channel;
 import org.neo4j.com.ProtocolVersion;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;

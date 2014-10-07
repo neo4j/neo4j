@@ -19,40 +19,37 @@
  */
 package org.neo4j.cluster.com;
 
+import java.io.IOException;
 import java.net.ConnectException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.UnknownHostException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
 
-import org.jboss.netty.bootstrap.ServerBootstrap;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelException;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.ChannelPipeline;
-import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.channel.ChannelStateEvent;
-import org.jboss.netty.channel.Channels;
-import org.jboss.netty.channel.ExceptionEvent;
-import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.SimpleChannelHandler;
-import org.jboss.netty.channel.group.ChannelGroup;
-import org.jboss.netty.channel.group.DefaultChannelGroup;
-import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
-import org.jboss.netty.handler.codec.serialization.ObjectDecoder;
-import org.jboss.netty.util.ThreadNameDeterminer;
-import org.jboss.netty.util.ThreadRenamingRunnable;
-
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.ChannelPipeline;
+import io.netty.channel.group.ChannelGroup;
+import io.netty.channel.group.DefaultChannelGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.serialization.ClassResolvers;
+import io.netty.handler.codec.serialization.ObjectDecoder;
+import io.netty.util.concurrent.GlobalEventExecutor;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageProcessor;
 import org.neo4j.cluster.com.message.MessageSource;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.NamedThreadFactory;
+import org.neo4j.io.net.Ports;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
@@ -94,20 +91,19 @@ public class NetworkReceiver
     }
 
     public static final String CLUSTER_SCHEME = "cluster";
-    public static final String INADDR_ANY = "0.0.0.0";
 
     private ChannelGroup channels;
+    private NioEventLoopGroup workerGroup;
+    private NioEventLoopGroup bossGroup;
 
     // Receiving
-    private NioServerSocketChannelFactory nioChannelFactory;
-    private ServerBootstrap serverBootstrap;
     private Iterable<MessageProcessor> processors = Listeners.newListeners();
 
     private Monitor monitor;
     private Configuration config;
     private StringLogger msgLog;
 
-    private Map<URI, Channel> connections = new ConcurrentHashMap<URI, Channel>();
+    private Map<URI, Channel> connections = new ConcurrentHashMap<>();
     private Iterable<NetworkChannelsListener> listeners = Listeners.newListeners();
 
     volatile boolean bindingDetected = false;
@@ -123,30 +119,44 @@ public class NetworkReceiver
     public void init()
             throws Throwable
     {
-        ThreadRenamingRunnable.setThreadNameDeterminer( ThreadNameDeterminer.CURRENT );
+        // TODO This is not present in Netty 4 - what was the point of this?
+//        ThreadRenamingRunnable.setThreadNameDeterminer( ThreadNameDeterminer.CURRENT );
     }
 
     @Override
     public void start()
             throws Throwable
     {
-        channels = new DefaultChannelGroup();
+        // Try binding to any port in the port range
+        HostnamePort targetAddress = config.clusterServer();
+        try
+        {
+            bossGroup = new NioEventLoopGroup( 0, daemon( "Cluster boss", monitor ) );
+            workerGroup = new NioEventLoopGroup( 2, daemon( "Cluster worker", monitor ));
 
-        // Listen for incoming connections
-        nioChannelFactory = new NioServerSocketChannelFactory(
-                Executors.newCachedThreadPool( daemon( "Cluster boss", monitor ) ),
-                Executors.newFixedThreadPool( 2, daemon( "Cluster worker", monitor ) ), 2 );
-        serverBootstrap = new ServerBootstrap( nioChannelFactory );
-        serverBootstrap.setOption( "child.tcpNoDelay", true );
-        serverBootstrap.setPipelineFactory( new NetworkNodePipelineFactory() );
+            InetSocketAddress socketAddress = Ports.findFreePort( targetAddress.getHost(), targetAddress.getPorts() );
 
-        int[] ports = config.clusterServer().getPorts();
+            ServerBootstrap b = new ServerBootstrap();
+            b.group( bossGroup, workerGroup )
+                    .channel( NioServerSocketChannel.class )
+                    .option( ChannelOption.SO_BACKLOG, 100 )
+                    .option( ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT )
+                    .childOption( ChannelOption.TCP_NODELAY, true )
+                    .childHandler( new NetworkNodePipelineFactory() );
 
-        int minPort = ports[0];
-        int maxPort = ports.length == 2 ? ports[1] : minPort;
+            Channel channel = b.bind( socketAddress.getAddress(), socketAddress.getPort() ).sync().channel();
 
-        // Try all ports in the given range
-        listen( minPort, maxPort );
+            listeningAt( getURI( socketAddress ) );
+
+            channels = new DefaultChannelGroup( GlobalEventExecutor.INSTANCE );
+            channels.add( channel );
+        }
+        catch(IOException e)
+        {
+            msgLog.logMessage( "Failed to bind server to " + targetAddress, e );
+            stop();
+            throw e;
+        }
     }
 
     @Override
@@ -155,8 +165,14 @@ public class NetworkReceiver
     {
         msgLog.debug( "Shutting down NetworkReceiver" );
 
-        channels.close().awaitUninterruptibly();
-        serverBootstrap.releaseExternalResources();
+        if(channels != null)
+        {
+            channels.close().awaitUninterruptibly();
+        }
+        bossGroup.shutdownGracefully();
+        workerGroup.shutdownGracefully();
+        bossGroup.terminationFuture().sync();
+        workerGroup.terminationFuture().sync();
         msgLog.debug( "Shutting down NetworkReceiver complete" );
     }
 
@@ -164,44 +180,6 @@ public class NetworkReceiver
     public void shutdown()
             throws Throwable
     {
-    }
-
-    private void listen( int minPort, int maxPort )
-            throws URISyntaxException, ChannelException, UnknownHostException
-    {
-        ChannelException ex = null;
-        for ( int checkPort = minPort; checkPort <= maxPort; checkPort++ )
-        {
-            try
-            {
-                InetAddress host;
-                String address = config.clusterServer().getHost();
-                InetSocketAddress localAddress;
-                if ( address == null || address.equals( INADDR_ANY ))
-                {
-                    localAddress = new InetSocketAddress( checkPort );
-                }
-                else
-                {
-                    host = InetAddress.getByName( address );
-                    localAddress = new InetSocketAddress( host, checkPort );
-                }
-
-                Channel listenChannel = serverBootstrap.bind( localAddress );
-
-                listeningAt( getURI( localAddress ) );
-
-                channels.add( listenChannel );
-                return;
-            }
-            catch ( ChannelException e )
-            {
-                ex = e;
-            }
-        }
-
-        nioChannelFactory.releaseExternalResources();
-        throw ex;
     }
 
     // MessageSource implementation
@@ -261,7 +239,6 @@ public class NetworkReceiver
     protected void openedChannel( final URI uri, Channel ctxChannel )
     {
         connections.put( uri, ctxChannel );
-
         Listeners.notifyListeners( listeners, new Listeners.Notification<NetworkChannelsListener>()
         {
             @Override
@@ -296,43 +273,34 @@ public class NetworkReceiver
     }
 
     private class NetworkNodePipelineFactory
-            implements ChannelPipelineFactory
+            extends ChannelInitializer<SocketChannel>
     {
         @Override
-        public ChannelPipeline getPipeline() throws Exception
+        protected void initChannel( SocketChannel ch ) throws Exception
         {
-            ChannelPipeline pipeline = Channels.pipeline();
-            pipeline.addLast( "frameDecoder",new ObjectDecoder( 1024 * 1000, NetworkNodePipelineFactory.this.getClass().getClassLoader() ) );
+            ChannelPipeline pipeline = ch.pipeline();
+            pipeline.addLast( "frameDecoder", new ObjectDecoder( 1024 * 1000, ClassResolvers.cacheDisabled(NetworkNodePipelineFactory.this.getClass().getClassLoader()) ) );
             pipeline.addLast( "serverHandler", new MessageReceiver() );
-            return pipeline;
         }
     }
 
     private class MessageReceiver
-            extends SimpleChannelHandler
+            extends ChannelDuplexHandler
     {
         @Override
-        public void channelOpen( ChannelHandlerContext ctx, ChannelStateEvent e ) throws Exception
-        {
-            Channel ctxChannel = ctx.getChannel();
-            openedChannel( getURI( (InetSocketAddress) ctxChannel.getRemoteAddress() ), ctxChannel );
-            channels.add( ctxChannel );
-        }
-
-        @Override
-        public void messageReceived( ChannelHandlerContext ctx, MessageEvent event ) throws Exception
+        public void channelRead( ChannelHandlerContext ctx, Object msg ) throws Exception
         {
             if (!bindingDetected)
             {
-                InetSocketAddress local = ((InetSocketAddress)event.getChannel().getLocalAddress());
+                InetSocketAddress local = ((InetSocketAddress)ctx.channel().localAddress());
                 bindingDetected = true;
                 listeningAt( getURI( local ) );
             }
 
-            final Message message = (Message) event.getMessage();
+            final Message message = (Message) msg;
 
             // Fix FROM header since sender cannot know it's correct IP/hostname
-            InetSocketAddress remote = (InetSocketAddress) ctx.getChannel().getRemoteAddress();
+            InetSocketAddress remote = (InetSocketAddress) ctx.channel().remoteAddress();
             String remoteAddress = remote.getAddress().getHostAddress();
             URI fromHeader = URI.create( message.getHeader( Message.FROM ) );
             fromHeader = URI.create(fromHeader.getScheme()+"://"+remoteAddress + ":" + fromHeader.getPort());
@@ -344,24 +312,26 @@ public class NetworkReceiver
         }
 
         @Override
-        public void channelDisconnected( ChannelHandlerContext ctx, ChannelStateEvent e ) throws Exception
+        public void channelActive( ChannelHandlerContext ctx ) throws Exception
         {
-            closedChannel( getURI( (InetSocketAddress) ctx.getChannel().getRemoteAddress() ) );
+            Channel ctxChannel = ctx.channel();
+            openedChannel( getURI( (InetSocketAddress) ctxChannel.remoteAddress() ), ctxChannel );
+            channels.add( ctxChannel );
         }
 
         @Override
-        public void channelClosed( ChannelHandlerContext ctx, ChannelStateEvent e ) throws Exception
+        public void channelInactive( ChannelHandlerContext ctx ) throws Exception
         {
-            closedChannel( getURI( (InetSocketAddress) ctx.getChannel().getRemoteAddress() ) );
-            channels.remove( ctx.getChannel() );
+            closedChannel( getURI( (InetSocketAddress) ctx.channel().remoteAddress() ) );
+            channels.remove( ctx.channel() );
         }
 
         @Override
-        public void exceptionCaught( ChannelHandlerContext ctx, ExceptionEvent e ) throws Exception
+        public void exceptionCaught( ChannelHandlerContext ctx, Throwable e ) throws Exception
         {
-            if ( !(e.getCause() instanceof ConnectException) )
+            if ( !(e instanceof ConnectException) )
             {
-                msgLog.error( "Receive exception:", e.getCause() );
+                msgLog.error( "Receive exception:", e );
             }
         }
     }
