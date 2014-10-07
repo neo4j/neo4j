@@ -23,8 +23,7 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.jboss.netty.channel.ChannelException;
-
+import io.netty.channel.ChannelException;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;

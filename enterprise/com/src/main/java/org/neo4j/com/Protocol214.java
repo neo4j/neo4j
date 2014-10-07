@@ -21,8 +21,7 @@ package org.neo4j.com;
 
 import java.nio.ByteBuffer;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-
+import io.netty.buffer.ByteBuf;
 import org.neo4j.kernel.impl.store.StoreId;
 
 public class Protocol214 extends Protocol
@@ -33,7 +32,7 @@ public class Protocol214 extends Protocol
     }
 
     @Override
-    protected StoreId readStoreId( ChannelBuffer source, ByteBuffer byteBuffer )
+    protected StoreId readStoreId( ByteBuf source, ByteBuffer byteBuffer )
     {
         byteBuffer.clear();
         byteBuffer.limit( 8 + 8 + 8 + 8 + 8 ); // creation time, random id, store version, upgrade time, upgrade id

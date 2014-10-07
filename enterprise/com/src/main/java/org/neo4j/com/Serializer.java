@@ -21,9 +21,9 @@ package org.neo4j.com;
 
 import java.io.IOException;
 
-import org.jboss.netty.buffer.ChannelBuffer;
+import io.netty.buffer.ByteBuf;
 
 public interface Serializer
 {
-    void write( ChannelBuffer buffer ) throws IOException;
+    void write( ByteBuf buffer ) throws IOException;
 }

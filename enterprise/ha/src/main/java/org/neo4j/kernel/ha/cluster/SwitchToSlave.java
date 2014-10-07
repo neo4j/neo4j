@@ -236,6 +236,11 @@ public class SwitchToSlave
                     copyStoreFromMaster( masterClient, cancellationRequest );
                 }
             }
+            catch ( Throwable e )
+            {
+                e.printStackTrace();
+                throw e;
+            }
             finally
             {
                 copyLife.shutdown();

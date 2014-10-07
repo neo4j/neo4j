@@ -24,19 +24,17 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Arrays;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
 import org.junit.Test;
-
 import org.neo4j.com.BlockLogBuffer;
 import org.neo4j.com.BlockLogReader;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.*;
 
 public class TestBlockLogBuffer
 {
@@ -44,7 +42,7 @@ public class TestBlockLogBuffer
     public void onlyOneNonFullBlock() throws IOException
     {
         byte[] bytes = new byte[255];
-        ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );
+        ByteBuf wrappedBuffer = Unpooled.wrappedBuffer( bytes );
         wrappedBuffer.resetWriterIndex();
         BlockLogBuffer buffer = new BlockLogBuffer( wrappedBuffer, new Monitors().newMonitor( ByteCounterMonitor.class ) );
 
@@ -78,7 +76,7 @@ public class TestBlockLogBuffer
     public void readSmallPortions() throws IOException
     {
         byte[] bytes = new byte[255];
-        ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );
+        ByteBuf wrappedBuffer = Unpooled.wrappedBuffer( bytes );
         wrappedBuffer.resetWriterIndex();
         BlockLogBuffer buffer = new BlockLogBuffer( wrappedBuffer, new Monitors().newMonitor( ByteCounterMonitor.class ) );
 
@@ -109,7 +107,7 @@ public class TestBlockLogBuffer
     public void readOnlyOneNonFullBlock() throws IOException
     {
         byte[] bytes = new byte[255];
-        ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );
+        ByteBuf wrappedBuffer = Unpooled.wrappedBuffer( bytes );
         wrappedBuffer.resetWriterIndex();
         BlockLogBuffer buffer = new BlockLogBuffer( wrappedBuffer, new Monitors().newMonitor( ByteCounterMonitor.class ) );
 
@@ -145,7 +143,7 @@ public class TestBlockLogBuffer
     public void onlyOneFullBlock() throws Exception
     {
         byte[] bytes = new byte[256];
-        ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );
+        ByteBuf wrappedBuffer = Unpooled.wrappedBuffer( bytes );
         wrappedBuffer.resetWriterIndex();
         BlockLogBuffer buffer = new BlockLogBuffer( wrappedBuffer, new Monitors().newMonitor( ByteCounterMonitor.class ) );
 
@@ -166,7 +164,7 @@ public class TestBlockLogBuffer
     public void readOnlyOneFullBlock() throws Exception
     {
         byte[] bytes = new byte[256];
-        ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );
+        ByteBuf wrappedBuffer = Unpooled.wrappedBuffer( bytes );
         wrappedBuffer.resetWriterIndex();
         BlockLogBuffer buffer = new BlockLogBuffer( wrappedBuffer, new Monitors().newMonitor( ByteCounterMonitor.class ) );
 
@@ -189,7 +187,7 @@ public class TestBlockLogBuffer
     public void canWriteLargestAtomAfterFillingBuffer() throws Exception
     {
         byte[] bytes = new byte[300];
-        ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );
+        ByteBuf wrappedBuffer = Unpooled.wrappedBuffer( bytes );
         wrappedBuffer.resetWriterIndex();
         BlockLogBuffer buffer = new BlockLogBuffer( wrappedBuffer, new Monitors().newMonitor( ByteCounterMonitor.class ) );
 
@@ -214,7 +212,7 @@ public class TestBlockLogBuffer
     public void canWriteReallyLargeByteArray() throws Exception
     {
         byte[] bytes = new byte[650];
-        ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );
+        ByteBuf wrappedBuffer = Unpooled.wrappedBuffer( bytes );
         wrappedBuffer.resetWriterIndex();
         BlockLogBuffer buffer = new BlockLogBuffer( wrappedBuffer, new Monitors().newMonitor( ByteCounterMonitor.class ) );
 
@@ -249,7 +247,7 @@ public class TestBlockLogBuffer
     public void canReaderReallyLargeByteArray() throws Exception
     {
         byte[] bytes = new byte[650];
-        ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );
+        ByteBuf wrappedBuffer = Unpooled.wrappedBuffer( bytes );
         wrappedBuffer.resetWriterIndex();
         BlockLogBuffer buffer = new BlockLogBuffer( wrappedBuffer, new Monitors().newMonitor( ByteCounterMonitor.class ) );
 

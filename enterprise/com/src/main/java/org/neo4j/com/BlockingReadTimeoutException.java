@@ -19,32 +19,6 @@
  */
 package org.neo4j.com;
 
-import java.io.IOException;
-import java.nio.channels.ReadableByteChannel;
-
-import io.netty.buffer.ByteBuf;
-import org.neo4j.kernel.monitoring.ByteCounterMonitor;
-import org.neo4j.kernel.monitoring.Monitors;
-
-public class ToChannelBufferWriter implements MadeUpWriter
+public class BlockingReadTimeoutException extends Exception
 {
-    private final ByteBuf target;
-
-    public ToChannelBufferWriter( ByteBuf target )
-    {
-        this.target = target;
-    }
-
-    @Override
-    public void write( ReadableByteChannel data )
-    {
-        try ( BlockLogBuffer blockBuffer = new BlockLogBuffer( target, new Monitors().newMonitor( ByteCounterMonitor.class ) ) )
-        {
-            blockBuffer.write( data );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
 }
