@@ -34,35 +34,33 @@ case class Add(lhs: Expression, rhs: Expression)(val position: InputPosition) ex
   private def infixRhsTypes(lhs: ast.Expression): TypeGenerator = s => {
     val lhsTypes = lhs.types(s)
 
+    // Strings
     // "a" + "b" => "ab"
     // "a" + 1 => "a1"
     // "a" + 1.1 => "a1.1"
-    val stringTypes =
-      if (lhsTypes containsAny CTString.covariant)
-        CTString.covariant | CTInteger.covariant | CTFloat.covariant
-      else
-        TypeSpec.none
-
+    // Numbers
     // 1 + "b" => "1b"
     // 1 + 1 => 2
     // 1 + 1.1 => 2.1
     // 1.1 + "b" => "1.1b"
     // 1.1 + 1 => 2.1
     // 1.1 + 1.1 => 2.2
-    val numberTypes =
-      if (lhsTypes containsAny (CTInteger.covariant | CTFloat.covariant))
+    val valueTypes =
+      if (lhsTypes containsAny (CTInteger.covariant | CTFloat.covariant | CTString.covariant | CTAny.covariant))
         CTString.covariant | CTInteger.covariant | CTFloat.covariant
       else
         TypeSpec.none
 
     // [a] + [b] => [a, b]
+    val collectionTypes = lhsTypes constrain CTCollection(CTAny)
+
     // [a] + b => [a, b]
-    val collectionTypes = (lhsTypes constrain CTCollection(CTAny)) | (lhsTypes constrain CTCollection(CTAny)).unwrapCollections
+    val lhsCollectionTypes = collectionTypes | collectionTypes.unwrapCollections
 
     // a + [b] => [a, b]
     val rhsCollectionTypes = lhsTypes.wrapInCollection
 
-    stringTypes | numberTypes | collectionTypes | rhsCollectionTypes
+    valueTypes | lhsCollectionTypes | rhsCollectionTypes
   }
 
   private def infixOutputTypes(lhs: ast.Expression, rhs: ast.Expression): TypeGenerator = s => {
@@ -91,17 +89,17 @@ case class Add(lhs: Expression, rhs: Expression)(val position: InputPosition) ex
       when(CTInteger.covariant, CTInteger.covariant)(CTInteger) |
         when(CTFloat.covariant, CTFloat.covariant | CTInteger.covariant)(CTFloat)
 
-    // [a] + [b] => [a, b]
-    // [a] + b => [a, b]
-    // a + [b] => [a, b]
     val collectionTypes = {
       val lhsCollectionTypes = lhsTypes constrain CTCollection(CTAny)
       val rhsCollectionTypes = rhsTypes constrain CTCollection(CTAny)
       val lhsCollectionInnerTypes = lhsCollectionTypes.unwrapCollections
       val rhsCollectionInnerTypes = rhsCollectionTypes.unwrapCollections
 
+      // [a] + [b] => [a, b]
       (lhsCollectionTypes intersect rhsCollectionTypes) |
+        // [a] + b => [a, b]
         (rhsTypes intersectOrCoerce lhsCollectionInnerTypes).wrapInCollection |
+        // a + [b] => [a, b]
         (lhsTypes intersectOrCoerce rhsCollectionInnerTypes).wrapInCollection
     }
 

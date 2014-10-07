@@ -188,4 +188,24 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     result.toSet should equal(Set(Map("nestedMap.foo.bar" -> "baz")))
   }
 
+  test("Types correctly across multiple WITH and CASE using numbers") {
+    val query = """WITH 0.5 AS x
+                  |WITH (CASE WHEN x < 1 THEN 1 ELSE true END) AS x
+                  |RETURN x + 1""".stripMargin
+
+    val result = executeScalarWithNewPlanner[Long](query)
+
+    result should equal(2)
+  }
+
+  test("Types correctly across multiple WITH and CASE using strings") {
+    val query = """WITH 0.5 AS x
+                  |WITH (CASE WHEN x < 1 THEN "wow" ELSE true END) AS x
+                  |RETURN x + "!"""".stripMargin
+
+    val result = executeScalarWithNewPlanner[String](query)
+
+    result should equal("wow!")
+  }
+
 }
