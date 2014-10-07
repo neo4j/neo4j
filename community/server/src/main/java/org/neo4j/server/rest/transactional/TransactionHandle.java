@@ -21,7 +21,6 @@ package org.neo4j.server.rest.transactional;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -36,6 +35,11 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.rest.transactional.error.InternalBeginTransactionError;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.server.rest.web.TransactionUriScheme;
+
+import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
+import static org.neo4j.server.rest.transactional.TransactionHandle.StatementExecutionStrategy.EXECUTE_STATEMENT_USING_PERIODIC_COMMIT;
+import static org.neo4j.server.rest.transactional.TransactionHandle.StatementExecutionStrategy.EXECUTE_STATEMENT;
+import static org.neo4j.server.rest.transactional.TransactionHandle.StatementExecutionStrategy.SKIP_EXECUTE_STATEMENT;
 
 /**
  * Encapsulates executing statements in a transaction, committing the transaction, or rolling it back.
@@ -117,42 +121,31 @@ public class TransactionHandle implements TransactionTerminationHandle
         {
             try
             {
-                // PERIODIC COMMIT queries may only be used when directly committing a pristine (newly created)
-                // transaction and when the first statement is an PERIODIC COMMIT statement.
-                //
-                // In that case we refrain from opening a transaction and leave management of
-                // transactions to Cypher. If there are any further statements they will all be
-                // executed in a separate transaction (Once you PERIODIC COMMIT all bets are off).
-                //
-                boolean periodicCommit;
-                try
-                {
-                    periodicCommit = pristine && engine.isPeriodicCommit( statements.peek().statement() );
-                }
-                catch ( CypherException e )
-                {
-                    errors.add( new Neo4jError( e.status(), e ) );
-                    throw e;
-                }
+                StatementExecutionStrategy executionStrategy = selectExecutionStrategy( statements, pristine, errors );
 
-                if ( periodicCommit )
-                {
-                    // If there is an open transaction at this point this will cause an immediate error
-                    // as soon as Cypher tries to execute the initial PERIODIC COMMIT statement
-                    executePeriodicCommitStatement(statements, output, errors);
-                }
-                else
-                {
-                    ensureActiveTransaction();
-                    // If any later statement is an PERIODIC COMMIT query, executeStatements will fail
-                    // as Cypher does refuse to execute PERIODIC COMMIT queries in an open transaction
-                    executeStatements( statements, output, errors );
-                    closeContextAndCollectErrors( errors );
+                switch ( executionStrategy ) {
+                    case EXECUTE_STATEMENT_USING_PERIODIC_COMMIT:
+                        // If there is an open transaction at this point this will cause an immediate error
+                        // as soon as Cypher tries to execute the initial PERIODIC COMMIT statement
+                        executePeriodicCommitStatement(statements, output, errors);
+                        break;
+
+                    case EXECUTE_STATEMENT:
+                        ensureActiveTransaction();
+                        // If any later statement is an PERIODIC COMMIT query, executeStatements will fail
+                        // as Cypher does refuse to execute PERIODIC COMMIT queries in an open transaction
+                        executeStatements( statements, output, errors );
+                        closeContextAndCollectErrors( errors );
+                        break;
+
+                    case SKIP_EXECUTE_STATEMENT:
+                        addToCollection( statements.errors(), errors );
+                        break;
                 }
             }
             finally
             {
-                registry.forget(id);
+                registry.forget( id );
             }
         }
         catch ( InternalBeginTransactionError e )
@@ -163,6 +156,45 @@ public class TransactionHandle implements TransactionTerminationHandle
         {
             output.errors( errors );
             output.finish();
+        }
+    }
+
+    private StatementExecutionStrategy selectExecutionStrategy( StatementDeserializer statements, boolean pristine, List<Neo4jError> errors )
+    {
+        // PERIODIC COMMIT queries may only be used when directly committing a pristine (newly created)
+        // transaction and when the first statement is an PERIODIC COMMIT statement.
+        //
+        // In that case we refrain from opening a transaction and leave management of
+        // transactions to Cypher. If there are any further statements they will all be
+        // executed in a separate transaction (Once you PERIODIC COMMIT all bets are off).
+        //
+        try
+        {
+            if ( pristine )
+            {
+                Statement peek = statements.peek();
+                if ( peek == null ) /* JSON parse error */
+                {
+                    return SKIP_EXECUTE_STATEMENT;
+                }
+                else if ( engine.isPeriodicCommit( peek.statement() ) )
+                {
+                    return EXECUTE_STATEMENT_USING_PERIODIC_COMMIT;
+                }
+                else
+                {
+                    return EXECUTE_STATEMENT;
+                }
+            }
+            else
+            {
+                return EXECUTE_STATEMENT;
+            }
+        }
+        catch ( CypherException e )
+        {
+            errors.add( new Neo4jError( e.status(), e ) );
+            throw e;
         }
     }
 
@@ -308,11 +340,7 @@ public class TransactionHandle implements TransactionTerminationHandle
                 }
             }
 
-            Iterator<Neo4jError> deserializationErrors = statements.errors();
-            while ( deserializationErrors.hasNext() )
-            {
-                errors.add( deserializationErrors.next() );
-            }
+            addToCollection( statements.errors(), errors );
         }
         catch ( Throwable e )
         {
@@ -357,14 +385,18 @@ public class TransactionHandle implements TransactionTerminationHandle
                 errors.add( new Neo4jError( Status.Statement.ExecutionFailure, e ) );
             }
 
-            Iterator<Neo4jError> deserializationErrors = statements.errors();
-            while ( deserializationErrors.hasNext() )
-            {
-                errors.add( deserializationErrors.next() );
-            }
+            addToCollection( statements.errors(), errors );
         }
         catch ( Throwable e )
         {
             errors.add( new Neo4jError( Status.General.UnknownFailure, e ) );
         }
-    }}
+    }
+
+    enum StatementExecutionStrategy
+    {
+        EXECUTE_STATEMENT_USING_PERIODIC_COMMIT,
+        EXECUTE_STATEMENT,
+        SKIP_EXECUTE_STATEMENT
+    }
+}

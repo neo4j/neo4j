@@ -156,6 +156,29 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
+    public void begin_and_execute__commit_with_badly_escaped_statement() throws Exception
+    {
+        long nodesInDatabaseBeforeTransaction = countNodes();
+        String json = "{ \"statements\": [ { \"statement\": \"LOAD CSV WITH HEADERS FROM " +
+                "\\\"xx file://C:/countries.csvxxx\\\\\" as csvLine MERGE (c:Country { Code: csvLine.Code })\" } ] }";
+
+        // begin and execute
+        Response begin = http.POST( "/db/data/transaction", quotedJson( json ) );
+
+        String commitResource = begin.stringFromContent( "commit" );
+
+        // commit
+        Response commit = http.POST( commitResource );
+
+        assertThat( begin.status(), equalTo( 201 ) );
+        assertThat( begin, hasErrors( Status.Request.InvalidFormat ) );
+        assertThat( commit.status(), equalTo( 200 ) );
+        assertThat( commit, containsNoErrors() );
+
+        assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction ) );
+    }
+
+    @Test
     public void begin__execute__commit__execute() throws Exception
     {
         // begin
@@ -188,6 +211,21 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         assertThat( begin.status(), equalTo( 200 ) );
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 1 ) );
     }
+
+    @Test
+    public void begin_and_execute_and_commit_with_badly_escaped_statement() throws Exception
+    {
+        long nodesInDatabaseBeforeTransaction = countNodes();
+        String json = "{ \"statements\": [ { \"statement\": \"LOAD CSV WITH HEADERS FROM " +
+                "\\\"xx file://C:/countries.csvxxx\\\\\" as csvLine MERGE (c:Country { Code: csvLine.Code })\" } ] }";
+        // begin and execute and commit
+        Response begin = http.POST( "/db/data/transaction/commit", quotedJson( json ) );
+
+        assertThat( begin.status(), equalTo( 200 ) );
+        assertThat( begin, hasErrors( Status.Request.InvalidFormat ) );
+        assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction ) );
+    }
+
 
     @Test
     public void begin_and_execute_periodic_commit_and_commit() throws Exception
