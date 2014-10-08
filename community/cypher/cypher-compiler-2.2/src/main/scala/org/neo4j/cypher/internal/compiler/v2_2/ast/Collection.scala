@@ -28,7 +28,7 @@ case class Collection(expressions: Seq[Expression])(val position: InputPosition)
 
   private def possibleTypes: TypeGenerator = state => expressions match {
     case Seq() => CTCollection(CTAny).covariant
-    case _     => expressions.mergeUpTypes(state).wrapInCollection
+    case _     => expressions.leastUpperBoundsOfTypes(state).wrapInCollection
   }
 }
 

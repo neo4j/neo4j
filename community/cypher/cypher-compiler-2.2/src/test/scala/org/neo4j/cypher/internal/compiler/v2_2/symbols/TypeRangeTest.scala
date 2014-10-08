@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 
 class TypeRangeTest extends CypherFunSuite {
 
-  test("typeRangeOfSingleTypeShouldContainOnlyThatType") {
+  test("TypeRange of single type should contain only that type") {
     val rangeOfInteger = TypeRange(CTInteger, CTInteger)
     rangeOfInteger.contains(CTInteger) should equal(true)
     rangeOfInteger.contains(CTNumber) should equal(false)
@@ -48,7 +48,7 @@ class TypeRangeTest extends CypherFunSuite {
     rangeOfCollectionAny.contains(CTAny) should equal(false)
   }
 
-  test("unboundedTypeRangeRootedAtAnyShouldContainAll") {
+  test("unbounded TypeRange rooted at CTAny should contain all") {
     val rangeRootedAtAny = TypeRange(CTAny, None)
     rangeRootedAtAny.contains(CTAny) should equal(true)
     rangeRootedAtAny.contains(CTString) should equal(true)
@@ -61,7 +61,7 @@ class TypeRangeTest extends CypherFunSuite {
     rangeRootedAtAny.contains(CTCollection(CTCollection(CTFloat))) should equal(true)
   }
 
-  test("unboundedTypeRangeRootedAtLeafTypeShouldContainLeaf") {
+  test("unbounded TypeRange rooted at leaf type should contain leaf") {
     val rangeRootedAtInteger = TypeRange(CTInteger, None)
     rangeRootedAtInteger.contains(CTInteger) should equal(true)
     rangeRootedAtInteger.contains(CTNumber) should equal(false)
@@ -76,7 +76,7 @@ class TypeRangeTest extends CypherFunSuite {
     rangeRootedAtCollectionOfNumber.contains(CTAny) should equal(false)
   }
 
-  test("unboundedTypeRangeRootedAtBranchTypeShouldContainAllMoreSpecificTypes") {
+  test("unbounded TypeRange rooted at branch type should contain all more specific types") {
     val rangeRootedAtInteger = TypeRange(CTNumber, None)
     rangeRootedAtInteger.contains(CTInteger) should equal(true)
     rangeRootedAtInteger.contains(CTFloat) should equal(true)
@@ -93,7 +93,7 @@ class TypeRangeTest extends CypherFunSuite {
     rangeRootedAtCollectionAny.contains(CTAny) should equal(false)
   }
 
-  test("typeRangeShouldContainOverlappingRange") {
+  test("should contain overlapping range") {
     val rangeRootedAtNumber = TypeRange(CTNumber, None)
     val rangeRootedAtInteger = TypeRange(CTInteger, None)
     rangeRootedAtNumber.contains(rangeRootedAtInteger) should equal(true)
@@ -116,7 +116,7 @@ class TypeRangeTest extends CypherFunSuite {
     rangeRootedAtInteger.contains(rangeRootedAtDouble) should equal(false)
   }
 
-  test("intersectRangeWithOverlappingRangeShouldNotChangeRange") {
+  test("intersection of range with overlapping range should not change range") {
     val rangeRootedAtInteger = TypeRange(CTInteger, None)
     rangeRootedAtInteger & TypeRange(CTNumber, None) should equal(Some(rangeRootedAtInteger))
 
@@ -127,7 +127,7 @@ class TypeRangeTest extends CypherFunSuite {
     rangeOfNumber & TypeRange(CTNumber, None) should equal(Some(rangeOfNumber))
   }
 
-  test("intersectRangeWithIntersectingRangeShouldReturnIntersection") {
+  test("intersection of range with intersecting range should return intersection") {
     val rangeOfNumber = TypeRange(CTNumber, None)
     rangeOfNumber & TypeRange(CTAny, CTNumber) should equal(Some(TypeRange(CTNumber, CTNumber)))
 
@@ -135,7 +135,7 @@ class TypeRangeTest extends CypherFunSuite {
     rangeToNumber & TypeRange(CTNumber, None) should equal(Some(TypeRange(CTNumber, CTNumber)))
   }
 
-  test("intersectRangeToSubRangeShouldReturnSubRange") {
+  test("intersection of range to sub range should return sub range") {
     val rangeOfAll = TypeRange(CTAny, None)
     rangeOfAll & TypeRange(CTAny, CTNumber) should equal(Some(TypeRange(CTAny, CTNumber)))
     rangeOfAll & TypeRange(CTNumber, CTNumber) should equal(Some(TypeRange(CTNumber, CTNumber)))
@@ -146,13 +146,13 @@ class TypeRangeTest extends CypherFunSuite {
     rangeOfNumberToInteger & TypeRange(CTInteger, CTInteger) should equal(Some(TypeRange(CTInteger, CTInteger)))
   }
 
-  test("intersectRangeWithinCollection") {
+  test("intersection of range within collection") {
     val rangeFromCollectionAny = TypeRange(CTCollection(CTAny), None)
     rangeFromCollectionAny & TypeRange(CTCollection(CTString), None) should equal(Some(TypeRange(CTCollection(CTString), None)))
     rangeFromCollectionAny & TypeRange(CTCollection(CTString), CTCollection(CTString)) should equal(Some(TypeRange(CTCollection(CTString), CTCollection(CTString))))
   }
 
-  test("intersectRangeWithNonOverlappingRangeShouldReturnNone") {
+  test("intersection of range with non overlapping range should return none") {
     val rangeFromNumber = TypeRange(CTNumber, None)
     rangeFromNumber & TypeRange(CTString, None) should equal(None)
 
@@ -167,28 +167,28 @@ class TypeRangeTest extends CypherFunSuite {
     rangeOfNumber & rangeOfAny should equal(None)
   }
 
-  test("mergeUpWithSubType") {
+  test("leastUpperBound with super type") {
     val rangeFromAny = TypeRange(CTAny, None)
     val rangeOfAny = TypeRange(CTAny, CTAny)
-    rangeFromAny.mergeUp(rangeOfAny) should equal(Seq(rangeOfAny))
+    (rangeFromAny leastUpperBounds rangeOfAny) should equal(Seq(rangeOfAny))
 
     val rangeOfInteger = TypeRange(CTInteger, None)
-    rangeOfInteger.mergeUp(rangeOfAny) should equal(Seq(rangeOfAny))
+    (rangeOfInteger leastUpperBounds rangeOfAny) should equal(Seq(rangeOfAny))
 
     val rangeOfNumber = TypeRange(CTNumber, CTNumber)
-    rangeOfInteger.mergeUp(rangeOfNumber) should equal(Seq(rangeOfNumber))
+    (rangeOfInteger leastUpperBounds rangeOfNumber) should equal(Seq(rangeOfNumber))
   }
 
-  test("mergeUpWithNestedType") {
+  test("leastUpperBound with sub type") {
     val rangeFromCollectionAny = TypeRange(CTCollection(CTAny), None)
     val rangeOfCollectionAny = TypeRange(CTCollection(CTAny), CTCollection(CTAny))
-    rangeFromCollectionAny.mergeUp(rangeOfCollectionAny) should equal(Seq(rangeOfCollectionAny))
+    (rangeFromCollectionAny leastUpperBounds rangeOfCollectionAny) should equal(Seq(rangeOfCollectionAny))
 
     val rangeFromCollectionString = TypeRange(CTCollection(CTString), None)
-    rangeFromCollectionAny.mergeUp(rangeFromCollectionString) should equal(Seq(TypeRange(CTCollection(CTAny), CTCollection(CTString)), TypeRange(CTCollection(CTString), None)))
+    (rangeFromCollectionAny leastUpperBounds rangeFromCollectionString) should equal(Seq(TypeRange(CTCollection(CTAny), CTCollection(CTString)), TypeRange(CTCollection(CTString), None)))
   }
 
-  test("shouldHaveIndefiniteSizeWhenAllowingUnboundAnyAtAnyDepth") {
+  test("should have indefinite size when allowing unbound any at any depth") {
     TypeRange(CTAny, None).hasDefiniteSize should equal(false)
     TypeRange(CTCollection(CTAny), None).hasDefiniteSize should equal(false)
 
@@ -201,7 +201,7 @@ class TypeRangeTest extends CypherFunSuite {
     TypeRange(CTCollection(CTCollection(CTString)), None).hasDefiniteSize should equal(true)
   }
 
-  test("shouldReparentIntoCollection") {
+  test("should reparent into collection") {
     TypeRange(CTString, None).reparent(CTCollection) should equal(TypeRange(CTCollection(CTString), None))
     TypeRange(CTAny, CTNumber).reparent(CTCollection) should equal(TypeRange(CTCollection(CTAny), CTCollection(CTNumber)))
   }

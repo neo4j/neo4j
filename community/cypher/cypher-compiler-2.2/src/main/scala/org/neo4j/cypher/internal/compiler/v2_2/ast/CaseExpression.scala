@@ -24,8 +24,10 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import symbols._
 
 case class CaseExpression(expression: Option[Expression], alternatives: Seq[(Expression, Expression)], default: Option[Expression])(val position: InputPosition) extends Expression {
+  lazy val possibleExpressions = alternatives.map(_._2) ++ default
+
   def semanticCheck(ctx: SemanticContext): SemanticCheck = {
-    val possibleTypes: TypeGenerator = (alternatives.map(_._2) ++ default).mergeUpTypes
+    val possibleTypes: TypeGenerator = possibleExpressions.leastUpperBoundsOfTypes
 
     expression.semanticCheck(ctx) chain
     alternatives.flatMap { a => Seq(a._1, a._2) }.semanticCheck(ctx) chain
