@@ -1065,4 +1065,51 @@ RETURN x0.name""")
       result.lastRelationship() should equal (r1)
     }
   }
+
+  test("issue #2907, varlength pattern should check label on endnode") {
+
+    val a = createLabeledNode("LABEL")
+    val b = createLabeledNode("LABEL")
+    val c = createLabeledNode("LABEL")
+
+    relate(a, b,  "r")
+    relate(b, c,  "r")
+
+    val query = s"""START a=node(${a.getId}) WITH a AS a START b=node(*) WITH a AS a, b AS b
+                   |WHERE
+                   |(a)-[:r]->(b:LABEL) OR
+                   |(a)-[:r*]->(b:MISSING_LABEL)
+                   |RETURN DISTINCT b""".stripMargin
+
+
+    //WHEN
+    val result = execute(query)
+
+    //THEN
+    result.toList should equal (List(Map("b" -> b)))
+  }
+
+
+
+  test("issue #2907 should only check label on end node") {
+
+    val a = createLabeledNode("BLUE")
+    val b = createLabeledNode("RED")
+    val c = createLabeledNode("GREEN")
+    val d = createLabeledNode("YELLOW")
+
+    relate(a, b,  "r")
+    relate(b, c,  "r")
+    relate(b, d,  "r")
+
+    val query = s"""MATCH (a:BLUE)-[r*]->(b:GREEN) RETURN count(r)""".stripMargin
+
+
+    //WHEN
+    val result = executeScalar[Long](query)
+
+    //THEN
+    result should equal (1)
+  }
+
 }
