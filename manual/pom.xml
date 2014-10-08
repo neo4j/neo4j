@@ -24,8 +24,9 @@
     <docs.test-sources>${project.build.directory}/test-sources</docs.test-sources>
     <docs.images>${project.build.outputDirectory}/images</docs.images>
     <docs.tools>${project.build.directory}/tools</docs.tools>
+    <docs.resources>${docs.tools}/main/resources</docs.resources>
     <neo4j.version>${project.version}</neo4j.version>
-    <doctools.version>18</doctools.version>
+    <doctools.version>21</doctools.version>
     <attach-docs-phase>none</attach-docs-phase>
     <maven.site.skip>true</maven.site.skip>
     <maven.site.deploy.skip>true</maven.site.deploy.skip>
@@ -400,6 +401,19 @@
               </arguments>
             </configuration>
           </execution>
+          <execution>
+            <id>execute-xml-lint</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <executable>make</executable>
+              <arguments>
+                <argument>lint</argument>
+              </arguments>
+            </configuration>
+          </execution>
         </executions>
         <dependencies>
           <dependency>
@@ -459,31 +473,6 @@
         </dependencies>
       </plugin>
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>xml-maven-plugin</artifactId>
-        <version>1.0</version>
-        <executions>
-          <execution>
-            <id>validate-docbook</id>
-            <phase>process-classes</phase>
-            <goals>
-              <goal>validate</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <validationSets>
-            <validationSet>
-              <dir>${project.build.directory}</dir>
-              <includes>
-                <include>*.xml</include>
-                <include>upgrade/*.xml</include>
-              </includes>
-            </validationSet>
-          </validationSets>
-        </configuration>
-      </plugin>
-      <plugin>
         <groupId>com.agilejava.docbkx</groupId>
         <artifactId>docbkx-maven-plugin</artifactId>
         <version>2.0.15</version>
@@ -515,7 +504,7 @@
             </goals>
             <configuration>
               <includes>neo4j-manual-html.xml</includes>
-              <webhelpCustomization>conf/webhelp.xsl</webhelpCustomization>
+              <webhelpCustomization>${docs.resources}/conf/webhelp.xsl</webhelpCustomization>
               <admonGraphicsPath>images/icons/admon/</admonGraphicsPath>
               <generateLegalnoticeLink>true</generateLegalnoticeLink>
               <useIdAsFilename>true</useIdAsFilename>
@@ -546,16 +535,16 @@
               </preProcess>
               <postProcess>
                 <copy todir="${project.build.directory}/docbkx/webhelp/images" overwrite="true">
-                  <fileset dir="${docs.tools}/main/resources/images"/>
+                  <fileset dir="${docs.resources}/images"/>
                 </copy>
                 <copy todir="${project.build.directory}/docbkx/webhelp/images" overwrite="true">
                   <fileset dir="${project.build.directory}/src/images"/>
                 </copy>
                 <copy todir="${project.build.directory}/docbkx/webhelp/css" overwrite="true">
-                  <fileset dir="${docs.tools}/main/resources/css"/>
+                  <fileset dir="${docs.resources}/css"/>
                 </copy>
                 <copy todir="${project.build.directory}/docbkx/webhelp/common" overwrite="true">
-                  <fileset dir="${project.basedir}/common"/>
+                  <fileset dir="${docs.resources}/common"/>
                 </copy>
                 <copy todir="${project.build.directory}/docbkx/webhelp/js" overwrite="true">
                   <fileset dir="${project.build.directory}/src/js"/>
@@ -590,7 +579,7 @@
               <navigGraphics>false</navigGraphics>
               <admonTextlabel>true</admonTextlabel>
               <admonGraphics>false</admonGraphics>
-              <htmlCustomization>conf/text.xsl</htmlCustomization>
+              <htmlCustomization>${docs.resources}/conf/text.xsl</htmlCustomization>
               <preProcess>
                 <replace file="${project.build.directory}/upgrade/upgrades.xml" encoding="UTF-8" token="&amp;#8594;" value="--&gt;" />
               </preProcess>
@@ -604,20 +593,21 @@
             </goals>
             <configuration>
               <includes>neo4j-manual-shortinfo.xml</includes>
-              <foCustomization>conf/fo.xsl</foCustomization>
-              <externalFOPConfiguration>conf/fop.xml</externalFOPConfiguration>
+              <foCustomization>${docs.resources}/conf/fo.xsl</foCustomization>
+              <externalFOPConfiguration>${docs.resources}/conf/fop.xml</externalFOPConfiguration>
               <generateToc>
                 book toc
                 part toc
               </generateToc>
               <preProcess>
                 <copy todir="${project.build.directory}/images" overwrite="true">
-                  <fileset dir="${docs.tools}/main/resources/images" />
+                  <fileset dir="${docs.resources}/images" />
                 </copy>
                 <copy todir="${project.build.directory}/images" overwrite="true">
                   <fileset dir="${project.build.directory}/src/images" />
                 </copy>
-                <replace file="${project.build.directory}/neo4j-manual-shortinfo.xml" encoding="UTF-8" token="url=&quot;javadocs" value="url=&quot;http://docs.neo4j.org/chunked/${project.version}/javadocs" />
+                <replace file="${project.build.directory}/neo4j-manual-shortinfo.xml" encoding="UTF-8" token="url=&quot;javadocs" value="url=&quot;http://neo4j.com/docs/${project.version}/javadocs" />
+                <replace file="${project.build.directory}/neo4j-manual-shortinfo.xml" encoding="UTF-8" token="url=&quot;cypher-refcard" value="url=&quot;http://neo4j.com/docs/${project.version}/cypher-refcard" />
               </preProcess>
               <imgSrcPath>${project.build.directory}/images</imgSrcPath>
               <admonGraphicsPath>${project.build.directory}/images/icons/admon/</admonGraphicsPath>
