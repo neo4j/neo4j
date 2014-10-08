@@ -17,23 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction;
+package org.neo4j.kernel.impl.util;
 
-import org.neo4j.helpers.Provider;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.helpers.Predicate;
 
-public class DefaultTxIdGenerator implements TxIdGenerator
+/**
+ * A condition that either {@link #evaluate() evaluates} to {@code true} or {@code false},
+ * like {@link Predicate}, but without an argument passed to it.
+ */
+public interface Condition
 {
-    private final Provider<TransactionIdStore> transactionIdStore;
-
-    public DefaultTxIdGenerator( Provider<TransactionIdStore> transactionIdStore )
-    {
-        this.transactionIdStore = transactionIdStore;
-    }
-
-    @Override
-    public long generate( TransactionRepresentation transaction )
-    {
-        return transactionIdStore.instance().nextCommittingTransactionId();
-    }
+    boolean evaluate();
 }

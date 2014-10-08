@@ -30,20 +30,20 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.test.AbstractClusterTest;
+import org.neo4j.test.ha.ClusterManager.RepairKit;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.assertEquals;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.test.ReflectionUtil.getPrivateField;
-import static org.neo4j.test.ha.ClusterManager.RepairKit;
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 import static org.neo4j.test.ha.ClusterManager.masterSeesSlavesAsAvailable;
 
 public class ClusterTopologyChangesIT extends AbstractClusterTest
 {
-    private static final int TEST_NODE_COUNT = 10_000;
+    private static final int TEST_NODE_COUNT = 100;
 
     @Before
     public void setUp()

@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
-import org.neo4j.kernel.impl.transaction.TxIdGenerator;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 
 /**
@@ -37,12 +36,12 @@ public class BatchingPhysicalTransactionAppender extends AbstractPhysicalTransac
     private final AtomicLong completedForceCounter = new AtomicLong( 0 );
     private boolean shutDown;
     private final BatchingForceThread forceThread;
-    
-    public BatchingPhysicalTransactionAppender( LogFile logFile, TxIdGenerator txIdGenerator,
+
+    public BatchingPhysicalTransactionAppender( LogFile logFile,
             TransactionMetadataCache transactionMetadataCache, final TransactionIdStore transactionIdStore,
             IdOrderingQueue legacyIndexTransactionOrdering )
     {
-        super( logFile, txIdGenerator, transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering );
+        super( logFile, transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering );
         forceThread = new BatchingForceThread( new BatchingForceThread.Operation()
         {
             private long lastSeenTransactionId;
@@ -57,13 +56,10 @@ public class BatchingPhysicalTransactionAppender extends AbstractPhysicalTransac
                 ongoingForceCounter.incrementAndGet();
                 if ( currentTransactionId != lastSeenTransactionId )
                 {
-                    synchronized ( channel )
-                    {
-                        channel.force();
-                    }
+                    BatchingPhysicalTransactionAppender.this.forceChannel();
                 }
                 completedForceCounter.incrementAndGet();
-                
+
                 boolean changed = lastSeenTransactionId != currentTransactionId;
                 lastSeenTransactionId = currentTransactionId;
                 return changed;
@@ -82,7 +78,7 @@ public class BatchingPhysicalTransactionAppender extends AbstractPhysicalTransac
      * Called by the committer that just appended a transaction to the log.
      */
     @Override
-    protected void force( long ticket ) throws IOException
+    protected void forceAfterAppend( long ticket ) throws IOException
     {
         LockSupport.unpark( forceThread );
         while ( (ticket == ongoingForceCounter.get() || ticket == completedForceCounter.get()) &&
@@ -91,7 +87,7 @@ public class BatchingPhysicalTransactionAppender extends AbstractPhysicalTransac
             LockSupport.parkNanos( 100_000 ); // 0,1 ms
         }
     }
-    
+
     @Override
     public void close()
     {

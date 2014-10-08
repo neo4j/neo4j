@@ -45,7 +45,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.CombiningIterable;
 import org.neo4j.helpers.collection.MapUtil;
@@ -89,7 +88,6 @@ import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
-import org.neo4j.kernel.impl.transaction.DefaultTxIdGenerator;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
@@ -228,14 +226,7 @@ public class TestNeoStore
                 mock( RelationshipTypeTokenHolder.class), locks,
                 mock( SchemaWriteGuard.class), mock( TransactionEventHandlers.class), IndexingService.NO_MONITOR, fs,
                 mock( StoreUpgrader.class ), mock( TransactionMonitor.class ), kernelHealth,
-                new DefaultTxIdGenerator( new Provider<TransactionIdStore>()
-                {
-                    @Override
-                    public TransactionIdStore instance()
-                    {
-                        return ds.evaluate();
-                    }
-                } ), TransactionHeaderInformationFactory.DEFAULT, new StartupStatisticsProvider(), caches, nodeManager,
+                TransactionHeaderInformationFactory.DEFAULT, new StartupStatisticsProvider(), caches, nodeManager,
                 null, null, InternalAbstractGraphDatabase.defaultCommitProcessFactory );
         ds.init();
         ds.start();

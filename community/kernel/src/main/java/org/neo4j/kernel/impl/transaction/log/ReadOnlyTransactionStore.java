@@ -25,8 +25,6 @@ import java.io.IOException;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.TransactionMetadata;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -60,14 +58,8 @@ public class ReadOnlyTransactionStore extends LifecycleAdapter implements Logica
             }
         } ));
 
-        physicalStore = life.add( new PhysicalLogicalTransactionStore( logFile, new TxIdGenerator()
-        {
-            @Override
-            public long generate( TransactionRepresentation transactionRepresentation )
-            {
-                throw new UnsupportedOperationException(  );
-            }
-        }, transactionMetadataCache, transactionIdStore, BYPASS, false ) );
+        physicalStore = life.add( new PhysicalLogicalTransactionStore( logFile,
+                transactionMetadataCache, transactionIdStore, BYPASS, false ) );
     }
 
     @Override

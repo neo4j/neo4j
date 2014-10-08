@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -60,23 +61,35 @@ public class ResponsePackerTest
                 singletonProvider( new StoreId() ) );
 
         // WHEN
-        Response<Object> response = packer.packResponse( requestContextStartingAt( 5L ), null );
+        Response<Object> response = packer.packTransactionStreamResponse( requestContextStartingAt( 5L ), null );
         final AtomicLong nextExpectedVisit = new AtomicLong( lastAppliedTransactionId );
-        response.accept( new Visitor<CommittedTransactionRepresentation, IOException>()
+        response.accept( new Response.Handler()
         {
             @Override
-            public boolean visit( CommittedTransactionRepresentation element ) throws IOException
+            public void obligation( long txId ) throws IOException
             {
+                fail( "Should not be called" );
+            }
 
-                // THEN
-                long txId = element.getCommitEntry().getTxId();
-                assertThat( txId, lessThanOrEqualTo( targetTransactionId ) );
-                assertEquals( nextExpectedVisit.incrementAndGet(), txId );
+            @Override
+            public Visitor<CommittedTransactionRepresentation, IOException> transactions()
+            {
+                return new Visitor<CommittedTransactionRepresentation, IOException>()
+                {
+                    @Override
+                    public boolean visit( CommittedTransactionRepresentation element ) throws IOException
+                    {
+                        // THEN
+                        long txId = element.getCommitEntry().getTxId();
+                        assertThat( txId, lessThanOrEqualTo( targetTransactionId ) );
+                        assertEquals( nextExpectedVisit.incrementAndGet(), txId );
 
-                // Move the target transaction id forward one step, effectively always keeping it out of reach
-                transactionIdStore.setLastCommittedAndClosedTransactionId(
-                        transactionIdStore.getLastCommittedTransactionId()+1 );
-                return true;
+                        // Move the target transaction id forward one step, effectively always keeping it out of reach
+                        transactionIdStore.setLastCommittedAndClosedTransactionId(
+                                transactionIdStore.getLastCommittedTransactionId()+1 );
+                        return true;
+                    }
+                };
             }
         } );
     }

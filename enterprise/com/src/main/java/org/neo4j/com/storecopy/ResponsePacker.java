@@ -24,9 +24,9 @@ import java.io.IOException;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
+import org.neo4j.com.TransactionObligationResponse;
 import org.neo4j.com.TransactionStream;
-import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.Predicates;
+import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -51,13 +51,7 @@ public class ResponsePacker
         this.storeId = storeId;
     }
 
-    public <T> Response<T> packResponse( RequestContext context, T response )
-    {
-        return packResponse( context, response, Predicates.<CommittedTransactionRepresentation>TRUE() );
-    }
-
-    public <T> Response<T> packResponse( RequestContext context, T response,
-            final Predicate<CommittedTransactionRepresentation> filter )
+    public <T> Response<T> packTransactionStreamResponse( RequestContext context, T response )
     {
         final long toStartFrom = context.lastAppliedTransaction() + 1;
         final long toEndAt = transactionIdStore.getLastCommittedTransactionId();
@@ -69,23 +63,41 @@ public class ResponsePacker
                 // Check so that it's even worth thinking about extracting any transactions at all
                 if ( toStartFrom > BASE_TX_ID && toStartFrom <= toEndAt )
                 {
-                    extractTransactions( toStartFrom, filterVisitor( visitor, filter, toEndAt ) );
+                    extractTransactions( toStartFrom, filterVisitor( visitor, toEndAt ) );
                 }
             }
         };
-        return new Response<>( response, storeId.instance(), transactions, ResourceReleaser.NO_OP );
+        return new TransactionStreamResponse<>( response, storeId.instance(), transactions, ResourceReleaser.NO_OP );
+    }
+
+    public <T> Response<T> packTransactionObligationResponse( RequestContext context, T response )
+    {
+        return packTransactionObligationResponse( context, response,
+                transactionIdStore.getLastCommittedTransactionId() );
+    }
+
+    public <T> Response<T> packTransactionObligationResponse( RequestContext context, T response,
+            long obligationTxId )
+    {
+        return new TransactionObligationResponse<>( response, storeId.instance(), obligationTxId,
+                ResourceReleaser.NO_OP );
+    }
+
+    public <T> Response<T> packEmptyResponse( T response )
+    {
+        return new TransactionObligationResponse<>( response, storeId.instance(), TransactionIdStore.BASE_TX_ID,
+                ResourceReleaser.NO_OP );
     }
 
     protected Visitor<CommittedTransactionRepresentation, IOException> filterVisitor(
-            final Visitor<CommittedTransactionRepresentation, IOException> delegate,
-            final Predicate<CommittedTransactionRepresentation> filter, final long txToEndAt )
+            final Visitor<CommittedTransactionRepresentation, IOException> delegate, final long txToEndAt )
     {
         return new Visitor<CommittedTransactionRepresentation, IOException>()
         {
             @Override
             public boolean visit( CommittedTransactionRepresentation element ) throws IOException
             {
-                if ( !filter.accept( element ) || element.getCommitEntry().getTxId() > txToEndAt )
+                if ( element.getCommitEntry().getTxId() > txToEndAt )
                 {
                     return false;
                 }

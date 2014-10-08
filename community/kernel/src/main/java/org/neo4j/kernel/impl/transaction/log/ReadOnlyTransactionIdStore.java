@@ -45,9 +45,15 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
     {
         throw new UnsupportedOperationException( "Read-only transaction ID store" );
     }
-    
+
     @Override
     public long getLastCommittedTransactionId()
+    {
+        return transactionId;
+    }
+
+    @Override
+    public long getLastClosedTransactionId()
     {
         return transactionId;
     }

@@ -31,6 +31,7 @@ import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.com.Server;
 import org.neo4j.com.TransactionStream;
+import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.ResponseUnpacker;
@@ -43,6 +44,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.MasterClient214;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.com.master.MasterImpl.Monitor;
+import org.neo4j.kernel.ha.com.master.MasterImplTest;
 import org.neo4j.kernel.ha.com.master.MasterServer;
 import org.neo4j.kernel.ha.com.slave.MasterClient;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
@@ -98,7 +100,7 @@ public class MasterClientTest
     public void newClientsShouldNotIgnoreStoreIdDifferences() throws Throwable
     {
         // Given
-        MasterImpl.SPI masterImplSPI = mockMasterImplSpiWith( new StoreId( 1, 2, 3, 4 ) );
+        MasterImpl.SPI masterImplSPI = MasterImplTest.mockedSpi( new StoreId( 1, 2, 3, 4 ) );
         when( masterImplSPI.getMasterIdForCommittedTx( anyLong() ) ).thenReturn( Pair.of( 1, 5L ) );
 
         cleanupRule.add( newMasterServer( masterImplSPI ) );
@@ -128,7 +130,6 @@ public class MasterClientTest
         when( resolver.resolveDependency( LogicalTransactionStore.class ) ).thenReturn( txStore );
         when( resolver.resolveDependency( TransactionRepresentationStoreApplier.class ) ).thenReturn( txApplier );
         when( resolver.resolveDependency( TransactionIdStore.class ) ).thenReturn( txIdStore );
-        when( txAppender.append( any( CommittedTransactionRepresentation.class ) ) ).thenReturn( true );
         when( txStore.getAppender() ).thenReturn( txAppender );
 
         ResponseUnpacker unpacker = initAndStart( new TransactionCommittingResponseUnpacker( resolver ) );
@@ -139,7 +140,7 @@ public class MasterClientTest
         masterClient.newLockSession( new RequestContext( 1, 2, 3, 4, 5, 6 ) );
 
         // Then
-        verify( txAppender, times( TX_LOG_COUNT ) ).append( any( CommittedTransactionRepresentation.class ) );
+        verify( txAppender, times( TX_LOG_COUNT ) ).append( any( TransactionRepresentation.class ), anyLong() );
         verify( txIdStore, times( TX_LOG_COUNT ) ).transactionCommitted( anyLong() );
         verify( txApplier, times( TX_LOG_COUNT ) )
                 .apply( any( TransactionRepresentation.class ), any( LockGroup.class ), anyLong(),
@@ -192,7 +193,7 @@ public class MasterClientTest
 
     private static Response<Void> voidResponseWithTransactionLogs()
     {
-        return new Response<>( null, StoreId.DEFAULT, new TransactionStream()
+        return new TransactionStreamResponse<>( null, StoreId.DEFAULT, new TransactionStream()
         {
             @Override
             public void accept( Visitor<CommittedTransactionRepresentation, IOException> visitor ) throws IOException

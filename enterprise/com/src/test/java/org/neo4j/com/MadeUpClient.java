@@ -27,6 +27,7 @@ import java.nio.channels.ReadableByteChannel;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 
+import org.neo4j.com.MadeUpServer.MadeUpRequestType;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -148,7 +149,50 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
                     throws IOException
             {
                 return buffer.readInt();
-                    }
+            }
+        } );
+    }
+
+    @Override
+    public Response<Integer> streamBackTransactions( final int responseToSendBack, final int txCount )
+    {
+        return sendRequest( MadeUpRequestType.STREAM_BACK_TRANSACTIONS, getRequestContext(), new Serializer()
+        {
+            @Override
+            public void write( ChannelBuffer buffer ) throws IOException
+            {
+                buffer.writeInt( responseToSendBack );
+                buffer.writeInt( txCount );
+            }
+        }, new Deserializer<Integer>()
+        {
+            @Override
+            public Integer read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
+            {
+                return buffer.readInt();
+            }
+        } );
+    }
+
+    @Override
+    public Response<Integer> informAboutTransactionObligations( final int responseToSendBack,
+            final long desiredObligation )
+    {
+        return sendRequest( MadeUpRequestType.INFORM_ABOUT_TX_OBLIGATIONS, getRequestContext(), new Serializer()
+        {
+            @Override
+            public void write( ChannelBuffer buffer ) throws IOException
+            {
+                buffer.writeInt( responseToSendBack );
+                buffer.writeLong( desiredObligation );
+            }
+        }, new Deserializer<Integer>()
+        {
+            @Override
+            public Integer read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
+            {
+                return buffer.readInt();
+            }
         } );
     }
 }

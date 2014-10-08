@@ -69,7 +69,7 @@ import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.ha.UpdatePuller;
+import org.neo4j.kernel.ha.UpdatePullerClient;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.com.master.Slaves;
@@ -667,14 +667,14 @@ public class ClusterManager
             return member.getConfig().get( GraphDatabaseSettings.store_dir );
         }
 
-        public void sync( HighlyAvailableGraphDatabase... except ) throws IOException
+        public void sync( HighlyAvailableGraphDatabase... except ) throws InterruptedException
         {
             Set<HighlyAvailableGraphDatabase> exceptSet = new HashSet<>( asList( except ) );
             for ( HighlyAvailableGraphDatabase db : getAllMembers() )
             {
                 if ( !exceptSet.contains( db ) )
                 {
-                    db.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
+                    db.getDependencyResolver().resolveDependency( UpdatePullerClient.class ).pullUpdates();
                 }
             }
         }

@@ -20,6 +20,8 @@
 package org.neo4j.kernel.ha;
 
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Before;
@@ -31,6 +33,7 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.protocol.election.Election;
 import org.neo4j.com.RequestContext;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberChangeEvent;
@@ -44,6 +47,8 @@ import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.kernel.logging.Logging;
 
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Matchers.anyLong;
@@ -65,30 +70,31 @@ public class UpdatePullerTest
     private final AvailabilityGuard availabilityGuard = mock( AvailabilityGuard.class );
     private final LastUpdateTime lastUpdateTime = mock( LastUpdateTime.class );
     private final Master master = mock( Master.class );
-    private final StringLogger stringLogger = mock( StringLogger.class );
+    private final Logging logging = new DevNullLoggingService();
     private final RequestContextFactory requestContextFactory = mock( RequestContextFactory.class );
+    private final DependencyResolver resolver = mock( DependencyResolver.class );
+    private final UpdatePuller updatePuller = new UpdatePuller( stateMachine, availabilityGuard,
+            requestContextFactory, master, lastUpdateTime, logging, myId );
 
     @Before
-    public void setup()
+    public void setup() throws Throwable
     {
         when( config.get( HaSettings.pull_interval ) ).thenReturn( 1000l );
         when( config.get( ClusterSettings.server_id ) ).thenReturn( myId );
         when( availabilityGuard.isAvailable( anyLong() ) ).thenReturn( true );
+        updatePuller.init();
+        updatePuller.start();
     }
 
     @Test
     public void shouldNotStartPullingUpdatesUntilStartIsCalled() throws Throwable
     {
         // GIVEN
-        final UpdatePuller puller = new UpdatePuller(
-                stateMachine,
-                master,
-                requestContextFactory,
-                availabilityGuard,
-                lastUpdateTime,
-                config,
+        final UpdatePullerClient puller = new UpdatePullerClient(
+                1,
                 scheduler,
-                stringLogger );
+                logging,
+                updatePuller );
 
         // WHEN
         puller.init();
@@ -104,15 +110,11 @@ public class UpdatePullerTest
     public void shouldStartAndStopPullingUpdatesWhenStartAndStopIsCalled() throws Throwable
     {
         // GIVEN
-        final UpdatePuller puller = new UpdatePuller(
-                stateMachine,
-                master,
-                requestContextFactory,
-                availabilityGuard,
-                lastUpdateTime,
-                config,
+        final UpdatePullerClient puller = new UpdatePullerClient(
+                1,
                 scheduler,
-                stringLogger );
+                logging,
+                updatePuller );
 
         // WHEN
         puller.init();
@@ -122,13 +124,14 @@ public class UpdatePullerTest
         assertNotNull( scheduler.getJob() );
 
         puller.start();
+        stateMachine.switchInstanceToSlave();
         scheduler.runJob();
 
         verify( lastUpdateTime, times( 1 ) ).setLastUpdateTime( anyLong() );
         verify( availabilityGuard, times( 1 ) ).isAvailable( anyLong() );
         verify( master, times( 1 ) ).pullUpdates( Matchers.<RequestContext>any() );
 
-        puller.stop();
+        updatePuller.stop();
         scheduler.runJob();
 
         verifyNoMoreInteractions( lastUpdateTime, availabilityGuard );
@@ -138,19 +141,16 @@ public class UpdatePullerTest
     public void shouldStopPullingUpdatesWhenThisInstanceBecomesTheMaster() throws Throwable
     {
         // GIVEN
-        final UpdatePuller puller = new UpdatePuller(
-                stateMachine,
-                master,
-                requestContextFactory,
-                availabilityGuard,
-                lastUpdateTime,
-                config,
+        final UpdatePullerClient puller = new UpdatePullerClient(
+                1,
                 scheduler,
-                stringLogger );
+                logging,
+                updatePuller );
 
         // WHEN
         puller.init();
         puller.start();
+        stateMachine.switchInstanceToSlave();
         scheduler.runJob();
 
         // THEN
@@ -169,21 +169,16 @@ public class UpdatePullerTest
     public void shouldKeepPullingUpdatesWhenThisInstanceBecomesASlave() throws Throwable
     {
         // GIVEN
-        final CapturingHighAvailabilityMemberStateMachine memberStateMachine =
-                new CapturingHighAvailabilityMemberStateMachine( myId );
-        final UpdatePuller puller = new UpdatePuller(
-                memberStateMachine,
-                master,
-                requestContextFactory,
-                availabilityGuard,
-                lastUpdateTime,
-                config,
+        final UpdatePullerClient puller = new UpdatePullerClient(
+                1,
                 scheduler,
-                stringLogger );
+                logging,
+                updatePuller );
 
         // WHEN
         puller.init();
         puller.start();
+        stateMachine.switchInstanceToSlave();
         scheduler.runJob();
 
         // THEN
@@ -191,7 +186,7 @@ public class UpdatePullerTest
         verify( availabilityGuard, times( 1 ) ).isAvailable( anyLong() );
         verify( master, times( 1 ) ).pullUpdates( Matchers.<RequestContext>any() );
 
-        memberStateMachine.switchInstanceToSlave();
+        stateMachine.switchInstanceToSlave();
 
         scheduler.runJob();
 
@@ -204,21 +199,16 @@ public class UpdatePullerTest
     public void shouldResumePullingUpdatesWhenThisInstanceSwitchesFromMasterToSlave() throws Throwable
     {
         // GIVEN
-        final CapturingHighAvailabilityMemberStateMachine memberStateMachine =
-                new CapturingHighAvailabilityMemberStateMachine( myId );
-        final UpdatePuller puller = new UpdatePuller(
-                memberStateMachine,
-                master,
-                requestContextFactory,
-                availabilityGuard,
-                lastUpdateTime,
-                config,
+        final UpdatePullerClient puller = new UpdatePullerClient(
+                1,
                 scheduler,
-                stringLogger );
+                logging,
+                updatePuller );
 
         // WHEN
         puller.init();
         puller.start();
+        stateMachine.switchInstanceToSlave();
         scheduler.runJob();
 
         // THEN
@@ -226,11 +216,12 @@ public class UpdatePullerTest
         verify( availabilityGuard, times( 1 ) ).isAvailable( anyLong() );
         verify( master, times( 1 ) ).pullUpdates( Matchers.<RequestContext>any() );
 
-        memberStateMachine.switchInstanceToMaster();
+        stateMachine.switchInstanceToMaster();
 
+        // This job should be ignored, since I'm now master
         scheduler.runJob();
 
-        memberStateMachine.switchInstanceToSlave();
+        stateMachine.switchInstanceToSlave();
 
         scheduler.runJob();
 
@@ -242,27 +233,22 @@ public class UpdatePullerTest
     @Test
     public void shouldResumePullingUpdatesWhenThisInstanceSwitchesFromSlaveToMaster() throws Throwable
     {
-        CapturingHighAvailabilityMemberStateMachine memberStateMachine = new
-                CapturingHighAvailabilityMemberStateMachine( myId );
-        UpdatePuller puller = new UpdatePuller(
-                memberStateMachine,
-                master,
-                requestContextFactory,
-                availabilityGuard,
-                lastUpdateTime,
-                config,
+        final UpdatePullerClient puller = new UpdatePullerClient(
+                1,
                 scheduler,
-                stringLogger );
+                logging,
+                updatePuller );
 
         puller.init();
         puller.start();
+        stateMachine.switchInstanceToSlave();
         scheduler.runJob();
 
         verify( lastUpdateTime, times( 1 ) ).setLastUpdateTime( anyLong() );
         verify( availabilityGuard, times( 1 ) ).isAvailable( anyLong() );
         verify( master, times( 1 ) ).pullUpdates( Matchers.<RequestContext>any() );
 
-        memberStateMachine.switchInstanceToSlave();
+        stateMachine.switchInstanceToSlave();
 
         scheduler.runJob();
 
@@ -270,7 +256,7 @@ public class UpdatePullerTest
         verify( availabilityGuard, times( 2 ) ).isAvailable( anyLong() );
         verify( master, times( 2 ) ).pullUpdates( Matchers.<RequestContext>any() );
 
-        memberStateMachine.switchInstanceToMaster();
+        stateMachine.switchInstanceToMaster();
 
         verifyNoMoreInteractions( lastUpdateTime, availabilityGuard );
     }
@@ -325,7 +311,7 @@ public class UpdatePullerTest
     {
         private final InstanceId myId;
         private final URI uri;
-        private HighAvailabilityMemberListener listener;
+        private final List<HighAvailabilityMemberListener> listeners = new ArrayList<>();
 
         public CapturingHighAvailabilityMemberStateMachine( InstanceId myId )
         {
@@ -339,21 +325,27 @@ public class UpdatePullerTest
         @Override
         public void addHighAvailabilityMemberListener( HighAvailabilityMemberListener toAdd )
         {
-            listener = toAdd;
+            listeners.add( toAdd );
         }
 
         public void switchInstanceToSlave()
         {
-            listener.slaveIsAvailable(
-                    new HighAvailabilityMemberChangeEvent(
-                            HighAvailabilityMemberState.TO_SLAVE, HighAvailabilityMemberState.SLAVE, myId, uri ) );
+            for ( HighAvailabilityMemberListener listener : listeners )
+            {
+                listener.slaveIsAvailable(
+                        new HighAvailabilityMemberChangeEvent(
+                                HighAvailabilityMemberState.TO_SLAVE, HighAvailabilityMemberState.SLAVE, myId, uri ) );
+            }
         }
 
         public void switchInstanceToMaster()
         {
-            listener.masterIsAvailable(
-                    new HighAvailabilityMemberChangeEvent(
-                            HighAvailabilityMemberState.TO_MASTER, HighAvailabilityMemberState.MASTER, myId, uri ) );
+            for ( HighAvailabilityMemberListener listener : listeners )
+            {
+                listener.masterIsAvailable(
+                        new HighAvailabilityMemberChangeEvent(
+                                HighAvailabilityMemberState.TO_MASTER, HighAvailabilityMemberState.MASTER, myId, uri ) );
+            }
         }
     }
 }

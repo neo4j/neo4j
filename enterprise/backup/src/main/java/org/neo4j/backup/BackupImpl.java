@@ -32,8 +32,6 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.monitoring.BackupMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
-import static java.lang.Math.max;
-
 import static org.neo4j.com.RequestContext.anonymous;
 
 class BackupImpl implements TheBackupInterface
@@ -70,13 +68,13 @@ class BackupImpl implements TheBackupInterface
                     transactionIdStore, logFileInformation, storeId,
                     copyStartContext.lastAppliedTransaction() + 1 ); // mandatory transaction id
             long optionalTransactionId = copyStartContext.lastAppliedTransaction();
-            return responsePacker.packResponse( anonymous( optionalTransactionId ), null/*no response object*/ );
+            return responsePacker.packTransactionStreamResponse( anonymous( optionalTransactionId ), null/*no response object*/ );
         }
     }
 
     @Override
     public Response<Void> incrementalBackup( RequestContext context )
     {
-        return incrementalResponsePacker.packResponse( context, null );
+        return incrementalResponsePacker.packTransactionStreamResponse( context, null );
     }
 }

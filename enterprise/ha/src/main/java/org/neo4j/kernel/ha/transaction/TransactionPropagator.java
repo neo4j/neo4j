@@ -171,7 +171,8 @@ public class TransactionPropagator implements Lifecycle
     {
         int replicationFactor = desiredReplicationFactor;
         // If the author is not this instance, then we need to push to one less - the committer already has it
-        if ( config.getServerId().toIntegerIndex() != authorId )
+        boolean isAuthoredBySlave = config.getServerId().toIntegerIndex() != authorId;
+        if ( isAuthoredBySlave )
         {
             replicationFactor--;
         }
@@ -353,7 +354,12 @@ public class TransactionPropagator implements Lifecycle
             {
                 try
                 {
-                    pusher.queuePush( slave, txId );
+                    // Bypass the CommitPusher, now that we have a single thread pulling updates on each slave
+                    // The CommitPusher is all about batching transaction pushing to slaves, to reduce the overhead
+                    // of multiple threads pulling the same transactions on each slave. That should be fine now.
+//                    pusher.queuePush( slave, txId );
+
+                    slave.pullUpdates( txId );
                     return null;
                 }
                 finally

@@ -22,8 +22,19 @@ package org.neo4j.com;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.util.ArrayList;
+import java.util.Collection;
 
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
+import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 
 public class MadeUpServerImplementation implements MadeUpCommunicationInterface
 {
@@ -39,7 +50,7 @@ public class MadeUpServerImplementation implements MadeUpCommunicationInterface
     public Response<Integer> multiply( int value1, int value2 )
     {
         gotCalled = true;
-        return new Response<Integer>( value1 * value2, storeIdToRespondWith,
+        return new TransactionStreamResponse<>( value1 * value2, storeIdToRespondWith,
                 TransactionStream.EMPTY, ResourceReleaser.NO_OP );
     }
 
@@ -53,7 +64,7 @@ public class MadeUpServerImplementation implements MadeUpCommunicationInterface
 
     private Response<Void> emptyResponse()
     {
-        return new Response<Void>( null, storeIdToRespondWith,
+        return new TransactionStreamResponse<>( null, storeIdToRespondWith,
                 TransactionStream.EMPTY, ResourceReleaser.NO_OP );
     }
 
@@ -63,6 +74,54 @@ public class MadeUpServerImplementation implements MadeUpCommunicationInterface
         // TOOD Verify as well?
         readFully( data );
         return emptyResponse();
+    }
+
+    @Override
+    public Response<Integer> streamBackTransactions( int responseToSendBack, final int txCount )
+    {
+        TransactionStream transactions = new TransactionStream()
+        {
+            @Override
+            public void accept( Visitor<CommittedTransactionRepresentation, IOException> visitor ) throws IOException
+            {
+                for ( int i = 0; i < txCount; i++ )
+                {
+                    CommittedTransactionRepresentation transaction = createTransaction( i );
+                    visitor.visit( transaction );
+                }
+            }
+        };
+
+        return new TransactionStreamResponse<>( responseToSendBack, storeIdToRespondWith, transactions,
+                ResourceReleaser.NO_OP );
+    }
+
+    @Override
+    public Response<Integer> informAboutTransactionObligations( int responseToSendBack, long desiredObligation )
+    {
+        return new TransactionObligationResponse<>( responseToSendBack, storeIdToRespondWith, desiredObligation,
+                ResourceReleaser.NO_OP );
+    }
+
+    protected CommittedTransactionRepresentation createTransaction( long txId )
+    {
+        return new CommittedTransactionRepresentation(
+                new LogEntryStart( 0, 0, 0, 0, new byte[0], null ),
+                transaction( txId ),
+                new OnePhaseCommit( txId, 0 ) );
+    }
+
+    private TransactionRepresentation transaction( long txId )
+    {
+        Collection<Command> commands = new ArrayList<>();
+        NodeCommand command = new NodeCommand();
+        NodeRecord node = new NodeRecord( txId );
+        node.setInUse( true );
+        command.init( new NodeRecord( txId ), node );
+        commands.add( command );
+        PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( commands );
+        transaction.setHeader( new byte[0], 0, 0, 0, 0, 0 );
+        return transaction;
     }
 
     private void readFully( ReadableByteChannel data )

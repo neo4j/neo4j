@@ -38,7 +38,7 @@ import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.Args;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.ha.UpdatePuller;
+import org.neo4j.kernel.ha.UpdatePullerClient;
 import org.neo4j.shell.impl.RmiLocation;
 import org.neo4j.test.ProcessStreamHandler;
 
@@ -335,7 +335,7 @@ public class LegacyDatabaseImpl extends UnicastRemoteObject implements LegacyDat
     {
         try
         {
-            db.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
+            db.getDependencyResolver().resolveDependency( UpdatePullerClient.class ).pullUpdates();
         }
         catch ( Exception e )
         {

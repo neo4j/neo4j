@@ -53,7 +53,6 @@ import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.NamedThreadFactory;
-import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
@@ -148,14 +147,11 @@ import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.storemigration.UpgradeConfiguration;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
-import org.neo4j.kernel.impl.transaction.DefaultTxIdGenerator;
 import org.neo4j.kernel.impl.transaction.RecoveryVerifier;
 import org.neo4j.kernel.impl.transaction.TransactionCounters;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
-import org.neo4j.kernel.impl.transaction.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreInjectedTransactionValidator;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
@@ -271,7 +267,6 @@ public abstract class InternalAbstractGraphDatabase
     protected Locks lockManager;
     protected IdGeneratorFactory idGeneratorFactory;
     protected IndexConfigStore indexStore;
-    protected TxIdGenerator txIdGenerator;
     protected LifecycledPageCache pageCache;
     protected StoreFactory storeFactory;
     protected DiagnosticsManager diagnosticsManager;
@@ -504,8 +499,6 @@ public abstract class InternalAbstractGraphDatabase
 
         updateableSchemaState = new KernelSchemaStateStore( newSchemaStateMap() );
 
-        txIdGenerator = life.add( createTxIdGenerator() );
-
         lockManager = createLockManager();
 
         idGeneratorFactory = createIdGeneratorFactory();
@@ -700,19 +693,6 @@ public abstract class InternalAbstractGraphDatabase
         return new DefaultKernelData( config, this );
     }
 
-    protected TxIdGenerator createTxIdGenerator()
-    {
-        // TODO move to after neostore data source is created
-        return new DefaultTxIdGenerator( new Provider<TransactionIdStore>()
-        {
-            @Override
-            public TransactionIdStore instance()
-            {
-                return neoDataSource.evaluate();
-            }
-        } );
-    }
-
     protected Caches createCaches()
     {
         return new DefaultCaches( msgLog, monitors );
@@ -861,7 +841,7 @@ public abstract class InternalAbstractGraphDatabase
                 dependencyResolver, propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder,
                 lockManager, this, transactionEventHandlers,
                 monitors.newMonitor( IndexingService.Monitor.class ), fileSystem,
-                storeMigrationProcess, transactionMonitor, kernelHealth, txIdGenerator,
+                storeMigrationProcess, transactionMonitor, kernelHealth,
                 createHeaderInformationFactory(), startupStatistics, caches, nodeManager, guard, indexStore,
                 getCommitProcessFactory() );
         dataSourceManager.register( neoDataSource );
@@ -1258,10 +1238,6 @@ public abstract class InternalAbstractGraphDatabase
             else if ( NodeManager.class.isAssignableFrom( type ) && type.isInstance( nodeManager ) )
             {
                 return type.cast( nodeManager );
-            }
-            else if ( TxIdGenerator.class.isAssignableFrom( type ) && type.isInstance( txIdGenerator ) )
-            {
-                return type.cast( txIdGenerator );
             }
             else if ( DiagnosticsManager.class.isAssignableFrom( type ) && type.isInstance( diagnosticsManager ) )
             {

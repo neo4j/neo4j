@@ -17,40 +17,39 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha.com.slave;
+package org.neo4j.com;
 
-import org.neo4j.com.Response;
+import java.io.IOException;
+
 import org.neo4j.com.storecopy.TransactionObligationFulfiller;
-import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.ha.com.master.Slave;
+import org.neo4j.kernel.impl.store.StoreId;
 
-public class SlaveImpl implements Slave
+/**
+ * {@link Response} that carries transaction obligation as a side-effect.
+ *
+ * @see TransactionObligationFulfiller
+ */
+public class TransactionObligationResponse<T> extends Response<T>
 {
-    private final TransactionObligationFulfiller fulfiller;
+    public static final byte RESPONSE_TYPE = -1;
 
-    public SlaveImpl( TransactionObligationFulfiller fulfiller )
+    private final long obligationTxId;
+
+    public TransactionObligationResponse( T response, StoreId storeId, long obligationTxId, ResourceReleaser releaser )
     {
-        this.fulfiller = fulfiller;
+        super( response, storeId, releaser );
+        this.obligationTxId = obligationTxId;
     }
 
     @Override
-    public Response<Void> pullUpdates( long upToAndIncludingTxId )
+    public void accept( Response.Handler handler ) throws IOException
     {
-        try
-        {
-            fulfiller.fulfill( upToAndIncludingTxId );
-        }
-        catch ( InterruptedException e )
-        {
-            throw Exceptions.launderedException( e );
-        }
-        return Response.EMPTY;
+        handler.obligation( obligationTxId );
     }
 
     @Override
-    public int getServerId()
+    public boolean hasTransactionsToBeApplied()
     {
-        throw new UnsupportedOperationException( "This should not be called. Knowing the server id is only needed " +
-                "on the client side, we're now on the server side." );
+        return false;
     }
 }

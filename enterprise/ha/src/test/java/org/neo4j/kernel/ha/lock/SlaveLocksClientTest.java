@@ -25,8 +25,8 @@ import org.mockito.Matchers;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.ResourceReleaser;
-import org.neo4j.com.Response;
 import org.neo4j.com.TransactionStream;
+import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
@@ -65,13 +65,13 @@ public class SlaveLocksClientTest
         when( master.acquireSharedLock(
                 any( RequestContext.class ),
                 any( Locks.ResourceType.class ),
-                Matchers.<long[]>anyVararg() ) ).thenReturn( new Response<>( new LockResult( LockStatus.OK_LOCKED ),
+                Matchers.<long[]>anyVararg() ) ).thenReturn( new TransactionStreamResponse<>( new LockResult( LockStatus.OK_LOCKED ),
                 null, TransactionStream.EMPTY, ResourceReleaser.NO_OP ) );
 
         when( master.acquireExclusiveLock(
                 any( RequestContext.class ),
                 any( Locks.ResourceType.class ),
-                Matchers.<long[]>anyVararg() ) ).thenReturn( new Response<>( new LockResult( LockStatus.OK_LOCKED ),
+                Matchers.<long[]>anyVararg() ) ).thenReturn( new TransactionStreamResponse<>( new LockResult( LockStatus.OK_LOCKED ),
                 null, TransactionStream.EMPTY, ResourceReleaser.NO_OP ) );
         AvailabilityGuard availabilityGuard = mock( AvailabilityGuard.class );
         when( availabilityGuard.isAvailable( anyLong() ) ).thenReturn( true );

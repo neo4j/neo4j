@@ -159,11 +159,12 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         masterDelegateInvocationHandler = new DelegateInvocationHandler<>( Master.class );
         master = (Master) Proxy.newProxyInstance( Master.class.getClassLoader(), new Class[]{Master.class},
                 masterDelegateInvocationHandler );
-        final int serverId = config.get( ClusterSettings.server_id ).toIntegerIndex();
-        requestContextFactory = dependencies.satisfyDependency(new RequestContextFactory( serverId, getDependencyResolver() ));
+        InstanceId serverId = config.get( ClusterSettings.server_id );
+        requestContextFactory = dependencies.satisfyDependency(new RequestContextFactory( serverId.toIntegerIndex(),
+                getDependencyResolver() ));
 
         this.responseUnpacker = dependencies.satisfyDependency(
-                new TransactionCommittingResponseUnpacker( dependencyResolver ) );
+                new TransactionCommittingResponseUnpacker( getDependencyResolver() ) );
 
         kernelProvider = new Provider<KernelAPI>()
         {
@@ -180,8 +181,12 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
         life.add( responseUnpacker );
 
-        dependencies.satisfyDependency( life.add( new UpdatePuller( memberStateMachine, master, requestContextFactory,
-                availabilityGuard, lastUpdateTime, config, jobScheduler, msgLog ) ) );
+        UpdatePuller updatePuller = life.add( new UpdatePuller( memberStateMachine, availabilityGuard,
+                requestContextFactory, master, lastUpdateTime, logging, serverId ) );
+        dependencies.satisfyDependency( life.add( new UpdatePullerClient( config.get( HaSettings.pull_interval ),
+                jobScheduler, logging, updatePuller ) ) );
+        dependencies.satisfyDependency( life.add( new UpdatePullingTransactionObligationFulfiller(
+                updatePuller, memberStateMachine, serverId, dependencies ) ) );
 
         stateSwitchTimeoutMillis = config.get( HaSettings.state_switch_timeout );
 

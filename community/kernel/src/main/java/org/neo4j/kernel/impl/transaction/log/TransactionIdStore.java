@@ -56,11 +56,16 @@ public interface TransactionIdStore
      * @param transactionId the applied transaction id.
      */
     void transactionCommitted( long transactionId );
-    
+
     /**
      * @return highest seen gap-free {@link #transactionCommitted(long) committed transaction id}.
      */
     long getLastCommittedTransactionId();
+
+    /**
+     * @return highest seen gap-free {@link #transactionClosed(long) closed transaction id}.
+     */
+    long getLastClosedTransactionId();
 
     /**
      * Used by recovery. Perhaps this shouldn't be exposed like this?

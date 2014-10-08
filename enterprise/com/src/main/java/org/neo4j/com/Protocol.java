@@ -89,6 +89,19 @@ public abstract class Protocol
 
         PAYLOAD response = payloadDeserializer.read( dechunkingBuffer, input );
         StoreId storeId = readStoreId( dechunkingBuffer, input );
+
+        // Response type is what previously was a byte saying how many data sources there were in the
+        // coming transaction stream response. For backwards compatibility we keep it as a byte and we introduce
+        // the transaction obligation response type as -1
+        byte responseType = dechunkingBuffer.readByte();
+        if ( responseType == TransactionObligationResponse.RESPONSE_TYPE )
+        {
+            // It is a transaction obligation response
+            long obligationTxId = dechunkingBuffer.readLong();
+            return new TransactionObligationResponse<>( response, storeId, obligationTxId, channelReleaser );
+        }
+
+        // It's a transaction stream in this response
         TransactionStream transactions = new TransactionStream()
         {
             @Override
@@ -98,15 +111,15 @@ public abstract class Protocol
                 NetworkReadableLogChannel channel = new NetworkReadableLogChannel( dechunkingBuffer );
 
                 try ( PhysicalTransactionCursor<ReadableLogChannel> cursor =
-                              new PhysicalTransactionCursor<>( channel, reader ) )
+                        new PhysicalTransactionCursor<>( channel, reader ) )
                 {
-                    while (cursor.next() && visitor.visit( cursor.get() ))
-                    {
+                    while ( cursor.next() && visitor.visit( cursor.get() ) )
+                    {   // Plow through it
                     }
                 }
             }
         };
-        return new Response<>( response, storeId, transactions, channelReleaser );
+        return new TransactionStreamResponse<>( response, storeId, transactions, channelReleaser );
     }
 
     protected abstract StoreId readStoreId( ChannelBuffer source, ByteBuffer byteBuffer );

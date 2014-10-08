@@ -20,7 +20,6 @@
 package org.neo4j.ha.upgrade;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.rmi.RemoteException;
@@ -54,7 +53,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.ha.UpdatePuller;
+import org.neo4j.kernel.ha.UpdatePullerClient;
 import org.neo4j.test.TargetDirectory;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -447,9 +446,9 @@ public class RollingUpgradeIT
         }
     }
 
-    public void verifyComplexLoad( GraphDatabaseAPI db, long centralNode ) throws IOException
+    public void verifyComplexLoad( GraphDatabaseAPI db, long centralNode ) throws InterruptedException
     {
-        db.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
+        db.getDependencyResolver().resolveDependency( UpdatePullerClient.class ).pullUpdates();
         try( Transaction tx = db.beginTx() )
         {
             Node center = db.getNodeById( centralNode );

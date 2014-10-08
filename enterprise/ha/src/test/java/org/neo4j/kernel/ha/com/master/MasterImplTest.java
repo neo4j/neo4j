@@ -32,15 +32,20 @@ import org.mockito.stubbing.Answer;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.RequestContext;
+import org.neo4j.com.ResourceReleaser;
+import org.neo4j.com.Response;
+import org.neo4j.com.TransactionObligationResponse;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.com.master.MasterImpl.Monitor;
+import org.neo4j.kernel.ha.com.master.MasterImpl.SPI;
 import org.neo4j.kernel.impl.locking.Locks.Client;
 import org.neo4j.kernel.impl.locking.Locks.ResourceType;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
@@ -89,7 +94,7 @@ public class MasterImplTest
     public void givenStartedAndAccessibleWhenInitializeTxThenSucceeds() throws Throwable
     {
         // Given
-        MasterImpl.SPI spi = mock( MasterImpl.SPI.class );
+        MasterImpl.SPI spi = mockedSpi();
         Logging logging = new DevNullLoggingService();
         Config config = config( 20 );
 
@@ -115,17 +120,27 @@ public class MasterImplTest
     public void failingToStartTxShouldNotLeadToNPE() throws Throwable
     {
         // Given
-        MasterImpl.SPI spi = mock( MasterImpl.SPI.class );
+        MasterImpl.SPI spi = mockedSpi();
         Config config = config( 20 );
 
         when( spi.isAccessible() ).thenReturn( true );
         when( spi.acquireClient() ).thenThrow( new RuntimeException( "Nope" ) );
         when( spi.getMasterIdForCommittedTx( anyLong() ) ).thenReturn( Pair.of( 1, 1L ) );
+        when( spi.packEmptyResponse( any() ) ).thenAnswer( new Answer()
+        {
+            @Override
+            public Object answer( InvocationOnMock invocation ) throws Throwable
+            {
+                return new TransactionObligationResponse<>( invocation.getArguments()[0], StoreId.DEFAULT,
+                        TransactionIdStore.BASE_TX_ID, ResourceReleaser.NO_OP );
+            }
+        } );
 
         MasterImpl instance = new MasterImpl( spi, mock( MasterImpl.Monitor.class ),
                 new DevNullLoggingService(), config );
         instance.start();
-        HandshakeResult handshake = instance.handshake( 1, new StoreId() ).response();
+        Response<HandshakeResult> response = instance.handshake( 1, new StoreId() );
+        HandshakeResult handshake = response.response();
 
         // When
         try
@@ -140,7 +155,7 @@ public class MasterImplTest
             assertThat(e.getMessage(), equalTo( "Nope" ));
         }
     }
-    
+
     @Test
     public void shouldNotEndLockSessionWhereThereIsAnActiveLockAcquisition() throws Throwable
     {
@@ -148,7 +163,7 @@ public class MasterImplTest
         final CountDownLatch latch = new CountDownLatch( 1 );
         try
         {
-            MasterImpl.SPI spi = mock( MasterImpl.SPI.class );
+            MasterImpl.SPI spi = mockedSpi();
             when( spi.isAccessible() ).thenReturn( true );
             Client client = mock( Client.class );
             doAnswer( new Answer<Void>()
@@ -166,7 +181,7 @@ public class MasterImplTest
                     new DevNullLoggingService(), config, 20 );
             master.start();
             HandshakeResult handshake = master.handshake( 1, new StoreId() ).response();
-            
+
             // WHEN
             final RequestContext context = new RequestContext( handshake.epoch(), 1, 2, 0, 1, 0 );
             master.newLockSession( context );
@@ -184,7 +199,7 @@ public class MasterImplTest
             verify( client, times( 0 ) ).close();
             latch.countDown();
             acquireFuture.get();
-            
+
             // THEN
             verify( client, times( 1 ) ).close();
         }
@@ -193,7 +208,7 @@ public class MasterImplTest
             latch.countDown();
         }
     }
-    
+
     public final @Rule OtherThreadRule<Void> otherThread = new OtherThreadRule<>();
 
     private Config config( int lockReadTimeout )
@@ -202,5 +217,26 @@ public class MasterImplTest
         params.put( HaSettings.lock_read_timeout.name(), lockReadTimeout + "s" );
         params.put( ClusterSettings.server_id.name(), "1" );
         return new Config( params, HaSettings.class );
+    }
+
+    public static SPI mockedSpi()
+    {
+        return mockedSpi( StoreId.DEFAULT );
+    }
+
+    public static SPI mockedSpi( final StoreId storeId )
+    {
+        MasterImpl.SPI mock = mock( MasterImpl.SPI.class );
+        when( mock.storeId() ).thenReturn( storeId );
+        when( mock.packEmptyResponse( any() ) ).thenAnswer( new Answer()
+        {
+            @Override
+            public Object answer( InvocationOnMock invocation ) throws Throwable
+            {
+                return new TransactionObligationResponse<>( invocation.getArguments()[0], storeId,
+                        TransactionIdStore.BASE_TX_ID, ResourceReleaser.NO_OP );
+            }
+        } );
+        return mock;
     }
 }

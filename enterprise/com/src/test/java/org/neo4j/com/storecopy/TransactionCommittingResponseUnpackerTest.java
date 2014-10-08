@@ -25,24 +25,30 @@ import org.junit.Test;
 
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
+import org.neo4j.com.TransactionObligationResponse;
 import org.neo4j.com.TransactionStream;
+import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
+import org.neo4j.test.DoubleLatch;
 
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
+import static org.neo4j.com.storecopy.ResponseUnpacker.NO_OP_TX_HANDLER;
 
 public class TransactionCommittingResponseUnpackerTest
 {
@@ -56,16 +62,13 @@ public class TransactionCommittingResponseUnpackerTest
     {
         // Given
 
-          // Handcrafted deep mocks, otherwise the dependency resolution throws ClassCastExceptions
+        // Handcrafted deep mocks, otherwise the dependency resolution throws ClassCastExceptions
         DependencyResolver dependencyResolver = mock( DependencyResolver.class );
         TransactionIdStore txIdStore = mock( TransactionIdStore.class );
 
         when( dependencyResolver.resolveDependency( TransactionIdStore.class ) ).thenReturn( txIdStore );
 
         TransactionAppender appender = mock( TransactionAppender.class );
-          // Should indicate success applying the transaction
-        when( appender.append( any( CommittedTransactionRepresentation.class ) ) ).thenReturn( true );
-
         LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
         when( logicalTransactionStore.getAppender() ).thenReturn( appender );
         when( dependencyResolver.resolveDependency( LogicalTransactionStore.class ) )
@@ -81,20 +84,22 @@ public class TransactionCommittingResponseUnpackerTest
            */
         StoppingTxHandler stoppingTxHandler = new StoppingTxHandler();
 
+        int maxBatchSize = 10;
         TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker(
-                dependencyResolver );
+                dependencyResolver, maxBatchSize );
         stoppingTxHandler.setUnpacker( unpacker );
 
         // When
         unpacker.start();
-        int committingTransactionId = 2;
-        DummyResponse response = new DummyResponse( committingTransactionId );
+        long committingTransactionId = TransactionIdStore.BASE_TX_ID + 1;
+        DummyTransactionResponse response = new DummyTransactionResponse( committingTransactionId, 1, appender, maxBatchSize );
         unpacker.unpackResponse( response, stoppingTxHandler );
 
         // Then
         verify( txIdStore, times( 1 ) ).transactionCommitted( committingTransactionId );
         verify( txIdStore, times( 1 ) ).transactionClosed( committingTransactionId );
-        verify( appender, times( 1 ) ).append( response.getTheTx() );
+        verify( appender, times( 1 ) ).append( any( TransactionRepresentation.class ), anyLong() );
+        verify( appender, times( 1 ) ).force();
 
         // Then
           // The txhandler has stopped the unpacker. It should not allow any more transactions to go through
@@ -111,6 +116,71 @@ public class TransactionCommittingResponseUnpackerTest
         verifyNoMoreInteractions( appender );
     }
 
+    @Test
+    public void shouldApplyQueuedTransactionsIfMany() throws Throwable
+    {
+        // GIVEN
+        DependencyResolver dependencyResolver = mock( DependencyResolver.class );
+        TransactionIdStore txIdStore = mock( TransactionIdStore.class );
+
+        when( dependencyResolver.resolveDependency( TransactionIdStore.class ) ).thenReturn( txIdStore );
+
+        TransactionAppender appender = mock( TransactionAppender.class );
+        when( appender.append( any( TransactionRepresentation.class ) ) ).thenReturn( 2L, 3L, 4L, 5L, 6L );
+          // Should indicate success applying the transaction
+
+        LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
+        when( logicalTransactionStore.getAppender() ).thenReturn( appender );
+        when( dependencyResolver.resolveDependency( LogicalTransactionStore.class ) )
+                .thenReturn( logicalTransactionStore );
+
+        when( dependencyResolver.resolveDependency( TransactionRepresentationStoreApplier.class ) )
+                .thenReturn( mock( TransactionRepresentationStoreApplier.class ) );
+        int maxBatchSize = 3;
+        TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker(
+                dependencyResolver, maxBatchSize );
+        unpacker.start();
+
+        // WHEN/THEN
+        int txCount = maxBatchSize * 2 - 1;
+        unpacker.unpackResponse( new DummyTransactionResponse( 2, txCount, appender, maxBatchSize ), NO_OP_TX_HANDLER );
+
+        // and THEN
+        verify( appender, times( txCount ) ).append( any( TransactionRepresentation.class ), anyLong() );
+        verify( appender, times( 2 ) ).force();
+    }
+
+    @Test
+    public void shouldAwaitTransactionObligationsToBeFulfilled() throws Throwable
+    {
+        // GIVEN
+        DependencyResolver dependencyResolver = mock( DependencyResolver.class );
+
+        TransactionIdStore txIdStore = mock( TransactionIdStore.class );
+        when( dependencyResolver.resolveDependency( TransactionIdStore.class ) ).thenReturn( txIdStore );
+
+        TransactionAppender appender = mock( TransactionAppender.class );
+        LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
+        when( logicalTransactionStore.getAppender() ).thenReturn( appender );
+        when( dependencyResolver.resolveDependency( LogicalTransactionStore.class ) )
+                .thenReturn( logicalTransactionStore );
+
+        when( dependencyResolver.resolveDependency( TransactionRepresentationStoreApplier.class ) )
+                .thenReturn( mock( TransactionRepresentationStoreApplier.class ) );
+        DoubleLatch latch = new DoubleLatch();
+        TransactionObligationFulfiller obligationFulfiller = mock( TransactionObligationFulfiller.class );
+        when( dependencyResolver.resolveDependency( TransactionObligationFulfiller.class ) )
+                .thenReturn( obligationFulfiller );
+        final TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker(
+                dependencyResolver );
+        unpacker.start();
+
+        // WHEN
+        unpacker.unpackResponse( new DummyObligationResponse( 4 ), NO_OP_TX_HANDLER );
+
+        // THEN
+        verify( obligationFulfiller, times( 1 ) ).fulfill( 4l );
+    }
 
     private static class StoppingTxHandler implements ResponseUnpacker.TxHandler
     {
@@ -140,30 +210,80 @@ public class TransactionCommittingResponseUnpackerTest
         }
     }
 
-    private static class DummyResponse extends Response<Object>
+    private static class DummyObligationResponse extends TransactionObligationResponse<Object>
     {
-        private final CommittedTransactionRepresentation theTx;
+        public DummyObligationResponse( long obligationTxId )
+        {
+            super( new Object(), StoreId.DEFAULT, obligationTxId, ResourceReleaser.NO_OP );
+        }
+    }
 
-        public DummyResponse( long txId )
+    private static class DummyTransactionResponse extends TransactionStreamResponse<Object>
+    {
+        private final long startingAtTxId;
+        private final int txCount;
+        private final TransactionAppender appender;
+        private final int maxBatchSize;
+
+        public DummyTransactionResponse( long startingAtTxId, int txCount, TransactionAppender appender, int maxBatchSize )
         {
             super( new Object(), StoreId.DEFAULT, mock( TransactionStream.class ), ResourceReleaser.NO_OP );
-            theTx = mock( CommittedTransactionRepresentation.class );
-            LogEntryCommit mockCommitEntry = mock( LogEntryCommit.class );
-            when( mockCommitEntry.getTxId() ).thenReturn( txId );
-            when( theTx.getCommitEntry() ).thenReturn( mockCommitEntry );
+            this.startingAtTxId = startingAtTxId;
+            this.txCount = txCount;
+            this.appender = appender;
+            this.maxBatchSize = maxBatchSize;
         }
 
-        public CommittedTransactionRepresentation getTheTx()
+        private CommittedTransactionRepresentation tx( long id )
         {
-            return theTx;
+            CommittedTransactionRepresentation tx = mock( CommittedTransactionRepresentation.class );
+            LogEntryCommit mockCommitEntry = mock( LogEntryCommit.class );
+            when( mockCommitEntry.getTxId() ).thenReturn( id );
+            when( tx.getCommitEntry() ).thenReturn( mockCommitEntry );
+            TransactionRepresentation txRepresentation = mock( TransactionRepresentation.class );
+            when( tx.getTransactionRepresentation() ).thenReturn( txRepresentation );
+            return tx;
         }
 
         @Override
-        public void accept( Visitor<CommittedTransactionRepresentation, IOException> visitor ) throws IOException
+        public void accept( Response.Handler handler ) throws IOException
         {
-            visitor.visit( theTx );
+            for ( int i = 0; i < txCount; i++ )
+            {
+                handler.transactions().visit( tx( startingAtTxId+i ) );
+                if ( (i+1) % maxBatchSize == 0 )
+                {
+                    try
+                    {
+                        verify( appender, times( maxBatchSize ) ).append( any( TransactionRepresentation.class ), anyLong() );
+                        verify( appender, times( 1 ) ).force();
+                    }
+                    catch ( IOException e )
+                    {
+                        throw new RuntimeException( e );
+                    }
+                }
+                else
+                {
+                    verifyNoMoreInteractions( appender );
+                }
+            }
+        }
+    }
+
+    public class ControlledObligationFulfuller implements TransactionObligationFulfiller
+    {
+        private final DoubleLatch latch;
+
+        public ControlledObligationFulfuller( DoubleLatch latch )
+        {
+            this.latch = latch;
         }
 
-
+        @Override
+        public void fulfill( long toTxId ) throws InterruptedException
+        {
+            latch.startAndAwaitFinish();
+        }
     }
 }
