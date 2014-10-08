@@ -204,7 +204,7 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
                 {
                     state.accept( writer );
                     // replace the old store with the
-                    this.state = new ConcurrentTrackerState( writer.openForReading() );
+                    this.state = new ConcurrentTrackerState( writer.openForReading( ) );
                 }
                 // close the old store
                 state.close();

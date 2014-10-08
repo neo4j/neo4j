@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
+import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
+import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
+
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -30,15 +34,9 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.api.CountsKey;
-import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
-
-import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
-import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
-import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
 
 class CountsStore implements Closeable
 {
@@ -47,7 +45,11 @@ class CountsStore implements Closeable
         CountsStore openForReading() throws IOException;
     }
 
-    static final int RECORD_SIZE = (3 * 4) + 8/*bytes*/;
+    static final byte EMPTY_RECORD_KEY = 0;
+    static final byte NODE_KEY = 1;
+    static final byte RELATIONSHIP_KEY = 2;
+
+    static final int RECORD_SIZE /*bytes*/ = 16 /*key*/ + 16 /*value*/;
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
     private final File file;
@@ -55,8 +57,7 @@ class CountsStore implements Closeable
     private final CountsStoreHeader header;
     private final int totalRecords;
 
-    private CountsStore( FileSystemAbstraction fs, PageCache pageCache, File file, PagedFile pages,
-                         CountsStoreHeader header )
+    CountsStore( FileSystemAbstraction fs, PageCache pageCache, File file, PagedFile pages, CountsStoreHeader header )
     {
         this.fs = fs;
         this.pageCache = pageCache;
@@ -83,7 +84,8 @@ class CountsStore implements Closeable
             }
             finally
             {
-                unMapCountsStore( pageCache, storeFile, pages );
+                pages.flush();
+                pageCache.unmap( storeFile );
             }
         }
         catch ( IOException e )
@@ -105,16 +107,12 @@ class CountsStore implements Closeable
         return pageCache.map( storeFile, pageSize );
     }
 
-    private static void unMapCountsStore( PageCache pageCache, File storeFile, PagedFile pages ) throws IOException
-    {
-        pages.flush();
-        pageCache.unmap( storeFile );
-    }
-
     public long get( CountsKey key )
     {
         Register.LongRegister value = Registers.newLongRegister();
-        int min = header.headerRecords(), mid, max = min + totalRecords;
+        int min = header.headerRecords();
+        int max = min + totalRecords - 1;
+        int mid;
         try ( PageCursor cursor = pages.io( 0, PF_SHARED_LOCK ) )
         {
             while ( min <= max )
@@ -142,7 +140,7 @@ class CountsStore implements Closeable
         return 0;
     }
 
-    private int compareKeyAndReadValue( PageCursor cursor, CountsKey target, int record, Register.Long.Out value )
+    private int compareKeyAndReadValue( PageCursor cursor, CountsKey target, int record, Register.Long.Out count )
             throws IOException
     {
         int pageId = (record * RECORD_SIZE) / pages.pageSize();
@@ -153,20 +151,7 @@ class CountsStore implements Closeable
             do
             {
                 cursor.setOffset( offset );
-                int startLabelId = cursor.getInt();
-                int typeId = cursor.getInt();
-                int endLabelId = cursor.getInt();
-                long count = cursor.getLong();
-                if ( count < 0 )
-                {
-                    value.write( -count );
-                    key = nodeKey( typeId );
-                }
-                else
-                {
-                    value.write( count );
-                    key = relationshipKey( startLabelId, typeId, endLabelId );
-                }
+                key = readRecord( cursor, count );
             } while ( cursor.shouldRetry() );
             return target.compareTo( key );
         }
@@ -174,6 +159,68 @@ class CountsStore implements Closeable
         {
             throw new IllegalStateException( "Could not fetch page: " + pageId );
         }
+    }
+
+    /**
+     * Node Key:
+     *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
+     * [x, , , , , , , , , , , ,x,x,x,x]
+     *  _                       _ _ _ _
+     *  |                          |
+     * entry                      label
+     * type                        id
+     *
+     * Relationship Key:
+     *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
+     * [x, ,x,x,x,x, ,x,x,x,x, ,x,x,x,x]
+     *  _   _ _ _ _   _ _ _ _   _ _ _ _
+     *  |      |         |         |
+     * entry  label      rel      label
+     * type    id        type      id
+     *
+     * Count value:
+     *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
+     * [ , , , , , , , ,x,x,x,x,x,x,x,x]
+     *                  _ _ _ _ _ _ _ _
+     *                         |
+     *                       value
+     */
+    private CountsKey readRecord( PageCursor cursor, Register.Long.Out value )
+    {
+        // read type
+        byte type = cursor.getByte();
+
+        // read key
+        cursor.getByte(); // skip unused byte
+        int one = cursor.getInt();
+        cursor.getByte(); // skip unused byte
+        int two = cursor.getInt();
+        cursor.getByte(); // skip unused byte
+        int three = cursor.getInt();
+
+        // read value
+        cursor.getLong(); // skip unused long
+        long count =  cursor.getLong();
+
+        CountsKey key;
+        switch ( type )
+        {
+            case EMPTY_RECORD_KEY:
+                throw new IllegalStateException( "Reading empty record" );
+            case NODE_KEY:
+                assert one == 0;
+                assert two == 0;
+                key = nodeKey( three /* label id*/ );
+                value.write( count );
+                break;
+            case RELATIONSHIP_KEY:
+                key = relationshipKey( one /* start label id */, two /* rel type id */, three /* end label id */ );
+                value.write( count );
+                break;
+            default:
+                throw new IllegalStateException( "Unknown counts key type: " + type );
+        }
+        return key;
     }
 
     public File file()
@@ -219,37 +266,76 @@ class CountsStore implements Closeable
         }
     }
 
+    /**
+     * Node Key:
+     *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
+     * [x, , , , , , , , , , , ,x,x,x,x]
+     *  _                       _ _ _ _
+     *  |                          |
+     * entry                      label
+     * type                        id
+     *
+     * Relationship Key:
+     *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
+     * [x, ,x,x,x,x, ,x,x,x,x, ,x,x,x,x]
+     *  _   _ _ _ _   _ _ _ _   _ _ _ _
+     *  |      |         |         |
+     * entry  label      rel      label
+     * type    id        type      id
+     *
+     * Count value:
+     *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
+     * [ , , , , , , , ,x,x,x,x,x,x,x,x]
+     *                  _ _ _ _ _ _ _ _
+     *                         |
+     *                       value
+     */
     private void visitRecord( ByteBuffer buffer, RecordVisitor visitor )
     {
+        // read type
+        byte type = buffer.get();
+
+        // read key
+        buffer.get(); // skip unused byte
+        int one = buffer.getInt();
+        buffer.get(); // skip unused byte
+        int two = buffer.getInt();
+        buffer.get(); // skip unused byte
+        int three = buffer.getInt();
+
+        // read value
+        buffer.getLong(); // skip unused long
+        long count =  buffer.getLong();
+
         CountsKey key;
-        long value;
-        int startLabelId = buffer.getInt();
-        int typeId = buffer.getInt();
-        int endLabelId = buffer.getInt();
-        long count = buffer.getLong();
+        switch ( type )
+        {
+            case EMPTY_RECORD_KEY:
+                assert one == 0;
+                assert two == 0;
+                assert three == 0;
+                assert count == 0;
+                return;
 
-        // if the count is zero then it is unused
-        if ( count == 0 )
-        {
-            return;
-        }
+            case NODE_KEY:
+                assert one == 0;
+                assert two == 0;
+                key = nodeKey( three /* label id*/ );
+                break;
 
-        if ( count < 0 )
-        {
-            value = -count;
-            key = nodeKey( typeId );
+            case RELATIONSHIP_KEY:
+                key = relationshipKey( one /* start label id */, two /* rel type id */, three /* end label id */ );
+                break;
+
+            default:
+                throw new IllegalStateException( "Unknown counts key type: " + type );
         }
-        else
-        {
-            value = count;
-            key = relationshipKey( startLabelId, typeId, endLabelId );
-        }
-        visitor.visit( key, value );
+        visitor.visit( key, count );
     }
 
     public Writer newWriter( File targetFile, long lastCommittedTxId ) throws IOException
     {
-        return new StoreWriter( targetFile, lastCommittedTxId );
+        return new CountsStoreWriter( fs, pageCache, header, targetFile, lastCommittedTxId );
     }
 
     public void close() throws IOException
@@ -257,100 +343,4 @@ class CountsStore implements Closeable
         pageCache.unmap( file );
     }
 
-    private class StoreWriter implements Writer, CountsVisitor
-    {
-        private PageCursor page;
-        private final PagedFile pagedFile;
-        private final File targetFile;
-        private final long txId;
-        private int totalRecords;
-
-        StoreWriter( File targetFile, long lastCommittedTxId ) throws IOException
-        {
-            this.targetFile = targetFile;
-            this.txId = lastCommittedTxId;
-            this.pagedFile = pageCache.map( targetFile, pages.pageSize() );
-            if ( !(this.page = pagedFile.io( 0, PF_EXCLUSIVE_LOCK )).next() )
-            {
-                throw new IOException( "Could not acquire page." );
-            }
-            page.setOffset( header.headerRecords() * RECORD_SIZE );
-        }
-
-        @Override
-        public void visit( CountsKey key, long value )
-        {
-            if ( value != 0 ) // only writeToBuffer values that count
-            {
-                totalRecords++;
-                key.accept( this, value );
-            }
-        }
-
-        @Override
-        public void visitNodeCount( int labelId, long count )
-        {
-            assert count > 0 : String
-                    .format( "visitNodeCount(labelId=%d, count=%d) - count must be positive", labelId, count );
-            write( 0, labelId, 0, -count );
-        }
-
-        @Override
-        public void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count )
-        {
-            assert count > 0 : String
-                    .format( "visitRelationshipCount(startLabelId=%d, typeId=%d, endLabelId=%d, count=%d)" +
-                             " - count must be positive", startLabelId, typeId, endLabelId, count );
-            write( startLabelId, typeId, endLabelId, count );
-        }
-
-        private void write( int startLabelId, int typeId, int endLabelId, long count )
-        {
-            try
-            {
-                int offset = page.getOffset();
-                if ( offset >= pages.pageSize() )
-                { // we've reached the end of this page
-                    page.next();
-                    offset = 0;
-                }
-                do
-                {
-                    page.setOffset( offset );
-                    page.putInt( startLabelId );
-                    page.putInt( typeId );
-                    page.putInt( endLabelId );
-                    page.putLong( count );
-                } while ( page.shouldRetry() );
-            }
-            catch ( IOException e )
-            {
-                throw new UnderlyingStorageException( e );
-            }
-        }
-
-        @Override
-        public CountsStore openForReading() throws IOException
-        {
-            return new CountsStore( fs, pageCache, targetFile, pagedFile, newHeader() );
-        }
-
-        @Override
-        public void close() throws IOException
-        {
-            if ( !page.next( 0 ) )
-            {
-                throw new IOException( "Could not update header." );
-            }
-            newHeader().write( page );
-            page.close();
-            page = null;
-            pagedFile.flush();
-        }
-
-        private CountsStoreHeader newHeader()
-        {
-            return header.update( totalRecords, txId );
-        }
-    }
 }

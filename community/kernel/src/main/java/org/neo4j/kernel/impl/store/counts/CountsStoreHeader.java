@@ -19,20 +19,25 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
+import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
+import static org.neo4j.kernel.impl.store.counts.CountsStore.RECORD_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
+
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.neo4j.helpers.UTF8;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
-import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
-import static org.neo4j.kernel.impl.store.counts.CountsStore.RECORD_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
-
 final class CountsStoreHeader
 {
     static CountsStoreHeader empty( String storeFormatVersion )
     {
+        if ( storeFormatVersion == null )
+        {
+            throw new IllegalArgumentException( "store format version cannot be null" );
+        }
         return new CountsStoreHeader( UTF8.encode( storeFormatVersion ), 0, BASE_TX_ID );
     }
 
@@ -46,6 +51,45 @@ final class CountsStoreHeader
         this.storeFormatVersion = storeFormatVersion;
         this.dataRecords = dataRecords;
         this.lastTxId = lastTxId;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        CountsStoreHeader that = (CountsStoreHeader) o;
+
+        if ( dataRecords != that.dataRecords )
+        {
+            return false;
+        }
+        if ( lastTxId != that.lastTxId )
+        {
+            return false;
+        }
+        if ( !Arrays.equals( storeFormatVersion, that.storeFormatVersion ) )
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = Arrays.hashCode( storeFormatVersion );
+        result = 31 * result + dataRecords;
+        result = 31 * result + (int) (lastTxId ^ (lastTxId >>> 32));
+        return result;
     }
 
     @Override
