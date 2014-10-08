@@ -22,7 +22,10 @@ package org.neo4j.com;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,30 +35,33 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.jboss.netty.bootstrap.ServerBootstrap;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelException;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.ChannelPipeline;
-import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.channel.ChannelStateEvent;
-import org.jboss.netty.channel.Channels;
-import org.jboss.netty.channel.ExceptionEvent;
-import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.SimpleChannelHandler;
-import org.jboss.netty.channel.WriteCompletionEvent;
-import org.jboss.netty.channel.group.ChannelGroup;
-import org.jboss.netty.channel.group.DefaultChannelGroup;
-import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
-
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelException;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.ChannelPipeline;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.group.ChannelGroup;
+import io.netty.channel.group.DefaultChannelGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.util.concurrent.GlobalEventExecutor;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.io.net.Ports;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.CommandWriter;
@@ -93,10 +99,9 @@ import static org.neo4j.helpers.NamedThreadFactory.daemon;
  *
  * @see Client
  */
-public abstract class Server<T, R> extends SimpleChannelHandler implements ChannelPipelineFactory, Lifecycle
+@ChannelHandler.Sharable
+public abstract class Server<T, R> extends ChannelInboundHandlerAdapter implements Lifecycle
 {
-    private static final String INADDR_ANY = "0.0.0.0";
-
     public interface Configuration
     {
         long getOldChannelThreshold();
@@ -115,7 +120,6 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     // actual work. So this is more like a core Netty I/O pool worker size.
     public final static int DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS = 200;
 
-    private ServerBootstrap bootstrap;
     private final T requestTarget;
     private ChannelGroup channelGroup;
     private final Map<Channel, Pair<RequestContext, AtomicLong /*time last heard of*/>> connectedSlaveChannels =
@@ -146,6 +150,32 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     private long oldChannelThresholdMillis;
     private final TxChecksumVerifier txVerifier;
     private int chunkSize;
+
+    private EventLoopGroup bossGroup;
+    private EventLoopGroup workerGroup;
+    private ChannelFutureListener onWriteComplete = new ChannelFutureListener()
+    {
+        @Override
+        public void operationComplete( ChannelFuture channel ) throws Exception
+        {
+            /*
+             * This is here to ensure that channels that have stuff written to them for a long time,
+             * long transaction
+             * pulls and store copies (mainly the latter), will not timeout and have their
+             * transactions rolled back.
+             * This is actually not a problem, since both mentioned above have no transaction
+             * associated with them
+             * but it is more sanitary and leaves less exceptions in the logs
+             * Each time a write completes, simply update the corresponding channel's timestamp.
+             */
+            Pair<RequestContext, AtomicLong> slave = connectedSlaveChannels.get( channel.channel() );
+            if ( slave != null )
+            {
+                slave.other().set( clock.currentTimeMillis() );
+            }
+        }
+    };
+
 
     public Server( T requestTarget, Configuration config, Logging logging, int frameLength,
             ProtocolVersion protocolVersion, TxChecksumVerifier txVerifier, Clock clock, ByteCounterMonitor
@@ -181,55 +211,68 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         silentChannelExecutor = newSingleThreadScheduledExecutor( named( "Silent channel reaper" ) );
         silentChannelExecutor.scheduleWithFixedDelay( silentChannelFinisher(), 5, 5, TimeUnit.SECONDS );
 
-        ExecutorService bossExecutor = newCachedThreadPool( daemon( "Boss-" + className ) );
-        ExecutorService workerExecutor = newCachedThreadPool( daemon( "Worker-" + className ) );
-        bootstrap = new ServerBootstrap( new NioServerSocketChannelFactory(
-                bossExecutor, workerExecutor, config.getMaxConcurrentTransactions() ) );
-        bootstrap.setPipelineFactory( this );
-
-        Channel channel = null;
-        socketAddress = null;
+        bossGroup = new NioEventLoopGroup(0, daemon( "Boss-" + className ));
+        workerGroup = new NioEventLoopGroup(0, daemon( "Worker-" + className ));
 
         // Try binding to any port in the port range
-        int[] ports = config.getServerAddress().getPorts();
-
-        ChannelException ex = null;
-
-        for ( int port = ports[0]; port <= ports[1]; port++ )
+        HostnamePort targetAddress = config.getServerAddress();
+        try
         {
-            if ( config.getServerAddress().getHost() == null || config.getServerAddress().getHost().equals( INADDR_ANY ))
-            {
-                socketAddress = new InetSocketAddress( port );
-            }
-            else
-            {
-                socketAddress = new InetSocketAddress( config.getServerAddress().getHost(), port );
-            }
+            ServerBootstrap b = new ServerBootstrap();
+            b.group( bossGroup, workerGroup )
+                .channel( NioServerSocketChannel.class )
+                .option( ChannelOption.SO_BACKLOG, 100 )
+                .option( ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT )
+                .childOption( ChannelOption.TCP_NODELAY, true )
+                .childHandler( new Initializer() );
+
+            channelGroup = new DefaultChannelGroup( GlobalEventExecutor.INSTANCE );
+            listen( targetAddress.getHost(), targetAddress.getPorts()[0], targetAddress.getPorts()[1], b );
+        }
+        catch(Exception e)
+        {
+            msgLog.logMessage( "Failed to bind server to " + targetAddress, e );
+            stop();
+            throw e;
+        }
+        msgLog.logMessage( className + " communication server started and bound to " + socketAddress );
+    }
+
+    private void listen( String address, int minPort, int maxPort, ServerBootstrap serverBootstrap )
+            throws URISyntaxException, ChannelException, UnknownHostException
+    {
+        ChannelException ex = null;
+        for ( int checkPort = minPort; checkPort <= maxPort; checkPort++ )
+        {
             try
             {
-                channel = bootstrap.bind( socketAddress );
-                ex = null;
-                break;
+                InetAddress host;
+                InetSocketAddress localAddress;
+                if ( address == null || address.equals( Ports.INADDR_ANY ))
+                {
+                    localAddress = new InetSocketAddress( checkPort );
+                }
+                else
+                {
+                    host = InetAddress.getByName( address );
+                    localAddress = new InetSocketAddress( host, checkPort );
+                }
+
+                Channel channel = serverBootstrap.bind( localAddress ).sync().channel();
+                msgLog.logMessage( getClass().getSimpleName() + " communication server started and bound to " + localAddress );
+                channelGroup.add( channel );
+                return;
             }
             catch ( ChannelException e )
             {
                 ex = e;
             }
+            catch ( InterruptedException e )
+            {
+                throw new ChannelException( "Interrupted while setting up network listener." );
+            }
         }
-
-        if ( ex != null )
-        {
-            msgLog.logMessage( "Failed to bind server to " + socketAddress, ex );
-            bootstrap.releaseExternalResources();
-            targetCallExecutor.shutdownNow();
-            unfinishedTransactionExecutor.shutdownNow();
-            silentChannelExecutor.shutdownNow();
-            throw new IOException( ex );
-        }
-
-        channelGroup = new DefaultChannelGroup();
-        channelGroup.add( channel );
-        msgLog.logMessage( className + " communication server started and bound to " + socketAddress );
+        throw ex;
     }
 
     @Override
@@ -245,9 +288,15 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         silentChannelExecutor.shutdown();
         silentChannelExecutor.awaitTermination( 10, TimeUnit.SECONDS );
 
-        channelGroup.close().awaitUninterruptibly();
+        if(channelGroup != null)
+        {
+            channelGroup.close().awaitUninterruptibly();
+        }
 
-        bootstrap.releaseExternalResources();
+        bossGroup.shutdownGracefully();
+        workerGroup.shutdownGracefully();
+        bossGroup.terminationFuture().sync();
+        workerGroup.terminationFuture().sync();
     }
 
     @Override
@@ -290,8 +339,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
                 }
                 for ( Map.Entry<Channel, Boolean> channel : channels.entrySet() )
                 {
-                    if ( channel.getValue() || !channel.getKey().isOpen() || !channel.getKey().isConnected() ||
-                            !channel.getKey().isBound() )
+                    if ( channel.getValue() || !channel.getKey().isActive() )
                     {
                         tryToFinishOffChannel( channel.getKey() );
                     }
@@ -309,94 +357,46 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     }
 
     @Override
-    public ChannelPipeline getPipeline() throws Exception
-    {
-        ChannelPipeline pipeline = Channels.pipeline();
-        pipeline.addLast( "monitor", new MonitorChannelHandler(byteCounterMonitor) );
-        addLengthFieldPipes( pipeline, frameLength );
-        pipeline.addLast( "serverHandler", this );
-        return pipeline;
-    }
-
-
-    @Override
-    public void channelOpen( ChannelHandlerContext ctx, ChannelStateEvent e ) throws Exception
-    {
-        channelGroup.add( e.getChannel() );
-    }
-
-    @Override
-    public void messageReceived( ChannelHandlerContext ctx, MessageEvent event )
-            throws Exception
+    public void channelRead( ChannelHandlerContext ctx, Object msg ) throws Exception
     {
         try
         {
-            ChannelBuffer message = (ChannelBuffer) event.getMessage();
-            handleRequest( message, event.getChannel() );
+            ByteBuf message = (ByteBuf) msg;
+            handleRequest( message, ctx.channel() );
         }
         catch ( Throwable e )
         {
             msgLog.error( "Error handling request", e );
 
             // Attempt to reply to the client
-            ChunkingChannelBuffer buffer = newChunkingBuffer( event.getChannel() );
+            ChunkingChannelBuffer buffer = newChunkingBuffer( ctx.channel() );
             buffer.clear( /* failure = */true );
             writeFailureResponse( e, buffer );
-
-            ctx.getChannel().close();
-            tryToFinishOffChannel( ctx.getChannel() );
+            ctx.close();
+            tryToFinishOffChannel( ctx.channel() );
             throw Exceptions.launderedException( e );
         }
     }
 
     @Override
-    public void writeComplete( ChannelHandlerContext ctx, WriteCompletionEvent e ) throws Exception
+    public void channelActive( ChannelHandlerContext ctx ) throws Exception
     {
-        /*
-         * This is here to ensure that channels that have stuff written to them for a long time, long transaction
-         * pulls and store copies (mainly the latter), will not timeout and have their transactions rolled back.
-         * This is actually not a problem, since both mentioned above have no transaction associated with them
-         * but it is more sanitary and leaves less exceptions in the logs
-         * Each time a write completes, simply update the corresponding channel's timestamp.
-         */
-        Pair<RequestContext, AtomicLong> slave = connectedSlaveChannels.get( ctx.getChannel() );
-        if ( slave != null )
+        channelGroup.add( ctx.channel() );
+    }
+
+    @Override
+    public void channelInactive( ChannelHandlerContext ctx ) throws Exception
+    {
+        if(!ctx.channel().isActive())
         {
-            slave.other().set( clock.currentTimeMillis() );
-            super.writeComplete( ctx, e );
+            tryToFinishOffChannel( ctx.channel() );
         }
     }
 
     @Override
-    public void channelClosed( ChannelHandlerContext ctx, ChannelStateEvent e )
-            throws Exception
+    public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause ) throws Exception
     {
-        super.channelClosed( ctx, e );
-
-        if ( !ctx.getChannel().isOpen() )
-        {
-            tryToFinishOffChannel( ctx.getChannel() );
-        }
-
-        channelGroup.remove( e.getChannel() );
-    }
-
-    @Override
-    public void channelDisconnected( ChannelHandlerContext ctx, ChannelStateEvent e )
-            throws Exception
-    {
-        super.channelDisconnected( ctx, e );
-
-        if ( !ctx.getChannel().isConnected() )
-        {
-            tryToFinishOffChannel( ctx.getChannel() );
-        }
-    }
-
-    @Override
-    public void exceptionCaught( ChannelHandlerContext ctx, ExceptionEvent e ) throws Exception
-    {
-        msgLog.warn( "Exception from Netty", e.getCause() );
+        msgLog.warn( "Exception in network stack", cause );
     }
 
     protected void tryToFinishOffChannel( Channel channel )
@@ -473,7 +473,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         };
     }
 
-    protected void handleRequest( ChannelBuffer buffer, final Channel channel )
+    protected void handleRequest( ByteBuf buffer, final Channel channel )
     {
         Byte continuation = readContinuationHeader( buffer, channel );
         if ( continuation == null )
@@ -488,7 +488,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
                 // This is the first chunk in a multi-chunk request
                 RequestType<T> type = getRequestContext( buffer.readByte() );
                 RequestContext context = readContext( buffer );
-                ChannelBuffer targetBuffer = mapSlave( channel, context );
+                ByteBuf targetBuffer = mapSlave( channel, context );
                 partialRequest = new PartialRequest( type, context, targetBuffer );
                 partialRequests.put( channel, partialRequest );
             }
@@ -499,9 +499,9 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
             PartialRequest partialRequest = partialRequests.remove( channel );
             RequestType<T> type;
             RequestContext context;
-            ChannelBuffer targetBuffer;
-            ChannelBuffer bufferToReadFrom;
-            ChannelBuffer bufferToWriteTo;
+            ByteBuf targetBuffer;
+            ByteBuf bufferToReadFrom;
+            ByteBuf bufferToWriteTo;
             if ( partialRequest == null )
             {
                 // This is the one and single chunk in the request
@@ -519,18 +519,18 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
                 targetBuffer = partialRequest.buffer;
                 partialRequest.add( buffer );
                 bufferToReadFrom = targetBuffer;
-                bufferToWriteTo = ChannelBuffers.dynamicBuffer();
+                bufferToWriteTo = channel.alloc().buffer();
             }
 
             bufferToWriteTo.clear();
-            final ChunkingChannelBuffer chunkingBuffer = new ChunkingChannelBuffer( bufferToWriteTo, channel, chunkSize,
+            final ChunkingChannelBuffer chunkingBuffer = new ChunkingChannelBuffer( bufferToWriteTo.retain(), channel, chunkSize,
                     getInternalProtocolVersion(), applicationProtocolVersion );
             submitSilent( targetCallExecutor, targetCaller( type, channel, context, chunkingBuffer,
                     bufferToReadFrom ) );
         }
     }
 
-    private Byte readContinuationHeader( ChannelBuffer buffer, final Channel channel )
+    private Byte readContinuationHeader( ByteBuf buffer, final Channel channel )
     {
         byte[] header = new byte[2];
         buffer.readBytes( header );
@@ -554,7 +554,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     }
 
     protected Runnable targetCaller( final RequestType<T> type, final Channel channel, final RequestContext context,
-                                     final ChunkingChannelBuffer targetBuffer, final ChannelBuffer bufferToReadFrom )
+                                     final ChunkingChannelBuffer targetBuffer, final ByteBuf bufferToReadFrom )
     {
         return new Runnable()
         {
@@ -564,7 +564,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
             {
                 Map<String, String> requestContext = new HashMap<>();
                 requestContext.put( "type", type.toString() );
-                requestContext.put( "remoteClient", channel.getRemoteAddress().toString() );
+                requestContext.put( "remoteClient", channel.remoteAddress().toString() );
                 requestContext.put( "slaveContext", context.toString() );
                 requestMonitor.beginRequest( requestContext );
                 Response<R> response = null;
@@ -576,7 +576,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
                     type.getObjectSerializer().write( response.response(), targetBuffer );
                     writeStoreId( response.getStoreId(), targetBuffer );
                     writeTransactionStreams( response, targetBuffer);
-                    targetBuffer.done();
+                    targetBuffer.done().addListener( onWriteComplete );
                     responseWritten( type, channel, context );
                 }
                 catch ( Throwable e )
@@ -620,7 +620,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     {
     }
 
-    private static void writeStoreId( StoreId storeId, ChannelBuffer targetBuffer )
+    private static void writeStoreId( StoreId storeId, ByteBuf targetBuffer )
     {
         targetBuffer.writeLong( storeId.getCreationTime() );
         targetBuffer.writeLong( storeId.getRandomId() );
@@ -629,8 +629,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         targetBuffer.writeLong( storeId.getUpgradeId() );
     }
 
-    private static void writeTransactionStreams( Response<?> response,
-            ChannelBuffer buffer) throws IOException
+    private static void writeTransactionStreams( Response<?> response, ByteBuf buffer) throws IOException
     {
         final NetworkWritableLogChannel channel = new NetworkWritableLogChannel( buffer );
         final LogEntryWriterv1 writer = new LogEntryWriterv1( channel, new CommandWriter( channel ) );
@@ -651,7 +650,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         } );
     }
 
-    protected RequestContext readContext( ChannelBuffer buffer )
+    protected RequestContext readContext( ByteBuf buffer )
     {
         long sessionId = buffer.readLong();
         int machineId = buffer.readInt();
@@ -673,7 +672,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
 
     protected abstract RequestType<T> getRequestContext( byte id );
 
-    protected ChannelBuffer mapSlave( Channel channel, RequestContext slave )
+    protected ByteBuf mapSlave( Channel channel, RequestContext slave )
     {
         synchronized ( connectedSlaveChannels )
         {
@@ -693,7 +692,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
                 }
             }
         }
-        return ChannelBuffers.dynamicBuffer();
+        return channel.alloc().buffer();
     }
 
     protected Pair<RequestContext, AtomicLong> unmapSlave( Channel channel )
@@ -726,27 +725,45 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
 
     private ChunkingChannelBuffer newChunkingBuffer( Channel channel )
     {
-        return new ChunkingChannelBuffer( ChannelBuffers.dynamicBuffer(),
-                channel,
-                chunkSize, getInternalProtocolVersion(), applicationProtocolVersion );
+        return new ChunkingChannelBuffer( channel.alloc().buffer(),
+                channel, chunkSize, getInternalProtocolVersion(), applicationProtocolVersion );
     }
 
     private class PartialRequest
     {
         final RequestContext context;
-        final ChannelBuffer buffer;
+        final ByteBuf buffer;
         final RequestType<T> type;
 
-        public PartialRequest( RequestType<T> type, RequestContext context, ChannelBuffer buffer )
+        public PartialRequest( RequestType<T> type, RequestContext context, ByteBuf buffer )
         {
             this.type = type;
             this.context = context;
             this.buffer = buffer;
         }
 
-        public void add( ChannelBuffer buffer )
+        public void add( ByteBuf buffer )
         {
             this.buffer.writeBytes( buffer );
+        }
+    }
+
+    private class Initializer extends ChannelInitializer<SocketChannel>
+    {
+        @Override
+        protected void initChannel( SocketChannel ch ) throws Exception
+        {
+            try
+            {
+                ChannelPipeline pipeline = ch.pipeline();
+                pipeline.addLast( "monitor", new MonitorChannelHandler( byteCounterMonitor ) );
+                addLengthFieldPipes( pipeline, frameLength );
+                pipeline.addLast( "serverHandler", Server.this );
+            }
+            catch(Throwable e)
+            {
+                e.printStackTrace();
+            }
         }
     }
 }

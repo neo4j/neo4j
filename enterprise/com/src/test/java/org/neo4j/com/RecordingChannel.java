@@ -23,67 +23,84 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelConfig;
-import org.jboss.netty.channel.ChannelFactory;
-import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelFutureListener;
-import org.jboss.netty.channel.ChannelPipeline;
-import org.jboss.netty.handler.queue.BlockingReadHandler;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelConfig;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelMetadata;
+import io.netty.channel.ChannelPipeline;
+import io.netty.channel.ChannelProgressivePromise;
+import io.netty.channel.ChannelPromise;
+import io.netty.channel.EventLoop;
+import io.netty.util.Attribute;
+import io.netty.util.AttributeKey;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 
 public class RecordingChannel implements Channel
 {
-    private Queue<ChannelBuffer> recievedMessages = new LinkedList<ChannelBuffer>();
+    private Queue<ByteBuf> recievedMessages = new LinkedList<ByteBuf>();
 
     @Override
     public ChannelFuture write( Object message )
     {
-        if(message instanceof ChannelBuffer )
+        if(message instanceof ByteBuf )
         {
-            ChannelBuffer buffer = (ChannelBuffer)message;
+            ByteBuf buffer = (ByteBuf)message;
             recievedMessages.offer( buffer.duplicate() );
         }
         return immediateFuture;
     }
 
     @Override
-    public ChannelFuture write( Object message, SocketAddress remoteAddress )
+    public ChannelFuture write( Object msg, ChannelPromise promise )
     {
-        write(message);
+        write( msg );
         return immediateFuture;
     }
 
     @Override
-    public Integer getId()
+    public Channel flush()
     {
-        throw new UnsupportedOperationException(  );
+        return null;
     }
 
     @Override
-    public ChannelFactory getFactory()
+    public ChannelFuture writeAndFlush( Object msg, ChannelPromise promise )
     {
-        throw new UnsupportedOperationException(  );
+        write(msg);
+        return immediateFuture;
     }
 
     @Override
-    public Channel getParent()
+    public ChannelFuture writeAndFlush( Object msg )
     {
-        throw new UnsupportedOperationException(  );
+        write(msg);
+        return immediateFuture;
     }
 
     @Override
-    public ChannelConfig getConfig()
+    public EventLoop eventLoop()
     {
-        throw new UnsupportedOperationException(  );
+        return null;
     }
 
     @Override
-    public ChannelPipeline getPipeline()
+    public Channel parent()
     {
-        throw new UnsupportedOperationException(  );
+        return null;
+    }
+
+    @Override
+    public ChannelConfig config()
+    {
+        return null;
     }
 
     @Override
@@ -93,27 +110,39 @@ public class RecordingChannel implements Channel
     }
 
     @Override
-    public boolean isBound()
+    public boolean isRegistered()
+    {
+        return false;
+    }
+
+    @Override
+    public boolean isActive()
     {
         return true;
     }
 
     @Override
-    public boolean isConnected()
+    public ChannelMetadata metadata()
     {
-        return true;
+        return null;
     }
 
     @Override
-    public SocketAddress getLocalAddress()
+    public SocketAddress localAddress()
     {
-        throw new UnsupportedOperationException(  );
+        return null;
     }
 
     @Override
-    public SocketAddress getRemoteAddress()
+    public SocketAddress remoteAddress()
     {
-        throw new UnsupportedOperationException(  );
+        return null;
+    }
+
+    @Override
+    public ChannelFuture closeFuture()
+    {
+        return null;
     }
 
     @Override
@@ -129,13 +158,13 @@ public class RecordingChannel implements Channel
     }
 
     @Override
-    public ChannelFuture disconnect()
+    public ChannelFuture connect( SocketAddress remoteAddress, SocketAddress localAddress )
     {
-        throw new UnsupportedOperationException(  );
+        return null;
     }
 
     @Override
-    public ChannelFuture unbind()
+    public ChannelFuture disconnect()
     {
         throw new UnsupportedOperationException(  );
     }
@@ -147,21 +176,51 @@ public class RecordingChannel implements Channel
     }
 
     @Override
-    public ChannelFuture getCloseFuture()
+    public ChannelFuture deregister()
     {
-        throw new UnsupportedOperationException(  );
+        return null;
     }
 
     @Override
-    public int getInterestOps()
+    public ChannelFuture bind( SocketAddress localAddress, ChannelPromise promise )
     {
-        throw new UnsupportedOperationException(  );
+        return null;
     }
 
     @Override
-    public boolean isReadable()
+    public ChannelFuture connect( SocketAddress remoteAddress, ChannelPromise promise )
     {
-        return false;
+        return null;
+    }
+
+    @Override
+    public ChannelFuture connect( SocketAddress remoteAddress, SocketAddress localAddress, ChannelPromise promise )
+    {
+        return null;
+    }
+
+    @Override
+    public ChannelFuture disconnect( ChannelPromise promise )
+    {
+        return null;
+    }
+
+    @Override
+    public ChannelFuture close( ChannelPromise promise )
+    {
+        return null;
+    }
+
+    @Override
+    public ChannelFuture deregister( ChannelPromise promise )
+    {
+        return null;
+    }
+
+    @Override
+    public Channel read()
+    {
+        return null;
     }
 
     @Override
@@ -171,27 +230,51 @@ public class RecordingChannel implements Channel
     }
 
     @Override
-    public ChannelFuture setInterestOps( int interestOps )
+    public Unsafe unsafe()
     {
-        throw new UnsupportedOperationException(  );
+        return null;
     }
 
     @Override
-    public ChannelFuture setReadable( boolean readable )
+    public ChannelPipeline pipeline()
     {
-        throw new UnsupportedOperationException(  );
+        return null;
     }
 
     @Override
-    public Object getAttachment()
+    public ByteBufAllocator alloc()
     {
-        throw new UnsupportedOperationException(  );
+        return PooledByteBufAllocator.DEFAULT;
     }
 
     @Override
-    public void setAttachment( Object attachment )
+    public ChannelPromise newPromise()
     {
-        throw new UnsupportedOperationException(  );
+        return null;
+    }
+
+    @Override
+    public ChannelProgressivePromise newProgressivePromise()
+    {
+        return null;
+    }
+
+    @Override
+    public ChannelFuture newSucceededFuture()
+    {
+        return null;
+    }
+
+    @Override
+    public ChannelFuture newFailedFuture( Throwable cause )
+    {
+        return null;
+    }
+
+    @Override
+    public ChannelPromise voidPromise()
+    {
+        return null;
     }
 
     @Override
@@ -203,18 +286,18 @@ public class RecordingChannel implements Channel
     // This is due to a tight coupling of the netty pipeline and message deserialization, we can't deserialize without
     // this pipeline item yet. We should refactor the serialization/deserialzation code appropriately such that it is
     // not tied like this to components it should not be aware of.
-    public BlockingReadHandler<ChannelBuffer> asBlockingReadHandler()
+    public BlockingReadHandler<ByteBuf> asBlockingReadHandler()
     {
-        return new BlockingReadHandler<ChannelBuffer>()
+        return new BlockingReadHandler<ByteBuf>()
         {
             @Override
-            public ChannelBuffer read() throws IOException, InterruptedException
+            public ByteBuf read() throws IOException, InterruptedException
             {
                 return recievedMessages.poll();
             }
 
             @Override
-            public ChannelBuffer read( long timeout, TimeUnit unit ) throws IOException, InterruptedException
+            public ByteBuf read( long timeout, TimeUnit unit ) throws IOException, InterruptedException
             {
                 return read();
             }
@@ -224,15 +307,21 @@ public class RecordingChannel implements Channel
     private ChannelFuture immediateFuture = new ChannelFuture()
     {
         @Override
-        public Channel getChannel()
-        {
-            return RecordingChannel.this;
-        }
-
-        @Override
         public boolean isDone()
         {
             return true;
+        }
+
+        @Override
+        public Void get() throws InterruptedException, ExecutionException
+        {
+            return null;
+        }
+
+        @Override
+        public Void get( long timeout, TimeUnit unit ) throws InterruptedException, ExecutionException, TimeoutException
+        {
+            return null;
         }
 
         @Override
@@ -248,55 +337,51 @@ public class RecordingChannel implements Channel
         }
 
         @Override
-        public Throwable getCause()
+        public boolean isCancellable()
+        {
+            return false;
+        }
+
+        @Override
+        public Throwable cause()
         {
             return null;
         }
 
         @Override
-        public boolean cancel()
+        public Channel channel()
         {
-            return false;
+            return null;
         }
 
         @Override
-        public boolean setSuccess()
-        {
-            return true;
-        }
-
-        @Override
-        public boolean setFailure( Throwable cause )
-        {
-            return false;
-        }
-
-        @Override
-        public boolean setProgress( long amount, long current, long total )
-        {
-            return false;
-        }
-
-        @Override
-        public void addListener( ChannelFutureListener listener )
+        public ChannelFuture addListener( GenericFutureListener<? extends Future<? super Void>> listener )
         {
             try
             {
-                listener.operationComplete( this );
+//                listener.operationComplete( this );
             }
             catch ( Exception e )
             {
                 throw new RuntimeException( e );
             }
+            return this;
         }
 
         @Override
-        public void removeListener( ChannelFutureListener listener )
+        public ChannelFuture addListeners( GenericFutureListener<? extends Future<? super Void>>... listeners )
         {
+            return null;
         }
 
         @Override
-        public ChannelFuture rethrowIfFailed() throws Exception
+        public ChannelFuture removeListener( GenericFutureListener<? extends Future<? super Void>> listener )
+        {
+            return null;
+        }
+
+        @Override
+        public ChannelFuture removeListeners( GenericFutureListener<? extends Future<? super Void>>... listeners )
         {
             return null;
         }
@@ -348,5 +433,23 @@ public class RecordingChannel implements Channel
         {
             return false;
         }
+
+        @Override
+        public Void getNow()
+        {
+            return null;
+        }
+
+        @Override
+        public boolean cancel( boolean mayInterruptIfRunning )
+        {
+            return false;
+        }
     };
+
+    @Override
+    public <T> Attribute<T> attr( AttributeKey<T> key )
+    {
+        return null;
+    }
 }

@@ -26,8 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-import org.jboss.netty.channel.Channel;
-
+import io.netty.channel.Channel;
 import org.neo4j.com.Protocol;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;

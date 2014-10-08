@@ -21,17 +21,16 @@ package org.neo4j.com;
 
 import java.io.IOException;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-
+import io.netty.buffer.ByteBuf;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.ReadPastEndException;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 
 public class NetworkReadableLogChannel implements ReadableLogChannel
 {
-    private final ChannelBuffer delegate;
+    private final ByteBuf delegate;
 
-    public NetworkReadableLogChannel( ChannelBuffer input )
+    public NetworkReadableLogChannel( ByteBuf input )
     {
         this.delegate = input;
     }

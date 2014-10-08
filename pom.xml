@@ -573,8 +573,8 @@ public class ComponentVersion extends Version
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
-        <artifactId>netty</artifactId>
-        <version>3.6.3.Final</version>
+        <artifactId>netty-all</artifactId>
+        <version>4.0.23.Final</version>
       </dependency>
       <dependency>
         <groupId>log4j</groupId>

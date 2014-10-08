@@ -29,16 +29,15 @@ import java.nio.channels.ScatteringByteChannel;
 import java.nio.charset.Charset;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBufferFactory;
-import org.jboss.netty.buffer.ChannelBufferIndexFinder;
-import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelFutureListener;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.ByteBufProcessor;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 
 /**
- * A decorator around a {@link ChannelBuffer} which adds the ability to transfer
+ * A decorator around a {@link ByteBuf} which adds the ability to transfer
  * chunks of it over a {@link Channel} when capacity is reached.
  * <p>
  * Instances of this class are created with an underlying buffer for holding
@@ -56,7 +55,7 @@ import org.jboss.netty.channel.ChannelFutureListener;
  * sleeps until some acknowledgment comes back from the other side that chunks
  * have been read.
  */
-public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListener
+public class ChunkingChannelBuffer extends ByteBuf implements ChannelFutureListener
 {
     static final byte CONTINUATION_LAST = 0;
     static final byte CONTINUATION_MORE = 1;
@@ -64,7 +63,7 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
     static final byte OUTCOME_FAILURE = 1;
     private static final int MAX_WRITE_AHEAD_CHUNKS = 5;
 
-    private ChannelBuffer buffer;
+    private ByteBuf buffer;
     private final Channel channel;
     private final int capacity;
     private int continuationPosition;
@@ -73,7 +72,7 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
     private final byte applicationProtocolVersion;
     private final byte internalProtocolVersion;
 
-    public ChunkingChannelBuffer( ChannelBuffer buffer, Channel channel, int capacity,
+    public ChunkingChannelBuffer( ByteBuf buffer, Channel channel, int capacity,
             byte internalProtocolVersion, byte applicationProtocolVersion )
     {
         this.buffer = buffer;
@@ -105,71 +104,6 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
         buffer.setBytes( continuationPosition, header( continuation ) );
     }
 
-    public ChannelBufferFactory factory()
-    {
-        return buffer.factory();
-    }
-
-    public int capacity()
-    {
-        return buffer.capacity();
-    }
-
-    public ByteOrder order()
-    {
-        return buffer.order();
-    }
-
-    public boolean isDirect()
-    {
-        return buffer.isDirect();
-    }
-
-    public int readerIndex()
-    {
-        return buffer.readerIndex();
-    }
-
-    public void readerIndex( int readerIndex )
-    {
-        buffer.readerIndex( readerIndex );
-    }
-
-    public int writerIndex()
-    {
-        return buffer.writerIndex();
-    }
-
-    public void writerIndex( int writerIndex )
-    {
-        buffer.writerIndex( writerIndex );
-    }
-
-    public void setIndex( int readerIndex, int writerIndex )
-    {
-        buffer.setIndex( readerIndex, writerIndex );
-    }
-
-    public int readableBytes()
-    {
-        return buffer.readableBytes();
-    }
-
-    public int writableBytes()
-    {
-        return buffer.writableBytes();
-    }
-
-    public boolean readable()
-    {
-        return buffer.readable();
-    }
-
-    public boolean writable()
-    {
-        return buffer.writable();
-    }
-
     public void clear( boolean failure )
     {
         buffer.clear();
@@ -177,354 +111,11 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
         addRoomForContinuationHeader();
     }
 
-    public void clear()
+    @Override
+    public ByteBuf clear()
     {
         clear( false );
-    }
-
-    public void markReaderIndex()
-    {
-        buffer.markReaderIndex();
-    }
-
-    public void resetReaderIndex()
-    {
-        buffer.resetReaderIndex();
-    }
-
-    public void markWriterIndex()
-    {
-        buffer.markWriterIndex();
-    }
-
-    public void resetWriterIndex()
-    {
-        buffer.resetWriterIndex();
-    }
-
-    public void discardReadBytes()
-    {
-        buffer.discardReadBytes();
-    }
-
-    public void ensureWritableBytes( int writableBytes )
-    {
-        buffer.ensureWritableBytes( writableBytes );
-    }
-
-    public byte getByte( int index )
-    {
-        return buffer.getByte( index );
-    }
-
-    public short getUnsignedByte( int index )
-    {
-        return buffer.getUnsignedByte( index );
-    }
-
-    public short getShort( int index )
-    {
-        return buffer.getShort( index );
-    }
-
-    public int getUnsignedShort( int index )
-    {
-        return buffer.getUnsignedShort( index );
-    }
-
-    public int getMedium( int index )
-    {
-        return buffer.getMedium( index );
-    }
-
-    public int getUnsignedMedium( int index )
-    {
-        return buffer.getUnsignedMedium( index );
-    }
-
-    public int getInt( int index )
-    {
-        return buffer.getInt( index );
-    }
-
-    public long getUnsignedInt( int index )
-    {
-        return buffer.getUnsignedInt( index );
-    }
-
-    public long getLong( int index )
-    {
-        return buffer.getLong( index );
-    }
-
-    public char getChar( int index )
-    {
-        return buffer.getChar( index );
-    }
-
-    public float getFloat( int index )
-    {
-        return buffer.getFloat( index );
-    }
-
-    public double getDouble( int index )
-    {
-        return buffer.getDouble( index );
-    }
-
-    public void getBytes( int index, ChannelBuffer dst )
-    {
-        buffer.getBytes( index, dst );
-    }
-
-    public void getBytes( int index, ChannelBuffer dst, int length )
-    {
-        buffer.getBytes( index, dst, length );
-    }
-
-    public void getBytes( int index, ChannelBuffer dst, int dstIndex, int length )
-    {
-        buffer.getBytes( index, dst, dstIndex, length );
-    }
-
-    public void getBytes( int index, byte[] dst )
-    {
-        buffer.getBytes( index, dst );
-    }
-
-    public void getBytes( int index, byte[] dst, int dstIndex, int length )
-    {
-        buffer.getBytes( index, dst, dstIndex, length );
-    }
-
-    public void getBytes( int index, ByteBuffer dst )
-    {
-        buffer.getBytes( index, dst );
-    }
-
-    public void getBytes( int index, OutputStream out, int length ) throws IOException
-    {
-        buffer.getBytes( index, out, length );
-    }
-
-    public int getBytes( int index, GatheringByteChannel out, int length ) throws IOException
-    {
-        return buffer.getBytes( index, out, length );
-    }
-
-    public void setByte( int index, int value )
-    {
-        buffer.setByte( index, value );
-    }
-
-    public void setShort( int index, int value )
-    {
-        buffer.setShort( index, value );
-    }
-
-    public void setMedium( int index, int value )
-    {
-        buffer.setMedium( index, value );
-    }
-
-    public void setInt( int index, int value )
-    {
-        buffer.setInt( index, value );
-    }
-
-    public void setLong( int index, long value )
-    {
-        buffer.setLong( index, value );
-    }
-
-    public void setChar( int index, int value )
-    {
-        buffer.setChar( index, value );
-    }
-
-    public void setFloat( int index, float value )
-    {
-        buffer.setFloat( index, value );
-    }
-
-    public void setDouble( int index, double value )
-    {
-        buffer.setDouble( index, value );
-    }
-
-    public void setBytes( int index, ChannelBuffer src )
-    {
-        buffer.setBytes( index, src );
-    }
-
-    public void setBytes( int index, ChannelBuffer src, int length )
-    {
-        buffer.setBytes( index, src, length );
-    }
-
-    public void setBytes( int index, ChannelBuffer src, int srcIndex, int length )
-    {
-        buffer.setBytes( index, src, srcIndex, length );
-    }
-
-    public void setBytes( int index, byte[] src )
-    {
-        buffer.setBytes( index, src );
-    }
-
-    public void setBytes( int index, byte[] src, int srcIndex, int length )
-    {
-        buffer.setBytes( index, src, srcIndex, length );
-    }
-
-    public void setBytes( int index, ByteBuffer src )
-    {
-        buffer.setBytes( index, src );
-    }
-
-    public int setBytes( int index, InputStream in, int length ) throws IOException
-    {
-        return buffer.setBytes( index, in, length );
-    }
-
-    public int setBytes( int index, ScatteringByteChannel in, int length ) throws IOException
-    {
-        return buffer.setBytes( index, in, length );
-    }
-
-    public void setZero( int index, int length )
-    {
-        buffer.setZero( index, length );
-    }
-
-    public byte readByte()
-    {
-        return buffer.readByte();
-    }
-
-    public short readUnsignedByte()
-    {
-        return buffer.readUnsignedByte();
-    }
-
-    public short readShort()
-    {
-        return buffer.readShort();
-    }
-
-    public int readUnsignedShort()
-    {
-        return buffer.readUnsignedShort();
-    }
-
-    public int readMedium()
-    {
-        return buffer.readMedium();
-    }
-
-    public int readUnsignedMedium()
-    {
-        return buffer.readUnsignedMedium();
-    }
-
-    public int readInt()
-    {
-        return buffer.readInt();
-    }
-
-    public long readUnsignedInt()
-    {
-        return buffer.readUnsignedInt();
-    }
-
-    public long readLong()
-    {
-        return buffer.readLong();
-    }
-
-    public char readChar()
-    {
-        return buffer.readChar();
-    }
-
-    public float readFloat()
-    {
-        return buffer.readFloat();
-    }
-
-    public double readDouble()
-    {
-        return buffer.readDouble();
-    }
-
-    public ChannelBuffer readBytes( int length )
-    {
-        return buffer.readBytes( length );
-    }
-
-    public ChannelBuffer readBytes( ChannelBufferIndexFinder indexFinder )
-    {
-        return buffer.readBytes( indexFinder );
-    }
-
-    public ChannelBuffer readSlice( int length )
-    {
-        return buffer.readSlice( length );
-    }
-
-    public ChannelBuffer readSlice( ChannelBufferIndexFinder indexFinder )
-    {
-        return buffer.readSlice( indexFinder );
-    }
-
-    public void readBytes( ChannelBuffer dst )
-    {
-        buffer.readBytes( dst );
-    }
-
-    public void readBytes( ChannelBuffer dst, int length )
-    {
-        buffer.readBytes( dst, length );
-    }
-
-    public void readBytes( ChannelBuffer dst, int dstIndex, int length )
-    {
-        buffer.readBytes( dst, dstIndex, length );
-    }
-
-    public void readBytes( byte[] dst )
-    {
-        buffer.readBytes( dst );
-    }
-
-    public void readBytes( byte[] dst, int dstIndex, int length )
-    {
-        buffer.readBytes( dst, dstIndex, length );
-    }
-
-    public void readBytes( ByteBuffer dst )
-    {
-        buffer.readBytes( dst );
-    }
-
-    public void readBytes( OutputStream out, int length ) throws IOException
-    {
-        buffer.readBytes( out, length );
-    }
-
-    public int readBytes( GatheringByteChannel out, int length ) throws IOException
-    {
-        return buffer.readBytes( out, length );
-    }
-
-    public void skipBytes( int length )
-    {
-        buffer.skipBytes( length );
-    }
-
-    public int skipBytes( ChannelBufferIndexFinder indexFinder )
-    {
-        return buffer.skipBytes( indexFinder );
+        return this;
     }
 
     private void sendChunkIfNeeded( int bytesPlus )
@@ -535,21 +126,19 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
         {
             setContinuation( CONTINUATION_MORE );
             writeCurrentChunk();
-            // TODO Reuse buffers?
-            buffer = ChannelBuffers.dynamicBuffer();
+            buffer = channel.alloc().buffer();
             addRoomForContinuationHeader();
         }
     }
 
-    private void writeCurrentChunk()
+    private ChannelFuture writeCurrentChunk()
     {
-        if ( !channel.isOpen() || !channel.isConnected() || !channel.isBound() )
-            throw new ComException( "Channel has been closed, so no need to try to write to it anymore. Client closed it?" );
+        if ( !channel.isActive() )
+            throw new ComException( "Channel has been closed, so no need to try to write to it anymore. Client closed it?" + channel.isActive() + ", " + channel.isOpen() + ", " + channel.isWritable() );
 
         waitForClientToCatchUpOnReadingChunks();
-        ChannelFuture future = channel.write( buffer );
-        future.addListener( this );
         writeAheadCounter.incrementAndGet();
+        return channel.writeAndFlush( buffer ).addListener( this );
     }
 
     private void waitForClientToCatchUpOnReadingChunks()
@@ -558,7 +147,7 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
         // If channel has been disconnected we can exit and the next write
         // will produce a decent exception out.
         boolean waited = false;
-        while ( channel.isConnected() && writeAheadCounter.get() >= MAX_WRITE_AHEAD_CHUNKS )
+        while ( channel.isActive() && writeAheadCounter.get() >= MAX_WRITE_AHEAD_CHUNKS )
         {
             waited = true;
             try
@@ -571,7 +160,7 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
             }
         }
 
-        if ( waited && (!channel.isConnected() || !channel.isOpen()) )
+        if ( waited && (!channel.isActive()) )
         {
             throw new ComException( "Channel has been closed" );
         }
@@ -587,253 +176,327 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
 
         if ( !future.isSuccess() || future.isCancelled() )
         {
-            future.getChannel().close();
+            future.channel().close();
         }
         writeAheadCounter.decrementAndGet();
     }
 
-    public void done()
+    public ChannelFuture done()
     {
-        if ( readable() /* Meaning that something has been written to it and can be read/sent */ )
+        if ( isReadable() /* Meaning that something has been written to it and can be read/sent */ )
         {
-            writeCurrentChunk();
+            return writeCurrentChunk();
+        }
+        else
+        {
+            return channel.newSucceededFuture();
         }
     }
 
-    public void writeByte( int value )
+    @Override
+    public ChunkingChannelBuffer writeByte( int value )
     {
         sendChunkIfNeeded( 1 );
         buffer.writeByte( value );
+        return this;
     }
 
-    public void writeShort( int value )
+    @Override
+    public ChunkingChannelBuffer writeShort( int value )
     {
         sendChunkIfNeeded( 2 );
         buffer.writeShort( value );
+        return this;
     }
 
-    public void writeMedium( int value )
+    @Override
+    public ChunkingChannelBuffer writeMedium( int value )
     {
         sendChunkIfNeeded( 4 );
         buffer.writeMedium( value );
+        return this;
     }
 
-    public void writeInt( int value )
+    @Override
+    public ChunkingChannelBuffer writeInt( int value )
     {
         sendChunkIfNeeded( 4 );
         buffer.writeInt( value );
+        return this;
     }
 
-    public void writeLong( long value )
+    @Override
+    public ChunkingChannelBuffer writeLong( long value )
     {
         sendChunkIfNeeded( 8 );
         buffer.writeLong( value );
+        return this;
     }
 
-    public void writeChar( int value )
+    @Override
+    public ChunkingChannelBuffer writeChar( int value )
     {
         sendChunkIfNeeded( 2 );
         buffer.writeChar( value );
+        return this;
     }
 
-    public void writeFloat( float value )
+    @Override
+    public ChunkingChannelBuffer writeFloat( float value )
     {
         sendChunkIfNeeded( 8 );
         buffer.writeFloat( value );
+        return this;
     }
 
-    public void writeDouble( double value )
+    @Override
+    public ChunkingChannelBuffer writeDouble( double value )
     {
         sendChunkIfNeeded( 8 );
         buffer.writeDouble( value );
+        return this;
     }
 
-    public void writeBytes( ChannelBuffer src )
+    @Override
+    public ByteBuf writeBytes( ByteBuf src )
     {
         sendChunkIfNeeded( src.capacity() );
         buffer.writeBytes( src );
+        return this;
     }
 
-    public void writeBytes( ChannelBuffer src, int length )
+    @Override
+    public ByteBuf writeBytes( ByteBuf src, int length )
     {
         sendChunkIfNeeded( length );
         buffer.writeBytes( src, length );
+        return this;
     }
 
-    public void writeBytes( ChannelBuffer src, int srcIndex, int length )
+    @Override
+    public ByteBuf writeBytes( ByteBuf src, int srcIndex, int length )
     {
         sendChunkIfNeeded( length );
         buffer.writeBytes( src, srcIndex, length );
+        return this;
     }
 
-    public void writeBytes( byte[] src )
+    @Override
+    public ByteBuf writeBytes( byte[] src )
     {
         sendChunkIfNeeded( src.length );
         buffer.writeBytes( src );
+        return this;
     }
 
-    public void writeBytes( byte[] src, int srcIndex, int length )
+    @Override
+    public ByteBuf writeBytes( byte[] src, int srcIndex, int length )
     {
         sendChunkIfNeeded( length );
         buffer.writeBytes( src, srcIndex, length );
+        return this;
     }
 
-    public void writeBytes( ByteBuffer src )
+    @Override
+    public ByteBuf writeBytes( ByteBuffer src )
     {
         sendChunkIfNeeded( src.limit() );
         buffer.writeBytes( src );
+        return this;
     }
 
+    @Override
     public int writeBytes( InputStream in, int length ) throws IOException
     {
         sendChunkIfNeeded( length );
         return buffer.writeBytes( in, length );
     }
 
+    @Override
     public int writeBytes( ScatteringByteChannel in, int length ) throws IOException
     {
         sendChunkIfNeeded( length );
         return buffer.writeBytes( in, length );
     }
 
-    public void writeZero( int length )
+    @Override
+    public ByteBuf writeZero( int length )
     {
         sendChunkIfNeeded( length );
         buffer.writeZero( length );
+        return this;
     }
 
+    @Override
     public int indexOf( int fromIndex, int toIndex, byte value )
     {
         return buffer.indexOf( fromIndex, toIndex, value );
     }
 
-    public int indexOf( int fromIndex, int toIndex, ChannelBufferIndexFinder indexFinder )
-    {
-        return buffer.indexOf( fromIndex, toIndex, indexFinder );
-    }
-
+    @Override
     public int bytesBefore( byte value )
     {
         return buffer.bytesBefore( value );
     }
 
-    public int bytesBefore( ChannelBufferIndexFinder indexFinder )
-    {
-        return buffer.bytesBefore( indexFinder );
-    }
-
+    @Override
     public int bytesBefore( int length, byte value )
     {
         return buffer.bytesBefore( length, value );
     }
 
-    public int bytesBefore( int length, ChannelBufferIndexFinder indexFinder )
-    {
-        return buffer.bytesBefore( length, indexFinder );
-    }
-
+    @Override
     public int bytesBefore( int index, int length, byte value )
     {
         return buffer.bytesBefore( index, length, value );
     }
 
-    public int bytesBefore( int index, int length, ChannelBufferIndexFinder indexFinder )
+    @Override
+    public int forEachByte( ByteBufProcessor processor )
     {
-        return buffer.bytesBefore( index, length, indexFinder );
+        return buffer.forEachByte( processor );
     }
 
-    public ChannelBuffer copy()
+    @Override
+    public int forEachByte( int index, int length, ByteBufProcessor processor )
+    {
+        return buffer.forEachByte( index, length, processor );
+    }
+
+    @Override
+    public int forEachByteDesc( ByteBufProcessor processor )
+    {
+        return buffer.forEachByteDesc( processor );
+    }
+
+    @Override
+    public int forEachByteDesc( int index, int length, ByteBufProcessor processor )
+    {
+        return buffer.forEachByteDesc( index, length, processor );
+    }
+
+    @Override
+    public ByteBuf copy()
     {
         return buffer.copy();
     }
 
-    public ChannelBuffer copy( int index, int length )
+    @Override
+    public ByteBuf copy( int index, int length )
     {
         return buffer.copy( index, length );
     }
 
-    public ChannelBuffer slice()
+    @Override
+    public ByteBuf slice()
     {
         return buffer.slice();
     }
 
-    public ChannelBuffer slice( int index, int length )
+    @Override
+    public ByteBuf slice( int index, int length )
     {
         return buffer.slice( index, length );
     }
 
-    public ChannelBuffer duplicate()
+    @Override
+    public ByteBuf duplicate()
     {
         return buffer.duplicate();
     }
 
-    public ByteBuffer toByteBuffer()
+    @Override
+    public int nioBufferCount()
     {
-        return buffer.toByteBuffer();
+        return buffer.nioBufferCount();
     }
 
-    public ByteBuffer toByteBuffer( int index, int length )
+    @Override
+    public ByteBuffer nioBuffer()
     {
-        return buffer.toByteBuffer( index, length );
+        return buffer.nioBuffer();
     }
 
-    public ByteBuffer[] toByteBuffers()
+    @Override
+    public ByteBuffer nioBuffer( int index, int length )
     {
-        return buffer.toByteBuffers();
+        return buffer.nioBuffer( index, length );
     }
 
-    public ByteBuffer[] toByteBuffers( int index, int length )
+    @Override
+    public ByteBuffer internalNioBuffer( int index, int length )
     {
-        return buffer.toByteBuffers( index, length );
+        return buffer.internalNioBuffer( index, length );
     }
 
+    @Override
+    public ByteBuffer[] nioBuffers()
+    {
+        return buffer.nioBuffers();
+    }
+
+    @Override
+    public ByteBuffer[] nioBuffers( int index, int length )
+    {
+        return buffer.nioBuffers( index, length );
+    }
+
+    @Override
     public boolean hasArray()
     {
         return buffer.hasArray();
     }
 
+    @Override
     public byte[] array()
     {
         return buffer.array();
     }
 
+    @Override
     public int arrayOffset()
     {
         return buffer.arrayOffset();
     }
 
+    @Override
+    public boolean hasMemoryAddress()
+    {
+        return buffer.hasMemoryAddress();
+    }
+
+    @Override
+    public long memoryAddress()
+    {
+        return buffer.memoryAddress();
+    }
+
+    @Override
     public String toString( Charset charset )
     {
         return buffer.toString( charset );
     }
 
+    @Override
     public String toString( int index, int length, Charset charset )
     {
         return buffer.toString( index, length, charset );
     }
 
-    public String toString( String charsetName )
+    @Override
+    public int hashCode()
     {
-        return buffer.toString( charsetName );
+        return buffer.hashCode();
     }
 
-    public String toString( String charsetName, ChannelBufferIndexFinder terminatorFinder )
+    @Override
+    public boolean equals( Object obj )
     {
-        return buffer.toString( charsetName, terminatorFinder );
+        return buffer.equals( obj );
     }
 
-    public String toString( int index, int length, String charsetName )
-    {
-        return buffer.toString( index, length, charsetName );
-    }
-
-    public String toString( int index, int length, String charsetName,
-            ChannelBufferIndexFinder terminatorFinder )
-    {
-        return buffer.toString( index, length, charsetName, terminatorFinder );
-    }
-
-    public int compareTo( ChannelBuffer buffer )
+    @Override
+    public int compareTo( ByteBuf buffer )
     {
         return this.buffer.compareTo( buffer );
     }
@@ -842,5 +505,632 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
     public String toString()
     {
         return buffer.toString();
+    }
+
+    @Override
+    public int capacity()
+    {
+        return buffer.capacity();
+    }
+
+    @Override
+    public ByteBuf capacity( int newCapacity )
+    {
+        buffer.capacity( newCapacity );
+        return this;
+    }
+
+    @Override
+    public int maxCapacity()
+    {
+        return buffer.maxCapacity();
+    }
+
+    @Override
+    public ByteBufAllocator alloc()
+    {
+        return buffer.alloc();
+    }
+
+    @Override
+    public ByteOrder order()
+    {
+        return buffer.order();
+    }
+
+    @Override
+    public ByteBuf order( ByteOrder endianness )
+    {
+        buffer.order( endianness );
+        return this;
+    }
+
+    @Override
+    public ByteBuf unwrap()
+    {
+        return buffer.unwrap();
+    }
+
+    @Override
+    public boolean isDirect()
+    {
+        return buffer.isDirect();
+    }
+
+    @Override
+    public int readerIndex()
+    {
+        return buffer.readerIndex();
+    }
+
+    @Override
+    public ByteBuf readerIndex( int readerIndex )
+    {
+        buffer.readerIndex( readerIndex );
+        return this;
+    }
+
+    @Override
+    public int writerIndex()
+    {
+        return buffer.writerIndex();
+    }
+
+    @Override
+    public ByteBuf writerIndex( int writerIndex )
+    {
+        buffer.writerIndex( writerIndex );
+        return this;
+    }
+
+    @Override
+    public ByteBuf setIndex( int readerIndex, int writerIndex )
+    {
+        buffer.setIndex( readerIndex, writerIndex );
+        return this;
+    }
+
+    @Override
+    public int readableBytes()
+    {
+        return buffer.readableBytes();
+    }
+
+    @Override
+    public int writableBytes()
+    {
+        return buffer.writableBytes();
+    }
+
+    @Override
+    public int maxWritableBytes()
+    {
+        return buffer.maxWritableBytes();
+    }
+
+    @Override
+    public boolean isReadable()
+    {
+        return buffer.isReadable();
+    }
+
+    @Override
+    public boolean isReadable( int size )
+    {
+        return buffer.isReadable( size );
+    }
+
+    @Override
+    public boolean isWritable()
+    {
+        return buffer.isWritable();
+    }
+
+    @Override
+    public boolean isWritable( int size )
+    {
+        return buffer.isWritable( size );
+    }
+
+    @Override
+    public ByteBuf markReaderIndex()
+    {
+        buffer.markReaderIndex();
+        return this;
+    }
+
+    @Override
+    public ByteBuf resetReaderIndex()
+    {
+        buffer.resetReaderIndex();
+        return this;
+    }
+
+    @Override
+    public ByteBuf markWriterIndex()
+    {
+        buffer.markWriterIndex();
+        return this;
+    }
+
+    @Override
+    public ByteBuf resetWriterIndex()
+    {
+        buffer.resetWriterIndex();
+        return this;
+    }
+
+    @Override
+    public ByteBuf discardReadBytes()
+    {
+        buffer.discardReadBytes();
+        return this;
+    }
+
+    @Override
+    public ByteBuf discardSomeReadBytes()
+    {
+        buffer.discardSomeReadBytes();
+        return this;
+    }
+
+    @Override
+    public ByteBuf ensureWritable( int minWritableBytes )
+    {
+        buffer.ensureWritable( minWritableBytes );
+        return this;
+    }
+
+    @Override
+    public int ensureWritable( int minWritableBytes, boolean force )
+    {
+        return buffer.ensureWritable( minWritableBytes, force );
+    }
+
+    @Override
+    public boolean getBoolean( int index )
+    {
+        return buffer.getBoolean( index );
+    }
+
+    @Override
+    public byte getByte( int index )
+    {
+        return buffer.getByte( index );
+    }
+
+    @Override
+    public short getUnsignedByte( int index )
+    {
+        return buffer.getUnsignedByte( index );
+    }
+
+    @Override
+    public short getShort( int index )
+    {
+        return buffer.getShort( index );
+    }
+
+    @Override
+    public int getUnsignedShort( int index )
+    {
+        return buffer.getUnsignedShort( index );
+    }
+
+    @Override
+    public int getMedium( int index )
+    {
+        return buffer.getMedium( index );
+    }
+
+    @Override
+    public int getUnsignedMedium( int index )
+    {
+        return buffer.getUnsignedMedium( index );
+    }
+
+    @Override
+    public int getInt( int index )
+    {
+        return buffer.getInt( index );
+    }
+
+    @Override
+    public long getUnsignedInt( int index )
+    {
+        return buffer.getUnsignedInt( index );
+    }
+
+    @Override
+    public long getLong( int index )
+    {
+        return buffer.getLong( index );
+    }
+
+    @Override
+    public char getChar( int index )
+    {
+        return buffer.getChar( index );
+    }
+
+    @Override
+    public float getFloat( int index )
+    {
+        return buffer.getFloat( index );
+    }
+
+    @Override
+    public double getDouble( int index )
+    {
+        return buffer.getDouble( index );
+    }
+
+    @Override
+    public ByteBuf getBytes( int index, ByteBuf dst )
+    {
+        buffer.getBytes( index, dst );
+        return this;
+    }
+
+    @Override
+    public ByteBuf getBytes( int index, ByteBuf dst, int length )
+    {
+        buffer.getBytes( index, dst, length );
+        return this;
+    }
+
+    @Override
+    public ByteBuf getBytes( int index, ByteBuf dst, int dstIndex, int length )
+    {
+        buffer.getBytes( index, dst, dstIndex, length );
+        return this;
+    }
+
+    @Override
+    public ByteBuf getBytes( int index, byte[] dst )
+    {
+        buffer.getBytes( index, dst );
+        return this;
+    }
+
+    @Override
+    public ByteBuf getBytes( int index, byte[] dst, int dstIndex, int length )
+    {
+        buffer.getBytes( index, dst, dstIndex, length );
+        return this;
+    }
+
+    @Override
+    public ByteBuf getBytes( int index, ByteBuffer dst )
+    {
+        buffer.getBytes( index, dst );
+        return this;
+    }
+
+    @Override
+    public ByteBuf getBytes( int index, OutputStream out, int length ) throws IOException
+    {
+        buffer.getBytes( index, out, length );
+        return this;
+    }
+
+    @Override
+    public int getBytes( int index, GatheringByteChannel out, int length ) throws IOException
+    {
+        return buffer.getBytes( index, out, length );
+    }
+
+    @Override
+    public ByteBuf setBoolean( int index, boolean value )
+    {
+        buffer.setBoolean( index, value );
+        return this;
+    }
+
+    @Override
+    public ByteBuf setByte( int index, int value )
+    {
+        buffer.setByte( index, value );
+        return this;
+    }
+
+    @Override
+    public ByteBuf setShort( int index, int value )
+    {
+        buffer.setShort( index, value );
+        return this;
+    }
+
+    @Override
+    public ByteBuf setMedium( int index, int value )
+    {
+        buffer.setMedium( index, value );
+        return this;
+    }
+
+    @Override
+    public ByteBuf setInt( int index, int value )
+    {
+        buffer.setInt( index, value );
+        return this;
+    }
+
+    @Override
+    public ByteBuf setLong( int index, long value )
+    {
+        buffer.setLong( index, value );
+        return this;
+    }
+
+    @Override
+    public ByteBuf setChar( int index, int value )
+    {
+        buffer.setChar( index, value );
+        return this;
+    }
+
+    @Override
+    public ByteBuf setFloat( int index, float value )
+    {
+        buffer.setFloat( index, value );
+        return this;
+    }
+
+    @Override
+    public ByteBuf setDouble( int index, double value )
+    {
+        buffer.setDouble( index, value );
+        return this;
+    }
+
+    @Override
+    public ByteBuf setBytes( int index, ByteBuf src )
+    {
+        buffer.setBytes( index, src );
+        return this;
+    }
+
+    @Override
+    public ByteBuf setBytes( int index, ByteBuf src, int length )
+    {
+        buffer.setBytes( index, src, length );
+        return this;
+    }
+
+    @Override
+    public ByteBuf setBytes( int index, ByteBuf src, int srcIndex, int length )
+    {
+        buffer.setBytes( index, src, srcIndex, length );
+        return this;
+    }
+
+    @Override
+    public ByteBuf setBytes( int index, byte[] src )
+    {
+        buffer.setBytes( index, src );
+        return this;
+    }
+
+    @Override
+    public ByteBuf setBytes( int index, byte[] src, int srcIndex, int length )
+    {
+        buffer.setBytes( index, src, srcIndex, length );
+        return this;
+    }
+
+    @Override
+    public ByteBuf setBytes( int index, ByteBuffer src )
+    {
+        buffer.setBytes( index, src );
+        return this;
+    }
+
+    @Override
+    public int setBytes( int index, InputStream in, int length ) throws IOException
+    {
+        return buffer.setBytes( index, in, length );
+    }
+
+    @Override
+    public int setBytes( int index, ScatteringByteChannel in, int length ) throws IOException
+    {
+        return buffer.setBytes( index, in, length );
+    }
+
+    @Override
+    public ByteBuf setZero( int index, int length )
+    {
+        buffer.setZero( index, length );
+        return this;
+    }
+
+    @Override
+    public boolean readBoolean()
+    {
+        return buffer.readBoolean();
+    }
+
+    @Override
+    public byte readByte()
+    {
+        return buffer.readByte();
+    }
+
+    @Override
+    public short readUnsignedByte()
+    {
+        return buffer.readUnsignedByte();
+    }
+
+    @Override
+    public short readShort()
+    {
+        return buffer.readShort();
+    }
+
+    @Override
+    public int readUnsignedShort()
+    {
+        return buffer.readUnsignedShort();
+    }
+
+    @Override
+    public int readMedium()
+    {
+        return buffer.readMedium();
+    }
+
+    @Override
+    public int readUnsignedMedium()
+    {
+        return buffer.readUnsignedMedium();
+    }
+
+    @Override
+    public int readInt()
+    {
+        return buffer.readInt();
+    }
+
+    @Override
+    public long readUnsignedInt()
+    {
+        return buffer.readUnsignedInt();
+    }
+
+    @Override
+    public long readLong()
+    {
+        return buffer.readLong();
+    }
+
+    @Override
+    public char readChar()
+    {
+        return buffer.readChar();
+    }
+
+    @Override
+    public float readFloat()
+    {
+        return buffer.readFloat();
+    }
+
+    @Override
+    public double readDouble()
+    {
+        return buffer.readDouble();
+    }
+
+    @Override
+    public ByteBuf readBytes( int length )
+    {
+        buffer.readBytes( length );
+        return this;
+    }
+
+    @Override
+    public ByteBuf readSlice( int length )
+    {
+        buffer.readSlice( length );
+        return this;
+    }
+
+    @Override
+    public ByteBuf readBytes( ByteBuf dst )
+    {
+        buffer.readBytes( dst );
+        return this;
+    }
+
+    @Override
+    public ByteBuf readBytes( ByteBuf dst, int length )
+    {
+        buffer.readBytes( dst, length );
+        return this;
+    }
+
+    @Override
+    public ByteBuf readBytes( ByteBuf dst, int dstIndex, int length )
+    {
+        buffer.readBytes( dst, dstIndex, length );
+        return this;
+    }
+
+    @Override
+    public ByteBuf readBytes( byte[] dst )
+    {
+        buffer.readBytes( dst );
+        return this;
+    }
+
+    @Override
+    public ByteBuf readBytes( byte[] dst, int dstIndex, int length )
+    {
+        buffer.readBytes( dst, dstIndex, length );
+        return this;
+    }
+
+    @Override
+    public ByteBuf readBytes( ByteBuffer dst )
+    {
+        buffer.readBytes( dst );
+        return this;
+    }
+
+    @Override
+    public ByteBuf readBytes( OutputStream out, int length ) throws IOException
+    {
+        buffer.readBytes( out, length );
+        return this;
+    }
+
+    @Override
+    public int readBytes( GatheringByteChannel out, int length ) throws IOException
+    {
+        return buffer.readBytes( out, length );
+    }
+
+    @Override
+    public ByteBuf skipBytes( int length )
+    {
+        buffer.skipBytes( length );
+        return this;
+    }
+
+    @Override
+    public ByteBuf writeBoolean( boolean value )
+    {
+        return buffer.writeBoolean( value );
+    }
+
+    @Override
+    public int refCnt()
+    {
+        throw new UnsupportedOperationException( "Reference counting not supported." );
+    }
+
+    @Override
+    public boolean release()
+    {
+        throw new UnsupportedOperationException( "Reference counting not supported." );
+    }
+
+    @Override
+    public boolean release( int decrement )
+    {
+        throw new UnsupportedOperationException( "Reference counting not supported." );
+    }
+
+    @Override
+    public ByteBuf retain( int increment )
+    {
+        throw new UnsupportedOperationException( "Reference counting not supported." );
+    }
+
+    @Override
+    public ByteBuf retain()
+    {
+        throw new UnsupportedOperationException( "Reference counting not supported." );
     }
 }

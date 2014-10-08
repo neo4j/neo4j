@@ -21,8 +21,7 @@ package org.neo4j.backup;
 
 import java.io.IOException;
 
-import org.jboss.netty.channel.Channel;
-
+import io.netty.channel.Channel;
 import org.neo4j.backup.BackupClient.BackupRequestType;
 import org.neo4j.com.Client;
 import org.neo4j.com.Protocol;

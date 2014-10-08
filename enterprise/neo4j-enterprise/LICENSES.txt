@@ -5,10 +5,10 @@ libraries. For an overview of the licenses see the NOTICE.txt file.
 Apache Software License, Version 2.0
   ConcurrentLinkedHashMap
   Lucene Core
+  Netty/All-in-One
   opencsv
   parboiled-core
   parboiled-scala
-  The Netty Project
 ------------------------------------------------------------------------------
 
                                  Apache License

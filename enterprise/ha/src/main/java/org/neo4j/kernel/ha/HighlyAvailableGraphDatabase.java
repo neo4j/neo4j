@@ -23,8 +23,7 @@ import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.Map;
 
-import org.jboss.netty.logging.InternalLoggerFactory;
-
+import io.netty.util.internal.logging.InternalLoggerFactory;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
