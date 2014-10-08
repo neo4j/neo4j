@@ -53,8 +53,8 @@ trait PatternGraphBuilder {
     }
 
     def takeOnVarLengthRel(r: VarLengthRelatedTo) = {
-      val startNode: PatternNode = patternNodeMap.getOrElseUpdate(r.left.name, new PatternNode(r.left.name))
-      val endNode: PatternNode = patternNodeMap.getOrElseUpdate(r.right.name, new PatternNode(r.right.name))
+      val startNode: PatternNode = patternNodeMap.getOrElseUpdate(r.left.name, new PatternNode(r.left))
+      val endNode: PatternNode = patternNodeMap.getOrElseUpdate(r.right.name, new PatternNode(r.right))
       patternRelMap(r.pathName) = startNode.relateViaVariableLengthPathTo(r.pathName, endNode, r.minHops, r.maxHops, r.relTypes, r.direction, r.relIterator, r.properties)
       true
     }
