@@ -34,7 +34,7 @@ import java.util.concurrent.locks.LockSupport;
  * support, and is used in MuninnPageCache.unparkEvictor on behalf of the page
  * faulting threads.
  */
-class FreePageWaiter
+final class FreePageWaiter
 {
     // A special poison-pill value that is used to tell FreePageWaiters that they should
     // stop waiting and that there is no free page for them, because the page cache is
@@ -114,5 +114,16 @@ class FreePageWaiter
         this.exception = exception;
         this.page = exceptionSignal;
         LockSupport.unpark( waiter );
+    }
+
+    @Override
+    public String toString()
+    {
+        return shortString() + " -> " + (next == null ? "null" : next.shortString());
+    }
+
+    private String shortString()
+    {
+        return "FreePageWaiter@" + Integer.toHexString( hashCode() ) + "[t:" + waiter.getId() + "]";
     }
 }

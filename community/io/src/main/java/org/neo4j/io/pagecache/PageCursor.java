@@ -129,7 +129,9 @@ public interface PageCursor extends AutoCloseable
 
     /**
      * Returns true if the page has entered an inconsistent state since the
-     * last call to next() or retry().
+     * last call to next() or shouldRetry().
+     * If this method returns true, the in-page offset of the cursor will be
+     * reset to zero.
      *
      * @throws IOException If the page was evicted while doing IO, the cursor will have
      *                     to do a page fault to get the page back.

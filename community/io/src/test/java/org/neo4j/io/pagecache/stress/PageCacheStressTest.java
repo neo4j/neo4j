@@ -112,6 +112,7 @@ public class PageCacheStressTest
             thread2.interrupt();
             thread1.join();
             thread2.join();
+            pageCacheUnderTest.close();
         }
     }
 

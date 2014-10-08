@@ -21,7 +21,6 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
@@ -48,8 +47,6 @@ final class MuninnPagedFile implements PagedFile
     final MuninnPageCache pageCache;
     // This is the table where we translate file-page-ids to cache-page-ids:
     final int pageSize;
-    // Global linked list of free pages
-    final AtomicReference<MuninnPage> freelist;
     final PageCacheMonitor monitor;
 
     final PrimitiveLongObjectMap<MuninnPage>[] translationTables;
@@ -68,13 +65,11 @@ final class MuninnPagedFile implements PagedFile
             MuninnPageCache pageCache,
             int pageSize,
             PageSwapperFactory swapperFactory,
-            AtomicReference<MuninnPage> pageFreelist,
             MuninnCursorPool cursorPool,
             PageCacheMonitor monitor ) throws IOException
     {
         this.pageCache = pageCache;
         this.pageSize = pageSize;
-        this.freelist = pageFreelist;
         this.cursorPool = cursorPool;
         this.monitor = monitor;
 
@@ -216,13 +211,21 @@ final class MuninnPagedFile implements PagedFile
         return UnsafeUtil.getAndAddInt( this, referenceCounterOffset, -1 ) <= 1;
     }
 
+    /**
+     * Get the current ref-count. Useful for checking if this PagedFile should
+     * be considered unmapped.
+     */
     int getRefCount()
     {
         return UnsafeUtil.getIntVolatile( this, referenceCounterOffset );
     }
 
-    public MuninnPage unparkEvictor( int iterationCount ) throws IOException
+    /**
+     * Grab a free page for the purpose of page faulting. Possibly blocking if
+     * none are immediately available.
+     */
+    MuninnPage grabFreePage() throws IOException
     {
-        return pageCache.unparkEvictor( iterationCount );
+        return pageCache.grabFreePage();
     }
 }

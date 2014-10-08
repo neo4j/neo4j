@@ -19,6 +19,19 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
+import static org.neo4j.io.pagecache.RecordingPageCacheMonitor.Evict;
+import static org.neo4j.io.pagecache.RecordingPageCacheMonitor.Fault;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -29,7 +42,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.junit.Test;
-
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongIntMap;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
@@ -41,20 +53,6 @@ import org.neo4j.io.pagecache.PageCacheTest;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.RecordingPageCacheMonitor;
-
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
-import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
-import static org.neo4j.io.pagecache.RecordingPageCacheMonitor.Evict;
-import static org.neo4j.io.pagecache.RecordingPageCacheMonitor.Fault;
 
 public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
 {
@@ -187,7 +185,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         writeInitialDataTo( file );
         RecordingPageCacheMonitor monitor = new RecordingPageCacheMonitor();
 
-        MuninnPageCache pageCache = new MuninnPageCache( fs, 10, 8, monitor );
+        MuninnPageCache pageCache = new MuninnPageCache( fs, 4, 8, monitor );
         PagedFile pagedFile = pageCache.map( file, 8 );
 
         try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
