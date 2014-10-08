@@ -22,12 +22,10 @@ package org.neo4j.graphdb;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
-
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Test;
-
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class GraphDatabaseServiceTest
 {
@@ -66,7 +64,6 @@ public class GraphDatabaseServiceTest
             @Override
             public void run()
             {
-                System.out.println( "Do tx" );
                 final Transaction tx = db.beginTx();
 
                 started.countDown();
@@ -82,17 +79,12 @@ public class GraphDatabaseServiceTest
 
                 db.createNode().setProperty( "foo", "bar" );
                 tx.success();
-                System.out.println( "Doing tx" );
                 tx.finish();
-                System.out.println( "Done tx" );
-                System.out.flush();
             }
         } );
 
         started.await();
-        System.out.println( "Shutting down" );
         db.shutdown();
-        System.out.println( "Shut down" );
 
 
     }
@@ -111,7 +103,6 @@ public class GraphDatabaseServiceTest
             @Override
             public void run()
             {
-                System.out.println( "Do tx" );
                 final Transaction tx = db.beginTx();
 
                 started.countDown();
@@ -127,7 +118,6 @@ public class GraphDatabaseServiceTest
 
                 db.createNode().setProperty( "foo", "bar" );
                 tx.success();
-                System.out.println( "Doing tx" );
 
                 Executors.newSingleThreadExecutor().submit( new Runnable()
                 {
@@ -152,14 +142,11 @@ public class GraphDatabaseServiceTest
                 } );
 
                 tx.finish();
-                System.out.println( "Done tx" );
             }
         } );
 
         started.await();
-        System.out.println( "Shutting down" );
         db.shutdown();
-        System.out.println( "Shut down" );
 
         while ( result.get() == null )
         {
