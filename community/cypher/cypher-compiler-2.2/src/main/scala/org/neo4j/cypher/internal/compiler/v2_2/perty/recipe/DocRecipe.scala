@@ -33,40 +33,51 @@ case object DocRecipe {
   case class strategyExpander[T : TypeTag, S >: T : TypeTag](extractor: DocGenStrategy[S]) {
     val tpe = typeOf[S]
 
-    case object expand extends (DocRecipe[T] => PrintableDocRecipe) {
-
+    case object expandForPrinting extends (DocRecipe[T] => PrintableDocRecipe) {
       def apply(input: DocRecipe[T]) = {
         @tailrec
-        def expand(remaining: DocRecipe[Any], result: PrintableDocRecipe): PrintableDocRecipe = {
-          remaining match {
-            case Seq(hd: AddPretty[_], tl@_*) =>
-              if (hd.tpe <:< tpe) {
-                formatErrors {
-                  hd.asInstanceOf[AddPretty[_ <: T]](extractor)
-                } match {
-                  case Some(recipe) =>
-                    expand(recipe ++ tl, result)
+        def expand(remaining: DocRecipe[Any], result: PrintableDocRecipe = Seq.empty): PrintableDocRecipe = remaining match {
+          case Seq(hd: AddPretty[_], tl@_*) =>
+            throw new IllegalArgumentException(
+              s"Cannot expand value of type ${hd.tpe}, it is not within the extractor's supported type bound <:< $tpe (extractor: $extractor)"
+            )
 
-                  case None =>
-                    throw new IllegalArgumentException(
-                      s"Extractor failed to expand value of type: ${hd.tpe} (extractor: $extractor)"
-                    )
-                }
-              } else {
-                throw new IllegalArgumentException(
-                  s"Cannot expand value of type ${hd.tpe}, it is not within the extractor's supported type bound <:< $tpe (extractor: $extractor)"
-                )
-              }
+          case Seq(hd: PrintableDocStep, tl@_*) =>
+            expand(tl, result :+ hd)
 
-            case Seq(hd: PrintableDocStep, tl@_*) =>
-              expand(tl, result :+ hd)
-
-            case Seq() =>
-              result
-          }
+          case Seq() =>
+            result
         }
 
-        expand(input, Seq.empty)
+        expand(expandForQuoting(input))
+      }
+    }
+
+    case object expandForQuoting extends (DocRecipe[T] => DocRecipe[T]) {
+      def apply(input: DocRecipe[T]) = {
+        @tailrec
+        def expand(remaining: DocRecipe[Any], result: DocRecipe[T] = Seq.empty): DocRecipe[T] = remaining match {
+          case Seq(hd: AddPretty[_], tl@_*) if hd.tpe <:< tpe =>
+            formatErrors {
+              hd.asInstanceOf[AddPretty[_ <: T]](extractor)
+            } match {
+              case Some(recipe) =>
+                expand(recipe ++ tl, result)
+
+              case None =>
+                throw new IllegalArgumentException(
+                  s"Extractor failed to expand value of type: ${hd.tpe} (extractor: $extractor)"
+                )
+            }
+
+          case Seq(hd: PrintableDocStep, tl@_*) =>
+            expand(tl, result :+ hd)
+
+          case Seq() =>
+            result
+        }
+
+        expand(input)
       }
     }
   }

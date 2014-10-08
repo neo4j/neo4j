@@ -31,7 +31,7 @@ class DocRecipeTest extends CypherFunSuite {
     import Pretty._
 
     val doc = Pretty("x" :/: "y")
-    val result = strategyExpander(Extractor.empty) expand doc
+    val result = strategyExpander(Extractor.empty) expandForPrinting doc
 
     result should equal(doc)
   }
@@ -45,7 +45,7 @@ class DocRecipeTest extends CypherFunSuite {
       case (a: Int)    => Pretty("1")
       case (s: String) => Pretty(s)
     })
-    val result = expander.expand(docAppender)
+    val result = expander.expandForPrinting(docAppender)
 
     result should equal(apply("1" :/: "y"))
   }

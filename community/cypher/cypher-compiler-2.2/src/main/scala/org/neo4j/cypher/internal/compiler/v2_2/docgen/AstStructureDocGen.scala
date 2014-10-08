@@ -33,21 +33,19 @@ case object astStructureDocGen extends CustomDocGen[ASTNode] {
 
   import Pretty._
 
-  val simpleDocGen = SimpleDocHandler.docGen
-  val astDocGen = InternalDocHandler.docGen
-  val astExpander = strategyExpander[ASTNode, Any](astDocGen)
+  val astExpander = strategyExpander[ASTNode, Any](InternalDocHandler.docGen)
+  val simpleExpander = strategyExpander[ASTNode, Any](SimpleDocHandler.docGen)
 
   def apply[X <: Any : TypeTag](x: X): Option[DocRecipe[Any]] = x match {
-//    case particle: ASTParticle =>
-//      astParticleDocGen(particle)
+    case particle: ASTParticle =>
+      astParticleDocGen(particle)
 
     case astNode: ASTNode =>
-      val astRecipe = astExpander.expand(Seq(AddPretty(astNode)))
-//      val result = simpleDocGen(astNode).map { simpleDoc =>
-//        nest(group(group(comment("ast") :/: astDoc) :/: group(comment("val") :/: splice(simpleDoc))))
-//      }.getOrElse(astDoc)
-//      Pretty(result)
-      Some(astRecipe)
+      val pretties: Seq[AddPretty[ASTNode]] = Seq(AddPretty(astNode))
+      val astRecipe = astExpander.expandForQuoting(pretties)
+      val simpleRecipe = simpleExpander.expandForQuoting(pretties)
+      val result = nest(group(group(comment("ast") :/: quote(astRecipe)) :/: group(comment("val") :/: quote(simpleRecipe))))
+      Pretty(result)
 
     case _ =>
       None

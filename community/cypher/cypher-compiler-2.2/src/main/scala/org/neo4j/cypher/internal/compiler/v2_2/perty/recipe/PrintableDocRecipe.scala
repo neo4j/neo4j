@@ -38,7 +38,7 @@ case object PrintableDocRecipe {
   case class evalUsingStrategy[T : TypeTag, S >: T : TypeTag](docGen: DocGenStrategy[S] = toStringDocGen) extends (DocRecipe[T] => Doc) {
     def apply(recipe: DocRecipe[T]): Doc = {
       val expander = strategyExpander[T, S](docGen)
-      val expanded = expander.expand(recipe)
+      val expanded = expander.expandForPrinting(recipe)
       val printable = eval(expanded)
       printable
     }
