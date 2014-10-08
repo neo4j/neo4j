@@ -23,7 +23,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -41,19 +40,17 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
 {
     private final LogFile logFile;
     private final TransactionMetadataCache transactionMetadataCache;
-    private final TxIdGenerator txIdGenerator;
     private TransactionAppender appender;
     private final TransactionIdStore transactionIdStore;
     private final boolean batchedWrites;
     private final IdOrderingQueue legacyIndexTransactionOrdering;
 
-    public PhysicalLogicalTransactionStore( LogFile logFile, TxIdGenerator txIdGenerator,
+    public PhysicalLogicalTransactionStore( LogFile logFile,
             TransactionMetadataCache transactionMetadataCache,
             TransactionIdStore transactionIdStore, IdOrderingQueue legacyIndexTransactionOrdering,
             boolean batchedWrites )
     {
         this.logFile = logFile;
-        this.txIdGenerator = txIdGenerator;
         this.transactionMetadataCache = transactionMetadataCache;
         this.transactionIdStore = transactionIdStore;
         this.legacyIndexTransactionOrdering = legacyIndexTransactionOrdering;
@@ -64,9 +61,9 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
     public void init() throws Throwable
     {
         this.appender = batchedWrites ?
-                new BatchingPhysicalTransactionAppender( logFile, txIdGenerator,
+                new BatchingPhysicalTransactionAppender( logFile,
                         transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering ) :
-                new PhysicalTransactionAppender( logFile, txIdGenerator,
+                new PhysicalTransactionAppender( logFile,
                         transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering );
     }
 

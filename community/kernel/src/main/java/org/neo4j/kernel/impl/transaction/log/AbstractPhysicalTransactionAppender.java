@@ -24,7 +24,6 @@ import java.io.IOException;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterv1;
@@ -33,7 +32,6 @@ import org.neo4j.kernel.impl.util.IdOrderingQueue;
 abstract class AbstractPhysicalTransactionAppender implements TransactionAppender
 {
     protected final WritableLogChannel channel;
-    private final TxIdGenerator txIdGenerator;
     private final TransactionMetadataCache transactionMetadataCache;
     private final LogFile logFile;
     private final TransactionIdStore transactionIdStore;
@@ -47,7 +45,7 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
     // is introduced to manage just that and is only used for transactions that contain any legacy index changes.
     protected final IdOrderingQueue legacyIndexTransactionOrdering;
 
-    public AbstractPhysicalTransactionAppender( LogFile logFile, TxIdGenerator txIdGenerator,
+    protected AbstractPhysicalTransactionAppender( LogFile logFile,
             TransactionMetadataCache transactionMetadataCache, TransactionIdStore transactionIdStore,
             IdOrderingQueue legacyIndexTransactionOrdering )
     {
@@ -55,7 +53,6 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
         this.transactionIdStore = transactionIdStore;
         this.legacyIndexTransactionOrdering = legacyIndexTransactionOrdering;
         this.channel = logFile.getWriter();
-        this.txIdGenerator = txIdGenerator;
         this.transactionMetadataCache = transactionMetadataCache;
         this.indexCommandDetector = new IndexCommandDetector( new CommandWriter( channel ) );
         this.transactionLogWriter = new TransactionLogWriter( new LogEntryWriterv1( channel, indexCommandDetector ) );
@@ -100,7 +97,7 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
             // We put log rotation check outside the private append method since it must happen before
             // we generate the next transaction id
             rotated = logFile.checkRotation();
-            transactionId = txIdGenerator.generate( transaction );
+            transactionId = transactionIdStore.nextCommittingTransactionId();
             hasLegacyIndexChanges = append( transaction, transactionId );
             ticket = getCurrentTicket();
         }
@@ -151,7 +148,7 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
             long candidateTransactionId = transaction.getCommitEntry().getTxId();
             if ( lastCommittedTxId + 1 == candidateTransactionId )
             {
-                transactionId = txIdGenerator.generate( transaction.getTransactionRepresentation() );
+                transactionId = transactionIdStore.nextCommittingTransactionId();
                 hasLegacyIndexChanges = append( transaction.getTransactionRepresentation(), transactionId );
                 ticket = getCurrentTicket();
             }

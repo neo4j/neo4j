@@ -19,9 +19,16 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
@@ -47,22 +54,16 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TargetDirectory;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
+
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.NO_PRUNING;
 import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
-import static org.neo4j.kernel.impl.util.Providers.singletonProvider;
 import static org.neo4j.test.TargetDirectory.testDirForTest;
 
 public class PhysicalLogicalTransactionStoreTest
@@ -92,8 +93,7 @@ public class PhysicalLogicalTransactionStoreTest
         LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000, NO_PRUNING,
                 transactionIdStore, mock( LogVersionRepository.class), monitor, logRotationControl,
                 positionCache, noRecoveryAsserter() ) );
-        TxIdGenerator txIdGenerator = new DefaultTxIdGenerator( singletonProvider( transactionIdStore ) );
-        life.add( new PhysicalLogicalTransactionStore( logFile, txIdGenerator, positionCache,
+        life.add( new PhysicalLogicalTransactionStore( logFile, positionCache,
                 transactionIdStore, BYPASS, true ) );
 
         try
@@ -113,7 +113,6 @@ public class PhysicalLogicalTransactionStoreTest
         // GIVEN
         LogRotationControl logRotationControl = mock( LogRotationControl.class );
         TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 0l );
-        TxIdGenerator txIdGenerator = new DefaultTxIdGenerator( singletonProvider( transactionIdStore ) );
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
         final byte[] additionalHeader = new byte[] {1, 2, 5};
         final int masterId = 2, authorId = 1;
@@ -128,7 +127,7 @@ public class PhysicalLogicalTransactionStoreTest
         life.start();
         try
         {
-            addATransactionAndRewind( logFile, txIdGenerator, positionCache, transactionIdStore,
+            addATransactionAndRewind( logFile, positionCache, transactionIdStore,
                     additionalHeader, masterId, authorId, timeStarted, latestCommittedTxWhenStarted, timeCommitted );
         }
         finally
@@ -160,7 +159,7 @@ public class PhysicalLogicalTransactionStoreTest
                         transactionIdStore, mock( LogVersionRepository.class), monitor, logRotationControl,
                 positionCache, recoverer ) );
 
-        life.add( new PhysicalLogicalTransactionStore( logFile, txIdGenerator, positionCache,
+        life.add( new PhysicalLogicalTransactionStore( logFile, positionCache,
                 transactionIdStore, BYPASS, true ) );
 
         // WHEN
@@ -183,7 +182,6 @@ public class PhysicalLogicalTransactionStoreTest
         // GIVEN
         LogRotationControl logRotationControl = mock( LogRotationControl.class );
         TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 0l );
-        TxIdGenerator txIdGenerator = new DefaultTxIdGenerator( singletonProvider( transactionIdStore ) );
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
         final byte[] additionalHeader = new byte[] {1, 2, 5};
         final int masterId = 2, authorId = 1;
@@ -198,7 +196,7 @@ public class PhysicalLogicalTransactionStoreTest
         life.start();
         try
         {
-            addATransactionAndRewind( logFile, txIdGenerator, positionCache, transactionIdStore,
+            addATransactionAndRewind( logFile, positionCache, transactionIdStore,
                     additionalHeader, masterId, authorId, timeStarted, latestCommittedTxWhenStarted, timeCommitted );
         }
         finally
@@ -230,7 +228,7 @@ public class PhysicalLogicalTransactionStoreTest
                 transactionIdStore, mock( LogVersionRepository.class), monitor, logRotationControl,
                 positionCache, recoverer ));
 
-        LogicalTransactionStore store = life.add( new PhysicalLogicalTransactionStore( logFile, txIdGenerator,
+        LogicalTransactionStore store = life.add( new PhysicalLogicalTransactionStore( logFile,
                 positionCache, transactionIdStore, BYPASS, true ) );
 
         // WHEN
@@ -248,13 +246,13 @@ public class PhysicalLogicalTransactionStoreTest
         }
     }
 
-    private void addATransactionAndRewind( LogFile logFile, TxIdGenerator txIdGenerator,
+    private void addATransactionAndRewind( LogFile logFile,
                                            TransactionMetadataCache positionCache, TransactionIdStore transactionIdStore,
                                            byte[] additionalHeader, int masterId, int authorId, long timeStarted,
                                            long latestCommittedTxWhenStarted, long timeCommitted ) throws IOException
     {
         TransactionAppender appender = new PhysicalTransactionAppender(
-                logFile, txIdGenerator, positionCache, transactionIdStore, BYPASS );
+                logFile, positionCache, transactionIdStore, BYPASS );
         PhysicalTransactionRepresentation transaction =
                 new PhysicalTransactionRepresentation( singleCreateNodeCommand() );
         transaction.setHeader( additionalHeader, masterId, authorId, timeStarted, latestCommittedTxWhenStarted,

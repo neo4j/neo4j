@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.com.ComException;
+import org.neo4j.com.RequestContext;
 import org.neo4j.com.storecopy.TransactionObligationFulfiller;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Pair;
@@ -162,7 +163,8 @@ public class UpdatePuller implements Lifecycle, TransactionObligationFulfiller
         {
             try
             {
-                master.pullUpdates( requestContextFactory.newRequestContext() );
+                RequestContext context = requestContextFactory.newRequestContext();
+                master.pullUpdates( context );
             }
             catch ( ComException e )
             {

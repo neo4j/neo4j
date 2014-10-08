@@ -21,16 +21,15 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.transaction.TxIdGenerator;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 
 public class PhysicalTransactionAppender extends AbstractPhysicalTransactionAppender
 {
-    public PhysicalTransactionAppender( LogFile logFile, TxIdGenerator txIdGenerator,
+    public PhysicalTransactionAppender( LogFile logFile,
             TransactionMetadataCache transactionMetadataCache, TransactionIdStore transactionIdStore,
             IdOrderingQueue legacyIndexTransactionOrdering )
     {
-        super( logFile, txIdGenerator, transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering );
+        super( logFile, transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering );
     }
 
     @Override

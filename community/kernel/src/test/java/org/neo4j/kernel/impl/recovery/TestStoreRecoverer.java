@@ -32,7 +32,6 @@ import org.neo4j.kernel.impl.store.record.NeoStoreUtil;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
-import org.neo4j.kernel.impl.transaction.DefaultTxIdGenerator;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
@@ -43,10 +42,8 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory;
-import org.neo4j.kernel.impl.util.Providers;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -118,9 +115,7 @@ public class TestStoreRecoverer
 
         try
         {
-            TransactionAppender appender = new PhysicalTransactionAppender( logFile,
-                    new DefaultTxIdGenerator( Providers.<TransactionIdStore>singletonProvider( transactionIdStore ) ),
-                    positionCache, transactionIdStore, null );
+            TransactionAppender appender = new PhysicalTransactionAppender( logFile, positionCache, null, null );
             appender.append( singleNodeTransaction() );
         }
         finally

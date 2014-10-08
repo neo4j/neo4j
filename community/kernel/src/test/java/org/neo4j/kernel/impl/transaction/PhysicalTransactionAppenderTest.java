@@ -72,11 +72,12 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
@@ -94,13 +95,12 @@ public class PhysicalTransactionAppenderTest
         // GIVEN
         LogFile logFile = mock( LogFile.class );
         when( logFile.getWriter() ).thenReturn( channel );
-        TxIdGenerator txIdGenerator = mock( TxIdGenerator.class );
         long txId = 15;
-        when( txIdGenerator.generate( any( TransactionRepresentation.class ) ) ).thenReturn( txId );
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
-        TransactionAppender appender = new PhysicalTransactionAppender(
-                logFile, txIdGenerator, positionCache, transactionIdStore, BYPASS );
+        when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( txId );
+        TransactionAppender appender = new PhysicalTransactionAppender( logFile, positionCache,
+                transactionIdStore, BYPASS );
 
         // WHEN
         PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation(
@@ -135,14 +135,12 @@ public class PhysicalTransactionAppenderTest
         // GIVEN
         LogFile logFile = mock( LogFile.class );
         when( logFile.getWriter() ).thenReturn( channel );
-        TxIdGenerator txIdGenerator = mock( TxIdGenerator.class );
-        long txId = 15;
-        when( txIdGenerator.generate( any( TransactionRepresentation.class ) ) ).thenReturn( txId );
-        TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
+        long nextTxId = 15;
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
+        when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( nextTxId );
+        TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
         TransactionAppender appender = new PhysicalTransactionAppender(
-                logFile, txIdGenerator, positionCache, transactionIdStore, BYPASS );
-
+                logFile, positionCache, transactionIdStore, BYPASS );
 
         // WHEN
         final byte[] additionalHeader = new byte[]{1, 2, 5};
@@ -184,11 +182,10 @@ public class PhysicalTransactionAppenderTest
         LogFile logFile = mock( LogFile.class );
         InMemoryLogChannel channel = new InMemoryLogChannel();
         when( logFile.getWriter() ).thenReturn( channel );
-        TxIdGenerator txIdGenerator = mock( TxIdGenerator.class );
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         TransactionAppender appender = new PhysicalTransactionAppender(
-                logFile, txIdGenerator, positionCache, transactionIdStore, BYPASS );
+                logFile, positionCache, transactionIdStore, BYPASS );
 
         // WHEN
         final byte[] additionalHeader = new byte[]{1, 2, 5};
@@ -230,12 +227,11 @@ public class PhysicalTransactionAppenderTest
         when( channel.putInt( anyInt() ) ).thenThrow( new IOException( failureMessage ) );
         LogFile logFile = mock( LogFile.class );
         when( logFile.getWriter() ).thenReturn( channel );
-        TxIdGenerator txIdGenerator = mock( TxIdGenerator.class );
-        when( txIdGenerator.generate( any( TransactionRepresentation.class ) ) ).thenReturn( txId );
         TransactionMetadataCache metadataCache = new TransactionMetadataCache( 10, 10 );
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
+        when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( txId );
         TransactionAppender appender = new PhysicalTransactionAppender( logFile,
-                txIdGenerator, metadataCache, transactionIdStore, BYPASS );
+                metadataCache, transactionIdStore, BYPASS );
 
         // WHEN
         TransactionRepresentation transaction = mock( TransactionRepresentation.class );
@@ -249,6 +245,7 @@ public class PhysicalTransactionAppenderTest
         {
             // THEN
             assertTrue( contains( e, failureMessage, IOException.class ) );
+            verify( transactionIdStore, times( 1 ) ).nextCommittingTransactionId();
             verifyNoMoreInteractions( transactionIdStore );
         }
     }
@@ -261,12 +258,11 @@ public class PhysicalTransactionAppenderTest
         LogFile logFile = mock( LogFile.class );
         WritableLogChannel channel = new InMemoryLogChannel();
         when( logFile.getWriter() ).thenReturn( channel );
-        TxIdGenerator txIdGenerator = mock( TxIdGenerator.class );
-        when( txIdGenerator.generate( any( TransactionRepresentation.class ) ) ).thenReturn( 1L, 2L, 3L, 4L, 5L );
         TransactionMetadataCache metadataCache = new TransactionMetadataCache( 10, 100 );
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
+        when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( 1L, 2L, 3L, 4L, 5L );
         IdOrderingQueue legacyIndexOrdering = new SynchronizedArrayIdOrderingQueue( 5 );
-        TransactionAppender appender = new BatchingPhysicalTransactionAppender( logFile, txIdGenerator,
+        TransactionAppender appender = new BatchingPhysicalTransactionAppender( logFile,
                 metadataCache, transactionIdStore, legacyIndexOrdering );
 
         // WHEN appending 5 simultaneous transaction, of which 3 has legacy index changes [1*,2,3*,4,5*]
@@ -336,12 +332,11 @@ public class PhysicalTransactionAppenderTest
         } ).when( logFile ).prune();
         WritableLogChannel channel = new InMemoryLogChannel();
         when( logFile.getWriter() ).thenReturn( channel );
-        TxIdGenerator txIdGenerator = mock( TxIdGenerator.class );
-        when( txIdGenerator.generate( any( TransactionRepresentation.class ) ) ).thenReturn( 1L, 2L, 3L, 4L, 5L );
         TransactionMetadataCache metadataCache = new TransactionMetadataCache( 10, 100 );
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
+        when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( 1L, 2L, 3L, 4L, 5L );
         IdOrderingQueue legacyIndexOrdering = new SynchronizedArrayIdOrderingQueue( 5 );
-        TransactionAppender appender = new PhysicalTransactionAppender( logFile, txIdGenerator,
+        TransactionAppender appender = new PhysicalTransactionAppender( logFile,
                 metadataCache, transactionIdStore, legacyIndexOrdering );
         OtherThreadExecutor<Void> otherThread = cleanup.add( new OtherThreadExecutor<Void>( "T2", null ) );
 

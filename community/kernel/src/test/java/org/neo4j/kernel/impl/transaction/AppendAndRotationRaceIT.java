@@ -39,9 +39,6 @@ import org.junit.runners.Parameterized.Parameters;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.transaction.DefaultTxIdGenerator;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.log.BatchingPhysicalTransactionAppender;
@@ -49,15 +46,14 @@ import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogRotationControl;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.Monitor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.Monitor;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
-import org.neo4j.kernel.impl.util.Providers;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.EphemeralFileSystemRule;
 
@@ -92,8 +88,6 @@ public class AppendAndRotationRaceIT
         AtomicBoolean doneSignal = new AtomicBoolean();
         Rotator logRotationControl = new Rotator( 20, doneSignal, transactionIdStore );
         TransactionMetadataCache metadataCache = new TransactionMetadataCache( 10, 1_000 );
-        TxIdGenerator txIdGenerator = new DefaultTxIdGenerator(
-                Providers.<TransactionIdStore>singletonProvider( transactionIdStore ) );
 
         // ... and finally the two services of interest
         long rotateAtSize = forceRotate ? Integer.MAX_VALUE : 3_000;
@@ -103,7 +97,7 @@ public class AppendAndRotationRaceIT
                 mock( Visitor.class ) ) );
         life.start();
         TransactionAppender appender = appenderFactory.create(
-                logFile, txIdGenerator, metadataCache, transactionIdStore );
+                logFile, metadataCache, transactionIdStore );
 
         // WHENever stressing load on the appender where rotations are triggered (see Rotator)
         Committer[] committers = new Committer[10];
@@ -296,17 +290,17 @@ public class AppendAndRotationRaceIT
 
     private interface AppenderFactory
     {
-        TransactionAppender create( LogFile logFile, TxIdGenerator txIdGenerator,
+        TransactionAppender create( LogFile logFile,
                 TransactionMetadataCache metadataCache, TransactionIdStore transactionIdStore );
     }
 
     private static final AppenderFactory NON_BATCHING = new AppenderFactory()
     {
         @Override
-        public TransactionAppender create( LogFile logFile, TxIdGenerator txIdGenerator,
+        public TransactionAppender create( LogFile logFile,
                 TransactionMetadataCache metadataCache, TransactionIdStore transactionIdStore )
         {
-            return new PhysicalTransactionAppender( logFile, txIdGenerator,
+            return new PhysicalTransactionAppender( logFile,
                     metadataCache, transactionIdStore, IdOrderingQueue.BYPASS );
         }
     };
@@ -314,10 +308,10 @@ public class AppendAndRotationRaceIT
     private static final AppenderFactory BATCHING = new AppenderFactory()
     {
         @Override
-        public TransactionAppender create( LogFile logFile, TxIdGenerator txIdGenerator,
+        public TransactionAppender create( LogFile logFile,
                 TransactionMetadataCache metadataCache, TransactionIdStore transactionIdStore )
         {
-            return new BatchingPhysicalTransactionAppender( logFile, txIdGenerator,
+            return new BatchingPhysicalTransactionAppender( logFile,
                     metadataCache, transactionIdStore, IdOrderingQueue.BYPASS );
         }
     };

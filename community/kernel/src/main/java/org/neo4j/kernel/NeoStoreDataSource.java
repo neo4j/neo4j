@@ -99,7 +99,6 @@ import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
-import org.neo4j.kernel.impl.transaction.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogFileRecoverer;
@@ -182,7 +181,6 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
     private final StoreUpgrader storeMigrationProcess;
     private final TransactionMonitor transactionMonitor;
     private final KernelHealth kernelHealth;
-    private final TxIdGenerator txIdGenerator;
     private final TransactionHeaderInformationFactory transactionHeaderInformationFactory;
     private final StartupStatisticsProvider startupStatistics;
     private final Caches cacheProvider;
@@ -291,7 +289,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
                                  SchemaWriteGuard schemaWriteGuard, TransactionEventHandlers transactionEventHandlers,
                                  IndexingService.Monitor indexingServiceMonitor, FileSystemAbstraction fs,
                                  StoreUpgrader storeMigrationProcess, TransactionMonitor transactionMonitor,
-                                 KernelHealth kernelHealth, TxIdGenerator txIdGenerator,
+                                 KernelHealth kernelHealth,
                                  TransactionHeaderInformationFactory transactionHeaderInformationFactory,
                                  StartupStatisticsProvider startupStatistics,
                                  Caches cacheProvider, NodeManager nodeManager, Guard guard,
@@ -313,7 +311,6 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
         this.storeMigrationProcess = storeMigrationProcess;
         this.transactionMonitor = transactionMonitor;
         this.kernelHealth = kernelHealth;
-        this.txIdGenerator = txIdGenerator;
         this.transactionHeaderInformationFactory = transactionHeaderInformationFactory;
         this.startupStatistics = startupStatistics;
         this.cacheProvider = cacheProvider;
@@ -485,7 +482,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
                     neoStore, logMonitor, this, transactionMetadataCache, logFileRecoverer ) );
 
             final LogicalTransactionStore logicalTransactionStore = dependencies.satisfyDependency(
-                    new PhysicalLogicalTransactionStore( logFile, txIdGenerator,
+                    new PhysicalLogicalTransactionStore( logFile,
                             transactionMetadataCache, neoStore, legacyIndexTransactionOrdering,
                             config.get( GraphDatabaseSettings.batched_writes ) ) );
 

@@ -83,6 +83,11 @@ public class ResponsePacker
                 ResourceReleaser.NO_OP );
     }
 
+    public <T> Response<T> packEmptyResponse( T response )
+    {
+        return new TransactionObligationResponse<>( response, storeId.instance(), -1, ResourceReleaser.NO_OP );
+    }
+
     protected Visitor<CommittedTransactionRepresentation, IOException> filterVisitor(
             final Visitor<CommittedTransactionRepresentation, IOException> delegate, final long txToEndAt )
     {
