@@ -920,7 +920,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         |WITH
         |  `  candidate@60`.name AS `  candidate@212`,
         |  `  origin@7`.name AS `  origin@186`,
-        |  SUM(ROUND(Add(r2.weight, Multiply(COALESCE(r2.activity, 0), 2)))) AS `boost`
+        |  SUM(ROUND(r2.weight + COALESCE(r2.activity, 0) * 2)) AS `boost`
         |GIVEN `  origin@186`, boost, `  candidate@212`
         |WITH
         |  `  candidate@212` AS `  candidate@212`, `  origin@186` AS `  origin@186`, boost AS `boost`

@@ -23,7 +23,9 @@ import Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_2._
 import symbols._
 
-case class Add(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression {
+case class Add(lhs: Expression, rhs: Expression)(val position: InputPosition)
+  extends Expression with BinaryOperatorExpression
+{
   def semanticCheck(ctx: SemanticContext) =
     lhs.semanticCheck(ctx) chain
     lhs.expectType(TypeSpec.all) chain
@@ -105,31 +107,43 @@ case class Add(lhs: Expression, rhs: Expression)(val position: InputPosition) ex
 
     stringTypes | numberTypes | collectionTypes
   }
+
+  override def canonicalOperatorSymbol = "+"
 }
 
-case class UnaryAdd(rhs: Expression)(val position: InputPosition) extends Expression with PrefixFunctionTyping {
+case class UnaryAdd(rhs: Expression)(val position: InputPosition)
+  extends Expression with LeftUnaryOperatorExpression with PrefixFunctionTyping {
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTInteger), outputType = CTInteger),
     Signature(argumentTypes = Vector(CTFloat), outputType = CTFloat)
   )
+
+  override def canonicalOperatorSymbol = "+"
 }
 
-case class Subtract(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with InfixFunctionTyping {
+case class Subtract(lhs: Expression, rhs: Expression)(val position: InputPosition)
+  extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTInteger),
     Signature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTFloat),
     Signature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
   )
+
+  override def canonicalOperatorSymbol = "-"
 }
 
-case class UnarySubtract(rhs: Expression)(val position: InputPosition) extends Expression with PrefixFunctionTyping {
+case class UnarySubtract(rhs: Expression)(val position: InputPosition)
+  extends Expression with LeftUnaryOperatorExpression with PrefixFunctionTyping {
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTInteger), outputType = CTInteger),
     Signature(argumentTypes = Vector(CTFloat), outputType = CTFloat)
   )
+
+  override def canonicalOperatorSymbol = "-"
 }
 
-case class Multiply(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with InfixFunctionTyping {
+case class Multiply(lhs: Expression, rhs: Expression)(val position: InputPosition)
+  extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
   // 1 * 1 => 1
   // 1 * 1.1 => 1.1
   // 1.1 * 1 => 1.1
@@ -139,9 +153,12 @@ case class Multiply(lhs: Expression, rhs: Expression)(val position: InputPositio
     Signature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTFloat),
     Signature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
   )
+
+  override def canonicalOperatorSymbol = "*"
 }
 
-case class Divide(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with InfixFunctionTyping {
+case class Divide(lhs: Expression, rhs: Expression)(val position: InputPosition)
+  extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
   // 1 / 1 => 1
   // 1 / 1.1 => 0.909
   // 1.1 / 1 => 1.1
@@ -151,9 +168,12 @@ case class Divide(lhs: Expression, rhs: Expression)(val position: InputPosition)
     Signature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTFloat),
     Signature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
   )
+
+  override def canonicalOperatorSymbol = "/"
 }
 
-case class Modulo(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with InfixFunctionTyping {
+case class Modulo(lhs: Expression, rhs: Expression)(val position: InputPosition)
+  extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
   // 1 % 1 => 0
   // 1 % 1.1 => 1.0
   // 1.1 % 1 => 0.1
@@ -163,9 +183,12 @@ case class Modulo(lhs: Expression, rhs: Expression)(val position: InputPosition)
     Signature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTFloat),
     Signature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
   )
+
+  override def canonicalOperatorSymbol = "%"
 }
 
-case class Pow(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with InfixFunctionTyping {
+case class Pow(lhs: Expression, rhs: Expression)(val position: InputPosition)
+  extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
   // 1 ^ 1 => 1.1
   // 1 ^ 1.1 => 1.0
   // 1.1 ^ 1 => 1.1
@@ -173,4 +196,6 @@ case class Pow(lhs: Expression, rhs: Expression)(val position: InputPosition) ex
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
   )
+
+  override def canonicalOperatorSymbol = "^"
 }
