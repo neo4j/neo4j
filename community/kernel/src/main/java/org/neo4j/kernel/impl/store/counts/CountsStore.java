@@ -248,7 +248,8 @@ class CountsStore implements Closeable
             }
             byte[] record = new byte[RECORD_SIZE];
             ByteBuffer buffer = ByteBuffer.wrap( record );
-            for ( int read, offset = 0; (read = in.read( record, offset, record.length - offset )) != -1; )
+            boolean readNext = true;
+            for ( int read, offset = 0; readNext && (read = in.read( record, offset, record.length - offset )) != -1; )
             {
                 if ( read != record.length )
                 {
@@ -256,7 +257,7 @@ class CountsStore implements Closeable
                     continue;
                 }
                 buffer.position( 0 );
-                visitRecord( buffer, visitor );
+                readNext = visitRecord( buffer, visitor );
                 offset = 0;
             }
         }
@@ -290,7 +291,7 @@ class CountsStore implements Closeable
      *                         |
      *                       value
      */
-    private void visitRecord( ByteBuffer buffer, RecordVisitor visitor )
+    private boolean visitRecord( ByteBuffer buffer, RecordVisitor visitor )
     {
         // read type
         byte type = buffer.get();
@@ -315,7 +316,7 @@ class CountsStore implements Closeable
                 assert two == 0;
                 assert three == 0;
                 assert count == 0;
-                return;
+                return false;
 
             case NODE_KEY:
                 assert one == 0;
@@ -331,6 +332,7 @@ class CountsStore implements Closeable
                 throw new IllegalStateException( "Unknown counts key type: " + type );
         }
         visitor.visit( key, count );
+        return true;
     }
 
     public Writer newWriter( File targetFile, long lastCommittedTxId ) throws IOException
