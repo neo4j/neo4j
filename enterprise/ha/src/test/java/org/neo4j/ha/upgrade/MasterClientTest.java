@@ -44,6 +44,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.MasterClient214;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.com.master.MasterImpl.Monitor;
+import org.neo4j.kernel.ha.com.master.MasterImplTest;
 import org.neo4j.kernel.ha.com.master.MasterServer;
 import org.neo4j.kernel.ha.com.slave.MasterClient;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
@@ -99,7 +100,7 @@ public class MasterClientTest
     public void newClientsShouldNotIgnoreStoreIdDifferences() throws Throwable
     {
         // Given
-        MasterImpl.SPI masterImplSPI = mockMasterImplSpiWith( new StoreId( 1, 2, 3, 4 ) );
+        MasterImpl.SPI masterImplSPI = MasterImplTest.mockedSpi( new StoreId( 1, 2, 3, 4 ) );
         when( masterImplSPI.getMasterIdForCommittedTx( anyLong() ) ).thenReturn( Pair.of( 1, 5L ) );
 
         cleanupRule.add( newMasterServer( masterImplSPI ) );

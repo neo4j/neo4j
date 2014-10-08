@@ -21,7 +21,7 @@ package org.neo4j.kernel.ha.shell;
 
 import java.rmi.RemoteException;
 
-import org.neo4j.kernel.ha.UpdatePuller;
+import org.neo4j.kernel.ha.UpdatePullerClient;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Continuation;
 import org.neo4j.shell.Output;
@@ -37,7 +37,7 @@ public class Pullupdates extends NonTransactionProvidingApp
     {
         try
         {
-            getServer().getDb().getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
+            getServer().getDb().getDependencyResolver().resolveDependency( UpdatePullerClient.class ).pullUpdates();
         }
         catch ( IllegalArgumentException e )
         {

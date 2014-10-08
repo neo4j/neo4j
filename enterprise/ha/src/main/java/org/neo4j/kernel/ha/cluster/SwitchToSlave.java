@@ -34,6 +34,7 @@ import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
+import org.neo4j.com.storecopy.TransactionObligationFulfiller;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.HostnamePort;
@@ -50,7 +51,6 @@ import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.MasterClient210;
 import org.neo4j.kernel.ha.StoreOutOfDateException;
 import org.neo4j.kernel.ha.StoreUnableToParticipateInClusterException;
-import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.ha.cluster.member.ClusterMemberVersionCheck;
 import org.neo4j.kernel.ha.cluster.member.ClusterMemberVersionCheck.Outcome;
@@ -372,7 +372,7 @@ public class SwitchToSlave
     {
         MasterClient master = newMasterClient( masterUri, nioneoDataSource.getStoreId(), haCommunicationLife );
 
-        Slave slaveImpl = new SlaveImpl( resolver.resolveDependency( UpdatePuller.class ) );
+        Slave slaveImpl = new SlaveImpl( resolver.resolveDependency( TransactionObligationFulfiller.class ) );
 
         SlaveServer server = new SlaveServer( slaveImpl, serverConfig(), logging, byteCounterMonitor, requestMonitor);
 

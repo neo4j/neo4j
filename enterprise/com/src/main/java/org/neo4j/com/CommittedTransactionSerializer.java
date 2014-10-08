@@ -30,6 +30,10 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterv1;
 
+/**
+ * Serialized {@link CommittedTransactionRepresentation transactions} to raw bytes on the {@link ChannelBuffer network}.
+ * One serializer can be instantiated per response and is able to serialize one or many transactions.
+ */
 public class CommittedTransactionSerializer implements Visitor<CommittedTransactionRepresentation, IOException>
 {
     private final NetworkWritableLogChannel channel;

@@ -19,63 +19,128 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 
-import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.com.ComException;
 import org.neo4j.com.RequestContext;
+import org.neo4j.com.TransactionObligationResponse;
+import org.neo4j.com.TransactionStream;
+import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.com.storecopy.TransactionObligationFulfiller;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberChangeEvent;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberListener;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
+import org.neo4j.kernel.ha.com.master.MasterImpl;
+import org.neo4j.kernel.ha.com.slave.MasterClient;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.CappedOperation;
-import org.neo4j.kernel.impl.util.Condition;
-import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.logging.Logging;
 
 import static java.lang.System.currentTimeMillis;
 
-public class UpdatePuller implements Lifecycle, TransactionObligationFulfiller
+/**
+ * Able to pull updates from a master and apply onto this slave database.
+ *
+ * Updates are pulled and applied using a single and dedicated thread, created in here. No other threads are allowed to
+ * pull and apply transactions on a slave. Calling one of the {@link #pullUpdates() pullUpdates}
+ * {@link #fulfill(long) methods} will {@link UpdatePuller#poke() poke} that single thread, so that
+ * it gets going, if not already doing so, with its usual task of pulling updates and the caller which poked
+ * the update thread will constantly poll to see if the transactions it is oglibed to await have been applied.
+ *
+ * Here comes a diagram of how the classes making up this functionality hangs together:
+ *
+ * <pre>
+ *
+ *             -------- 1 -------------------->({@link MasterImpl master})
+ *           /                                   |
+ *          |                                   /
+ *          | v--------------------- 2 --------
+ *       ({@link MasterClient slave})
+ *       | ^ \
+ *       | |   -------- 3 -----
+ *       | \                   \
+ *       |  \                   v
+ *       |   ---- 8 -----------({@link TransactionCommittingResponseUnpacker response unpacker})
+ *       |                        |     ^
+ *       9                        |     |
+ *    (continue)                  4     7
+ *                                |     |
+ *                                v     |
+ *                             ({@link UpdatePullingTransactionObligationFulfiller obligation fulfiller})
+ *                                |     ^
+ *                                |     |
+ *                                5     6
+ *                                |     |
+ *                                v     |
+ *                            ({@link UpdatePuller update puller})
+ *
+ * </pre>
+ *
+ * In the above picture:
+ *
+ * <ol>
+ * <li>Slave issues request to master, for example for locking an entity</li>
+ * <li>Master responds with a {@link TransactionObligationResponse transaction obligation} telling the slave
+ * which transaction it must have applied before continuing</li>
+ * <li>The response from the master gets unpacked by the response unpacker...</li>
+ * <li>...which will be sent to the {@link UpdatePullingTransactionObligationFulfiller obligation fulfiller}...</li>
+ * <li>...which will ask the {@link UpdatePuller update puller}, a separate thread, to have that transaction
+ * committed and applied. The calling thread will gently wait for that to happen.</li>
+ * <li>The {@link UpdatePuller update puller} will pull updates until it reaches that desired transaction id,
+ * and might actually continue passed that point if master has more transactions. The obligation fulfiller,
+ * constantly polling for {@link TransactionIdStore#getLastClosedTransactionId() last applied transaction}
+ * will notice when the obligation has been fulfilled.</li>
+ * <li>Response unpacker finishes its call to {@link TransactionObligationFulfiller#fulfill(long) fulfill the obligation}</li>
+ * <li>Slave has fully received the response and is now able to...</li>
+ * <li>...continue</li>
+ * </ol>
+ *
+ * All communication, except actually pulling updates, work this way between slave and master. The only difference
+ * in the pullUpdates case is that instead of receiving and fulfilling a transaction obligation,
+ * {@link TransactionStream transaction data} is received and applied to store directly, in batches.
+ */
+public class UpdatePuller implements Runnable, Lifecycle
 {
-    private final HighAvailabilityMemberStateMachine memberStateMachine;
-    private final Master master;
-    private final RequestContextFactory requestContextFactory;
+    public static final Condition NEXT_TICKET = new Condition()
+    {
+        @Override
+        public boolean evaluate( int currentTicket, int targetTicket )
+        {
+            return currentTicket >= targetTicket;
+        }
+    };
+
+    private volatile boolean halted;
+    private volatile boolean paused = true;
+    private final AtomicInteger targetTicket = new AtomicInteger(), currentTicket = new AtomicInteger();
     private final AvailabilityGuard availabilityGuard;
-    private final LastUpdateTime lastUpdateTime;
-    private final Config config;
-    private final JobScheduler scheduler;
+    private final RequestContextFactory requestContextFactory;
+    private final Master master;
     private final StringLogger logger;
     private final CappedOperation<Pair<String, ? extends Exception>> cappedLogger;
-    private final UpdatePullerHighAvailabilityMemberListener listener;
-    private UpdatePullingThread updatePuller;
-    private TransactionIdStore transactionIdStore;
-    private final DependencyResolver resolver;
+    private final LastUpdateTime lastUpdateTime;
+    private final PauseListener listener;
+    private final HighAvailabilityMemberStateMachine memberStateMachine;
+    private Thread me;
 
-    public UpdatePuller( HighAvailabilityMemberStateMachine memberStateMachine, Master master,
-                         RequestContextFactory requestContextFactory, AvailabilityGuard availabilityGuard,
-                         LastUpdateTime lastUpdateTime, Config config, JobScheduler scheduler, final StringLogger log,
-                         DependencyResolver resolver )
-
+    UpdatePuller( HighAvailabilityMemberStateMachine memberStateMachine, AvailabilityGuard availabilityGuard,
+            RequestContextFactory requestContextFactory, Master master, LastUpdateTime lastUpdateTime, Logging logging,
+            InstanceId serverId )
     {
         this.memberStateMachine = memberStateMachine;
-        this.master = master;
-        this.requestContextFactory = requestContextFactory;
         this.availabilityGuard = availabilityGuard;
+        this.requestContextFactory = requestContextFactory;
+        this.master = master;
         this.lastUpdateTime = lastUpdateTime;
-        this.config = config;
-        this.scheduler = scheduler;
-        this.logger = log;
-        this.resolver = resolver;
+        this.logger = logging.getMessagesLog( getClass() );
         this.cappedLogger = new CappedOperation<Pair<String, ? extends Exception>>(
                 CappedOperation.count( 10 ) )
         {
@@ -85,87 +150,109 @@ public class UpdatePuller implements Lifecycle, TransactionObligationFulfiller
                 logger.warn( event.first(), event.other() );
             }
         };
-
-        this.listener = new UpdatePullerHighAvailabilityMemberListener( config.get( ClusterSettings.server_id ) );
+        this.listener = new PauseListener( serverId );
     }
 
-    public void pullUpdates() throws InterruptedException
+    @Override
+    public void run()
     {
-        if ( !updatePuller.isActive() )
+        while ( !halted )
         {
-            return;
-        }
-
-        final int ticket = updatePuller.poke();
-        await( new Condition()
-        {
-            @Override
-            public boolean evaluate()
+            if ( !paused )
             {
-                return updatePuller.current() >= ticket;
+                int round = targetTicket.get();
+                if ( currentTicket.get() < round )
+                {
+                    doPullUpdates();
+                    currentTicket.set( round );
+                    continue;
+                }
             }
-        } );
+
+            LockSupport.parkNanos( 100_000_000 );
+        }
     }
 
-    private void await( Condition condition ) throws InterruptedException
+    @Override
+    public void init() throws Throwable
     {
-        while ( !condition.evaluate() )
+        // TODO Don't do this. This is just to satisfy LockSupport park/unpark
+        // And we cannot have this class extend Thread since there's a naming clash with Lifecycle for stop()
+        me = new Thread( this );
+        me.start();
+    }
+
+    @Override
+    public synchronized void start()
+    {
+        memberStateMachine.addHighAvailabilityMemberListener( listener );
+    }
+
+    @Override
+    public void stop()
+    {
+        pause( true );
+        memberStateMachine.removeHighAvailabilityMemberListener( listener );
+    }
+
+    @Override
+    public void shutdown() throws Throwable
+    {
+        halted = true;
+        while ( me.getState() != Thread.State.TERMINATED )
         {
-            if ( !updatePuller.isActive() )
+            Thread.sleep( 1 );
+            Thread.yield();
+        }
+    }
+
+    private void pause( boolean paused )
+    {
+        boolean wasPaused = this.paused;
+        this.paused = paused;
+        if ( wasPaused )
+        {
+            LockSupport.unpark( me );
+        }
+    }
+
+    interface Condition
+    {
+        boolean evaluate( int currentTicket, int targetTicket );
+    }
+
+    public void await( Condition condition ) throws InterruptedException
+    {
+        int ticket = poke();
+        while ( !condition.evaluate( currentTicket.get(), ticket ) )
+        {
+            if ( !isActive() )
             {
-                throw new InterruptedException( "Update puller has been halted:" + updatePuller );
+                throw new IllegalStateException( "Update puller has been halted:" + this );
             }
 
             Thread.sleep( 1 );
         }
     }
 
-    /**
-     * Triggers pulling of updates up until at least {@code toTxId} if no pulling is currently happening
-     * and returns immediately.
-     * @return {@link Future} which will block on {@link Future#get()} until {@code toTxId} has been applied.
-     */
-    @Override
-    public void pullUpdates( final long toTxId ) throws InterruptedException
+    private int poke()
     {
-        if ( !updatePuller.isActive() )
-        {
-            throw new IllegalStateException( "Update puller not active " + updatePuller );
-        }
-
-        Condition condition = new Condition()
-        {
-            @Override
-            public boolean evaluate()
-            {
-                /**
-                 * We need to await last *closed* transaction id, not last *committed* transaction id since
-                 * right after leaving this method we might read records off of disk, and they had better
-                 * be up to date, otherwise we read stale data.
-                 */
-                return transactionIdStore.getLastClosedTransactionId() >= toTxId;
-            }
-        };
-        if ( condition.evaluate() )
-        {   // We're already there
-            return;
-        }
-
-        updatePuller.poke();
-        await( condition );
+        int result = this.targetTicket.incrementAndGet();
+        LockSupport.unpark( me );
+        return result;
     }
 
-    private void startUpdatePuller()
+    public boolean isActive()
     {
-        updatePuller = new UpdatePullingThread( new UpdatePullingThread.Operation()
-        {
-            @Override
-            public void perform()
-            {
-                doPullUpdates();
-            }
-        } );
-        updatePuller.start();
+        // Should return true if this is active
+        return !halted && !paused;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "UpdatePuller[halted:" + halted + ", paused:" + paused +
+                ", current:" + currentTicket + ", target:" + targetTicket + "]";
     }
 
     private void doPullUpdates()
@@ -189,65 +276,11 @@ public class UpdatePuller implements Lifecycle, TransactionObligationFulfiller
         }
     }
 
-    @Override
-    public void init() throws Throwable
-    {
-        startUpdatePuller();
-        startIntervalTrigger();
-    }
-
-    private void startIntervalTrigger()
-    {
-        long pullInterval = config.get( HaSettings.pull_interval );
-        if ( pullInterval > 0 )
-        {
-            scheduler.scheduleRecurring( JobScheduler.Group.pullUpdates, new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    try
-                    {
-                        pullUpdates();
-                    }
-                    catch ( InterruptedException e )
-                    {
-                        logger.error( "Pull updates failed", e );
-                    }
-                }
-            }, pullInterval, pullInterval, TimeUnit.MILLISECONDS );
-        }
-    }
-
-    @Override
-    public void start() throws Throwable
-    {
-        memberStateMachine.addHighAvailabilityMemberListener( listener );
-    }
-
-    @Override
-    public void stop() throws Throwable
-    {
-        updatePuller.pause( true );
-        memberStateMachine.removeHighAvailabilityMemberListener( listener );
-    }
-
-    @Override
-    public void shutdown() throws Throwable
-    {
-        updatePuller.halt();
-        while ( updatePuller.getState() != Thread.State.TERMINATED )
-        {
-            Thread.sleep( 1 );
-            Thread.yield();
-        }
-    }
-
-    private class UpdatePullerHighAvailabilityMemberListener extends HighAvailabilityMemberListener.Adapter
+    private class PauseListener extends HighAvailabilityMemberListener.Adapter
     {
         private final InstanceId myInstanceId;
 
-        private UpdatePullerHighAvailabilityMemberListener( InstanceId myInstanceId )
+        private PauseListener( InstanceId myInstanceId )
         {
             this.myInstanceId = myInstanceId;
         }
@@ -258,7 +291,7 @@ public class UpdatePuller implements Lifecycle, TransactionObligationFulfiller
             if ( event.getInstanceId().equals( myInstanceId ) )
             {
                 // I'm the master, no need to pull updates
-                updatePuller.pause( true );
+                pause( true );
             }
         }
 
@@ -268,12 +301,7 @@ public class UpdatePuller implements Lifecycle, TransactionObligationFulfiller
             if ( event.getInstanceId().equals( myInstanceId ) )
             {
                 // I'm a slave, let the transactions stream in
-
-                // Pull out the transaction id store at this very moment, because we receive this event
-                // when joining a cluster or switching to a new master and there might have been a store copy
-                // just now where there has been a new transaction id store created.
-                transactionIdStore = resolver.resolveDependency( TransactionIdStore.class );
-                updatePuller.pause( false );
+                pause( false );
             }
         }
     }

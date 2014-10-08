@@ -20,17 +20,17 @@
 package org.neo4j.kernel.ha.com.slave;
 
 import org.neo4j.com.Response;
+import org.neo4j.com.storecopy.TransactionObligationFulfiller;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.ha.com.master.Slave;
 
 public class SlaveImpl implements Slave
 {
-    private final UpdatePuller puller;
+    private final TransactionObligationFulfiller fulfiller;
 
-    public SlaveImpl( UpdatePuller puller )
+    public SlaveImpl( TransactionObligationFulfiller fulfiller )
     {
-        this.puller = puller;
+        this.fulfiller = fulfiller;
     }
 
     @Override
@@ -38,7 +38,7 @@ public class SlaveImpl implements Slave
     {
         try
         {
-            puller.pullUpdates( upToAndIncludingTxId );
+            fulfiller.fulfill( upToAndIncludingTxId );
         }
         catch ( InterruptedException e )
         {

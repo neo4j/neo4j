@@ -115,7 +115,8 @@ public class TestStoreRecoverer
 
         try
         {
-            TransactionAppender appender = new PhysicalTransactionAppender( logFile, positionCache, null, null );
+            TransactionAppender appender = new PhysicalTransactionAppender( logFile, positionCache,
+                    transactionIdStore, null );
             appender.append( singleNodeTransaction() );
         }
         finally

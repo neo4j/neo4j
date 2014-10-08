@@ -179,7 +179,7 @@ public class TransactionCommittingResponseUnpackerTest
         unpacker.unpackResponse( new DummyObligationResponse( 4 ), NO_OP_TX_HANDLER );
 
         // THEN
-        verify( obligationFulfiller, times( 1 ) ).pullUpdates( 4l );
+        verify( obligationFulfiller, times( 1 ) ).fulfill( 4l );
     }
 
     private static class StoppingTxHandler implements ResponseUnpacker.TxHandler
@@ -281,7 +281,7 @@ public class TransactionCommittingResponseUnpackerTest
         }
 
         @Override
-        public void pullUpdates( long toTxId ) throws InterruptedException
+        public void fulfill( long toTxId ) throws InterruptedException
         {
             latch.startAndAwaitFinish();
         }

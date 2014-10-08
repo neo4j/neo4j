@@ -22,6 +22,8 @@ package org.neo4j.com.storecopy;
 import java.io.IOException;
 
 import org.neo4j.com.Response;
+import org.neo4j.com.TransactionStream;
+import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.com.storecopy.TransactionQueue.TransactionVisitor;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.Visitor;
@@ -34,6 +36,15 @@ import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
+/**
+ * Receives and unpacks {@link Response responses}.
+ * Transaction obligations are handled by {@link TransactionObligationFulfiller} and
+ * {@link TransactionStream transaction streams} are {@link TransactionRepresentationStoreApplier applied to the store},
+ * in batches.
+ *
+ * It is assumed that any {@link TransactionStreamResponse response carrying transaction data} comes from the one
+ * and same thread.
+ */
 public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, Lifecycle
 {
     private static final int DEFAULT_BATCH_SIZE = 30;
@@ -58,7 +69,7 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
 
             try
             {
-                obligationFulfiller.pullUpdates( txId );
+                obligationFulfiller.fulfill( txId );
             }
             catch ( InterruptedException e )
             {
@@ -192,7 +203,7 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
             return new TransactionObligationFulfiller()
             {
                 @Override
-                public void pullUpdates( long toTxId )
+                public void fulfill( long toTxId )
                 {
                     throw new UnsupportedOperationException( "Should not be called" );
                 }

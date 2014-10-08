@@ -37,7 +37,7 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.ha.BeginTx;
 import org.neo4j.ha.FinishTx;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.ha.UpdatePuller;
+import org.neo4j.kernel.ha.UpdatePullerClient;
 import org.neo4j.test.AbstractClusterTest;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
@@ -63,7 +63,7 @@ public class IndexOperationsIT extends AbstractClusterTest
         // -- all instances should see it after pulling updates
         for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
         {
-            db.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
+            db.getDependencyResolver().resolveDependency( UpdatePullerClient.class ).pullUpdates();
             assertNodeAndIndexingExists( db, node, key, value );
         }
     }

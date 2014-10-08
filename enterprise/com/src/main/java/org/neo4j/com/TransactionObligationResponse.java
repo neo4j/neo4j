@@ -21,10 +21,18 @@ package org.neo4j.com;
 
 import java.io.IOException;
 
+import org.neo4j.com.storecopy.TransactionObligationFulfiller;
 import org.neo4j.kernel.impl.store.StoreId;
 
+/**
+ * {@link Response} that carries transaction obligation as a side-effect.
+ *
+ * @see TransactionObligationFulfiller
+ */
 public class TransactionObligationResponse<T> extends Response<T>
 {
+    public static final byte RESPONSE_TYPE = -1;
+
     private final long obligationTxId;
 
     public TransactionObligationResponse( T response, StoreId storeId, long obligationTxId, ResourceReleaser releaser )

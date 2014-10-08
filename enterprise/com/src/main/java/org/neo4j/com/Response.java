@@ -25,6 +25,11 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 
+/**
+ * In response to a {@link Client#sendRequest(RequestType, RequestContext, Serializer, Deserializer) request}
+ * which contains a response value (T), and optionally some sort of side-effect,
+ * like {@link TransactionStreamResponse transaction stream} or {@link TransactionObligationResponse transaction oglibation}.
+ */
 public abstract class Response<T> implements AutoCloseable
 {
     private final T response;
@@ -74,15 +79,20 @@ public abstract class Response<T> implements AutoCloseable
      */
     public interface Handler
     {
+        /**
+         * Called for responses that handle {@link TransactionObligationResponse transaction obligations}
+         * after the obligation transaction id has been deserialized.
+         * @param txId the obligation transaction id that must be fulfilled.
+         * @throws IOException if there were any problems fulfilling that obligation.
+         */
         void obligation( long txId ) throws IOException;
 
         /**
-         * Transaction stream is starting, containing the following data sources.
-         * Only called if there are at least one transaction in the coming transaction stream.
+         * @return a {@link Visitor} which will {@link Visitor#visit(Object) receive} calls about transactions.
          */
         Visitor<CommittedTransactionRepresentation,IOException> transactions();
     }
 
-    public static final Response<Void> EMPTY = new TransactionObligationResponse<Void>( null, StoreId.DEFAULT,
+    public static final Response<Void> EMPTY = new TransactionObligationResponse<>( null, StoreId.DEFAULT,
             -1, ResourceReleaser.NO_OP );
 }

@@ -45,7 +45,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.ha.UpdatePuller;
+import org.neo4j.kernel.ha.UpdatePullerClient;
 import org.neo4j.test.RepeatRule;
 import org.neo4j.test.StreamConsumer;
 import org.neo4j.test.TargetDirectory;
@@ -170,7 +170,7 @@ public class TestPullUpdatesApplied
         String storePath = args[0];
         int serverId = Integer.parseInt( args[1] );
 
-        database( serverId, storePath ).getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
+        database( serverId, storePath ).getDependencyResolver().resolveDependency( UpdatePullerClient.class ).pullUpdates();
         // this is the bug trigger
         // no shutdown, emulates a crash.
     }

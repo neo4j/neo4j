@@ -30,7 +30,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.ha.UpdatePuller;
+import org.neo4j.kernel.ha.UpdatePullerClient;
 import org.neo4j.test.LoggerRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
@@ -92,7 +92,7 @@ public class MultipleClusterTest
             // Verify properties in all cluster nodes
             for ( HighlyAvailableGraphDatabase highlyAvailableGraphDatabase : cluster1.getAllMembers() )
             {
-                highlyAvailableGraphDatabase.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
+                highlyAvailableGraphDatabase.getDependencyResolver().resolveDependency( UpdatePullerClient.class ).pullUpdates();
 
                 Transaction transaction = highlyAvailableGraphDatabase.beginTx();
                 assertEquals( "neo4j.ha", highlyAvailableGraphDatabase.getNodeById( cluster1NodeId ).getProperty(
@@ -102,7 +102,7 @@ public class MultipleClusterTest
 
             for ( HighlyAvailableGraphDatabase highlyAvailableGraphDatabase : cluster2.getAllMembers() )
             {
-                highlyAvailableGraphDatabase.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
+                highlyAvailableGraphDatabase.getDependencyResolver().resolveDependency( UpdatePullerClient.class ).pullUpdates();
 
                 Transaction transaction = highlyAvailableGraphDatabase.beginTx();
                 assertEquals( "neo4j.ha2", highlyAvailableGraphDatabase.getNodeById( cluster2NodeId ).getProperty(

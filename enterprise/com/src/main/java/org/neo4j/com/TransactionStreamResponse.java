@@ -21,10 +21,19 @@ package org.neo4j.com;
 
 import java.io.IOException;
 
+import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.kernel.impl.store.StoreId;
 
+/**
+ * {@link Response} that carries {@link TransactionStream transaction data} as a side-effect, to be applied
+ * before accessing the response value.
+ *
+ * @see ResponseUnpacker
+ */
 public class TransactionStreamResponse<T> extends Response<T>
 {
+    public static final byte RESPONSE_TYPE = 0;
+
     private final TransactionStream transactions;
 
     public TransactionStreamResponse( T response, StoreId storeId, TransactionStream transactions,

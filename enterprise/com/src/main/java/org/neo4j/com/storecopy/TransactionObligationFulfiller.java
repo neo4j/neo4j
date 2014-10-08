@@ -19,7 +19,11 @@
  */
 package org.neo4j.com.storecopy;
 
+/**
+ * Fulfills transaction obligations, i.e. ensures that the database has committed and applied a particular
+ * transaction id.
+ */
 public interface TransactionObligationFulfiller
 {
-    void pullUpdates( final long toTxId ) throws InterruptedException;
+    void fulfill( long toTxId ) throws InterruptedException;
 }
