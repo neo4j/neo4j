@@ -318,6 +318,7 @@ BSD License
   Easing Equations (in easing.js)
   Janino
   JQuery Easing Plugin
+  Scala Compiler
 ------------------------------------------------------------------------------
 
 Copyright (c) <year>, <copyright holder>
