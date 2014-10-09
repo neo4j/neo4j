@@ -31,7 +31,7 @@ trait Expression2Selectivity {
   def apply(exp: Expression)(implicit semanticTable: SemanticTable, selections: Selections): Selectivity
 }
 
-case class ExpressionSelectivityCalculator(stats: GraphStatistics) extends Expression2Selectivity with SelectivityCombiner {
+case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: SelectivityCombiner) extends Expression2Selectivity  {
   def apply(exp: Expression)(implicit semanticTable: SemanticTable, selections: Selections): Selectivity = exp match {
     // WHERE a:Label
     case HasLabels(_, label :: Nil) =>
@@ -51,7 +51,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics) extends Expre
 
     case Ors(expressions) =>
       val selectivities = expressions.toSeq.map(apply)
-      orTogetherSelectivities(selectivities).get // We can trust the AST to never have empty ORs
+      combiner.orTogetherSelectivities(selectivities).get // We can trust the AST to never have empty ORs
 
     // WHERE id(x) = {param}
     case In(func@FunctionInvocation(_, _, IndexedSeq(_)), Parameter(_))
@@ -92,7 +92,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics) extends Expre
 
     val expandedSelectivities = Stream.from(0).take(expressions.size).flatMap(_ => indexSelectivities)
 
-    val selectivity: Option[Selectivity] = orTogetherSelectivities(expandedSelectivities)
+    val selectivity: Option[Selectivity] = combiner.orTogetherSelectivities(expandedSelectivities)
 
     selectivity.
       getOrElse(DEFAULT_EQUALITY_SELECTIVITY * Multiplier(expressions.size)) // If no index exist, use default equality selectivity

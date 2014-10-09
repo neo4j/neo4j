@@ -32,7 +32,7 @@ trait Pattern2Selectivity {
   def apply(pattern: PatternRelationship)(implicit semanticTable: SemanticTable, selections: Selections): Selectivity
 }
 
-case class PatternSelectivityCalculator(stats: GraphStatistics) extends Pattern2Selectivity with SelectivityCombiner {
+case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: SelectivityCombiner) extends Pattern2Selectivity {
 
   def apply(pattern: PatternRelationship)(implicit semanticTable: SemanticTable, selections: Selections): Selectivity = {
     val labelsOnLhs = mapToLabelTokenSpecs(selections.labelsOnNode(pattern.nodes._1).toSeq)
@@ -72,15 +72,15 @@ case class PatternSelectivityCalculator(stats: GraphStatistics) extends Pattern2
             stats.cardinalityByLabelsAndRelationshipType(rhsLabel.id, typ.id, lhsLabel.id) / maxRelCount
 
           case _ if dir == Direction.BOTH =>
-            orTogetherSelectivities(Seq(
+            combiner.orTogetherSelectivities(Seq(
               stats.cardinalityByLabelsAndRelationshipType(lhsLabel.id, typ.id, rhsLabel.id) / maxRelCount,
               stats.cardinalityByLabelsAndRelationshipType(rhsLabel.id, typ.id, lhsLabel.id) / maxRelCount
             )).get
         }
       }
-    }).map(andTogetherSelectivities).flatten
+    }).map(combiner.andTogetherSelectivities).flatten
 
-    orTogetherSelectivities(selectivities).getOrElse(Selectivity(1))
+    combiner.orTogetherSelectivities(selectivities).getOrElse(Selectivity(1))
   }
 
   private def calculateLabelSelectivity(specs: Seq[TokenSpec[LabelId]]): Selectivity = {
@@ -89,7 +89,7 @@ case class PatternSelectivityCalculator(stats: GraphStatistics) extends Pattern2
       case spec: TokenSpec[LabelId] => stats.nodesWithLabelCardinality(spec.id) / stats.nodesWithLabelCardinality(None)
     }
 
-    andTogetherSelectivities(selectivities).getOrElse(Selectivity(1))
+    combiner.andTogetherSelectivities(selectivities).getOrElse(Selectivity(1))
   }
 
   // These two methods should be one, but I failed to conjure up the proper Scala type magic to make it work
