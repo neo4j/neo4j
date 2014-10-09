@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{Query, Statement}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assumeDependence._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport, Planner, QueryGraph, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 import org.scalatest.mock.MockitoSugar
@@ -205,7 +205,7 @@ trait CardinalityTestHelper extends QueryGraphProducer {
     def shouldHaveCardinality(number: Double) {
       val (statistics, semanticTable) = prepareTestContext
       val queryGraph = createQueryGraphAndSemanticStableTable()
-      val cardinalityModel = QueryGraphCardinalityModel(
+      val cardinalityModel = AssumeDependenceQueryGraphCardinalityModel(
         statistics,
         producePredicates,
         groupPredicates(estimateSelectivity(statistics, semanticTable)),

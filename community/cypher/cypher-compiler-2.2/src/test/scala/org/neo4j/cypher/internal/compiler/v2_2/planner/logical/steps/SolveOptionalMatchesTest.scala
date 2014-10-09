@@ -265,7 +265,7 @@ class SolveOptionalMatchesTest extends CypherFunSuite with LogicalPlanningTestSu
              withAddedOptionalMatch(qgForAtoB.addPredicates(labelPredicate))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
+    when(factory.newCardinalityEstimator(any())).thenReturn((plan: LogicalPlan) => plan match {
       case _: SingleRow => Cardinality(1.0)
       case _            => Cardinality(1000.0)
     })
