@@ -147,7 +147,7 @@ public class TestXa
     }
 
     @After
-    public void tearDownNeoStore()
+    public void tearDownNeoStore() throws IOException
     {
         ds.stop();
         log.setLevel( level );

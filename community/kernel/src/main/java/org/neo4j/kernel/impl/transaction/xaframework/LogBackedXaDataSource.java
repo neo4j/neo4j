@@ -57,22 +57,9 @@ public abstract class LogBackedXaDataSource extends XaDataSource
         this.logicalLog = logicalLog;
     }
 
-    @Override
-    public void stop()
+    protected void unbindLogicalLog()
     {
-        if ( logicalLog == null )
-        {
-            return;
-        }
-        try
-        {
-            logicalLog.close();
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-        logicalLog = null;
+        this.logicalLog = null;
     }
 
     @Override

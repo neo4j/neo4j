@@ -333,7 +333,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         }
 
         @Override
-        public void stop()
+        public void stop() throws IOException
         {
             xaContainer.close();
             // cleanup dummy resource log

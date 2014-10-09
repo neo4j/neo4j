@@ -19,6 +19,17 @@
  */
 package org.neo4j.backup;
 
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.index.impl.lucene.LuceneDataSource.DEFAULT_NAME;
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME;
+
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
@@ -38,7 +49,6 @@ import org.hamcrest.Description;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -66,18 +76,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.Mute;
 import org.neo4j.test.TargetDirectory;
-
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import static org.neo4j.index.impl.lucene.LuceneDataSource.DEFAULT_NAME;
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME;
 
 public class BackupServiceIT
 {
@@ -639,12 +637,13 @@ public class BackupServiceIT
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase(
                 backupDir.getAbsolutePath() );
+        ReadableByteChannel logicalLog = null;
         try
         {
             XaDataSourceManager xaDataSourceManager = db.getDependencyResolver().resolveDependency(
                     XaDataSourceManager.class );
             XaDataSource dataSource = xaDataSourceManager.getXaDataSource( dataSourceName );
-            ReadableByteChannel logicalLog = dataSource.getLogicalLog( 1 );
+            logicalLog = dataSource.getLogicalLog( 1 );
 
             ByteBuffer buffer = ByteBuffer.allocate( 64 );
             long[] headerData = VersionAwareLogEntryReader.readLogHeader( buffer, logicalLog, true );
@@ -656,6 +655,10 @@ public class BackupServiceIT
         finally
         {
             db.shutdown();
+            if ( logicalLog != null )
+            {
+                logicalLog.close();
+            }
         }
     }
 

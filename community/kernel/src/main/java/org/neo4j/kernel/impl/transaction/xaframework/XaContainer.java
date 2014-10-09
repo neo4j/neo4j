@@ -67,19 +67,11 @@ public class XaContainer
     /**
      * Closes the logical log and nulls out all instances.
      */
-    public void close()
+    public void close() throws IOException
     {
-        try
+        if ( log != null )
         {
-            if ( log != null )
-            {
-                log.close();
-            }
-        }
-        catch ( IOException e )
-        {
-            System.out.println( "Unable to close logical log" );
-            e.printStackTrace();
+            log.close();
         }
         log = null;
         rm = null;
