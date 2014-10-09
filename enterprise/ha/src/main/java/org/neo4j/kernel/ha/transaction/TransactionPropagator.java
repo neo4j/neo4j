@@ -354,12 +354,12 @@ public class TransactionPropagator implements Lifecycle
             {
                 try
                 {
-                    // Bypass the CommitPusher, now that we have a single thread pulling updates on each slave
+                    // TODO Bypass the CommitPusher, now that we have a single thread pulling updates on each slave
                     // The CommitPusher is all about batching transaction pushing to slaves, to reduce the overhead
                     // of multiple threads pulling the same transactions on each slave. That should be fine now.
-//                    pusher.queuePush( slave, txId );
+//                    slave.pullUpdates( txId );
+                    pusher.queuePush( slave, txId );
 
-                    slave.pullUpdates( txId );
                     return null;
                 }
                 finally
