@@ -19,16 +19,16 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.kernel.impl.util.CappedOperation.count;
+import static org.neo4j.kernel.impl.util.CappedOperation.differentItems;
+
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
-
+import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.impl.util.CappedOperation.Switch;
-
-import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.kernel.impl.util.CappedOperation.count;
-import static org.neo4j.kernel.impl.util.CappedOperation.differentItems;
 
 public class CappedOperationTest
 {
@@ -42,14 +42,14 @@ public class CappedOperationTest
         // WHEN/THEN
         assertEquals( 0, triggerCount.get() );
 
-        operation.event( "test" );
-        assertEquals( 1, triggerCount.get() );
-        operation.event( "test" );
+        operation.event( "test" ); // 1
+        assertEquals( 0, triggerCount.get() );
+        operation.event( "test" ); // 2 ... and reset
         assertEquals( 1, triggerCount.get() );
 
-        operation.event( "test" );
-        assertEquals( 2, triggerCount.get() );
-        operation.event( "test" );
+        operation.event( "test" ); // 1
+        assertEquals( 1, triggerCount.get() );
+        operation.event( "test" ); // 2
         assertEquals( 2, triggerCount.get() );
     }
 
@@ -71,6 +71,36 @@ public class CappedOperationTest
         assertEquals( 2, triggerCount.get() );
         operation.event( "OTHER" );
         assertEquals( 3, triggerCount.get() );
+    }
+
+    @Test
+    public void shouldTriggerBasedOnTime() throws Exception
+    {
+        // GIVEN
+        AtomicInteger triggerCount = new AtomicInteger();
+        FakeClock clock = new FakeClock();
+        CappedOperation<String> operation = countingCappedOperations( triggerCount,
+                CappedOperation.time( clock, 1500, TimeUnit.MILLISECONDS ) );
+
+        // WHEN/THEN
+        // event happens right away
+        operation.event( "event" );
+        assertEquals( 0, triggerCount.get() );
+
+        // after a little while, but before the threshold
+        clock.forward( 1499, TimeUnit.MILLISECONDS );
+        operation.event( "event" );
+        assertEquals( 0, triggerCount.get() );
+
+        // right after the threshold
+        clock.forward( 2, TimeUnit.MILLISECONDS );
+        operation.event( "event" );
+        assertEquals( 1, triggerCount.get() );
+
+        // after another threshold
+        clock.forward( 1600, TimeUnit.MILLISECONDS );
+        operation.event( "event" );
+        assertEquals( 2, triggerCount.get() );
     }
 
     private CappedOperation<String> countingCappedOperations( final AtomicInteger triggerCount,

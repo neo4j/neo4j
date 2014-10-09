@@ -51,16 +51,18 @@ public abstract class CappedOperation<T>
     @SuppressWarnings( "rawtypes" )
     private static <T> Switch<T> firstOccurenceOf( final Switch... filters )
     {
+        for ( Switch filter : filters )
+        {
+            filter.reset();
+        }
+
         return new Switch<T>()
         {
-            private boolean firstTime = true;
-
             @SuppressWarnings( "unchecked" )
             @Override
             public synchronized boolean accept( T item )
             {
-                boolean accepted = firstTime;
-                firstTime = false;
+                boolean accepted = false;
                 // Pass it through all since they are probably stateful
                 for ( Switch<T> filter : filters )
                 {
@@ -104,7 +106,7 @@ public abstract class CappedOperation<T>
             @Override
             public boolean accept( T item )
             {
-                return lastSeen == 0 || clock.currentTimeMillis()-lastSeen >= timeMillis;
+                return clock.currentTimeMillis()-lastSeen >= timeMillis;
             }
 
             @Override

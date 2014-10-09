@@ -19,6 +19,9 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import static org.neo4j.index.impl.lucene.MultipleBackupDeletionPolicy.SNAPSHOT_ID;
+import static org.neo4j.kernel.impl.store.NeoStore.versionStringToLong;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
@@ -53,7 +56,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterator;
@@ -71,9 +73,6 @@ import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-
-import static org.neo4j.index.impl.lucene.MultipleBackupDeletionPolicy.SNAPSHOT_ID;
-import static org.neo4j.kernel.impl.store.NeoStore.versionStringToLong;
 
 /**
  * An {@link XaDataSource} optimized for the {@link LuceneIndexImplementation}.
@@ -192,7 +191,7 @@ public class LuceneDataSource implements Lifecycle
     }
 
     @Override
-    public void stop()
+    public void stop() throws IOException
     {
         synchronized ( this )
         {
@@ -203,14 +202,7 @@ public class LuceneDataSource implements Lifecycle
             closed = true;
             for ( IndexReference searcher : indexSearchers.values() )
             {
-                try
-                {
-                    searcher.dispose( true );
-                }
-                catch ( IOException e )
-                {
-                    e.printStackTrace();
-                }
+                searcher.dispose( true );
             }
             indexSearchers.clear();
         }
