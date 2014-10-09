@@ -33,7 +33,7 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 public class NodeRecord extends PrimitiveRecord
 {
     private long nextRel = Record.NO_NEXT_RELATIONSHIP.intValue();
-    private long labels;
+    private long labels = Record.NO_LABELS_FIELD.intValue();
     private Collection<DynamicRecord> dynamicLabelRecords = emptyList();
     private boolean isLight = true;
     private boolean dense;

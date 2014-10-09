@@ -99,10 +99,11 @@ public class CommandWriter implements NeoCommandHandler
         {
             channel.put( record.isDense() ? (byte) 1 : (byte) 0 );
             channel.putLong( record.getNextRel() ).putLong( record.getNextProp() );
-            // labels
             channel.putLong( record.getLabelField() );
-            writeDynamicRecords( record.getDynamicLabelRecords() );
         }
+        // Always write dynamic label records because we want to know which ones have been deleted
+        // especially if the node has been deleted.
+        writeDynamicRecords( record.getDynamicLabelRecords() );
         return true;
     }
 

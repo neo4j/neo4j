@@ -20,13 +20,6 @@
 package org.neo4j.kernel.impl.transaction.command;
 
 import org.junit.Test;
-
-import org.neo4j.kernel.impl.transaction.command.CommandReader;
-import org.neo4j.kernel.impl.transaction.command.CommandReaderFactory;
-import org.neo4j.kernel.impl.transaction.command.PhysicalLogNeoCommandReaderV0_19;
-import org.neo4j.kernel.impl.transaction.command.PhysicalLogNeoCommandReaderV0_20;
-import org.neo4j.kernel.impl.transaction.command.PhysicalLogNeoCommandReaderV1;
-
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -36,6 +29,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersions.LOG_E
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_1_9;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_2_0;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_2_1;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_2_2;
 
 public class CommandReaderFactoryTest
 {
@@ -66,7 +60,7 @@ public class CommandReaderFactoryTest
     }
 
     @Test
-    public void testReturnsV1ReaderForVersion1AndLogFormat2_1() throws Exception
+    public void testReturnsV1_21ReaderForVersion1AndLogFormat2_1() throws Exception
     {
         // GIVEN
         CommandReaderFactory factory = new CommandReaderFactory.Default();
@@ -79,16 +73,16 @@ public class CommandReaderFactoryTest
     }
 
     @Test
-    public void testReturnsV1ReaderForVersion2AndLogFormat2_2() throws Exception
+    public void testReturnsV2ReaderForVersion2AndLogFormat2_2() throws Exception
     {
         // GIVEN
         CommandReaderFactory factory = new CommandReaderFactory.Default();
 
         // WHEN
-        CommandReader reader = factory.newInstance( LOG_VERSION_2_1, LOG_ENTRY_VERSION_2_2 );
+        CommandReader reader = factory.newInstance( LOG_VERSION_2_2, LOG_ENTRY_VERSION_2_2 );
 
         // THEN
-        assertTrue( reader instanceof PhysicalLogNeoCommandReaderV1 );
+        assertTrue( reader instanceof PhysicalLogNeoCommandReaderV2 );
     }
 
     @Test

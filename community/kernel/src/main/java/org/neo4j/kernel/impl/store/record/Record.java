@@ -24,21 +24,24 @@ package org.neo4j.kernel.impl.store.record;
  */
 public enum Record
 {
-    NOT_IN_USE( (byte) 0, 0 ), 
+    NOT_IN_USE( (byte) 0, 0 ),
     IN_USE( (byte) 1, 1 ),
     FIRST_IN_CHAIN( (byte) 2, 2 ),
-    RESERVED( (byte) -1, -1 ), 
+    RESERVED( (byte) -1, -1 ),
     NO_NEXT_PROPERTY( (byte) -1, -1 ),
     NO_PREVIOUS_PROPERTY( (byte) -1, -1 ),
     NO_NEXT_RELATIONSHIP( (byte) -1, -1 ),
-    NO_PREV_RELATIONSHIP( (byte) -1, -1 ), 
+    NO_PREV_RELATIONSHIP( (byte) -1, -1 ),
     NOT_DIRECTED( (byte) 0, 0 ),
-    DIRECTED( (byte) 2, 2 ), 
-    NO_NEXT_BLOCK( (byte) -1, -1 ), 
+    DIRECTED( (byte) 2, 2 ),
+    NO_NEXT_BLOCK( (byte) -1, -1 ),
     NO_PREV_BLOCK( (byte) -1, -1 ),
 
     NODE_PROPERTY( (byte) 0, 0 ),
-    REL_PROPERTY( (byte) 2, 2 );
+    REL_PROPERTY( (byte) 2, 2 ),
+
+    NO_LABELS_FIELD( (byte)0, 0 );
+
     public static final byte CREATED_IN_TX = 2;
 
     private byte byteValue;
@@ -52,7 +55,7 @@ public enum Record
 
     /**
      * Returns a byte value representation for this record type.
-     * 
+     *
      * @return The byte value for this record type
      */
     public byte byteValue()
@@ -62,7 +65,7 @@ public enum Record
 
     /**
      * Returns a int value representation for this record type.
-     * 
+     *
      * @return The int value for this record type
      */
     public int intValue()

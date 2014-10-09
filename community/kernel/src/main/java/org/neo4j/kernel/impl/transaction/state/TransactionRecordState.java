@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
@@ -275,8 +276,18 @@ public class TransactionRecordState
                                              "] since it has already been deleted." );
         }
         nodeRecord.setInUse( false );
-        nodeRecord.setLabelField( 0, Collections.<DynamicRecord>emptyList() );
+        nodeRecord.setLabelField( Record.NO_LABELS_FIELD.intValue(),
+                markNotInUse( nodeRecord.getDynamicLabelRecords() ) );
         return getAndDeletePropertyChain( nodeRecord );
+    }
+
+    private Collection<DynamicRecord> markNotInUse( Collection<DynamicRecord> dynamicLabelRecords )
+    {
+        for ( DynamicRecord record : dynamicLabelRecords )
+        {
+            record.setInUse( false );
+        }
+        return dynamicLabelRecords;
     }
 
     private ArrayMap<Integer, DefinedProperty> getAndDeletePropertyChain( NodeRecord nodeRecord )

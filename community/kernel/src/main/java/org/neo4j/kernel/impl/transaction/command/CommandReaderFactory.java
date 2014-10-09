@@ -78,8 +78,9 @@ public abstract class CommandReaderFactory
                     switch ( logFormatVersion )
                     {
                         case LOG_VERSION_2_1:
-                        case LOG_VERSION_2_2:
                             return new PhysicalLogNeoCommandReaderV1();
+                        case LOG_VERSION_2_2:
+                            return new PhysicalLogNeoCommandReaderV2();
                     }
             }
             throw new IllegalArgumentException( "Unknown log format version (" + logFormatVersion + ") and " +
