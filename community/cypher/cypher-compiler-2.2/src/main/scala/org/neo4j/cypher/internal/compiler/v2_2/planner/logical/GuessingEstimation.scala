@@ -20,10 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast
-import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 
 object GuessingEstimation {
   val LABEL_NOT_FOUND_SELECTIVITY: Selectivity = 0.0
@@ -33,16 +31,8 @@ object GuessingEstimation {
   val DEFAULT_CONNECTIVITY_CHANCE: Multiplier = 1.0
 }
 
-class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
-                                       selectivity: Metrics.PredicateSelectivityCombiner)
-                                      (implicit semanticTable: SemanticTable) extends Metrics.CardinalityModel {
-  private val queryGraphCardinalityModel = QueryGraphCardinalityModel(
-    statistics,
-    producePredicates,
-    groupPredicates(estimateSelectivity(statistics, semanticTable)),
-    selectivity
-  )
-
+class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel)
+  extends Metrics.CardinalityModel {
   def apply(plan: LogicalPlan): Cardinality = plan match {
     case
       _: AllNodesScan | _: NodeByLabelScan | _: NodeByIdSeek | _: NodeIndexUniqueSeek | _: NodeHashJoin |

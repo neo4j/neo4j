@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.combinePredicates
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 
@@ -29,10 +29,11 @@ object SimpleMetricsFactory extends MetricsFactory {
   def newCostModel(cardinality: CardinalityModel): CostModel =
     new CardinalityCostModel(cardinality)
 
-  def newCardinalityEstimator(statistics: GraphStatistics, selectivity: PredicateSelectivityCombiner, semanticTable: SemanticTable)
-  : CardinalityModel = new StatisticsBackedCardinalityModel(statistics, selectivity)(semanticTable)
+  def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel)
+  : CardinalityModel = new StatisticsBackedCardinalityModel(queryGraphCardinalityModel)
 
-  def newSelectivity() = combinePredicates.default
+  def newQueryGraphCardinalityModel(statistics: GraphStatistics, semanticTable: SemanticTable) =
+    QueryGraphCardinalityModel.default(statistics, semanticTable)
 
   def newCandidateListCreator(): (Seq[LogicalPlan]) => CandidateList = plans => CandidateList(plans)
 }

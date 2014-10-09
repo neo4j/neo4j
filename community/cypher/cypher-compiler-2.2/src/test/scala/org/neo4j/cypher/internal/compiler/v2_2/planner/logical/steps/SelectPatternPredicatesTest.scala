@@ -44,7 +44,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
   )_)_)
 
   val factory = newMockedMetricsFactory
-  when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
+  when(factory.newCardinalityEstimator(any())).thenReturn((plan: LogicalPlan) => plan match {
     case _ => Cardinality(1000)
   })
 

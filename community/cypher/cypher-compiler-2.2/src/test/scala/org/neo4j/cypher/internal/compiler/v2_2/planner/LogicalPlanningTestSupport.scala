@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.parser.{CypherParser, ParserMonit
 import org.neo4j.cypher.internal.compiler.v2_2.planner.execution.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{GraphStatistics, PlanContext}
 import org.neo4j.graphdb.Direction
@@ -51,14 +52,15 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   }
 
   class SpyableMetricsFactory extends MetricsFactory {
-    def newCardinalityEstimator(statistics: GraphStatistics, selectivity: PredicateSelectivityCombiner, semanticTable: SemanticTable) =
-      SimpleMetricsFactory.newCardinalityEstimator(statistics, selectivity, semanticTable)
+    def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel) =
+      SimpleMetricsFactory.newCardinalityEstimator(queryGraphCardinalityModel)
     def newCostModel(cardinality: CardinalityModel) =
       SimpleMetricsFactory.newCostModel(cardinality)
-    def newSelectivity() =
-      SimpleMetricsFactory.newSelectivity()
+    def newQueryGraphCardinalityModel(statistics: GraphStatistics, semanticTable: SemanticTable): QueryGraphCardinalityModel =
+      SimpleMetricsFactory.newQueryGraphCardinalityModel(statistics, semanticTable)
 
     def newCandidateListCreator(): (Seq[LogicalPlan]) => CandidateList = SimpleMetricsFactory.newCandidateListCreator()
+
   }
 
   def newMockedQueryGraph = mock[QueryGraph]

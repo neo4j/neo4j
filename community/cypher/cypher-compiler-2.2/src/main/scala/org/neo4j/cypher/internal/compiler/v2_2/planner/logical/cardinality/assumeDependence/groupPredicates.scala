@@ -17,11 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality
+package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assumeDependence
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Selectivity
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.groupPredicates.EstimatedPredicateCombination
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assumeDependence.groupPredicates.EstimatedPredicateCombination
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 

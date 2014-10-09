@@ -54,7 +54,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
+    when(factory.newCardinalityEstimator(any())).thenReturn((plan: LogicalPlan) => plan match {
       case _: NodeByIdSeek => Cardinality(1)
       case _               => Cardinality(Double.MaxValue)
     })
@@ -94,7 +94,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
+    when(factory.newCardinalityEstimator(any())).thenReturn((plan: LogicalPlan) => plan match {
       case _: DirectedRelationshipByIdSeek => Cardinality(1)
       case _                               => Cardinality(Double.MaxValue)
     })
@@ -131,7 +131,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       patternRelationships = Set(patternRel))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
+    when(factory.newCardinalityEstimator(any())).thenReturn((plan: LogicalPlan) => plan match {
       case _: UndirectedRelationshipByIdSeek => Cardinality(2)
       case _                                 => Cardinality(Double.MaxValue)
     })
@@ -174,7 +174,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       patternRelationships = Set(patternRel))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
+    when(factory.newCardinalityEstimator(any())).thenReturn((plan: LogicalPlan) => plan match {
       case _: UndirectedRelationshipByIdSeek => Cardinality(2)
       case _                                 => Cardinality(Double.MaxValue)
     })
@@ -221,7 +221,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       patternRelationships = Set(patternRel))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
+    when(factory.newCardinalityEstimator(any())).thenReturn((plan: LogicalPlan) => plan match {
       case _: UndirectedRelationshipByIdSeek => Cardinality(2)
       case _                                 => Cardinality(Double.MaxValue)
     })
