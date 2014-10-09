@@ -19,7 +19,7 @@
  */
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityModel
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assumeIndependence.AssumeIndependenceQueryGraphCardinalityModel
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assumeIndependence.{IndependenceCombiner, AssumeIndependenceQueryGraphCardinalityModel}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{SemanticTable, LogicalPlanningTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.CardinalityTestHelper
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
@@ -437,5 +437,6 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
       shouldHaveCardinality(patternNodeCrossProduct * createdSelectivity * appearsOnSelectivity * indexSelectivity)
   }
 
-  def createCardinalityModel(stats: GraphStatistics, semanticTable: SemanticTable): QueryGraphCardinalityModel = AssumeIndependenceQueryGraphCardinalityModel(stats, semanticTable)
+  def createCardinalityModel(stats: GraphStatistics, semanticTable: SemanticTable): QueryGraphCardinalityModel =
+    AssumeIndependenceQueryGraphCardinalityModel(stats, semanticTable, IndependenceCombiner)
 }
