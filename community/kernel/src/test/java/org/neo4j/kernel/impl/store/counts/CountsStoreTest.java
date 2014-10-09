@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.store.counts;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
 import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
@@ -35,6 +36,8 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsKey;
 import org.neo4j.kernel.impl.api.CountsVisitor;
+import org.neo4j.register.Register;
+import org.neo4j.register.Registers;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
@@ -48,8 +51,8 @@ public class CountsStoreTest
         try ( CountsStore<CountsKey> counts = CountsStore.open( fs, pageCache, alpha, RECORD_SERIALIZER ) )
         {
             // then
-            assertEquals( 0, counts.get( CountsKey.nodeKey( 0 ) ) );
-            assertEquals( 0, counts.get( CountsKey.relationshipKey( 1, 2, 3 ) ) );
+            assertEquals( 0, get( counts, nodeKey( 0 ) ) );
+            assertEquals( 0, get( counts, CountsKey.relationshipKey( 1, 2, 3 ) ) );
             assertEquals( BASE_TX_ID, counts.lastTxId() );
             assertEquals( 0, counts.totalRecordsStored() );
             assertEquals( alpha, counts.file() );
@@ -74,7 +77,7 @@ public class CountsStoreTest
         {
             // when
             writer = counts.newWriter( beta, lastCommittedTxId );
-            writer.visit( CountsKey.nodeKey( 0 ), 21 );
+            writer.visit( nodeKey( 0 ), 21 );
             writer.visit( CountsKey.relationshipKey( 1, 2, 3 ), 32 );
             writer.close();
         }
@@ -82,8 +85,8 @@ public class CountsStoreTest
         try ( CountsStore<CountsKey> updated = writer.openForReading() )
         {
             // then
-            assertEquals( 21, updated.get( CountsKey.nodeKey( 0 ) ) );
-            assertEquals( 32, updated.get( CountsKey.relationshipKey( 1, 2, 3 ) ) );
+            assertEquals( 21, get( updated, nodeKey( 0 ) ) );
+            assertEquals( 32, get( updated, CountsKey.relationshipKey( 1, 2, 3 ) ) );
             assertEquals( lastCommittedTxId, updated.lastTxId() );
             assertEquals( 2, updated.totalRecordsStored() );
             assertEquals( beta, updated.file() );
@@ -132,5 +135,12 @@ public class CountsStoreTest
     {
         fs = fsRule.get();
         pageCache = pageCacheRule.getPageCache( fs, new Config() );
+    }
+
+    private <K extends Comparable<K>> long get( CountsStore<K> store, K key )
+    {
+        Register.LongRegister value = Registers.newLongRegister();
+        store.get( key, value );
+        return value.read();
     }
 }

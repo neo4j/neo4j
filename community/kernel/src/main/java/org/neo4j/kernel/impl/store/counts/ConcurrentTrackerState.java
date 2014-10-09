@@ -30,6 +30,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.kernel.impl.api.CountsKey;
+import org.neo4j.register.Register;
+import org.neo4j.register.Registers;
 
 class ConcurrentTrackerState implements CountsTracker.State
 {
@@ -62,9 +64,14 @@ class ConcurrentTrackerState implements CountsTracker.State
          * (see Merger)
          */
         final AtomicLong count = state.get( key );
-        return count == null
-                ? store.get( key )
-                : count.get();
+        if ( count != null )
+        {
+            return count.get();
+        }
+
+        final Register.LongRegister value = Registers.newLongRegister();
+        store.get( key, value );
+        return value.read();
     }
 
     @Override
@@ -73,7 +80,9 @@ class ConcurrentTrackerState implements CountsTracker.State
         AtomicLong count = state.get( key );
         if ( count == null )
         {
-            AtomicLong proposal = new AtomicLong( store.get( key ) );
+            final Register.LongRegister value = Registers.newLongRegister();
+            store.get( key, value );
+            AtomicLong proposal = new AtomicLong( value.read() );
             count = state.putIfAbsent( key, proposal );
             if ( count == null )
             {

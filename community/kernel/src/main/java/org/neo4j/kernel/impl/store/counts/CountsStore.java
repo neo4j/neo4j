@@ -106,9 +106,8 @@ class CountsStore<K extends Comparable<K>> implements Closeable
         return pageCache.map( storeFile, pageSize );
     }
 
-    public long get( K key )
+    public void get( K key, Register.Long.Out value )
     {
-        Register.LongRegister value = Registers.newLongRegister();
         int min = header.headerRecords();
         int max = min + totalRecords - 1;
         int mid;
@@ -120,7 +119,7 @@ class CountsStore<K extends Comparable<K>> implements Closeable
                 int cmp = compareKeyAndReadValue( cursor, key, mid, value );
                 if ( cmp == 0 )
                 {
-                    return value.read();
+                    return;
                 }
                 else if ( cmp < 0 )
                 {
@@ -136,7 +135,7 @@ class CountsStore<K extends Comparable<K>> implements Closeable
         {
             throw new UnderlyingStorageException( e );
         }
-        return 0;
+        value.write( 0 );
     }
 
     private int compareKeyAndReadValue( PageCursor cursor, K target, int record, Register.Long.Out count )

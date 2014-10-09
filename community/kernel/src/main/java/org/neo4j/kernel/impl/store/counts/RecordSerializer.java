@@ -26,7 +26,7 @@ import org.neo4j.register.Register;
 
 public interface RecordSerializer<K extends Comparable<K>>
 {
-    boolean visitRecord(ByteBuffer buffer, RecordVisitor<K> visitor);
+    boolean visitRecord( ByteBuffer buffer, RecordVisitor visitor );
 
     K readRecord( PageCursor cursor, Register.Long.Out value );
 }
