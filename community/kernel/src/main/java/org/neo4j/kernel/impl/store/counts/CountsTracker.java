@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.api.CountsKey;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.locking.LockWrapper;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.register.Register;
 
 import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
 import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
@@ -58,7 +59,8 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
 
         File storeFile();
 
-        CountsStore.Writer<CountsKey> newWriter( File file, long lastCommittedTxId ) throws IOException;
+        CountsStore.Writer<CountsKey, Register.Long.Out> newWriter( File file, long lastCommittedTxId )
+                throws IOException;
 
         void accept( RecordVisitor<CountsKey> visitor );
     }
@@ -75,7 +77,10 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
         this.state = new ConcurrentTrackerState( openStore( fs, pageCache, this.alphaFile, this.betaFile ) );
     }
 
-    private static CountsStore<CountsKey> openStore( FileSystemAbstraction fs, PageCache pageCache, File alpha, File beta )
+    private static CountsStore<CountsKey, Register.Long.Out> openStore( FileSystemAbstraction fs,
+                                                                        PageCache pageCache,
+                                                                        File alpha,
+                                                                        File beta )
     {
         try
         {
@@ -83,8 +88,10 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
             CountsRecordSerializer recordSerializer = new CountsRecordSerializer();
             if ( hasAlpha && hasBeta )
             {
-                CountsStore<CountsKey> alphaStore = CountsStore.open( fs, pageCache, alpha, recordSerializer );
-                CountsStore<CountsKey> betaStore = CountsStore.open( fs, pageCache, beta, recordSerializer );
+                CountsStore<CountsKey, Register.Long.Out> alphaStore =
+                        CountsStore.open( fs, pageCache, alpha, recordSerializer );
+                CountsStore<CountsKey, Register.Long.Out> betaStore =
+                        CountsStore.open( fs, pageCache, beta, recordSerializer );
                 long alphaTxId = alphaStore.lastTxId(), betaTxId = betaStore.lastTxId();
                 if ( alphaTxId > betaTxId )  // TODO: compare to what the txIdProvider says...
                 {
@@ -201,7 +208,7 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
             if ( state.hasChanges() )
             {
                 // select the next file, and create a writer for it
-                try ( CountsStore.Writer<CountsKey> writer = nextWriter( state, lastCommittedTxId ) )
+                try ( CountsStore.Writer<CountsKey, Register.Long.Out> writer = nextWriter( state, lastCommittedTxId ) )
                 {
                     state.accept( writer );
                     // replace the old store with the
@@ -213,7 +220,8 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
         }
     }
 
-    CountsStore.Writer<CountsKey> nextWriter( State state, long lastCommittedTxId ) throws IOException
+    CountsStore.Writer<CountsKey, Register.Long.Out> nextWriter( State state, long lastCommittedTxId )
+            throws IOException
     {
         if ( alphaFile.equals( state.storeFile() ) )
         {

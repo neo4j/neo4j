@@ -52,12 +52,13 @@ import org.neo4j.register.Register;
  *                         |
  *                       value
  */
-public class CountsRecordSerializer implements RecordSerializer<CountsKey>
+public class CountsRecordSerializer implements RecordSerializer<CountsKey, Register.Long.Out>
 {
     static final byte EMPTY_RECORD_KEY = 0;
     static final byte NODE_KEY = 1;
     static final byte RELATIONSHIP_KEY = 2;
 
+    @Override
     public boolean visitRecord(ByteBuffer buffer, RecordVisitor<CountsKey> visitor)
     {
         // read type
@@ -101,6 +102,8 @@ public class CountsRecordSerializer implements RecordSerializer<CountsKey>
         visitor.visit( key, count );
         return true;
     }
+
+    @Override
     public CountsKey readRecord( PageCursor cursor, Register.Long.Out value )
     {
         // read type
@@ -137,5 +140,11 @@ public class CountsRecordSerializer implements RecordSerializer<CountsKey>
                 throw new IllegalStateException( "Unknown counts key type: " + type );
         }
         return key;
+    }
+
+    @Override
+    public void writeDefaultValue( Register.Long.Out valueRegister )
+    {
+        valueRegister.write( 0 );
     }
 }

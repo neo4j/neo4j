@@ -33,8 +33,9 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.api.CountsKey;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.register.Register;
 
-class CountsStoreWriter implements CountsStore.Writer<CountsKey>, CountsVisitor
+class CountsStoreWriter implements CountsStore.Writer<CountsKey, Register.Long.Out>, CountsVisitor
 {
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
@@ -152,7 +153,7 @@ class CountsStoreWriter implements CountsStore.Writer<CountsKey>, CountsVisitor
     }
 
     @Override
-    public CountsStore<CountsKey> openForReading() throws IOException
+    public CountsStore<CountsKey, Register.Long.Out> openForReading() throws IOException
     {
         return new CountsStore<>( fs, pageCache, targetFile, pagedFile, newHeader(), new CountsRecordSerializer() );
     }

@@ -33,6 +33,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsKey;
 import org.neo4j.kernel.impl.store.CountsOracle;
+import org.neo4j.register.Register;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
@@ -136,13 +137,14 @@ public class CountsTrackerTest
             }
 
             @Override
-            CountsStore.Writer<CountsKey> nextWriter( State state, long lastCommittedTxId ) throws IOException
+            CountsStore.Writer<CountsKey, Register.Long.Out> nextWriter( State state, long lastCommittedTxId ) throws IOException
             {
-                final CountsStore.Writer<CountsKey> writer = super.nextWriter( state, lastCommittedTxId );
-                return new CountsStore.Writer<CountsKey>()
+                final CountsStore.Writer<CountsKey, Register.Long.Out> writer =
+                        super.nextWriter( state, lastCommittedTxId );
+                return new CountsStore.Writer<CountsKey, Register.Long.Out>()
                 {
                     @Override
-                    public CountsStore<CountsKey> openForReading() throws IOException
+                    public CountsStore<CountsKey, Register.Long.Out> openForReading() throws IOException
                     {
                         barrier.reached();
                         return writer.openForReading();

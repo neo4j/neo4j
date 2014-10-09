@@ -34,13 +34,12 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.api.CountsKey;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.register.Register;
-import org.neo4j.register.Registers;
 
-class CountsStore<K extends Comparable<K>> implements Closeable
+class CountsStore<K extends Comparable<K>, VR> implements Closeable
 {
-    interface Writer<K extends Comparable<K>> extends RecordVisitor<K>, Closeable
+    interface Writer<K extends Comparable<K>, VR> extends RecordVisitor<K>, Closeable
     {
-        CountsStore<K> openForReading() throws IOException;
+        CountsStore<K, VR> openForReading() throws IOException;
     }
 
     static final int RECORD_SIZE /*bytes*/ = 16 /*key*/ + 16 /*value*/;
@@ -50,10 +49,10 @@ class CountsStore<K extends Comparable<K>> implements Closeable
     private final PagedFile pages;
     private final CountsStoreHeader header;
     private final int totalRecords;
-    private final RecordSerializer<K> recordSerializer;
+    private final RecordSerializer<K, VR> recordSerializer;
 
     CountsStore( FileSystemAbstraction fs, PageCache pageCache, File file, PagedFile pages, CountsStoreHeader header,
-                 RecordSerializer<K> recordSerializer )
+                 RecordSerializer<K, VR> recordSerializer )
     {
         this.fs = fs;
         this.pageCache = pageCache;
@@ -91,8 +90,10 @@ class CountsStore<K extends Comparable<K>> implements Closeable
         }
     }
 
-    static <K extends Comparable<K>> CountsStore<K> open( FileSystemAbstraction fs, PageCache pageCache,
-                                                          File storeFile, RecordSerializer<K> recordSerializer )
+    static <K extends Comparable<K>, VR> CountsStore<K, VR> open( FileSystemAbstraction fs,
+                                                                  PageCache pageCache,
+                                                                  File storeFile,
+                                                                  RecordSerializer<K, VR> recordSerializer )
             throws IOException
     {
         PagedFile pages = mapCountsStore( pageCache, storeFile );
@@ -106,7 +107,7 @@ class CountsStore<K extends Comparable<K>> implements Closeable
         return pageCache.map( storeFile, pageSize );
     }
 
-    public void get( K key, Register.Long.Out value )
+    public void get( K key, VR value )
     {
         int min = header.headerRecords();
         int max = min + totalRecords - 1;
@@ -135,10 +136,10 @@ class CountsStore<K extends Comparable<K>> implements Closeable
         {
             throw new UnderlyingStorageException( e );
         }
-        value.write( 0 );
+        recordSerializer.writeDefaultValue( value );
     }
 
-    private int compareKeyAndReadValue( PageCursor cursor, K target, int record, Register.Long.Out count )
+    private int compareKeyAndReadValue( PageCursor cursor, K target, int record, VR count )
             throws IOException
     {
         int pageId = (record * RECORD_SIZE) / pages.pageSize();
@@ -203,7 +204,7 @@ class CountsStore<K extends Comparable<K>> implements Closeable
         }
     }
 
-    public Writer<CountsKey> newWriter( File targetFile, long lastCommittedTxId ) throws IOException
+    public Writer<CountsKey, Register.Long.Out> newWriter( File targetFile, long lastCommittedTxId ) throws IOException
     {
         return new CountsStoreWriter( fs, pageCache, header, targetFile, lastCommittedTxId );
     }

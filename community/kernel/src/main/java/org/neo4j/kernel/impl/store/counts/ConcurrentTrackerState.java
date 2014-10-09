@@ -36,10 +36,10 @@ import org.neo4j.register.Registers;
 class ConcurrentTrackerState implements CountsTracker.State
 {
     private static final int INITIAL_CHANGES_CAPACITY = 1024;
-    private final CountsStore<CountsKey> store;
+    private final CountsStore<CountsKey, Register.Long.Out> store;
     private final ConcurrentMap<CountsKey, AtomicLong> state = new ConcurrentHashMap<>( INITIAL_CHANGES_CAPACITY );
 
-    ConcurrentTrackerState( CountsStore<CountsKey> store )
+    ConcurrentTrackerState( CountsStore<CountsKey, Register.Long.Out> store )
     {
         this.store = store;
     }
@@ -105,7 +105,8 @@ class ConcurrentTrackerState implements CountsTracker.State
     }
 
     @Override
-    public CountsStore.Writer<CountsKey> newWriter( File file, long lastCommittedTxId ) throws IOException
+    public CountsStore.Writer<CountsKey, Register.Long.Out> newWriter( File file, long lastCommittedTxId )
+            throws IOException
     {
         return store.newWriter( file, lastCommittedTxId );
     }

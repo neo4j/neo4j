@@ -22,11 +22,12 @@ package org.neo4j.kernel.impl.store.counts;
 import java.nio.ByteBuffer;
 
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.register.Register;
 
-public interface RecordSerializer<K extends Comparable<K>>
+public interface RecordSerializer<K extends Comparable<K>, VR>
 {
-    boolean visitRecord( ByteBuffer buffer, RecordVisitor visitor );
+    boolean visitRecord( ByteBuffer buffer, RecordVisitor<K> visitor );
 
-    K readRecord( PageCursor cursor, Register.Long.Out value );
+    K readRecord( PageCursor cursor, VR valueRegister );
+
+    void writeDefaultValue( VR valueRegister );
 }

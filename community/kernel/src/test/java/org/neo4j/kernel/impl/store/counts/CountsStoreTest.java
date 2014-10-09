@@ -48,7 +48,8 @@ public class CountsStoreTest
     {
         // when
         CountsStore.createEmpty( pageCache, alpha, ALL_STORES_VERSION );
-        try ( CountsStore<CountsKey> counts = CountsStore.open( fs, pageCache, alpha, RECORD_SERIALIZER ) )
+        try ( CountsStore<CountsKey, Register.Long.Out> counts =
+                      CountsStore.open( fs, pageCache, alpha, RECORD_SERIALIZER ) )
         {
             // then
             assertEquals( 0, get( counts, nodeKey( 0 ) ) );
@@ -72,8 +73,9 @@ public class CountsStoreTest
     {
         // given
         CountsStore.createEmpty( pageCache, alpha, ALL_STORES_VERSION );
-        CountsStore.Writer<CountsKey> writer;
-        try ( CountsStore<CountsKey> counts = CountsStore.open( fs, pageCache, alpha, RECORD_SERIALIZER ) )
+        CountsStore.Writer<CountsKey, Register.Long.Out> writer;
+        try ( CountsStore<CountsKey, Register.Long.Out> counts =
+                      CountsStore.open( fs, pageCache, alpha, RECORD_SERIALIZER ) )
         {
             // when
             writer = counts.newWriter( beta, lastCommittedTxId );
@@ -82,7 +84,7 @@ public class CountsStoreTest
             writer.close();
         }
 
-        try ( CountsStore<CountsKey> updated = writer.openForReading() )
+        try ( CountsStore<CountsKey, Register.Long.Out> updated = writer.openForReading() )
         {
             // then
             assertEquals( 21, get( updated, nodeKey( 0 ) ) );
@@ -137,7 +139,7 @@ public class CountsStoreTest
         pageCache = pageCacheRule.getPageCache( fs, new Config() );
     }
 
-    private <K extends Comparable<K>> long get( CountsStore<K> store, K key )
+    private <K extends Comparable<K>> long get( CountsStore<K, Register.Long.Out> store, K key )
     {
         Register.LongRegister value = Registers.newLongRegister();
         store.get( key, value );
