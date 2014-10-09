@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
+import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
+import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
+
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -33,9 +36,6 @@ import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.locking.LockWrapper;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.register.Register;
-
-import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
-import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
 
 /**
  * {@link CountsTracker} maintains two files, the {@link #alphaFile} and the {@link #betaFile} that it rotates between.
@@ -86,12 +86,13 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
         {
             boolean hasAlpha = fs.fileExists( alpha ), hasBeta = fs.fileExists( beta );
             CountsRecordSerializer recordSerializer = new CountsRecordSerializer();
+            CountsStoreWriter.Factory writerFactory = new CountsStoreWriter.Factory();
             if ( hasAlpha && hasBeta )
             {
                 CountsStore<CountsKey, Register.Long.Out> alphaStore =
-                        CountsStore.open( fs, pageCache, alpha, recordSerializer );
+                        CountsStore.open( fs, pageCache, alpha, recordSerializer, writerFactory );
                 CountsStore<CountsKey, Register.Long.Out> betaStore =
-                        CountsStore.open( fs, pageCache, beta, recordSerializer );
+                        CountsStore.open( fs, pageCache, beta, recordSerializer, writerFactory );
                 long alphaTxId = alphaStore.lastTxId(), betaTxId = betaStore.lastTxId();
                 if ( alphaTxId > betaTxId )  // TODO: compare to what the txIdProvider says...
                 {
@@ -106,11 +107,11 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
             }
             else if ( hasAlpha )
             {
-                return CountsStore.open( fs, pageCache, alpha, recordSerializer );
+                return CountsStore.open( fs, pageCache, alpha, recordSerializer, writerFactory );
             }
             else if ( hasBeta )
             {
-                return CountsStore.open( fs, pageCache, beta, recordSerializer );
+                return CountsStore.open( fs, pageCache, beta, recordSerializer, writerFactory );
             }
             else
             {

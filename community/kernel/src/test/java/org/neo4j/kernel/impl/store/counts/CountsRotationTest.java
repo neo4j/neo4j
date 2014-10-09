@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -27,7 +31,6 @@ import java.util.Collection;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -49,10 +52,6 @@ import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 public class CountsRotationTest
 {
     @Test
@@ -69,7 +68,7 @@ public class CountsRotationTest
         assertFalse( fs.fileExists( betaStoreFile() ) );
 
         try ( CountsStore<CountsKey, Register.Long.Out> store =
-                      CountsStore.open( fs, pageCache, alphaStoreFile(), RECORD_SERIALIZER ) )
+                      CountsStore.open( fs, pageCache, alphaStoreFile(), RECORD_SERIALIZER, WRITER_FACTORY ) )
         {
             assertEquals( TransactionIdStore.BASE_TX_ID, store.lastTxId() );
             assertEquals( 0, store.totalRecordsStored() );
@@ -96,7 +95,7 @@ public class CountsRotationTest
         assertTrue( fs.fileExists( betaStoreFile() ) );
 
         try ( CountsStore<CountsKey, Register.Long.Out> store =
-                      CountsStore.open( fs, pageCache, betaStoreFile(), RECORD_SERIALIZER ) )
+                      CountsStore.open( fs, pageCache, betaStoreFile(), RECORD_SERIALIZER, WRITER_FACTORY ) )
         {
             // a transaction for creating the label and a transaction for the node
             assertEquals( TransactionIdStore.BASE_TX_ID + 1 + 1, store.lastTxId() );
@@ -132,7 +131,7 @@ public class CountsRotationTest
 
         final PageCache pageCache = db.getDependencyResolver().resolveDependency( PageCache.class );
         try ( CountsStore<CountsKey, Register.Long.Out> store =
-                      CountsStore.open( fs, pageCache, betaStoreFile(), RECORD_SERIALIZER ) )
+                      CountsStore.open( fs, pageCache, betaStoreFile(), RECORD_SERIALIZER, WRITER_FACTORY ) )
         {
             // NOTE since the rotation happens before the second transaction is committed we do not see those changes
             // in the stats
@@ -182,6 +181,7 @@ public class CountsRotationTest
 
     private static final String COUNTS_STORE_BASE = NeoStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE;
     private static final CountsRecordSerializer RECORD_SERIALIZER = new CountsRecordSerializer();
+    private static final CountsStoreWriter.Factory WRITER_FACTORY = new CountsStoreWriter.Factory();
 
     private File alphaStoreFile()
     {

@@ -19,13 +19,18 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
+import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
+import static org.neo4j.kernel.impl.store.StoreFactory.buildTypeDescriptorAndVersion;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
+
 import java.io.File;
 import java.io.IOException;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
@@ -50,13 +55,6 @@ import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
-import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
-import static org.neo4j.kernel.impl.store.StoreFactory.buildTypeDescriptorAndVersion;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
-
 public class CountsComputerTest
 {
     @Test
@@ -72,7 +70,7 @@ public class CountsComputerTest
         rebuildCounts( countsState, lastCommittedTransactionId );
 
         try ( CountsStore<CountsKey, Register.Long.Out> store =
-                      CountsStore.open( fs, pageCache, alphaStoreFile(), RECORD_SERIALIZER ) )
+                      CountsStore.open( fs, pageCache, alphaStoreFile(), RECORD_SERIALIZER, WRITER_FACTORY ) )
         {
             // a transaction for creating the label and a transaction for the node
             assertEquals( BASE_TX_ID, store.lastTxId() );
@@ -101,7 +99,7 @@ public class CountsComputerTest
         rebuildCounts( countsState, lastCommittedTransactionId );
 
         try ( CountsStore<CountsKey, Register.Long.Out> store =
-                      CountsStore.open( fs, pageCache, betaStoreFile(), RECORD_SERIALIZER ) )
+                      CountsStore.open( fs, pageCache, betaStoreFile(), RECORD_SERIALIZER, WRITER_FACTORY ) )
         {
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1, store.lastTxId() );
             assertEquals( 4, store.totalRecordsStored() );
@@ -135,7 +133,7 @@ public class CountsComputerTest
         rebuildCounts( countsState, lastCommittedTransactionId );
 
         try ( CountsStore<CountsKey, Register.Long.Out> store =
-                      CountsStore.open( fs, pageCache, betaStoreFile(), RECORD_SERIALIZER ) )
+                      CountsStore.open( fs, pageCache, betaStoreFile(), RECORD_SERIALIZER, WRITER_FACTORY ) )
         {
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1, store.lastTxId() );
             assertEquals( 3, store.totalRecordsStored() );
@@ -169,7 +167,7 @@ public class CountsComputerTest
         rebuildCounts( countsState, lastCommittedTransactionId );
 
         try ( CountsStore<CountsKey, Register.Long.Out> store =
-                      CountsStore.open( fs, pageCache, betaStoreFile(), RECORD_SERIALIZER ) )
+                      CountsStore.open( fs, pageCache, betaStoreFile(), RECORD_SERIALIZER, WRITER_FACTORY ) )
         {
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1 + 1, store.lastTxId() );
             assertEquals( 11, store.totalRecordsStored() );
@@ -207,7 +205,7 @@ public class CountsComputerTest
         rebuildCounts( countsState, lastCommittedTransactionId );
 
         try ( CountsStore<CountsKey, Register.Long.Out> store =
-                      CountsStore.open( fs, pageCache, betaStoreFile(), RECORD_SERIALIZER ) )
+                      CountsStore.open( fs, pageCache, betaStoreFile(), RECORD_SERIALIZER, WRITER_FACTORY ) )
         {
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1 + 1 + 1, store.lastTxId() );
             assertEquals( 15, store.totalRecordsStored() );
@@ -252,7 +250,7 @@ public class CountsComputerTest
         rebuildCounts( countsState, lastCommittedTransactionId );
 
         try ( CountsStore<CountsKey, Register.Long.Out> store =
-                      CountsStore.open( fs, pageCache, betaStoreFile(), RECORD_SERIALIZER ) )
+                      CountsStore.open( fs, pageCache, betaStoreFile(), RECORD_SERIALIZER, WRITER_FACTORY ) )
         {
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1, store.lastTxId() );
             assertEquals( 30, store.totalRecordsStored() );
@@ -300,6 +298,7 @@ public class CountsComputerTest
 
     private static final String COUNTS_STORE_BASE = NeoStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE;
     private static final CountsRecordSerializer RECORD_SERIALIZER = new CountsRecordSerializer();
+    private static final CountsStoreWriter.Factory WRITER_FACTORY = new CountsStoreWriter.Factory();
 
     private File alphaStoreFile()
     {

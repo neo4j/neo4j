@@ -49,7 +49,7 @@ public class CountsStoreTest
         // when
         CountsStore.createEmpty( pageCache, alpha, ALL_STORES_VERSION );
         try ( CountsStore<CountsKey, Register.Long.Out> counts =
-                      CountsStore.open( fs, pageCache, alpha, RECORD_SERIALIZER ) )
+                      CountsStore.open( fs, pageCache, alpha, RECORD_SERIALIZER, WRITER_FACTORY ) )
         {
             // then
             assertEquals( 0, get( counts, nodeKey( 0 ) ) );
@@ -75,7 +75,7 @@ public class CountsStoreTest
         CountsStore.createEmpty( pageCache, alpha, ALL_STORES_VERSION );
         CountsStore.Writer<CountsKey, Register.Long.Out> writer;
         try ( CountsStore<CountsKey, Register.Long.Out> counts =
-                      CountsStore.open( fs, pageCache, alpha, RECORD_SERIALIZER ) )
+                      CountsStore.open( fs, pageCache, alpha, RECORD_SERIALIZER, WRITER_FACTORY ) )
         {
             // when
             writer = counts.newWriter( beta, lastCommittedTxId );
@@ -121,6 +121,7 @@ public class CountsStoreTest
     }
 
     private static final CountsRecordSerializer RECORD_SERIALIZER = new CountsRecordSerializer();
+    private static final CountsStoreWriter.Factory WRITER_FACTORY = new CountsStoreWriter.Factory();
 
     @Rule
     public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();

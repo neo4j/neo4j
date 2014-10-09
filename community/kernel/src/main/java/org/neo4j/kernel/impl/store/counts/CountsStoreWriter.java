@@ -37,6 +37,18 @@ import org.neo4j.register.Register;
 
 class CountsStoreWriter implements CountsStore.Writer<CountsKey, Register.Long.Out>, CountsVisitor
 {
+    static class Factory implements CountsStore.WriterFactory<CountsKey, Register.Long.Out>
+    {
+        @Override
+        public CountsStore.Writer<CountsKey, Register.Long.Out> create( FileSystemAbstraction fs, PageCache pageCache,
+                                                                        CountsStoreHeader header, File targetFile,
+                                                                        long lastCommittedTxId ) throws IOException
+        {
+            return new CountsStoreWriter( fs, pageCache, header, targetFile, lastCommittedTxId );
+        }
+    }
+
+
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
     private final CountsStoreHeader header;
@@ -155,7 +167,8 @@ class CountsStoreWriter implements CountsStore.Writer<CountsKey, Register.Long.O
     @Override
     public CountsStore<CountsKey, Register.Long.Out> openForReading() throws IOException
     {
-        return new CountsStore<>( fs, pageCache, targetFile, pagedFile, newHeader(), new CountsRecordSerializer() );
+        return new CountsStore<>( fs, pageCache, targetFile, pagedFile, newHeader(),
+                new CountsRecordSerializer(), new Factory() );
     }
 
     @Override

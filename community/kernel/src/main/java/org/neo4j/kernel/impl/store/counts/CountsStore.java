@@ -31,15 +31,19 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.kernel.impl.api.CountsKey;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
-import org.neo4j.register.Register;
 
 class CountsStore<K extends Comparable<K>, VR> implements Closeable
 {
     interface Writer<K extends Comparable<K>, VR> extends RecordVisitor<K>, Closeable
     {
         CountsStore<K, VR> openForReading() throws IOException;
+    }
+
+    interface WriterFactory<K extends Comparable<K>, VR>
+    {
+        Writer<K, VR> create( FileSystemAbstraction fs, PageCache pageCache, CountsStoreHeader header,
+                              File targetFile, long lastCommittedTxId ) throws IOException;
     }
 
     static final int RECORD_SIZE /*bytes*/ = 16 /*key*/ + 16 /*value*/;
@@ -50,9 +54,10 @@ class CountsStore<K extends Comparable<K>, VR> implements Closeable
     private final CountsStoreHeader header;
     private final int totalRecords;
     private final RecordSerializer<K, VR> recordSerializer;
+    private final WriterFactory<K, VR> writerFactory;
 
     CountsStore( FileSystemAbstraction fs, PageCache pageCache, File file, PagedFile pages, CountsStoreHeader header,
-                 RecordSerializer<K, VR> recordSerializer )
+                 RecordSerializer<K, VR> recordSerializer, WriterFactory<K, VR> writerFactory )
     {
         this.fs = fs;
         this.pageCache = pageCache;
@@ -60,6 +65,7 @@ class CountsStore<K extends Comparable<K>, VR> implements Closeable
         this.pages = pages;
         this.header = header;
         this.recordSerializer = recordSerializer;
+        this.writerFactory = writerFactory;
         this.totalRecords = header.dataRecords();
     }
 
@@ -93,12 +99,13 @@ class CountsStore<K extends Comparable<K>, VR> implements Closeable
     static <K extends Comparable<K>, VR> CountsStore<K, VR> open( FileSystemAbstraction fs,
                                                                   PageCache pageCache,
                                                                   File storeFile,
-                                                                  RecordSerializer<K, VR> recordSerializer )
+                                                                  RecordSerializer<K, VR> recordSerializer,
+                                                                  WriterFactory<K, VR> writerFactory )
             throws IOException
     {
         PagedFile pages = mapCountsStore( pageCache, storeFile );
         CountsStoreHeader header = CountsStoreHeader.read( pages );
-        return new CountsStore<>( fs, pageCache, storeFile, pages, header, recordSerializer );
+        return new CountsStore<>( fs, pageCache, storeFile, pages, header, recordSerializer, writerFactory );
     }
 
     private static PagedFile mapCountsStore( PageCache pageCache, File storeFile ) throws IOException
@@ -204,9 +211,9 @@ class CountsStore<K extends Comparable<K>, VR> implements Closeable
         }
     }
 
-    public Writer<CountsKey, Register.Long.Out> newWriter( File targetFile, long lastCommittedTxId ) throws IOException
+    public Writer<K, VR> newWriter( File targetFile, long lastCommittedTxId ) throws IOException
     {
-        return new CountsStoreWriter( fs, pageCache, header, targetFile, lastCommittedTxId );
+        return writerFactory.create( fs, pageCache, header, targetFile, lastCommittedTxId );
     }
 
     public void close() throws IOException
