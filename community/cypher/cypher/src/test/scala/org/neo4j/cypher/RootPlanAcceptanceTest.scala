@@ -26,32 +26,74 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
     //v2.2 must be handled separately since the resulting compiler is dependent on query
     val versions = CypherVersion.allVersions.filter(!_.name.startsWith(CypherVersion.v2_2.name))
     versions.foreach { v =>
-      assertVersion(v, "create() return 1", v.name )
+      given("create() return 1")
+        .withCypherVersion(v)
+        .shouldHaveCypherVersion(v)
     }
   }
 
   test("should use cost by default in 2.2") {
-    assertVersion(CypherVersion.v2_2, "match n return n", CypherVersion.v2_2_cost.name)
-  }
-
-  test("should use 2.2-cost when possible in 2.2") {
-    assertVersion(CypherVersion.v2_2_cost, "match n return n", CypherVersion.v2_2_cost.name)
+    given("match n return n")
+      .shouldHaveCypherVersion(CypherVersion.v2_2_cost)
   }
 
   test("should fallback to 2.2-rule in 2.2") {
-    assertVersion(CypherVersion.v2_2_cost, "create() return 1", CypherVersion.v2_2_rule.name)
+    given("create() return 1")
+      .withCypherVersion(CypherVersion.v2_2_cost)
+      .shouldHaveCypherVersion(CypherVersion.v2_2_rule)
   }
+
 
   test("should use 2.2-rule if we really ask for it in 2.2") {
-    assertVersion(CypherVersion.v2_2_rule, "match n return n", CypherVersion.v2_2_rule.name)
+    given("match n return n")
+      .withCypherVersion(CypherVersion.v2_2_rule)
+      .shouldHaveCypherVersion(CypherVersion.v2_2_rule)
   }
 
+  test("children should be empty") {
+    given("match n return n").planDescripton.getChildren.size() should equal(0)
+  }
 
-  def assertVersion(v: CypherVersion, query: String, expectedCompiler: String) {
-    val executionResult = eengine.profile(s"cypher ${v.name} ${query}").executionPlanDescription()
-    val planDescription = executionResult.asJava
+  test("DbHits should be properly formatted") {
+    given("match n return n").planDescripton.getArguments.get("DbHits") should equal("1")
+  }
 
-    planDescription.getArguments.get("version") should equal(s"CYPHER ${expectedCompiler}")
+  test("Rows should be properly formatted") {
+    given("match n return n").planDescripton.getArguments.get("Rows") should equal("0")
+  }
+
+  test("EstimatedRows should be properly formatted") {
+    given("match n return n").planDescripton.getArguments.get("EstimatedRows") should equal("0")
+  }
+
+  test("IntroducedIdentifier should be properly formatted") {
+    given("match n return n").planDescripton.getArguments.get("IntroducedIdentifier") should equal("n")
+  }
+
+  def given(query: String) = TestQuery(query)
+
+  case class TestQuery(query: String,
+                       cypherVersion: Option[CypherVersion] = None) {
+
+    def withCypherVersion(version: CypherVersion) = copy(cypherVersion = Some(version))
+
+    def shouldHaveCypherVersion(version: CypherVersion) = {
+      val planDescription = execute()
+      planDescription.getArguments.get("version") should equal(s"CYPHER ${version.name}")
+
+      this
+    }
+
+    def planDescripton = execute()
+
+    private def execute() = {
+      val version = cypherVersion match {
+        case Some(v) => s"cypher ${v.name}"
+        case None => ""
+      }
+      val executionResult = eengine.profile(s"${version}  ${query}").executionPlanDescription()
+      executionResult.asJava
+    }
   }
 
 }
