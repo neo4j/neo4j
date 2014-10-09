@@ -462,21 +462,31 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
     }
 
     @Override
-    public void stop()
+    public void stop() throws IOException
     {
-        super.stop();
-        if ( !readOnly )
+        try
         {
-            forceEverything();
+            if ( !readOnly )
+            {
+                forceEverything();
+            }
+            xaContainer.close();
+            life.shutdown();
+            unbindLogicalLog();
+            if ( logApplied )
+            {
+                neoStore.rebuildIdGenerators();
+                logApplied = false;
+            }
+            neoStore.close();
         }
-        life.shutdown();
-        xaContainer.close();
-        if ( logApplied )
+        catch ( IOException e )
         {
-            neoStore.rebuildIdGenerators();
-            logApplied = false;
+            msgLog.error( "Something went wrong while shutting down the store. Recovery will happen on next startup. " +
+                    "Please inspect the logs for the root cause and address that before attempting to restart the database " +
+                    "(for example, low disk space)." );
+            throw e;
         }
-        neoStore.close();
         msgLog.info( "NeoStore closed" );
     }
 

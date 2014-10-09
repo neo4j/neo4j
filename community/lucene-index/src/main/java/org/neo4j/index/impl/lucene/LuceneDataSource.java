@@ -19,6 +19,9 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import static org.neo4j.index.impl.lucene.MultipleBackupDeletionPolicy.SNAPSHOT_ID;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionStringToLong;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
@@ -84,11 +87,18 @@ import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
-import org.neo4j.kernel.impl.transaction.xaframework.*;
+import org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator;
+import org.neo4j.kernel.impl.transaction.xaframework.LogBackedXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
-
-import static org.neo4j.index.impl.lucene.MultipleBackupDeletionPolicy.SNAPSHOT_ID;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionStringToLong;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
+import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
+import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
+import org.neo4j.kernel.impl.transaction.xaframework.XaContainer;
+import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
+import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
+import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
+import org.neo4j.kernel.impl.transaction.xaframework.XaTransactionFactory;
 
 /**
  * An {@link XaDataSource} optimized for the {@link LuceneIndexImplementation}.
@@ -301,11 +311,10 @@ public class LuceneDataSource extends LogBackedXaDataSource
     }
 
     @Override
-    public void stop()
+    public void stop() throws IOException
     {
         synchronized ( this )
         {
-            super.stop();
             if ( closed )
             {
                 return;
@@ -313,14 +322,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
             closed = true;
             for ( IndexReference searcher : indexSearchers.values() )
             {
-                try
-                {
-                    searcher.dispose( true );
-                }
-                catch ( IOException e )
-                {
-                    e.printStackTrace();
-                }
+                searcher.dispose( true );
             }
             indexSearchers.clear();
         }
@@ -328,6 +330,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
         if ( xaContainer != null )
         {
             xaContainer.close();
+            unbindLogicalLog();
         }
         providerStore.close();
     }

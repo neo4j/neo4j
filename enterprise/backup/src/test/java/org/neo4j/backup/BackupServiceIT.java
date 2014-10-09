@@ -32,13 +32,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -63,6 +56,11 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.Mute;
 import org.neo4j.test.TargetDirectory;
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
@@ -70,7 +68,7 @@ import static junit.framework.Assert.assertTrue;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.*;
+import static org.junit.Assert.fail;
 import static org.neo4j.index.impl.lucene.LuceneDataSource.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME;
 
@@ -602,12 +600,13 @@ public class BackupServiceIT
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase(
                 backupDir.getAbsolutePath() );
+        ReadableByteChannel logicalLog = null;
         try
         {
             XaDataSourceManager xaDataSourceManager = db.getDependencyResolver().resolveDependency(
                     XaDataSourceManager.class );
             XaDataSource dataSource = xaDataSourceManager.getXaDataSource( dataSourceName );
-            ReadableByteChannel logicalLog = dataSource.getLogicalLog( 1 );
+            logicalLog = dataSource.getLogicalLog( 1 );
 
             ByteBuffer buffer = ByteBuffer.allocate( 64 );
             long[] headerData = LogIoUtils.readLogHeader( buffer, logicalLog, true );
@@ -619,6 +618,10 @@ public class BackupServiceIT
         finally
         {
             db.shutdown();
+            if ( logicalLog != null )
+            {
+                logicalLog.close();
+            }
         }
     }
 

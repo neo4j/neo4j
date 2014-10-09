@@ -19,6 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static java.lang.Math.max;
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.CLEAN;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG1;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG2;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -54,12 +60,6 @@ import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.MonitoredReadableByteChannel;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import static java.lang.Math.max;
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.CLEAN;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG1;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG2;
 
 /**
  * <CODE>XaLogicalLog</CODE> is a transaction and logical log combined. In
@@ -729,6 +729,7 @@ public class XaLogicalLog implements LogLoader
                     "time it is opened." );
             return;
         }
+        xaTf.flushAll();
         releaseCurrentLogFile();
         char logWas = currentLog;
         if ( currentLog != CLEAN ) // again special case, see above
@@ -736,7 +737,6 @@ public class XaLogicalLog implements LogLoader
             setActiveLog( CLEAN );
         }
 
-        xaTf.flushAll();
         File activeLogFileName = new File( fileName.getPath() + "." + logWas);
         renameLogFileToRightVersion( activeLogFileName, endPosition );
         xaTf.getAndSetNewVersion();
