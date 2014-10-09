@@ -58,9 +58,9 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
 
         File storeFile();
 
-        CountsStore.Writer newWriter( File file, long lastCommittedTxId ) throws IOException;
+        CountsStore.Writer<CountsKey> newWriter( File file, long lastCommittedTxId ) throws IOException;
 
-        void accept( RecordVisitor visitor );
+        void accept( RecordVisitor<CountsKey> visitor );
     }
 
     public static final String ALPHA = ".alpha", BETA = ".beta";
@@ -75,15 +75,16 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
         this.state = new ConcurrentTrackerState( openStore( fs, pageCache, this.alphaFile, this.betaFile ) );
     }
 
-    private static CountsStore openStore( FileSystemAbstraction fs, PageCache pageCache, File alpha, File beta )
+    private static CountsStore<CountsKey> openStore( FileSystemAbstraction fs, PageCache pageCache, File alpha, File beta )
     {
         try
         {
             boolean hasAlpha = fs.fileExists( alpha ), hasBeta = fs.fileExists( beta );
+            CountsRecordSerializer recordSerializer = new CountsRecordSerializer();
             if ( hasAlpha && hasBeta )
             {
-                CountsStore alphaStore = CountsStore.open( fs, pageCache, alpha );
-                CountsStore betaStore = CountsStore.open( fs, pageCache, beta );
+                CountsStore<CountsKey> alphaStore = CountsStore.open( fs, pageCache, alpha, recordSerializer );
+                CountsStore<CountsKey> betaStore = CountsStore.open( fs, pageCache, beta, recordSerializer );
                 long alphaTxId = alphaStore.lastTxId(), betaTxId = betaStore.lastTxId();
                 if ( alphaTxId > betaTxId )  // TODO: compare to what the txIdProvider says...
                 {
@@ -98,11 +99,11 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
             }
             else if ( hasAlpha )
             {
-                return CountsStore.open( fs, pageCache, alpha );
+                return CountsStore.open( fs, pageCache, alpha, recordSerializer );
             }
             else if ( hasBeta )
             {
-                return CountsStore.open( fs, pageCache, beta );
+                return CountsStore.open( fs, pageCache, beta, recordSerializer );
             }
             else
             {
@@ -149,7 +150,7 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
 
     public void accept( final CountsVisitor visitor )
     {
-        state.accept( new RecordVisitor()
+        state.accept( new RecordVisitor<CountsKey>()
         {
             @Override
             public void visit( CountsKey key, long value )
@@ -200,7 +201,7 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
             if ( state.hasChanges() )
             {
                 // select the next file, and create a writer for it
-                try ( CountsStore.Writer writer = nextWriter( state, lastCommittedTxId ) )
+                try ( CountsStore.Writer<CountsKey> writer = nextWriter( state, lastCommittedTxId ) )
                 {
                     state.accept( writer );
                     // replace the old store with the
@@ -212,7 +213,7 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
         }
     }
 
-    CountsStore.Writer nextWriter( State state, long lastCommittedTxId ) throws IOException
+    CountsStore.Writer<CountsKey> nextWriter( State state, long lastCommittedTxId ) throws IOException
     {
         if ( alphaFile.equals( state.storeFile() ) )
         {

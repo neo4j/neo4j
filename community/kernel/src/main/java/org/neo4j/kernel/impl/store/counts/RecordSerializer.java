@@ -19,7 +19,14 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
-interface RecordVisitor<K extends Comparable<K>>
+import java.nio.ByteBuffer;
+
+import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.register.Register;
+
+public interface RecordSerializer<K extends Comparable<K>>
 {
-    void visit( K key, long value );
+    boolean visitRecord(ByteBuffer buffer, RecordVisitor<K> visitor);
+
+    K readRecord( PageCursor cursor, Register.Long.Out value );
 }

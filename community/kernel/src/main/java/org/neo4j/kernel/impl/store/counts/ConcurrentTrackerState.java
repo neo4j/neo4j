@@ -34,10 +34,10 @@ import org.neo4j.kernel.impl.api.CountsKey;
 class ConcurrentTrackerState implements CountsTracker.State
 {
     private static final int INITIAL_CHANGES_CAPACITY = 1024;
-    private final CountsStore store;
+    private final CountsStore<CountsKey> store;
     private final ConcurrentMap<CountsKey, AtomicLong> state = new ConcurrentHashMap<>( INITIAL_CHANGES_CAPACITY );
 
-    ConcurrentTrackerState( CountsStore store )
+    ConcurrentTrackerState( CountsStore<CountsKey> store )
     {
         this.store = store;
     }
@@ -96,15 +96,15 @@ class ConcurrentTrackerState implements CountsTracker.State
     }
 
     @Override
-    public CountsStore.Writer newWriter( File file, long lastCommittedTxId ) throws IOException
+    public CountsStore.Writer<CountsKey> newWriter( File file, long lastCommittedTxId ) throws IOException
     {
         return store.newWriter( file, lastCommittedTxId );
     }
 
     @Override
-    public void accept( RecordVisitor visitor )
+    public void accept( RecordVisitor<CountsKey> visitor )
     {
-        try ( Merger merger = new Merger( visitor, sortedUpdates( state ) ) )
+        try ( Merger<CountsKey> merger = new Merger<>( visitor, sortedUpdates( state ) ) )
         {
             store.accept( merger );
         }
@@ -116,9 +116,10 @@ class ConcurrentTrackerState implements CountsTracker.State
         store.close();
     }
 
-    private static Update[] sortedUpdates( ConcurrentMap<CountsKey, AtomicLong> updates )
+    private static Update<CountsKey>[] sortedUpdates( ConcurrentMap<CountsKey, AtomicLong> updates )
     {
-        Update[] result = new Update[updates.size()];
+        @SuppressWarnings( "unchecked" )
+        Update<CountsKey>[] result = new Update[updates.size()];
         Iterator<Map.Entry<CountsKey, AtomicLong>> iterator = updates.entrySet().iterator();
         for ( int i = 0; i < result.length; i++ )
         {
@@ -126,7 +127,7 @@ class ConcurrentTrackerState implements CountsTracker.State
             {
                 throw new ConcurrentModificationException( "fewer entries than expected" );
             }
-            result[i] = new Update( iterator.next() );
+            result[i] = new Update<>( iterator.next() );
         }
         if ( iterator.hasNext() )
         {
@@ -136,24 +137,24 @@ class ConcurrentTrackerState implements CountsTracker.State
         return result;
     }
 
-    private static final class Merger implements RecordVisitor, AutoCloseable
+    private static final class Merger<K extends Comparable<K>> implements RecordVisitor<K>, AutoCloseable
     {
-        private final RecordVisitor target;
-        private final Update[] updates;
+        private final RecordVisitor<K> target;
+        private final Update<K>[] updates;
         private int next;
 
-        public Merger( RecordVisitor target, Update[] updates )
+        public Merger( RecordVisitor<K> target, Update<K>[] updates )
         {
             this.target = target;
             this.updates = updates;
         }
 
         @Override
-        public void visit( CountsKey key, long value )
+        public void visit( K key, long value )
         {
             while ( next < updates.length )
             {
-                Update nextUpdate = updates[next];
+                Update<K> nextUpdate = updates[next];
                 int cmp = key.compareTo( nextUpdate.key );
                 if ( cmp == 0 )
                 { // overwrite the value in the store
@@ -180,17 +181,17 @@ class ConcurrentTrackerState implements CountsTracker.State
         }
     }
 
-    private static final class Update implements Comparable<Update>
+    private static final class Update<K extends Comparable<K>> implements Comparable<Update<K>>
     {
-        final CountsKey key;
+        final K key;
         final long value;
 
-        Update( Map.Entry<CountsKey, AtomicLong> entry )
+        Update( Map.Entry<K, AtomicLong> entry )
         {
             this( entry.getKey(), entry.getValue().longValue() );
         }
 
-        Update( CountsKey key, long value )
+        Update( K key, long value )
         {
             this.key = key;
             this.value = value;
@@ -203,7 +204,7 @@ class ConcurrentTrackerState implements CountsTracker.State
         }
 
         @Override
-        public int compareTo( Update that )
+        public int compareTo( Update<K> that )
         {
             return this.key.compareTo( that.key );
         }

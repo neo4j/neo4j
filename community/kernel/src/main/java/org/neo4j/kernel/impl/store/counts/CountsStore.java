@@ -20,8 +20,6 @@
 package org.neo4j.kernel.impl.store.counts;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
-import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
-import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
 
 import java.io.Closeable;
 import java.io.File;
@@ -38,16 +36,12 @@ import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 
-class CountsStore implements Closeable
+class CountsStore<K extends Comparable<K>> implements Closeable
 {
-    interface Writer extends RecordVisitor, Closeable
+    interface Writer<K extends Comparable<K>> extends RecordVisitor<K>, Closeable
     {
-        CountsStore openForReading() throws IOException;
+        CountsStore<K> openForReading() throws IOException;
     }
-
-    static final byte EMPTY_RECORD_KEY = 0;
-    static final byte NODE_KEY = 1;
-    static final byte RELATIONSHIP_KEY = 2;
 
     static final int RECORD_SIZE /*bytes*/ = 16 /*key*/ + 16 /*value*/;
     private final FileSystemAbstraction fs;
@@ -56,14 +50,17 @@ class CountsStore implements Closeable
     private final PagedFile pages;
     private final CountsStoreHeader header;
     private final int totalRecords;
+    private final RecordSerializer<K> recordSerializer;
 
-    CountsStore( FileSystemAbstraction fs, PageCache pageCache, File file, PagedFile pages, CountsStoreHeader header )
+    CountsStore( FileSystemAbstraction fs, PageCache pageCache, File file, PagedFile pages, CountsStoreHeader header,
+                 RecordSerializer<K> recordSerializer )
     {
         this.fs = fs;
         this.pageCache = pageCache;
         this.file = file;
         this.pages = pages;
         this.header = header;
+        this.recordSerializer = recordSerializer;
         this.totalRecords = header.dataRecords();
     }
 
@@ -94,11 +91,13 @@ class CountsStore implements Closeable
         }
     }
 
-    static CountsStore open( FileSystemAbstraction fs, PageCache pageCache, File storeFile ) throws IOException
+    static <K extends Comparable<K>> CountsStore<K> open( FileSystemAbstraction fs, PageCache pageCache,
+                                                          File storeFile, RecordSerializer<K> recordSerializer )
+            throws IOException
     {
         PagedFile pages = mapCountsStore( pageCache, storeFile );
         CountsStoreHeader header = CountsStoreHeader.read( pages );
-        return new CountsStore( fs, pageCache, storeFile, pages, header );
+        return new CountsStore<>( fs, pageCache, storeFile, pages, header, recordSerializer );
     }
 
     private static PagedFile mapCountsStore( PageCache pageCache, File storeFile ) throws IOException
@@ -107,7 +106,7 @@ class CountsStore implements Closeable
         return pageCache.map( storeFile, pageSize );
     }
 
-    public long get( CountsKey key )
+    public long get( K key )
     {
         Register.LongRegister value = Registers.newLongRegister();
         int min = header.headerRecords();
@@ -140,18 +139,18 @@ class CountsStore implements Closeable
         return 0;
     }
 
-    private int compareKeyAndReadValue( PageCursor cursor, CountsKey target, int record, Register.Long.Out count )
+    private int compareKeyAndReadValue( PageCursor cursor, K target, int record, Register.Long.Out count )
             throws IOException
     {
         int pageId = (record * RECORD_SIZE) / pages.pageSize();
         int offset = (record * RECORD_SIZE) % pages.pageSize();
         if ( pageId == cursor.getCurrentPageId() || cursor.next( pageId ) )
         {
-            CountsKey key;
+            K key;
             do
             {
                 cursor.setOffset( offset );
-                key = readRecord( cursor, count );
+                key = recordSerializer.readRecord( cursor, count );
             } while ( cursor.shouldRetry() );
             return target.compareTo( key );
         }
@@ -159,68 +158,6 @@ class CountsStore implements Closeable
         {
             throw new IllegalStateException( "Could not fetch page: " + pageId );
         }
-    }
-
-    /**
-     * Node Key:
-     *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
-     * [x, , , , , , , , , , , ,x,x,x,x]
-     *  _                       _ _ _ _
-     *  |                          |
-     * entry                      label
-     * type                        id
-     *
-     * Relationship Key:
-     *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
-     * [x, ,x,x,x,x, ,x,x,x,x, ,x,x,x,x]
-     *  _   _ _ _ _   _ _ _ _   _ _ _ _
-     *  |      |         |         |
-     * entry  label      rel      label
-     * type    id        type      id
-     *
-     * Count value:
-     *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
-     * [ , , , , , , , ,x,x,x,x,x,x,x,x]
-     *                  _ _ _ _ _ _ _ _
-     *                         |
-     *                       value
-     */
-    private CountsKey readRecord( PageCursor cursor, Register.Long.Out value )
-    {
-        // read type
-        byte type = cursor.getByte();
-
-        // read key
-        cursor.getByte(); // skip unused byte
-        int one = cursor.getInt();
-        cursor.getByte(); // skip unused byte
-        int two = cursor.getInt();
-        cursor.getByte(); // skip unused byte
-        int three = cursor.getInt();
-
-        // read value
-        cursor.getLong(); // skip unused long
-        long count =  cursor.getLong();
-
-        CountsKey key;
-        switch ( type )
-        {
-            case EMPTY_RECORD_KEY:
-                throw new IllegalStateException( "Reading empty record" );
-            case NODE_KEY:
-                assert one == 0;
-                assert two == 0;
-                key = nodeKey( three /* label id*/ );
-                value.write( count );
-                break;
-            case RELATIONSHIP_KEY:
-                key = relationshipKey( one /* start label id */, two /* rel type id */, three /* end label id */ );
-                value.write( count );
-                break;
-            default:
-                throw new IllegalStateException( "Unknown counts key type: " + type );
-        }
-        return key;
     }
 
     public File file()
@@ -237,7 +174,7 @@ class CountsStore implements Closeable
         return header.dataRecords();
     }
 
-    public void accept( RecordVisitor visitor )
+    public void accept( RecordVisitor<K> visitor )
     {
         try ( InputStream in = fs.openAsInputStream( file ) )
         {
@@ -257,7 +194,7 @@ class CountsStore implements Closeable
                     continue;
                 }
                 buffer.position( 0 );
-                readNext = visitRecord( buffer, visitor );
+                readNext = recordSerializer.visitRecord( buffer, visitor );
                 offset = 0;
             }
         }
@@ -267,75 +204,7 @@ class CountsStore implements Closeable
         }
     }
 
-    /**
-     * Node Key:
-     *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
-     * [x, , , , , , , , , , , ,x,x,x,x]
-     *  _                       _ _ _ _
-     *  |                          |
-     * entry                      label
-     * type                        id
-     *
-     * Relationship Key:
-     *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
-     * [x, ,x,x,x,x, ,x,x,x,x, ,x,x,x,x]
-     *  _   _ _ _ _   _ _ _ _   _ _ _ _
-     *  |      |         |         |
-     * entry  label      rel      label
-     * type    id        type      id
-     *
-     * Count value:
-     *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
-     * [ , , , , , , , ,x,x,x,x,x,x,x,x]
-     *                  _ _ _ _ _ _ _ _
-     *                         |
-     *                       value
-     */
-    private boolean visitRecord( ByteBuffer buffer, RecordVisitor visitor )
-    {
-        // read type
-        byte type = buffer.get();
-
-        // read key
-        buffer.get(); // skip unused byte
-        int one = buffer.getInt();
-        buffer.get(); // skip unused byte
-        int two = buffer.getInt();
-        buffer.get(); // skip unused byte
-        int three = buffer.getInt();
-
-        // read value
-        buffer.getLong(); // skip unused long
-        long count =  buffer.getLong();
-
-        CountsKey key;
-        switch ( type )
-        {
-            case EMPTY_RECORD_KEY:
-                assert one == 0;
-                assert two == 0;
-                assert three == 0;
-                assert count == 0;
-                return false;
-
-            case NODE_KEY:
-                assert one == 0;
-                assert two == 0;
-                key = nodeKey( three /* label id*/ );
-                break;
-
-            case RELATIONSHIP_KEY:
-                key = relationshipKey( one /* start label id */, two /* rel type id */, three /* end label id */ );
-                break;
-
-            default:
-                throw new IllegalStateException( "Unknown counts key type: " + type );
-        }
-        visitor.visit( key, count );
-        return true;
-    }
-
-    public Writer newWriter( File targetFile, long lastCommittedTxId ) throws IOException
+    public Writer<CountsKey> newWriter( File targetFile, long lastCommittedTxId ) throws IOException
     {
         return new CountsStoreWriter( fs, pageCache, header, targetFile, lastCommittedTxId );
     }

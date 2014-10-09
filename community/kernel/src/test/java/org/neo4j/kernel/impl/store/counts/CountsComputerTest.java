@@ -67,7 +67,7 @@ public class CountsComputerTest
 
         rebuildCounts( countsState, lastCommittedTransactionId );
 
-        try ( CountsStore store = CountsStore.open( fs, pageCache, alphaStoreFile() ) )
+        try ( CountsStore<CountsKey> store = CountsStore.open( fs, pageCache, alphaStoreFile(), RECORD_SERIALIZER ) )
         {
             // a transaction for creating the label and a transaction for the node
             assertEquals( BASE_TX_ID, store.lastTxId() );
@@ -95,7 +95,7 @@ public class CountsComputerTest
 
         rebuildCounts( countsState, lastCommittedTransactionId );
 
-        try ( CountsStore store = CountsStore.open( fs, pageCache, betaStoreFile() ) )
+        try ( CountsStore<CountsKey> store = CountsStore.open( fs, pageCache, betaStoreFile(), RECORD_SERIALIZER ) )
         {
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1, store.lastTxId() );
             assertEquals( 4, store.totalRecordsStored() );
@@ -128,7 +128,7 @@ public class CountsComputerTest
 
         rebuildCounts( countsState, lastCommittedTransactionId );
 
-        try ( CountsStore store = CountsStore.open( fs, pageCache, betaStoreFile() ) )
+        try ( CountsStore<CountsKey> store = CountsStore.open( fs, pageCache, betaStoreFile(), RECORD_SERIALIZER ) )
         {
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1, store.lastTxId() );
             assertEquals( 3, store.totalRecordsStored() );
@@ -161,7 +161,7 @@ public class CountsComputerTest
 
         rebuildCounts( countsState, lastCommittedTransactionId );
 
-        try ( CountsStore store = CountsStore.open( fs, pageCache, betaStoreFile() ) )
+        try ( CountsStore<CountsKey> store = CountsStore.open( fs, pageCache, betaStoreFile(), RECORD_SERIALIZER ) )
         {
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1 + 1, store.lastTxId() );
             assertEquals( 11, store.totalRecordsStored() );
@@ -198,7 +198,7 @@ public class CountsComputerTest
 
         rebuildCounts( countsState, lastCommittedTransactionId );
 
-        try ( CountsStore store = CountsStore.open( fs, pageCache, betaStoreFile() ) )
+        try ( CountsStore<CountsKey> store = CountsStore.open( fs, pageCache, betaStoreFile(), RECORD_SERIALIZER ) )
         {
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1 + 1 + 1, store.lastTxId() );
             assertEquals( 15, store.totalRecordsStored() );
@@ -242,7 +242,7 @@ public class CountsComputerTest
 
         rebuildCounts( countsState, lastCommittedTransactionId );
 
-        try ( CountsStore store = CountsStore.open( fs, pageCache, betaStoreFile() ) )
+        try ( CountsStore<CountsKey> store = CountsStore.open( fs, pageCache, betaStoreFile(), RECORD_SERIALIZER ) )
         {
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1, store.lastTxId() );
             assertEquals( 30, store.totalRecordsStored() );
@@ -288,16 +288,17 @@ public class CountsComputerTest
         pageCache = pcRule.getPageCache( fs, new Config() );
     }
 
-    private static final String countsStoreBase = NeoStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE;
+    private static final String COUNTS_STORE_BASE = NeoStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE;
+    private static final CountsRecordSerializer RECORD_SERIALIZER = new CountsRecordSerializer();
 
     private File alphaStoreFile()
     {
-        return new File( dir, countsStoreBase + CountsTracker.ALPHA );
+        return new File( dir, COUNTS_STORE_BASE + CountsTracker.ALPHA );
     }
 
     private File betaStoreFile()
     {
-        return new File( dir, countsStoreBase + CountsTracker.BETA );
+        return new File( dir, COUNTS_STORE_BASE + CountsTracker.BETA );
     }
 
     private long getLastTxId( GraphDatabaseAPI db )
@@ -310,13 +311,13 @@ public class CountsComputerTest
     {
         fs.deleteFile( alphaStoreFile() );
         fs.deleteFile( betaStoreFile() );
-        CountsTracker.createEmptyCountsStore( pageCache, new File( dir, countsStoreBase ),
+        CountsTracker.createEmptyCountsStore( pageCache, new File( dir, COUNTS_STORE_BASE ),
                 buildTypeDescriptorAndVersion( CountsTracker.STORE_DESCRIPTOR ) );
     }
 
     private void rebuildCounts( CountsState countsState, long lastCommittedTransactionId ) throws IOException
     {
-        final CountsTracker tracker = new CountsTracker( fs, pageCache, new File( dir, countsStoreBase ) );
+        final CountsTracker tracker = new CountsTracker( fs, pageCache, new File( dir, COUNTS_STORE_BASE ) );
         countsState.accept( new CountsAcceptor.Initializer( tracker ) );
         tracker.rotate( lastCommittedTransactionId );
         tracker.close();

@@ -59,7 +59,7 @@ public class CountsStoreWriterTest
             assertEquals( lastTxId, counts.lastTxId() );
             assertEquals( 2, counts.totalRecordsStored() );
             assertEquals( file, counts.file() );
-            counts.accept( new RecordVisitor()
+            counts.accept( new RecordVisitor<CountsKey>()
             {
                 @Override
                 public void visit( CountsKey key, long value )

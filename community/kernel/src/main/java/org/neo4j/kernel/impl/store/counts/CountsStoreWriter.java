@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.store.counts;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
-import static org.neo4j.kernel.impl.store.counts.CountsStore.NODE_KEY;
-import static org.neo4j.kernel.impl.store.counts.CountsStore.RELATIONSHIP_KEY;
+import static org.neo4j.kernel.impl.store.counts.CountsRecordSerializer.NODE_KEY;
+import static org.neo4j.kernel.impl.store.counts.CountsRecordSerializer.RELATIONSHIP_KEY;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.api.CountsKey;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 
-class CountsStoreWriter implements CountsStore.Writer, CountsVisitor
+class CountsStoreWriter implements CountsStore.Writer<CountsKey>, CountsVisitor
 {
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
@@ -152,9 +152,9 @@ class CountsStoreWriter implements CountsStore.Writer, CountsVisitor
     }
 
     @Override
-    public CountsStore openForReading() throws IOException
+    public CountsStore<CountsKey> openForReading() throws IOException
     {
-        return new CountsStore( fs, pageCache, targetFile, pagedFile, newHeader() );
+        return new CountsStore<>( fs, pageCache, targetFile, pagedFile, newHeader(), new CountsRecordSerializer() );
     }
 
     @Override

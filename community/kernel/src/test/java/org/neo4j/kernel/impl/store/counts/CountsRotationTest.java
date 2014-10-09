@@ -67,7 +67,7 @@ public class CountsRotationTest
         assertTrue( fs.fileExists( alphaStoreFile() ) );
         assertFalse( fs.fileExists( betaStoreFile() ) );
 
-        try ( CountsStore store = CountsStore.open( fs, pageCache, alphaStoreFile() ) )
+        try ( CountsStore<CountsKey> store = CountsStore.open( fs, pageCache, alphaStoreFile(), RECORD_SERIALIZER ) )
         {
             assertEquals( TransactionIdStore.BASE_TX_ID, store.lastTxId() );
             assertEquals( 0, store.totalRecordsStored() );
@@ -93,7 +93,7 @@ public class CountsRotationTest
         assertTrue( fs.fileExists( alphaStoreFile() ) );
         assertTrue( fs.fileExists( betaStoreFile() ) );
 
-        try ( CountsStore store = CountsStore.open( fs, pageCache, betaStoreFile() ) )
+        try ( CountsStore<CountsKey> store = CountsStore.open( fs, pageCache, betaStoreFile(), RECORD_SERIALIZER ) )
         {
             // a transaction for creating the label and a transaction for the node
             assertEquals( TransactionIdStore.BASE_TX_ID + 1 + 1, store.lastTxId() );
@@ -128,7 +128,7 @@ public class CountsRotationTest
         assertTrue( fs.fileExists( betaStoreFile() ) );
 
         final PageCache pageCache = db.getDependencyResolver().resolveDependency( PageCache.class );
-        try ( CountsStore store = CountsStore.open( fs, pageCache, betaStoreFile() ) )
+        try ( CountsStore<CountsKey> store = CountsStore.open( fs, pageCache, betaStoreFile(), RECORD_SERIALIZER ) )
         {
             // NOTE since the rotation happens before the second transaction is committed we do not see those changes
             // in the stats
@@ -176,22 +176,24 @@ public class CountsRotationTest
         pageCache = pcRule.getPageCache( fs, new Config() );
     }
 
-    private static final String countsStoreBase = NeoStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE;
+    private static final String COUNTS_STORE_BASE = NeoStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE;
+    private static final CountsRecordSerializer RECORD_SERIALIZER = new CountsRecordSerializer();
 
     private File alphaStoreFile()
     {
-        return new File( dir.getPath(), countsStoreBase + CountsTracker.ALPHA );
+        return new File( dir.getPath(), COUNTS_STORE_BASE + CountsTracker.ALPHA );
     }
 
     private File betaStoreFile()
     {
-        return new File( dir.getPath(), countsStoreBase + CountsTracker.BETA );
+        return new File( dir.getPath(), COUNTS_STORE_BASE + CountsTracker.BETA );
     }
+
 
     private Collection<Pair<CountsKey, Long>> allRecords( CountsStore store )
     {
         final Collection<Pair<CountsKey, Long>> records = new ArrayList<>();
-        store.accept( new RecordVisitor()
+        store.accept( new RecordVisitor<CountsKey>()
         {
             @Override
             public void visit( CountsKey key, long value )

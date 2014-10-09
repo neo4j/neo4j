@@ -1,3 +1,22 @@
+/**
+ * Copyright (c) 2002-2014 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.kernel.impl.store.counts;
 
 import static org.junit.Assert.assertEquals;
@@ -26,7 +45,7 @@ public class CountsStoreTest
     {
         // when
         CountsStore.createEmpty( pageCache, alpha, ALL_STORES_VERSION );
-        try ( CountsStore counts = CountsStore.open( fs, pageCache, alpha ) )
+        try ( CountsStore<CountsKey> counts = CountsStore.open( fs, pageCache, alpha, RECORD_SERIALIZER ) )
         {
             // then
             assertEquals( 0, counts.get( CountsKey.nodeKey( 0 ) ) );
@@ -34,7 +53,7 @@ public class CountsStoreTest
             assertEquals( BASE_TX_ID, counts.lastTxId() );
             assertEquals( 0, counts.totalRecordsStored() );
             assertEquals( alpha, counts.file() );
-            counts.accept( new RecordVisitor()
+            counts.accept( new RecordVisitor<CountsKey>()
             {
                 @Override
                 public void visit( CountsKey key, long value )
@@ -50,8 +69,8 @@ public class CountsStoreTest
     {
         // given
         CountsStore.createEmpty( pageCache, alpha, ALL_STORES_VERSION );
-        CountsStore.Writer writer;
-        try ( CountsStore counts = CountsStore.open( fs, pageCache, alpha ) )
+        CountsStore.Writer<CountsKey> writer;
+        try ( CountsStore<CountsKey> counts = CountsStore.open( fs, pageCache, alpha, RECORD_SERIALIZER ) )
         {
             // when
             writer = counts.newWriter( beta, lastCommittedTxId );
@@ -60,7 +79,7 @@ public class CountsStoreTest
             writer.close();
         }
 
-        try ( CountsStore updated = writer.openForReading() )
+        try ( CountsStore<CountsKey> updated = writer.openForReading() )
         {
             // then
             assertEquals( 21, updated.get( CountsKey.nodeKey( 0 ) ) );
@@ -68,7 +87,7 @@ public class CountsStoreTest
             assertEquals( lastCommittedTxId, updated.lastTxId() );
             assertEquals( 2, updated.totalRecordsStored() );
             assertEquals( beta, updated.file() );
-            updated.accept( new RecordVisitor()
+            updated.accept( new RecordVisitor<CountsKey>()
             {
                 @Override
                 public void visit( CountsKey key, long value )
@@ -95,6 +114,8 @@ public class CountsStoreTest
             } );
         }
     }
+
+    private static final CountsRecordSerializer RECORD_SERIALIZER = new CountsRecordSerializer();
 
     @Rule
     public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();

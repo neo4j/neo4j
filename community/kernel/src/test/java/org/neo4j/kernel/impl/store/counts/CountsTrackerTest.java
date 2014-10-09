@@ -136,13 +136,13 @@ public class CountsTrackerTest
             }
 
             @Override
-            CountsStore.Writer nextWriter( State state, long lastCommittedTxId ) throws IOException
+            CountsStore.Writer<CountsKey> nextWriter( State state, long lastCommittedTxId ) throws IOException
             {
-                final CountsStore.Writer writer = super.nextWriter( state, lastCommittedTxId );
-                return new CountsStore.Writer()
+                final CountsStore.Writer<CountsKey> writer = super.nextWriter( state, lastCommittedTxId );
+                return new CountsStore.Writer<CountsKey>()
                 {
                     @Override
-                    public CountsStore openForReading() throws IOException
+                    public CountsStore<CountsKey> openForReading() throws IOException
                     {
                         barrier.reached();
                         return writer.openForReading();
