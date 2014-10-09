@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality
+package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assumeDependence
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{LabelName, Ors, PropertyKeyName}
@@ -61,21 +61,18 @@ case class ExistsCombination(idName: IdName) extends PredicateCombination {
 }
 
 trait PropertyAndLabelPredicate {
-  def idName: IdName
   def propertyKey: PropertyKeyName
   def valueCount: Int
   def label: LabelName
   def containedPredicates: Set[Predicate]
 }
 
-case class PropertyEqualsAndLabelPredicate(idName: IdName,
-                                     propertyKey: PropertyKeyName,
-                                     valueCount: Int,
-                                     label: LabelName,
-                                     containedPredicates: Set[Predicate]) extends PredicateCombination with PropertyAndLabelPredicate
-
-case class PropertyNotEqualsAndLabelPredicate(idName: IdName,
-                                           propertyKey: PropertyKeyName,
+case class PropertyEqualsAndLabelPredicate(propertyKey: PropertyKeyName,
                                            valueCount: Int,
                                            label: LabelName,
                                            containedPredicates: Set[Predicate]) extends PredicateCombination with PropertyAndLabelPredicate
+
+case class PropertyNotEqualsAndLabelPredicate(propertyKey: PropertyKeyName,
+                                              valueCount: Int,
+                                              label: LabelName,
+                                              containedPredicates: Set[Predicate]) extends PredicateCombination with PropertyAndLabelPredicate

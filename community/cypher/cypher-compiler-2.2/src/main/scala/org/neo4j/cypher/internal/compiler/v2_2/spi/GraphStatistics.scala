@@ -36,4 +36,6 @@ trait GraphStatistics {
 
 object GraphStatistics {
   val DEFAULT_PREDICATE_SELECTIVITY = Selectivity(0.75)
+  val DEFAULT_EQUALITY_SELECTIVITY = Selectivity(0.1)
+  val DEFAULT_NUMBER_OF_ID_LOOKUPS = Cardinality(25)
 }

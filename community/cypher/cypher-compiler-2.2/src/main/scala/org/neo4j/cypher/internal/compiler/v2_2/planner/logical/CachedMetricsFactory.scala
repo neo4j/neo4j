@@ -26,14 +26,15 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 
 case class CachedMetricsFactory(metricsFactory: MetricsFactory) extends MetricsFactory {
-  def newCardinalityEstimator(statistics: GraphStatistics, selectivity: PredicateSelectivityCombiner, semanticTable: SemanticTable) =
-    CachedFunction.byIdentity(metricsFactory.newCardinalityEstimator(statistics, selectivity, semanticTable))
+  def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel): CardinalityModel =
+    CachedFunction.byIdentity(metricsFactory.newCardinalityEstimator(queryGraphCardinalityModel))
 
   def newCostModel(cardinality: CardinalityModel) =
     CachedFunction.byIdentity(metricsFactory.newCostModel(cardinality))
 
-  def newSelectivity() =
-    CachedFunction.byIdentity(metricsFactory.newSelectivity())
+  def newQueryGraphCardinalityModel(statistics: GraphStatistics, semanticTable: SemanticTable) =
+    CachedFunction.byIdentity(metricsFactory.newQueryGraphCardinalityModel(statistics, semanticTable))
 
-  def newCandidateListCreator(): (Seq[LogicalPlan]) => CandidateList = metricsFactory.newCandidateListCreator()
+  def newCandidateListCreator(): (Seq[LogicalPlan]) => CandidateList =
+    metricsFactory.newCandidateListCreator()
 }

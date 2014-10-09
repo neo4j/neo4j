@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{normalizeWithClaus
 import org.neo4j.cypher.internal.compiler.v2_2.parser.{CypherParser, ParserMonitor}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.combinePredicates
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter.unnestEmptyApply
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{GraphStatistics, PlanContext}
@@ -74,7 +74,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   val realConfig = new RealLogicalPlanningConfiguration
 
   trait LogicalPlanningConfiguration {
-    def cardinalityModel(statistics: GraphStatistics, selectivity: PredicateSelectivityCombiner, semanticTable: SemanticTable): PartialFunction[LogicalPlan, Cardinality]
+    def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, semanticTable: SemanticTable): Metrics.CardinalityModel
     def costModel(cardinality: CardinalityModel): PartialFunction[LogicalPlan, Cost]
     def graphStatistics: GraphStatistics
     def indexes: Set[(String, String)]
@@ -99,8 +99,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   }
 
   case class RealLogicalPlanningConfiguration() extends LogicalPlanningConfiguration {
-    def cardinalityModel(statistics: GraphStatistics, selectivity: PredicateSelectivityCombiner, semanticTable: SemanticTable) = {
-      val model = new StatisticsBackedCardinalityModel(statistics, selectivity)(semanticTable)
+    def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, semanticTable: SemanticTable) = {
+      val model = new StatisticsBackedCardinalityModel(queryGraphCardinalityModel)
       ({
         case (plan: LogicalPlan) => model(plan)
       })
@@ -141,7 +141,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     def costModel(cardinality: Metrics.CardinalityModel) =
       cost.orElse(parent.costModel(cardinality))
 
-    def cardinalityModel(statistics: GraphStatistics, selectivity: Metrics.PredicateSelectivityCombiner, semanticTable: SemanticTable) = {
+    def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, semanticTable: SemanticTable): Metrics.CardinalityModel = {
       val labelIdCardinality: Map[LabelId, Cardinality] = labelCardinality.map {
         case (name: String, cardinality: Cardinality) =>
           semanticTable.resolvedLabelIds(name) -> cardinality
@@ -153,8 +153,9 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
       labelScanCardinality
         .orElse(cardinality)
-        .orElse(parent.cardinalityModel(statistics, selectivity, semanticTable))
+        .orElse(PartialFunction(parent.cardinalityModel(queryGraphCardinalityModel, semanticTable)))
     }
+
     def graphStatistics: GraphStatistics =
       Option(statistics).getOrElse(parent.graphStatistics)
   }
@@ -182,10 +183,11 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     def metricsFactory = new MetricsFactory {
       def newCostModel(cardinality: Metrics.CardinalityModel) =
         config.costModel(cardinality)
-      def newCardinalityEstimator(statistics: GraphStatistics, selectivity: Metrics.PredicateSelectivityCombiner, semanticTable: SemanticTable) =
-        config.cardinalityModel(statistics, selectivity, semanticTable)
+      def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel) =
+        config.cardinalityModel(queryGraphCardinalityModel, semanticTable)
 
-      def newSelectivity() = combinePredicates.default
+      def newQueryGraphCardinalityModel(statistics: GraphStatistics, semanticTable: SemanticTable) =
+        QueryGraphCardinalityModel.default(statistics, semanticTable)
 
       def newCandidateListCreator(): (Seq[LogicalPlan]) => CandidateList = CandidateList.apply
     }
