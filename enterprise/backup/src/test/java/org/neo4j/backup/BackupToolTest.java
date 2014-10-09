@@ -27,7 +27,6 @@ import java.util.Properties;
 
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.full.TaskExecutionOrder;
 import org.neo4j.helpers.HostnamePort;
@@ -47,6 +46,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -67,7 +67,28 @@ public class BackupToolTest
 
         // then
         verify( service ).doIncrementalBackupOrFallbackToFull( eq( "localhost" ),
-                eq( BackupServer.DEFAULT_PORT ), eq( "my_backup" ), eq( true ), any( Config.class ) );
+                eq( BackupServer.DEFAULT_PORT ), eq( "my_backup" ), eq( true ), any( Config.class ),
+                eq( BackupClient.BIG_READ_TIMEOUT) );
+        verify( systemOut ).println(
+                "Performing backup from '" + new HostnamePort( "localhost", BackupServer.DEFAULT_PORT ) + "'" );
+        verify( systemOut ).println( "Done" );
+    }
+    
+    @Test
+    public void shouldResetTimeout() throws Exception 
+    {
+        String newTimeout = "3"; /*seconds by default*/
+        long expectedTimeout = 3 * 1000;
+        String[] args = new String[]{"-host", "localhost", "-to", "my_backup", "-timeout", newTimeout};
+        BackupService service = mock( BackupService.class );
+        PrintStream systemOut = mock( PrintStream.class );
+
+        // when
+        new BackupTool( service, systemOut ).run( args );
+
+        // then
+        verify( service ).doIncrementalBackupOrFallbackToFull( eq( "localhost" ), eq( BackupServer.DEFAULT_PORT ),
+                eq( "my_backup" ), eq( true ), any( Config.class ), eq( expectedTimeout ) );
         verify( systemOut ).println(
                 "Performing backup from '" + new HostnamePort( "localhost", BackupServer.DEFAULT_PORT ) + "'" );
         verify( systemOut ).println( "Done" );
@@ -85,7 +106,7 @@ public class BackupToolTest
 
         // then
         verify( service ).doIncrementalBackupOrFallbackToFull( eq( "localhost" ), eq( BackupServer.DEFAULT_PORT ),
-                eq( "my_backup" ), eq( true ), any( Config.class ) );
+                eq( "my_backup" ), eq( true ), any( Config.class ), eq( BackupClient.BIG_READ_TIMEOUT) );
         verify( systemOut ).println(
                 "Performing backup from '" + new HostnamePort( "localhost", BackupServer.DEFAULT_PORT ) + "'" );
         verify( systemOut ).println( "Done" );
@@ -104,7 +125,7 @@ public class BackupToolTest
 
         // then
         verify( service ).doIncrementalBackupOrFallbackToFull( eq( "localhost" ), eq( BackupServer.DEFAULT_PORT ),
-                eq( "my_backup" ), eq( true ), any( Config.class ) );
+                eq( "my_backup" ), eq( true ), any( Config.class ), eq( BackupClient.BIG_READ_TIMEOUT) );
         verify( systemOut ).println(
                 "Performing backup from '" + new HostnamePort( "localhost", BackupServer.DEFAULT_PORT ) + "'" );
         verify( systemOut ).println( "Done" );
@@ -124,7 +145,7 @@ public class BackupToolTest
         // then
         ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
         verify( service ).doIncrementalBackupOrFallbackToFull( anyString(), anyInt(), anyString(), anyBoolean(),
-                config.capture() );
+                config.capture(), eq( BackupClient.BIG_READ_TIMEOUT) );
         assertFalse( config.getValue().get( ConsistencyCheckSettings.consistency_check_property_owners ) );
         assertEquals( TaskExecutionOrder.MULTI_PASS,
                 config.getValue().get( ConsistencyCheckSettings.consistency_check_execution_order ) );
@@ -149,7 +170,7 @@ public class BackupToolTest
         // then
         ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
         verify( service ).doIncrementalBackupOrFallbackToFull( anyString(), anyInt(), anyString(), anyBoolean(),
-                config.capture() );
+                config.capture(), anyLong() );
         assertTrue( config.getValue().get( ConsistencyCheckSettings.consistency_check_property_owners ) );
     }
 
