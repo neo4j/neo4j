@@ -47,7 +47,7 @@ class AmendedRootPlanDescription(child: PlanDescription, version: CypherVersion)
       java.util.Collections.unmodifiableMap[String, AnyRef](newArgs)
     }
 
-    val getChildren = List(childAsJava).asJava
+    val getChildren = childAsJava.getChildren
 
     override def toString = self.toString
   }
