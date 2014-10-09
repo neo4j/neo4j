@@ -68,7 +68,7 @@ class CardinalityModelIntegrationTest extends CypherFunSuite with LogicalPlannin
       withGraphNodes(40).
       withLabel('A -> 20).
       withLabel('B -> 30).
-      shouldHaveCardinality(40.0 * (20.0 / 40 ) * (30.0 / 40))
+      shouldHaveCardinality(40.0 * Math.min(20.0 / 40, 30.0 / 40))
   }
 
   test("node cardinality given multiple labels 2") {
@@ -76,7 +76,7 @@ class CardinalityModelIntegrationTest extends CypherFunSuite with LogicalPlannin
       withGraphNodes(40).
       withLabel('A -> 30).
       withLabel('B -> 20).
-      shouldHaveCardinality(40.0 * (30.0 / 40) *  (20.0 / 40))
+      shouldHaveCardinality(40.0 * Math.min(30.0 / 40 , 20.0 / 40))
   }
 
   test("node cardinality when label is missing from store") {
@@ -113,7 +113,7 @@ class CardinalityModelIntegrationTest extends CypherFunSuite with LogicalPlannin
       withGraphNodes(40).
       withKnownProperty('prop).
       withLabel('A -> 10).
-      shouldHaveCardinality(40.0 * (10.0 / 40) * ( DEFAULT_EQUALITY_SELECTIVITY))
+      shouldHaveCardinality(40.0 * Math.min(10.0 / 40, DEFAULT_EQUALITY_SELECTIVITY))
   }
 
   test("cardinality for label and property equality when index is not present 2") {
@@ -146,7 +146,7 @@ class CardinalityModelIntegrationTest extends CypherFunSuite with LogicalPlannin
       withLabel('A -> 30).
       withIndexSelectivity(('A, 'prop) -> .3).
       withIndexSelectivity(('A, 'bar) -> .4).
-      shouldHaveCardinality(40.0 * (30.0 / 40) * (DEFAULT_EQUALITY_SELECTIVITY))
+      shouldHaveCardinality(40.0 * Math.min(30.0 / 40, DEFAULT_EQUALITY_SELECTIVITY))
   }
 
   test("cardinality for multiple OR:ed equality predicates where one is backed by index and one is not") {
@@ -155,7 +155,7 @@ class CardinalityModelIntegrationTest extends CypherFunSuite with LogicalPlannin
       withLabel('A -> 30).
       withIndexSelectivity(('A, 'prop) -> .3).
       withKnownProperty('bar).
-      shouldHaveCardinality(40.0 * (30.0 / 40) * (DEFAULT_EQUALITY_SELECTIVITY))
+      shouldHaveCardinality(40.0 * Math.min(30.0 / 40 , DEFAULT_EQUALITY_SELECTIVITY))
   }
 
   ignore("cardinality for property equality predicate when property name is unknown") { // We can get away with not doing this
@@ -176,7 +176,7 @@ class CardinalityModelIntegrationTest extends CypherFunSuite with LogicalPlannin
       withLabel('A -> 30).
       withIndexSelectivity(('A, 'prop) -> .03).
       withIndexSelectivity(('A, 'bar) -> .04).
-      shouldHaveCardinality(30 * .03 * .04)
+      shouldHaveCardinality(30 * Math.min(.03, DEFAULT_EQUALITY_SELECTIVITY))
   }
 
   test("cardinality for multiple AND:ed equality predicates where one is backed by index and one is not") {
@@ -185,7 +185,7 @@ class CardinalityModelIntegrationTest extends CypherFunSuite with LogicalPlannin
       withLabel('A -> 30).
       withIndexSelectivity(('A, 'prop) -> .03).
       withKnownProperty('bar).
-      shouldHaveCardinality(30 * .03 * DEFAULT_EQUALITY_SELECTIVITY)
+      shouldHaveCardinality(30 * Math.min(.03, DEFAULT_EQUALITY_SELECTIVITY))
   }
 
   test("cardinality for label and property equality when no index is present") {
@@ -193,7 +193,7 @@ class CardinalityModelIntegrationTest extends CypherFunSuite with LogicalPlannin
       withGraphNodes(40).
       withLabel('A -> 30).
       withKnownProperty('prop).
-      shouldHaveCardinality(40.0 * (30.0 / 40) * DEFAULT_EQUALITY_SELECTIVITY)
+      shouldHaveCardinality(40.0 * Math.min(30.0 / 40, DEFAULT_EQUALITY_SELECTIVITY))
   }
 
   test("relationship cardinality given labels on both sides") {
@@ -292,17 +292,6 @@ class CardinalityModelIntegrationTest extends CypherFunSuite with LogicalPlannin
     givenPattern("MATCH (a:FOO) WHERE id(a) IN [1,2,3]").
       withGraphNodes(1000).
       withLabel('FOO -> 500).
-      shouldHaveCardinality(1000.0 * (500.0 / 1000) * (3.0 / 1000))
-  }
-
-  test("two relationships with property") {
-    givenPattern("MATCH (t:Track)--(al)--(a:Artist) WHERE t.duration = 61").
-      withGraphNodes(6200).
-      withLabel('Track -> 5000).
-      withLabel('Artist -> 200).
-      withRelationshipCardinality('Track -> 'APPEARS_ON -> 'Album -> 5000).
-      withRelationshipCardinality('Artist -> 'CREATED -> 'Album -> 1000).
-      withIndexSelectivity(('Track, 'duration) -> .005).
-      shouldHaveCardinality(6200.0 * 6200.0 * 6200.0 * (1000.0 / (6200.0 * 6200.0)) * (5000.0 / (6200.0 * 6200.0)) * 0.005 * DEFAULT_PREDICATE_SELECTIVITY)
+      shouldHaveCardinality(1000.0 * Math.min(500.0 / 1000 , 3.0 / 1000))
   }
 }
