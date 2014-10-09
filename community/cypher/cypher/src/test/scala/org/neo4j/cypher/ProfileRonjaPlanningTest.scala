@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_2.parser.{CypherParser, ParserMonitor}
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.{CardinalityModel, CostModel}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.{QueryGraphCardinalityModel, CardinalityModel, CostModel}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
@@ -93,7 +93,6 @@ class ProfileRonjaPlanningTest extends ExecutionEngineFunSuite with QueryStatist
   private def runQueryWith(query: String, compiler: CypherCompiler, db: GraphDatabaseAPI): (List[Map[String, Any]], InternalExecutionResult) = {
     val (plan, parameters) = db.withTx {
       tx =>
-        val kernelAPI = db.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.api.KernelAPI])
         val planContext = new TransactionBoundPlanContext(db.statement, db) with RealStatistics
         compiler.planQuery(query, planContext, Profiled)
     }

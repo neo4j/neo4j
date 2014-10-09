@@ -18,10 +18,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityModel
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assumeDependence._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{SemanticTable, LogicalPlanningTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.CardinalityTestHelper
+import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 
-class CardinalityModelIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport with CardinalityTestHelper {
+class AssumeDependenceCardinalityModelTest extends CypherFunSuite with LogicalPlanningTestSupport with CardinalityTestHelper {
 
   test("all nodes is gotten from stats") {
     givenPattern("MATCH (n)").
@@ -294,4 +297,7 @@ class CardinalityModelIntegrationTest extends CypherFunSuite with LogicalPlannin
       withLabel('FOO -> 500).
       shouldHaveCardinality(1000.0 * Math.min(500.0 / 1000 , 3.0 / 1000))
   }
+
+  def createCardinalityModel(stats: GraphStatistics, semanticTable: SemanticTable): QueryGraphCardinalityModel =
+    AssumeDependenceQueryGraphCardinalityModel(stats, producePredicates, groupPredicates(estimateSelectivity(stats, semanticTable)), combinePredicates.assumeDependence)
 }

@@ -50,7 +50,7 @@ case class estimateSelectivity(stats: GraphStatistics, semanticTable: SemanticTa
     // WHERE x:Label AND x.prop <> 42
     case property: PropertyNotEqualsAndLabelPredicate =>
       val idxLookup: Option[Selectivity] = getSelectivityForPossibleIndex(property)
-      idxLookup.map(_.inverse * calculateSelectivityForLabel(property.label)).getOrElse(1.0)
+      idxLookup.map(_.negate * calculateSelectivityForLabel(property.label)).getOrElse(1.0)
 
     // WHERE false
     case SingleExpression(False()) =>

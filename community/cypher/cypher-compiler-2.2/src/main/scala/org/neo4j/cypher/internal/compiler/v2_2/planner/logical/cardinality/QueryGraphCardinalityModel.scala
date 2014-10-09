@@ -19,14 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Cardinality
+import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assumeDependence._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryGraph, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
-
-trait QueryGraphCardinalityModel {
-  def apply(queryGraph: QueryGraph): Cardinality
-}
 
 object QueryGraphCardinalityModel {
   def default(statistics: GraphStatistics, semanticTable: SemanticTable): QueryGraphCardinalityModel =

@@ -23,13 +23,16 @@ object CachedFunction {
   def byIdentity[A, B](f: A => B) = new (A => B) {
     private val cache = new java.util.IdentityHashMap[A, B]()
 
-    def apply(input: A): B = Option(cache.get(input)) match {
-      case Some(value) =>
-        value
-      case None =>
+    def apply(input: A): B = cache.get(input) match {
+      case null =>
         val newValue = f(input)
         cache.put(input, newValue)
         newValue
+      case value =>
+        value
     }
   }
+
+  def byIdentity[A, B, C](f: (A, B) => C): (A, B) => C =
+    Function.untupled(byIdentity(f.tupled))
 }

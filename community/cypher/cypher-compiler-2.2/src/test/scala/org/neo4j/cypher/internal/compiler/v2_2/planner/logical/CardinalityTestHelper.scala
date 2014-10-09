@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{Query, Statement}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assumeDependence._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport, Planner, QueryGraph, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
@@ -53,6 +54,8 @@ trait QueryGraphProducer extends MockitoSugar {
 trait CardinalityTestHelper extends QueryGraphProducer {
 
   self: CypherFunSuite with LogicalPlanningTestSupport =>
+
+  def createCardinalityModel(stats: GraphStatistics, semanticTable: SemanticTable): QueryGraphCardinalityModel
 
   def givenPattern(pattern: String) = TestUnit(pattern)
   def givenPredicate(pattern: String) = TestUnit("MATCH " + pattern)
@@ -205,16 +208,12 @@ trait CardinalityTestHelper extends QueryGraphProducer {
     def shouldHaveCardinality(number: Double) {
       val (statistics, semanticTable) = prepareTestContext
       val queryGraph = createQueryGraphAndSemanticStableTable()
-      val cardinalityModel = AssumeDependenceQueryGraphCardinalityModel(
-        statistics,
-        producePredicates,
-        groupPredicates(estimateSelectivity(statistics, semanticTable)),
-        combinePredicates.default
-      )
+      val cardinalityModel = createCardinalityModel(statistics, semanticTable)
       val result = cardinalityModel(queryGraph)
       result should equal(Cardinality(number))
     }
 
+    // TODO: Still hard coded to use assumeDependence. Refactor!
     def shouldHaveSelectivity(number: Double): Unit = {
       val (statistics, semanticTable) = prepareTestContext
       val queryGraph = createQueryGraphAndSemanticStableTable()

@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryGraph, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 
 object Metrics {
@@ -34,6 +33,8 @@ object Metrics {
   // This metric estimates how many rows of data a logical plan produces
   // (e.g. by asking the database for statistics)
   type CardinalityModel = LogicalPlan => Cardinality
+
+  type QueryGraphCardinalityModel = QueryGraph => Cardinality
 }
 
 case class Metrics(cost: CostModel,
@@ -95,7 +96,7 @@ case class Selectivity(factor: Double) extends Ordered[Selectivity] {
   def *(other: Selectivity): Selectivity = other.factor * factor
   def *(other: Multiplier): Selectivity = factor * other.coefficient
   def ^(a: Int): Selectivity = Math.pow(factor, a)
-  def inverse: Selectivity = 1 - factor
+  def negate: Selectivity = 1 - factor
 
   def compare(that: Selectivity) = factor.compare(that.factor)
 }
