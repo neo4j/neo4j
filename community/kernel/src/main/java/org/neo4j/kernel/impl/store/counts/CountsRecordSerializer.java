@@ -26,6 +26,8 @@ import java.nio.ByteBuffer;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.api.CountsKey;
+import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordSerializer;
+import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
 import org.neo4j.register.Register;
 
 /**
@@ -52,14 +54,14 @@ import org.neo4j.register.Register;
  *                         |
  *                       value
  */
-public class CountsRecordSerializer implements RecordSerializer<CountsKey, Register.Long.Out>
+public class CountsRecordSerializer implements KeyValueRecordSerializer<CountsKey, Register.LongRegister>
 {
     static final byte EMPTY_RECORD_KEY = 0;
     static final byte NODE_KEY = 1;
     static final byte RELATIONSHIP_KEY = 2;
 
     @Override
-    public boolean visitRecord(ByteBuffer buffer, RecordVisitor<CountsKey> visitor)
+    public boolean visitRecord(ByteBuffer buffer, KeyValueRecordVisitor<CountsKey, Register.LongRegister> visitor)
     {
         // read type
         byte type = buffer.get();
@@ -74,7 +76,8 @@ public class CountsRecordSerializer implements RecordSerializer<CountsKey, Regis
 
         // read value
         buffer.getLong(); // skip unused long
-        long count =  buffer.getLong();
+        long count = buffer.getLong();
+        visitor.valueRegister().write( count );
 
         CountsKey key;
         switch ( type )
@@ -99,12 +102,12 @@ public class CountsRecordSerializer implements RecordSerializer<CountsKey, Regis
             default:
                 throw new IllegalStateException( "Unknown counts key type: " + type );
         }
-        visitor.visit( key, count );
+        visitor.visit( key );
         return true;
     }
 
     @Override
-    public CountsKey readRecord( PageCursor cursor, Register.Long.Out value )
+    public CountsKey readRecord( PageCursor cursor, Register.LongRegister value )
     {
         // read type
         byte type = cursor.getByte();
@@ -143,7 +146,7 @@ public class CountsRecordSerializer implements RecordSerializer<CountsKey, Regis
     }
 
     @Override
-    public void writeDefaultValue( Register.Long.Out valueRegister )
+    public void writeDefaultValue( Register.LongRegister valueRegister )
     {
         valueRegister.write( 0 );
     }

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.register.Register;
 
 public abstract class CountsKey implements Comparable<CountsKey>
 {
@@ -47,7 +48,7 @@ public abstract class CountsKey implements Comparable<CountsKey>
     @Override
     public abstract String toString();
 
-    public abstract void accept( CountsVisitor visitor, long count );
+    public abstract void accept( CountsVisitor visitor, Register.LongRegister count );
 
     public static final class NodeKey extends CountsKey
     {
@@ -76,9 +77,9 @@ public abstract class CountsKey implements Comparable<CountsKey>
         }
 
         @Override
-        public void accept( CountsVisitor visitor, long count )
+        public void accept( CountsVisitor visitor, Register.LongRegister count )
         {
-            visitor.visitNodeCount( labelId, count );
+            visitor.visitNodeCount( labelId, count.read() );
         }
 
         @Override
@@ -153,9 +154,9 @@ public abstract class CountsKey implements Comparable<CountsKey>
         }
 
         @Override
-        public void accept( CountsVisitor visitor, long count )
+        public void accept( CountsVisitor visitor, Register.LongRegister count )
         {
-            visitor.visitRelationshipCount( startLabelId, typeId, endLabelId, count );
+            visitor.visitRelationshipCount( startLabelId, typeId, endLabelId, count.read() );
         }
 
         @Override

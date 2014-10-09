@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.counts;
+package org.neo4j.kernel.impl.store.kvstore;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
@@ -36,13 +36,13 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
-public class CountsStoreHeaderTest
+public class SortedKeyValueStoreHeaderTest
 {
     @Test
     public void shouldCreateAnEmptyHeader()
     {
         // when
-        CountsStoreHeader header = CountsStoreHeader.empty( ALL_STORES_VERSION );
+        SortedKeyValueStoreHeader header = SortedKeyValueStoreHeader.empty( ALL_STORES_VERSION );
 
         // then
         assertEquals( BASE_TX_ID, header.lastTxId() );
@@ -55,10 +55,10 @@ public class CountsStoreHeaderTest
     public void shouldUpdateHeader()
     {
         // given
-        CountsStoreHeader header = CountsStoreHeader.empty( ALL_STORES_VERSION );
+        SortedKeyValueStoreHeader header = SortedKeyValueStoreHeader.empty( ALL_STORES_VERSION );
 
         // when
-        CountsStoreHeader newHeader = header.update( 42, 24 );
+        SortedKeyValueStoreHeader newHeader = header.update( 42, 24 );
 
         // then
         assertEquals( 24, newHeader.lastTxId() );
@@ -71,7 +71,7 @@ public class CountsStoreHeaderTest
     public void shouldWriteHeaderInPageFile() throws IOException
     {
         // given
-        CountsStoreHeader header = CountsStoreHeader.empty( ALL_STORES_VERSION ).update( 42, 24 );
+        SortedKeyValueStoreHeader header = SortedKeyValueStoreHeader.empty( ALL_STORES_VERSION ).update( 42, 24 );
 
         // when
         try
@@ -81,7 +81,7 @@ public class CountsStoreHeaderTest
             pagedFile.flush();
 
             // then
-            assertEquals( header, CountsStoreHeader.read( pagedFile ) );
+            assertEquals( header, SortedKeyValueStoreHeader.read( pagedFile ) );
         }
         finally
         {

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
+import static org.neo4j.register.Register.LongRegister;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -30,16 +32,17 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.kernel.impl.api.CountsKey;
-import org.neo4j.register.Register;
+import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
+import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
 import org.neo4j.register.Registers;
 
 class ConcurrentTrackerState implements CountsTracker.State
 {
     private static final int INITIAL_CHANGES_CAPACITY = 1024;
-    private final CountsStore<CountsKey, Register.Long.Out> store;
+    private final SortedKeyValueStore<CountsKey, LongRegister> store;
     private final ConcurrentMap<CountsKey, AtomicLong> state = new ConcurrentHashMap<>( INITIAL_CHANGES_CAPACITY );
 
-    ConcurrentTrackerState( CountsStore<CountsKey, Register.Long.Out> store )
+    ConcurrentTrackerState( SortedKeyValueStore<CountsKey, LongRegister> store )
     {
         this.store = store;
     }
@@ -69,7 +72,7 @@ class ConcurrentTrackerState implements CountsTracker.State
             return count.get();
         }
 
-        final Register.LongRegister value = Registers.newLongRegister();
+        final LongRegister value = Registers.newLongRegister();
         store.get( key, value );
         return value.read();
     }
@@ -80,7 +83,7 @@ class ConcurrentTrackerState implements CountsTracker.State
         AtomicLong count = state.get( key );
         if ( count == null )
         {
-            final Register.LongRegister value = Registers.newLongRegister();
+            final LongRegister value = Registers.newLongRegister();
             store.get( key, value );
             AtomicLong proposal = new AtomicLong( value.read() );
             count = state.putIfAbsent( key, proposal );
@@ -105,14 +108,14 @@ class ConcurrentTrackerState implements CountsTracker.State
     }
 
     @Override
-    public CountsStore.Writer<CountsKey, Register.Long.Out> newWriter( File file, long lastCommittedTxId )
+    public CountsStore.Writer<CountsKey, LongRegister> newWriter( File file, long lastCommittedTxId )
             throws IOException
     {
         return store.newWriter( file, lastCommittedTxId );
     }
 
     @Override
-    public void accept( RecordVisitor<CountsKey> visitor )
+    public void accept( KeyValueRecordVisitor<CountsKey, LongRegister> visitor )
     {
         try ( Merger<CountsKey> merger = new Merger<>( visitor, sortedUpdates( state ) ) )
         {
@@ -147,20 +150,29 @@ class ConcurrentTrackerState implements CountsTracker.State
         return result;
     }
 
-    private static final class Merger<K extends Comparable<K>> implements RecordVisitor<K>, AutoCloseable
+    private static final class Merger<K extends Comparable<K>> implements KeyValueRecordVisitor<K, LongRegister>,
+            AutoCloseable
     {
-        private final RecordVisitor<K> target;
+        private final KeyValueRecordVisitor<K, LongRegister> target;
         private final Update<K>[] updates;
         private int next;
+        private final LongRegister valueRegister;
 
-        public Merger( RecordVisitor<K> target, Update<K>[] updates )
+        public Merger( KeyValueRecordVisitor<K, LongRegister> target, Update<K>[] updates )
         {
             this.target = target;
             this.updates = updates;
+            this.valueRegister = target.valueRegister();
         }
 
         @Override
-        public void visit( K key, long value )
+        public LongRegister valueRegister()
+        {
+            return valueRegister;
+        }
+
+        @Override
+        public void visit( K key )
         {
             while ( next < updates.length )
             {
@@ -169,24 +181,28 @@ class ConcurrentTrackerState implements CountsTracker.State
                 if ( cmp == 0 )
                 { // overwrite the value in the store
                     next++;
-                    value = nextUpdate.value;
+                    valueRegister.write( nextUpdate.value );
                 }
                 else if ( cmp > 0 )
                 { // write this before writing the entry from the store
                     next++;
-                    target.visit( nextUpdate.key, nextUpdate.value );
+                    long original = valueRegister.read();
+                    valueRegister.write( nextUpdate.value );
+                    target.visit( nextUpdate.key );
+                    valueRegister.write( original );
                     continue; // then see if there are more entries to consider from the updates...
                 }
                 break;
             }
-            target.visit( key, value );
+            target.visit( key );
         }
 
         public void close()
         {
             for ( int i = next; i < updates.length; i++ )
             {
-                target.visit( updates[i].key, updates[i].value );
+                valueRegister.write( updates[i].value );
+                target.visit( updates[i].key );
             }
         }
     }

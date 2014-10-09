@@ -19,19 +19,19 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static java.util.Objects.requireNonNull;
+import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
+import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
+import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
+import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.neo4j.kernel.impl.transaction.command.Command;
-
-import static java.util.Objects.requireNonNull;
-
-import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
-import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
-import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
-import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
+import org.neo4j.register.Register;
 
 public class CountsState implements CountsVisitor.Visitable, CountsAcceptor
 {
@@ -72,7 +72,7 @@ public class CountsState implements CountsVisitor.Visitable, CountsAcceptor
     {
         for ( Map.Entry<CountsKey, Count> entry : counts.entrySet() )
         {
-            entry.getKey().accept( visitor, entry.getValue().value );
+            entry.getKey().accept( visitor, entry.getValue() );
         }
     }
 
@@ -189,9 +189,9 @@ public class CountsState implements CountsVisitor.Visitable, CountsAcceptor
         return count;
     }
 
-    private static class Count
+    private static class Count implements Register.LongRegister
     {
-        long value;
+        private long value;
 
         void update( long delta )
         {
@@ -202,6 +202,18 @@ public class CountsState implements CountsVisitor.Visitable, CountsAcceptor
         public String toString()
         {
             return Long.toString( value );
+        }
+
+        @Override
+        public long read()
+        {
+            return value;
+        }
+
+        @Override
+        public void write( long value )
+        {
+            this.value = value;
         }
     }
 

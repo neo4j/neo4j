@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
+import static org.neo4j.kernel.impl.store.CommonAbstractStore.buildTypeDescriptorAndVersion;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Future;
@@ -26,44 +28,22 @@ import java.util.concurrent.Future;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
-
 import org.neo4j.helpers.Function;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsKey;
 import org.neo4j.kernel.impl.store.CountsOracle;
+import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
 import org.neo4j.register.Register;
+import org.neo4j.register.Registers;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.ThreadingRule;
 
-import static org.neo4j.kernel.impl.store.CommonAbstractStore.buildTypeDescriptorAndVersion;
-
 public class CountsTrackerTest
 {
-    private static final String VERSION = buildTypeDescriptorAndVersion( CountsTracker.STORE_DESCRIPTOR );
-    public final @Rule EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    public final @Rule TestName testName = new TestName();
-    public final @Rule PageCacheRule pageCache = new PageCacheRule();
-    public final @Rule ThreadingRule threading = new ThreadingRule();
-    private final Config config = new Config();
-
-    public CountsOracle oracle()
-    {
-        CountsOracle oracle = new CountsOracle();
-        CountsOracle.Node n0 = oracle.node( 0, 1 );
-        CountsOracle.Node n1 = oracle.node( 0, 3 );
-        CountsOracle.Node n2 = oracle.node( 2, 3 );
-        CountsOracle.Node n3 = oracle.node( 2 );
-        oracle.relationship( n0, 1, n2 );
-        oracle.relationship( n1, 1, n3 );
-        oracle.relationship( n1, 1, n2 );
-        oracle.relationship( n0, 1, n3 );
-        return oracle;
-    }
-
     @Test
     public void shouldStoreCounts() throws Exception
     {
@@ -96,6 +76,8 @@ public class CountsTrackerTest
             oracle.update( tracker );
             tracker.rotate( 1 );
 
+            oracle.verify( tracker );
+
             // when
             CountsOracle delta = new CountsOracle();
             {
@@ -125,45 +107,6 @@ public class CountsTrackerTest
     public void shouldBeAbleToReadUpToDateValueWhileAnotherThreadIsPerformingRotation() throws Exception
     {
         // given
-        class InstrumentedCountsTracker extends CountsTracker
-        {
-            private final Barrier barrier;
-
-            InstrumentedCountsTracker( FileSystemAbstraction fs, PageCache pageCache, File storeFileBase,
-                                       Barrier barrier )
-            {
-                super( fs, pageCache, storeFileBase );
-                this.barrier = barrier;
-            }
-
-            @Override
-            CountsStore.Writer<CountsKey, Register.Long.Out> nextWriter( State state, long lastCommittedTxId ) throws IOException
-            {
-                final CountsStore.Writer<CountsKey, Register.Long.Out> writer =
-                        super.nextWriter( state, lastCommittedTxId );
-                return new CountsStore.Writer<CountsKey, Register.Long.Out>()
-                {
-                    @Override
-                    public CountsStore<CountsKey, Register.Long.Out> openForReading() throws IOException
-                    {
-                        barrier.reached();
-                        return writer.openForReading();
-                    }
-
-                    @Override
-                    public void close() throws IOException
-                    {
-                        writer.close();
-                    }
-
-                    @Override
-                    public void visit( CountsKey key, long value )
-                    {
-                        writer.visit( key, value );
-                    }
-                };
-            }
-        }
         CountsTracker.createEmptyCountsStore( pageCache(), storeFile(), VERSION );
         CountsOracle oracle = oracle();
         try ( CountsTracker tracker = new CountsTracker( fs.get(), pageCache(), storeFile() ) )
@@ -181,9 +124,9 @@ public class CountsTrackerTest
             delta.relationship( n2, 2, n1 ); // relationshipType 2 has not been used before...
         }
         delta.update( oracle );
+
         Barrier.Control barrier = new Barrier.Control();
-        try ( InstrumentedCountsTracker tracker = new InstrumentedCountsTracker(
-                fs.get(), pageCache(), storeFile(), barrier ) )
+        try ( CountsTracker tracker = new InstrumentedCountsTracker( fs.get(), pageCache(), storeFile(), barrier ) )
         {
             Future<Void> task = threading.execute( new Function<CountsTracker, Void>()
             {
@@ -212,6 +155,27 @@ public class CountsTrackerTest
         }
     }
 
+    private static final String VERSION = buildTypeDescriptorAndVersion( CountsTracker.STORE_DESCRIPTOR );
+    public final @Rule EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    public final @Rule TestName testName = new TestName();
+    public final @Rule PageCacheRule pageCache = new PageCacheRule();
+    public final @Rule ThreadingRule threading = new ThreadingRule();
+    private final Config config = new Config();
+
+    public CountsOracle oracle()
+    {
+        CountsOracle oracle = new CountsOracle();
+        CountsOracle.Node n0 = oracle.node( 0, 1 );
+        CountsOracle.Node n1 = oracle.node( 0, 3 );
+        CountsOracle.Node n2 = oracle.node( 2, 3 );
+        CountsOracle.Node n3 = oracle.node( 2 );
+        oracle.relationship( n0, 1, n2 );
+        oracle.relationship( n1, 1, n3 );
+        oracle.relationship( n1, 1, n2 );
+        oracle.relationship( n0, 1, n3 );
+        return oracle;
+    }
+
     private File storeFile()
     {
         return new File( testName.getMethodName() );
@@ -220,5 +184,54 @@ public class CountsTrackerTest
     private PageCache pageCache()
     {
         return pageCache.getPageCache( fs.get(), config );
+    }
+
+    private static class InstrumentedCountsTracker extends CountsTracker
+    {
+        private final Barrier barrier;
+
+        InstrumentedCountsTracker( FileSystemAbstraction fs, PageCache pageCache, File storeFileBase,
+                                   Barrier barrier )
+        {
+            super( fs, pageCache, storeFileBase );
+            this.barrier = barrier;
+        }
+
+        @Override
+        CountsStore.Writer<CountsKey, Register.LongRegister> nextWriter( State state, long lastCommittedTxId )
+                throws IOException
+        {
+            final CountsStoreWriter writer = (CountsStoreWriter) super.nextWriter( state, lastCommittedTxId );
+            return new CountsStore.Writer<CountsKey, Register.LongRegister>()
+            {
+                private final Register.LongRegister valueRegister = Registers.newLongRegister();
+
+                @Override
+                public SortedKeyValueStore<CountsKey, Register.LongRegister> openForReading() throws IOException
+                {
+                    barrier.reached();
+                    return writer.openForReading();
+                }
+
+                @Override
+                public void close() throws IOException
+                {
+                    writer.close();
+                }
+
+                @Override
+                public void visit( CountsKey key )
+                {
+                    writer.valueRegister().write( valueRegister.read() );
+                    writer.visit( key );
+                }
+
+                @Override
+                public Register.LongRegister valueRegister()
+                {
+                    return valueRegister;
+                }
+            };
+        }
     }
 }

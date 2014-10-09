@@ -33,25 +33,29 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.api.CountsKey;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
+import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader;
 import org.neo4j.register.Register;
+import org.neo4j.register.Registers;
 
-class CountsStoreWriter implements CountsStore.Writer<CountsKey, Register.Long.Out>, CountsVisitor
+public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, Register.LongRegister>, CountsVisitor
 {
-    static class Factory implements CountsStore.WriterFactory<CountsKey, Register.Long.Out>
+    public static class Factory implements SortedKeyValueStore.WriterFactory<CountsKey, Register.LongRegister>
     {
         @Override
-        public CountsStore.Writer<CountsKey, Register.Long.Out> create( FileSystemAbstraction fs, PageCache pageCache,
-                                                                        CountsStoreHeader header, File targetFile,
-                                                                        long lastCommittedTxId ) throws IOException
+        public CountsStoreWriter create( FileSystemAbstraction fs, PageCache pageCache,
+                                         SortedKeyValueStoreHeader header, File targetFile,
+                                         long lastCommittedTxId )
+                throws IOException
         {
             return new CountsStoreWriter( fs, pageCache, header, targetFile, lastCommittedTxId );
         }
     }
 
-
+    private final Register.LongRegister valueRegister = Registers.newLongRegister();
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
-    private final CountsStoreHeader header;
+    private final SortedKeyValueStoreHeader header;
     private final PagedFile pagedFile;
     private final File targetFile;
     private final long txId;
@@ -59,13 +63,13 @@ class CountsStoreWriter implements CountsStore.Writer<CountsKey, Register.Long.O
     private int totalRecords;
     private PageCursor page;
 
-    CountsStoreWriter( FileSystemAbstraction fs, PageCache pageCache, CountsStoreHeader header,
+    CountsStoreWriter( FileSystemAbstraction fs, PageCache pageCache, SortedKeyValueStoreHeader header,
                        File targetFile, long lastCommittedTxId ) throws IOException
     {
         this.fs = fs;
         this.pageCache = pageCache;
         int pageSize = pageCache.pageSize();
-        if ( pageSize % CountsStore.RECORD_SIZE != 0 )
+        if ( pageSize % SortedKeyValueStore.RECORD_SIZE != 0 )
         {
             throw new IllegalStateException( "page size must a multiple of the record size" );
         }
@@ -77,16 +81,22 @@ class CountsStoreWriter implements CountsStore.Writer<CountsKey, Register.Long.O
         {
             throw new IOException( "Could not acquire page." );
         }
-        page.setOffset( this.header.headerRecords() * CountsStore.RECORD_SIZE );
+        page.setOffset( this.header.headerRecords() * SortedKeyValueStore.RECORD_SIZE );
     }
 
     @Override
-    public void visit( CountsKey key, long value )
+    public Register.LongRegister valueRegister()
     {
-        if ( value != 0 /* only writeToBuffer values that count */ )
+        return valueRegister;
+    }
+
+    @Override
+    public void visit( CountsKey key )
+    {
+        if ( valueRegister.read() != 0 /* only writeToBuffer values that count */ )
         {
             totalRecords++;
-            key.accept( this, value );
+            key.accept( this, valueRegister );
         }
     }
 
@@ -165,10 +175,9 @@ class CountsStoreWriter implements CountsStore.Writer<CountsKey, Register.Long.O
     }
 
     @Override
-    public CountsStore<CountsKey, Register.Long.Out> openForReading() throws IOException
+    public CountsStore openForReading() throws IOException
     {
-        return new CountsStore<>( fs, pageCache, targetFile, pagedFile, newHeader(),
-                new CountsRecordSerializer(), new Factory() );
+        return new CountsStore( fs, pageCache, targetFile, pagedFile, newHeader() );
     }
 
     @Override
@@ -184,7 +193,7 @@ class CountsStoreWriter implements CountsStore.Writer<CountsKey, Register.Long.O
         pagedFile.flush();
     }
 
-    private CountsStoreHeader newHeader()
+    private SortedKeyValueStoreHeader newHeader()
     {
         return header.update( totalRecords, txId );
     }

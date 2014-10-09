@@ -17,9 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.counts;
+package org.neo4j.kernel.impl.store.kvstore;
 
-interface RecordVisitor<K extends Comparable<K>>
+import java.nio.ByteBuffer;
+
+import org.neo4j.io.pagecache.PageCursor;
+
+public interface KeyValueRecordSerializer<K extends Comparable<K>, VR>
 {
-    void visit( K key, long value );
+    boolean visitRecord( ByteBuffer buffer, KeyValueRecordVisitor<K, VR> visitor );
+
+    K readRecord( PageCursor cursor, VR valueRegister );
+
+    void writeDefaultValue( VR valueRegister );
 }

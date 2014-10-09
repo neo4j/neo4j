@@ -35,6 +35,11 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsKey;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.store.AbstractStore;
+import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
+import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
+import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader;
+import org.neo4j.register.Register;
+import org.neo4j.register.Registers;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
@@ -47,22 +52,32 @@ public class CountsStoreWriterTest
         final CountsStoreWriter writer = new CountsStoreWriter( fs, pageCache, emptyHeader, file, lastTxId );
 
         // when
-        writer.visit( nodeKey( 0 ), 42 );
-        writer.visit( relationshipKey( 1, 2, 3 ), 24 );
+        writer.valueRegister().write( 42 );
+        writer.visit( nodeKey( 0 ) );
+        writer.valueRegister().write( 24 );
+        writer.visit( relationshipKey( 1, 2, 3 ) );
         writer.close();
 
         // then
         try
         {
-            final CountsStore counts = writer.openForReading();
+            final SortedKeyValueStore counts = writer.openForReading();
 
             assertEquals( lastTxId, counts.lastTxId() );
             assertEquals( 2, counts.totalRecordsStored() );
             assertEquals( file, counts.file() );
-            counts.accept( new RecordVisitor<CountsKey>()
+            counts.accept( new KeyValueRecordVisitor<CountsKey, Register.LongRegister>()
             {
+                private final Register.LongRegister valueRegister = Registers.newLongRegister();
+
                 @Override
-                public void visit( CountsKey key, long value )
+                public Register.LongRegister valueRegister()
+                {
+                    return valueRegister;
+                }
+
+                @Override
+                public void visit( CountsKey key )
                 {
                     key.accept( new CountsVisitor()
                     {
@@ -81,7 +96,7 @@ public class CountsStoreWriterTest
                             assertEquals( 3, endLabelId );
                             assertEquals( 24, count );
                         }
-                    }, value );
+                    }, valueRegister );
                 }
             } );
 
@@ -98,7 +113,8 @@ public class CountsStoreWriterTest
     @Rule
     public PageCacheRule pageCacheRule = new PageCacheRule();
 
-    private final CountsStoreHeader emptyHeader = CountsStoreHeader.empty( AbstractStore.ALL_STORES_VERSION );
+    private final SortedKeyValueStoreHeader emptyHeader = SortedKeyValueStoreHeader.empty( AbstractStore
+            .ALL_STORES_VERSION );
     private final File file = new File( "file" );
     private final long lastTxId = 100;
     private FileSystemAbstraction fs;
