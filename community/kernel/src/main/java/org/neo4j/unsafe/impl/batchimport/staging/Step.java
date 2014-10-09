@@ -80,4 +80,9 @@ public interface Step<T>
      * @param cause cause for the panic.
      */
     void receivePanic( Throwable cause );
+
+    /**
+     * Closes any resources kept open by this step. Called after a {@link Stage} is executed, whether successful or not.
+     */
+    void close();
 }

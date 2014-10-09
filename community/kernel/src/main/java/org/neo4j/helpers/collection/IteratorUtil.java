@@ -1089,4 +1089,10 @@ public abstract class IteratorUtil
             }
         };
     }
+
+    @SafeVarargs
+    public static <T> T[] array( T... items )
+    {
+        return items;
+    }
 }

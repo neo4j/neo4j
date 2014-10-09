@@ -70,6 +70,7 @@ import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappings;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
+import org.neo4j.unsafe.impl.batchimport.input.Inputs;
 import org.neo4j.unsafe.impl.batchimport.staging.CoarseBoundedProgressExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 
@@ -225,7 +226,7 @@ public class StoreMigrator implements StoreMigrationParticipant
                 executionMonitor );
         Iterable<InputNode> nodes = legacyNodesAsInput( legacyStore );
         Iterable<InputRelationship> relationships = legacyRelationshipsAsInput( legacyStore );
-        importer.doImport( nodes, relationships, IdMappings.actual() );
+        importer.doImport( Inputs.input( nodes, relationships, IdMappings.actual() ) );
         progressMonitor.finished();
 
         // Finish the import of nodes and relationships

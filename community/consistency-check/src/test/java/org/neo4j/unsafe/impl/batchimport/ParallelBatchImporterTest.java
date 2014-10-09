@@ -63,6 +63,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapping;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappings;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
+import org.neo4j.unsafe.impl.batchimport.input.Inputs;
 import org.neo4j.unsafe.impl.batchimport.staging.SilentExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Writer;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.WriterFactory;
@@ -135,10 +136,10 @@ public class ParallelBatchImporterTest
                 new SilentExecutionMonitor(), writerFactory );
 
         // WHEN
-        inserter.doImport(
+        inserter.doImport( Inputs.input(
                 nodes( NODE_COUNT, idGenerator ),
                 relationships( NODE_COUNT * 3, idGenerator ),
-                idMapping );
+                idMapping ) );
 
         // THEN
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );

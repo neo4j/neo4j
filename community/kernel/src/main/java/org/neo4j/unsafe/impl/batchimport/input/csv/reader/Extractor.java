@@ -17,19 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport;
-
-import java.io.IOException;
-
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapping;
-import org.neo4j.unsafe.impl.batchimport.input.Input;
+package org.neo4j.unsafe.impl.batchimport.input.csv.reader;
 
 /**
- * Imports graph data accepting node data separated from relationship data and an {@link IdMapping}
- * specifying how the node ids specified by the input relates to actual node ids in the resulting store.
+ * Extracts a value from a part of a {@code char[]} into any type of value, f.ex. a {@link Extractors#STRING string},
+ * {@link Extractors#LONG long} or {@link Extractors#intArray()}.
  */
-public interface BatchImporter
+public interface Extractor<T>
 {
-    void doImport( Input input )
-            throws IOException;
+    T extract( char[] data, int offset, int length );
 }

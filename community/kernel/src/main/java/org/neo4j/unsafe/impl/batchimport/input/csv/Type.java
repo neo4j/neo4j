@@ -17,19 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport;
+package org.neo4j.unsafe.impl.batchimport.input.csv;
 
-import java.io.IOException;
-
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapping;
-import org.neo4j.unsafe.impl.batchimport.input.Input;
+import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
 
 /**
- * Imports graph data accepting node data separated from relationship data and an {@link IdMapping}
- * specifying how the node ids specified by the input relates to actual node ids in the resulting store.
+ * Types used to semantically specify the contents of a {@link Entry}.
  */
-public interface BatchImporter
+public enum Type
 {
-    void doImport( Input input )
-            throws IOException;
+    ID,
+    PROPERTY,
+    LABEL,
+    RELATIONSHIP_TYPE,
+    START_NODE,
+    END_NODE,
+    IGNORE;
 }

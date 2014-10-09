@@ -203,7 +203,16 @@ public abstract class AbstractStep<T> implements Step<T>
         }
     }
 
+    /**
+     * Called when upstream has run out of batches to send and all received batches have been processed successfully.
+     * Called before {@link #close()}.
+     */
     protected void done()
     {   // Do nothing by default
+    }
+
+    @Override
+    public void close()
+    {
     }
 }

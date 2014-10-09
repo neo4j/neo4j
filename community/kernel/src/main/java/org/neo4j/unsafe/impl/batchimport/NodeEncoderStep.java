@@ -118,5 +118,6 @@ public final class NodeEncoderStep extends ExecutorServiceStep<List<InputNode>>
     {
         // We're done adding ids to the IdMapper, sort so that the following stages can query it.
         idMapper.prepare();
+        super.done();
     }
 }

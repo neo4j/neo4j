@@ -17,19 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport;
+package org.neo4j.unsafe.impl.batchimport.input;
 
-import java.io.IOException;
+import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
 
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapping;
-import org.neo4j.unsafe.impl.batchimport.input.Input;
-
-/**
- * Imports graph data accepting node data separated from relationship data and an {@link IdMapping}
- * specifying how the node ids specified by the input relates to actual node ids in the resulting store.
- */
-public interface BatchImporter
+public class MissingHeaderException extends HeaderException
 {
-    void doImport( Input input )
-            throws IOException;
+    private final Type missingType;
+
+    public MissingHeaderException( Type missingType )
+    {
+        super( "Missing header of type " + missingType );
+        this.missingType = missingType;
+    }
+
+    public Type getMissingType()
+    {
+        return missingType;
+    }
 }

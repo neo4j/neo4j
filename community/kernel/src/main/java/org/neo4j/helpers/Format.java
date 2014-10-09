@@ -87,16 +87,20 @@ public class Format
         return TIME.format( date, timeZone );
     }
 
+    public static int KB = 1024;
+    public static int MB = KB * KB;
+    public static int GB = KB * MB;
+
     public static String bytes( long bytes )
     {
         double size = bytes;
         for ( String suffix : BYTE_SIZES )
         {
-            if ( size < 1024 )
+            if ( size < KB )
             {
                 return String.format( "%.2f %s", Double.valueOf( size ), suffix );
             }
-            size /= 1024;
+            size /= KB;
         }
         return String.format( "%.2f TB", Double.valueOf( size ) );
     }

@@ -71,4 +71,12 @@ public class Stage
             previous = step;
         }
     }
+
+    public void close()
+    {
+        for ( Step<?> step : pipeline )
+        {
+            step.close();
+        }
+    }
 }
