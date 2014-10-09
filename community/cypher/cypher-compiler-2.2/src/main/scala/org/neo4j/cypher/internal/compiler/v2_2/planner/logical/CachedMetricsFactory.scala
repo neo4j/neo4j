@@ -20,32 +20,21 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.CachedFunction
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{SemanticTable, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 
 case class CachedMetricsFactory(metricsFactory: MetricsFactory) extends MetricsFactory {
-  def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel) =
+  def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel): CardinalityModel =
     CachedFunction.byIdentity(metricsFactory.newCardinalityEstimator(queryGraphCardinalityModel))
 
   def newCostModel(cardinality: CardinalityModel) =
     CachedFunction.byIdentity(metricsFactory.newCostModel(cardinality))
 
-  def newQueryGraphCardinalityModel(statistics: GraphStatistics, semanticTable: SemanticTable) = new QueryGraphCardinalityModel {
-    private val cache = new java.util.IdentityHashMap[QueryGraph, Cardinality]()
-    private val inner = metricsFactory.newQueryGraphCardinalityModel(statistics, semanticTable)
+  def newQueryGraphCardinalityModel(statistics: GraphStatistics, semanticTable: SemanticTable) =
+    CachedFunction.byIdentity(metricsFactory.newQueryGraphCardinalityModel(statistics, semanticTable))
 
-    def apply(input: QueryGraph): Cardinality = cache.get(input) match {
-      case null =>
-        val newValue = inner(input)
-        cache.put(input, newValue)
-        newValue
-
-      case value => value
-    }
-  }
-
-  def newCandidateListCreator(): (Seq[LogicalPlan]) => CandidateList = metricsFactory.newCandidateListCreator()
+  def newCandidateListCreator(): (Seq[LogicalPlan]) => CandidateList =
+    metricsFactory.newCandidateListCreator()
 }
