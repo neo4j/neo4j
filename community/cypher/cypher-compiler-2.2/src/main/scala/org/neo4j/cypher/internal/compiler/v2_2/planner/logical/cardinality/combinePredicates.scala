@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Selectivity
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.groupPredicates._
 
 object combinePredicates {
-  def default: PredicateSelectivityCombiner = assumeIndependence
+  def default: PredicateSelectivityCombiner = assumeDependence
 
   // Multiply all predicates together to get one selectivity
   def assumeIndependence(combinations: Set[EstimatedPredicateCombination]): (Set[Predicate], Selectivity) =

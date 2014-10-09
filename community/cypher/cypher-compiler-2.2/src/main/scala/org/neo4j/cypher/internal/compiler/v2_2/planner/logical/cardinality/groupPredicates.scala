@@ -30,44 +30,36 @@ object groupPredicates {
 }
 
 case class groupPredicates(selectivityEstimator: PredicateCombination => Selectivity) extends (Set[Predicate] => Set[EstimatedPredicateCombination]) {
-  def iteration(in: (Set[Predicate], Set[EstimatedPredicateCombination]), originalPredicates: Set[Predicate]) = {
+  def iteration(in: (Set[Predicate], Set[EstimatedPredicateCombination])) = {
     val (predicates, combinations) = in
     if (predicates.isEmpty) {
       (predicates, combinations)
     } else {
-      val combination = findMostUsefulCombination(predicates, originalPredicates)
+      val combination = findMostUsefulCombination(predicates)
       (predicates -- combination._1.containedPredicates, combinations + combination)
     }
   }
 
   def apply(predicates: Set[Predicate]): Set[EstimatedPredicateCombination] = {
-    val (_, result) = iterateUntilConverged {
-      ps: (Set[Predicate], Set[EstimatedPredicateCombination]) => iteration(ps, predicates)
-    }((predicates, Set.empty))
+    val (_, result) = iterateUntilConverged(iteration)((predicates, Set.empty))
     result
   }
 
-  def findCombinations(predicates: Set[Predicate], originalPredicates: Set[Predicate]): Set[EstimatedPredicateCombination] = {
+  def findCombinations(predicates: Set[Predicate]): Set[EstimatedPredicateCombination] = {
     val combinations = predicates.flatMap {
       case expression@ExpressionPredicate(Not(In(Property(Identifier(name), propertyKey), Collection(expressions)))) =>
         val exists = ExistsPredicate(IdName(name))
         val labelPredicates: Set[(LabelName, ExpressionPredicate)] = predicates.labelsFor(name)
         val labelsCombinedWithExpression: Set[PredicateCombination] = labelPredicates.map {
-          case (l, p) if predicates(p) =>
-            PropertyNotEqualsAndLabelPredicate(IdName(name), propertyKey, expressions.length, l, Set(p, expression, exists))
-          case (l, p) =>
-            PropertyNotEqualsAndLabelPredicate(IdName(name), propertyKey, expressions.length, l, Set(expression, exists))
+          case (l, p) => PropertyNotEqualsAndLabelPredicate(propertyKey, expressions.length, l, Set(p, expression, exists))
         }
         labelsCombinedWithExpression + SingleExpression(expression.e)
 
       case expression@ExpressionPredicate(In(Property(Identifier(name), propertyKey), Collection(expressions))) =>
         val exists = ExistsPredicate(IdName(name))
-        val labelPredicates: Set[(LabelName, ExpressionPredicate)] = originalPredicates.labelsFor(name)
+        val labelPredicates: Set[(LabelName, ExpressionPredicate)] = predicates.labelsFor(name)
         val labelsCombinedWithExpression: Set[PredicateCombination] = labelPredicates.map {
-          case (l, p) if predicates(p) =>
-            PropertyEqualsAndLabelPredicate(IdName(name), propertyKey, expressions.length, l, Set(p, expression, exists))
-          case (l, p) =>
-            PropertyEqualsAndLabelPredicate(IdName(name), propertyKey, expressions.length, l, Set(expression, exists))
+          case (l, p) => PropertyEqualsAndLabelPredicate(propertyKey, expressions.length, l, Set(p, expression, exists))
         }
         labelsCombinedWithExpression + SingleExpression(expression.e)
 
@@ -102,8 +94,8 @@ case class groupPredicates(selectivityEstimator: PredicateCombination => Selecti
     combinations.map(combination => combination -> selectivityEstimator(combination))
   }
 
-  def findMostUsefulCombination(predicates: Set[Predicate], originalPredicates: Set[Predicate]): EstimatedPredicateCombination =
-    findCombinations(predicates, originalPredicates).minBy(_._2)
+  def findMostUsefulCombination(predicates: Set[Predicate]): EstimatedPredicateCombination =
+    findCombinations(predicates).minBy(_._2)
 
   def produceGroupings(labels: Set[(LabelName, ExpressionPredicate)]): Set[Option[(LabelName, ExpressionPredicate)]] =
     if (labels.isEmpty)
@@ -113,7 +105,7 @@ case class groupPredicates(selectivityEstimator: PredicateCombination => Selecti
         l => Some(l)
       }
 
- implicit class RichPredicateSet(val predicates: Set[Predicate]) {
+  implicit class RichPredicateSet(val predicates: Set[Predicate]) {
     def labelsFor(id: String): Set[(LabelName, ExpressionPredicate)] = predicates.collect {
       case p@ExpressionPredicate(HasLabels(Identifier(name), label :: Nil)) if id == name => (label, p)
     }
