@@ -20,6 +20,9 @@
 
 package org.neo4j.server.rest.repr;
 
+import java.io.IOException;
+import javax.ws.rs.core.MediaType;
+
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.config.ClientConfig;
@@ -30,9 +33,6 @@ import org.junit.Test;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.domain.GraphDbHelper;
-
-import javax.ws.rs.core.MediaType;
-import java.io.IOException;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -60,7 +60,7 @@ public class XForwardFilterIT extends AbstractRestFunctionalTestBase
     public void setupTheDatabase()
     {
         cleanDatabase();
-        helper.createRelationship("RELATES_TO", helper.createNode(), helper.createNode());
+        helper.createRelationship( "RELATES_TO", helper.createNode(), helper.createNode() );
     }
 
     @Test
@@ -167,16 +167,25 @@ public class XForwardFilterIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldUseXForwardedHostAndXForwardedProtoHeadersInCypherResponseRepresentations() {
+    public void shouldDELETEME() throws Exception
+    {
+        ClientResponse response = client.resource( "http://localhost:7474/db/data" ).accept( APPLICATION_JSON ).get( ClientResponse.class );
+        System.out.println("------->  "+response.getStatus());
+    }
+
+    @Test
+    public void shouldUseXForwardedHostAndXForwardedProtoHeadersInCypherResponseRepresentations()
+    {
         // when
-        String jsonString = "{\"statements\" : [{ \"statement\": \"MATCH (n) RETURN n\", \"resultDataContents\":[\"REST\"] }] }";
+        String jsonString = "{\"statements\" : [{ \"statement\": \"MATCH (n) RETURN n\", " +
+                "\"resultDataContents\":[\"REST\"] }] }";
 
         ClientResponse response = client.resource( "http://localhost:7474/db/data/transaction" )
                 .accept( APPLICATION_JSON )
                 .header( X_FORWARDED_HOST, "jimwebber.org:2354" )
                 .header( X_FORWARDED_PROTO, "https" )
                 .entity( jsonString, MediaType.APPLICATION_JSON_TYPE )
-                .post(ClientResponse.class);
+                .post( ClientResponse.class );
 
         // then
         String entity = response.getEntity( String.class );
@@ -185,7 +194,8 @@ public class XForwardFilterIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldUseXForwardedHostAndXForwardedProtoWhenDoingSlashRedirects() {
+    public void shouldUseXForwardedHostAndXForwardedProtoWhenDoingSlashRedirects()
+    {
         // when
         client.getProperties().put( ClientConfig.PROPERTY_FOLLOW_REDIRECTS, false );
         ClientResponse response = client.resource( "http://localhost:7474/db/data" )
@@ -195,8 +205,8 @@ public class XForwardFilterIT extends AbstractRestFunctionalTestBase
                 .post( ClientResponse.class );
 
         // then
-        assertEquals(302, response.getStatus());
-        String location = response.getHeaders().getFirst("Location");
-        assertEquals(location, "https://jimwebber.org:2342/db/data/");
+        assertEquals( 302, response.getStatus() );
+        String location = response.getHeaders().getFirst( "Location" );
+        assertEquals( "https://jimwebber.org:2342/db/data/", location );
     }
 }

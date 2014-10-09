@@ -19,15 +19,15 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import org.neo4j.cypher.javacompat.internal.ServerExecutionEngine;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.server.rest.transactional.error.TransactionLifecycleException;
-import org.neo4j.server.rest.web.TransactionUriScheme;
-
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+
+import org.neo4j.cypher.javacompat.internal.ServerExecutionEngine;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.server.rest.transactional.error.TransactionLifecycleException;
+import org.neo4j.server.rest.web.TransactionUriScheme;
 
 /**
  * Transactional actions contains the business logic for executing statements against Neo4j across long-running
@@ -55,20 +55,14 @@ public class TransactionFacade
     private final ServerExecutionEngine engine;
     private final TransactionRegistry registry;
     private final StringLogger log;
-    private final URI baseUri;
 
     public TransactionFacade( TransitionalPeriodTransactionMessContainer kernel, ServerExecutionEngine engine,
-                              TransactionRegistry registry, URI baseUri, StringLogger log )
+                              TransactionRegistry registry, StringLogger log )
     {
         this.kernel = kernel;
         this.engine = engine;
         this.registry = registry;
         this.log = log;
-        try {
-          this.baseUri = new URI(baseUri+"db/data");
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     public TransactionHandle newTransactionHandle( TransactionUriScheme uriScheme ) throws TransactionLifecycleException
@@ -91,8 +85,20 @@ public class TransactionFacade
         return new StatementDeserializer( input );
     }
 
-    public ExecutionResultSerializer serializer( OutputStream output )
+    public ExecutionResultSerializer serializer( OutputStream output, URI requestUri )
     {
-        return new ExecutionResultSerializer( output, baseUri, log );
+        return new ExecutionResultSerializer( output, baseUri( requestUri ), log );
+    }
+
+    private URI baseUri( URI requestUri )
+    {
+        try
+        {
+            return new URI( requestUri + "db/data" );
+        }
+        catch ( URISyntaxException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 }
