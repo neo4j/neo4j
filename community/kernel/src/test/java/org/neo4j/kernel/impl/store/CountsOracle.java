@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import static org.junit.Assert.assertEquals;
+
 import java.util.List;
 
 import org.neo4j.kernel.impl.api.CountsAcceptor;
 import org.neo4j.kernel.impl.api.CountsState;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-
-import static org.junit.Assert.assertEquals;
 
 public class CountsOracle
 {
@@ -86,6 +86,14 @@ public class CountsOracle
                         assertEquals( "Should be able to read visited state.",
                                       tracker.countsForRelationship( startLabelId, typeId, endLabelId ), count );
                         verifier.visitRelationshipCount( startLabelId, typeId, endLabelId, count );
+                    }
+
+                    @Override
+                    public void visitIndexCount( int indexId, long count )
+                    {
+                        assertEquals( "Should be able to read visited state.",
+                                tracker.countsForIndex( indexId ), count );
+                        verifier.visitIndexCount( indexId, count );
                     }
                 } );
             }

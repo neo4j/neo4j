@@ -34,6 +34,11 @@ public abstract class CountsKey implements Comparable<CountsKey>
         return new RelationshipKey( startLabelId, typeId, endLabelId );
     }
 
+    public static IndexKey indexKey( int indexId )
+    {
+        return new IndexKey( indexId );
+    }
+
     private CountsKey()
     {
         // all subclasses are internal
@@ -187,6 +192,59 @@ public abstract class CountsKey implements Comparable<CountsKey>
             else
             {
                 return 1;
+            }
+        }
+    }
+
+    public static final class IndexKey extends CountsKey
+    {
+        private final int indexId;
+
+        private IndexKey( int indexId )
+        {
+            this.indexId = indexId;
+        }
+
+        public int indexId()
+        {
+            return indexId;
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            return this == o || (o instanceof IndexKey) && indexId == ((IndexKey) o).indexId;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format( "CountsKey[(:index=%s)]", indexId );
+        }
+
+        @Override
+        public void accept( CountsVisitor visitor, Register.LongRegister count )
+        {
+            visitor.visitIndexCount( indexId, count.read() );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return indexId;
+        }
+
+        @Override
+        public int compareTo( CountsKey o )
+        {
+            if ( o instanceof IndexKey )
+            {
+                IndexKey that = (IndexKey) o;
+                return this.indexId - that.indexId;
+            }
+            else
+            {
+                return -1;
             }
         }
     }

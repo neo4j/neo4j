@@ -96,6 +96,12 @@ public class CountsStoreWriterTest
                             assertEquals( 3, endLabelId );
                             assertEquals( 24, count );
                         }
+
+                        @Override
+                        public void visitIndexCount( int indexId, long count )
+                        {
+                            // nothing to check here
+                        }
                     }, valueRegister );
                 }
             } );
