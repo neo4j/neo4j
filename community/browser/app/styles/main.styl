@@ -41,8 +41,6 @@ svg
   display: block
   width: 100%
   overflow: hidden
-  border-top: 1px solid #dfe5f0
-  border-bottom: 1px solid #e7e9eb
 
 [play-topic], [help-topic], [server-topic], a[target]
   &:before
@@ -113,6 +111,7 @@ table.json-object
   background-color: #FFF
   white-space: nowrap
   overflow: hidden
+  border-top: 1px solid #e6e9ef
 
   .btn-group
     absolute: top 3px right 12px
@@ -186,6 +185,9 @@ table.json-object
     position: absolute
     overflow-y: scroll
     .view-result-graph
+      width: 100%
+      height: 100%
+    .view-result-plan, .view-result-graph .graph-holder
       display: table
       width: 100%
       height: 100%
@@ -198,6 +200,8 @@ table.json-object
         height: 100%
   .legend
     max-height: none;
+  .left-frame-toggle
+    display: none
 
 // Hack to prevent SVG wrapped in a table-row container to grow indefinitely
 .browser-firefox .fullscreen-container svg
@@ -432,6 +436,6 @@ select
   padding-left: 24px
   font-size: 15px
   font-weight: bold
-span.error 
+span.error
   font-size: 11px
   color: red

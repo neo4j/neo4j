@@ -23,21 +23,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 angular.module('neo4jApp.controllers')
   .controller 'CypherResultCtrl', ['$rootScope', '$scope', ($rootScope, $scope) ->
 
+    $scope.availableModes = []
     $scope.$watch 'frame.response', (resp) ->
       return unless resp
       # available combos:
       # - Graph + Table
       # - Table only
       $scope.availableModes = []
-      $scope.availableModes.push('table') if resp.table.size
       $scope.availableModes.push('graph') if resp.table.nodes.length
+      $scope.availableModes.push('table') if resp.table.size?
 
       # Initialise tab state from user selected if any
       $scope.tab = $rootScope.stickyTab
       # Otherwise try to detect the best mode
       if not $scope.tab?
-        showGraph = resp.table.nodes.length
-        $scope.tab = if showGraph then 'graph' else 'table'
+        $scope.tab = $scope.availableModes[0] || 'table'
 
       # Override user tab selection if that mode doesn't exists
       $scope.tab = 'table' unless $scope.availableModes.indexOf($scope.tab) >= 0
@@ -47,8 +47,11 @@ angular.module('neo4jApp.controllers')
       tab ?= if $scope.tab is 'graph' then 'table' else 'graph'
       $rootScope.stickyTab = $scope.tab = tab
 
-    $scope.isActive = (tab) -> 
+    $scope.isActive = (tab) ->
       tab is $scope.tab
+
+    $scope.isAvailable = (tab) ->
+      tab in $scope.availableModes
 
     $scope.resultStatistics = (frame) ->
       if frame?.response

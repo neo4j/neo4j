@@ -29,12 +29,86 @@
     .outer
       margin: 0 24px 24px 24px
       box-shadow: 0 1px 6px rgba(0,0,0,0.12)
+      position: relative
+      overflow: none
       .overflow-indicator
         font-size: 17px
         vertical-align: middle
+      &.noshadow
+        box-shadow: none
+
+      .left-frame-toggle
+        background-color: #F8F9FB
+        position:absolute
+        width: 45px
+        display: block
+        border-right: 1px solid #e6e9ef
+        top: 39px
+        bottom: 0px
+        z-index: 1
+
+        .left-toggle-menu
+          width: (frame-left-menu-width - frame-left-menu-hanging-lid-width)
+          position:absolute
+          left: 0
+
+          .btn-group.toggle-buttons
+            margin: 0
+            width: (frame-left-menu-width - frame-left-menu-hanging-lid-width)
+            .mini-menu-item-text
+              display: block
+              font-size: 9px
+              line-height: 10px
+              margin-top: 4px
+              padding: 0
+
+          button
+            font-size: 12px
+            margin: 0
+            width: 44px
+            border-radius: 0
+            padding: 6px 8px 0px 8px
+            border-bottom: 1px solid #D8DDE2
+            padding-bottom: 3px
+            height: 58px
+            color: #9B9DA2
+            line-height: 22px
+            position: relative
+            box-shadow: none
+            background: #F8F9FB
+            z-index: 3
+            &:hover
+              color: #000
+            &.active
+              color: #000
+
+            i, span
+              font-size: 21px
+              line-height: 21px
+              vertical-align: bottom
+            .frame-left-menu-icon
+              width: 22px
+              height: 22px
+              margin: 0px auto
+              background-position: 0% 0%
+              background-repeat: no-repeat
+              border: 0
+              background-size: contain
+              background-color: transparent
+
+
+      .right-inner-frame
+        margin: 0 0px 0px 25px
+        display: block
+        z-index: 13
+        position: relative
+        &.no-indicator
+          margin: 0 0px 0px (frame-left-menu-width - frame-left-menu-hanging-lid-width)
+        &.no-left-menu
+          margin: 0
+
     .inner
       position: relative
-      border-radius: 3px
       background-color: #fff
 
       .view-result
@@ -52,7 +126,7 @@
             opacity: 0
           &.ng-hide-remove.ng-hide-remove-active, &.ng-hide-add
             opacity: 1
-     
+
 
         .form-info
           font-size: 12px
@@ -61,21 +135,16 @@
           width: 175px
           display: inline-block
 
-        //a[class*="fa-"]
-        //  color: color-default-text
-        //  &:hover
-        //    color: color-link
-
-        .view-result-graph
+        .view-result-graph .graph-holder
           background-color: #F9FBFD
           display: table
           width: 100%
-          height: 100%
+          min-height: frame-min-height
           > *
             display: table-row
           svg
-            height: 400px
             width: 100%
+            height: 400px
           a.fa-table
             font-size: 24px
             absolute: bottom 57px right horizontal-padding
@@ -86,10 +155,10 @@
             height: 100%
 
         .view-result-table
-          border-top: 1px solid #fff
           position: relative
           overflow-y: auto
           max-height: 464px
+          min-height: frame-min-height
           a.fa-download
             absolute: top 8px right horizontal-padding*2+20
             font-size: 24px
@@ -188,81 +257,20 @@
     font-size: 11px
     text-transform: uppercase
     border-left: 1px solid #e6e9ef
-    a
+    height: middlebar-height
+    .btn-group.toggle-buttons
+      margin: 0 10px 0 10px
+    button
+      border-radius: 0px
+      padding: 0 12px
+      border: 0
+      margin-top: -5px
+      height: middlebar-height
       color: #9b9da2
-      line-height: 36px
+      line-height: middlebar-height
       position: relative
-      top: -1px
-      transition: color 0.25s;
       &:hover
         color: #40454f
-      &.toggle-graph
-        padding: 12px 0 12px 16px
-      &.toggle-table
-        padding: 12px 16px 12px 0px
-
-    .switch {
-      position: relative
-      top: 3px
-      display: inline-block
-      margin-left: 3px
-      margin-right: 5px
-
-      height: ball-size;
-      width: 26px;
-      user-select: none;
-      label.right {
-        border-color: #D2D5DA;
-        .switch-inner {
-          margin-left: 0;
-        }
-        .handle {
-          right: 0px;
-          border-color: #D2D5DA;
-        }
-      }
-
-      label {
-        margin-bottom: 0;
-        display: block;
-        overflow: hidden;
-        cursor: pointer;
-        border: 2px solid #CED3D8;
-        border-radius: 50px;
-        height: ball-size;
-        transition: border-color 0.25s;
-      }
-      .switch-inner {
-        width: 200%;
-        margin-left: -100%;
-        transition: all 0.3s ease-in 0s;
-        &:before, &:after {
-          content: "";
-          float: left;
-          width: 50%;
-          height: ball-size;
-        }
-        &:before {
-          padding-left: 10px;
-          background-color: #D2D5DA
-        }
-        &:after {
-          background-color: #D2D5DA;
-        }
-      }
-      .handle {
-        width: ball-size;
-        margin: 0;
-        background: #FFFFFF;
-        border: 2px solid #CED3D8;
-        border-radius: 50%;
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        right: 10px;
-        transition: all 0.3s ease-in 0s;
-      }
-    }
 
 .actions
   float: right

@@ -1,41 +1,57 @@
 div(ng-controller="CypherResultCtrl", fullscreen)
   .outer
     include partials/frame-common-actions
-    .inner
-      .view-result(ng-class='{error: frame.hasErrors}')
-        .view-result-graph.result(ng-show='isActive("graph")', ng-controller="InspectorCtrl")
-          include partials/legend
-          .graph-contents
-            svg(neo-graph
-              graph-data='frame.response.graph'
-              on-item-click='onItemClick($item, "graphItem")'
-              on-item-mouse-over='onItemHover($item, "graphItem")'
-              on-item-mouse-out='onItemHover()'
-              on-node-drag-toggle='onNodeDragToggle($item)'
-              on-canvas-clicked='onItemClick()'
-              ng-controller='D3GraphCtrl'
-              style="pointer-events:fill;")
-          .status-bar
+    .left-frame-toggle
+      .left-toggle-menu.toggle(ng-if='frame.type == "cypher" && availableModes.length > 0')
+        .btn-group.toggle-buttons
+          button.btn(ng-class='{active: isActive("graph")}', ng-click='setActive("graph")')
+            i.nf.nf-logo
+            span.mini-menu-item-text Graph
+          br
+          button.btn(ng-class='{active: isActive("table")}', ng-click='setActive("table")')
+            i.fa.fa-table
+            span.mini-menu-item-text Rows
+    .right-inner-frame.no-indicator(ng-class='{"no-left-menu": frame.type != "cypher" || availableModes.length < 1}')
+      .inner
+        .view-result(ng-class='{error: frame.hasErrors}')
+          .view-result-graph(ng-show='isActive("graph")', ng-controller="InspectorCtrl")
+            article.help.no-data(ng-show='!isAvailable("graph")')
+              p No graph view available. You have to return complete nodes or relationships to view the graph.
+            .graph-holder.result(ng-show='isAvailable("graph")')
+              include partials/legend
+              .graph-contents
+                svg.graph(neo-graph
+                  graph-data='frame.response.graph'
+                  on-item-click='onItemClick($item, "graphItem")'
+                  on-item-mouse-over='onItemHover($item, "graphItem")'
+                  on-item-mouse-out='onItemHover()'
+                  on-node-drag-toggle='onNodeDragToggle($item)'
+                  on-canvas-clicked='onItemClick()'
+                  ng-controller='D3GraphCtrl'
+                  style="pointer-events:fill;")
+            .status-bar(ng-show='isActive("graph")')
+              .status
+                include partials/inspector
+
+          .view-result-table.result(ng-show='isActive("table")')
+            neo-table(table-data='frame.response.table', ng-show='isAvailable("table")')
+            article.help.no-data(ng-show='!isAvailable("table")')
+              p No rows returned.
+          .status-bar(ng-show='isActive("table") && isAvailable("table")')
             .status
-              include partials/inspector
-
-        .view-result-table.result(ng-show='isActive("table")')
-          neo-table(table-data='frame.response.table')
-        .status-bar(ng-show='isActive("table")')
-          .status
-            include partials/result-status
+              include partials/result-status
 
 
-        .view-result-error.result(ng-show='frame.hasErrors')
-          pre(ng-bind="frame.detailedErrorText")
-          .status-bar.error
-            .status
-              .fa.fa-exclamation-triangle
-              {{frame.errorText}}
+          .view-result-error.result(ng-show='frame.hasErrors')
+            pre(ng-bind="frame.detailedErrorText")
+            .status-bar.error
+              .status
+                .fa.fa-exclamation-triangle
+                {{frame.errorText}}
 
-        .view-result-loading(ng-show='frame.isLoading')
-          .spinner
-            span.fa.fa-spinner.fa-spin.fa-2x
-          .status-bar
-            .status
-              span Running...
+          .view-result-loading(ng-show='frame.isLoading')
+            .spinner
+              span.fa.fa-spinner.fa-spin.fa-2x
+            .status-bar
+              .status
+                span Running...
