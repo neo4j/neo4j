@@ -133,6 +133,12 @@ public class CountsStoreTest
                             assertEquals( 3, endLabelId );
                             assertEquals( 32, count );
                         }
+
+                        @Override
+                        public void visitIndexCount( int indexId, long count )
+                        {
+                            // nothing to check here
+                        }
                     }, valueRegister );
                 }
             } );

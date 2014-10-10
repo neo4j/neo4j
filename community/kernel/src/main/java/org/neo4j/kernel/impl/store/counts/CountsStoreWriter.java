@@ -117,6 +117,12 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
         write( RELATIONSHIP_KEY, startLabelId, typeId, endLabelId, count );
     }
 
+    @Override
+    public void visitIndexCount( int indexId, long count )
+    {
+        throw new UnsupportedOperationException( "not implemented yet" );
+    }
+
     /**
      * Node Key:
      * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5

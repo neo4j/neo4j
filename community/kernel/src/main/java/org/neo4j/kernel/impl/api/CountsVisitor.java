@@ -29,4 +29,6 @@ public interface CountsVisitor
     void visitNodeCount( int labelId, long count );
 
     void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count );
+
+    void visitIndexCount( int indexId, long count );
 }

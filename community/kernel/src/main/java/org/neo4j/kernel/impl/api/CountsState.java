@@ -33,6 +33,7 @@ import static java.util.Objects.requireNonNull;
 
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
+import static org.neo4j.kernel.impl.api.CountsKey.indexKey;
 import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
 import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
 
@@ -50,6 +51,12 @@ public class CountsState implements CountsVisitor.Visitable, CountsAcceptor, Rec
     public void updateCountsForRelationship( int startLabelId, int typeId, int endLabelId, long delta )
     {
         count( relationshipKey( startLabelId, typeId, endLabelId ) ).update( delta );
+    }
+
+    @Override
+    public void updateCountsForIndex( int indexId, long delta )
+    {
+        count( indexKey( indexId ) ).update( delta );
     }
 
     public void increment( int labelId )
@@ -257,6 +264,12 @@ public class CountsState implements CountsVisitor.Visitable, CountsAcceptor, Rec
         }
 
         @Override
+        public void visitIndexCount( int indexId, long count )
+        {
+            // not updated through commands
+        }
+
+        @Override
         public void visitNodeCount( int labelId, long count )
         {
             // not updated through commands
@@ -283,6 +296,12 @@ public class CountsState implements CountsVisitor.Visitable, CountsAcceptor, Rec
         public void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count )
         {
             verify( relationshipKey( startLabelId, typeId, endLabelId ), count );
+        }
+
+        @Override
+        public void visitIndexCount( int indexId, long count )
+        {
+            verify( indexKey( indexId ), count );
         }
 
         private void verify( CountsKey key, long actual )

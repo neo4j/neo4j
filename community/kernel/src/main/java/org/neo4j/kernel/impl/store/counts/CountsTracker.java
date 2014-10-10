@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
+import static org.neo4j.kernel.impl.api.CountsKey.indexKey;
 import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
 import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
 
@@ -150,6 +151,17 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     public void updateCountsForRelationship( int startLabelId, int typeId, int endLabelId, long delta )
     {
         update( relationshipKey( startLabelId, typeId, endLabelId ), delta );
+    }
+
+    public long countsForIndex( int indexId )
+    {
+        return get( indexKey( indexId ) );
+    }
+
+    @Override
+    public void updateCountsForIndex( int indexId, long delta )
+    {
+        update( indexKey( indexId ), delta );
     }
 
     public void accept( final CountsVisitor visitor )
