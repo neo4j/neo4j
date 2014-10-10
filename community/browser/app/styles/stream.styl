@@ -29,10 +29,91 @@
     .outer
       margin: 0 24px 24px 24px
       box-shadow: 0 1px 6px rgba(0,0,0,0.12)
+      position: relative
+      overflow-y: hidden
+      &.noshadow
+        box-shadow: none
+
+      .left-frame-toggle
+        background-color: RGBA(82, 88, 100, 1)
+        position:absolute
+        width: frame-left-menu-width
+        display: block
+        border-right: 1px solid #e6e9ef
+        top: 39px
+        bottom: 0px
+        z-index: 1
+
+        .left-toggle-menu
+          width: (frame-left-menu-width - frame-left-menu-hanging-lid-width)
+          position:absolute
+          left: 0
+
+          .btn-group.toggle-buttons
+            margin: 0
+            width: (frame-left-menu-width - frame-left-menu-hanging-lid-width)
+
+          button
+            font-size: 12px
+            margin: 0
+            width: 100%
+            border-radius: 0
+            padding: 0 8px
+            border-bottom: 1px solid #5d6370
+            height: middlebar-height 
+            color: RGBA(216, 221, 226, 1)
+            line-height: 22px
+            position: relative
+            box-shadow: none
+            background: RGBA(82, 88, 100, 1)
+            z-index: 3
+            &:hover
+              color: white
+            &.active
+              background: RGBA(48, 51, 58, 1)
+            i, span
+              font-size: 17px
+            .frame-left-menu-icon
+              width: 22px
+              height: auto
+
+      .right-inner-frame
+        margin: 0 0px 0px 25px
+        display: block
+        z-index: 13
+        transition: all .5s ease
+        position: relative
+
+        &.show-menu
+          margin: 0 0px 0px frame-left-menu-width
+          .menu-indicator
+            left: (-1*frame-left-menu-hanging-lid-width)
+        .menu-indicator
+          height: 100%
+          background-color: RGBA(255, 255, 255, 1)
+          width: 25px
+          position: absolute
+          left: -25px
+          top: 0
+          display: block
+          transition: all .5s ease
+          cursor: pointer
+          &:hover
+            span
+              color: black
+          span
+            position:absolute
+            top:50%
+            height: 14px
+            margin: -7px auto
+            text-align: center
+            width: 100%
+            color: RGBA(155, 157, 162, 1)
+
     .inner
       position: relative
-      border-radius: 3px
       background-color: #fff
+      border-left: 1px solid #e6e9ef
 
       .view-result
         position: relative
@@ -185,81 +266,20 @@
     font-size: 11px
     text-transform: uppercase
     border-left: 1px solid #e6e9ef
-    a
+    height: middlebar-height 
+    .btn-group.toggle-buttons
+      margin: 0 10px 0 10px
+    button
+      border-radius: 0px
+      padding: 0 12px
+      border: 0
+      margin-top: -5px
+      height: middlebar-height 
       color: #9b9da2
-      line-height: 36px
+      line-height: middlebar-height 
       position: relative
-      top: -1px
-      transition: color 0.25s;
       &:hover
         color: #40454f
-      &.toggle-graph
-        padding: 12px 0 12px 16px
-      &.toggle-table
-        padding: 12px 16px 12px 0px
-
-    .switch {
-      position: relative
-      top: 3px
-      display: inline-block
-      margin-left: 3px
-      margin-right: 5px
-
-      height: ball-size;
-      width: 26px;
-      user-select: none;
-      label.right {
-        border-color: #D2D5DA;
-        .switch-inner {
-          margin-left: 0;
-        }
-        .handle {
-          right: 0px;
-          border-color: #D2D5DA;
-        }
-      }
-
-      label {
-        margin-bottom: 0;
-        display: block;
-        overflow: hidden;
-        cursor: pointer;
-        border: 2px solid #CED3D8;
-        border-radius: 50px;
-        height: ball-size;
-        transition: border-color 0.25s;
-      }
-      .switch-inner {
-        width: 200%;
-        margin-left: -100%;
-        transition: all 0.3s ease-in 0s;
-        &:before, &:after {
-          content: "";
-          float: left;
-          width: 50%;
-          height: ball-size;
-        }
-        &:before {
-          padding-left: 10px;
-          background-color: #D2D5DA
-        }
-        &:after {
-          background-color: #D2D5DA;
-        }
-      }
-      .handle {
-        width: ball-size;
-        margin: 0;
-        background: #FFFFFF;
-        border: 2px solid #CED3D8;
-        border-radius: 50%;
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        right: 10px;
-        transition: all 0.3s ease-in 0s;
-      }
-    }
 
 .actions
   float: right

@@ -1,41 +1,58 @@
 div(ng-controller="CypherResultCtrl", fullscreen)
   .outer
     include partials/frame-common-actions
-    .inner
-      .view-result(ng-class='{error: frame.hasErrors}')
-        .view-result-graph.result(ng-show='isActive("graph")', ng-controller="InspectorCtrl")
-          include partials/legend
-          .graph-contents
-            svg(neo-graph
-              graph-data='frame.response.graph'
-              on-item-click='onItemClick($item, "graphItem")'
-              on-item-mouse-over='onItemHover($item, "graphItem")'
-              on-item-mouse-out='onItemHover()'
-              on-node-drag-toggle='onNodeDragToggle($item)'
-              on-canvas-clicked='onItemClick()'
-              ng-controller='D3GraphCtrl'
-              style="pointer-events:fill;")
-          .status-bar
+    .left-frame-toggle
+      .left-toggle-menu.toggle(ng-if='frame.type == "cypher" && availableModes.length > 1')
+        .btn-group.toggle-buttons
+          button.btn(ng-class='{active: isActive("graph")}', ng-click='setActive("graph")') 
+            img.frame-left-menu-icon(src="images/icon-neo4j.png")
+          br
+          button.btn(ng-class='{active: isActive("table")}', ng-click='setActive("table")') 
+            i.fa.fa-table
+    .right-inner-frame
+      .menu-indicator(onclick="$(this).parent('.right-inner-frame').toggleClass('show-menu')")
+        span.fa.fa-bars
+      .inner
+        .view-result(ng-class='{error: frame.hasErrors}')
+          .view-result-graph.result(ng-show='isActive("graph")', ng-controller="InspectorCtrl")
+            include partials/legend
+            .graph-contents
+              svg(neo-graph
+                graph-data='frame.response.graph'
+                on-item-click='onItemClick($item, "graphItem")'
+                on-item-mouse-over='onItemHover($item, "graphItem")'
+                on-item-mouse-out='onItemHover()'
+                on-node-drag-toggle='onNodeDragToggle($item)'
+                on-canvas-clicked='onItemClick()'
+                ng-controller='D3GraphCtrl'
+                style="pointer-events:fill;")
+            .status-bar
+              .status
+                include partials/inspector
+
+          .view-result-table.result(ng-show='isActive("table")')
+            neo-table(table-data='frame.response.table')
+          .status-bar(ng-show='isActive("table")')
             .status
-              include partials/inspector
+              include partials/result-status
 
-        .view-result-table.result(ng-show='isActive("table")')
-          neo-table(table-data='frame.response.table')
-        .status-bar(ng-show='isActive("table")')
-          .status
-            include partials/result-status
-
-
-        .view-result-error.result(ng-show='frame.hasErrors')
-          pre(ng-bind="frame.detailedErrorText")
-          .status-bar.error
+          .view-result-table.result(ng-show='isActive("text")')
+            pre.ascii-table(ng-bind='ascii')
+          .status-bar(ng-show='isActive("text")')
             .status
-              .fa.fa-exclamation-triangle
-              {{frame.errorText}}
+              include partials/result-status
 
-        .view-result-loading(ng-show='frame.isLoading')
-          .spinner
-            span.fa.fa-spinner.fa-spin.fa-2x
-          .status-bar
-            .status
-              span Running...
+
+          .view-result-error.result(ng-show='frame.hasErrors')
+            pre(ng-bind="frame.detailedErrorText")
+            .status-bar.error
+              .status
+                .fa.fa-exclamation-triangle
+                {{frame.errorText}}
+
+          .view-result-loading(ng-show='frame.isLoading')
+            .spinner
+              span.fa.fa-spinner.fa-spin.fa-2x
+            .status-bar
+              .status
+                span Running...
