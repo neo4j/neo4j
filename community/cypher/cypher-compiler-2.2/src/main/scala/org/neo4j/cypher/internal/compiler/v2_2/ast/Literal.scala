@@ -19,14 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.ast
 
-import Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.perty._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_2.perty.format.quoteString
-import symbols._
-import java.net.URL
-import Doc._
-import Doc._
+import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 
 sealed trait Literal extends Expression {
   def value: AnyRef

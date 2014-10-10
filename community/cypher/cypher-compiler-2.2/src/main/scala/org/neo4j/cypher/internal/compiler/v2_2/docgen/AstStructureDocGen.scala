@@ -19,26 +19,35 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.docgen
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{SymbolicName, LabelName, ASTParticle, ASTNode}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{ASTNode, ASTParticle}
+import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import org.neo4j.cypher.internal.compiler.v2_2.perty.handler.SimpleDocHandler
-import org.neo4j.cypher.internal.compiler.v2_2.perty.{DocDrill, mkDocDrill, CustomDocGen}
+import org.neo4j.cypher.internal.compiler.v2_2.perty.recipe.DocRecipe.strategyExpander
+import org.neo4j.cypher.internal.compiler.v2_2.perty.recipe.{Pretty, RecipeAppender}
+import org.neo4j.cypher.internal.compiler.v2_2.perty.step.AddPretty
+
+import scala.reflect.runtime.universe.TypeTag
 
 // Doc builder for printing any kind of ast node together with it's structure
-case object AstStructureDocGen extends CustomDocGen[ASTNode] {
+case object astStructureDocGen extends CustomDocGen[ASTNode] {
 
-  import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
+  import Pretty._
 
-  def newDocDrill = {
+  val astExpander = strategyExpander[ASTNode, Any](InternalDocHandler.docGen)
+  val simpleExpander = strategyExpander[ASTNode, Any](SimpleDocHandler.docGen)
+
+  def apply[X <: Any : TypeTag](x: X): Option[DocRecipe[Any]] = x match {
     case particle: ASTParticle =>
-      inner => astParticleDocGen(inner)(particle)
+      astParticleDocGen(particle)
 
     case astNode: ASTNode =>
-      inner =>
-        val ast = AstDocHandlerWithFallback.docGen(inner)(astNode)
-        val simple = SimpleDocHandler.docGen(inner)(astNode)
-        Some(nest(group(group(comment("ast") :/: ast) :/: group(comment("val") :/: simple))))
+      val pretties: Seq[AddPretty[ASTNode]] = Seq(AddPretty(astNode))
+      val astRecipe = astExpander.expandForQuoting(pretties)
+      val simpleRecipe = simpleExpander.expandForQuoting(pretties)
+      val result = nest(group(group(comment("ast") :/: quote(astRecipe)) :/: group(comment("val") :/: quote(simpleRecipe))))
+      Pretty(result)
 
     case _ =>
-      inner => None
+      None
   }
 }

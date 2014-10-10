@@ -21,51 +21,47 @@
 package org.neo4j.cypher.internal.compiler.v2_2.docgen
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
+import org.neo4j.cypher.internal.compiler.v2_2.perty.recipe.{Pretty, RecipeAppender}
 
-import scala.util.Try
+import scala.reflect.runtime.universe.TypeTag
 
 case object astPhraseDocGen extends CustomDocGen[ASTNode] {
 
-  def newDocDrill = {
-    val phraseDocDrill = mkDocDrill[ASTPhrase]() {
-      case clause: Clause => clause.asDoc
-      case item: ReturnItem => item.asDoc
-      case items: ReturnItems => items.asDoc
-      case where: Where => where.asDoc
-      case hint: Hint => hint.asDoc
-      case orderBy: OrderBy => orderBy.asDoc
-      case sortItem: SortItem => sortItem.asDoc
-      case slice: ASTSlicingPhrase => slice.asDoc
-    }
+  import Pretty._
 
-    {
-      case phrase: ASTPhrase => inner => phraseDocDrill(phrase)(inner)
-      case _                 => inner => None
-    }
+  def apply[X <: Any : TypeTag](x: X): Option[DocRecipe[Any]] = x match {
+    case clause: Clause => clause.asPretty
+    case item: ReturnItem => item.asPretty
+    case items: ReturnItems => items.asPretty
+    case where: Where => where.asPretty
+    case hint: Hint => hint.asPretty
+    case orderBy: OrderBy => orderBy.asPretty
+    case sortItem: SortItem => sortItem.asPretty
+    case slice: ASTSlicingPhrase => slice.asPretty
+    case _ => None
   }
 
-  implicit class ClauseConverter(clause: Clause) {
-    def asDoc(pretty: DocConverter[Any]): Doc = clause match {
-      case clause: Return => clause.asDoc(pretty)
-      case clause: With   => clause.asDoc(pretty)
-      case clause: Unwind => clause.asDoc(pretty)
-      case _              => TextDoc(clause.toString)
+  implicit class ClauseConverter(clause: Clause) extends Converter {
+    def unquote = clause match {
+      case clause: Return => clause.unquote
+      case clause: With   => clause.unquote
+      case clause: Unwind => clause.unquote
+      case _              => text(clause.toString)
     }
   }
-  abstract class ProjectionClauseConverter {
+  abstract class ProjectionClauseConverter extends Converter {
     def clause: ProjectionClause
     def where: Option[Where]
 
-    def asDoc(pretty: DocConverter[Any]): Doc = {
-      val distinct: Doc = if (clause.distinct) "DISTINCT" else nil
-      val items: Doc = pretty(clause.returnItems)
-      val orderBy: Doc = clause.orderBy.map(pretty)
-      val skip: Doc = clause.skip.map(pretty)
-      val limit: Doc = clause.limit.map(pretty)
-      val predicate: Doc = where.map(pretty)
-      section(clause.name, distinct :+: items :+: predicate :+: orderBy :+: skip :+: limit)
+    def unquote = {
+      val distinct: RecipeAppender[Any] = if (clause.distinct) "DISTINCT" else nothing
+      val items = pretty[ReturnItems](clause.returnItems)
+      val orderBy = prettyOption(clause.orderBy)
+      val skip = prettyOption(clause.skip)
+      val limit = prettyOption(clause.limit)
+      val predicate = prettyOption(where)
+      section(clause.name)(distinct :/?: items :/?: predicate :/?: orderBy :/?: skip :/?: limit)
     }
   }
 
@@ -77,80 +73,71 @@ case object astPhraseDocGen extends CustomDocGen[ASTNode] {
     def where = clause.where
   }
 
-  implicit class ReturnItemsConverter(returnItems: ReturnItems) {
-    def asDoc(pretty: DocConverter[Any]): Doc = if (returnItems.includeExisting && returnItems.items.isEmpty)
-      text("*")
+  implicit class ReturnItemsConverter(returnItems: ReturnItems) extends Converter {
+    def unquote= if (returnItems.includeExisting && returnItems.items.isEmpty)
+      "*"
     else if (returnItems.includeExisting)
-      text("*,") :/: sepList(returnItems.items.map(pretty))
+      "*," :/: sepList(returnItems.items.map(pretty[ReturnItem]))
     else
-      sepList(returnItems.items.map(pretty))
+      sepList(returnItems.items.map(pretty[ReturnItem]))
   }
 
-  implicit class ReturnItemConverter(item: ReturnItem) {
-    def asDoc(pretty: DocConverter[Any]): Doc = item match {
-      case aliasedItem: AliasedReturnItem => aliasedItem.asDoc(pretty)
-      case unAliasedItem: UnaliasedReturnItem => unAliasedItem.asDoc(pretty)
+  implicit class ReturnItemConverter(item: ReturnItem) extends Converter {
+    def unquote = item match {
+      case aliasedItem: AliasedReturnItem => aliasedItem.unquote
+      case unAliasedItem: UnaliasedReturnItem => unAliasedItem.unquote
     }
   }
 
-  implicit class AliasedReturnItemConverter(item: AliasedReturnItem) {
-    def asDoc(pretty: DocConverter[Any]) = group(pretty(item.expression) :/: "AS" :/: pretty(item.identifier))
+  implicit class AliasedReturnItemConverter(item: AliasedReturnItem) extends Converter{
+    def unquote = group(pretty(item.expression) :/: "AS" :/: pretty(item.identifier))
   }
 
-  implicit class UnaliasedReturnItemConverter(item: UnaliasedReturnItem) {
-    def asDoc(pretty: DocConverter[Any]) = text(item.inputText)
+  implicit class UnaliasedReturnItemConverter(item: UnaliasedReturnItem) extends Converter {
+    def unquote = item.inputText
   }
 
-  implicit class WhereConverter(where: Where) {
-    def asDoc(pretty: DocConverter[Any]) = section("WHERE", pretty(where.expression))
+  implicit class WhereConverter(where: Where) extends Converter {
+    def unquote = section("WHERE")(pretty(where.expression))
   }
 
-  implicit class OrderByConverter(orderBy: OrderBy) {
-    def asDoc(pretty: DocConverter[Any]) =
-      group("ORDER BY" :/: groupedSepList(orderBy.sortItems.map(pretty)))
+  implicit class OrderByConverter(orderBy: OrderBy) extends Converter {
+    def unquote =
+      group("ORDER BY" :/: groupedSepList(orderBy.sortItems.map(pretty[SortItem])))
   }
 
-  implicit class SortItemConverter(sortIem: SortItem) {
-    def asDoc(pretty: DocConverter[Any]): Doc = sortIem match {
+  implicit class SortItemConverter(sortIem: SortItem) extends Converter {
+    def unquote = sortIem match {
       case AscSortItem(expression) => pretty(expression)
-      case DescSortItem(expression) => group(pretty(expression) :/: "DESC")
+      case DescSortItem(expression) =>group(pretty(expression) :/: "DESC")
     }
   }
 
-  implicit class HintConverter(hint: Hint) {
-    def asDoc(pretty: DocConverter[Any]) = hint match {
+  implicit class HintConverter(hint: Hint) extends PartialConverter {
+    def unquote = hint match {
       case UsingIndexHint(identifier, label, property) =>
-        group("USING" :/: "INDEX" :/: group(pretty(identifier) :: block(pretty(label))(pretty(property))))
+        Some(group("USING" :/: "INDEX" :/: group(pretty(identifier) :: block(pretty(label))(pretty(property)))))
 
       case UsingScanHint(identifier, label) =>
-        group("USING" :/: "SCAN" :/: group(pretty(identifier) :: pretty(label)))
+        Some(group("USING" :/: "SCAN" :/: group(pretty(identifier) :: pretty(label))))
 
-      case NodeByIdentifiedIndex(identifier, index, key, value) => // START n = node:index(key = value)
-        group("START" :/: pretty(identifier) :/: " = " :/: "NODE:" :: pretty(index) :: parens(pretty(key) :/: "=" :/: pretty(value)))
-
-      case NodeByIndexQuery(identifier, index, query) => // START n = node:index("query")
-        group("START" :/: pretty(identifier) :/: " = " :/: "NODE:" :: pretty(index) :: parens(pretty(query)))
-
-      case RelationshipByIdentifiedIndex(identifier, index, key, value) => // START r = relationship:index(key = value)
-        group("START" :/: pretty(identifier) :/: " = " :/: "RELATIONSHIP:" :: pretty(index) :: parens(pretty(key) :/: "=" :/: pretty(value)))
-
-      case RelationshipByIndexQuery(identifier, index, query) => // START r = relationship:index("query")
-        group("START" :/: pretty(identifier) :/: " = " :/: "RELATIONSHIP:" :: pretty(index) :: parens(pretty(query)))
+      case _ =>
+        None
     }
   }
 
-  implicit class SlicingPhraseConverter(slice: ASTSlicingPhrase) {
-    def asDoc(pretty: DocConverter[Any]) = slice match {
-      case Skip(expr) => section("SKIP", pretty(expr))
-      case Limit(expr) => section("LIMIT", pretty(expr))
+  implicit class SlicingPhraseConverter(slice: ASTSlicingPhrase) extends Converter {
+    def unquote = slice match {
+      case Skip(expr) => section("SKIP")(pretty(expr))
+      case Limit(expr) => section("LIMIT")(pretty(expr))
     }
   }
 
-  implicit class UnwindConverter(unwind: Unwind) {
-    def asDoc(pretty: DocConverter[Any]) = {
-      val input: Doc = pretty(unwind.expression)
-      val output: Doc = pretty(unwind.identifier)
-      section("UNWIND", input :/: "AS" :/: output)
+  implicit class UnwindConverter(unwind: Unwind) extends Converter {
+    def unquote = {
+      val input = pretty(unwind.expression)
+      val output = pretty(unwind.identifier)
+      section("UNWIND")(input :/: "AS" :/: output)
     }
   }
 }

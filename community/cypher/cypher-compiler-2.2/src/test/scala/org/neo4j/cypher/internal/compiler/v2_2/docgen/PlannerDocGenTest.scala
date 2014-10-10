@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.docgen
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.perty.DocFormatters
 import org.neo4j.cypher.internal.compiler.v2_2.perty.gen.DocHandlerTestSuite
-import org.neo4j.cypher.internal.compiler.v2_2.perty.handler.SimpleDocHandler
+import org.neo4j.cypher.internal.compiler.v2_2.perty.handler.{DefaultDocHandler, SimpleDocHandler}
 import org.neo4j.cypher.internal.compiler.v2_2.perty.print.{PrintNewLine, PrintText, condense}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
@@ -30,7 +30,10 @@ import org.neo4j.graphdb.Direction
 
 class PlannerDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTestSupport {
 
-  val docGen = plannerDocGen ++ AstDocHandler.docGen.lift[Any] ++ SimpleDocHandler.docGen
+  val docGen =
+    plannerDocGen orElse
+    AstDocHandler.docGen.lift[Any] orElse
+    DefaultDocHandler.docGen
 
   val rel1 = PatternRelationship(IdName("r1"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq(), SimplePatternLength)
   val rel2 = PatternRelationship(IdName("r2"), (IdName("b"), IdName("a")), Direction.INCOMING, Seq(RelTypeName("X")(null)), SimplePatternLength)

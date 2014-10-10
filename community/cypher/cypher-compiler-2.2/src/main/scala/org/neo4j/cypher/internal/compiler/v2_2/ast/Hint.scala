@@ -26,6 +26,10 @@ sealed trait Hint extends ASTNode with ASTPhrase with SemanticCheckable {
   def identifier: Identifier
 }
 
+object Hint {
+  implicit val byIdentifier =
+    Ordering.by { (hint: Hint) => hint.identifier }(Identifier.byName)
+}
 // allowed on match
 
 sealed trait UsingHint extends Hint

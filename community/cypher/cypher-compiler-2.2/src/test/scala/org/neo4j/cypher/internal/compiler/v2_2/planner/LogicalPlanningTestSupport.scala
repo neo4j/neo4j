@@ -127,9 +127,9 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     val projections =
       RegularQueryProjection(projections = ids.map((id) => id -> ident(id)).toMap)
 
-    FakePlan(ids.map(IdName).toSet)(PlannerQuery(
+    FakePlan(ids.map(IdName(_)).toSet)(PlannerQuery(
         horizon = projections,
-        graph = QueryGraph.empty.addPatternNodes(ids.map(IdName).toSeq: _*)
+        graph = QueryGraph.empty.addPatternNodes(ids.map(IdName(_)).toSeq: _*)
       )
     )
   }
@@ -140,7 +140,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   }
 
   def newMockedLogicalPlan(ids: String*): LogicalPlan =
-    newMockedLogicalPlan(ids.map(IdName).toSet)
+    newMockedLogicalPlan(ids.map(IdName(_)).toSet)
 
   def newMockedLogicalPlanWithSolved(ids: Set[IdName], solved: PlannerQuery): LogicalPlan =
     FakePlan(ids)(solved)

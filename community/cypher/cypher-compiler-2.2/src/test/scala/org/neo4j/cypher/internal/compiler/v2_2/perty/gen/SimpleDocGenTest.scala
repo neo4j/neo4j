@@ -20,13 +20,12 @@
 
 package org.neo4j.cypher.internal.compiler.v2_2.perty.gen
 
+import org.neo4j.cypher.internal.compiler.v2_2.perty.{NilDoc, TextDoc, ConsDoc, DocLiteral}
 import org.neo4j.cypher.internal.compiler.v2_2.perty.handler.SimpleDocHandler
 
 import scala.collection.mutable
 
 class SimpleDocGenTest extends DocHandlerTestSuite[Any] {
-
-  import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
 
   val docGen = SimpleDocHandler.docGen
 
@@ -60,10 +59,16 @@ class SimpleDocGenTest extends DocHandlerTestSuite[Any] {
     pprintToString('\f') should equal("'\\f'")
   }
 
-  test("simpleDocGen formats maps") {
+  test("simpleDocGen formats immutable maps") {
     pprintToString(Map.empty) should equal("Map()")
     pprintToString(Map(1 -> "a")) should equal("Map(1 → \"a\")")
     pprintToString(Map(1 -> "a", 2 -> "b")) should equal("Map(1 → \"a\", 2 → \"b\")")
+  }
+
+  test("simpleDocGen formats mutable maps") {
+    pprintToString(mutable.OpenHashMap.empty) should equal("OpenHashMap()")
+    pprintToString(mutable.OpenHashMap(1 -> "a")) should equal("OpenHashMap(1 → \"a\")")
+    pprintToString(mutable.OpenHashMap(1 -> "a", 2 -> "b")) should equal("OpenHashMap(1 → \"a\", 2 → \"b\")")
   }
 
   test("simpleDocGen formats lists") {
@@ -79,8 +84,11 @@ class SimpleDocGenTest extends DocHandlerTestSuite[Any] {
   }
 
   test("simpleDocGen formats mutable sets") {
-    pprintToString(new mutable.HashSet) should equal("HashSet()")
-    pprintToString((mutable.HashSet.newBuilder += 1 += 2).result()) should equal("HashSet(2, 1)")
+    val emptySet = pprintToString(new mutable.HashSet)
+    emptySet should equal("HashSet()")
+
+    val filledSet = pprintToString((mutable.HashSet.newBuilder += 1 += 2).result())
+    (filledSet == "HashSet(2, 1)" || filledSet == "HashSet(1, 2)") should be(true)
   }
 
   test("simpleDocGen formats non-list sequences") {
@@ -92,6 +100,7 @@ class SimpleDocGenTest extends DocHandlerTestSuite[Any] {
   test("simpleDocGen formats arrays") {
     pprintToString(Array.empty) should equal("Array()")
     pprintToString(Array(1)) should equal("Array(1)")
+    pprintToString(Array("x")) should equal("Array(\"x\")")
     pprintToString(Array(1, 2)) should equal("Array(1, 2)")
   }
 
@@ -108,16 +117,25 @@ class SimpleDocGenTest extends DocHandlerTestSuite[Any] {
   }
 
   test("simpleDocGen formats products") {
-    case object ZObj
-    case class Y(v: Either[ZObj.type, Char])
-    case class X[T](a: Y, b: T)
+    import SimpleDocGenTest._
 
+    pprintToString(ZObj) should equal("ZObj")
+    pprintToString(Right('a')) should equal("Right('a')")
+    pprintToString(Y(Left(ZObj))) should equal("Y(Left(ZObj))")
     pprintToString(X[Int]( a = Y(Left(ZObj)), b = 2 )) should equal("X(Y(Left(ZObj)), 2)")
     pprintToString(X[Int]( a = Y(Right('a')), b = 2 )) should equal("X(Y(Right('a')), 2)")
     pprintToString(X[(Int, Int)]( a = Y(Right('a')), b = (2, 3) )) should equal("X(Y(Right('a')), (2, 3))")
   }
 
   test("simpleDocGen formats literal docs") {
-    pprintToString(literal("a" :: "b")) should equal("DocLiteral(\"a\"·\"b\")")
+    val result = pprintToString(DocLiteral(ConsDoc(TextDoc("a"), ConsDoc(TextDoc("b"), NilDoc))))
+
+    result should equal("DocLiteral(\"a\" ⸬ \"b\" ⸬ ø)")
   }
+}
+
+object SimpleDocGenTest {
+  case object ZObj
+  case class Y(v: Either[ZObj.type, Char])
+  case class X[T](a: Y, b: T)
 }

@@ -17,9 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.perty.bling
+package org.neo4j.cypher.internal.compiler.v2_2.perty.recipe
 
-case object toStringExtractor extends (Any => Option[String]) {
-  def apply(v: Any) = Some(v.toString)
+import org.neo4j.cypher.internal.compiler.v2_2.perty._
+
+protected case object formatErrors {
+  def apply(inner: => Option[DocRecipe[Any]]): Option[DocRecipe[Any]] = {
+    import Pretty._
+
+    try {
+      inner
+    } catch {
+      case _: NotImplementedError =>
+        Pretty("???")
+
+//      case _: MatchError =>
+//        None
+
+      case e: Exception =>
+        Pretty(group(s"${e.getClass.getSimpleName}:" :/: e.toString))
+
+      case other: Throwable =>
+        throw other
+    }
+  }
 }
-

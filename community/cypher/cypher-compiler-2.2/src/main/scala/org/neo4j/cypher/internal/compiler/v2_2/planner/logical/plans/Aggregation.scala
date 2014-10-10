@@ -32,5 +32,5 @@ case class Aggregation(left: LogicalPlan,
 
   def rhs = None
 
-  val availableSymbols = groupingExpressions.keySet.map(IdName) ++ aggregationExpression.keySet.map(IdName)
+  val availableSymbols = groupingExpressions.keySet.map(IdName(_)) ++ aggregationExpression.keySet.map(IdName(_))
 }

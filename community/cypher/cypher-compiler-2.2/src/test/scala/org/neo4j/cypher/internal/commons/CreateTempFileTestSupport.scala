@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.commons
 
-import scala.reflect.io.File
 import java.io.PrintWriter
+
 import scala.io.Codec
+import scala.reflect.io.File
 
 trait CreateTempFileTestSupport extends CypherTestSupport {
   self: CypherFunSuite =>

@@ -17,14 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.perty
+package org.neo4j.cypher.internal.compiler.v2_2.perty.print
 
-import org.neo4j.cypher.internal.compiler.v2_2.perty.bling._
+import scala.reflect.runtime.universe.TypeTag
+import org.neo4j.cypher.internal.compiler.v2_2.perty._
+import org.neo4j.cypher.internal.compiler.v2_2.perty.handler.DefaultDocHandler
 
-case object mkDocDrill {
-  def apply[A]
-    (implicit handler: ExtractionFailureHandler[Any, Doc] = catchExtractionFailures)
-  : (PartialFunction[A, ((Any) => Doc) => Doc]) => DocDrill[A] =
-    mkDrill[A, Any, Doc](handler)
+object pprintln {
+  // Print value and newline to PrintStream after converting to a doc using the given generator and formatter
+  def apply[T: TypeTag, S >: T : TypeTag](value: T,
+                                          formatter: DocFormatter = DocFormatters.defaultPageFormatter)
+                                         (docGen: DocGenStrategy[S] = DefaultDocHandler.docGen): Unit = {
+    Console.println(pprintToString[T, S](value, formatter)(docGen))
+  }
 }
-

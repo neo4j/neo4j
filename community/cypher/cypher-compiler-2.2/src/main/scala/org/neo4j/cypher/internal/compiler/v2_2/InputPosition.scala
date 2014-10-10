@@ -34,10 +34,8 @@ case class InputPosition(offset: Int, line: Int, column: Int) {
 }
 
 object InputPosition {
-  implicit object InputPositionOrdering extends Ordering[InputPosition] {
-    def compare(p1: InputPosition, p2: InputPosition) =
-      p1.offset.compare(p2.offset)
-  }
+  implicit val byOffset =
+    Ordering.by { (pos: InputPosition) => pos.offset }
 
   val NONE = null
 }

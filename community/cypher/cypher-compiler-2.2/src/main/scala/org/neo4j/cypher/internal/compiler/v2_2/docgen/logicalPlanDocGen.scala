@@ -38,46 +38,52 @@
 */
 package org.neo4j.cypher.internal.compiler.v2_2.docgen
 
-import org.neo4j.cypher.internal.compiler.v2_2.perty.{CustomDocGen, mkDocDrill}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_2.perty._
+import org.neo4j.cypher.internal.compiler.v2_2.perty.recipe.Pretty
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, LogicalPlan}
+
+import scala.reflect.runtime.universe.TypeTag
 
 case object logicalPlanDocGen extends CustomDocGen[LogicalPlan] {
 
-  import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
+  import Pretty._
 
-  def newDocDrill = mkDocDrill[LogicalPlan]() {
-      case plan: LogicalPlan => (inner) =>
-        val optLeft = plan.lhs
-        val optRight = plan.rhs
-        val childPlans: Set[Any] = optLeft.toSet ++ optRight.toSet
+  def apply[X <: LogicalPlan : TypeTag](plan: X): Option[DocRecipe[Any]] = {
+    val optLeft = plan.lhs
+    val optRight = plan.rhs
+    val childPlans: Set[Any] = optLeft.toSet ++ optRight.toSet
 
-        val arguments =
-          plan
-            .productIterator
-            .filter((v: Any) => !childPlans.contains(v))
-            .map(inner)
+    val arguments =
+      plan
+        .productIterator
+        .filter((v: Any) => !childPlans.contains(v))
+        .toSeq
+        .map(pretty[Any])
 
-        val deps = sepList(plan.availableSymbols.map(inner), break = breakSilent)
-        val depsBlock = block(plan.productPrefix, open = "[", close = "]")(deps)
-        val head = block(depsBlock)(sepList(arguments))
+    val sortedDeps = plan.availableSymbols.toSeq.sorted(IdName.byName)
+    val deps = sepList(sortedDeps.map(pretty[IdName]), break = silentBreak)
+    val prefix = plan.productPrefix :: brackets(deps, break = noBreak)
+    val head = block(prefix)(sepList(arguments))
 
-        (optLeft, optRight) match {
-          case (None, None) =>
-            head
+    val result = (optLeft, optRight) match {
+      case (None, None) =>
+        head
 
-          case (Some(left), None) =>
-            group(page(head :/: group("↳ " :: inner(left))))
+      case (Some(left), None) =>
+        val leftAppender = group("↳ " :: pretty(left))
+        group(page(head :/: leftAppender))
 
-          case (Some(left), Some(right)) =>
-            group(page(
-              nest(head :/: group(page(
-                section("↳ left =", inner(left)) :/:
-                  section("↳ right =", inner(right))
-              )))
-            ))
+      case (Some(left), Some(right)) =>
+        val leftAppender = section("↳ left =")(pretty(left))
+        val rightAppender = section("↳ right =")(pretty(right))
+        group(page(
+          nest(head :/: group(page(leftAppender :/: rightAppender)))
+        ))
 
-          case (None, Some(right)) =>
-            throw new IllegalArgumentException("Right-leaning plans are not supported")
-        }
+      case (None, Some(right)) =>
+        throw new IllegalArgumentException("Right-leaning plans are not supported")
     }
+
+    Pretty(result)
+  }
 }

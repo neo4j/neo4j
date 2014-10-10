@@ -20,42 +20,46 @@
 package org.neo4j.cypher.internal.compiler.v2_2.perty.format
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc
+import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import org.neo4j.cypher.internal.compiler.v2_2.perty.print.PrintText
 
 class LineDocFormatterTest extends CypherFunSuite {
 
-  import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
-
   test("format ConsDoc") {
-    LineDocFormatter(cons("a", cons("b"))) should equal(Seq(PrintText("a"), PrintText("b")))
+    LineDocFormatter(ConsDoc(TextDoc("a"), ConsDoc(TextDoc("b"), NilDoc))) should equal(Seq(PrintText("a"), PrintText("b")))
   }
 
   test("format NilDoc") {
-    LineDocFormatter(nil) should equal(Seq.empty)
+    LineDocFormatter(NilDoc) should equal(Seq.empty)
   }
 
   test("format TextDoc") {
-    LineDocFormatter("text") should equal(Seq(PrintText("text")))
+    LineDocFormatter(TextDoc("text")) should equal(Seq(PrintText("text")))
   }
 
   test("format BreakDoc") {
-    LineDocFormatter(break) should equal(Seq(PrintText(" ")))
+    LineDocFormatter(BreakDoc) should equal(Seq(PrintText(" ")))
   }
 
   test("format BreakWith") {
-    LineDocFormatter(breakWith("-")) should equal(Seq(PrintText("-")))
+    LineDocFormatter(BreakWith("-")) should equal(Seq(PrintText("-")))
   }
 
   test("format GroupDoc") {
-    LineDocFormatter(group(cons("a", "b"))) should equal(Seq(PrintText("a"), PrintText("b")))
+    LineDocFormatter(GroupDoc(ConsDoc(TextDoc("a"), ConsDoc(TextDoc("b"), NilDoc)))) should equal(
+      Seq(PrintText("a"), PrintText("b"))
+    )
   }
 
   test("format NestDoc") {
-    LineDocFormatter(nest(10, nil)) should equal(Seq.empty)
+    LineDocFormatter(NestDoc(NilDoc)) should equal(Seq.empty)
+  }
+
+  test("format NestWith") {
+    LineDocFormatter(NestWith(10, NilDoc)) should equal(Seq.empty)
   }
 
   test("format PageDoc") {
-    LineDocFormatter(page(nil)) should equal(Seq.empty)
+    LineDocFormatter(PageDoc(NilDoc)) should equal(Seq.empty)
   }
 }

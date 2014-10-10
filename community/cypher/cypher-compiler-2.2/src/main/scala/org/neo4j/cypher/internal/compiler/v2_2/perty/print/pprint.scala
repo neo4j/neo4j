@@ -22,9 +22,13 @@ package org.neo4j.cypher.internal.compiler.v2_2.perty.print
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import org.neo4j.cypher.internal.compiler.v2_2.perty.handler.DefaultDocHandler
 
+import scala.reflect.runtime.universe.TypeTag
+
 object pprint {
   // Print value to PrintStream after converting to a doc using the given generator and formatter
-  def apply[T](value: T, formatter: DocFormatter = DocFormatters.defaultPageFormatter)
-              (implicit generator: DocConverter[T] = DefaultDocHandler.docGen.asConverter): Unit =
-    println(pprintToString(value, formatter)(generator))
+  def apply[T: TypeTag, S >: T : TypeTag](value: T,
+                                          formatter: DocFormatter = DocFormatters.defaultPageFormatter)
+                                         (docGen: DocGenStrategy[S] = DefaultDocHandler.docGen): Unit = {
+    Console.print(pprintToString[T, S](value, formatter)(docGen))
+  }
 }

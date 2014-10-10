@@ -19,9 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.perty
 
-import org.neo4j.cypher.internal.compiler.v2_2.perty.gen.docStructureDocGen
-import org.neo4j.cypher.internal.compiler.v2_2.perty.print.Pretty
-
 /**
  * Class of pretty-printable documents.
  *
@@ -29,123 +26,11 @@ import org.neo4j.cypher.internal.compiler.v2_2.perty.print.Pretty
  * (cf. http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.34.2200&rep=rep1&type=pdf)
  *
  */
-sealed abstract class Doc extends docStructureDocGen.ToString[Doc] with LineDocFormatting {
-
-  import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
-
-  def ::(hd: Doc): Doc = cons(hd, this)
-  def :/:(hd: Doc): Doc = cons(hd, cons(break, this))
-  def :?:(hd: Doc): Doc = replaceIfNil(hd, this)
-  def :+:(hd: Doc): Doc = appendWithBreak(hd, this)
-
-  def isNil = false
-
-  def toOption: Option[Doc] = Some(this)
-}
-
-object Doc {
-  // sequences of docs
-
-  def cons(head: Doc, tail: Doc = nil): Doc = if (head == nil) tail else ConsDoc(head, tail)
-  def nil: Doc = NilDoc
-  def noBreak: BreakingDoc = NoBreak
-
-  // replace nil tail with default document
-
-  def replaceIfNil(default: Doc, tail: Doc) =
-    if (tail.isNil) default else tail
-
-  // append docs with breaks but remove any nils
-
-  def appendWithBreak(head: Doc, tail: Doc, break: BreakingDoc = break) =
-    if (head.isNil) tail else if (tail.isNil) head else ConsDoc(head, breakBefore(tail, break = break))
-
-  // unbreakable text doc
-
-  implicit def text(value: String): Doc = TextDoc(value)
-
-  // breaks are either expanded to their value or a line break
-
-  val break: BreakingDoc = BreakDoc
-  val breakSilent: BreakingDoc = BreakWith("")
-  def breakWith(value: String): BreakingDoc = BreakWith(value)
-
-  // useful to force a page break if a group is in PageMode and print nothing otherwise
-
-  def breakSilentBefore(doc: Doc): Doc = breakBefore(doc, break = breakSilent)
-
-  def breakBefore(doc: Doc, break: BreakingDoc = break): Doc =
-    if (doc.isNil) doc else break :: doc
-
-  // *all* breaks in a group are either expanded to their value or a line break
-
-  def group(doc: Doc): Doc = GroupDoc(doc)
-
-  // change nesting level for inner content (used when breaks are printed as newlines)
-
-  def nest(content: Doc): Doc = NestDoc(content)
-  def nest(indent: Int, content: Doc): Doc = NestWith(indent, content)
-
-  // force vertical layout
-
-  def page(content: Doc): Doc = PageDoc(content)
-
-  // literals are helpful in tests to see the actual document produced instead of how it is rendered
-
-  def literal(doc: Doc) = DocLiteral(doc)
-
-  // helper
-
-  implicit def opt(optDoc: Option[Doc]) = optDoc.getOrElse(nil)
-
-  implicit def list(docs: TraversableOnce[Doc]): Doc = docs.foldRight(nil)(cons)
-
-  def breakList(docs: TraversableOnce[Doc], break: BreakingDoc = break): Doc = docs.foldRight(nil) {
-    case (hd, NilDoc) => hd :: nil
-    case (hd, tail)   => hd :: break :: tail
-  }
-
-  def sepList(docs: TraversableOnce[Doc], sep: Doc = ",", break: BreakingDoc = break): Doc = docs.foldRight(nil) {
-    case (hd, NilDoc) => hd :: nil
-    case (hd, tail)   => hd :: sep :: break :: tail
-  }
-
-  def groupedSepList(docs: TraversableOnce[Doc], sep: Doc = ",", break: BreakingDoc = break): Doc = docs.foldRight(nil) {
-    case (hd, NilDoc) => hd :: nil
-    case (hd, tail)   => group(hd :: sep) :: break :: tail
-  }
-
-  def block(name: Doc, open: Doc = "(", close: Doc = ")")(innerDoc: Doc): Doc =
-    group( name :: surrounded(open, close, breakSilent, breakSilent )(innerDoc) )
-
-  def brackets(innerDoc: Doc, break: BreakingDoc = breakSilent) =
-    surrounded(open = "[", close = "]", break, break)(innerDoc)
-
-  def braces(innerDoc: Doc, break: BreakingDoc = breakSilent) =
-    surrounded(open = "{", close = "}", break, break)(innerDoc)
-
-  def parens(innerDoc: Doc, break: BreakingDoc = breakSilent) =
-    surrounded(open = "(", close = ")", break, break)(innerDoc)
-
-  def comment(innerDoc: Doc, break: BreakingDoc = break) =
-    surrounded(open = "/*", close = "*/", break, break)(innerDoc)
-
-  def surrounded(open: Doc, close: Doc, openBreak: BreakingDoc, closeBreak: BreakingDoc)(innerDoc: Doc): Doc =
-    surrounded(open, breakBefore(close, openBreak))(breakBefore(innerDoc, closeBreak))
-
-  def surrounded(open: Doc, close: Doc)(innerDoc: Doc): Doc =
-    group(open :: nest(group(innerDoc)) :: close)
-
-  def section(start: Doc, inner: Doc, break: BreakingDoc = break): Doc =
-    if (inner.isNil) inner else group(start :: nest(breakBefore(inner, break = break)))
-}
+sealed abstract class Doc extends LineDocFormatting
 
 final case class ConsDoc(head: Doc, tail: Doc = NilDoc) extends Doc
 
-case object NilDoc extends Doc {
-  override def toOption = None
-  override def isNil = true
-}
+case object NilDoc extends Doc
 
 sealed abstract class ValueDoc extends Doc {
   def value: String
@@ -186,8 +71,6 @@ final case class NestWith(indent: Int, content: Doc) extends NestingDoc {
   def optIndent = Some(indent)
 }
 
-final case class DocLiteral(doc: Doc) extends Pretty {
-  override def toDoc = inner => docStructureDocGen(inner)(doc)
-}
+
 
 

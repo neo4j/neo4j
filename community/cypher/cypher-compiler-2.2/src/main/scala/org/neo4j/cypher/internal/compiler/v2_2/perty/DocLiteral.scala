@@ -19,30 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.perty
 
-import org.neo4j.cypher.internal.compiler.v2_2.perty.bling.MapExtractionFailureHandler
+import org.neo4j.cypher.internal.compiler.v2_2.perty.gen.docStructureDocGen
+import org.neo4j.cypher.internal.compiler.v2_2.perty.print.{pprintToString, ToPrettyString}
 
-case object catchExtractionFailures extends MapExtractionFailureHandler[Throwable, Any, Doc](formatErrors)
+final case class DocLiteral(doc: Doc)
+  extends ToPretty with ToPrettyString[DocLiteral] with LineDocFormatting {
 
-case object throwExtractionFailures extends MapExtractionFailureHandler[Throwable, Any, Doc](throwErrors)
+  override def toPretty: Option[DocRecipe[Any]] = docStructureDocGen(doc)
 
-case object formatErrors extends (Throwable => Option[Doc]) {
-  import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
-
-  def apply(throwable: Throwable) = throwable match {
-    case _: NotImplementedError =>
-      Some("???")
-
-    case _: MatchError =>
-      None
-
-    case e: Exception =>
-      Some(group(s"${e.getClass.getSimpleName}:" :/: e.toString))
-
-    case other =>
-      throw other
-  }
-}
-
-case object throwErrors extends (Throwable => Option[Doc]) {
-  def apply(throwable: Throwable) = throw throwable
+  def toDefaultPrettyString(formatter: DocFormatter): String =
+    pprintToString(doc, formatter)(docStructureDocGen.lift[Any])
 }

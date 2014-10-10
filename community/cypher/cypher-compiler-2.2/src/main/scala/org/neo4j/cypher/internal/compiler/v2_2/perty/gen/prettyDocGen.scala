@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.perty.gen
 
-import org.neo4j.cypher.internal.compiler.v2_2.perty._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.bling.LayerExtractor
-import org.neo4j.cypher.internal.compiler.v2_2.perty.print.Pretty
+import scala.reflect.runtime.universe.TypeTag
 
-case object prettyDocGen extends CustomDocGen[Pretty] {
-  def newDocDrill = (v: Pretty) => v.toDoc
+import org.neo4j.cypher.internal.compiler.v2_2.perty._
+
+case object prettyDocGen extends CustomDocGen[ToPretty] {
+  def apply[X <: ToPretty : TypeTag](x: X): Option[DocRecipe[Any]] = x.toPretty
 }

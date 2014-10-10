@@ -1360,7 +1360,7 @@ return b
     // should give us all rels
     val actual = result.toList
 
-    actual should equal(List(Map(("a2" -> node1), ("r" -> relationship),("b2" -> node2))))
+    actual should equal(List(Map("a2" -> node1, "r" -> relationship, "b2" -> node2)))
   }
 
   test("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a1)-[r]->(b2) RETURN a1, r, b2") {

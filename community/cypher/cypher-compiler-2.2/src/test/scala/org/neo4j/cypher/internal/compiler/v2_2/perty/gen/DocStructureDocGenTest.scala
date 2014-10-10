@@ -22,49 +22,47 @@ package org.neo4j.cypher.internal.compiler.v2_2.perty.gen
 
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
 
-class DocStructureDocGenTest extends DocHandlerTestSuite[Doc] {
-
-  import org.neo4j.cypher.internal.compiler.v2_2.perty.Doc._
+class DocStructureDocGenTest  extends DocHandlerTestSuite[Doc] {
 
   val docGen = docStructureDocGen
 
-  test("end => \"ø\"") {
-    pprintToString(nil) should equal("ø")
+  test("nil => \"ø\"") {
+    pprintToString(NilDoc) should equal("ø")
   }
 
-  test("break => \"_\"") {
-    pprintToString(break) should equal("_")
+  test("break => \"·\"") {
+    pprintToString(BreakDoc) should equal("·")
   }
 
-  test("breakWith(...) => \"_..._\"") {
-    pprintToString(breakWith("...")) should equal("_..._")
+  test("breakWith(...) => \"·...·\"") {
+    pprintToString(BreakWith("...")) should equal("·...·")
   }
 
   test("text(...) => \"...\"") {
-    pprintToString("...") should equal("\"...\"")
+    pprintToString[Doc](TextDoc("...")) should equal("\"...\"")
   }
 
-  test("text(\"a\")·text(\"b\") => \"a\"·\"b\"·ø") {
-    pprintToString("a" :: "b" :: nil) should equal("\"a\"·\"b\"·ø")
+  test("text(\"a\")·text(\"b\") => \"a\" ⸬ \"b\" ⸬ ø") {
+    pprintToString(ConsDoc(TextDoc("a"), ConsDoc(TextDoc("b"), NilDoc))) should equal("\"a\" ⸬ \"b\" ⸬ ø")
   }
 
   test("group(text(\"a\")) => [\"a\"]") {
-    pprintToString(group("a")) should equal("[\"a\"]")
+    pprintToString(GroupDoc(TextDoc("a"))) should equal("[\"a\"]")
   }
 
   test("nest(3, text(\"a\")) => (3)<\"a\">") {
-    pprintToString(nest(3, "a")) should equal("(3)<\"a\">")
+    pprintToString(NestWith(3, TextDoc("a"))) should equal("(3)<\"a\">")
   }
 
   test("nest(text(\"a\")) => (3)<\"a\">") {
-    pprintToString(nest("a")) should equal("<\"a\">")
+    pprintToString(NestDoc(TextDoc("a"))) should equal("<\"a\">")
   }
 
   test("page(group(\"a\"))) => (|[\"a\"]|)") {
-    pprintToString(page(group("a"))) should equal("(|[\"a\"]|)")
+    pprintToString(PageDoc(GroupDoc(TextDoc("a")))) should equal("(|[\"a\"]|)")
   }
 
   test("group(page(\"a\"))) => [(|\"a\"|)]") {
-    pprintToString(group(page("a"))) should equal("[(|\"a\"|)]")
+    pprintToString(GroupDoc(PageDoc(TextDoc("a")))) should equal("[(|\"a\"|)]")
   }
 }

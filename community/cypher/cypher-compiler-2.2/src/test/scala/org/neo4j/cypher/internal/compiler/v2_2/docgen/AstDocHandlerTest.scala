@@ -25,16 +25,16 @@ import org.neo4j.cypher.internal.compiler.v2_2.perty.handler.SimpleDocHandler
 
 class AstDocHandlerTest extends DocHandlerTestSuite[Any] with AstConstructionTestSupport {
 
-  val docGen = AstDocHandler.docGen.lift[Any] ++ SimpleDocHandler.docGen
+  val docGen = AstDocHandler.docGen.lift[Any] orElse SimpleDocHandler.docGen
 
   test("should work inside non-ast nodes") {
-    case class Container(astNode: ASTNode)
-    pprintToString(Container(ident("a"))) should equal("Container(a)")
+    pprintToString[Container](Container(ident("a"))) should equal("Container(a)")
   }
 
   test("should work inside non-ast-nodes inside unknown ast nodes") {
-    case class UnExpected(v: Any) extends ASTNode { def position = null }
-    case class Container(astNode: ASTNode)
-    pprintToString(UnExpected(Container(ident("a")))) should equal("UnExpected(Container(a))")
+    pprintToString[UnExpected](UnExpected(Container(ident("a")))) should equal("UnExpected(Container(a))")
   }
+
+  case class UnExpected(v: Any) extends ASTNode { def position = null }
+  case class Container(astNode: ASTNode)
 }
