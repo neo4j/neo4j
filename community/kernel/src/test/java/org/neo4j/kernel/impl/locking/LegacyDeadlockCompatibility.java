@@ -28,11 +28,14 @@ import javax.transaction.Transaction;
 
 import org.junit.Ignore;
 import org.junit.Test;
+
 import org.neo4j.kernel.DeadlockDetectedException;
 
 import static java.lang.System.currentTimeMillis;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
 
 @Ignore("Not a test, part of a compatibility suite.")
 // This is the legacy deadlock detection tests
@@ -132,6 +135,13 @@ public class LegacyDeadlockCompatibility extends LockingCompatibilityTestSuite.C
             File file = new LockWorkFailureDump( getClass() ).dumpState( locks, new LockWorker[] { t1, t2, t3, t4 } );
             throw new RuntimeException( "Failed, forensics information dumped to " + file.getAbsolutePath(), e );
         }
+        finally
+        {
+            t1.close();
+            t2.close();
+            t3.close();
+            t4.close();
+        }
     }
 
     public static class StressThread extends Thread
@@ -143,7 +153,9 @@ public class LegacyDeadlockCompatibility extends LockingCompatibilityTestSuite.C
         static
         {
             for ( int i = 0; i < resources.length; i++ )
+            {
                 resources[i] = i;
+            }
         }
         private final CountDownLatch startSignal;
         private final String name;

@@ -24,10 +24,12 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.kernel.api.exceptions.index.FlipFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexProxyAlreadyClosedKernelException;
+import org.neo4j.test.CleanupRule;
 import org.neo4j.test.OtherThreadExecutor;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -125,8 +127,8 @@ public class FlippableIndexProxyTest
         final CountDownLatch triggerFinishFlip = new CountDownLatch( 1 );
         final CountDownLatch triggerExternalAccess = new CountDownLatch( 1 );
 
-        OtherThreadExecutor<Void> flippingThread = new OtherThreadExecutor<Void>( "Flipping thread", null );
-        OtherThreadExecutor<Void> dropIndexThread = new OtherThreadExecutor<Void>( "Drop index thread", null );
+        OtherThreadExecutor<Void> flippingThread = cleanup.add( new OtherThreadExecutor<Void>( "Flipping thread", null ) );
+        OtherThreadExecutor<Void> dropIndexThread = cleanup.add( new OtherThreadExecutor<Void>( "Drop index thread", null ) );
 
 
         // WHEN one thread starts flipping to another context
@@ -156,6 +158,8 @@ public class FlippableIndexProxyTest
         // But it should have gotten to drop the new index context, after the flip happened.
         verify( contextAfterFlip ).drop();
     }
+
+    public final @Rule CleanupRule cleanup = new CleanupRule();
 
     private OtherThreadExecutor.WorkerCommand<Void, Void> dropTheIndex( final FlippableIndexProxy flippable )
     {

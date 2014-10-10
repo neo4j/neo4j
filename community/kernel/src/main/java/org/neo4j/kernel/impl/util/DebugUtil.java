@@ -25,11 +25,16 @@ import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.helpers.Predicate;
+
+import static java.lang.reflect.Modifier.isPublic;
+import static java.lang.reflect.Modifier.isStatic;
 
 import static org.neo4j.helpers.Exceptions.stringify;
 
@@ -62,7 +67,7 @@ public class DebugUtil
             throw new RuntimeException( "Can't happen", e );
         }
     }
-    
+
     public static boolean currentStackTraceContains( Predicate<StackTraceElement> predicate )
     {
         for ( StackTraceElement element : Thread.currentThread().getStackTrace() )
@@ -74,7 +79,7 @@ public class DebugUtil
         }
         return false;
     }
-    
+
     public static Predicate<StackTraceElement> classNameIs( final String className )
     {
         return new Predicate<StackTraceElement>()
@@ -86,7 +91,7 @@ public class DebugUtil
             }
         };
     }
-    
+
     public static Predicate<StackTraceElement> classNameContains( final String classNamePart )
     {
         return new Predicate<StackTraceElement>()
@@ -98,7 +103,7 @@ public class DebugUtil
             }
         };
     }
-    
+
     public static Predicate<StackTraceElement> classIs( final Class<?> cls )
     {
         return new Predicate<StackTraceElement>()
@@ -110,7 +115,7 @@ public class DebugUtil
             }
         };
     }
-    
+
     public static Predicate<StackTraceElement> classNameAndMethodAre( final String className,
             final String methodName )
     {
@@ -123,7 +128,7 @@ public class DebugUtil
             }
         };
     }
-    
+
     public static Predicate<StackTraceElement> classAndMethodAre( final Class<?> cls, final String methodName )
     {
         return new Predicate<StackTraceElement>()
@@ -135,12 +140,12 @@ public class DebugUtil
             }
         };
     }
-    
+
     public static class StackTracer
     {
         private final Map<Stack, AtomicInteger> uniqueStackTraces = new HashMap<>();
         private boolean considerMessages = true;
-        
+
         public void add( Throwable t )
         {
             Stack key = new Stack( t, considerMessages );
@@ -152,7 +157,7 @@ public class DebugUtil
             }
             count.incrementAndGet();
         }
-        
+
         public void print( PrintStream out, int interestThreshold )
         {
             System.out.println( "Printing stack trace counts:" );
@@ -169,7 +174,7 @@ public class DebugUtil
             out.println( "------" );
             out.println( "Total:" + total );
         }
-        
+
         public StackTracer printAtShutdown( final PrintStream out, final int interestThreshold )
         {
             Runtime.getRuntime().addShutdownHook( new Thread()
@@ -182,14 +187,14 @@ public class DebugUtil
             } );
             return this;
         }
-        
+
         public StackTracer ignoreMessages()
         {
             considerMessages = false;
             return this;
         }
     }
-    
+
     private static class Stack
     {
         private final Throwable stackTrace;
@@ -202,7 +207,7 @@ public class DebugUtil
             this.considerMessage = considerMessage;
             this.elements = stackTrace.getStackTrace();
         }
-        
+
         @Override
         public int hashCode()
         {
@@ -214,7 +219,7 @@ public class DebugUtil
             }
             return hashCode;
         }
-        
+
         @Override
         public boolean equals( Object obj )
         {
@@ -222,7 +227,7 @@ public class DebugUtil
             {
                 return false;
             }
-            
+
             Stack o = (Stack) obj;
             if ( considerMessage )
             {
@@ -295,5 +300,69 @@ public class DebugUtil
                 out.println( "\t" + entry.getKey() + ": " + entry.getValue() );
             }
         }
+    }
+
+    /**
+     * Only enabled iff -ea is enabled.
+     *
+     * Tries to track down which test that got us to the point in execution we're at right now by analyzing the
+     * stack trace elements of the current thread. If no test was found on the stack trace or if -ea is not enabled,
+     * then an empty string is returned.
+     *
+     * Basically it will try to find the first public non-static method with a {@code @Test} annotation
+     * and, if found, return {@code <simple-class-name>#<test-method-name>}.
+     *
+     * This method can be added to places where there's a suspicion that tests forget to close resources,
+     * for example threads, where threads can have this string added as the last part of its name. And it can be
+     * left there in production code as well, since it will be dormant if the JVM hasn't got assertions enabled.
+     */
+    public static String trackTest()
+    {
+        boolean track = false;
+        assert (track = true) : "A trick to set this variable to true if assertions are enabled";
+
+        if ( track )
+        {
+            for ( StackTraceElement element : Thread.currentThread().getStackTrace() )
+            {
+                try
+                {
+                    String className = element.getClassName();
+                    Class<?> cls = Class.forName( className );
+                    Method method = cls.getDeclaredMethod( element.getMethodName() );
+                    if ( !isStatic( method.getModifiers() ) &&
+                         isPublic( method.getModifiers() ) &&
+                         hasTestAnnotation( method ) )
+                    {
+                        return " @ " + simpleClassName( className ) + "#" + element.getMethodName();
+                    }
+                }
+                catch ( ClassNotFoundException | SecurityException | NoSuchMethodException e )
+                {
+                    // This is so weird, but hey, who am I to judge all ours precious JVM and class loader
+                    continue;
+                }
+            }
+        }
+        return "";
+    }
+
+    private static String simpleClassName( String className )
+    {
+        return className.indexOf( '.' ) == -1
+                ? className
+                : className.substring( className.lastIndexOf( '.' )+1 );
+    }
+
+    private static boolean hasTestAnnotation( Method method )
+    {
+        for ( Annotation annotation : method.getAnnotations() )
+        {
+            if ( annotation.annotationType().getSimpleName().equals( "Test" ) )
+            {
+                return true;
+            }
+        }
+        return false;
     }
 }

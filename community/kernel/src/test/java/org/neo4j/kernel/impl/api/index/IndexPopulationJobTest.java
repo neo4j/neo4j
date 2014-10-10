@@ -29,6 +29,7 @@ import java.util.concurrent.Future;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Matchers;
 
@@ -57,6 +58,7 @@ import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.TestLogger;
 import org.neo4j.kernel.logging.SingleLoggingService;
+import org.neo4j.test.CleanupRule;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.OtherThreadExecutor;
@@ -237,8 +239,8 @@ public class IndexPopulationJobTest
         final IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, storeView,
                 StringLogger.DEV_NULL );
 
-        OtherThreadExecutor<Void> populationJobRunner = new OtherThreadExecutor<>(
-                "Population job test runner", null );
+        OtherThreadExecutor<Void> populationJobRunner = cleanup.add( new OtherThreadExecutor<Void>(
+                "Population job test runner", null ) );
         Future<Void> runFuture = populationJobRunner.executeDontWait( new WorkerCommand<Void, Void>()
         {
             @Override
@@ -528,6 +530,7 @@ public class IndexPopulationJobTest
     private KernelSchemaStateStore stateHolder;
 
     private int labelId;
+    public final @Rule CleanupRule cleanup = new CleanupRule();
 
     @Before
     public void before() throws Exception
