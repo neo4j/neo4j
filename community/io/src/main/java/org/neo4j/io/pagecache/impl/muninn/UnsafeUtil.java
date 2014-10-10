@@ -30,6 +30,7 @@ public final class UnsafeUtil
 {
     private static final Unsafe unsafe;
     private static final MethodHandle getAndAddInt;
+    private static final MethodHandle getAndSetObject;
     private static final Object nullSentinelBase;
     private static final long nullSentinelOffset;
     private static Object nullSentinel; // see the retainReference() method
@@ -56,17 +57,34 @@ public final class UnsafeUtil
         unsafe = theUnsafe;
         nullSentinelBase = sentinelBase;
         nullSentinelOffset = sentinelOffset;
-        getAndAddInt = getGetAndAddIntMethodHandle();
+        MethodHandles.Lookup lookup = MethodHandles.lookup();
+        getAndAddInt = getGetAndAddIntMethodHandle( lookup );
+        getAndSetObject = getGetAndSetObjectMethodHandle( lookup );
     }
 
-    private static MethodHandle getGetAndAddIntMethodHandle()
+    private static MethodHandle getGetAndAddIntMethodHandle(
+            MethodHandles.Lookup lookup )
     {
-        MethodHandles.Lookup lookup = MethodHandles.lookup();
         // int getAndAddInt(Object o, long offset, int delta)
         MethodType type = MethodType.methodType( Integer.TYPE, Object.class, Long.TYPE, Integer.TYPE );
         try
         {
             return lookup.findVirtual( Unsafe.class, "getAndAddInt", type );
+        }
+        catch ( Exception e )
+        {
+            return null;
+        }
+    }
+
+    private static MethodHandle getGetAndSetObjectMethodHandle(
+            MethodHandles.Lookup lookup )
+    {
+        // Object getAndSetObject(Object o, long offset, Object newValue)
+        MethodType type = MethodType.methodType( Object.class, Object.class, Long.TYPE, Object.class );
+        try
+        {
+            return lookup.findVirtual( Unsafe.class, "getAndSetObject", type );
         }
         catch ( Exception e )
         {
@@ -97,7 +115,7 @@ public final class UnsafeUtil
             }
             catch ( Throwable throwable )
             {
-                throw new AssertionError( "unexpected", throwable );
+                throw new AssertionError( "Unexpected intrinsic failure", throwable );
             }
         }
 
@@ -111,9 +129,41 @@ public final class UnsafeUtil
         return x;
     }
 
-    public static boolean compareAndSwapLong( Object obj, long offset, long expected, long update )
+    public static boolean compareAndSwapLong(
+            Object obj, long offset, long expected, long update )
     {
         return unsafe.compareAndSwapLong( obj, offset, expected, update );
+    }
+
+    public static boolean compareAndSwapObject(
+            Object obj, long offset, Object expected, Object update )
+    {
+        return unsafe.compareAndSwapObject( obj, offset, expected, update );
+    }
+
+    public static Object getAndSetObject( Object obj, long offset, Object newValue )
+    {
+        // The Java 8 specific version:
+        if ( getAndSetObject != null )
+        {
+            try
+            {
+                return getAndSetObject.invokeExact( unsafe, obj, offset, newValue );
+            }
+            catch ( Throwable throwable )
+            {
+                throw new AssertionError( "Unexpected intrinsic failure", throwable );
+            }
+        }
+
+        // The Java 7 version:
+        Object current;
+        do
+        {
+            current = unsafe.getObjectVolatile( obj, offset );
+        }
+        while ( !unsafe.compareAndSwapObject( obj, offset, current, newValue ) );
+        return current;
     }
 
     public static long malloc( long sizeInBytes )

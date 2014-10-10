@@ -20,12 +20,11 @@
 package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.io.pagecache.impl.muninn.jsr166e.StampedLock;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.impl.muninn.jsr166e.StampedLock;
 
 final class MuninnWritePageCursor extends MuninnPageCursor
 {
@@ -77,7 +76,6 @@ final class MuninnWritePageCursor extends MuninnPageCursor
         StampedLock translationTableLock = pagedFile.translationTableLocks[stripe];
         PrimitiveLongObjectMap<MuninnPage> translationTable = pagedFile.translationTables[stripe];
         PageSwapper swapper = pagedFile.swapper;
-        AtomicReference<MuninnPage> freelist = pagedFile.freelist;
         MuninnPage page;
 
         long stamp = translationTableLock.tryOptimisticRead();
@@ -112,11 +110,7 @@ final class MuninnWritePageCursor extends MuninnPageCursor
                 {
                     // Our translation table is still outdated. Go ahead and page
                     // fault.
-                    pageFault(
-                            filePageId,
-                            translationTable,
-                            freelist,
-                            swapper );
+                    pageFault( filePageId, translationTable, swapper );
                     return;
                 }
                 // Another thread completed the page fault ahead of us.
@@ -171,11 +165,7 @@ final class MuninnWritePageCursor extends MuninnPageCursor
             }
             // The page is definitely no good, and our translation table is
             // definitely out of date.
-            pageFault(
-                    filePageId,
-                    translationTable,
-                    freelist,
-                    swapper );
+            pageFault( filePageId, translationTable, swapper );
         }
         finally
         {

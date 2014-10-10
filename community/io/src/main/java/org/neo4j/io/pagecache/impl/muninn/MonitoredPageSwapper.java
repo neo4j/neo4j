@@ -78,4 +78,10 @@ final class MonitoredPageSwapper implements PageSwapper
     {
         return pageSwapper.getLastPageId();
     }
+
+    @Override
+    public String toString()
+    {
+        return pageSwapper.toString() + "[*Monitored]";
+    }
 }

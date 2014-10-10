@@ -19,6 +19,24 @@
  */
 package org.neo4j.io.pagecache;
 
+import static org.hamcrest.Matchers.both;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
+import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
+import static org.neo4j.test.ByteArrayMatcher.byteArray;
+import static org.neo4j.test.ThreadTestUtils.awaitThreadState;
+import static org.neo4j.test.ThreadTestUtils.fork;
+
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -44,9 +62,9 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.adversaries.RandomAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
@@ -55,25 +73,6 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.test.RepeatRule;
-
-import static org.hamcrest.Matchers.both;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
-import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
-import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
-import static org.neo4j.test.ByteArrayMatcher.byteArray;
-import static org.neo4j.test.ThreadTestUtils.awaitThreadState;
-import static org.neo4j.test.ThreadTestUtils.fork;
 
 public abstract class PageCacheTest<T extends RunnablePageCache>
 {
@@ -1376,6 +1375,7 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
         cache.unmap( file );
     }
 
+    @RepeatRule.Repeat( times = 10 )
     @Test( timeout = 60000 )
     public void readsAndWritesMustBeMutuallyConsistent() throws Exception
     {
@@ -1516,7 +1516,156 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
         }
     }
 
-    @Test(timeout = 1000)
+    @Ignore
+    @RepeatRule.Repeat( times = 12000 )
+    @Test( timeout = 60000 )
+    public void mustNotLoseUpdates() throws Exception
+    {
+        // Another test that tries to squeeze out data race bugs. The idea is
+        // the following:
+        // We have a number of threads that are going to perform one of two
+        // operations on randomly chosen pages. The first operation is this:
+        // They are going to pin a random page, and then scan through it to
+        // find a record that is their own. A record has a thread-id and a
+        // counter, both 32-bit integers. If the record is not found, it will
+        // be added after all the other existing records on that page, if any.
+        // The last 32-bit word on a page is a sum of all the counters, and it
+        // will be updated. Then it will verify that the sum matches the
+        // counters.
+        // The second operation is read-only, where only the verification is
+        // performed.
+        // The kicker is this: the threads will also keep track of which of
+        // their counters on what pages are at what value, by maintaining
+        // mirror counters in memory. The threads will continuously check if
+        // these stay in sync with the data on the page cache. If they go out
+        // of sync, then we have a data race bug where we either pin the wrong
+        // pages or somehow lose updates to the pages.
+        // This is somewhat similar to what the PageCacheStressTest does.
+
+        final AtomicBoolean shouldStop = new AtomicBoolean();
+        final int cachePages = 20;
+        final int filePages = cachePages * 2;
+        final int threadCount = 8;
+        final int pageSize = threadCount * 4;
+
+        getPageCache( fs, cachePages, pageSize, PageCacheMonitor.NULL );
+        final PagedFile pagedFile = pageCache.map( file, pageSize );
+
+        // Ensure all the pages exist
+        try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+        {
+            for ( int i = 0; i < filePages; i++ )
+            {
+                assertTrue( "failed to initialise file page " + i, cursor.next() );
+            }
+        }
+        pageCache.flush();
+
+        class Result
+        {
+            final int threadId;
+            final int[] pageCounts;
+
+            Result( int threadId, int[] pageCounts )
+            {
+                this.threadId = threadId;
+                this.pageCounts = pageCounts;
+            }
+        }
+
+        class Worker implements Callable<Result>
+        {
+            final int threadId;
+
+            Worker( int threadId )
+            {
+                this.threadId = threadId;
+            }
+
+            @Override
+            public Result call() throws Exception
+            {
+                int[] pageCounts = new int[filePages];
+                ThreadLocalRandom rng = ThreadLocalRandom.current();
+
+                while ( !shouldStop.get() )
+                {
+                    int pageId = rng.nextInt( 0, filePages );
+                    boolean updateCounter = rng.nextBoolean();
+                    int pf_flags = updateCounter? PF_EXCLUSIVE_LOCK : PF_SHARED_LOCK;
+                    try ( PageCursor cursor = pagedFile.io( pageId, pf_flags ) )
+                    {
+                        int counter;
+                        try
+                        {
+                            assertTrue( cursor.next() );
+                            do
+                            {
+                                cursor.setOffset( threadId * 4 );
+                                counter = cursor.getInt();
+                            }
+                            while ( cursor.shouldRetry() );
+                            String lockName = updateCounter ? "PF_EXCLUSIVE_LOCK" : "PF_SHARED_LOCK";
+                            assertThat( "inconsistent page read from filePageId = " + pageId + ", with " + lockName +
+                                            " [t:" + Thread.currentThread().getId() + "]",
+                                    counter, is( pageCounts[pageId] ) );
+                        }
+                        catch ( Throwable throwable )
+                        {
+                            shouldStop.set( true );
+                            throw throwable;
+                        }
+                        if ( updateCounter )
+                        {
+                            counter++;
+                            pageCounts[pageId]++;
+                            cursor.setOffset( threadId * 4 );
+                            cursor.putInt( counter );
+                        }
+                    }
+                }
+
+                return new Result( threadId, pageCounts );
+            }
+        }
+
+        List<Future<Result>> futures = new ArrayList<>();
+        for ( int i = 0; i < threadCount; i++ )
+        {
+            futures.add( executor.submit( new Worker( i ) ) );
+        }
+
+        Thread.sleep( 1 );
+        shouldStop.set( true );
+
+        for ( Future<Result> future : futures )
+        {
+            Result result = future.get();
+            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
+            {
+                for ( int i = 0; i < filePages; i++ )
+                {
+                    assertTrue( cursor.next() );
+
+                    int threadId = result.threadId;
+                    int expectedCount = result.pageCounts[i];
+                    int actualCount;
+                    do
+                    {
+                        cursor.setOffset( threadId * 4 );
+                        actualCount = cursor.getInt();
+                    }
+                    while ( cursor.shouldRetry() );
+
+                    assertThat( "wrong count for threadId = " + threadId + ", pageId = " + i,
+                            actualCount, is( expectedCount ) );
+                }
+            }
+        }
+        pageCache.unmap( file );
+    }
+
+    @Test( timeout = 1000 )
     public void writesOfDifferentUnitsMustHaveCorrectEndianess() throws Exception
     {
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
@@ -3280,7 +3429,6 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
             }
         }
     }
-
 
     @RepeatRule.Repeat( times = 100 )
     @Test( timeout = 60000 )

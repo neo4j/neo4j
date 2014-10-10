@@ -22,7 +22,6 @@ package org.neo4j.io.pagecache.impl.muninn;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -102,23 +101,43 @@ public class MuninnPageCache implements RunnablePageCache
     private static final IOException oomException = new IOException(
             "OutOfMemoryError encountered in the page cache background eviction thread" );
 
-    // This is used as a poison-pill signal in the freePageWaiters list, to
-    // inform any page faulting thread that it is now no longer possible to
-    // queue up and wait for more pages to be evicted, because the page cache
-    // has been shut down.
+    // The field offset to unsafely access the freelist field.
+    private static final long freelistOffset =
+            UnsafeUtil.getFieldOffset( MuninnPageCache.class, "freelist" );
+
+    // This is used as a poison-pill signal in the freelist, to inform any
+    // page faulting thread that it is now no longer possible to queue up and
+    // wait for more pages to be evicted, because the page cache has been shut
+    // down.
     private static final FreePageWaiter shutdownSignal = new FreePageWaiter();
 
     private final PageSwapperFactory swapperFactory;
     private final int cachePageSize;
+    private final int keepFree;
     private final MuninnCursorPool cursorPool;
     private final PageCacheMonitor monitor;
     final MuninnPage[] pages;
 
-    // Linked list of free pages
-    private final AtomicReference<MuninnPage> freelist;
-
-    // Linked list of threads waiting for free pages
-    private final AtomicReference<FreePageWaiter> freePageWaiters;
+    // The freelist takes a bit of explanation. It is a thread-safe linked-list
+    // of 3 types of objects. A link can either be a MuninnPage, a FreePage or
+    // a FreePageWaiter.
+    // Initially, most of the links are MuninnPages that are ready for the
+    // taking. Then towards the end, we have the last bunch of pages linked
+    // through FreePage objects. We make this transition because, once a
+    // MuninnPage has been removed from the list, it cannot be added back. The
+    // reason is that the MuninnPages are reused, and adding them back into the
+    // freelist would expose us to the ABA-problem, which can cause cycles to
+    // form. The FreePage and FreePageWaiter objects, however, are single-use
+    // such that they don't exhibit the ABA-problem. In other words, eviction
+    // will never add MuninnPages to the freelist; it will only add free pages
+    // through a new FreePage object, or with direct transfer through a
+    // FreePageWaiter. FreePageWaiters are added to the list by threads that
+    // want a free page, but have discovered that the freelist is either empty,
+    // or has another FreePageWaiter at the head.
+    // This contraption basically gives us a "transfer stack" with some space
+    // optimisations for the initial bulk of contents.
+    // This field is accessed via Unsafe.
+    private volatile Object freelist;
 
     // Linked list of mappings - guarded by synchronized(this)
     private volatile FileMapping mappedFiles;
@@ -150,22 +169,39 @@ public class MuninnPageCache implements RunnablePageCache
 
         this.swapperFactory = swapperFactory;
         this.cachePageSize = cachePageSize;
+        this.keepFree = Math.min( pagesToKeepFree, maxPages / 2 );
         this.cursorPool = new MuninnCursorPool();
         this.monitor = monitor;
         this.pages = new MuninnPage[maxPages];
 
         MemoryReleaser memoryReleaser = new MemoryReleaser( maxPages );
-        MuninnPage pageList = null;
+        Object pageList = null;
         int cachePageId = maxPages;
         while ( cachePageId --> 0 )
         {
             MuninnPage page = new MuninnPage( cachePageSize, cachePageId, memoryReleaser );
             pages[cachePageId] = page;
-            page.nextFree = pageList;
-            pageList = page;
+
+            if ( pageList == null )
+            {
+                FreePage freePage = new FreePage( page );
+                freePage.setNext( null );
+                pageList = freePage;
+            }
+            else if ( pageList instanceof FreePage
+                    && ((FreePage) pageList).count < keepFree )
+            {
+                FreePage freePage = new FreePage( page );
+                freePage.setNext( (FreePage) pageList );
+                pageList = freePage;
+            }
+            else
+            {
+                page.nextFree = pageList;
+                pageList = page;
+            }
         }
-        freelist = new AtomicReference<>( pageList );
-        freePageWaiters = new AtomicReference<>();
+        UnsafeUtil.putObjectVolatile( this, freelistOffset, pageList );
     }
 
     static void verifyHacks()
@@ -228,7 +264,6 @@ public class MuninnPageCache implements RunnablePageCache
                 this,
                 filePageSize,
                 swapperFactory,
-                freelist,
                 cursorPool,
                 monitor );
         pagedFile.incrementRefCount();
@@ -326,7 +361,6 @@ public class MuninnPageCache implements RunnablePageCache
         {
             pages[i] = null;
         }
-        freelist.set( null );
     }
 
     @Override
@@ -366,35 +400,120 @@ public class MuninnPageCache implements RunnablePageCache
         return pages.length;
     }
 
-    MuninnPage unparkEvictor( int iterationCount ) throws IOException
+    MuninnPage grabFreePage() throws IOException
     {
-        assertHealthy();
-        Thread thread = evictorThread;
-        if ( thread != null )
+        // Review the comment on the freelist field before making changes to
+        // this part of the code.
+        // Whatever the case, we're going to the head-pointer of the freelist,
+        // and in doing so, we can discover a number of things.
+        // We can discover a MuninnPage object, in which case we can try to
+        // CAS the freelist pointer to the value of the MuninnPage.nextFree
+        // pointer, and if this succeeds then we've grabbed that page.
+        // We can discover a FreePage object, in which case we'll do a similar
+        // dance by attempting to CAS the freelist to the FreePage objects next
+        // pointer, and again, if we succeed then we've grabbed the MuninnPage
+        // given by the FreePage object.
+        // We can discover a FreePageWaiter object, which means that other
+        // threads have already given up spinning on the freelist waiting for
+        // free pages, so we might as well just get in line right away.
+        // We can discover a null-pointer, in which case the freelist has just
+        // been emptied for whatever it contained before. Either new FreePage
+        // objects are going to be added to it, or another thread is going to
+        // get tired of waiting and add a FreePageWaiter to it, or we are going
+        // to get tired of waiting and add our own FreePageWaiter to it.
+        // Importantly, this FreePageWaiter could be the shutdownSignal
+        // instance, so we need to check for that and throw the appropriate
+        // exception if that turns out to be the case.
+
+        Object current;
+        FreePageWaiter waiter = null;
+        int iterationCount = 0;
+        boolean shouldUnparkInSpin = true;
+        for (;;)
         {
-            if ( iterationCount > pageFaultSpinCount )
+            assertHealthy();
+            iterationCount++;
+            current = getFreelistHead();
+            if ( current == null && iterationCount > pageFaultSpinCount )
             {
-                FreePageWaiter waiter = new FreePageWaiter();
-                FreePageWaiter listHead;
-                do
+                waiter = waiter == null? new FreePageWaiter() : waiter;
+                // Make sure to null out the next pointer, in case the waiter
+                // was created at a time where the current object was another
+                // waiter.
+                waiter.next = null;
+                if ( compareAndSetFreelistHead( null, waiter ) )
                 {
-                    listHead = freePageWaiters.get();
-                    if ( listHead == shutdownSignal )
-                    {
-                        throw new IllegalStateException( "The PageCache has been shut down" );
-                    }
-                    waiter.next = listHead;
+                    unparkEvictor();
+                    return waiter.park( this );
                 }
-                while ( !freePageWaiters.compareAndSet( listHead, waiter ) );
-                LockSupport.unpark( thread );
-                return waiter.park( this );
             }
-            else
+            else if ( current == null )
             {
-                LockSupport.unpark( thread );
+                // Short-circuit the checks bellow for performance, because we
+                // know that they will always fail when 'current' is null.
+                if ( shouldUnparkInSpin )
+                {
+                    unparkEvictor();
+                    shouldUnparkInSpin = false;
+                }
+                continue;
             }
+            else if ( current instanceof MuninnPage )
+            {
+                MuninnPage page = (MuninnPage) current;
+                if ( compareAndSetFreelistHead( page, page.nextFree ) )
+                {
+                    return page;
+                }
+            }
+            else if ( current instanceof FreePage )
+            {
+                FreePage freePage = (FreePage) current;
+                if ( compareAndSetFreelistHead( freePage, freePage.next ) )
+                {
+                    return freePage.page;
+                }
+            }
+            else if ( current instanceof FreePageWaiter )
+            {
+                if ( current == shutdownSignal )
+                {
+                    throw new IllegalStateException(
+                            "The PageCache has been shut down" );
+                }
+
+                waiter = waiter == null? new FreePageWaiter() : waiter;
+                waiter.next = (FreePageWaiter) current;
+                if ( compareAndSetFreelistHead( current, waiter ) )
+                {
+                    unparkEvictor();
+                    return waiter.park( this );
+                }
+            }
+            unparkEvictor();
         }
-        return null;
+    }
+
+    private void unparkEvictor()
+    {
+        LockSupport.unpark( evictorThread );
+    }
+
+    private Object getFreelistHead()
+    {
+        return UnsafeUtil.getObjectVolatile( this, freelistOffset );
+    }
+
+    private boolean compareAndSetFreelistHead( Object expected, Object update )
+    {
+        return UnsafeUtil.compareAndSwapObject(
+                this, freelistOffset, expected, update );
+    }
+
+    private Object getAndSetFreelistHead( Object newFreelistHead )
+    {
+        return UnsafeUtil.getAndSetObject(
+                this, freelistOffset, newFreelistHead );
     }
 
     /**
@@ -414,7 +533,6 @@ public class MuninnPageCache implements RunnablePageCache
 
     private void continuouslySweepPages()
     {
-        int keepFree = Math.min( pagesToKeepFree, pages.length / 2 );
         int clockArm = 0;
 
         while ( !Thread.interrupted() )
@@ -427,11 +545,15 @@ public class MuninnPageCache implements RunnablePageCache
         // for free pages in a page fault.
         // This can happen because files can be unmapped while their cursors
         // are in use.
-        FreePageWaiter waiters = freePageWaiters.getAndSet( shutdownSignal );
-        while ( waiters != null )
+        Object freelistHead = getAndSetFreelistHead( shutdownSignal );
+        if ( freelistHead instanceof FreePageWaiter )
         {
-            waiters.unparkInterrupt();
-            waiters = waiters.next;
+            FreePageWaiter waiters = (FreePageWaiter) freelistHead;
+            while ( waiters != null )
+            {
+                waiters.unparkInterrupt();
+                waiters = waiters.next;
+            }
         }
     }
 
@@ -440,30 +562,34 @@ public class MuninnPageCache implements RunnablePageCache
         // Park until we're either interrupted, or the number of free pages drops
         // bellow keepFree.
         long parkNanos = TimeUnit.MILLISECONDS.toNanos( 10 );
-        int availablePages;
-        do
+        for (;;)
         {
             LockSupport.parkNanos( parkNanos );
-            if ( Thread.currentThread().isInterrupted() )
+            if ( Thread.currentThread().isInterrupted() || closed )
             {
                 return 0;
             }
-            availablePages = 0;
-            MuninnPage page = freelist.get();
-            while ( page != null && availablePages < keepFree )
-            {
-                availablePages++;
-                page = page.nextFree;
-            }
-        } while ( availablePages == keepFree && freePageWaiters.get() == null );
 
-        return keepFree - availablePages;
+            Object freelistHead = getFreelistHead();
+
+            if ( freelistHead instanceof FreePage )
+            {
+                int availablePages = ((FreePage) freelistHead).count;
+                if ( availablePages < keepFree )
+                {
+                    return keepFree - availablePages;
+                }
+            }
+            else if ( freelistHead instanceof FreePageWaiter )
+            {
+                return keepFree;
+            }
+        }
     }
 
     int evictPages( int pageCountToEvict, int clockArm )
     {
-        FreePageWaiter waiters = freePageWaiters.getAndSet( null );
-        waiters = reverse( waiters );
+        FreePageWaiter waiters = grabFreePageWaitersIfAny();
 
         Thread currentThread = Thread.currentThread();
         while ( (pageCountToEvict > 0 || waiters != null) && !currentThread.isInterrupted() ) {
@@ -550,13 +676,35 @@ public class MuninnPageCache implements RunnablePageCache
                         }
                         else
                         {
-                            MuninnPage next;
+                            Object current;
+                            Object nextListHead;
+                            FreePage freePage = null;
+                            FreePageWaiter waiter;
                             do
                             {
-                                next = freelist.get();
-                                page.nextFree = next;
+                                waiter = null;
+                                current = getFreelistHead();
+                                if ( current == null || current instanceof FreePage )
+                                {
+                                    freePage = freePage == null?
+                                            new FreePage( page ) : freePage;
+                                    freePage.setNext( (FreePage) current );
+                                    nextListHead = freePage;
+                                }
+                                else
+                                {
+                                    assert current instanceof FreePageWaiter :
+                                            "Unexpected link type: " + current;
+                                    waiter = (FreePageWaiter) current;
+                                    nextListHead = waiter.next;
+                                }
                             }
-                            while ( !freelist.compareAndSet( next, page ) );
+                            while ( !compareAndSetFreelistHead(
+                                    current, nextListHead ) );
+                            if ( waiter != null )
+                            {
+                                waiter.unpark( page );
+                            }
                         }
                     }
                     else if ( waiters != null && evictorException != null )
@@ -585,6 +733,18 @@ public class MuninnPageCache implements RunnablePageCache
         }
 
         return clockArm;
+    }
+
+    private FreePageWaiter grabFreePageWaitersIfAny()
+    {
+        Object freelistHead = getFreelistHead();
+        if ( freelistHead instanceof FreePageWaiter )
+        {
+            FreePageWaiter waiters =
+                    (FreePageWaiter) getAndSetFreelistHead( null );
+            return reverse( waiters );
+        }
+        return null;
     }
 
     private FreePageWaiter reverse( FreePageWaiter waiters )

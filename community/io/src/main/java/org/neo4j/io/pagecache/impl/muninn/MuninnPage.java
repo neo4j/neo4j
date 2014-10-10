@@ -62,8 +62,11 @@ final class MuninnPage extends StampedLock implements Page
     // Optimistically incremented; occasionally truncated to a max of 5.
     // accessed through unsafe
     private volatile byte usageStamp;
-    // Next pointer in the freelist of available pages
-    public volatile MuninnPage nextFree;
+
+    // Next pointer in the freelist of available pages. This is either a
+    // MuninnPage object, or a FreePage object. See the comment on the
+    // MuninnPageCache.freelist field.
+    public Object nextFree;
 
     private PageSwapper swapper;
     private long filePageId = PageCursor.UNBOUND_PAGE_ID;
@@ -80,7 +83,9 @@ final class MuninnPage extends StampedLock implements Page
     {
         if ( position > cachePageSize )
         {
-            throw new IndexOutOfBoundsException();
+            String msg = "Position " + position + " is greater than the upper " +
+                    "page size bound of " + cachePageSize;
+            throw new IndexOutOfBoundsException( msg );
         }
         return true;
     }
@@ -325,7 +330,12 @@ final class MuninnPage extends StampedLock implements Page
         assert isWriteLocked(): "Cannot fault page without write-lock";
         if ( this.swapper != null || this.filePageId != PageCursor.UNBOUND_PAGE_ID )
         {
-            throw new IllegalStateException( "Cannot fault on bound page" );
+            String msg = String.format(
+                    "Cannot fault page {filePageId = %s, swapper = %s} into " +
+                            "cache page %s. Already bound to {filePageId = " +
+                            "%s, swapper = %s}.",
+                    filePageId, swapper, cachePageId, this.filePageId, this.swapper );
+            throw new IllegalStateException( msg );
         }
 
         // Note: It is important that we assign the filePageId before we swap

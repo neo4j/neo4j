@@ -20,7 +20,6 @@
 package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.io.pagecache.PageCursor;
@@ -107,29 +106,9 @@ abstract class MuninnPageCursor implements PageCursor
     void pageFault(
             long filePageId,
             PrimitiveLongObjectMap<MuninnPage> translationTable,
-            AtomicReference<MuninnPage> freelist,
             PageSwapper swapper ) throws IOException
     {
-        MuninnPage page;
-        int iterationCount = 0;
-        for (;;)
-        {
-            iterationCount++;
-            page = freelist.get();
-            if ( page == null )
-            {
-                page = pagedFile.unparkEvictor( iterationCount );
-                if ( page != null )
-                {
-                    break;
-                }
-                continue;
-            }
-            if ( freelist.compareAndSet( page, page.nextFree ) )
-            {
-                break;
-            }
-        }
+        MuninnPage page = pagedFile.grabFreePage();
 
         // We got a free page, and we know that we have race-free access to it.
         // Well, it's not entirely race free, because other paged files might have
