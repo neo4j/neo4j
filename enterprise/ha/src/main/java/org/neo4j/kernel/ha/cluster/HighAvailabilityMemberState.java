@@ -279,14 +279,9 @@ public enum HighAvailabilityMemberState
                     {
                         return TO_MASTER;
                     }
-                    if ( masterId.equals( context.getElectedMasterId() ) )
-                    {
-                        return this;
-                    }
-                    else
-                    {
-                        return PENDING;
-                    }
+                    // We need to go through slave switching process once again as
+                    // it is possible that we've missed elections and have stale epoch
+                    return PENDING;
                 }
 
                 @Override

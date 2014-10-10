@@ -20,6 +20,7 @@
 package org.neo4j.test;
 
 import java.io.File;
+import java.util.concurrent.Executors;
 
 import org.junit.After;
 import org.junit.Before;
@@ -35,6 +36,7 @@ import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 import org.neo4j.test.ha.ClusterManager.Provider;
 
 import static org.neo4j.cluster.ClusterSettings.default_timeout;
+import static org.neo4j.helpers.NamedThreadFactory.named;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.test.ha.ClusterManager.masterAvailable;
@@ -91,10 +93,18 @@ public abstract class AbstractClusterTest
     protected void insertClusterMemberInitialData( GraphDatabaseService db, String name, InstanceId serverId )
     {
     }
-    
+
     @After
     public void after() throws Exception
     {
-        life.shutdown();
+        // Execute shutdown in separate thread to prevent deadlocks
+        Executors.newSingleThreadExecutor( named( getClass() + "-Shutdown-Thread" ) ).submit( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                life.shutdown();
+            }
+        } ).get();
     }
 }

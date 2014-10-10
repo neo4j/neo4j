@@ -113,6 +113,8 @@ o Solves issue with excessive number of Remove commands in
 o Auto indexing no longer attempts to remove properties that
   have been removed from the configuration as candidates for
   autoindexing
+o Fixes issue where an exception during shutdown could lead
+  to recovery not completing properly on next restart
 
 1.9.8
 -----
