@@ -277,9 +277,9 @@ public class HighAvailabilityMemberStateTest
         HighAvailabilityMemberState newStateCase2 = SLAVE.masterIsElected( context, new InstanceId( 3 ) );
         assertEquals( PENDING, newStateCase2 );
 
-        // CASE 3: It is the current master that got elected again - ignore
+        // CASE 3: It is the current master that got elected again - SLAVE should switch to PENDING
         HighAvailabilityMemberState newStateCase3 = SLAVE.masterIsElected( context, masterInstanceId );
-        assertEquals( SLAVE, newStateCase3 );
+        assertEquals( PENDING, newStateCase3 );
     }
 
     @Test

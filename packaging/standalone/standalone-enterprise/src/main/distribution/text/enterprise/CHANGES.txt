@@ -18,6 +18,8 @@ o Solves issue with excessive number of Remove commands in
 o Auto indexing no longer attempts to remove properties that
   have been removed from the configuration as candidates for
   autoindexing
+o Fixes issue where an exception during shutdown could lead
+  to recovery not completing properly on next restart
 
 Server:
 o Ensure transactional endpoint responds with an https location for https
@@ -47,6 +49,10 @@ o Adds the ability for an instance state change to SLAVE can
 o Fixes consistency issues with the state reported by
   the HA bean. Now there will be no incompatible roles
   reported in the JMX console for a particular instance
+
+Backup:
+o Backup script now exits with error if consistency
+  check after full backup reveals errors
 
 1.9.8
 -----
