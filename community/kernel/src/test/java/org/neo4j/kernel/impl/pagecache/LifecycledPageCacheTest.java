@@ -54,8 +54,9 @@ public class LifecycledPageCacheTest
 
         // When
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fsRule.get() );
+        Neo4jJobScheduler scheduler = new Neo4jJobScheduler();
         PageCache cache = new LifecycledPageCache(
-                swapperFactory, new Neo4jJobScheduler(), config, new Monitors().newMonitor( PageCacheMonitor.class ) );
+                swapperFactory, scheduler, config, new Monitors().newMonitor( PageCacheMonitor.class ) );
 
         // Then
         assertThat(cache.pageSize(), equalTo(4096));

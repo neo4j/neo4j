@@ -69,6 +69,7 @@ public class StageTest
         {
             assertEquals( batches, stats.stat( Keys.done_batches ).asLong() );
         }
+        stage.close();
     }
 
     private static class ReceiveOrderAssertingStep extends ExecutorServiceStep<Object>

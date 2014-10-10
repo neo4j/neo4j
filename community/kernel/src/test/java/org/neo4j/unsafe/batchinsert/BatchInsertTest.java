@@ -462,6 +462,7 @@ public class BatchInsertTest
 
         // THEN
         assertFalse( batchInserter.getNodeProperties( nodeId ).containsKey( key ) );
+        batchInserter.shutdown();
     }
 
     @Test
@@ -480,6 +481,7 @@ public class BatchInsertTest
 
         // THEN
         assertTrue( Arrays.equals( secondValue, (String[]) batchInserter.getNodeProperties( nodeId ).get( key ) ) );
+        batchInserter.shutdown();
     }
 
     @Test
@@ -543,7 +545,8 @@ public class BatchInsertTest
             assertEquals( asSet( realSelfRelationship, realRelationship ), asSet( realStartNode.getRelationships( Direction.OUTGOING ) ) );
             assertEquals( asSet( realSelfRelationship, realRelationship ), asSet( realStartNode.getRelationships() ) );
         }
-        finally {
+        finally
+        {
             db.shutdown();
         }
     }
@@ -755,6 +758,7 @@ public class BatchInsertTest
         assertTrue( inserter.nodeHasLabel( node, Labels.FIRST ) );
         assertTrue( inserter.nodeHasLabel( node, Labels.SECOND ) );
         assertFalse( inserter.nodeHasLabel( node, Labels.THIRD ) );
+        inserter.shutdown();
     }
 
     @Test
@@ -769,6 +773,7 @@ public class BatchInsertTest
 
         // THEN
         assertEquals( asSet( Labels.FIRST.name(), Labels.THIRD.name() ), asSet( labelNames ) );
+        inserter.shutdown();
     }
 
     @Test
@@ -784,6 +789,7 @@ public class BatchInsertTest
 
         // THEN
         assertEquals( labels.other(), asSet( labelNames ) );
+        inserter.shutdown();
     }
 
     @Test
@@ -800,6 +806,7 @@ public class BatchInsertTest
         // THEN
         Iterable<String> labelNames = asNames( inserter.getNodeLabels( node ) );
         assertEquals( labels.other(), asSet( labelNames ) );
+        inserter.shutdown();
     }
 
     @Test
@@ -815,6 +822,7 @@ public class BatchInsertTest
         // THEN
         Iterable<String> labelNames = asNames( inserter.getNodeLabels( node ) );
         assertEquals( asSet( Labels.FIRST.name() ), asSet( labelNames ) );
+        inserter.shutdown();
     }
 
     @Test
@@ -829,6 +837,7 @@ public class BatchInsertTest
         // THEN
         assertEquals( "Hacker", definition.getLabel().name() );
         assertEquals( asCollection( iterator( "handle" ) ), asCollection( definition.getPropertyKeys() ) );
+        inserter.shutdown();
     }
 
     @Test
@@ -845,6 +854,7 @@ public class BatchInsertTest
         assertEquals( "Hacker", definition.getLabel().name() );
         assertEquals( ConstraintType.UNIQUENESS, definition.getConstraintType() );
         assertEquals( asSet( "handle" ), asSet( definition.getPropertyKeys() ) );
+        inserter.shutdown();
     }
 
     @Test
@@ -1164,6 +1174,7 @@ public class BatchInsertTest
 
         // THEN
         assertEquals( 21, gottenRelationships.size() );
+        inserter.shutdown();
     }
 
     private void createRelationships( BatchInserter inserter, long node, RelationshipType relType,

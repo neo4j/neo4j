@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.IOException;
 import java.util.concurrent.locks.LockSupport;
 
+import static org.neo4j.kernel.impl.util.DebugUtil.trackTest;
+
 /**
  * Background thread that goes together with {@link ParallelBatchingPhysicalTransactionAppender} and performs
  * and {@link Operation} as fast as it can as until it's {@link #halt() halted}.
@@ -36,23 +38,23 @@ class BatchingForceThread extends Thread
          */
         boolean force() throws IOException;
     }
-    
+
     private volatile boolean run = true;
     private final Operation operation;
     private volatile IOException failure;
-    
+
     BatchingForceThread( Operation operation )
     {
-        super( "BatchingWrites thread" );
+        super( "BatchingWrites thread" + trackTest() );
         this.operation = operation;
         setDaemon( true );
     }
-    
+
     public void halt()
     {
         run = false;
     }
-    
+
     @Override
     public void run()
     {

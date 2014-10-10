@@ -29,6 +29,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 
 import static org.neo4j.helpers.NamedThreadFactory.daemon;
+import static org.neo4j.kernel.impl.util.DebugUtil.trackTest;
 
 public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
 {
@@ -50,8 +51,8 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
     @Override
     public void init()
     {
-        this.executor = newCachedThreadPool( daemon( "Neo4j " + id ) );
-        this.scheduledExecutor = new ScheduledThreadPoolExecutor( 2, daemon( "Scheduled Neo4j " + id ) );
+        this.executor = newCachedThreadPool( daemon( "Neo4j " + id + trackTest() ) );
+        this.scheduledExecutor = new ScheduledThreadPoolExecutor( 2, daemon( "Scheduled Neo4j " + id + trackTest() ) );
     }
 
     @Override

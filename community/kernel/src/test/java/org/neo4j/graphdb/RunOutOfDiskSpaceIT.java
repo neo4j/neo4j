@@ -21,10 +21,12 @@ package org.neo4j.graphdb;
 
 import java.io.IOException;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.mockfs.LimitedFileSystemGraphDatabase;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.test.CleanupRule;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
@@ -39,7 +41,7 @@ public class RunOutOfDiskSpaceIT
     {
         // Given
         TransactionFailureException exceptionThrown = null;
-        LimitedFileSystemGraphDatabase db = new LimitedFileSystemGraphDatabase();
+        LimitedFileSystemGraphDatabase db = cleanup.add( new LimitedFileSystemGraphDatabase() );
 
         db.runOutOfDiskSpaceNao();
 
@@ -60,6 +62,7 @@ public class RunOutOfDiskSpaceIT
 
         // Then
         assertTrue( Exceptions.contains( exceptionThrown, IOException.class ) );
+        db.somehowGainMoreDiskSpace(); // to help shutting down the db
     }
 
     @Test
@@ -67,7 +70,7 @@ public class RunOutOfDiskSpaceIT
     {
         // Given
         TransactionFailureException errorCaught = null;
-        LimitedFileSystemGraphDatabase db = new LimitedFileSystemGraphDatabase();
+        LimitedFileSystemGraphDatabase db = cleanup.add( new LimitedFileSystemGraphDatabase() );
 
         db.runOutOfDiskSpaceNao();
 
@@ -98,5 +101,8 @@ public class RunOutOfDiskSpaceIT
 
         // Then
         assertThat( errorCaught.getCause(), is( instanceOf( org.neo4j.kernel.api.exceptions.TransactionFailureException.class ) ) );
+        db.somehowGainMoreDiskSpace(); // to help shutting down the db
     }
+
+    public final @Rule CleanupRule cleanup = new CleanupRule();
 }
