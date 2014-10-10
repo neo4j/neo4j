@@ -137,33 +137,53 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
         return !sameVersion;
     }
 
+    /**
+     * Will detect which version we're upgrading from. Also initialize some legacy objects based on that version.
+     * Doing that initialization here is good because we do this check when
+     * {@link #moveMigratedFiles(FileSystemAbstraction, File, File) moving migrated files}, which might be done
+     * as part of a resumed migration, i.e. run even if {@link #migrate(FileSystemAbstraction, File, File, DependencyResolver)}
+     * hasn't been run.
+     */
+    private String versionToUpgradeFrom( FileSystemAbstraction fileSystem, File storeDir )
+    {
+        if ( versionToUpgradeFrom == null )
+        {
+            versionToUpgradeFrom = upgradableDatabase.checkUpgradeable( storeDir );
+            final LogEntryWriterv1 logEntryWriter = new LogEntryWriterv1();
+            logEntryWriter.setCommandWriter( new PhysicalLogNeoXaCommandWriter() );
+            final LogEntryWriterv1 luceneLogEntryWriter = new LogEntryWriterv1();
+            luceneLogEntryWriter.setCommandWriter( LegacyLuceneCommandReader.newWriter() );
+            if ( versionToUpgradeFrom.equals( Legacy19Store.LEGACY_VERSION ) )
+            {
+                final LegacyLogIoUtil logIoUtil = new Legacy19LogIoUtil( new Legacy19CommandReader() );
+                final LegacyLogIoUtil luceneLogIoUtil = new Legacy19LogIoUtil( LegacyLuceneCommandReader.newReader() );
+                legacyLogFiles = new LegacyLogFiles( fileSystem, logEntryWriter, luceneLogEntryWriter,
+                        logIoUtil, luceneLogIoUtil );
+            }
+            else
+            {
+                final LegacyLogIoUtil logIoUtil = new Legacy20LogIoUtil( new Legacy20CommandReader() );
+                final LegacyLogIoUtil luceneLogIoUtil = new Legacy20LogIoUtil( LegacyLuceneCommandReader.newReader() );
+                legacyLogFiles = new LegacyLogFiles( fileSystem, logEntryWriter, luceneLogEntryWriter,
+                        logIoUtil, luceneLogIoUtil );
+            }
+        }
+        return versionToUpgradeFrom;
+    }
+
     @Override
     public void migrate( FileSystemAbstraction fileSystem, File storeDir, File migrationDir,
             DependencyResolver dependencyResolver ) throws IOException
     {
-        versionToUpgradeFrom = upgradableDatabase.checkUpgradeable( storeDir );
-
         progressMonitor.started();
 
-        final LogEntryWriterv1 logEntryWriter = new LogEntryWriterv1();
-        logEntryWriter.setCommandWriter( new PhysicalLogNeoXaCommandWriter() );
-        final LogEntryWriterv1 luceneLogEntryWriter = new LogEntryWriterv1();
-        luceneLogEntryWriter.setCommandWriter( LegacyLuceneCommandReader.newWriter() );
-        if ( versionToUpgradeFrom.equals( Legacy19Store.LEGACY_VERSION ) )
+        if ( versionToUpgradeFrom( fileSystem, storeDir ).equals( Legacy19Store.LEGACY_VERSION ) )
         {
             legacyStore = new Legacy19Store( fileSystem, new File( storeDir, NeoStore.DEFAULT_NAME ) );
-            final LegacyLogIoUtil logIoUtil = new Legacy19LogIoUtil( new Legacy19CommandReader() );
-            final LegacyLogIoUtil luceneLogIoUtil = new Legacy19LogIoUtil( LegacyLuceneCommandReader.newReader() );
-            legacyLogFiles = new LegacyLogFiles( fileSystem, logEntryWriter, luceneLogEntryWriter,
-                    logIoUtil, luceneLogIoUtil );
         }
         else
         {
             legacyStore = new Legacy20Store( fileSystem, new File( storeDir, NeoStore.DEFAULT_NAME ) );
-            final LegacyLogIoUtil logIoUtil = new Legacy20LogIoUtil( new Legacy20CommandReader() );
-            final LegacyLogIoUtil luceneLogIoUtil = new Legacy20LogIoUtil( LegacyLuceneCommandReader.newReader() );
-            legacyLogFiles = new LegacyLogFiles( fileSystem, logEntryWriter, luceneLogEntryWriter,
-                    logIoUtil, luceneLogIoUtil );
         }
 
         ExecutionMonitor executionMonitor = new CoarseBoundedProgressExecutionMonitor(
@@ -363,7 +383,7 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
         StoreFile20.deleteIdFile( fs, migrationDir, allExcept( StoreFile20.RELATIONSHIP_GROUP_STORE ) );
 
         Iterable<StoreFile20> filesToMove;
-        if ( versionToUpgradeFrom.equals( Legacy19Store.LEGACY_VERSION ) )
+        if ( versionToUpgradeFrom( fs, storeDir ).equals( Legacy19Store.LEGACY_VERSION ) )
         {
             filesToMove = Arrays.asList(
                     StoreFile20.NODE_STORE,
