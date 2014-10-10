@@ -23,6 +23,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.TransactionMetadata;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -118,30 +119,38 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
             new TransactionMetadataCache.TransactionMetadata( -1, -1, new LogPosition( 0, LOG_HEADER_SIZE ), 0 );
 
     @Override
-    public TransactionMetadataCache.TransactionMetadata getMetadataFor( long transactionId ) throws IOException
+    public TransactionMetadata getMetadataFor( long transactionId ) throws IOException
     {
         if ( transactionId <= BASE_TX_ID )
         {
             return METADATA_FOR_EMPTY_STORE;
         }
 
-        TransactionMetadataCache.TransactionMetadata transactionMetadata =
+        TransactionMetadata transactionMetadata =
                 transactionMetadataCache.getTransactionMetadata( transactionId );
         if ( transactionMetadata == null )
         {
-            try (IOCursor<CommittedTransactionRepresentation> cursor = getTransactions( transactionId ))
+            try ( IOCursor<CommittedTransactionRepresentation> cursor = getTransactions( transactionId ) )
             {
-                while (cursor.next())
+                while ( cursor.next() )
                 {
                     CommittedTransactionRepresentation tx = cursor.get();
-                    transactionMetadataCache.cacheTransactionMetadata( tx.getCommitEntry().getTxId(),
+                    long committedTxId = tx.getCommitEntry().getTxId();
+                    TransactionMetadata metadata = transactionMetadataCache.cacheTransactionMetadata( committedTxId,
                             tx.getStartEntry().getStartPosition(), tx.getStartEntry().getMasterId(),
                             tx.getStartEntry().getLocalId(), LogEntryStart.checksum( tx.getStartEntry() ) );
-
-                };
+                    if ( committedTxId == transactionId )
+                    {
+                        transactionMetadata = metadata;
+                    }
+                }
+            }
+            if ( transactionMetadata == null )
+            {
+                throw new NoSuchTransactionException( transactionId );
             }
         }
-        transactionMetadata = transactionMetadataCache.getTransactionMetadata( transactionId );
+
         return transactionMetadata;
     }
 

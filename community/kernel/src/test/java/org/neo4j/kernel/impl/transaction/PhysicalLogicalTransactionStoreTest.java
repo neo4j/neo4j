@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.transaction.log.LogFileRecoverer;
 import org.neo4j.kernel.impl.transaction.log.LogRotationControl;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.Monitor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
@@ -243,6 +244,26 @@ public class PhysicalLogicalTransactionStoreTest
         finally
         {
             life.shutdown();
+        }
+    }
+
+    @Test
+    public void shouldThrowNoSuchTransactionExceptionIfMetadataNotFound() throws Exception
+    {
+        // GIVEN
+        LogFile logFile = mock( LogFile.class );
+        TransactionMetadataCache cache = new TransactionMetadataCache( 10, 10 );
+        TransactionIdStore txIdStore = mock( TransactionIdStore.class );
+        LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, cache, txIdStore, BYPASS, false );
+
+        // WHEN
+        try
+        {
+            txStore.getMetadataFor( 10 );
+            fail( "Should have thrown" );
+        }
+        catch ( NoSuchTransactionException e )
+        {   // THEN Good
         }
     }
 
