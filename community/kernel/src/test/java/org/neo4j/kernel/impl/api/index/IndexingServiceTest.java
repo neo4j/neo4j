@@ -299,9 +299,9 @@ public class IndexingServiceTest
 
         // then
         logger.assertExactly(
-                info( "IndexingService.init: index on :LabelOne(propertyOne) is ONLINE" ),
-                info( "IndexingService.init: index on :LabelOne(propertyTwo) is POPULATING" ),
-                info( "IndexingService.init: index on :LabelTwo(propertyTwo) is FAILED" )
+                info( "IndexingService.init: index 1 on :LabelOne(propertyOne) is ONLINE" ),
+                info( "IndexingService.init: index 2 on :LabelOne(propertyTwo) is POPULATING" ),
+                info( "IndexingService.init: index 3 on :LabelTwo(propertyTwo) is FAILED" )
         );
     }
 
@@ -346,11 +346,11 @@ public class IndexingServiceTest
         // then
         verify( provider ).getPopulationFailure( 3 );
         logger.assertAtLeastOnce(
-                info( "IndexingService.start: index on :LabelOne(propertyOne) is ONLINE" ) );
+                info( "IndexingService.start: index 1 on :LabelOne(propertyOne) is ONLINE" ) );
         logger.assertAtLeastOnce(
-                info( "IndexingService.start: index on :LabelOne(propertyTwo) is POPULATING" ) );
+                info( "IndexingService.start: index 2 on :LabelOne(propertyTwo) is POPULATING" ) );
         logger.assertAtLeastOnce(
-                info( "IndexingService.start: index on :LabelTwo(propertyTwo) is FAILED" ) );
+                info( "IndexingService.start: index 3 on :LabelTwo(propertyTwo) is FAILED" ) );
     }
 
     @Test
