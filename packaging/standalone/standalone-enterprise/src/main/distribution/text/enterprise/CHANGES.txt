@@ -62,6 +62,8 @@ o Solves issue with excessive number of Remove commands in
 o Auto indexing no longer attempts to remove properties that
   have been removed from the configuration as candidates for
   autoindexing
+o Fixes issue where an exception during shutdown could lead
+  to recovery not completing properly on next restart
 
 Server:
 o Ensure transactional endpoint responds with an https location for https
@@ -186,6 +188,10 @@ o Fixes issue with Forseti lock manager, which could miss grabbing
 o Update puller on master no longer tries to pull updates
   from itself
 
+
+Backup:
+o Backup script now exits with error if consistency
+  check after full backup reveals errors
 
 1.9.8
 -----

@@ -140,14 +140,28 @@ public class StoreMigrator implements StoreMigrationParticipant
         return !sameVersion;
     }
 
+    /**
+     * Will detect which version we're upgrading from.
+     * Doing that initialization here is good because we do this check when
+     * {@link #moveMigratedFiles(File, File) moving migrated files}, which might be done
+     * as part of a resumed migration, i.e. run even if {@link #migrate(File, File)}
+     * hasn't been run.
+     */
+    private String versionToUpgradeFrom( FileSystemAbstraction fileSystem, File storeDir )
+    {
+        if ( versionToUpgradeFrom == null )
+        {
+            versionToUpgradeFrom = upgradableDatabase.checkUpgradeable( storeDir );
+        }
+        return versionToUpgradeFrom;
+    }
+
     @Override
     public void migrate( File storeDir, File migrationDir ) throws IOException
     {
-        versionToUpgradeFrom = upgradableDatabase.checkUpgradeable( storeDir );
-
         progressMonitor.started();
 
-        if ( versionToUpgradeFrom.equals( Legacy21Store.LEGACY_VERSION ) )
+        if ( versionToUpgradeFrom( fileSystem, storeDir ).equals( Legacy21Store.LEGACY_VERSION ) )
         {
             // ensure the stores have the new versions set before reading them to create a counts store
             ensureStoreVersions( storeDir );
@@ -404,7 +418,7 @@ public class StoreMigrator implements StoreMigrationParticipant
 
         Iterable<StoreFile> filesToMove;
         StoreFile[] idFilesToDelete;
-        switch ( versionToUpgradeFrom )
+        switch ( versionToUpgradeFrom( fileSystem, storeDir ) )
         {
             case Legacy19Store.LEGACY_VERSION:
                 filesToMove = Arrays.asList(

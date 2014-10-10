@@ -36,6 +36,7 @@ import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 import org.neo4j.test.ha.ClusterManager.Provider;
 
 import static org.neo4j.cluster.ClusterSettings.default_timeout;
+import static org.neo4j.helpers.NamedThreadFactory.named;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.test.ha.ClusterManager.masterAvailable;
@@ -96,7 +97,7 @@ public abstract class AbstractClusterTest
     public void after() throws Exception
     {
         // Execute shutdown in separate thread to prevent deadlocks
-        Executors.newSingleThreadExecutor().submit( new Runnable()
+        Executors.newSingleThreadExecutor( named( getClass() + "-Shutdown-Thread" ) ).submit( new Runnable()
         {
             @Override
             public void run()
