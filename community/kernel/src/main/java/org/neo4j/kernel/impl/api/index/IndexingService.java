@@ -172,7 +172,7 @@ public class IndexingService extends LifecycleAdapter
             SchemaIndexProvider provider = providerMap.apply( providerDescriptor );
             InternalIndexState initialState = provider.getInitialState( indexId );
 
-            logger.info( format( "IndexingService.init: index on %s is %s",
+            logger.info( format( "IndexingService.init: index %d on %s is %s", indexId,
                     descriptor.userDescription( tokenNameLookup ), initialState ) );
 
             boolean constraint = indexRule.isConstraintIndex();
@@ -219,7 +219,7 @@ public class IndexingService extends LifecycleAdapter
             public void accept( Long indexId, IndexProxy indexProxy )
             {
                 InternalIndexState state = indexProxy.getState();
-                logger.info( String.format( "IndexingService.start: index on %s is %s",
+                logger.info( String.format( "IndexingService.start: index %d on %s is %s", indexId,
                         indexProxy.getDescriptor().userDescription( tokenNameLookup ), state.name() ) );
                 switch ( state )
                 {
