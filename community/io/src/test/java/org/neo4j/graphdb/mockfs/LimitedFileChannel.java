@@ -29,9 +29,8 @@ import org.neo4j.io.fs.StoreChannel;
 
 public class LimitedFileChannel implements StoreChannel
 {
-
     private final StoreChannel inner;
-    private LimitedFilesystemAbstraction fs;
+    private final LimitedFilesystemAbstraction fs;
 
     public LimitedFileChannel( StoreChannel inner, LimitedFilesystemAbstraction limitedFilesystemAbstraction )
     {

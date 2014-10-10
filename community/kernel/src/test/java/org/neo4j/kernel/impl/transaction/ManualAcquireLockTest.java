@@ -49,7 +49,7 @@ public class ManualAcquireLockTest
     @Rule public TestRule chain = RuleChain.outerRule( db ).around( tx );
 
     private Worker worker;
-    
+
     @Before
     public void doBefore() throws Exception
     {
@@ -61,7 +61,7 @@ public class ManualAcquireLockTest
     {
         worker.close();
     }
-    
+
     @Test
     public void releaseReleaseManually() throws Exception
     {
@@ -70,7 +70,6 @@ public class ManualAcquireLockTest
 
         tx.success();
         Transaction current = tx.begin();
-        Worker worker = new Worker();
         Lock nodeLock = current.acquireWriteLock( node );
         worker.beginTx();
         try
@@ -112,7 +111,7 @@ public class ManualAcquireLockTest
         { // Good
         }
     }
-    
+
     @Test
     public void makeSureNodeStaysLockedEvenAfterManualRelease() throws Exception
     {
@@ -124,8 +123,7 @@ public class ManualAcquireLockTest
         Lock nodeLock = current.acquireWriteLock( node );
         node.setProperty( key, "value" );
         nodeLock.release();
-        
-        Worker worker = new Worker();
+
         worker.beginTx();
         try
         {
@@ -148,7 +146,7 @@ public class ManualAcquireLockTest
             // Ok, interrupting the thread while it's waiting for a lock will lead to tx failure.
         }
     }
-    
+
     private GraphDatabaseService getGraphDb()
     {
         return db.getGraphDatabaseService();
@@ -158,20 +156,20 @@ public class ManualAcquireLockTest
     {
         private final GraphDatabaseService graphDb;
         private Transaction tx;
-        
+
         public State( GraphDatabaseService graphDb )
         {
             this.graphDb = graphDb;
         }
     }
-    
+
     private class Worker extends OtherThreadExecutor<State>
     {
         public Worker()
         {
             super( "other thread", new State( getGraphDb() ) );
         }
-        
+
         void beginTx() throws Exception
         {
             execute( new WorkerCommand<State, Void>()
@@ -184,7 +182,7 @@ public class ManualAcquireLockTest
                 }
             } );
         }
-        
+
         void finishTx() throws Exception
         {
             execute( new WorkerCommand<State, Void>()
@@ -198,7 +196,7 @@ public class ManualAcquireLockTest
                 }
             } );
         }
-        
+
         void setProperty( final Node node, final String key, final Object value ) throws Exception
         {
             execute( new WorkerCommand<State, Object>()

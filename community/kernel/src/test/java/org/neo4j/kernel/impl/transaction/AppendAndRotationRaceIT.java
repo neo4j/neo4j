@@ -120,6 +120,7 @@ public class AppendAndRotationRaceIT
         {
             committer.await();
         }
+        life.shutdown();
         // doing Committer#await() above is enough since errors, as well as assertion failures that
         // has happened in any of the committers will be exposed there
     }

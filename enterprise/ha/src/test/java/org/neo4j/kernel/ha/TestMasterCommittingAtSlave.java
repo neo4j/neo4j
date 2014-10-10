@@ -25,6 +25,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.cluster.ClusterSettings;
@@ -49,6 +50,7 @@ import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.LogMarker;
+import org.neo4j.test.CleanupRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -57,7 +59,6 @@ import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.kernel.ha.com.master.SlavePriorities.givenOrder;
 import static org.neo4j.kernel.ha.com.master.SlavePriorities.roundRobin;
-
 
 public class TestMasterCommittingAtSlave
 {
@@ -226,7 +227,7 @@ public class TestMasterCommittingAtSlave
         log = new FakeStringLogger();
         Config config = new Config( MapUtil.stringMap(
                 HaSettings.tx_push_factor.name(), "" + replication, ClusterSettings.server_id.name(), "" + MasterServerId ) );
-        Neo4jJobScheduler scheduler = new Neo4jJobScheduler();
+        Neo4jJobScheduler scheduler = cleanup.add( new Neo4jJobScheduler() );
         TransactionPropagator result = new TransactionPropagator( TransactionPropagator.from( config, slavePriority ),
                 log, new Slaves()
         {
@@ -263,6 +264,7 @@ public class TestMasterCommittingAtSlave
     }
 
     private static final FileSystemAbstraction FS = new DefaultFileSystemAbstraction();
+    public final @Rule CleanupRule cleanup = new CleanupRule();
 
     private static class FakeSlave implements Slave
     {
