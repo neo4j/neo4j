@@ -63,8 +63,11 @@ import static java.util.concurrent.locks.LockSupport.parkNanos;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
+import static org.neo4j.kernel.impl.transaction.log.BatchingPhysicalTransactionAppender.DEFAULT_WAIT_STRATEGY;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.NO_PRUNING;
+import static org.neo4j.kernel.impl.util.Counter.ATOMIC_LONG;
+import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
 
 /**
  * This test verifies that there's no chance that there may be transactions appended to the log
@@ -313,7 +316,7 @@ public class AppendAndRotationRaceIT
                 TransactionMetadataCache metadataCache, TransactionIdStore transactionIdStore )
         {
             return new BatchingPhysicalTransactionAppender( logFile,
-                    metadataCache, transactionIdStore, IdOrderingQueue.BYPASS );
+                    metadataCache, transactionIdStore, BYPASS, ATOMIC_LONG, DEFAULT_WAIT_STRATEGY );
         }
     };
 }

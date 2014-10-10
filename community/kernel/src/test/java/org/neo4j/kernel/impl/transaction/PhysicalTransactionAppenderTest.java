@@ -84,6 +84,8 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import static org.neo4j.helpers.Exceptions.contains;
+import static org.neo4j.kernel.impl.transaction.log.BatchingPhysicalTransactionAppender.DEFAULT_WAIT_STRATEGY;
+import static org.neo4j.kernel.impl.util.Counter.ATOMIC_LONG;
 import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
 
 public class PhysicalTransactionAppenderTest
@@ -262,7 +264,7 @@ public class PhysicalTransactionAppenderTest
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( 1L, 2L, 3L, 4L, 5L );
         IdOrderingQueue legacyIndexOrdering = new SynchronizedArrayIdOrderingQueue( 5 );
         TransactionAppender appender = new BatchingPhysicalTransactionAppender( logFile,
-                metadataCache, transactionIdStore, legacyIndexOrdering );
+                metadataCache, transactionIdStore, legacyIndexOrdering, ATOMIC_LONG, DEFAULT_WAIT_STRATEGY );
 
         // WHEN appending 5 simultaneous transaction, of which 3 has legacy index changes [1*,2,3*,4,5*]
         // LEGEND: * = has legacy index changes

@@ -258,6 +258,13 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
                         "' inside an executing command for " + timeout + " ms" );
             }
         }
+
+        if ( executionState == ExecutionState.EXECUTED )
+        {
+            throw new IllegalStateException( "Would have wanted " + thread + " to wait for " + condition +
+                    " but that never happened within the duration of executed task" );
+        }
+
         return new WaitDetails( thread.getStackTrace() );
     }
 

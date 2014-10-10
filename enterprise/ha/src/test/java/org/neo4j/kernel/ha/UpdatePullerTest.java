@@ -22,7 +22,6 @@ package org.neo4j.kernel.ha;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -44,11 +43,10 @@ import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
-import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.test.OnDemandJobScheduler;
 
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Matchers.anyLong;
@@ -65,7 +63,7 @@ public class UpdatePullerTest
     private final CapturingHighAvailabilityMemberStateMachine stateMachine =
             new CapturingHighAvailabilityMemberStateMachine( myId );
 
-    private final OnDemandCallScheduler scheduler = new OnDemandCallScheduler();
+    private final OnDemandJobScheduler scheduler = new OnDemandJobScheduler();
     private final Config config = mock( Config.class );
     private final AvailabilityGuard availabilityGuard = mock( AvailabilityGuard.class );
     private final LastUpdateTime lastUpdateTime = mock( LastUpdateTime.class );
@@ -259,52 +257,6 @@ public class UpdatePullerTest
         stateMachine.switchInstanceToMaster();
 
         verifyNoMoreInteractions( lastUpdateTime, availabilityGuard );
-    }
-
-    private static class OnDemandCallScheduler extends LifecycleAdapter implements JobScheduler
-    {
-        private Runnable job;
-
-        @Override
-        public JobHandle schedule( Group group, Runnable job )
-        {
-            this.job = job;
-            return new OnDemandJobHandle();
-        }
-
-        @Override
-        public JobHandle scheduleRecurring( Group group, Runnable runnable, long period, TimeUnit timeUnit )
-        {
-            this.job = runnable;
-            return new OnDemandJobHandle();
-        }
-
-        @Override
-        public JobHandle scheduleRecurring( Group group, Runnable runnable, long initialDelay, long period, TimeUnit
-                timeUnit )
-        {
-            this.job = runnable;
-            return new OnDemandJobHandle();
-        }
-
-        public Runnable getJob()
-        {
-            return job;
-        }
-
-        public void runJob()
-        {
-            job.run();
-        }
-
-        private class OnDemandJobHandle implements JobHandle
-        {
-            @Override
-            public void cancel( boolean mayInterruptIfRunning )
-            {
-                job = null;
-            }
-        }
     }
 
     private static class CapturingHighAvailabilityMemberStateMachine extends HighAvailabilityMemberStateMachine

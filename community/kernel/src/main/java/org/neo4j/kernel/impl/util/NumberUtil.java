@@ -17,30 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.kernel.impl.util;
 
-import java.io.IOException;
-
-import org.neo4j.kernel.impl.util.IdOrderingQueue;
-
-public class PhysicalTransactionAppender extends AbstractPhysicalTransactionAppender
+public class NumberUtil
 {
-    public PhysicalTransactionAppender( LogFile logFile,
-            TransactionMetadataCache transactionMetadataCache, TransactionIdStore transactionIdStore,
-            IdOrderingQueue legacyIndexTransactionOrdering )
+    private static final long LONG_SIGN_MASK = 0x80000000_00000000L;
+
+    private NumberUtil()
     {
-        super( logFile, transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering );
+        throw new AssertionError( "Disallow instances" );
     }
 
-    @Override
-    protected void forceAfterAppend( long ticket ) throws IOException
+    /**
+     * @return whether or not {@code value1} and {@code value2} have the same {@link #signOf(long) sign}.
+     */
+    public static boolean haveSameSign( long value1, long value2 )
     {
-        forceChannel();
+        return signOf( value1 ) == signOf( value2 );
     }
 
-    @Override
-    protected long getNextTicket()
+    /**
+     * @return the sign of a long value, {@code true} for positive, {@code false} for negative.
+     */
+    public static boolean signOf( long value )
     {
-        return 0;
+        return (value & LONG_SIGN_MASK) == 0;
     }
 }

@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
-import java.util.concurrent.locks.LockSupport;
 
 import static org.neo4j.kernel.impl.util.DebugUtil.trackTest;
 
@@ -41,12 +40,17 @@ class BatchingForceThread extends Thread
 
     private volatile boolean run = true;
     private final Operation operation;
+    private final WaitStrategy waitStrategy;
     private volatile IOException failure;
 
-    BatchingForceThread( Operation operation )
+    /**
+     * @param waitStrategy how do we wait if there's nothing in particular to do right now?
+     */
+    BatchingForceThread( Operation operation, WaitStrategy waitStrategy )
     {
         super( "BatchingWrites thread" + trackTest() );
         this.operation = operation;
+        this.waitStrategy = waitStrategy;
         setDaemon( true );
     }
 
@@ -64,7 +68,7 @@ class BatchingForceThread extends Thread
             {
                 if ( !operation.force() )
                 {
-                    LockSupport.parkNanos( 1_000_000 ); // 1 ms
+                    waitStrategy.wait( this );
                 }
             }
             catch ( IOException e )
