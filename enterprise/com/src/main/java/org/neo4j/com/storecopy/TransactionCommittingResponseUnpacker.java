@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -100,10 +101,11 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
     private TransactionRepresentationStoreApplier storeApplier;
     private TransactionIdStore transactionIdStore;
     private TransactionObligationFulfiller obligationFulfiller;
+    private LogFile logFile;
     private final TransactionQueue transactionQueue;
     private volatile boolean stopped = false;
 
-    // Visits all queued transactions, appending them to the log
+    // Visits all queued transactions, committing them
     private final TransactionVisitor batchAppender = new TransactionVisitor()
     {
         @Override
@@ -114,7 +116,7 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
     };
 
     // Visits all queued, and recently appended, transactions, applying them to the store
-    private final TransactionVisitor batchApplier = new TransactionVisitor()
+    private final TransactionVisitor batchCommitterAndApplier = new TransactionVisitor()
     {
         @Override
         public void visit( CommittedTransactionRepresentation transaction, TxHandler handler ) throws IOException
@@ -166,14 +168,26 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
 
     private void applyQueuedTransactions() throws IOException
     {
-        if ( transactionQueue.acceptAndKeep( batchAppender ) > 0 )
+        // Synchronize to guard for concurrent shutdown
+        synchronized ( logFile )
         {
-            // TODO if this instance is set to "slave_only" then we can actually skip the force call here.
-            // Reason being that even if there would be a reordering in some layer where a store file would be
-            // changed before that change would have ended up in the log, it would be fine sine as a slave
-            // you would pull that transaction again anyhow before making changes to (after reading) any record.
-            appender.force();
-            transactionQueue.acceptAndRemove( batchApplier );
+            // Check rotation explicitly, since the version of append that we're calling isn't doing that.
+            if ( logFile.checkRotation() )
+            {
+                // TODO do pruning in another dedicated thread?
+                logFile.prune();
+            }
+
+            // Apply whatever is in the queue
+            if ( transactionQueue.acceptAndKeep( batchAppender ) > 0 )
+            {
+                // TODO if this instance is set to "slave_only" then we can actually skip the force call here.
+                // Reason being that even if there would be a reordering in some layer where a store file would be
+                // changed before that change would have ended up in the log, it would be fine sine as a slave
+                // you would pull that transaction again anyhow before making changes to (after reading) any record.
+                appender.force();
+                transactionQueue.acceptAndRemove( batchCommitterAndApplier );
+            }
         }
     }
 
@@ -189,6 +203,7 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
         this.storeApplier = resolver.resolveDependency( TransactionRepresentationStoreApplier.class );
         this.transactionIdStore = resolver.resolveDependency( TransactionIdStore.class );
         this.obligationFulfiller = resolveTransactionObligationFulfiller( resolver );
+        this.logFile = resolver.resolveDependency( LogFile.class );
         this.stopped = false;
     }
 

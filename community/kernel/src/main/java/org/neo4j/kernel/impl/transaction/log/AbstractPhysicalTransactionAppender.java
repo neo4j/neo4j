@@ -131,14 +131,7 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
     @Override
     public void force() throws IOException
     {
-        boolean rotated;
-        synchronized ( logFile )
-        {
-            rotated = logFile.checkRotation();
-        }
-
         forceChannel();
-        pruneIfRotated( rotated );
     }
 
     protected abstract long getCurrentTicket();
