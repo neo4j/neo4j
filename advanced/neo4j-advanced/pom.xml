@@ -5,12 +5,12 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>1.9.9</version>
+    <version>1.9.9-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
 
   <artifactId>neo4j-advanced</artifactId>
-  <version>1.9.9</version>
+  <version>1.9.9-SNAPSHOT</version>
   <name>Neo4j Advanced</name>
   <packaging>jar</packaging>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
