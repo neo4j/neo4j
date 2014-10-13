@@ -39,7 +39,7 @@ import org.neo4j.server.preflight.EnsurePreparedForHttpLogging;
 import org.neo4j.server.preflight.PerformRecoveryIfNecessary;
 import org.neo4j.server.preflight.PerformUpgradeIfNecessary;
 import org.neo4j.server.preflight.PreFlightTasks;
-import org.neo4j.server.webadmin.rest.AdvertisableService;
+import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.webadmin.rest.MasterInfoServerModule;
 import org.neo4j.server.webadmin.rest.MasterInfoService;
 

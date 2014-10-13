@@ -35,6 +35,8 @@ import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.preflight.PreFlightTasks;
+import org.neo4j.server.rest.management.AdvertisableService;
+import org.neo4j.server.rest.management.VersionAndEditionService;
 import org.neo4j.server.web.WebServer;
 
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
