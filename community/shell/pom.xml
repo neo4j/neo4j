@@ -3,13 +3,13 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>1.9.9-SNAPSHOT</version>
+    <version>1.9.9</version>
     <relativePath>../..</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>neo4j-shell</artifactId>
-  <version>1.9.9-SNAPSHOT</version>
+  <version>1.9.9</version>
   <name>Neo4j - Generic shell</name>
   <description>
 		A generic command shell with a client and server part.
