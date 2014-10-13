@@ -70,7 +70,7 @@ public class StringIdMapper implements IdMapper
     {
         this.dataCache = newLongArray( cacheFactory );
         this.trackerCache = newIntArray( cacheFactory );
-        this.strEncoder = new StringEncoder( 128, 2 );
+        this.strEncoder = new StringEncoder( 2 );
         this.collisionCache = newLongArray( cacheFactory );
         this.collisionStringIndex = newIntArray( cacheFactory );
         this.collisionStrings = new StringBuilder();

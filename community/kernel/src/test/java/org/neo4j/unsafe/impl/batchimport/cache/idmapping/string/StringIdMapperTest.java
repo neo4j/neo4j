@@ -83,15 +83,6 @@ public class StringIdMapperTest
         }
     }
 
-    @Test
-    public void shouldFindValuesEncodingToTheSameInternalLongValue() throws Exception
-    {
-        // GIVEN
-        // WHEN
-        // THEN
-        fail( "Test not fully implemented, since it's hard to find two such values with the brilliant encoding scheme" );
-    }
-
     private String randomUUID()
     {
         random.nextBytes( scratchBytes );

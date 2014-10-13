@@ -21,34 +21,34 @@ package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
 import java.util.Arrays;
 
+/**
+ * Encodes String into a long with very small chance of collision, i.e. two different Strings encoded into
+ * the same long value.
+ *
+ * Assumes a single thread making all calls to {@link #encode(String)}.
+ */
 public class StringEncoder
 {
     private static long UPPER_INT_MASK = 0x00000000_FFFFFFFFL;
     private static final int FOURTH_BYTE = 0x000000FF;
 
     private final int numCodes;
+    // A state-ful byte[] that changes as part of each call to encode
     private final byte[] reMap = new byte[256];
-    private final int numShorts, numInts, numLongs;
     private final int encodingThreshold = 7;
-    private final int codeLengthBytes;
 
     private int numChars;
-    private int maxIdLengthEncountered;
-    private int longIds;
 
-    public StringEncoder( int maxLength, int codingStrength )
+    // scratch data structures
+    private int[] encodedInt;
+    private byte[] encodedBytes = new byte[128];
+    private final int[] codes;
+
+    public StringEncoder( int codingStrength )
     {
         this.numCodes = codingStrength > 2 ? codingStrength : 2;
-        this.codeLengthBytes = numCodes * 4;
-        this.numShorts = codeLengthBytes / 2;
-        this.numInts = codeLengthBytes / 4;
-        this.numLongs = codeLengthBytes % 8 == 0 ? codeLengthBytes / 8 : codeLengthBytes / 8 + 1;
+        this.codes = new int[numCodes];
         Arrays.fill( reMap, (byte)-1 );
-    }
-
-    public int[] getLongIdStats()
-    {
-        return new int[] { longIds, maxIdLengthEncountered };
     }
 
     public long encode( String s )
@@ -59,34 +59,26 @@ public class StringEncoder
 
     private int[] encodeInt( String s )
     {
-        int[] codes = new int[numCodes];
         // construct bytes from string
-        byte[] bytes = new byte[s.length()];
-        for ( int i = 0; i < s.length(); i++ )
+        int length = s.length();
+        byte[] bytes = encodedBytes( length );
+        for ( int i = 0; i < length; i++ )
         {
             bytes[i] = (byte) ((s.charAt( i )) % 127);
         }
-        reMap( bytes );
-        if ( bytes.length > 127 )
-        {
-            longIds++;
-            if ( bytes.length > maxIdLengthEncountered )
-            {
-                maxIdLengthEncountered = bytes.length;
-            }
-        }
+        reMap( bytes, length );
         // encode
-        if ( bytes.length <= encodingThreshold )
+        if ( length <= encodingThreshold )
         {
-            return simplestCode( bytes );
+            return simplestCode( bytes, length, encodedInt );
         }
         for ( int i = 0; i < codes.length; )
         {
-            codes[i] = getCode( bytes, 1 );//relPrimes[index][i]);
-            codes[i + 1] = getCode( bytes, bytes.length - 1 );//relPrimes[index][i+1]);
+            codes[i] = getCode( bytes, length, 1 );//relPrimes[index][i]);
+            codes[i + 1] = getCode( bytes, length, bytes.length - 1 );//relPrimes[index][i+1]);
             i += 2;
         }
-        int carryOver = lengthEncoder( bytes.length ) << 1;
+        int carryOver = lengthEncoder( length ) << 1;
         int temp = 0;
         for ( int i = 0; i < codes.length; i++ )
         {
@@ -97,7 +89,16 @@ public class StringEncoder
         return codes;
     }
 
-    private int lengthEncoder( int length )
+    private byte[] encodedBytes( int length )
+    {
+        if ( length > encodedBytes.length )
+        {
+            encodedBytes = new byte[length];
+        }
+        return encodedBytes;
+    }
+
+    private static int lengthEncoder( int length )
     {
         if ( length < 32 )
         {
@@ -125,9 +126,9 @@ public class StringEncoder
         }
     }
 
-    private void reMap( byte[] bytes )
+    private void reMap( byte[] bytes, int length )
     {
-        for ( int i = 0; i < bytes.length; i++ )
+        for ( int i = 0; i < length; i++ )
         {
             if ( reMap[bytes[i]] == -1 )
             {
@@ -137,29 +138,27 @@ public class StringEncoder
         }
     }
 
-    private int[] simplestCode( byte[] bytes )
+    private static int[] simplestCode( byte[] bytes, int length, int[] target )
     {
-        int[] codes = new int[] { 0, 0 };
-        codes[0] = bytes.length << 25;
-        for ( int i = 0; i < 3 && i < bytes.length; i++ )
+        target[0] = bytes.length << 25;
+        for ( int i = 0; i < 3 && i < length; i++ )
         {
-            codes[0] = codes[0] | bytes[i] << ((2 - i) * 8);
+            target[0] = target[0] | bytes[i] << ((2 - i) * 8);
         }
-        for ( int i = 3; i < 7 && i < bytes.length; i++ )
+        for ( int i = 3; i < 7 && i < length; i++ )
         {
-            codes[1] = codes[1] | (bytes[i]) << ((6 - i) * 8);
+            target[1] = target[1] | (bytes[i]) << ((6 - i) * 8);
         }
-        return codes;
+        return target;
     }
 
-    private int getCode( byte[] bytes, int order )
+    private static int getCode( byte[] bytes, int length, int order )
     {
         long code = 0;
-        int size = bytes.length;
-        for ( int i = 0; i < size; i++ )
+        for ( int i = 0; i < length; i++ )
         {
             //code += (((long)bytes[(i*order) % size]) << (i % 7)*8);
-            long val = bytes[(i * order) % size];
+            long val = bytes[(i * order) % length];
             for ( int k = 1; k <= i; k++ )
             {
                 long prev = val;
