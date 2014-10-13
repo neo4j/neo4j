@@ -19,6 +19,8 @@
  */
 package org.neo4j.server;
 
+import org.apache.commons.configuration.Configuration;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -27,10 +29,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.servlet.Filter;
 
-import org.apache.commons.configuration.Configuration;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.internal.ServerExecutionEngine;
 import org.neo4j.graphdb.DependencyResolver;
@@ -79,7 +79,6 @@ import org.neo4j.server.rrd.RrdFactory;
 import org.neo4j.server.security.KeyStoreFactory;
 import org.neo4j.server.security.KeyStoreInformation;
 import org.neo4j.server.security.SslCertificateFactory;
-import org.neo4j.server.statistic.StatisticCollector;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.server.web.WebServerProvider;
@@ -121,7 +120,6 @@ public abstract class AbstractNeoServer implements NeoServer
     protected CypherExecutor cypherExecutor;
     protected Configurator configurator;
     protected WebServer webServer;
-    protected final StatisticCollector statisticsCollector = new StatisticCollector();
 
     private PreFlightTasks preFlight;
 

@@ -32,7 +32,7 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsExtractor;
 import org.neo4j.kernel.info.DiagnosticsPhase;
-import org.neo4j.server.webadmin.console.ShellSessionCreator;
+import org.neo4j.server.rest.management.console.ShellSessionCreator;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
