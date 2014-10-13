@@ -25,9 +25,9 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_2.parser.{CypherParser, ParserMonitor}
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.{CostModel, CardinalityModel, PredicateSelectivityCombiner}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.{QueryGraphCardinalityModel, CardinalityModel, CostModel}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.{PredicateCombination, combinePredicates}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{GraphStatistics, PlanContext, QueriedGraphStatistics}
 import org.neo4j.cypher.internal.spi.v2_2.{TransactionBoundPlanContext, TransactionBoundQueryContext}
@@ -70,7 +70,7 @@ class ProfileRonjaPlanningTest extends ExecutionEngineFunSuite with QueryStatist
   ignore("Should only be turned on for debugging purposes") {
     val db = new GraphDatabaseFactory().newEmbeddedDatabase("/Users/ata/dev/neo/ronja-benchmarks/target/benchmarkdb").asInstanceOf[GraphDatabaseAPI]
     try {
-      val (compiler, events) = buildCompiler(customMetrics(combinePredicates.assumeIndependence))(db)
+      val (compiler, events) = buildCompiler(customMetrics(QueryGraphCardinalityModel.default))(db)
       val (_, result) = runQueryWith("MATCH (t:Track)--(al:Album)--(a:Artist) WHERE t.duration = 61 AND a.gender = 'male' RETURN *", compiler, db)
 
       println(events.toJson)
@@ -93,7 +93,6 @@ class ProfileRonjaPlanningTest extends ExecutionEngineFunSuite with QueryStatist
   private def runQueryWith(query: String, compiler: CypherCompiler, db: GraphDatabaseAPI): (List[Map[String, Any]], InternalExecutionResult) = {
     val (plan, parameters) = db.withTx {
       tx =>
-        val kernelAPI = db.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.api.KernelAPI])
         val planContext = new TransactionBoundPlanContext(db.statement, db) with RealStatistics
         compiler.planQuery(query, planContext, Profiled)
     }
@@ -106,11 +105,11 @@ class ProfileRonjaPlanningTest extends ExecutionEngineFunSuite with QueryStatist
     }
   }
 
-  private def customMetrics(selectivity: PredicateSelectivityCombiner) = new MetricsFactory {
-    def newSelectivity() = selectivity
+  private def customMetrics(qgcmCreator: (GraphStatistics, SemanticTable) => QueryGraphCardinalityModel) = new MetricsFactory {
+    def newQueryGraphCardinalityModel(statistics: GraphStatistics, semanticTable: SemanticTable) = qgcmCreator(statistics, semanticTable)
 
-    def newCardinalityEstimator(statistics: GraphStatistics, selectivity: PredicateSelectivityCombiner, semanticTable: SemanticTable) =
-      SimpleMetricsFactory.newCardinalityEstimator(statistics, selectivity, semanticTable)
+    def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel) =
+      SimpleMetricsFactory.newCardinalityEstimator(queryGraphCardinalityModel)
 
     def newCostModel(cardinality: CardinalityModel) = SimpleMetricsFactory.newCostModel(cardinality)
 
@@ -130,17 +129,8 @@ class ProfileRonjaPlanningTest extends ExecutionEngineFunSuite with QueryStatist
     var currentCostCalc: Option[CostCalculation] = None
     var currentCardinalityEstimation: Option[CardinalityEstimation] = None
 
-    def estimateSelectivity(in: Set[(PredicateCombination, Selectivity)], result: (Set[cardinality.Predicate], Selectivity)) {
-      if(currentCostCalc.nonEmpty) {
-        val cardinalityEstimation = currentCardinalityEstimation.get
-        currentCardinalityEstimation = Some(
-          cardinalityEstimation.addSelectivityEstimation(SelectivityCalculated(in, result))
-        )
-      }
-    }
-
     def finishCardinalityEstimation(cardinality: Cardinality) {
-      if(currentCostCalc.nonEmpty) {
+      if (currentCostCalc.nonEmpty) {
         val cardinalityEstimation = currentCardinalityEstimation.get.copy(result = Some(cardinality))
         val costCalc = currentCostCalc.get
         currentCardinalityEstimation = None
@@ -149,9 +139,9 @@ class ProfileRonjaPlanningTest extends ExecutionEngineFunSuite with QueryStatist
     }
 
     def startCardinalityEstimation(plan: LogicalPlan) {
-      if(currentCostCalc.nonEmpty) {
+      if (currentCostCalc.nonEmpty) {
         assert(currentCardinalityEstimation.isEmpty)
-        currentCardinalityEstimation = Some(CardinalityEstimation(plan, None, Seq.empty))
+        currentCardinalityEstimation = Some(CardinalityEstimation(plan, None))
       }
     }
 
@@ -162,12 +152,12 @@ class ProfileRonjaPlanningTest extends ExecutionEngineFunSuite with QueryStatist
       currentBestPlan = Some(currentBest.addCostCalculation(costCalculation))
     }
 
-    def startCostCalculation(plan: LogicalPlan)  {
+    def startCostCalculation(plan: LogicalPlan) {
       assert(currentCostCalc.isEmpty)
       currentCostCalc = Some(CostCalculation(plan, None, Seq.empty))
     }
 
-    def finishedSelection(winner: Option[LogicalPlan])  {
+    def finishedSelection(winner: Option[LogicalPlan]) {
       val selection = currentBestPlan.get
       selections += selection.copy(winner = winner)
       currentBestPlan = None
@@ -180,9 +170,9 @@ class ProfileRonjaPlanningTest extends ExecutionEngineFunSuite with QueryStatist
   }
 
   case class LoggingMetricsFactory(inner: MetricsFactory, log: LoggingState) extends MetricsFactory {
-    def newCardinalityEstimator(statistics: GraphStatistics, selectivity: PredicateSelectivityCombiner, semanticTable: SemanticTable) =
+    def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel) =
       new CardinalityModel {
-        val innerCardinalityModel = inner.newCardinalityEstimator(statistics, selectivity, semanticTable)
+        val innerCardinalityModel = inner.newCardinalityEstimator(queryGraphCardinalityModel)
 
         def apply(in: LogicalPlan): Cardinality = {
           log.startCardinalityEstimation(in)
@@ -194,19 +184,11 @@ class ProfileRonjaPlanningTest extends ExecutionEngineFunSuite with QueryStatist
 
     def newCostModel(cardinality: CardinalityModel): CostModel = new CostModel {
       val innerCostModel = inner.newCostModel(cardinality)
+
       def apply(in: LogicalPlan): Cost = {
         log.startCostCalculation(in)
         val result = innerCostModel(in)
         log.finishCostCalculation(result)
-        result
-      }
-    }
-
-    def newSelectivity(): PredicateSelectivityCombiner = new PredicateSelectivityCombiner {
-      val innerSelectivity = inner.newSelectivity()
-      def apply(in: Set[(PredicateCombination, Selectivity)]): (Set[cardinality.Predicate], Selectivity) = {
-        val result: (Set[cardinality.Predicate], Selectivity) = innerSelectivity(in)
-        log.estimateSelectivity(in, result)
         result
       }
     }
@@ -227,7 +209,11 @@ class ProfileRonjaPlanningTest extends ExecutionEngineFunSuite with QueryStatist
     }
 
     def newCandidateListCreator(): (Seq[LogicalPlan]) => CandidateList = plans => new LoggingCandidateList(plans)
+
+    def newQueryGraphCardinalityModel(statistics: GraphStatistics, semanticTable: SemanticTable) =
+      inner.newQueryGraphCardinalityModel(statistics, semanticTable)
   }
+
 }
 
 case class BestPlanSelection(plans: Seq[LogicalPlan], winner: Option[LogicalPlan], costCalculations: Seq[CostCalculation]) {
@@ -250,31 +236,9 @@ case class CostCalculation(plan: LogicalPlan, result: Option[Cost], cardinalityE
   ))
 }
 
-case class CardinalityEstimation(plan: LogicalPlan, result: Option[Cardinality], selectivityCalculations: Seq[SelectivityCalculated]) {
-  def addSelectivityEstimation(selectivity: SelectivityCalculated) = copy(selectivityCalculations = selectivityCalculations :+ selectivity)
-
+case class CardinalityEstimation(plan: LogicalPlan, result: Option[Cardinality]) {
   def toJson: JValue = JObject(List[(String, JValue)](
     "plan" -> JString(plan.toString),
-    "result" -> JDouble(result.map(_.amount).getOrElse(-1)),
-    "selectivityCalculations" -> JArray(selectivityCalculations.map(_.toJson).toList)
+    "result" -> JDouble(result.map(_.amount).getOrElse(-1))
   ))
-}
-
-case class SelectivityCalculated(predicateCombinations: Set[(PredicateCombination, Selectivity)], result: (Set[cardinality.Predicate], Selectivity)) {
-  def toJson: JValue = JObject(
-    "predicateCombinations" -> toJson(predicateCombinations),
-    "result" -> toJson(result)
-  )
-
-  private def toJson(in: Set[(PredicateCombination, Selectivity)]): JValue = JArray(in.toList.map {
-    case (predicates, selectivity) => JObject(
-      "predicates" -> JString(predicates.toString),
-      "selectivity" -> JDouble(selectivity.factor)
-    )
-  })
-
-  private def toJson(in: (Set[cardinality.Predicate], Selectivity)): JValue = JObject(
-    "selectivity" -> JDouble(in._2.factor),
-    "predicatesUsed" -> JArray(in._1.toList.map(p => JString(p.toString)))
-  )
 }

@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{HasLabels, LabelName}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.QueryGraphProducer
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assumeDependence.{producePredicates, ExistsPredicate, PatternPredicate, ExpressionPredicate}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, PatternRelationship, SimplePatternLength}
 import org.neo4j.graphdb.Direction
 

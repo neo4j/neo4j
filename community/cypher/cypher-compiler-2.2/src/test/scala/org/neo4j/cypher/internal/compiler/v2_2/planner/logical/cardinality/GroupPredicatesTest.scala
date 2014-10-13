@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assumeDependence._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, PatternRelationship, SimplePatternLength}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{QueryGraphProducer, Selectivity}
 import org.neo4j.graphdb.Direction
@@ -79,7 +80,7 @@ class GroupPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupport
 
     groupPredicates(stubbedEstimateSelectivity)(Set(p1, p2)) should equal(
       Set(
-        (PropertyEqualsAndLabelPredicate(IdName(id1.name), property.propertyKey, 1, BAR, Set(p1, p2, p3)), Selectivity(0.2))
+        (PropertyEqualsAndLabelPredicate(property.propertyKey, 1, BAR, Set(p1, p2, p3)), Selectivity(0.2))
       )
     )
   }
