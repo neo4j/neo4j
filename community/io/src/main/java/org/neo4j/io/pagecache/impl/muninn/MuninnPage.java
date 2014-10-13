@@ -26,6 +26,7 @@ import java.nio.ByteOrder;
 
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.Page;
+import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.impl.muninn.jsr166e.StampedLock;
@@ -353,13 +354,24 @@ final class MuninnPage extends StampedLock implements Page
     /**
      * NOTE: This method MUST be called while holding the page write lock.
      */
-    public void evict() throws IOException
+    public void evict( PageCacheMonitor monitor ) throws IOException
     {
         assert isWriteLocked(): "Cannot evict page without write-lock";
+        long filePageId = this.filePageId;
         flush();
         UnsafeUtil.setMemory( pointer, cachePageSize, (byte) 0 );
-        filePageId = PageCursor.UNBOUND_PAGE_ID;
-        swapper = null;
+        this.filePageId = PageCursor.UNBOUND_PAGE_ID;
+
+        PageSwapper swapper = this.swapper;
+        this.swapper = null;
+
+        if ( swapper != null )
+        {
+            // The swapper can be null if the last page fault
+            // that page threw an exception.
+            swapper.evicted( filePageId, this );
+            monitor.evicted( filePageId, swapper );
+        }
     }
 
     public boolean isLoaded()
@@ -398,7 +410,8 @@ final class MuninnPage extends StampedLock implements Page
     @Override
     public String toString()
     {
-        return String.format( "MuninnPage@%x[-> %x, filePageId = %s%s, swapper = %s]%s",
-                hashCode(), pointer, filePageId, (dirty? ", dirty" : ""), swapper, getLockStateString() );
+        return String.format( "MuninnPage@%x[%s -> %x, filePageId = %s%s, swapper = %s]%s",
+                hashCode(), cachePageId, pointer, filePageId, (dirty? ", dirty" : ""),
+                swapper, getLockStateString() );
     }
 }

@@ -27,7 +27,6 @@ import java.util.concurrent.locks.LockSupport;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCacheMonitor;
-import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.RunnablePageCache;
@@ -612,16 +611,6 @@ public class MuninnPageCache implements RunnablePageCache
                 if ( stamp != 0 )
                 {
                     // We got the lock.
-                    // We have to grab the swapper and the filePageId, because
-                    // we cannot do the onEviction notification while holding
-                    // the lock on the page. The reason is that the
-                    // notification will take a lock on the translation table,
-                    // and that is the wrong lock order. We must always first
-                    // lock on the translation table, and then on the page.
-                    // Never the other way around. Otherwise we risk
-                    // dead-locking.
-                    PageSwapper swapper = page.getSwapper();
-                    long filePageId = page.getFilePageId();
                     boolean pageEvicted = false;
 
                     // Assume that the eviction is going to succeed, so that we
@@ -637,7 +626,7 @@ public class MuninnPageCache implements RunnablePageCache
 
                     try
                     {
-                        page.evict();
+                        page.evict( monitor );
                         evictorException = null;
                         pageEvicted = true;
                     }
@@ -661,14 +650,6 @@ public class MuninnPageCache implements RunnablePageCache
 
                     if ( pageEvicted )
                     {
-                        if ( swapper != null )
-                        {
-                            // The swapper can be null if the last page fault
-                            // that page threw an exception.
-                            swapper.evicted( filePageId );
-                            monitor.evicted( filePageId, swapper );
-                        }
-
                         if ( waiters != null )
                         {
                             waiters.unpark( page );

@@ -98,9 +98,9 @@ public class SingleFilePageSwapper implements PageSwapper
     }
 
     @Override
-    public void evicted( long filePageId )
+    public void evicted( long filePageId, Page page )
     {
-        onEviction.onEvict( filePageId );
+        onEviction.onEvict( filePageId, page );
     }
 
     @Override

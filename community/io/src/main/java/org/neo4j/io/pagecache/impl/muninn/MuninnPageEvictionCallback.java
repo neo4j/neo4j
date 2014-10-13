@@ -20,6 +20,7 @@
 package org.neo4j.io.pagecache.impl.muninn;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
+import org.neo4j.io.pagecache.Page;
 import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.impl.muninn.jsr166e.StampedLock;
 
@@ -37,7 +38,7 @@ final class MuninnPageEvictionCallback implements PageEvictionCallback
     }
 
     @Override
-    public void onEvict( long pageId )
+    public void onEvict( long pageId, Page page )
     {
         int stripe = (int) (pageId & MuninnPagedFile.translationTableStripeMask);
         StampedLock translationTableLock = translationTableLocks[stripe];
@@ -59,7 +60,11 @@ final class MuninnPageEvictionCallback implements PageEvictionCallback
         {
             try
             {
-                translationTable.remove( pageId );
+                MuninnPage removed = translationTable.remove( pageId );
+                assert removed == page: "Removed unexpected page when " +
+                        "cleaning up translation table for filePageId " +
+                        pageId + ". Evicted " + page + " but removed " +
+                        removed + " from the " + "translation table.";
             }
             finally
             {
