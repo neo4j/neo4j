@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.repeat
 
 case object CNFNormalizer extends Rewriter {
-  def apply(that: AnyRef): Option[AnyRef] = instance.apply(that)
+  def apply(that: AnyRef): AnyRef = instance.apply(that)
 
   private val instance: Rewriter = inSequence(
     deMorganRewriter,
@@ -35,7 +35,7 @@ case object CNFNormalizer extends Rewriter {
 }
 
 object deMorganRewriter extends Rewriter {
-  def apply(that: AnyRef): Option[AnyRef] = instance.apply(that)
+  def apply(that: AnyRef): AnyRef = instance.apply(that)
 
   private val step = Rewriter.lift {
     case p@Xor(expr1, expr2) =>
@@ -50,7 +50,7 @@ object deMorganRewriter extends Rewriter {
 }
 
 object distributeLawsRewriter extends Rewriter {
-  def apply(that: AnyRef): Option[AnyRef] = instance.apply(that)
+  def apply(that: AnyRef): AnyRef = instance.apply(that)
 
   private val step = Rewriter.lift {
     case p@Or(exp1, And(exp2, exp3)) => And(Or(exp1, exp2)(p.position), Or(exp1, exp3)(p.position))(p.position)
@@ -61,7 +61,7 @@ object distributeLawsRewriter extends Rewriter {
 }
 
 object flattenBooleanOperators extends Rewriter {
-  def apply(that: AnyRef): Option[AnyRef] = instance.apply(that)
+  def apply(that: AnyRef): AnyRef = instance.apply(that)
 
   private val firstStep: Rewriter = Rewriter.lift {
     case p@And(lhs, rhs) => Ands(Set(lhs, rhs))(p.position)
@@ -83,7 +83,7 @@ object flattenBooleanOperators extends Rewriter {
 }
 
 object simplifyPredicates extends Rewriter {
-  def apply(that: AnyRef): Option[AnyRef] = instance.apply(that)
+  def apply(that: AnyRef): AnyRef = instance.apply(that)
 
   private val T = True()(null)
   private val F = False()(null)

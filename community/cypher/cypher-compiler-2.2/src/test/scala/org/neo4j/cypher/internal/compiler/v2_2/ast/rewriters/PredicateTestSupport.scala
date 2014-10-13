@@ -38,7 +38,7 @@ trait PredicateTestSupport extends CypherTestSupport {
 
   implicit class IFF(x: Expression) {
     def <=>(other: Expression) = {
-      val output = rewriter(x).get
+      val output = rewriter(x)
 
       output should equal(other)
     }

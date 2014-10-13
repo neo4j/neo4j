@@ -37,7 +37,7 @@ case object namePatternElements {
 }
 
 case object nameMatchPatternElements extends Rewriter {
-  def apply(that: AnyRef): Option[AnyRef] = findingRewriter.apply(that)
+  def apply(that: AnyRef): AnyRef = findingRewriter.apply(that)
 
   private val findingRewriter: Rewriter = bottomUp(Rewriter.lift {
     case m: Match =>
@@ -48,7 +48,7 @@ case object nameMatchPatternElements extends Rewriter {
 
 // TODO: When Ronja is the only planner left, move these to nameMatchPatternElements
 case object namePatternPredicates extends Rewriter {
-  def apply(that: AnyRef): Option[AnyRef] = bottomUp(findingRewriter).apply(that)
+  def apply(that: AnyRef): AnyRef = bottomUp(findingRewriter).apply(that)
 
   private val findingRewriter: Rewriter = Rewriter.lift {
     case exp: PatternExpression =>
@@ -58,7 +58,7 @@ case object namePatternPredicates extends Rewriter {
 }
 
 case object nameUpdatingClauses extends Rewriter {
-  def apply(that: AnyRef): Option[AnyRef] = findingRewriter.apply(that)
+  def apply(that: AnyRef): AnyRef = findingRewriter.apply(that)
 
   private val findingRewriter: Rewriter = bottomUp(Rewriter.lift {
     case createUnique@CreateUnique(pattern) => {

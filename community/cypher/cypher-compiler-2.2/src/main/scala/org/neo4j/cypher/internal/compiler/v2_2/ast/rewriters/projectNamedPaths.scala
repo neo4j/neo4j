@@ -73,7 +73,7 @@ case object projectNamedPaths extends Rewriter {
     }
   }
 
-  def apply(input: AnyRef): Option[AnyRef] =
+  def apply(input: AnyRef): AnyRef =
     bottomUp(getRewriter(
       collectNamedPaths(input),
       collectUninlinableIdentifiers(input)

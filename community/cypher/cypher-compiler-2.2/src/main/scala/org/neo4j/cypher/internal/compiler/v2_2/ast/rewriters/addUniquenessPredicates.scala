@@ -26,7 +26,7 @@ import org.neo4j.cypher.InternalException
 
 case object addUniquenessPredicates extends Rewriter {
 
-  def apply(that: AnyRef): Option[AnyRef] = bottomUp(instance).apply(that)
+  def apply(that: AnyRef): AnyRef = bottomUp(instance).apply(that)
 
   case class UniqueRel(name: String, types: Set[RelTypeName]) {
     def isAlwaysDifferentFrom(other: UniqueRel) =

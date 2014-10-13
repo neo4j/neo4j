@@ -20,16 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v2_2
 
 import java.lang.reflect.Method
+import scala.annotation.tailrec
 import scala.collection.mutable.{HashMap => MutableHashMap}
 
 object Rewriter {
-  def lift(f: PartialFunction[AnyRef, AnyRef]): Rewriter = f.lift
+  def lift(f: PartialFunction[AnyRef, AnyRef]): Rewriter = f.orElse(PartialFunction(identity[AnyRef]))
 
-  case object noop extends Rewriter {
-    def apply(v: AnyRef) = Some(v)
-  }
+  val noop = Rewriter.lift(PartialFunction.empty)
 }
-
 
 object Rewritable {
   implicit class IteratorEq[A <: AnyRef](val iterator: Iterator[A]) {
@@ -88,13 +86,13 @@ object Rewritable {
   }
 
   implicit class RewritableAny[T <: AnyRef](val that: T) extends AnyVal {
-    def rewrite(rewriter: Rewriter): AnyRef = rewriter.apply(that).getOrElse(that)
+    def rewrite(rewriter: Rewriter): AnyRef = rewriter.apply(that)
     def endoRewrite(rewriter: Rewriter): T = rewrite(rewriter).asInstanceOf[T]
   }
 }
 
 case class TypedRewriter[T <: Rewritable](rewriter: Rewriter) extends (T => T) {
-  def apply(that: T) = rewriter.apply(that).getOrElse(that).asInstanceOf[T]
+  def apply(that: T) = rewriter.apply(that).asInstanceOf[T]
 
   def narrowed[S <: T] = TypedRewriter[S](rewriter)
 }
@@ -107,10 +105,10 @@ object inSequence {
   import Rewritable._
 
   class InSequenceRewriter(rewriters: Seq[Rewriter]) extends Rewriter {
-    def apply(that: AnyRef): Some[AnyRef] =
-      Some(rewriters.foldLeft(that) {
+    def apply(that: AnyRef): AnyRef =
+      rewriters.foldLeft(that) {
         (t, r) => t.rewrite(r)
-      })
+      }
   }
 
   def apply(rewriters: Rewriter*) = new InSequenceRewriter(rewriters)
@@ -121,7 +119,7 @@ object topDown {
   import Rewritable._
 
   class TopDownRewriter(rewriter: Rewriter) extends Rewriter {
-    def apply(that: AnyRef): Some[AnyRef] = {
+    def apply(that: AnyRef): AnyRef = {
       val rewrittenThat = that.rewrite(rewriter)
       Some(rewrittenThat.dup(rewrittenThat.children.map(t => this.apply(t).get).toList))
     }
@@ -145,15 +143,13 @@ object bottomUp {
 }
 
 case class repeat(rewriter: Rewriter) extends Rewriter {
-  import Rewritable._
-
-  def apply(that: AnyRef): Option[AnyRef] = {
-    rewriter.apply(that).map {
-      t =>
-        if (t == that)
-          t
-        else
-          t.rewrite(this)
+  @tailrec
+  final def apply(that: AnyRef): AnyRef = {
+    val t = rewriter.apply(that)
+    if (t == that) {
+      t
+    } else {
+      apply(t)
     }
   }
 }

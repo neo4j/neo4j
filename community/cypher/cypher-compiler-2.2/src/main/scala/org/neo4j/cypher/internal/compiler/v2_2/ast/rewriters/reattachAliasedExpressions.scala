@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Return
 
 case object reattachAliasedExpressions extends Rewriter {
-  def apply(in: AnyRef): Option[AnyRef] = bottomUp(findingRewriter).apply(in)
+  def apply(in: AnyRef): AnyRef = bottomUp(findingRewriter).apply(in)
 
   private val findingRewriter: Rewriter = Rewriter.lift {
     case clause: Return =>

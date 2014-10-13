@@ -38,7 +38,7 @@ trait RewriterTaskProcessor extends (RewriterTask => Rewriter) {
       (input: AnyRef) =>
         val result = conditions.toSeq.flatMap(cond => cond(input))
         if (result.isEmpty) {
-          Some(input)
+          input
         } else {
           throw new RewritingConditionViolationException(name, result)
         }
@@ -71,18 +71,16 @@ case class TracingRewriterTaskProcessor(sequenceName: String, onlyWhenChanged: B
     case RunRewriter(name, rewriter) =>
       val innerRewriter = super.apply(task)
       (in: AnyRef) =>
-        val out = innerRewriter(in)
-        out.foreach { result =>
-          val always = !onlyWhenChanged
-          if (always || in != result) {
-            val resultDoc = pprintToDoc[AnyRef, Any](Result(result))(ResultHandler.docGen)
-            val resultString = printCommandsToString(DocFormatters.defaultFormatter(resultDoc))
-            Console.print(s"*** $name ($sequenceName):$resultString\n")
-          } else {
-            Console.print(s"*** $name ($sequenceName):\n--\n")
-          }
+        val result = innerRewriter(in)
+        val always = !onlyWhenChanged
+        if (always || in != result) {
+          val resultDoc = pprintToDoc[AnyRef, Any](Result(result))(ResultHandler.docGen)
+          val resultString = printCommandsToString(DocFormatters.defaultFormatter(resultDoc))
+          Console.print(s"*** $name ($sequenceName):$resultString\n")
+        } else {
+          Console.print(s"*** $name ($sequenceName):\n--\n")
         }
-        out
+        result
 
     case _ =>
       super.apply(task)

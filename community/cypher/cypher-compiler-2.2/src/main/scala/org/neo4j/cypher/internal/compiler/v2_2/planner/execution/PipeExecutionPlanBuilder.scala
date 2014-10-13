@@ -61,7 +61,7 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
           ast.NestedPipeExpression(pipe, ast.PathExpression(step)(pos))(pos)
       }
 
-      def apply(that: AnyRef): Option[AnyRef] = bottomUp(instance).apply(that)
+      def apply(that: AnyRef): AnyRef = bottomUp(instance).apply(that)
     }
 
     def buildExpression(expr: ast.Expression): CommandExpression = {

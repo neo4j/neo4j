@@ -24,7 +24,7 @@ import ast._
 
 class MatchPredicateNormalization(normalizer: MatchPredicateNormalizer) extends Rewriter {
 
-  def apply(that: AnyRef): Option[AnyRef] = topDown(instance).apply(that)
+  def apply(that: AnyRef): AnyRef = topDown(instance).apply(that)
 
   private val instance: Rewriter = Rewriter.lift {
 

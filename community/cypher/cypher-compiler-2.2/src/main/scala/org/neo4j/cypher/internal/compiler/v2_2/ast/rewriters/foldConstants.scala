@@ -24,7 +24,7 @@ import ast._
 import org.neo4j.cypher
 
 case object foldConstants extends Rewriter {
-  def apply(that: AnyRef): Option[AnyRef] =
+  def apply(that: AnyRef): AnyRef =
   try {
     bottomUp(instance).apply(that)
   } catch {

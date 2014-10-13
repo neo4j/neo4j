@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 
 case object inlineProjections extends Rewriter {
 
-  def apply(in: AnyRef): Option[AnyRef] = instance.apply(in)
+  def apply(in: AnyRef): AnyRef = instance.apply(in)
 
   val instance = Rewriter.lift { case input: Statement =>
     val context = inliningContextCreator(input)

@@ -26,9 +26,9 @@ class RepeatTest extends CypherFunSuite {
   var count = 0
   val result = new Object
   val mockedRewriter = new Rewriter {
-    def apply(v1: AnyRef): Option[AnyRef] = {
+    def apply(v1: AnyRef): AnyRef = {
       count += 1
-      Some(result)
+      result
     }
   }
 
@@ -40,7 +40,7 @@ class RepeatTest extends CypherFunSuite {
     val output = repeat(mockedRewriter)(result)
 
     // then
-    output.get should equal(result)
+    output should equal(result)
     count should equal(1)
   }
 
@@ -52,7 +52,7 @@ class RepeatTest extends CypherFunSuite {
     val output = repeat(mockedRewriter)(new Object)
 
     // then
-    output.get should equal(result)
+    output should equal(result)
     count should equal(2)
   }
 }

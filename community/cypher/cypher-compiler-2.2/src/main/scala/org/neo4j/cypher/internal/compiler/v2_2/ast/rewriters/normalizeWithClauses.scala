@@ -51,7 +51,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.{Rewriter, bottomUp, topDown}
  */
 case object normalizeWithClauses extends Rewriter {
 
-  def apply(that: AnyRef): Option[AnyRef] = bottomUp(instance).apply(that)
+  def apply(that: AnyRef): AnyRef = bottomUp(instance).apply(that)
 
   private val clauseRewriter: (Clause => Seq[Clause]) = {
     case clause @ With(_, ri, None, _, _, None) =>
