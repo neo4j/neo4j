@@ -97,7 +97,7 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
             rotated = logFile.checkRotation();
             transactionId = transactionIdStore.nextCommittingTransactionId();
             hasLegacyIndexChanges = append0( transaction, transactionId );
-            ticket = getCurrentTicket();
+            ticket = getNextTicket();
         }
 
         forceAfterAppend( ticket );
@@ -134,7 +134,7 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
         forceChannel();
     }
 
-    protected abstract long getCurrentTicket();
+    protected abstract long getNextTicket();
 
     /**
      * Called as part of append.

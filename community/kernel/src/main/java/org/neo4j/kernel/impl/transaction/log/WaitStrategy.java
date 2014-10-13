@@ -19,28 +19,30 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import java.io.IOException;
+import java.util.concurrent.locks.LockSupport;
 
-import org.neo4j.kernel.impl.util.IdOrderingQueue;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-public class PhysicalTransactionAppender extends AbstractPhysicalTransactionAppender
+/**
+ * Strategy for waiting a while, given a certain {@link Thread}.
+ */
+public interface WaitStrategy
 {
-    public PhysicalTransactionAppender( LogFile logFile,
-            TransactionMetadataCache transactionMetadataCache, TransactionIdStore transactionIdStore,
-            IdOrderingQueue legacyIndexTransactionOrdering )
-    {
-        super( logFile, transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering );
-    }
+    public void wait( Thread thread );
 
-    @Override
-    protected void forceAfterAppend( long ticket ) throws IOException
+    public static class Park implements WaitStrategy
     {
-        forceChannel();
-    }
+        private final long nanos;
 
-    @Override
-    protected long getNextTicket()
-    {
-        return 0;
+        public Park( int millis )
+        {
+            this.nanos = MILLISECONDS.toNanos( millis );
+        }
+
+        @Override
+        public void wait( Thread thread )
+        {
+            LockSupport.parkNanos( nanos );
+        }
     }
 }

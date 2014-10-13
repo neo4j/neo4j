@@ -49,7 +49,7 @@ import static org.junit.Assert.fail;
 public class NestedTransactionLocksIT
 {
     private GraphDatabaseService db;
-    
+
     @Before
     public void before() throws Exception
     {
@@ -76,7 +76,7 @@ public class NestedTransactionLocksIT
             }
         };
     }
-    
+
     @Test
     public void nestedTransactionCanAcquireLocksFromTransactionObject() throws Exception
     {
@@ -117,7 +117,7 @@ public class NestedTransactionLocksIT
         }
     }
 
-    private Future<Lock> tryToAcquireSameLockOnAnotherThread( Node resource, OtherThreadExecutor<Void> otherThread ) throws TimeoutException
+    private Future<Lock> tryToAcquireSameLockOnAnotherThread( Node resource, OtherThreadExecutor<Void> otherThread ) throws Exception
     {
         Future<Lock> future = otherThread.executeDontWait( acquireWriteLock( resource ) );
         otherThread.waitUntilWaiting();
