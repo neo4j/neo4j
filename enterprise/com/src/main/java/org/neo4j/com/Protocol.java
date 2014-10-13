@@ -268,7 +268,7 @@ public abstract class Protocol
 
             PhysicalTransactionRepresentation toReturn = new PhysicalTransactionRepresentation( commands );
             toReturn.setHeader( header, masterId, authorId, timeStarted, latestCommittedTxWhenStarted,
-                    timeCommitted );
+                    timeCommitted, -1 );
             return toReturn;
         }
     };

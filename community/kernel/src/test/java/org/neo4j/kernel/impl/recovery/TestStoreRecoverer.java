@@ -128,7 +128,7 @@ public class TestStoreRecoverer
     private static TransactionRepresentation singleNodeTransaction()
     {
         PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( Arrays.asList( createNodeCommand() ) );
-        transaction.setHeader( new byte[0], 0, 0, 0, 0, 0 );
+        transaction.setHeader( new byte[0], 0, 0, 0, 0, 0, -1 );
         return transaction;
     }
 

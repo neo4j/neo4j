@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.com.Response;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.DeadlockDetectedException;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
@@ -234,7 +235,7 @@ class SlaveLocksClient implements Locks.Client
         exclusiveLocks.clear();
         if ( initialized )
         {
-            master.endLockSession( requestContextFactory.newRequestContext( (int) client.getIdentifier() ), true );
+            master.endLockSession( requestContextFactory.newRequestContext( (int) client.getLockSessionId() ), true );
             initialized = false;
         }
         client.releaseAll();
@@ -247,15 +248,15 @@ class SlaveLocksClient implements Locks.Client
         exclusiveLocks.clear();
         if ( initialized )
         {
-            master.endLockSession( requestContextFactory.newRequestContext( (int) client.getIdentifier() ), true );
+            master.endLockSession( requestContextFactory.newRequestContext( client.getLockSessionId() ), true );
         }
         client.close();
     }
 
     @Override
-    public long getIdentifier()
+    public int getLockSessionId()
     {
-        return client.getIdentifier();
+        return initialized ? client.getLockSessionId() : -1;
     }
 
     private boolean getReadLockOnMaster( Locks.ResourceType resourceType, long ... resourceId )
@@ -267,7 +268,7 @@ class SlaveLocksClient implements Locks.Client
         {
             makeSureTxHasBeenInitialized();
             return receiveLockResponse(
-                master.acquireSharedLock( requestContextFactory.newRequestContext( (int) getIdentifier() ), resourceType, resourceId ));
+                master.acquireSharedLock( requestContextFactory.newRequestContext( (int) getLockSessionId() ), resourceType, resourceId ));
         }
         else
         {
@@ -279,7 +280,7 @@ class SlaveLocksClient implements Locks.Client
     {
         makeSureTxHasBeenInitialized();
         return receiveLockResponse(
-                master.acquireExclusiveLock( requestContextFactory.newRequestContext( (int) getIdentifier() ), resourceType, resourceId ));
+                master.acquireExclusiveLock( requestContextFactory.newRequestContext( (int) getLockSessionId() ), resourceType, resourceId ));
     }
 
     private boolean receiveLockResponse( Response<LockResult> response )
@@ -306,7 +307,16 @@ class SlaveLocksClient implements Locks.Client
         availabilityGuard.checkAvailability( config.getAvailabilityTimeout(), RuntimeException.class );
         if ( !initialized )
         {
-            master.newLockSession( requestContextFactory.newRequestContext( (int) client.getIdentifier() ) );
+            try
+            {
+                master.newLockSession( requestContextFactory.newRequestContext( client.getLockSessionId() ) );
+            }
+            catch ( TransactionFailureException e )
+            {
+                // Temporary wrapping, we should review the exception structure of the Locks API to allow this to
+                // not use runtime exceptions here.
+                throw new org.neo4j.graphdb.TransactionFailureException( "Failed to acquire lock in cluster: " + e.getMessage(), e );
+            }
             initialized = true;
         }
     }

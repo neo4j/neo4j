@@ -88,7 +88,7 @@ public class PhysicalTransactionCursor<T extends ReadableLogChannel>
         PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( entries );
         transaction.setHeader( startEntry.getAdditionalHeader(), startEntry.getMasterId(),
                 startEntry.getLocalId(), startEntry.getTimeWritten(),
-                startEntry.getLastCommittedTxWhenTransactionStarted(), commitEntry.getTimeWritten() );
+                startEntry.getLastCommittedTxWhenTransactionStarted(), commitEntry.getTimeWritten(), -1 );
         current = new CommittedTransactionRepresentation( startEntry, transaction, commitEntry );
         return true;
     }

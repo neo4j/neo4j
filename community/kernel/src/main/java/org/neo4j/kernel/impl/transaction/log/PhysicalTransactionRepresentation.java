@@ -37,13 +37,20 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
     private long latestCommittedTxWhenStarted;
     private long timeCommitted;
 
+    /**
+     * This is a bit of a smell, it's used only for committing slave transactions on the master. Effectively, this
+     * identifies the lock session used to guard this transaction. The master ensures that lock session is live before
+     * committing, to guard against locks timing out. We may want to refactor this design later on.
+     */
+    private int lockSessionIdentifier;
+
     public PhysicalTransactionRepresentation( Collection<Command> commands )
     {
         this.commands = commands;
     }
 
     public void setHeader( byte[] additionalHeader, int masterId, int authorId, long timeStarted,
-            long latestCommittedTxWhenStarted, long timeCommitted )
+                           long latestCommittedTxWhenStarted, long timeCommitted, int lockSession )
     {
         this.additionalHeader = additionalHeader;
         this.masterId = masterId;
@@ -51,6 +58,7 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
         this.timeStarted = timeStarted;
         this.latestCommittedTxWhenStarted = latestCommittedTxWhenStarted;
         this.timeCommitted = timeCommitted;
+        this.lockSessionIdentifier = lockSession;
     }
 
     @Override
@@ -99,6 +107,12 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
     public long getTimeCommitted()
     {
         return timeCommitted;
+    }
+
+    @Override
+    public int getLockSessionId()
+    {
+        return lockSessionIdentifier;
     }
 
     @Override

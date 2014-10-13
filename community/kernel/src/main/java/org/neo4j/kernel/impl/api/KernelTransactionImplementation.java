@@ -710,7 +710,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private void commit() throws TransactionFailureException
     {
         boolean success = false;
-        try ( LockGroup locks = new LockGroup() )
+
+        try ( LockGroup lockGroup = new LockGroup() )
         {
             // Trigger transaction "before" hooks
             if ( (hooksState = hooks.beforeCommit( txState, this, storeLayer )) != null && hooksState.failed() )
@@ -745,10 +746,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     transactionRepresentation.setHeader( headerInformation.getAdditionalHeader(),
                             headerInformation.getMasterId(),
                             headerInformation.getAuthorId(),
-                            startTimeMillis, lastTransactionIdWhenStarted, clock.currentTimeMillis() );
+                            startTimeMillis, lastTransactionIdWhenStarted, clock.currentTimeMillis(),
+                            locks.getLockSessionId() );
 
                     // Commit the transaction
-                    commitProcess.commit( transactionRepresentation, locks );
+                    commitProcess.commit( transactionRepresentation, lockGroup );
                 }
             }
 

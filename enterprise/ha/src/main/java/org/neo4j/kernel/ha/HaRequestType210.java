@@ -231,7 +231,7 @@ public enum HaRequestType210 implements RequestType<Master>
     {
         @Override
         public Response<Void> call( Master master, RequestContext context, ChannelBuffer input,
-                ChannelBuffer target )
+                ChannelBuffer target ) throws TransactionFailureException
         {
             return master.newLockSession( context );
         }

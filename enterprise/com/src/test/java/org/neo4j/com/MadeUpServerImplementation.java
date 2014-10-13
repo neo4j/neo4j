@@ -120,7 +120,7 @@ public class MadeUpServerImplementation implements MadeUpCommunicationInterface
         command.init( new NodeRecord( txId ), node );
         commands.add( command );
         PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( commands );
-        transaction.setHeader( new byte[0], 0, 0, 0, 0, 0 );
+        transaction.setHeader( new byte[0], 0, 0, 0, 0, 0, 0 );
         return transaction;
     }
 

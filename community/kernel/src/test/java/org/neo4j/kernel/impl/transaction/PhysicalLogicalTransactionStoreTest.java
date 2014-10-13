@@ -277,7 +277,7 @@ public class PhysicalLogicalTransactionStoreTest
         PhysicalTransactionRepresentation transaction =
                 new PhysicalTransactionRepresentation( singleCreateNodeCommand() );
         transaction.setHeader( additionalHeader, masterId, authorId, timeStarted, latestCommittedTxWhenStarted,
-                timeCommitted );
+                timeCommitted, -1 );
         appender.append( transaction );
     }
 

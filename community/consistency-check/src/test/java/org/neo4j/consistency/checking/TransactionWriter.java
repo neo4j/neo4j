@@ -61,7 +61,7 @@ public class TransactionWriter
             long startTime, long lastCommittedTx, long committedTime )
     {
         PhysicalTransactionRepresentation representation = new PhysicalTransactionRepresentation( commands );
-        representation.setHeader( additionalHeader, masterId, authorId, startTime, lastCommittedTx, committedTime );
+        representation.setHeader( additionalHeader, masterId, authorId, startTime, lastCommittedTx, committedTime, -1 );
         return representation;
     }
 
