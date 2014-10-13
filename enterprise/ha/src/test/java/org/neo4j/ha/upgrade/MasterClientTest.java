@@ -56,6 +56,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
@@ -126,10 +127,12 @@ public class MasterClientTest
         TransactionRepresentationStoreApplier txApplier = mock( TransactionRepresentationStoreApplier.class );
         TransactionIdStore txIdStore = mock( TransactionIdStore.class );
         TransactionAppender txAppender = mock( TransactionAppender.class );
+        LogFile logFile = mock( LogFile.class );
 
         when( resolver.resolveDependency( LogicalTransactionStore.class ) ).thenReturn( txStore );
         when( resolver.resolveDependency( TransactionRepresentationStoreApplier.class ) ).thenReturn( txApplier );
         when( resolver.resolveDependency( TransactionIdStore.class ) ).thenReturn( txIdStore );
+        when( resolver.resolveDependency( LogFile.class ) ).thenReturn( logFile );
         when( txStore.getAppender() ).thenReturn( txAppender );
 
         ResponseUnpacker unpacker = initAndStart( new TransactionCommittingResponseUnpacker( resolver ) );

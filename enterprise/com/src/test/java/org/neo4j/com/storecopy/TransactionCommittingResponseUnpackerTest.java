@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -76,6 +77,8 @@ public class TransactionCommittingResponseUnpackerTest
 
         when( dependencyResolver.resolveDependency( TransactionRepresentationStoreApplier.class ) )
                 .thenReturn( mock( TransactionRepresentationStoreApplier.class ) );
+        LogFile logFile = mock( LogFile.class );
+        when( dependencyResolver.resolveDependency( LogFile.class ) ).thenReturn( logFile );
 
           /*
            * The tx handler is called on every transaction applied after setting its id to committing
@@ -100,6 +103,7 @@ public class TransactionCommittingResponseUnpackerTest
         verify( txIdStore, times( 1 ) ).transactionClosed( committingTransactionId );
         verify( appender, times( 1 ) ).append( any( TransactionRepresentation.class ), anyLong() );
         verify( appender, times( 1 ) ).force();
+        verify( logFile, times( 1 ) ).checkRotation();
 
         // Then
           // The txhandler has stopped the unpacker. It should not allow any more transactions to go through
@@ -136,6 +140,10 @@ public class TransactionCommittingResponseUnpackerTest
 
         when( dependencyResolver.resolveDependency( TransactionRepresentationStoreApplier.class ) )
                 .thenReturn( mock( TransactionRepresentationStoreApplier.class ) );
+
+        LogFile logFile = mock( LogFile.class );
+        when( dependencyResolver.resolveDependency( LogFile.class ) ).thenReturn( logFile );
+
         int maxBatchSize = 3;
         TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker(
                 dependencyResolver, maxBatchSize );
@@ -148,6 +156,7 @@ public class TransactionCommittingResponseUnpackerTest
         // and THEN
         verify( appender, times( txCount ) ).append( any( TransactionRepresentation.class ), anyLong() );
         verify( appender, times( 2 ) ).force();
+        verify( logFile, times( 2 ) ).checkRotation();
     }
 
     @Test
