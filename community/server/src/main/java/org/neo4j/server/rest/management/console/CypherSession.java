@@ -36,42 +36,50 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.neo4j.server.rest.management.console;
 
-package org.neo4j.server.webadmin.console;
-
-import org.junit.Test;
-
+import org.neo4j.cypher.SyntaxException;
+import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.database.CypherExecutor;
-import org.neo4j.server.database.Database;
-import org.neo4j.server.database.WrappedDatabase;
-import org.neo4j.server.rest.management.console.CypherSession;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.server.webadmin.console.ScriptSession;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.*;
-
-public class CypherSessionDocTest
+public class CypherSession implements ScriptSession
 {
-    @Test
-    public void shouldReturnASingleNode() throws Throwable
+    private final CypherExecutor cypherExecutor;
+    private final ConsoleLogger log;
+
+    public CypherSession( CypherExecutor cypherExecutor, Logging logging )
     {
-        AbstractGraphDatabase graphdb = (AbstractGraphDatabase) new TestGraphDatabaseFactory().newImpermanentDatabase();
-        Database database = new WrappedDatabase( graphdb );
-        CypherExecutor executor = new CypherExecutor( database, StringLogger.DEV_NULL );
-        executor.start();
+        this.cypherExecutor = cypherExecutor;
+        this.log = logging.getConsoleLog( getClass() );
+    }
+
+    @Override
+    public Pair<String, String> evaluate( String script )
+    {
+        if ( script.trim().equals( "" ) )
+        {
+            return Pair.of( "", null );
+        }
+
+        String resultString;
         try
         {
-            CypherSession session = new CypherSession( executor, DevNullLoggingService.DEV_NULL );
-            Pair<String, String> result = session.evaluate( "create (a) return a" );
-            assertThat( result.first(), containsString( "Node[0]" ) );
+            ExecutionResult result = cypherExecutor.getExecutionEngine().execute( script );
+            resultString = result.dumpToString();
         }
-        finally
+        catch ( SyntaxException error )
         {
-            graphdb.shutdown();
+            resultString = error.getMessage();
         }
+        catch ( Exception exception )
+        {
+            log.error( "Unknown error executing cypher query", exception );
+            resultString = "Error: " + exception.getClass().getSimpleName() + " - " + exception.getMessage();
+        }
+        return Pair.of( resultString, null );
     }
 }

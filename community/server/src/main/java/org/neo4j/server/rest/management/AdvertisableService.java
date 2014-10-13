@@ -17,28 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.scripting;
+package org.neo4j.server.rest.management;
 
-import java.util.Collections;
-import java.util.Map;
-
-public class ScriptExecutorFactoryRepository
+public interface AdvertisableService
 {
-    private final Map<String, ScriptExecutor.Factory> languages;
 
-    public ScriptExecutorFactoryRepository( Map<String, ScriptExecutor.Factory> languages )
-    {
-        this.languages = Collections.unmodifiableMap( languages );
-    }
+    String getName();
 
-    public ScriptExecutor.Factory getFactory( String language )
-    {
-        if(languages.containsKey( language ))
-        {
-            return languages.get( language );
-        } else
-        {
-            throw new NoSuchScriptLanguageException( "Unknown scripting language '" + language + "'." );
-        }
-    }
+    String getServerPath();
+
 }

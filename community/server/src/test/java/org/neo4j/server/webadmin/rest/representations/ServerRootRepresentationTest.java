@@ -26,8 +26,9 @@ import java.util.Map;
 import org.junit.Test;
 
 import org.neo4j.server.database.Database;
-import org.neo4j.server.webadmin.rest.AdvertisableService;
-import org.neo4j.server.webadmin.rest.console.ConsoleService;
+import org.neo4j.server.rest.management.AdvertisableService;
+import org.neo4j.server.rest.management.console.ConsoleService;
+import org.neo4j.server.rest.management.repr.ServerRootRepresentation;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertNotNull;

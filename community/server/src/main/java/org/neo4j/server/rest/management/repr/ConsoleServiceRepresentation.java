@@ -17,28 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.scripting;
+package org.neo4j.server.rest.management.repr;
 
-import java.util.Collections;
-import java.util.Map;
+import org.neo4j.server.rest.repr.ListRepresentation;
+import org.neo4j.server.rest.repr.MappingSerializer;
 
-public class ScriptExecutorFactoryRepository
-{
-    private final Map<String, ScriptExecutor.Factory> languages;
+public class ConsoleServiceRepresentation extends ServiceDefinitionRepresentation {
 
-    public ScriptExecutorFactoryRepository( Map<String, ScriptExecutor.Factory> languages )
+    private Iterable<String> engines;
+
+    public ConsoleServiceRepresentation(String basePath, Iterable<String> engines)
     {
-        this.languages = Collections.unmodifiableMap( languages );
+        super(basePath);
+        resourceUri( "exec", "" );
+        this.engines = engines;
+    }
+    
+    @Override
+    public void serialize( MappingSerializer serializer )
+    {
+        super.serialize(serializer);
+        serializer.putList("engines", ListRepresentation.string(engines));
     }
 
-    public ScriptExecutor.Factory getFactory( String language )
-    {
-        if(languages.containsKey( language ))
-        {
-            return languages.get( language );
-        } else
-        {
-            throw new NoSuchScriptLanguageException( "Unknown scripting language '" + language + "'." );
-        }
-    }
 }

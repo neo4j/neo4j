@@ -26,6 +26,7 @@ import javax.ws.rs.core.Response;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.OutputFormat;
 
