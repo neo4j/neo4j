@@ -47,13 +47,9 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
+import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContext;
-import org.neo4j.kernel.impl.transaction.state.RecordChanges;
-import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.kernel.impl.transaction.state.RecordChanges.RecordChange;
 
 import static org.junit.Assert.assertFalse;
@@ -146,10 +142,7 @@ public class WriteTransactionCommandOrderingTest
         when( relationshipGroupChanges.changes() ).thenReturn( Collections.<RecordChanges.RecordChange<Long,RelationshipGroupRecord,Integer>>emptyList() );
         when( schemaRuleChanges.changes() ).thenReturn( Collections.<RecordChanges.RecordChange<Long,Collection<DynamicRecord>,SchemaRule>>emptyList() );
 
-
-
-
-        return new TransactionRecordState( 1, mock( NeoStore.class), mock( IntegrityValidator.class), context );
+        return new TransactionRecordState( mock( NeoStore.class), mock( IntegrityValidator.class), context );
 
 //
 //        Command.PropertyCommand updatedProp = new Command.PropertyCommand();

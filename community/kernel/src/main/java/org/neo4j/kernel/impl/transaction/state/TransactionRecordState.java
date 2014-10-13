@@ -82,21 +82,9 @@ public class TransactionRecordState
     private long lastCommittedTxWhenTransactionStarted;
     private boolean prepared;
 
-    /**
-     * @param lastCommittedTxWhenTransactionStarted is the highest committed transaction id when this transaction
-     *                                              begun. No operations in this transaction are allowed to have
-     *                                              taken place before that transaction id. This is used by
-     *                                              constraint validation - if a constraint was not online when this
-     *                                              transaction begun, it will be verified during prepare. If you are
-     *                                              writing code against this API and are unsure about what to set
-     *                                              this value to, 0 is a safe choice. That will ensure all
-     *                                              constraints are checked.
-     */
-    public TransactionRecordState( long lastCommittedTxWhenTransactionStarted,
-                         NeoStore neoStore, IntegrityValidator integrityValidator,
+    public TransactionRecordState( NeoStore neoStore, IntegrityValidator integrityValidator,
                          NeoStoreTransactionContext context )
     {
-        this.lastCommittedTxWhenTransactionStarted = lastCommittedTxWhenTransactionStarted;
         this.neoStore = neoStore;
         this.integrityValidator = integrityValidator;
         this.context = context;
@@ -104,6 +92,15 @@ public class TransactionRecordState
 
     /**
      * Set this record state to a pristine state, acting as if it had never been used.
+     *
+     * @param lastCommittedTxWhenTransactionStarted is the highest committed transaction id when this transaction
+     *                                       begun. No operations in this transaction are allowed to have
+     *                                       taken place before that transaction id. This is used by
+     *                                       constraint validation - if a constraint was not online when this
+     *                                       transaction begun, it will be verified during prepare. If you are
+     *                                       writing code against this API and are unsure about what to set
+     *                                       this value to, 0 is a safe choice. That will ensure all
+     *                                       constraints are checked.
      */
     public void initialize( long lastCommittedTxWhenTransactionStarted )
     {
