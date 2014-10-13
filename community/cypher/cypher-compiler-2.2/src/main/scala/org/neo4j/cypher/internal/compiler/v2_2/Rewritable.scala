@@ -105,10 +105,17 @@ object inSequence {
   import Rewritable._
 
   class InSequenceRewriter(rewriters: Seq[Rewriter]) extends Rewriter {
-    def apply(that: AnyRef): AnyRef =
-      rewriters.foldLeft(that) {
-        (t, r) => t.rewrite(r)
+    def apply(that: AnyRef): AnyRef = {
+      val it = rewriters.iterator
+      //this piece of code is used a lot and has been through profiling
+      //please don't just remove it because it is ugly looking
+      var result = that
+      while (it.hasNext) {
+        result = result.rewrite(it.next())
       }
+
+      result
+    }
   }
 
   def apply(rewriters: Rewriter*) = new InSequenceRewriter(rewriters)
@@ -121,7 +128,18 @@ object topDown {
   class TopDownRewriter(rewriter: Rewriter) extends Rewriter {
     def apply(that: AnyRef): AnyRef = {
       val rewrittenThat = that.rewrite(rewriter)
-      Some(rewrittenThat.dup(rewrittenThat.children.map(t => this.apply(t).get).toList))
+      //this piece of code is used a lot and has been through profiling
+      //please don't just remove it because it is ugly looking
+      val children = rewrittenThat.children.toList
+      val buffer = new Array[AnyRef](children.size)
+      val it = children.iterator
+      var index = 0
+      while (it.hasNext) {
+        buffer(index) = apply(it.next())
+        index += 1
+      }
+
+      rewrittenThat.dup(buffer)
     }
   }
 
@@ -133,9 +151,20 @@ object bottomUp {
   import Rewritable._
 
   class BottomUpRewriter(val rewriter: Rewriter) extends Rewriter {
-    def apply(that: AnyRef): Some[AnyRef] = {
-      val rewrittenThat = that.dup(that.children.map(t => this.apply(t).get).toList)
-      Some(rewrittenThat.rewrite(rewriter))
+    def apply(that: AnyRef): AnyRef = {
+      //this piece of code is used a lot and has been through profiling
+      //please don't just remove it because it is ugly looking
+      val children = that.children.toList
+      val buffer = new Array[AnyRef](children.size)
+      val it = children.iterator
+      var index = 0
+      while (it.hasNext) {
+        buffer(index) = apply(it.next())
+        index += 1
+      }
+
+      val rewrittenThat = that.dup(buffer)
+      rewriter.apply(rewrittenThat)
     }
   }
 

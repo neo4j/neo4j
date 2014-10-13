@@ -28,21 +28,29 @@ case class CandidateList(plans: Seq[LogicalPlan] = Seq.empty) {
 
   def +(plan: LogicalPlan) = copy(plans :+ plan)
 
+  final val VERBOSE = false
+
   def bestPlan(costs: CostModel): Option[LogicalPlan] = {
-    val sortedPlans = plans.sortBy[(Int, Cost, Int)](c => (-c.solved.numHints, costs(c), -c.availableSymbols.size))
+    val comparePlans = (c: LogicalPlan) => (-c.solved.numHints, costs(c), -c.availableSymbols.size)
 
-//    if (sortedPlans.size > 1) {
-//      println("Get best of:")
-//      for (plan <- sortedPlans) {
-//        println("* " + plan.toString + s"\t${costs(plan)}\n")
-//      }
-//
-//      println("Best is:")
-//      println(sortedPlans.head.toString)
-//      println()
-//    }
+    if (VERBOSE) {
+      val sortedPlans = plans.sortBy(comparePlans)
 
-    sortedPlans.headOption
+      if (sortedPlans.size > 1) {
+        println("Get best of:")
+        for (plan <- sortedPlans) {
+          println("* " + plan.toString + s"\t${costs(plan)}\n")
+        }
+
+        println("Best is:")
+        println(sortedPlans.head.toString)
+        println()
+      }
+
+      sortedPlans.headOption
+    } else {
+      if (plans.isEmpty) None else Some(plans.minBy(comparePlans))
+    }
   }
 
   def map(f: LogicalPlan => LogicalPlan): CandidateList = copy(plans = plans.map(f))

@@ -38,14 +38,10 @@ object Foldable {
       case _ => Iterator.empty.asInstanceOf[Iterator[AnyRef]]
     }
 
-    private def reverseProductIterator(p: Product) = p.productArity match {
-      case 0 => Iterator.empty.asInstanceOf[Iterator[AnyRef]]
-      case 1 => Iterator.single[AnyRef](p.productElement(0).asInstanceOf[AnyRef])
-      case _ => new Iterator[AnyRef] {
-        private var c: Int = p.productArity - 1
-        def hasNext = c >= 0
-        def next() = { val result = p.productElement(c).asInstanceOf[AnyRef]; c -= 1; result }
-      }
+    private def reverseProductIterator(p: Product) = new Iterator[AnyRef] {
+      private var c: Int = p.productArity - 1
+      def hasNext = c >= 0
+      def next() = { val result = p.productElement(c).asInstanceOf[AnyRef]; c -= 1; result }
     }
   }
 
