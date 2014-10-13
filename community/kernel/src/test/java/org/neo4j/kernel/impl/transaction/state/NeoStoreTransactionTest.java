@@ -1467,7 +1467,7 @@ public class NeoStoreTransactionTest
         NeoStoreTransactionContext context =
                 new NeoStoreTransactionContext( mock( NeoStoreTransactionContextSupplier.class ), neoStore );
         context.bind( mock( Locks.Client.class ) );
-        TransactionRecordState result = new TransactionRecordState( 0l, neoStore,
+        TransactionRecordState result = new TransactionRecordState( neoStore,
                 new IntegrityValidator( neoStore, indexing ), context );
 
         return Pair.of( result, context );

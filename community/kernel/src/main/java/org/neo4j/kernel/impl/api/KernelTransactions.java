@@ -101,13 +101,13 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
             NeoStoreTransactionContext context = neoStoreTransactionContextSupplier.acquire();
             Locks.Client locksClient = locks.newClient();
             context.bind( locksClient );
-            TransactionRecordState neoStoreTransaction = new TransactionRecordState(
-                    neoStore.getLastCommittedTransactionId(), neoStore, integrityValidator, context );
+            TransactionRecordState recordState = new TransactionRecordState(
+                    neoStore, integrityValidator, context );
             LegacyIndexTransactionState legacyIndexTransactionState =
                     new LegacyIndexTransactionState( indexConfigStore, legacyIndexProviderLookup );
             KernelTransactionImplementation tx = new KernelTransactionImplementation(
                     statementOperations, readOnly, schemaWriteGuard,
-                    labelScanStore, indexingService, updateableSchemaState, neoStoreTransaction, providerMap,
+                    labelScanStore, indexingService, updateableSchemaState, recordState, providerMap,
                     neoStore, locksClient, hooks, constraintIndexCreator, transactionHeaderInformationFactory.create(),
                     transactionCommitProcess, transactionMonitor, persistenceCache, storeLayer,
                     legacyIndexTransactionState, Clock.SYSTEM_CLOCK )

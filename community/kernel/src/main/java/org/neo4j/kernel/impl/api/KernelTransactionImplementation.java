@@ -112,7 +112,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             SchemaWriteGuard schemaWriteGuard, LabelScanStore labelScanStore,
                                             IndexingService indexService,
                                             UpdateableSchemaState schemaState,
-                                            TransactionRecordState neoStoreTransaction,
+                                            TransactionRecordState recordState,
                                             SchemaIndexProviderMap providerMap, NeoStore neoStore,
                                             Locks.Client locks, TransactionHooks hooks,
                                             ConstraintIndexCreator constraintIndexCreator,
@@ -129,7 +129,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.schemaWriteGuard = schemaWriteGuard;
         this.labelScanStore = labelScanStore;
         this.indexService = indexService;
-        this.recordState = neoStoreTransaction;
+        this.recordState = recordState;
         this.providerMap = providerMap;
         this.schemaState = schemaState;
         this.hooks = hooks;
