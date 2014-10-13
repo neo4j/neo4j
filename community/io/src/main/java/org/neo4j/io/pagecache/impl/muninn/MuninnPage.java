@@ -19,10 +19,12 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
+import static org.neo4j.io.pagecache.impl.muninn.UnsafeUtil.allowUnalignedMemoryAccess;
+import static org.neo4j.io.pagecache.impl.muninn.UnsafeUtil.storeByteOrderIsNative;
+
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.Page;
@@ -33,7 +35,6 @@ import org.neo4j.io.pagecache.impl.muninn.jsr166e.StampedLock;
 
 final class MuninnPage extends StampedLock implements Page
 {
-    private static final boolean littleEndian = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN;
     private static final Constructor<?> directBufferCtor;
     private static final long usageStampOffset = UnsafeUtil.getFieldOffset( MuninnPage.class, "usageStamp" );
     static {
@@ -106,47 +107,137 @@ final class MuninnPage extends StampedLock implements Page
     public long getLong( int offset )
     {
         assert checkBounds( offset + 8 );
-        if ( littleEndian )
+        if ( allowUnalignedMemoryAccess )
         {
-            return Long.reverseBytes( UnsafeUtil.getLong( pointer + offset ) );
+            long x = UnsafeUtil.getLong( pointer + offset );
+            return storeByteOrderIsNative ? x : Long.reverseBytes( x );
         }
-        return UnsafeUtil.getLong( pointer + offset );
+        return getLongBigEndian( offset );
+    }
+
+    private long getLongBigEndian( int offset )
+    {
+        long p = pointer + offset;
+        long a = UnsafeUtil.getByte( p     ) & 0xFF;
+        long b = UnsafeUtil.getByte( p + 1 ) & 0xFF;
+        long c = UnsafeUtil.getByte( p + 2 ) & 0xFF;
+        long d = UnsafeUtil.getByte( p + 3 ) & 0xFF;
+        long e = UnsafeUtil.getByte( p + 4 ) & 0xFF;
+        long f = UnsafeUtil.getByte( p + 5 ) & 0xFF;
+        long g = UnsafeUtil.getByte( p + 6 ) & 0xFF;
+        long h = UnsafeUtil.getByte( p + 7 ) & 0xFF;
+        return (a << 56) | (b << 48) | (c << 40) | (d << 32) | (e << 24) | (f << 16) | (g << 8) | h;
     }
 
     public void putLong( long value, int offset )
     {
         assert checkBounds( offset + 8 );
-        if ( littleEndian )
+        if ( allowUnalignedMemoryAccess )
         {
-            UnsafeUtil.putLong( pointer + offset, Long.reverseBytes( value ) );
+            long p = pointer + offset;
+            UnsafeUtil.putLong( p, storeByteOrderIsNative ? value : Long.reverseBytes( value ) );
         }
         else
         {
-            UnsafeUtil.putLong( pointer + offset, value );
+            putLongBigEndian( value, offset );
         }
+    }
+
+    private void putLongBigEndian( long value, int offset )
+    {
+        long p = pointer + offset;
+        UnsafeUtil.putByte( p    , (byte)( value >> 56 ) );
+        UnsafeUtil.putByte( p + 1, (byte)( value >> 48 ) );
+        UnsafeUtil.putByte( p + 2, (byte)( value >> 40 ) );
+        UnsafeUtil.putByte( p + 3, (byte)( value >> 32 ) );
+        UnsafeUtil.putByte( p + 4, (byte)( value >> 24 ) );
+        UnsafeUtil.putByte( p + 5, (byte)( value >> 16 ) );
+        UnsafeUtil.putByte( p + 6, (byte)( value >> 8  ) );
+        UnsafeUtil.putByte( p + 7, (byte)( value       ) );
     }
 
     public int getInt( int offset )
     {
         assert checkBounds( offset + 4 );
-        if ( littleEndian )
+        if ( allowUnalignedMemoryAccess )
         {
-            return Integer.reverseBytes( UnsafeUtil.getInt( pointer + offset ) );
+            int x = UnsafeUtil.getInt( pointer + offset );
+            return storeByteOrderIsNative ? x : Integer.reverseBytes( x );
         }
-        return UnsafeUtil.getInt( pointer + offset );
+        return getIntBigEndian( offset );
+    }
+
+    private int getIntBigEndian( int offset )
+    {
+        long p = pointer + offset;
+        int a = UnsafeUtil.getByte( p     ) & 0xFF;
+        int b = UnsafeUtil.getByte( p + 1 ) & 0xFF;
+        int c = UnsafeUtil.getByte( p + 2 ) & 0xFF;
+        int d = UnsafeUtil.getByte( p + 3 ) & 0xFF;
+        return (a << 24) | (b << 16) | (c << 8) | d;
     }
 
     public void putInt( int value, int offset )
     {
         assert checkBounds( offset + 4 );
-        if ( littleEndian )
+        if ( allowUnalignedMemoryAccess )
         {
-            UnsafeUtil.putInt( pointer + offset, Integer.reverseBytes( value ) );
+            long p = pointer + offset;
+            UnsafeUtil.putInt( p, storeByteOrderIsNative ? value : Integer.reverseBytes( value ) );
         }
         else
         {
-            UnsafeUtil.putInt( pointer + offset, value );
+            putIntBigEndian( value, offset );
         }
+    }
+
+    private void putIntBigEndian( int value, int offset )
+    {
+        long p = pointer + offset;
+        UnsafeUtil.putByte( p    , (byte)( value >> 24 ) );
+        UnsafeUtil.putByte( p + 1, (byte)( value >> 16 ) );
+        UnsafeUtil.putByte( p + 2, (byte)( value >> 8  ) );
+        UnsafeUtil.putByte( p + 3, (byte)( value       ) );
+    }
+
+    public short getShort( int offset )
+    {
+        assert checkBounds( offset + 2 );
+        if ( allowUnalignedMemoryAccess )
+        {
+            short x = UnsafeUtil.getShort( pointer + offset );
+            return storeByteOrderIsNative ? x : Short.reverseBytes( x );
+        }
+        return getShortBigEndian( offset );
+    }
+
+    private short getShortBigEndian( int offset )
+    {
+        long p = pointer + offset;
+        short a = (short) (UnsafeUtil.getByte( p     ) & 0xFF);
+        short b = (short) (UnsafeUtil.getByte( p + 1 ) & 0xFF);
+        return (short) ((a << 8) | b);
+    }
+
+    public void putShort( short value, int offset )
+    {
+        assert checkBounds( offset + 2 );
+        if ( allowUnalignedMemoryAccess )
+        {
+            long p = pointer + offset;
+            UnsafeUtil.putShort( p, storeByteOrderIsNative ? value : Short.reverseBytes( value ) );
+        }
+        else
+        {
+            putShortBigEndian( value, offset );
+        }
+    }
+
+    private void putShortBigEndian( short value, int offset )
+    {
+        long p = pointer + offset;
+        UnsafeUtil.putByte( p    , (byte)( value >> 8 ) );
+        UnsafeUtil.putByte( p + 1, (byte)( value      ) );
     }
 
     @Override
@@ -154,7 +245,8 @@ final class MuninnPage extends StampedLock implements Page
     {
         assert checkBounds( offset + data.length );
         long address = pointer + offset;
-        for ( int i = 0; i < data.length; i++ )
+        int length = data.length;
+        for ( int i = 0; i < length; i++ )
         {
             data[i] = UnsafeUtil.getByte( address );
             address++;
@@ -166,33 +258,11 @@ final class MuninnPage extends StampedLock implements Page
     {
         assert checkBounds( offset + data.length );
         long address = pointer + offset;
-        for ( int i = 0; i < data.length; i++ )
+        int length = data.length;
+        for ( int i = 0; i < length; i++ )
         {
             UnsafeUtil.putByte( address, data[i] );
             address++;
-        }
-    }
-
-    public short getShort( int offset )
-    {
-        assert checkBounds( offset + 2 );
-        if ( littleEndian )
-        {
-            return Short.reverseBytes( UnsafeUtil.getShort( pointer + offset ) );
-        }
-        return UnsafeUtil.getShort( pointer + offset );
-    }
-
-    public void putShort( short value, int offset )
-    {
-        assert checkBounds( offset + 2 );
-        if ( littleEndian )
-        {
-            UnsafeUtil.putShort( pointer + offset, Short.reverseBytes( value ) );
-        }
-        else
-        {
-            UnsafeUtil.putShort( pointer + offset, value );
         }
     }
 

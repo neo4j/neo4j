@@ -205,17 +205,6 @@ public class MuninnPageCache implements RunnablePageCache
 
     static void verifyHacks()
     {
-        // Make sure that we can do unaligned get* and put*
-        // See java.nio.Bits.unaligned().
-        String arch = System.getProperty( "os.arch", "?" );
-        if ( !arch.equals( "x86_64" ) && !arch.equals( "i386" )
-                && !arch.equals( "x86" ) && !arch.equals( "amd64" ) )
-        {
-            throw new AssertionError(
-                    "MuninnPageCache cannot be guaranteed to work on CPU architecture '" + arch + "' " +
-                            "where support for unaligned word access is unknown." );
-        }
-
         // Make sure that we have access to theUnsafe.
         if ( !UnsafeUtil.hasUnsafe() )
         {
