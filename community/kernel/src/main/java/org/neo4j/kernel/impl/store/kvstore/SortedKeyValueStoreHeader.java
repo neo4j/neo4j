@@ -17,23 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.counts;
+package org.neo4j.kernel.impl.store.kvstore;
+
+import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
+import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore.RECORD_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.neo4j.helpers.UTF8;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
-import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
-import static org.neo4j.kernel.impl.store.counts.CountsStore.RECORD_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
-
-final class CountsStoreHeader
+public final class SortedKeyValueStoreHeader
 {
-    static CountsStoreHeader empty( String storeFormatVersion )
+    public static SortedKeyValueStoreHeader empty( String storeFormatVersion )
     {
-        return new CountsStoreHeader( UTF8.encode( storeFormatVersion ), 0, BASE_TX_ID );
+        if ( storeFormatVersion == null )
+        {
+            throw new IllegalArgumentException( "store format version cannot be null" );
+        }
+        return new SortedKeyValueStoreHeader( UTF8.encode( storeFormatVersion ), 0, BASE_TX_ID );
     }
 
     private static final int META_HEADER_SIZE = 2/*headerRecords*/ + 2/*versionLen*/ + 4/*dataRecords*/ + 8/*lastTxId*/;
@@ -41,11 +46,50 @@ final class CountsStoreHeader
     private final int dataRecords;
     private final long lastTxId;
 
-    private CountsStoreHeader( byte[] storeFormatVersion, int dataRecords, long lastTxId )
+    private SortedKeyValueStoreHeader( byte[] storeFormatVersion, int dataRecords, long lastTxId )
     {
         this.storeFormatVersion = storeFormatVersion;
         this.dataRecords = dataRecords;
         this.lastTxId = lastTxId;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        SortedKeyValueStoreHeader that = (SortedKeyValueStoreHeader) o;
+
+        if ( dataRecords != that.dataRecords )
+        {
+            return false;
+        }
+        if ( lastTxId != that.lastTxId )
+        {
+            return false;
+        }
+        if ( !Arrays.equals( storeFormatVersion, that.storeFormatVersion ) )
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = Arrays.hashCode( storeFormatVersion );
+        result = 31 * result + dataRecords;
+        result = 31 * result + (int) (lastTxId ^ (lastTxId >>> 32));
+        return result;
     }
 
     @Override
@@ -55,9 +99,9 @@ final class CountsStoreHeader
                               getClass().getSimpleName(), storeFormatVersion(), dataRecords, lastTxId );
     }
 
-    CountsStoreHeader update( int dataRecords, long lastTxId )
+    public SortedKeyValueStoreHeader update( int dataRecords, long lastTxId )
     {
-        return new CountsStoreHeader( storeFormatVersion, dataRecords, lastTxId );
+        return new SortedKeyValueStoreHeader( storeFormatVersion, dataRecords, lastTxId );
     }
 
     String storeFormatVersion()
@@ -65,7 +109,7 @@ final class CountsStoreHeader
         return UTF8.decode( storeFormatVersion );
     }
 
-    int headerRecords()
+    public int headerRecords()
     {
         int headerBytes = META_HEADER_SIZE + storeFormatVersion.length;
         headerBytes += RECORD_SIZE - (headerBytes % RECORD_SIZE);
@@ -82,7 +126,7 @@ final class CountsStoreHeader
         return lastTxId;
     }
 
-    static CountsStoreHeader read( PagedFile pagedFile ) throws IOException
+    public static SortedKeyValueStoreHeader read( PagedFile pagedFile ) throws IOException
     {
         try ( PageCursor page = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
         {
@@ -116,7 +160,7 @@ final class CountsStoreHeader
                         }
                     }
                 } while ( page.shouldRetry() );
-                return new CountsStoreHeader( storeFormatVersion, dataRecords, lastTxId );
+                return new SortedKeyValueStoreHeader( storeFormatVersion, dataRecords, lastTxId );
             }
             else
             {
@@ -125,7 +169,7 @@ final class CountsStoreHeader
         }
     }
 
-    void write( PagedFile pagedFile ) throws IOException
+    public void write( PagedFile pagedFile ) throws IOException
     {
         try ( PageCursor page = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
         {
@@ -140,7 +184,7 @@ final class CountsStoreHeader
         }
     }
 
-    void write( PageCursor page ) throws IOException
+    public void write( PageCursor page ) throws IOException
     {
         do
         {

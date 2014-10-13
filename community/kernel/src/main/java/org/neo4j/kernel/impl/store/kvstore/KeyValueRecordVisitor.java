@@ -17,11 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.counts;
+package org.neo4j.kernel.impl.store.kvstore;
 
-import org.neo4j.kernel.impl.api.CountsKey;
-
-interface RecordVisitor
+public interface KeyValueRecordVisitor<K extends Comparable<K>, VR>
 {
-    void visit( CountsKey key, long value );
+    VR valueRegister();
+    void visit( K key );
 }

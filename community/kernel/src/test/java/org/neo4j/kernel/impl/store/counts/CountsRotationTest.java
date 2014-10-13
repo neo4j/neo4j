@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -27,7 +31,6 @@ import java.util.Collection;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -42,15 +45,15 @@ import org.neo4j.kernel.impl.api.CountsKey;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
+import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.register.Register;
+import org.neo4j.register.Registers;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 public class CountsRotationTest
 {
@@ -176,27 +179,36 @@ public class CountsRotationTest
         pageCache = pcRule.getPageCache( fs, new Config() );
     }
 
-    private static final String countsStoreBase = NeoStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE;
+    private static final String COUNTS_STORE_BASE = NeoStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE;
 
     private File alphaStoreFile()
     {
-        return new File( dir.getPath(), countsStoreBase + CountsTracker.ALPHA );
+        return new File( dir.getPath(), COUNTS_STORE_BASE + CountsTracker.ALPHA );
     }
 
     private File betaStoreFile()
     {
-        return new File( dir.getPath(), countsStoreBase + CountsTracker.BETA );
+        return new File( dir.getPath(), COUNTS_STORE_BASE + CountsTracker.BETA );
     }
 
-    private Collection<Pair<CountsKey, Long>> allRecords( CountsStore store )
+
+    private Collection<Pair<CountsKey, Long>> allRecords( SortedKeyValueStore<CountsKey, Register.LongRegister> store )
     {
         final Collection<Pair<CountsKey, Long>> records = new ArrayList<>();
-        store.accept( new RecordVisitor()
+        store.accept( new KeyValueRecordVisitor<CountsKey, Register.LongRegister>()
         {
+            private final Register.LongRegister valueRegister = Registers.newLongRegister();
+
             @Override
-            public void visit( CountsKey key, long value )
+            public void visit( CountsKey key  )
             {
-                records.add( Pair.of( key, value ) );
+                records.add( Pair.of( key, valueRegister.read() ) );
+            }
+
+            @Override
+            public Register.LongRegister valueRegister()
+            {
+                return valueRegister;
             }
         } );
         return records;

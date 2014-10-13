@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
+import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
+import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
+
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -32,9 +35,10 @@ import org.neo4j.kernel.impl.api.CountsKey;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.locking.LockWrapper;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
-
-import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
-import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
+import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
+import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
+import org.neo4j.register.Register;
+import org.neo4j.register.Registers;
 
 /**
  * {@link CountsTracker} maintains two files, the {@link #alphaFile} and the {@link #betaFile} that it rotates between.
@@ -44,7 +48,7 @@ import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
  */
 public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, CountsAcceptor
 {
-    public static final String STORE_DESCRIPTOR = CountsStore.class.getSimpleName();
+    public static final String STORE_DESCRIPTOR = SortedKeyValueStore.class.getSimpleName();
 
     interface State extends Closeable
     {
@@ -58,9 +62,10 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
 
         File storeFile();
 
-        CountsStore.Writer newWriter( File file, long lastCommittedTxId ) throws IOException;
+        SortedKeyValueStore.Writer<CountsKey, Register.LongRegister> newWriter( File file, long lastCommittedTxId )
+                throws IOException;
 
-        void accept( RecordVisitor visitor );
+        void accept( KeyValueRecordVisitor<CountsKey, Register.LongRegister> visitor );
     }
 
     public static final String ALPHA = ".alpha", BETA = ".beta";
@@ -149,12 +154,20 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
 
     public void accept( final CountsVisitor visitor )
     {
-        state.accept( new RecordVisitor()
+        state.accept( new KeyValueRecordVisitor<CountsKey, Register.LongRegister>()
         {
+            private final Register.LongRegister valueRegister = Registers.newLongRegister();
+
             @Override
-            public void visit( CountsKey key, long value )
+            public Register.LongRegister valueRegister()
             {
-                key.accept( visitor, value );
+                return valueRegister;
+            }
+
+            @Override
+            public void visit( CountsKey key )
+            {
+                key.accept( visitor, valueRegister );
             }
         } );
     }
@@ -200,7 +213,8 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
             if ( state.hasChanges() )
             {
                 // select the next file, and create a writer for it
-                try ( CountsStore.Writer writer = nextWriter( state, lastCommittedTxId ) )
+                try ( CountsStore.Writer<CountsKey, Register.LongRegister> writer =
+                              nextWriter( state, lastCommittedTxId ) )
                 {
                     state.accept( writer );
                     // replace the old store with the
@@ -212,7 +226,8 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
         }
     }
 
-    CountsStore.Writer nextWriter( State state, long lastCommittedTxId ) throws IOException
+    CountsStore.Writer<CountsKey, Register.LongRegister> nextWriter( State state, long lastCommittedTxId )
+            throws IOException
     {
         if ( alphaFile.equals( state.storeFile() ) )
         {

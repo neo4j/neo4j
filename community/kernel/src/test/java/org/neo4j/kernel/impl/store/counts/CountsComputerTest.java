@@ -19,13 +19,18 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
+import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
+import static org.neo4j.kernel.impl.store.StoreFactory.buildTypeDescriptorAndVersion;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
+
 import java.io.File;
 import java.io.IOException;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
@@ -43,15 +48,12 @@ import org.neo4j.kernel.impl.api.CountsState;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.register.Register;
+import org.neo4j.register.Registers;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
-
-import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.kernel.impl.store.StoreFactory.buildTypeDescriptorAndVersion;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class CountsComputerTest
 {
@@ -99,11 +101,11 @@ public class CountsComputerTest
         {
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1, store.lastTxId() );
             assertEquals( 4, store.totalRecordsStored() );
-            assertEquals( 4, store.get( CountsKey.nodeKey( -1 ) ) );
-            assertEquals( 1, store.get( CountsKey.nodeKey( 0 ) ) );
-            assertEquals( 1, store.get( CountsKey.nodeKey( 1 ) ) );
-            assertEquals( 1, store.get( CountsKey.nodeKey( 2 ) ) );
-            assertEquals( 0, store.get( CountsKey.nodeKey( 3 ) ) );
+            assertEquals( 4, get( store, nodeKey( -1 ) ) );
+            assertEquals( 1, get( store, nodeKey( 0 ) ) );
+            assertEquals( 1, get( store, nodeKey( 1 ) ) );
+            assertEquals( 1, get( store, nodeKey( 2 ) ) );
+            assertEquals( 0, get( store, nodeKey( 3 ) ) );
         }
     }
 
@@ -132,11 +134,11 @@ public class CountsComputerTest
         {
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1, store.lastTxId() );
             assertEquals( 3, store.totalRecordsStored() );
-            assertEquals( 3, store.get( CountsKey.nodeKey( -1 ) ) );
-            assertEquals( 1, store.get( CountsKey.nodeKey( 0 ) ) );
-            assertEquals( 1, store.get( CountsKey.nodeKey( 1 ) ) );
-            assertEquals( 0, store.get( CountsKey.nodeKey( 2 ) ) );
-            assertEquals( 0, store.get( CountsKey.nodeKey( 3 ) ) );
+            assertEquals( 3, get( store, nodeKey( -1 ) ) );
+            assertEquals( 1, get( store, nodeKey( 0 ) ) );
+            assertEquals( 1, get( store, nodeKey( 1 ) ) );
+            assertEquals( 0, get( store, nodeKey( 2 ) ) );
+            assertEquals( 0, get( store, nodeKey( 3 ) ) );
         }
     }
 
@@ -165,14 +167,14 @@ public class CountsComputerTest
         {
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1 + 1, store.lastTxId() );
             assertEquals( 11, store.totalRecordsStored() );
-            assertEquals( 2, store.get( CountsKey.nodeKey( -1 ) ) );
-            assertEquals( 1, store.get( CountsKey.nodeKey( 0 ) ) );
-            assertEquals( 1, store.get( CountsKey.nodeKey( 1 ) ) );
-            assertEquals( 0, store.get( CountsKey.nodeKey( 2 ) ) );
-            assertEquals( 0, store.get( CountsKey.nodeKey( 3 ) ) );
-            assertEquals( 0, store.get( CountsKey.relationshipKey( -1, 0, -1 ) ) );
-            assertEquals( 1, store.get( CountsKey.relationshipKey( -1, 1, -1 ) ) );
-            assertEquals( 1, store.get( CountsKey.relationshipKey( 1, 1, 0 ) ) );
+            assertEquals( 2, get( store, nodeKey( -1 ) ) );
+            assertEquals( 1, get( store, nodeKey( 0 ) ) );
+            assertEquals( 1, get( store, nodeKey( 1 ) ) );
+            assertEquals( 0, get( store, nodeKey( 2 ) ) );
+            assertEquals( 0, get( store, nodeKey( 3 ) ) );
+            assertEquals( 0, get( store, relationshipKey( -1, 0, -1 ) ) );
+            assertEquals( 1, get( store, relationshipKey( -1, 1, -1 ) ) );
+            assertEquals( 1, get( store, relationshipKey( 1, 1, 0 ) ) );
         }
     }
 
@@ -202,19 +204,19 @@ public class CountsComputerTest
         {
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1 + 1 + 1, store.lastTxId() );
             assertEquals( 15, store.totalRecordsStored() );
-            assertEquals( 4, store.get( CountsKey.nodeKey( -1 ) ) );
-            assertEquals( 1, store.get( CountsKey.nodeKey( 0 ) ) );
-            assertEquals( 1, store.get( CountsKey.nodeKey( 1 ) ) );
-            assertEquals( 1, store.get( CountsKey.nodeKey( 2 ) ) );
-            assertEquals( 0, store.get( CountsKey.nodeKey( 3 ) ) );
-            assertEquals( 2, store.get( CountsKey.relationshipKey( -1, -1, -1 ) ) );
-            assertEquals( 1, store.get( CountsKey.relationshipKey( -1, 0, -1 ) ) );
-            assertEquals( 1, store.get( CountsKey.relationshipKey( -1, 1, -1 ) ) );
-            assertEquals( 0, store.get( CountsKey.relationshipKey( -1, 2, -1 ) ) );
-            assertEquals( 1, store.get( CountsKey.relationshipKey( 0, 0, 2 ) ) );
-            assertEquals( 0, store.get( CountsKey.relationshipKey( 2, 0, 0 ) ) );
-            assertEquals( 1, store.get( CountsKey.relationshipKey( -1, 1, 1 ) ) );
-            assertEquals( 0, store.get( CountsKey.relationshipKey( -1, 0, 1 ) ) );
+            assertEquals( 4, get( store, nodeKey( -1 ) ) );
+            assertEquals( 1, get( store, nodeKey( 0 ) ) );
+            assertEquals( 1, get( store, nodeKey( 1 ) ) );
+            assertEquals( 1, get( store, nodeKey( 2 ) ) );
+            assertEquals( 0, get( store, nodeKey( 3 ) ) );
+            assertEquals( 2, get( store, relationshipKey( -1, -1, -1 ) ) );
+            assertEquals( 1, get( store, relationshipKey( -1, 0, -1 ) ) );
+            assertEquals( 1, get( store, relationshipKey( -1, 1, -1 ) ) );
+            assertEquals( 0, get( store, relationshipKey( -1, 2, -1 ) ) );
+            assertEquals( 1, get( store, relationshipKey( 0, 0, 2 ) ) );
+            assertEquals( 0, get( store, relationshipKey( 2, 0, 0 ) ) );
+            assertEquals( 1, get( store, relationshipKey( -1, 1, 1 ) ) );
+            assertEquals( 0, get( store, relationshipKey( -1, 0, 1 ) ) );
         }
     }
 
@@ -246,23 +248,23 @@ public class CountsComputerTest
         {
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1, store.lastTxId() );
             assertEquals( 30, store.totalRecordsStored() );
-            assertEquals( 3, store.get( CountsKey.nodeKey( -1 ) ) );
-            assertEquals( 1, store.get( CountsKey.nodeKey( 0 ) ) );
-            assertEquals( 1, store.get( CountsKey.nodeKey( 1 ) ) );
-            assertEquals( 1, store.get( CountsKey.nodeKey( 2 ) ) );
-            assertEquals( 0, store.get( CountsKey.nodeKey( 3 ) ) );
-            assertEquals( 4, store.get( CountsKey.relationshipKey( -1, -1, -1 ) ) );
-            assertEquals( 1, store.get( CountsKey.relationshipKey( -1, 0, -1 ) ) );
-            assertEquals( 1, store.get( CountsKey.relationshipKey( -1, 1, -1 ) ) );
-            assertEquals( 1, store.get( CountsKey.relationshipKey( -1, 2, -1 ) ) );
-            assertEquals( 1, store.get( CountsKey.relationshipKey( -1, 3, -1 ) ) );
-            assertEquals( 0, store.get( CountsKey.relationshipKey( -1, 4, -1 ) ) );
-            assertEquals( 1, store.get( CountsKey.relationshipKey( 0, 2, 2 ) ) );
-            assertEquals( 0, store.get( CountsKey.relationshipKey( 2, 0, 0 ) ) );
-            assertEquals( 1, store.get( CountsKey.relationshipKey( -1, 1, 1 ) ) );
-            assertEquals( 2, store.get( CountsKey.relationshipKey( -1, -1, 1 ) ) );
-            assertEquals( 0, store.get( CountsKey.relationshipKey( 1, -1, 2 ) ) );
-            assertEquals( 3, store.get( CountsKey.relationshipKey( 0, -1, -1 ) ) );
+            assertEquals( 3, get( store, nodeKey( -1 ) ) );
+            assertEquals( 1, get( store, nodeKey( 0 ) ) );
+            assertEquals( 1, get( store, nodeKey( 1 ) ) );
+            assertEquals( 1, get( store, nodeKey( 2 ) ) );
+            assertEquals( 0, get( store, nodeKey( 3 ) ) );
+            assertEquals( 4, get( store, relationshipKey( -1, -1, -1 ) ) );
+            assertEquals( 1, get( store, relationshipKey( -1, 0, -1 ) ) );
+            assertEquals( 1, get( store, relationshipKey( -1, 1, -1 ) ) );
+            assertEquals( 1, get( store, relationshipKey( -1, 2, -1 ) ) );
+            assertEquals( 1, get( store, relationshipKey( -1, 3, -1 ) ) );
+            assertEquals( 0, get( store, relationshipKey( -1, 4, -1 ) ) );
+            assertEquals( 1, get( store, relationshipKey( 0, 2, 2 ) ) );
+            assertEquals( 0, get( store, relationshipKey( 2, 0, 0 ) ) );
+            assertEquals( 1, get( store, relationshipKey( -1, 1, 1 ) ) );
+            assertEquals( 2, get( store, relationshipKey( -1, -1, 1 ) ) );
+            assertEquals( 0, get( store, relationshipKey( 1, -1, 2 ) ) );
+            assertEquals( 3, get( store, relationshipKey( 0, -1, -1 ) ) );
         }
     }
 
@@ -288,16 +290,16 @@ public class CountsComputerTest
         pageCache = pcRule.getPageCache( fs, new Config() );
     }
 
-    private static final String countsStoreBase = NeoStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE;
+    private static final String COUNTS_STORE_BASE = NeoStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE;
 
     private File alphaStoreFile()
     {
-        return new File( dir, countsStoreBase + CountsTracker.ALPHA );
+        return new File( dir, COUNTS_STORE_BASE + CountsTracker.ALPHA );
     }
 
     private File betaStoreFile()
     {
-        return new File( dir, countsStoreBase + CountsTracker.BETA );
+        return new File( dir, COUNTS_STORE_BASE + CountsTracker.BETA );
     }
 
     private long getLastTxId( GraphDatabaseAPI db )
@@ -310,15 +312,22 @@ public class CountsComputerTest
     {
         fs.deleteFile( alphaStoreFile() );
         fs.deleteFile( betaStoreFile() );
-        CountsTracker.createEmptyCountsStore( pageCache, new File( dir, countsStoreBase ),
+        CountsTracker.createEmptyCountsStore( pageCache, new File( dir, COUNTS_STORE_BASE ),
                 buildTypeDescriptorAndVersion( CountsTracker.STORE_DESCRIPTOR ) );
     }
 
     private void rebuildCounts( CountsState countsState, long lastCommittedTransactionId ) throws IOException
     {
-        final CountsTracker tracker = new CountsTracker( fs, pageCache, new File( dir, countsStoreBase ) );
+        final CountsTracker tracker = new CountsTracker( fs, pageCache, new File( dir, COUNTS_STORE_BASE ) );
         countsState.accept( new CountsAcceptor.Initializer( tracker ) );
         tracker.rotate( lastCommittedTransactionId );
         tracker.close();
+    }
+
+    private long get( CountsStore store, CountsKey key )
+    {
+        Register.LongRegister value = Registers.newLongRegister();
+        store.get( key, value );
+        return value.read();
     }
 }
