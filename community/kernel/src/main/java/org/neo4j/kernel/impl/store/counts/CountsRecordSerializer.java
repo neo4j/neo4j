@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
+import static org.neo4j.kernel.impl.api.CountsKey.indexKey;
 import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
 import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
 
@@ -59,6 +60,7 @@ public class CountsRecordSerializer implements KeyValueRecordSerializer<CountsKe
     static final byte EMPTY_RECORD_KEY = 0;
     static final byte NODE_KEY = 1;
     static final byte RELATIONSHIP_KEY = 2;
+    static final byte INDEX_KEY = 4;
 
     @Override
     public boolean visitRecord(ByteBuffer buffer, KeyValueRecordVisitor<CountsKey, Register.LongRegister> visitor)
@@ -97,6 +99,10 @@ public class CountsRecordSerializer implements KeyValueRecordSerializer<CountsKe
 
             case RELATIONSHIP_KEY:
                 key = relationshipKey( one /* start label id */, two /* rel type id */, three /* end label id */ );
+                break;
+
+            case INDEX_KEY:
+                key = indexKey( three /* label id */, two /* pk id */ );
                 break;
 
             default:

@@ -47,4 +47,10 @@ public interface IndexStoreView extends PropertyAccessor
             Visitor<NodeLabelUpdate, FAILURE> labelUpdateVisitor );
 
     Iterable<NodePropertyUpdate> nodeAsUpdates( long nodeId );
+
+    void replaceIndexCount( IndexDescriptor descriptor, long total );
+
+    void updateIndexCount( IndexDescriptor descriptor, long delta );
+
+    void flush();
 }

@@ -98,7 +98,7 @@ public class CountsStoreWriterTest
                         }
 
                         @Override
-                        public void visitIndexCount( int indexId, long count )
+                        public void visitIndexCount( int labelId, int propertyKeyId, long count )
                         {
                             // nothing to check here
                         }

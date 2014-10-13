@@ -73,7 +73,7 @@ public class BridgingCacheAccessTest
         // GIVEN
         final BridgingCacheAccess cacheAccess = new BridgingCacheAccess( schemaCache, schemaState, persistenceCache );
         cacheAccess.setMaxChangesThreshold( 10 );
-        cacheAccess.applyCountUpdates( 1, 2, 3, 4 );
+        cacheAccess.applyCountUpdates( 1, 2, 3, 4);
         verify( schemaState, times( 1 ) ).clear();
         reset( schemaCache );
 

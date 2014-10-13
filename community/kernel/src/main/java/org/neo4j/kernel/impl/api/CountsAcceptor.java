@@ -25,7 +25,9 @@ public interface CountsAcceptor
 
     void updateCountsForRelationship( int startLabelId, int typeId, int endLabelId, long delta );
 
-    void updateCountsForIndex( int indexId, long delta );
+    void updateCountsForIndex( int labelId, int propertyKeyId, long delta );
+
+    void replaceCountsForIndex( int labelId, int propertyKeyId, long total );
 
     final class Initializer implements CountsVisitor
     {
@@ -49,9 +51,9 @@ public interface CountsAcceptor
         }
 
         @Override
-        public void visitIndexCount( int indexId, long count )
+        public void visitIndexCount( int labelId, int propertyKeyId, long count )
         {
-            target.updateCountsForIndex( indexId, count );
+            target.updateCountsForIndex( labelId, propertyKeyId, count );
         }
     }
 }

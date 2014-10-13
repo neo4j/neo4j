@@ -54,9 +54,15 @@ public class CountsState implements CountsVisitor.Visitable, CountsAcceptor, Rec
     }
 
     @Override
-    public void updateCountsForIndex( int indexId, long delta )
+    public void updateCountsForIndex( int labelId, int propertyKeyId, long delta )
     {
-        count( indexKey( indexId ) ).update( delta );
+        count( indexKey( labelId, propertyKeyId ) ).update( delta );
+    }
+
+    @Override
+    public void replaceCountsForIndex( int labelId, int propertyKeyId, long total )
+    {
+        count( indexKey( labelId, propertyKeyId ) ).write( total );
     }
 
     public void increment( int labelId )
@@ -264,7 +270,7 @@ public class CountsState implements CountsVisitor.Visitable, CountsAcceptor, Rec
         }
 
         @Override
-        public void visitIndexCount( int indexId, long count )
+        public void visitIndexCount( int labelId, int propertyKeyId, long count )
         {
             // not updated through commands
         }
@@ -299,9 +305,9 @@ public class CountsState implements CountsVisitor.Visitable, CountsAcceptor, Rec
         }
 
         @Override
-        public void visitIndexCount( int indexId, long count )
+        public void visitIndexCount( int labelId, int propertyKey, long count )
         {
-            verify( indexKey( indexId ), count );
+            verify( indexKey( labelId, propertyKey ), count );
         }
 
         private void verify( CountsKey key, long actual )
