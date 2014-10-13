@@ -21,59 +21,29 @@ package org.neo4j.helpers.collection;
 
 import java.util.Iterator;
 
-import org.neo4j.graphdb.ResourceIterator;
-
-class WrappingResourceIterator<T> implements ResourceIterator<T>
+class WrappingResourceIterator<T> extends PrefetchingResourceIterator<T>
 {
     private final Iterator<T> iterator;
-    boolean hasNext;
 
-    public WrappingResourceIterator( Iterator<T> iterator )
+    WrappingResourceIterator( Iterator<T> iterator )
     {
         this.iterator = iterator;
-        hasNext = iterator.hasNext();
     }
 
     @Override
     public void close()
     {
-        hasNext = false;
-    }
-
-    @Override
-    public boolean hasNext()
-    {
-        return hasNext;
-    }
-
-    @Override
-    public T next()
-    {
-        assertHasNext();
-        T result = iterator.next();
-        hasNext = iterator.hasNext();
-        return result;
     }
 
     @Override
     public void remove()
     {
-        assertHasNext();
-        try
-        {
-            iterator.remove();
-        }
-        finally
-        {
-            hasNext = iterator.hasNext();
-        }
+        iterator.remove();
     }
 
-    private void assertHasNext()
+    @Override
+    protected T fetchNextOrNull()
     {
-        if ( ! hasNext )
-        {
-            throw new IllegalArgumentException( "Iterator already closed" );
-        }
+        return iterator.hasNext() ? iterator.next() : null;
     }
 }

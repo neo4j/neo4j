@@ -43,7 +43,7 @@ public abstract class ProducerStep<T> extends AbstractStep<Void>
     @Override
     public long receive( long ticket, Void nothing )
     {
-        new Thread()
+        new Thread( "PRODUCER" )
         {
             @Override
             public void run()

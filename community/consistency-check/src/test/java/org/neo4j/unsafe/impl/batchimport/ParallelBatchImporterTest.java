@@ -19,7 +19,9 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -106,7 +108,7 @@ public class ParallelBatchImporterTest
     @Parameterized.Parameters(name = "{0},{1},{2}")
     public static Collection<Object[]> data()
     {
-        return Arrays.asList(
+        return Arrays.<Object[]>asList(
                 // synchronous I/O, actual node id input
                 new Object[]{SYNCHRONOUS, new LongInputIdGenerator(), IdMappings.actual()},
                 // synchronous I/O, string id input
@@ -135,24 +137,45 @@ public class ParallelBatchImporterTest
                 new DefaultFileSystemAbstraction(), config, new DevNullLoggingService(),
                 new SilentExecutionMonitor(), writerFactory );
 
-        // WHEN
-        inserter.doImport( Inputs.input(
-                nodes( NODE_COUNT, idGenerator ),
-                relationships( NODE_COUNT * 3, idGenerator ),
-                idMapping ) );
-
-        // THEN
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );
-        try ( Transaction tx = db.beginTx() )
+        boolean successful = false;
+        int relationshipCount = NODE_COUNT * 3;
+        try
         {
-            verifyData( NODE_COUNT, db );
-            tx.success();
+            // WHEN
+            inserter.doImport( Inputs.input( nodes( NODE_COUNT, idGenerator ),
+                    relationships( relationshipCount, idGenerator ), idMapping ) );
+            // THEN
+            GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );
+            try ( Transaction tx = db.beginTx() )
+            {
+                verifyData( NODE_COUNT, db );
+                tx.success();
+            }
+            finally
+            {
+                db.shutdown();
+            }
+            assertConsistent( directory.absolutePath() );
+            successful = true;
         }
         finally
         {
-            db.shutdown();
+            if ( !successful )
+            {
+                File failureFile = directory.file( "input" );
+                try ( PrintStream out = new PrintStream( failureFile ) )
+                {
+                    out.println( "Seed used in this failing run: " + idGenerator.seed );
+                    out.println( idGenerator );
+                    for ( InputRelationship relationship : relationships( relationshipCount, idGenerator ) )
+                    {
+                        out.println( relationship.id() + " " +
+                                relationship.startNode() + "-[:" + relationship.type() + "]->" + relationship.endNode() );
+                    }
+                }
+                System.err.println( "Additional debug information stored in " + failureFile );
+            }
         }
-        assertConsistent( directory.absolutePath() );
     }
 
     private void assertConsistent( String storeDir ) throws ConsistencyCheckIncompleteException
@@ -224,6 +247,18 @@ public class ParallelBatchImporterTest
         Object randomExisting()
         {
             return strings.get( random.nextInt( strings.size() ) );
+        }
+
+        @Override
+        public String toString()
+        {
+            StringBuilder builder = new StringBuilder( "Nodes" );
+            long i = 0;
+            for ( String string : strings )
+            {
+                builder.append( "\n" ).append( i++ ).append( " " ).append( string );
+            }
+            return builder.toString();
         }
     }
 

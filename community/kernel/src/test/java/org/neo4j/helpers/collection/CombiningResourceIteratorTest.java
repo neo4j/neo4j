@@ -20,18 +20,22 @@
 package org.neo4j.helpers.collection;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.ResourceIterator;
 
 import static java.util.Arrays.asList;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asResourceIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 
 public class CombiningResourceIteratorTest
 {
-
     @Test
     public void shouldNotCloseDuringIteration() throws Exception
     {
@@ -58,7 +62,10 @@ public class CombiningResourceIteratorTest
 
         // Given I iterate through half of it
         int iterations = 4;
-        while( iterations --> 0 ) combingIterator.next();
+        while( iterations --> 0 )
+        {
+            combingIterator.next();
+        }
 
         // When
         combingIterator.close();
@@ -79,5 +86,4 @@ public class CombiningResourceIteratorTest
         // When I iterate through it, things come back in the right order
         assertThat( IteratorUtil.asList( combingIterator ), equalTo(asList(1l,5l,6l,7l)) );
     }
-
 }
