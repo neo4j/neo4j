@@ -67,15 +67,18 @@ public class IndexPopulationJob implements Runnable
     private final StringLogger log;
     private final CountDownLatch doneSignal = new CountDownLatch( 1 );
 
-    private volatile StoreScan<IndexPopulationFailedKernelException> storeScan;
-    private volatile boolean cancelled;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
 
-    public IndexPopulationJob(IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
+    private volatile StoreScan<IndexPopulationFailedKernelException> storeScan;
+    private volatile boolean cancelled;
+
+    public IndexPopulationJob(IndexDescriptor descriptor,
+                              SchemaIndexProvider.Descriptor providerDescriptor,
                               String indexUserDescription,
                               FailedIndexProxyFactory failureDelegateFactory,
                               IndexPopulator populator, FlippableIndexProxy flipper,
-                              IndexStoreView storeView, UpdateableSchemaState updateableSchemaState,
+                              IndexStoreView storeView,
+                              UpdateableSchemaState updateableSchemaState,
                               Logging logging)
     {
         this.descriptor = descriptor;
@@ -96,6 +99,7 @@ public class IndexPopulationJob implements Runnable
         currentThread().setName( format( "Index populator on %s [runs on: %s]", indexUserDescription, oldThreadName ) );
         boolean success = false;
         Throwable failureCause = null;
+        final CountVisitor countVisitor = new CountVisitor();
         try
         {
             try
@@ -103,8 +107,9 @@ public class IndexPopulationJob implements Runnable
                 log.info( format("Index population started: [%s]", indexUserDescription) );
                 log.flush();
                 populator.create();
+                storeView.replaceIndexCount( descriptor, 0 );
 
-                indexAllNodes();
+                indexAllNodes( countVisitor );
                 if ( cancelled )
                 {
                     // We remain in POPULATING state
@@ -116,7 +121,8 @@ public class IndexPopulationJob implements Runnable
                     @Override
                     public Void call() throws Exception
                     {
-                        populateFromQueueIfAvailable( Long.MAX_VALUE );
+                        populateFromQueueIfAvailable( Long.MAX_VALUE, countVisitor );
+                        storeView.replaceIndexCount( descriptor, countVisitor.count() );
                         populator.close( true );
                         updateableSchemaState.clear();
                         return null;
@@ -189,7 +195,7 @@ public class IndexPopulationJob implements Runnable
         }
     }
 
-    private void indexAllNodes() throws IndexPopulationFailedKernelException
+    private void indexAllNodes( final CountVisitor countVisitor ) throws IndexPopulationFailedKernelException
     {
         storeScan = storeView.visitNodesWithPropertyAndLabel( descriptor, new Visitor<NodePropertyUpdate,
                 IndexPopulationFailedKernelException>()
@@ -200,7 +206,8 @@ public class IndexPopulationJob implements Runnable
                 try
                 {
                     populator.add( update.getNodeId(), update.getValueAfter() );
-                    populateFromQueueIfAvailable( update.getNodeId() );
+                    countVisitor.visitIndexUpdateCount( 1 );
+                    populateFromQueueIfAvailable( update.getNodeId(), countVisitor );
                 }
                 catch ( IndexEntryConflictException | IOException conflict )
                 {
@@ -220,20 +227,22 @@ public class IndexPopulationJob implements Runnable
         }
     }
 
-    private void populateFromQueueIfAvailable( final long highestIndexedNodeId )
+    private void populateFromQueueIfAvailable( final long highestIndexedNodeId, CountVisitor countVisitor )
             throws IndexEntryConflictException, IOException
     {
         if ( !queue.isEmpty() )
         {
-            try ( IndexUpdater updater = populator.newPopulatingUpdater( storeView ) )
+            try ( IndexUpdater updater = new CountingIndexUpdater( populator.newPopulatingUpdater( storeView ),
+                    countVisitor ) )
             {
-                for ( NodePropertyUpdate update : queue )
+                do
                 {
+                    NodePropertyUpdate update = queue.poll();
                     if ( update.getNodeId() <= highestIndexedNodeId )
                     {
                         updater.process( update );
                     }
-                }
+                } while ( !queue.isEmpty() );
             }
         }
     }
@@ -245,6 +254,7 @@ public class IndexPopulationJob implements Runnable
         {
             cancelled = true;
             storeScan.stop();
+            storeView.replaceIndexCount( descriptor, 0 );
         }
 
         return latchGuardedValue( NO_VALUE, doneSignal, "Index population job cancel" );
@@ -268,5 +278,21 @@ public class IndexPopulationJob implements Runnable
     public void awaitCompletion() throws InterruptedException
     {
         doneSignal.await();
+    }
+
+    private class CountVisitor implements CountingIndexUpdater.IndexUpdateCountVisitor
+    {
+        private long count = 0;
+
+        public long count()
+        {
+            return count;
+        }
+
+        @Override
+        public void visitIndexUpdateCount( long indexUpdates )
+        {
+            this.count += indexUpdates;
+        }
     }
 }

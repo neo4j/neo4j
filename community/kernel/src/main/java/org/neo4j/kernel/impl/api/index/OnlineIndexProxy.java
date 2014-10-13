@@ -39,15 +39,17 @@ public class OnlineIndexProxy implements IndexProxy
     private final IndexDescriptor descriptor;
     final IndexAccessor accessor;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
+    private CountingIndexUpdater.IndexUpdateCountVisitor indexUpdateCountVisitor;
 
     public OnlineIndexProxy( IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
-                             IndexAccessor accessor )
+                             IndexAccessor accessor, IndexStoreView view )
     {
         this.descriptor = descriptor;
         this.providerDescriptor = providerDescriptor;
         this.accessor = accessor;
+        this.indexUpdateCountVisitor = newResultVisitor( view );
     }
-    
+
     @Override
     public void start()
     {
@@ -56,9 +58,8 @@ public class OnlineIndexProxy implements IndexProxy
     @Override
     public IndexUpdater newUpdater( final IndexUpdateMode mode )
     {
-        return accessor.newUpdater( mode );
+        return new CountingIndexUpdater( accessor.newUpdater( mode ), indexUpdateCountVisitor );
     }
-
 
     @Override
     public Future<Void> drop() throws IOException
@@ -84,7 +85,7 @@ public class OnlineIndexProxy implements IndexProxy
     {
         return InternalIndexState.ONLINE;
     }
-    
+
     @Override
     public void force() throws IOException
     {
@@ -97,7 +98,7 @@ public class OnlineIndexProxy implements IndexProxy
         accessor.close();
         return VOID;
     }
-    
+
     @Override
     public IndexReader newReader()
     {
@@ -121,7 +122,7 @@ public class OnlineIndexProxy implements IndexProxy
     {
         // ok, it's online so it's valid
     }
-    
+
     @Override
     public IndexPopulationFailure getPopulationFailure() throws IllegalStateException
     {
@@ -138,5 +139,17 @@ public class OnlineIndexProxy implements IndexProxy
     public String toString()
     {
         return getClass().getSimpleName() + "[accessor:" + accessor + ", descriptor:" + descriptor + "]";
+    }
+
+    private CountingIndexUpdater.IndexUpdateCountVisitor newResultVisitor( final IndexStoreView view )
+    {
+        return new CountingIndexUpdater.IndexUpdateCountVisitor()
+        {
+            @Override
+            public void visitIndexUpdateCount( long indexUpdates )
+            {
+                view.updateIndexCount( descriptor, indexUpdates );
+            }
+        };
     }
 }

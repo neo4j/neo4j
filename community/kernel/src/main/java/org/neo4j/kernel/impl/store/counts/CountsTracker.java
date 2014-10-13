@@ -61,6 +61,8 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
 
         long updateCount( CountsKey key, long delta );
 
+        void replaceCount( CountsKey key, long total );
+
         File storeFile();
 
         SortedKeyValueStore.Writer<CountsKey, Register.LongRegister> newWriter( File file, long lastCommittedTxId )
@@ -153,15 +155,21 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
         update( relationshipKey( startLabelId, typeId, endLabelId ), delta );
     }
 
-    public long countsForIndex( int indexId )
+    public long countsForIndex( int labelId, int propertyKeyId )
     {
-        return get( indexKey( indexId ) );
+        return get( indexKey( labelId, propertyKeyId ) );
     }
 
     @Override
-    public void updateCountsForIndex( int indexId, long delta )
+    public void updateCountsForIndex( int labelId, int propertyKeyId, long delta )
     {
-        update( indexKey( indexId ), delta );
+        update( indexKey( labelId, propertyKeyId ), delta );
+    }
+
+    @Override
+    public void replaceCountsForIndex( int labelId, int propertyKeyId, long total )
+    {
+        replace( indexKey( labelId, propertyKeyId ), total );
     }
 
     public void accept( final CountsVisitor visitor )
@@ -198,6 +206,15 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
                 long value = state.updateCount( key, delta );
                 assert value >= 0 : String.format( "update(key=%s, delta=%d) -> value=%d", key, delta, value );
             }
+        }
+    }
+
+    private void replace( CountsKey key, long total )
+    {
+        assert total >= 0 : String.format( "replace(key=%s, value=%d)", key, total );
+        try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
+        {
+            state.updateCount( key, total );
         }
     }
 

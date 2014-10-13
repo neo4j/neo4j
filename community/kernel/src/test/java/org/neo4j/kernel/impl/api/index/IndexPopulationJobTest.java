@@ -53,6 +53,7 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -110,6 +111,9 @@ public class IndexPopulationJobTest
         verify( populator ).close( true );
 
         verifyNoMoreInteractions( populator );
+
+        // AND ALSO
+        assertEquals( 1, indexCount( FIRST, name ) );
     }
 
     @Test
@@ -151,10 +155,16 @@ public class IndexPopulationJobTest
         verify( populator ).close( true );
 
         verifyNoMoreInteractions( populator );
+
+        // AND ALSO
+        assertEquals( 2, indexCount( FIRST, name ) );
+        assertEquals( 0, indexCount( FIRST, age ) );
+        assertEquals( 0, indexCount( SECOND, name ) );
+        assertEquals( 0, indexCount( SECOND, age ) );
     }
 
     @Test
-    public void shouldIndexUpdatesWhenDoingThePopulation() throws Exception
+    public void shouldIndexConcurrentUpdatesWhilePopulating() throws Exception
     {
         // GIVEN
         Object value1 = "Mattias", value2 = "Jacob", value3 = "Stefan", changedValue = "changed";
@@ -179,10 +189,13 @@ public class IndexPopulationJobTest
                 Pair.of( node3, value3 ),
                 Pair.of( node1, changedValue ) );
         assertEquals( expected, populator.added );
+
+        // AND ALSO
+        assertEquals( 3, indexCount( FIRST, name ) );
     }
 
     @Test
-    public void shouldRemoveViaIndexUpdatesWhenDoingThePopulation() throws Exception
+    public void shouldRemoveViaConcurrentIndexUpdatesWhilePopulating() throws Exception
     {
         // GIVEN
         String value1 = "Mattias", value2 = "Jacob", value3 = "Stefan";
@@ -202,6 +215,9 @@ public class IndexPopulationJobTest
         assertEquals( expectedAdded, populator.added );
         Map<Long, Object> expectedRemoved = genericMap( node2, value2 );
         assertEquals( expectedRemoved, populator.removed );
+
+        // AND ALSO
+        assertEquals( 2, indexCount( FIRST, name ) );
     }
 
     @Test
@@ -221,6 +237,9 @@ public class IndexPopulationJobTest
 
         // THEN
         assertThat( index.getState(), equalTo( InternalIndexState.FAILED ) );
+
+        // AND ALSO
+        assertEquals( 0, indexCount( FIRST, name ) );
     }
 
     @Test
@@ -261,6 +280,9 @@ public class IndexPopulationJobTest
         // THEN
         verify( populator, times( 1 ) ).close( false );
         verify( index, times( 0 ) ).flip( Matchers.<Callable<Void>>any(), Matchers.<FailedIndexProxyFactory>any() );
+
+        // AND ALSO
+        assertEquals( 0, indexCount( FIRST, name ) );
     }
 
     @Test
@@ -281,6 +303,9 @@ public class IndexPopulationJobTest
                 info( "Index population started: [:FIRST(name)]" ),
                 info( "Index population completed. Index is now online: [:FIRST(name)]" )
         );
+
+        // AND ALSO
+        assertEquals( 0, indexCount( FIRST, name ) );
     }
 
     @Test
@@ -301,6 +326,9 @@ public class IndexPopulationJobTest
 
         // Then
         logger.assertAtLeastOnce( error( "Failed to populate index: [:FIRST(name)]", failure ) );
+
+        // AND ALSO
+        assertEquals( 0, indexCount( FIRST, name ) );
     }
 
     @Test
@@ -321,6 +349,9 @@ public class IndexPopulationJobTest
 
         // Then
         verify( failureDelegateFactory ).create( any( Throwable.class ) );
+
+        // AND ALSO
+        assertEquals( 0, indexCount( FIRST, name ) );
     }
 
     @Test
@@ -341,6 +372,9 @@ public class IndexPopulationJobTest
 
         // Then
         verify( populator ).markAsFailed( Matchers.contains( failureMessage ) );
+
+        // AND ALSO
+        assertEquals( 0, indexCount( FIRST, name ) );
     }
 
     @Test
@@ -360,6 +394,9 @@ public class IndexPopulationJobTest
 
         // Then
         verify( populator ).markAsFailed( Matchers.contains( "duplicate value" ) );
+
+        // AND ALSO
+        assertEquals( 0, indexCount( FIRST, name ) );
     }
 
     private static class ControlledStoreScan implements StoreScan<RuntimeException>
@@ -525,6 +562,7 @@ public class IndexPopulationJobTest
     private final String age = "age";
 
     private ThreadToStatementContextBridge ctxProvider;
+    private CountsTracker counts;
     private NeoStoreIndexStoreView indexStoreView;
     private IndexPopulator populator;
     private KernelSchemaStateStore stateHolder;
@@ -537,6 +575,7 @@ public class IndexPopulationJobTest
     {
         db = (ImpermanentGraphDatabase) new TestGraphDatabaseFactory().newImpermanentDatabase();
         ctxProvider = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
+        counts = db.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate().getCounts();
         populator = mock( IndexPopulator.class );
         stateHolder = new KernelSchemaStateStore();
         indexStoreView = newStoreView();
@@ -596,6 +635,18 @@ public class IndexPopulationJobTest
                 failureDelegateFactory,
                 populator, flipper, storeView,
                 stateHolder, new SingleLoggingService( logger ) );
+    }
+
+    private long indexCount( Label label, String propertyKey )
+    {
+        long result = -1l;
+        try ( Transaction tx = db.beginTx() )
+        {
+            ReadOperations statement = ctxProvider.instance().readOperations();
+            result = counts.countsForIndex( statement.labelGetForName( label.name() ), statement.propertyKeyGetForName( propertyKey ) );
+            tx.success();
+        }
+        return result;
     }
 
     private long createNode( Map<String, Object> properties, Label... labels )

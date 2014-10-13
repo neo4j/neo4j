@@ -34,9 +34,9 @@ public abstract class CountsKey implements Comparable<CountsKey>
         return new RelationshipKey( startLabelId, typeId, endLabelId );
     }
 
-    public static IndexKey indexKey( int indexId )
+    public static IndexKey indexKey( int labelId, int propertyKeyId )
     {
-        return new IndexKey( indexId );
+        return new IndexKey( labelId, propertyKeyId );
     }
 
     private CountsKey()
@@ -198,40 +198,60 @@ public abstract class CountsKey implements Comparable<CountsKey>
 
     public static final class IndexKey extends CountsKey
     {
-        private final int indexId;
+        private final int labelId;
+        private final int propertyKeyId;
 
-        private IndexKey( int indexId )
+        private IndexKey( int labelId, int propertyKeyId )
         {
-            this.indexId = indexId;
+            this.labelId = labelId;
+            this.propertyKeyId = propertyKeyId;
         }
 
-        public int indexId()
+        public int labelId()
         {
-            return indexId;
+            return labelId;
         }
 
-        @Override
-        public boolean equals( Object o )
+        public int getPropertyKeyId()
         {
-            return this == o || (o instanceof IndexKey) && indexId == ((IndexKey) o).indexId;
+            return propertyKeyId;
         }
 
         @Override
         public String toString()
         {
-            return String.format( "CountsKey[(:index=%s)]", indexId );
+            return String.format( "CountsKey[(%s {%s})", label( labelId ), propertyKey( propertyKeyId ) );
         }
 
         @Override
         public void accept( CountsVisitor visitor, Register.LongRegister count )
         {
-            visitor.visitIndexCount( indexId, count.read() );
+            visitor.visitIndexCount( labelId, propertyKeyId, count.read() );
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+
+            IndexKey indexKey = (IndexKey) o;
+            return labelId == indexKey.labelId && propertyKeyId == indexKey.propertyKeyId;
+
         }
 
         @Override
         public int hashCode()
         {
-            return indexId;
+            int result = labelId;
+            result = 31 * result + propertyKeyId;
+            return result;
         }
 
         @Override
@@ -240,7 +260,12 @@ public abstract class CountsKey implements Comparable<CountsKey>
             if ( o instanceof IndexKey )
             {
                 IndexKey that = (IndexKey) o;
-                return this.indexId - that.indexId;
+                int cmp = this.labelId - that.labelId;
+                if ( cmp == 0 )
+                {
+                    cmp = this.propertyKeyId - that.propertyKeyId;
+                }
+                return cmp;
             }
             else
             {
@@ -252,6 +277,11 @@ public abstract class CountsKey implements Comparable<CountsKey>
     public static String label( int id )
     {
         return id == ReadOperations.ANY_LABEL ? "" : (":label=" + id);
+    }
+
+    public static String propertyKey( int id )
+    {
+        return id == ReadOperations.NO_SUCH_PROPERTY_KEY ? "" : (":propertyKey=" + id);
     }
 
     public static String relationshipType( int id )

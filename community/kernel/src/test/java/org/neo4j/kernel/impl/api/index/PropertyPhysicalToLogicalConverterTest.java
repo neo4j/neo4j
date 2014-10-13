@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.api.index;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 import org.junit.After;
 import org.junit.Before;
@@ -45,13 +47,14 @@ import org.neo4j.test.PageCacheRule;
 
 import static org.junit.Assert.assertEquals;
 
+import static org.neo4j.helpers.collection.Iterables.toList;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 
 public class PropertyPhysicalToLogicalConverterTest
 {
     @Test
-    public void shouldConvertInlinedAddedProperty() throws Exception
+    public void shouldNotConvertInlinedAddedProperty() throws Exception
     {
         // GIVEN
         long key = 10;
@@ -60,10 +63,10 @@ public class PropertyPhysicalToLogicalConverterTest
         PropertyRecord after = propertyRecord( property( key, value ) );
 
         // WHEN
-        NodePropertyUpdate update = single( convert( none, none, change( before, after ) ) );
+        List<NodePropertyUpdate> updates = toList( convert( none, none, change( before, after ) ) );
 
         // THEN
-        assertEquals( UpdateMode.ADDED, update.getUpdateMode() );
+        assertEquals( Collections.<NodePropertyUpdate>emptyList(), updates );
     }
 
     @Test
@@ -112,7 +115,7 @@ public class PropertyPhysicalToLogicalConverterTest
     }
 
     @Test
-    public void shouldConvertDynamicAddedProperty() throws Exception
+    public void shouldNotConvertDynamicAddedProperty() throws Exception
     {
         // GIVEN
         long key = 10;
@@ -120,10 +123,10 @@ public class PropertyPhysicalToLogicalConverterTest
         PropertyRecord after = propertyRecord( property( key, longString ) );
 
         // WHEN
-        NodePropertyUpdate update = single( convert( none, none, change( before, after ) ) );
+        List<NodePropertyUpdate> updates = toList( convert( none, none, change( before, after ) ) );
 
         // THEN
-        assertEquals( UpdateMode.ADDED, update.getUpdateMode() );
+        assertEquals( Collections.<NodePropertyUpdate>emptyList(), updates );
     }
 
     @Test

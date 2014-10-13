@@ -156,7 +156,6 @@ public class NeoStoreTransactionTest
     private CacheAccessBackDoor cacheAccessBackDoor;
     private IndexingService mockIndexing;
     private PropertyLoader propertyLoader;
-    private long nextTxId = BASE_TX_ID + 1;
 
     private static void assertRelationshipGroupDoesNotExist( NeoStoreTransactionContext txCtx, NodeRecord node,
                                                              int type )
@@ -459,11 +458,13 @@ public class NeoStoreTransactionTest
         long nodeId = 0;
         CapturingIndexingService indexingService = new CapturingIndexingService();
         TransactionRecordState writeTransaction = newWriteTransaction( indexingService ).first();
+        int labelId = 3;
         int propertyKey1 = 1, propertyKey2 = 2;
         Object value1 = "first", value2 = 4;
 
         // WHEN
         writeTransaction.nodeCreate( nodeId );
+        writeTransaction.addLabelToNode( labelId, nodeId );
         writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
         writeTransaction.nodeAddProperty( nodeId, propertyKey2, value2 );
         PhysicalTransactionRepresentation transactionCommands = transactionRepresentationOf( writeTransaction );
@@ -474,9 +475,9 @@ public class NeoStoreTransactionTest
 
         // THEN
         assertEquals( asSet(
-                        add( nodeId, propertyKey1, value1, none ),
-                        add( nodeId, propertyKey2, value2, none ) ),
-
+                        add( nodeId, propertyKey1, value1, new long[]{labelId} ),
+                        add( nodeId, propertyKey2, value2, new long[]{labelId} )
+                ),
                 indexingService.updates );
     }
 
@@ -524,8 +525,10 @@ public class NeoStoreTransactionTest
         int nodeId = 0;
         TransactionRecordState writeTransaction = newWriteTransaction().first();
         int propertyKey1 = 1, propertyKey2 = 2;
+        int labelId = 3;
         Object value1 = "first", value2 = 4;
         writeTransaction.nodeCreate( nodeId );
+        writeTransaction.addLabelToNode( labelId, nodeId );
         DefinedProperty property1 = writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
         DefinedProperty property2 = writeTransaction.nodeAddProperty( nodeId, propertyKey2, value2 );
         PhysicalTransactionRepresentation transactionCommands = transactionRepresentationOf( writeTransaction );
@@ -547,9 +550,9 @@ public class NeoStoreTransactionTest
 
         // THEN
         assertEquals( asSet(
-                        remove( nodeId, propertyKey1, value1, none ),
-                        remove( nodeId, propertyKey2, value2, none ) ),
-
+                        remove( nodeId, propertyKey1, value1, new long[]{labelId} ),
+                        remove( nodeId, propertyKey2, value2, new long[]{labelId} )
+                ),
                 indexingService.updates );
     }
 
@@ -621,8 +624,7 @@ public class NeoStoreTransactionTest
         assertEquals( asSet(
                         add( nodeId, propertyKey1, value1, new long[]{labelId2} ),
                         add( nodeId, propertyKey2, value2, new long[]{labelId2} ),
-                        add( nodeId, propertyKey2, value2, new long[]{labelId1, labelId2} ) ),
-
+                        add( nodeId, propertyKey2, value2, new long[]{labelId1} ) ),
                 indexingService.updates );
     }
 
@@ -843,7 +845,7 @@ public class NeoStoreTransactionTest
         }
 
         // WHEN
-        Visitor<Command,IOException> verifier = new NeoCommandHandler.HandlerVisitor( new NeoCommandHandler.Adapter()
+        Visitor<Command, IOException> verifier = new NeoCommandHandler.HandlerVisitor( new NeoCommandHandler.Adapter()
         {
             @Override
             public boolean visitPropertyCommand( PropertyCommand command ) throws IOException
@@ -1142,8 +1144,8 @@ public class NeoStoreTransactionTest
         deleteRelationship( tx, relationshipsCreatedAOutgoing[0] );
 
         // THEN
-        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(),
-                typeA );
+        assertRelationshipGroupDoesNotExist(
+                txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), typeA );
         assertDenseRelationshipCounts( tx, txCtx, nodeId, typeB, 1, 1 );
         assertDenseRelationshipCounts( tx, txCtx, nodeId, typeC, 1, 1 );
 
@@ -1151,8 +1153,8 @@ public class NeoStoreTransactionTest
         deleteRelationship( tx, relationshipsCreatedBIncoming[0] );
 
         // THEN
-        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(),
-                typeA );
+        assertRelationshipGroupDoesNotExist(
+                txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), typeA );
         assertDenseRelationshipCounts( tx, txCtx, nodeId, typeB, 1, 0 );
         assertDenseRelationshipCounts( tx, txCtx, nodeId, typeC, 1, 1 );
 
@@ -1160,32 +1162,32 @@ public class NeoStoreTransactionTest
         deleteRelationship( tx, relationshipsCreatedBOutgoing[0] );
 
         // THEN
-        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(),
-                typeA );
-        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(),
-                typeB );
+        assertRelationshipGroupDoesNotExist(
+                txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), typeA );
+        assertRelationshipGroupDoesNotExist(
+                txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), typeB );
         assertDenseRelationshipCounts( tx, txCtx, nodeId, typeC, 1, 1 );
 
         // WHEN
         deleteRelationship( tx, relationshipsCreatedCIncoming[0] );
 
         // THEN
-        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(),
-                typeA );
-        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(),
-                typeB );
+        assertRelationshipGroupDoesNotExist(
+                txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), typeA );
+        assertRelationshipGroupDoesNotExist(
+                txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), typeB );
         assertDenseRelationshipCounts( tx, txCtx, nodeId, typeC, 1, 0 );
 
         // WHEN
         deleteRelationship( tx, relationshipsCreatedCOutgoing[0] );
 
         // THEN
-        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(),
-                typeA );
-        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(),
-                typeB );
-        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(),
-                typeC );
+        assertRelationshipGroupDoesNotExist(
+                txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), typeA );
+        assertRelationshipGroupDoesNotExist(
+                txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), typeB );
+        assertRelationshipGroupDoesNotExist(
+                txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), typeC );
     }
 
     @Test
@@ -1431,6 +1433,7 @@ public class NeoStoreTransactionTest
         return commitProcess( mockIndexing );
     }
 
+    private long nextTxId = BASE_TX_ID + 1;
     private TransactionRepresentationCommitProcess commitProcess( IndexingService indexing )
             throws InterruptedException, ExecutionException, IOException
     {

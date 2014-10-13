@@ -39,6 +39,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.CountsAcceptor;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.Lock;
@@ -57,17 +58,31 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     private final PropertyStore propertyStore;
     private final NodeStore nodeStore;
     private final LockService locks;
+    private final CountsAcceptor counts;
 
     public NeoStoreIndexStoreView( LockService locks, NeoStore neoStore )
     {
-        this( locks, neoStore.getNodeStore(), neoStore.getPropertyStore() );
+        this( locks, neoStore.getNodeStore(), neoStore.getPropertyStore(), neoStore.getCounts() );
     }
 
-    public NeoStoreIndexStoreView( LockService locks, NodeStore nodeStore, PropertyStore propertyStore )
+    public NeoStoreIndexStoreView( LockService locks, NodeStore nodeStore, PropertyStore propertyStore, CountsAcceptor counts )
     {
         this.locks = locks;
         this.propertyStore = propertyStore;
         this.nodeStore = nodeStore;
+        this.counts = counts;
+    }
+
+    @Override
+    public void replaceIndexCount( IndexDescriptor descriptor, long total )
+    {
+        counts.replaceCountsForIndex( descriptor.getLabelId(), descriptor.getPropertyKeyId(), total );
+    }
+
+    @Override
+    public void updateIndexCount( IndexDescriptor descriptor, long delta )
+    {
+        counts.updateCountsForIndex( descriptor.getLabelId(), descriptor.getPropertyKeyId(), delta );
     }
 
     @Override

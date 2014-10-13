@@ -96,6 +96,21 @@ class ConcurrentTrackerState implements CountsTracker.State
     }
 
     @Override
+    public void replaceCount( CountsKey key, long total )
+    {
+        AtomicLong count = state.get( key );
+        if ( count == null )
+        {
+            count = new AtomicLong( total );
+            state.put( key, count );
+        }
+        else
+        {
+            count.set( total );
+        }
+    }
+
+    @Override
     public File storeFile()
     {
         return store.file();

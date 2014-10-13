@@ -20,8 +20,7 @@
 package org.neo4j.kernel.impl.store.counts;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
-import static org.neo4j.kernel.impl.store.counts.CountsRecordSerializer.NODE_KEY;
-import static org.neo4j.kernel.impl.store.counts.CountsRecordSerializer.RELATIONSHIP_KEY;
+import static org.neo4j.kernel.impl.store.counts.CountsRecordSerializer.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -118,31 +117,45 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
     }
 
     @Override
-    public void visitIndexCount( int indexId, long count )
+    public void visitIndexCount( int labelId, int propertyKeyId, long count )
     {
-        throw new UnsupportedOperationException( "not implemented yet" );
+        assert count > 0 :
+                String.format( "visitIndexCount(labelId=%d, propertyKeyId=%d, count=%d)" +
+                               " - count must be positive", labelId, propertyKeyId, count );
+        write( INDEX_KEY, 0, propertyKeyId, labelId, count );
     }
 
     /**
      * Node Key:
-     * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
+     *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
      * [x, , , , , , , , , , , ,x,x,x,x]
-     * _                       _ _ _ _
-     * |                          |
-     * entry                      label
-     * type                        id
+     *  _                       _ _ _ _
+     *  |                          |
+     *  entry                      label
+     *  type                        id
      * <p/>
+     *
      * Relationship Key:
-     * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
+     *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
      * [x, ,x,x,x,x, ,x,x,x,x, ,x,x,x,x]
-     * _   _ _ _ _   _ _ _ _   _ _ _ _
-     * |      |         |         |
-     * entry  label      rel      label
-     * type    id        type      id
-     * id
+     *  _   _ _ _ _   _ _ _ _   _ _ _ _
+     *  |      |         |         |
+     *  entry  label      rel      label
+     *  type    id        type      id
+     *  id
      * <p/>
+     *
+     * Index Key:
+     *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
+     * [x, , , , , , ,x,x,x,x, ,x,x,x,x]
+     *  _             _ _ _ _   _ _ _ _
+     *  |                |         |
+     *  entry       property key   label
+     *  type             id        id
+     *  id
+     *
      * Count value:
-     * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
+     *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
      * [ , , , , , , , ,x,x,x,x,x,x,x,x]
      * _ _ _ _ _ _ _ _
      * |

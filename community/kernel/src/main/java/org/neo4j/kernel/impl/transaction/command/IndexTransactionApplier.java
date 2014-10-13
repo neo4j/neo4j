@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.command;
 
+import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -48,8 +50,6 @@ import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
 import org.neo4j.kernel.impl.transaction.state.LazyIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
-
-import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
 /**
  * Gather node and property changes, converting them into logical updates to the indexes.
@@ -201,8 +201,8 @@ public class IndexTransactionApplier extends NeoCommandHandler.Adapter
                     catch ( IndexNotFoundKernelException | IndexActivationFailedKernelException |
                             IndexPopulationFailedKernelException e )
                     {
-                        throw new IllegalStateException( "Unable to enable constraint, backing index is not online.",
-                                e );
+                        throw new IllegalStateException(
+                                "Unable to enable constraint, backing index is not online.", e );
                     }
                 }
                 break;

@@ -284,7 +284,7 @@ public class IndexingService extends LifecycleAdapter
     public double indexUniqueValuesPercentage( IndexRule rule ) throws IndexNotFoundKernelException
     {
         final long indexId = rule.getId();
-        final IndexProxy indexProxy = indexMapReference.getIndexProxy( indexId );
+        final IndexProxy indexProxy = indexMapReference.getIndexProxy(indexId);
         if ( indexProxy == null )
         {
             throw new IndexNotFoundKernelException( "No index with id " + indexId + " exists." );
@@ -348,7 +348,7 @@ public class IndexingService extends LifecycleAdapter
     {
         if ( state == State.RUNNING )
         {
-            try ( IndexUpdaterMap updaterMap = indexMapReference.getIndexUpdaterMap(
+            try ( IndexUpdaterMap updaterMap = indexMapReference.createIndexUpdaterMap(
                     forceIdempotency ? IndexUpdateMode.RECOVERY : IndexUpdateMode.ONLINE ) )
             {
                 applyUpdates( updates, updaterMap );
@@ -377,7 +377,7 @@ public class IndexingService extends LifecycleAdapter
         monitor.applyingRecoveredData( recoveredNodeIds );
         if ( !recoveredNodeIds.isEmpty() )
         {
-            try ( IndexUpdaterMap updaterMap = indexMapReference.getIndexUpdaterMap( IndexUpdateMode.RECOVERY ) )
+            try ( IndexUpdaterMap updaterMap = indexMapReference.createIndexUpdaterMap( IndexUpdateMode.RECOVERY ) )
             {
                 for ( IndexUpdater updater : updaterMap )
                 {
@@ -404,14 +404,16 @@ public class IndexingService extends LifecycleAdapter
             case ADDED:
                 for ( int len = update.getNumberOfLabelsAfter(), i = 0; i < len; i++ )
                 {
-                    processUpdateIfIndexExists( updaterMap, update, propertyKeyId, update.getLabelAfter( i ) );
+                    IndexDescriptor descriptor = new IndexDescriptor( update.getLabelAfter( i ), propertyKeyId );
+                    processUpdateIfIndexExists( updaterMap, update, descriptor );
                 }
                 break;
 
             case REMOVED:
                 for ( int len = update.getNumberOfLabelsBefore(), i = 0; i < len; i++ )
                 {
-                    processUpdateIfIndexExists( updaterMap, update, propertyKeyId, update.getLabelBefore( i ) );
+                    IndexDescriptor descriptor = new IndexDescriptor( update.getLabelBefore( i ), propertyKeyId );
+                    processUpdateIfIndexExists( updaterMap, update, descriptor );
                 }
                 break;
 
@@ -426,7 +428,8 @@ public class IndexingService extends LifecycleAdapter
 
                     if ( labelBefore == labelAfter )
                     {
-                        processUpdateIfIndexExists( updaterMap, update, propertyKeyId, labelAfter );
+                        IndexDescriptor descriptor = new IndexDescriptor( labelAfter, propertyKeyId );
+                        processUpdateIfIndexExists( updaterMap, update, descriptor );
                         i++;
                         j++;
                     }
@@ -447,22 +450,23 @@ public class IndexingService extends LifecycleAdapter
         }
     }
 
-    private void processUpdateIfIndexExists( IndexUpdaterMap updaterMap, NodePropertyUpdate update,
-                                             int propertyKeyId, int labelId )
+    private IndexDescriptor processUpdateIfIndexExists( IndexUpdaterMap updaterMap, NodePropertyUpdate update,
+                                                        IndexDescriptor descriptor )
     {
-        IndexDescriptor descriptor = new IndexDescriptor( labelId, propertyKeyId );
         try
         {
             IndexUpdater updater = updaterMap.getUpdater( descriptor );
             if ( null != updater )
             {
                 updater.process( update );
+                return descriptor;
             }
         }
         catch ( IOException | IndexEntryConflictException e )
         {
             throw new UnderlyingStorageException( e );
         }
+        return null;
     }
 
     public void dropIndex( IndexRule rule )
@@ -516,7 +520,7 @@ public class IndexingService extends LifecycleAdapter
                     OnlineIndexProxy onlineProxy = new OnlineIndexProxy(
                             descriptor, providerDescriptor,
                             getOnlineAccessorFromProvider( providerDescriptor, ruleId,
-                                                           new IndexConfiguration( constraint ) ) );
+                                                           new IndexConfiguration( constraint ) ), storeView );
                     if ( constraint )
                     {
                         return new TentativeConstraintIndexProxy( flipper, onlineProxy );
@@ -546,7 +550,7 @@ public class IndexingService extends LifecycleAdapter
         {
             IndexAccessor onlineAccessor = getOnlineAccessorFromProvider( providerDescriptor, ruleId,
                                                                           new IndexConfiguration( unique ) );
-            IndexProxy result = new OnlineIndexProxy( descriptor, providerDescriptor, onlineAccessor );
+            IndexProxy result = new OnlineIndexProxy( descriptor, providerDescriptor, onlineAccessor, storeView );
             result = contractCheckedProxy( result, true );
             return result;
         }
@@ -584,7 +588,7 @@ public class IndexingService extends LifecycleAdapter
                                                      IndexDescriptor descriptor, IndexConfiguration config )
     {
         SchemaIndexProvider indexProvider = providerMap.apply( providerDescriptor );
-        return indexProvider.getPopulator( ruleId, descriptor, config );
+        return indexProvider.getPopulator(ruleId, descriptor, config);
     }
 
     private IndexAccessor getOnlineAccessorFromProvider( SchemaIndexProvider.Descriptor providerDescriptor,
@@ -699,7 +703,7 @@ public class IndexingService extends LifecycleAdapter
 
     private Pair<IndexDescriptor, SchemaIndexProvider.Descriptor> getIndexProxyDescriptors( IndexProxy indexProxy )
     {
-        return Pair.of( indexProxy.getDescriptor(), indexProxy.getProviderDescriptor() );
+        return Pair.of(indexProxy.getDescriptor(), indexProxy.getProviderDescriptor());
     }
 
     public ResourceIterator<File> snapshotStoreFiles() throws IOException

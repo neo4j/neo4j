@@ -89,11 +89,11 @@ public class CountsOracle
                     }
 
                     @Override
-                    public void visitIndexCount( int indexId, long count )
+                    public void visitIndexCount( int labelId, int propertyKeyId, long count )
                     {
                         assertEquals( "Should be able to read visited state.",
-                                tracker.countsForIndex( indexId ), count );
-                        verifier.visitIndexCount( indexId, count );
+                                tracker.countsForIndex( labelId, propertyKeyId ), count );
+                        verifier.visitIndexCount( labelId, propertyKeyId, count );
                     }
                 } );
             }
