@@ -58,7 +58,6 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
-import org.neo4j.kernel.impl.api.operations.IndexCountsOperations;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.impl.api.operations.LegacyIndexReadOperations;
@@ -136,11 +135,6 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     final CountsOperations counting()
     {
         return operations.counting();
-    }
-
-    final IndexCountsOperations indexCounting()
-    {
-        return operations.indexCounting();
     }
 
     // <DataRead>
@@ -414,6 +408,20 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     {
         statement.assertOpen();
         return schemaRead().indexGetState( statement, descriptor );
+    }
+
+    @Override
+    public long indexNumberOfEntries( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    {
+        statement.assertOpen();
+        return schemaRead().indexNumberOfEntries( statement, descriptor );
+    }
+
+    @Override
+    public double indexUniqueValuesPercentage( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    {
+        statement.assertOpen();
+        return schemaRead().indexUniqueValuesPercentage( statement, descriptor );
     }
 
     @Override
@@ -958,13 +966,5 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         return counting().countsForRelationship( statement, startLabelId, typeId, endLabelId );
     }
 
-    @Override
-    public double indexUniqueValuesPercentage( int labelId, int propertyKeyId ) throws IndexNotFoundKernelException
-    {
-        statement.assertOpen();
-        return indexCounting().indexUniqueValuesPercentage( statement, labelId, propertyKeyId );
-    }
-
     // </Counts>
-
 }

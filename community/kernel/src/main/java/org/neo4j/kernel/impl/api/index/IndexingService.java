@@ -271,6 +271,19 @@ public class IndexingService extends LifecycleAdapter
         closeAllIndexes();
     }
 
+    public IndexProxy getOnlineProxyForRule( long indexId ) throws IndexNotFoundKernelException
+    {
+        IndexProxy indexProxy = getProxyForRule( indexId );
+        switch ( indexProxy.getState() )
+        {
+            case ONLINE:
+                return indexProxy;
+
+            default:
+                throw new IndexNotFoundKernelException( "Expected requested index with id " + indexId + " to be online.");
+        }
+    }
+
     public IndexProxy getProxyForRule( long indexId ) throws IndexNotFoundKernelException
     {
         IndexProxy indexProxy = indexMapReference.getIndexProxy( indexId );
@@ -281,19 +294,20 @@ public class IndexingService extends LifecycleAdapter
         return indexProxy;
     }
 
-    public double indexUniqueValuesPercentage( IndexRule rule ) throws IndexNotFoundKernelException
+    public double indexUniqueValuesPercentage( long indexId ) throws IndexNotFoundKernelException
     {
-        final long indexId = rule.getId();
-        final IndexProxy indexProxy = indexMapReference.getIndexProxy(indexId);
-        if ( indexProxy == null )
-        {
-            throw new IndexNotFoundKernelException( "No index with id " + indexId + " exists." );
-        }
+        final IndexProxy indexProxy = getOnlineProxyForRule( indexId );
 
         // TODO: compute this numbers by looking at the number of indexed entries in a lucene index
         final int sampleSize = 100000;
         final int frequency = 50;
         return indexProxy.newReader().uniqueValuesFrequencyInSample( sampleSize, frequency );
+    }
+
+    public long indexNumberOfEntries( long indexId ) throws IndexNotFoundKernelException
+    {
+        final IndexProxy indexProxy = getOnlineProxyForRule( indexId );
+        return storeView.getIndexCount( indexProxy.getDescriptor() );
     }
 
     /*

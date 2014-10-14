@@ -51,6 +51,8 @@ public interface IndexStoreView extends PropertyAccessor
 
     Iterable<NodePropertyUpdate> nodeAsUpdates( long nodeId );
 
+    long getIndexCount( IndexDescriptor descriptor );
+
     void replaceIndexCount( IndexDescriptor descriptor, long total );
 
     void updateIndexCount( IndexDescriptor descriptor, long delta );

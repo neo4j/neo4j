@@ -506,9 +506,15 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
-    public double indexUniqueValuesPercentage( int labelId, int propertyKeyId ) throws IndexNotFoundKernelException
+    public double indexUniqueValuesPercentage( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        return diskLayer.indexUniqueValuesPercentage( labelId, propertyKeyId );
+        return diskLayer.indexUniqueValuesPercentage( descriptor );
+    }
+
+    @Override
+    public long indexNumberOfEntries( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    {
+        return diskLayer.indexNumberOfEntries( descriptor );
     }
 
     @Override
