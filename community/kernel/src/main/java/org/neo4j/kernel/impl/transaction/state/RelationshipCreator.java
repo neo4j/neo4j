@@ -55,18 +55,18 @@ public class RelationshipCreator
             RecordAccessSet recordChangeSet )
     {
         // TODO could be unnecessary to mark as changed here already, dense nodes may not need to change
-        NodeRecord firstNode = recordChangeSet.getNodeRecords().getOrLoad( firstNodeId, null ).forChangingLinkage();
-        NodeRecord secondNode = recordChangeSet.getNodeRecords().getOrLoad( secondNodeId, null ).forChangingLinkage();
-        convertNodeToDenseIfNecessary( firstNode, recordChangeSet.getRelRecords(),
-                recordChangeSet.getRelGroupRecords() );
-        convertNodeToDenseIfNecessary( secondNode, recordChangeSet.getRelRecords(),
-                recordChangeSet.getRelGroupRecords() );
-        RelationshipRecord record = recordChangeSet.getRelRecords().create( id, null ).forChangingLinkage();
+        NodeRecord firstNode = recordChangeSet.getNodeChanges().getOrLoad( firstNodeId, null ).forChangingLinkage();
+        NodeRecord secondNode = recordChangeSet.getNodeChanges().getOrLoad( secondNodeId, null ).forChangingLinkage();
+        convertNodeToDenseIfNecessary( firstNode, recordChangeSet.getRelationshipChanges(),
+                recordChangeSet.getRelationshipGroupChanges() );
+        convertNodeToDenseIfNecessary( secondNode, recordChangeSet.getRelationshipChanges(),
+                recordChangeSet.getRelationshipGroupChanges() );
+        RelationshipRecord record = recordChangeSet.getRelationshipChanges().create( id, null ).forChangingLinkage();
         record.setLinks( firstNodeId, secondNodeId, type );
         record.setInUse( true );
         record.setCreated();
-        connectRelationship( firstNode, secondNode, record, recordChangeSet.getRelRecords(),
-                recordChangeSet.getRelGroupRecords() );
+        connectRelationship( firstNode, secondNode, record, recordChangeSet.getRelationshipChanges(),
+                recordChangeSet.getRelationshipGroupChanges() );
     }
 
     private void convertNodeToDenseIfNecessary( NodeRecord node,

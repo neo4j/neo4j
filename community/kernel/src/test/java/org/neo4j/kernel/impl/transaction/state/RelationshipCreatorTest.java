@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
+import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
@@ -46,12 +47,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
-import org.neo4j.kernel.impl.transaction.state.RecordAccess;
-import org.neo4j.kernel.impl.transaction.state.RecordAccessSet;
-import org.neo4j.kernel.impl.transaction.state.RelationshipCreator;
-import org.neo4j.kernel.impl.transaction.state.RelationshipGroupGetter;
-import org.neo4j.kernel.impl.transaction.state.RelationshipLocker;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.unsafe.batchinsert.DirectRecordAccessSet;
@@ -113,7 +108,7 @@ public class RelationshipCreatorTest
         public Tracker( NeoStore neoStore )
         {
             this.delegate = new DirectRecordAccessSet( neoStore );
-            this.relRecords = new TrackingRecordAccess<>( delegate.getRelRecords(), this );
+            this.relRecords = new TrackingRecordAccess<>( delegate.getRelationshipChanges(), this );
         }
 
         @Override
@@ -130,27 +125,27 @@ public class RelationshipCreatorTest
         }
 
         @Override
-        public RecordAccess<Long, NodeRecord, Void> getNodeRecords()
+        public RecordAccess<Long, NodeRecord, Void> getNodeChanges()
         {
-            return delegate.getNodeRecords();
+            return delegate.getNodeChanges();
         }
 
         @Override
-        public RecordAccess<Long, PropertyRecord, PrimitiveRecord> getPropertyRecords()
+        public RecordAccess<Long, PropertyRecord, PrimitiveRecord> getPropertyChanges()
         {
-            return delegate.getPropertyRecords();
+            return delegate.getPropertyChanges();
         }
 
         @Override
-        public RecordAccess<Long, RelationshipRecord, Void> getRelRecords()
+        public RecordAccess<Long, RelationshipRecord, Void> getRelationshipChanges()
         {
             return relRecords;
         }
 
         @Override
-        public RecordAccess<Long, RelationshipGroupRecord, Integer> getRelGroupRecords()
+        public RecordAccess<Long, RelationshipGroupRecord, Integer> getRelationshipGroupChanges()
         {
-            return delegate.getRelGroupRecords();
+            return delegate.getRelationshipGroupChanges();
         }
 
         @Override
@@ -158,7 +153,7 @@ public class RelationshipCreatorTest
         {
             return delegate.getSchemaRuleChanges();
         }
-        
+
         @Override
         public RecordAccess<Integer, PropertyKeyTokenRecord, Void> getPropertyKeyTokenChanges()
         {
@@ -181,6 +176,18 @@ public class RelationshipCreatorTest
         public void close()
         {
             delegate.close();
+        }
+
+        @Override
+        public RecordAccess<Long, NeoStoreRecord, Void> getNeoStoreChanges()
+        {
+            return delegate.getNeoStoreChanges();
+        }
+
+        @Override
+        public boolean hasChanges()
+        {
+            return delegate.hasChanges();
         }
     }
 

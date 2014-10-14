@@ -115,7 +115,7 @@ public class NodeCommitAndReadRaceTest
     private void createNodeWithSomeRelationships( long nodeId )
     {
         RecordAccessSet recordAccess = new DirectRecordAccessSet( neoStore );
-        NodeRecord node = recordAccess.getNodeRecords().create( nodeId, null ).forChangingData();
+        NodeRecord node = recordAccess.getNodeChanges().create( nodeId, null ).forChangingData();
         node.setInUse( true );
         node.setCreated();
 

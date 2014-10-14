@@ -31,6 +31,7 @@ import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.impl.api.LegacyIndexApplier.ProviderLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
@@ -43,9 +44,8 @@ import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContext;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContextSupplier;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
+import org.neo4j.kernel.impl.transaction.state.TransactionRecordStateContextSupplier;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -62,7 +62,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
 {
     // Transaction dependencies
 
-    private final NeoStoreTransactionContextSupplier neoStoreTransactionContextSupplier;
+    private final TransactionRecordStateContextSupplier transactionRecordStateContextSupplier;
     private final NeoStore neoStore;
     private final Locks locks;
     private final IntegrityValidator integrityValidator;
@@ -78,7 +78,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
     private final StoreReadLayer storeLayer;
     private final TransactionCommitProcess transactionCommitProcess;
     private final IndexConfigStore indexConfigStore;
-    private final LegacyIndexApplier.ProviderLookup legacyIndexProviderLookup;
+    private final ProviderLookup legacyIndexProviderLookup;
     private final TransactionHooks hooks;
     private final TransactionMonitor transactionMonitor;
     private final LifeSupport dataSourceLife;
@@ -108,19 +108,32 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
         @Override
         public KernelTransactionImplementation newInstance()
         {
-            NeoStoreTransactionContext context = neoStoreTransactionContextSupplier.acquire();
             Locks.Client locksClient = locks.newClient();
-            context.bind( locksClient );
-            TransactionRecordState recordState = new TransactionRecordState(
-                    neoStore, integrityValidator, context );
+            TransactionRecordState recordState = new TransactionRecordState( neoStore, integrityValidator,
+                    transactionRecordStateContextSupplier.acquire().bind( locksClient ) );
             LegacyIndexTransactionState legacyIndexTransactionState =
                     new LegacyIndexTransactionState( indexConfigStore, legacyIndexProviderLookup );
             KernelTransactionImplementation tx = new KernelTransactionImplementation(
-                    statementOperations, readOnly, schemaWriteGuard,
-                    labelScanStore, indexingService, updateableSchemaState, recordState, providerMap,
-                    neoStore, locksClient, hooks, constraintIndexCreator, transactionHeaderInformationFactory.create(),
-                    transactionCommitProcess, transactionMonitor, persistenceCache, storeLayer,
-                    legacyIndexTransactionState, localTxPool, Clock.SYSTEM_CLOCK );
+                    statementOperations,
+                    readOnly,
+                    schemaWriteGuard,
+                    labelScanStore,
+                    indexingService,
+                    updateableSchemaState,
+                    recordState,
+                    providerMap,
+                    neoStore,
+                    locksClient,
+                    hooks,
+                    constraintIndexCreator,
+                    transactionHeaderInformationFactory,
+                    transactionCommitProcess,
+                    transactionMonitor,
+                    persistenceCache,
+                    storeLayer,
+                    legacyIndexTransactionState,
+                    localTxPool,
+                    Clock.SYSTEM_CLOCK );
 
             allTransactions.add( tx );
 
@@ -148,7 +161,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
      */
     private final MarshlandPool<KernelTransactionImplementation> localTxPool = new MarshlandPool<>( globalTxPool );
 
-    public KernelTransactions( NeoStoreTransactionContextSupplier neoStoreTransactionContextSupplier,
+    public KernelTransactions( TransactionRecordStateContextSupplier transactionRecordStateContextSupplier,
                                NeoStore neoStore, Locks locks, IntegrityValidator integrityValidator,
                                ConstraintIndexCreator constraintIndexCreator,
                                IndexingService indexingService, LabelScanStore labelScanStore,
@@ -157,10 +170,10 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
                                SchemaIndexProviderMap providerMap, TransactionHeaderInformationFactory txHeaderFactory,
                                PersistenceCache persistenceCache, StoreReadLayer storeLayer,
                                TransactionCommitProcess transactionCommitProcess,
-                               IndexConfigStore indexConfigStore, LegacyIndexApplier.ProviderLookup legacyIndexProviderLookup,
+                               final IndexConfigStore indexConfigStore, final LegacyIndexApplier.ProviderLookup legacyIndexProviderLookup,
                                TransactionHooks hooks, TransactionMonitor transactionMonitor, LifeSupport dataSourceLife, boolean readOnly )
     {
-        this.neoStoreTransactionContextSupplier = neoStoreTransactionContextSupplier;
+        this.transactionRecordStateContextSupplier = transactionRecordStateContextSupplier;
         this.neoStore = neoStore;
         this.locks = locks;
         this.integrityValidator = integrityValidator;
@@ -187,9 +200,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
     public KernelTransaction newInstance()
     {
         assertDatabaseIsRunning();
-        return localTxPool.acquire().initialize(
-                transactionHeaderInformationFactory.create(),
-                neoStore.getLastCommittedTransactionId());
+        return localTxPool.acquire().initialize( neoStore.getLastCommittedTransactionId() );
     }
 
     /**
@@ -201,12 +212,11 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
         List<KernelTransaction> output = new ArrayList<>();
         for ( KernelTransactionImplementation tx : allTransactions )
         {
-            if(tx.isOpen())
+            if ( tx.isOpen() )
             {
                 output.add( tx );
             }
         }
-
         return output;
     }
 
@@ -235,7 +245,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
 
     private void assertDatabaseIsRunning()
     {
-        // TODO: Copied over from original source in NeoXADS - this should probably use DBAvailability, rather than this.
+        // TODO: Copied over from original source in NeoDS - this should probably use DBAvailability, rather than this.
         // Note, if you change this, you need a separate mechanism to stop transactions from being started during
         // Kernel#stop().
         if ( !dataSourceLife.isRunning() )

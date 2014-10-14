@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.state;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
@@ -30,6 +31,7 @@ import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
+import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -305,6 +307,36 @@ public class Loaders
             public RelationshipTypeTokenRecord clone( RelationshipTypeTokenRecord record )
             {
                 throw new UnsupportedOperationException();
+            }
+        };
+    }
+
+    public static Loader<Long, NeoStoreRecord, Void> neoStoreLoader( final NeoStore neoStore )
+    {
+        return new Loader<Long, NeoStoreRecord, Void>()
+        {
+            @Override
+            public NeoStoreRecord newUnused( Long key, Void additionalData )
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public NeoStoreRecord load( Long key, Void additionalData )
+            {
+                return neoStore.asRecord();
+            }
+
+            @Override
+            public void ensureHeavy( NeoStoreRecord record )
+            {
+            }
+
+            @Override
+            public NeoStoreRecord clone( NeoStoreRecord neoStoreRecord )
+            {
+                // We do not expect to manage the before state, so this operation will not be called.
+                throw new UnsupportedOperationException("Clone on NeoStoreRecord");
             }
         };
     }

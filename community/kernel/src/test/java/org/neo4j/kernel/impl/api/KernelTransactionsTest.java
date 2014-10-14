@@ -34,8 +34,8 @@ import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContext;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContextSupplier;
+import org.neo4j.kernel.impl.transaction.state.TransactionRecordStateContext;
+import org.neo4j.kernel.impl.transaction.state.TransactionRecordStateContextSupplier;
 import org.neo4j.kernel.impl.transaction.state.RecordChanges;
 import org.neo4j.kernel.impl.transaction.state.RecordChanges.RecordChange;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -123,7 +123,7 @@ public class KernelTransactionsTest
     }
 
     private static KernelTransactions newKernelTransactions( TransactionCommitProcess commitProcess,
-                                                             NeoStoreTransactionContextSupplier contextSupplier )
+                                                             TransactionRecordStateContextSupplier contextSupplier )
     {
         LifeSupport life = new LifeSupport();
         life.start();
@@ -157,15 +157,15 @@ public class KernelTransactionsTest
         return commitProcess;
     }
 
-    private static NeoStoreTransactionContextSupplier newMockContextSupplierWithChanges()
+    private static TransactionRecordStateContextSupplier newMockContextSupplierWithChanges()
     {
         return new MockContextSupplier()
         {
             @Override
             @SuppressWarnings("unchecked")
-            protected NeoStoreTransactionContext create()
+            protected TransactionRecordStateContext create()
             {
-                NeoStoreTransactionContext context = super.create();
+                TransactionRecordStateContext context = super.create();
 
                 RecordChanges<Long, NodeRecord, Void> recordChanges = mock( RecordChanges.class );
                 when( recordChanges.changeSize() ).thenReturn( 1 );
@@ -174,14 +174,14 @@ public class KernelTransactionsTest
                 when( recordChange.forReadingLinkage() ).thenReturn( new NodeRecord( 1, false, 1, 1 ) );
 
                 when( recordChanges.changes() ).thenReturn( Iterables.option( recordChange ) );
-                when( context.getNodeRecords() ).thenReturn( recordChanges );
+                when( context.getNodeChanges() ).thenReturn( recordChanges );
 
                 return context;
             }
         };
     }
 
-    private static class MockContextSupplier extends NeoStoreTransactionContextSupplier
+    private static class MockContextSupplier extends TransactionRecordStateContextSupplier
     {
         public MockContextSupplier()
         {
@@ -189,9 +189,9 @@ public class KernelTransactionsTest
         }
 
         @Override
-        protected NeoStoreTransactionContext create()
+        protected TransactionRecordStateContext create()
         {
-            return mock( NeoStoreTransactionContext.class, RETURNS_MOCKS );
+            return mock( TransactionRecordStateContext.class, RETURNS_MOCKS );
         }
     }
 }

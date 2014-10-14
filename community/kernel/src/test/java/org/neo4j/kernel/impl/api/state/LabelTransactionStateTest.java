@@ -283,8 +283,7 @@ public class LabelTransactionStateTest
               when( store.nodeGetAllProperties( anyLong() ) )
                       .thenReturn( asResourceIterator( IteratorUtil.<DefinedProperty>emptyIterator() ) );
 
-        txState = new TxStateImpl(
-                mock( LegacyIndexTransactionState.class ) );
+        txState = new TxStateImpl( mock( LegacyIndexTransactionState.class ) );
         state = StatementOperationsTestHelper.mockedState( txState );
         txContext = new StateHandlingStatementOperations( store, mock( LegacyPropertyTrackers.class ),
                 mock( ConstraintIndexCreator.class ), mock( LegacyIndexStore.class ) );

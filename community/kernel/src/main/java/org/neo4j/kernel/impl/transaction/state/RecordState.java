@@ -19,24 +19,28 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.neo4j.collection.pool.LinkedQueuePool;
-import org.neo4j.kernel.impl.store.NeoStore;
+import java.util.List;
 
-public class NeoStoreTransactionContextSupplier extends LinkedQueuePool<NeoStoreTransactionContext>
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.impl.transaction.command.Command;
+
+public interface RecordState
 {
-    private final NeoStore neoStore;
+    boolean hasChanges();
 
-    public NeoStoreTransactionContextSupplier( NeoStore neoStore )
-    {
-        super( Runtime.getRuntime().availableProcessors() * 2, null,
-                new CheckStrategy.TimeoutCheckStrategy( 1000 ),
-                new Monitor.Adapter<>() );
-        this.neoStore = neoStore;
-    }
+    void extractCommands( List<Command> target ) throws TransactionFailureException;
 
-    @Override
-    protected NeoStoreTransactionContext create()
+    public static final RecordState NO_STATE = new RecordState()
     {
-        return new NeoStoreTransactionContext( this, neoStore );
-    }
+        @Override
+        public void extractCommands( List<Command> target )
+        {   // Don't add anything
+        }
+
+        @Override
+        public boolean hasChanges()
+        {
+            return false;
+        }
+    };
 }

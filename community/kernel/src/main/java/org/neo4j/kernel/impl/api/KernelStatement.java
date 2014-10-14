@@ -33,7 +33,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.locking.Locks;
 
 public class KernelStatement implements TxState.Holder, Statement
@@ -43,7 +42,6 @@ public class KernelStatement implements TxState.Holder, Statement
     protected final TxState.Holder txStateHolder;
     protected final IndexReaderFactory indexReaderFactory;
     protected final LabelScanStore labelScanStore;
-    private final LegacyIndexTransactionState legacyIndexTransactionState;
 
     private LabelScanReader labelScanReader;
     private int referenceCount;
@@ -52,15 +50,13 @@ public class KernelStatement implements TxState.Holder, Statement
 
     public KernelStatement( KernelTransactionImplementation transaction, IndexReaderFactory indexReaderFactory,
                             LabelScanStore labelScanStore,
-                            TxState.Holder txStateHolder, Locks.Client locks, StatementOperationParts operations,
-                            LegacyIndexTransactionState legacyIndexTransactionState )
+                            TxState.Holder txStateHolder, Locks.Client locks, StatementOperationParts operations )
     {
         this.transaction = transaction;
         this.locks = locks;
         this.indexReaderFactory = indexReaderFactory;
         this.txStateHolder = txStateHolder;
         this.labelScanStore = labelScanStore;
-        this.legacyIndexTransactionState = legacyIndexTransactionState;
         this.facade = new OperationsFacade( this, operations );
     }
 
@@ -109,11 +105,6 @@ public class KernelStatement implements TxState.Holder, Statement
     public boolean hasTxStateWithChanges()
     {
         return txStateHolder.hasTxStateWithChanges();
-    }
-
-    protected LegacyIndexTransactionState legacyIndexTransactionState()
-    {
-        return legacyIndexTransactionState;
     }
 
     @Override

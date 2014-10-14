@@ -146,7 +146,7 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
 
     private void translateRecordChangeSetToEntries( List<LogEntry> result, List<LogEntryCommand> commands )
     {
-        for ( RecordChanges.RecordChange<Long, NodeRecord, Void> nodeChange : recordChangeSet.getNodeRecords().changes() )
+        for ( RecordChanges.RecordChange<Long, NodeRecord, Void> nodeChange : recordChangeSet.getNodeChanges().changes() )
         {
             Command.NodeCommand newCommand = new Command.NodeCommand();
             newCommand.init( nodeChange.getBefore(), nodeChange.forChangingData() );
@@ -154,7 +154,7 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
         }
 
         for ( RecordChanges.RecordChange<Long, RelationshipRecord, Void> relChange :
-                recordChangeSet.getRelRecords().changes() )
+                recordChangeSet.getRelationshipChanges().changes() )
         {
             Command.RelationshipCommand newCommand = new Command.RelationshipCommand();
             newCommand.init( relChange.forChangingData() );
@@ -162,7 +162,7 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
         }
 
         for ( RecordChanges.RecordChange<Long, RelationshipGroupRecord, Integer> relGroupChange :
-                recordChangeSet.getRelGroupRecords().changes() )
+                recordChangeSet.getRelationshipGroupChanges().changes() )
         {
             Command.RelationshipGroupCommand newCommand = new Command.RelationshipGroupCommand();
             newCommand.init( relGroupChange.forChangingData() );
@@ -170,7 +170,7 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
         }
 
         for ( RecordChanges.RecordChange<Long, PropertyRecord, PrimitiveRecord> propChange :
-                recordChangeSet.getPropertyRecords().changes() )
+                recordChangeSet.getPropertyChanges().changes() )
         {
             Command.PropertyCommand newCommand = new Command.PropertyCommand();
             newCommand.init( propChange.getBefore(), propChange.forChangingData() );
@@ -183,7 +183,7 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
             if ( command instanceof Command.RelationshipCommand )
             {
                 long id = ((Command.RelationshipCommand) command).getRecord().getId();
-                if ( recordChangeSet.getRelRecords().getIfLoaded( id ) == null )
+                if ( recordChangeSet.getRelationshipChanges().getIfLoaded( id ) == null )
                 {
                     result.add( commandEntry );
                 }
@@ -191,7 +191,7 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
             else if ( command instanceof Command.NodeCommand )
             {
                 long id = ((Command.NodeCommand) command).getAfter().getId();
-                if ( recordChangeSet.getNodeRecords().getIfLoaded( id ) == null )
+                if ( recordChangeSet.getNodeChanges().getIfLoaded( id ) == null )
                 {
                     result.add( commandEntry );
                 }
@@ -241,28 +241,28 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
 
         private void translateNodeDeletion( Command.NodeCommand command )
         {
-            recordChangeSet.getNodeRecords().getOrLoad( command.getKey(), null ).forChangingData().setInUse( false );
+            recordChangeSet.getNodeChanges().getOrLoad( command.getKey(), null ).forChangingData().setInUse( false );
         }
 
         private void translateNodeLabelChange( Command.NodeCommand command )
         {
-            recordChangeSet.getNodeRecords().getOrLoad( command.getKey(), null )
+            recordChangeSet.getNodeChanges().getOrLoad( command.getKey(), null )
                     .forChangingData().setLabelField( command.getAfter().getLabelField(), command.getAfter().getDynamicLabelRecords() );
         }
 
         private void translateNodePropertyChange( Command.NodeCommand command )
         {
-            recordChangeSet.getNodeRecords().getOrLoad( command.getKey(), null )
+            recordChangeSet.getNodeChanges().getOrLoad( command.getKey(), null )
                     .forChangingData().setNextProp( command.getAfter().getNextProp() );
         }
 
         private void translateNodeCreation( Command.NodeCommand command )
         {
-            NodeRecord created = recordChangeSet.getNodeRecords().create( command.getKey(), null ).forChangingData();
+            NodeRecord created = recordChangeSet.getNodeChanges().create( command.getKey(), null ).forChangingData();
             created.copyFrom( command.getAfter() );
             created.setNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() );
             created.setInUse( true );
-            recordChangeSet.getNodeRecords().getOrLoad( command.getKey(), null )
+            recordChangeSet.getNodeChanges().getOrLoad( command.getKey(), null )
                     .forChangingData().setNextProp( command.getAfter().getNextProp() );
         }
 
@@ -289,7 +289,7 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
 
         private void translateRelationshipPropertyChange( Command.RelationshipCommand command )
         {
-            recordChangeSet.getRelRecords().getOrLoad( command.getKey(), null ).forChangingData()
+            recordChangeSet.getRelationshipChanges().getOrLoad( command.getKey(), null ).forChangingData()
                     .setNextProp( command.getRecord().getNextProp() );
         }
 
@@ -299,16 +299,16 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
             PrimitiveRecord additionalData;
             if ( command.getAfter().isNodeSet() )
             {
-                additionalData = recordChangeSet.getNodeRecords().getOrLoad( command.getAfter().getNodeId
+                additionalData = recordChangeSet.getNodeChanges().getOrLoad( command.getAfter().getNodeId
                         (), null ).forReadingLinkage();
             }
             else
             {
-                additionalData = recordChangeSet.getRelRecords().getOrLoad( command.getAfter()
+                additionalData = recordChangeSet.getRelationshipChanges().getOrLoad( command.getAfter()
                         .getRelId(), null ).forReadingLinkage();
 
             }
-            recordChangeSet.getPropertyRecords().setTo( command.getKey(), command.getAfter(), additionalData );
+            recordChangeSet.getPropertyChanges().setTo( command.getKey(), command.getAfter(), additionalData );
             return true;
         }
 
@@ -405,7 +405,7 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
             RelationshipRecord record = command.getRecord();
             relationshipCreator.relationshipCreate( record.getId(), record.getType(), record.getFirstNode(),
                     record.getSecondNode(), recordChangeSet );
-            recordChangeSet.getRelRecords().getOrLoad( command.getKey(), null ).forChangingData()
+            recordChangeSet.getRelationshipChanges().getOrLoad( command.getKey(), null ).forChangingData()
                     .setNextProp( command.getRecord().getNextProp() );
         }
 

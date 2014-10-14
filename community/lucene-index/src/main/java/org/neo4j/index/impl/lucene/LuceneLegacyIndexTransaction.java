@@ -23,11 +23,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.graphdb.index.IndexCommandFactory;
-import org.neo4j.graphdb.index.LegacyIndexProviderTransaction;
+import org.neo4j.graphdb.index.LegacyIndexProviderTransactionState;
 import org.neo4j.kernel.api.LegacyIndex;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 
-public class LuceneLegacyIndexTransaction implements LegacyIndexProviderTransaction
+public class LuceneLegacyIndexTransaction implements LegacyIndexProviderTransactionState
 {
     private final LuceneDataSource dataSource;
     private final Map<String, LuceneIndex> nodeIndexes = new HashMap<>();

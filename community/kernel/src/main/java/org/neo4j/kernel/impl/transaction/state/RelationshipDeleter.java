@@ -55,9 +55,9 @@ public class RelationshipDeleter
      */
     public ArrayMap<Integer, DefinedProperty> relDelete( long id, RecordAccessSet recordChanges )
     {
-        RelationshipRecord record = recordChanges.getRelRecords().getOrLoad( id, null ).forChangingLinkage();
+        RelationshipRecord record = recordChanges.getRelationshipChanges().getOrLoad( id, null ).forChangingLinkage();
         ArrayMap<Integer, DefinedProperty> propertyMap =
-                propertyChainDeleter.getAndDeletePropertyChain( record, recordChanges.getPropertyRecords() );
+                propertyChainDeleter.getAndDeletePropertyChain( record, recordChanges.getPropertyChanges() );
         disconnectRelationship( record, recordChanges );
         updateNodesForDeletedRelationship( record, recordChanges );
         record.setInUse( false );
@@ -66,10 +66,10 @@ public class RelationshipDeleter
 
     private void disconnectRelationship( RelationshipRecord rel, RecordAccessSet recordChangeSet )
     {
-        disconnect( rel, RelationshipConnection.START_NEXT, recordChangeSet.getRelRecords() );
-        disconnect( rel, RelationshipConnection.START_PREV, recordChangeSet.getRelRecords() );
-        disconnect( rel, RelationshipConnection.END_NEXT, recordChangeSet.getRelRecords() );
-        disconnect( rel, RelationshipConnection.END_PREV, recordChangeSet.getRelRecords() );
+        disconnect( rel, RelationshipConnection.START_NEXT, recordChangeSet.getRelationshipChanges() );
+        disconnect( rel, RelationshipConnection.START_PREV, recordChangeSet.getRelationshipChanges() );
+        disconnect( rel, RelationshipConnection.END_NEXT, recordChangeSet.getRelationshipChanges() );
+        disconnect( rel, RelationshipConnection.END_PREV, recordChangeSet.getRelationshipChanges() );
     }
 
     private void disconnect( RelationshipRecord rel, RelationshipConnection pointer,
@@ -105,12 +105,12 @@ public class RelationshipDeleter
     private void updateNodesForDeletedRelationship( RelationshipRecord rel, RecordAccessSet recordChanges )
     {
         RecordProxy<Long, NodeRecord, Void> startNodeChange =
-                recordChanges.getNodeRecords().getOrLoad( rel.getFirstNode(), null );
+                recordChanges.getNodeChanges().getOrLoad( rel.getFirstNode(), null );
         RecordProxy<Long, NodeRecord, Void> endNodeChange =
-                recordChanges.getNodeRecords().getOrLoad( rel.getSecondNode(), null );
+                recordChanges.getNodeChanges().getOrLoad( rel.getSecondNode(), null );
 
-        NodeRecord startNode = recordChanges.getNodeRecords().getOrLoad( rel.getFirstNode(), null ).forReadingLinkage();
-        NodeRecord endNode = recordChanges.getNodeRecords().getOrLoad( rel.getSecondNode(), null ).forReadingLinkage();
+        NodeRecord startNode = recordChanges.getNodeChanges().getOrLoad( rel.getFirstNode(), null ).forReadingLinkage();
+        NodeRecord endNode = recordChanges.getNodeChanges().getOrLoad( rel.getSecondNode(), null ).forReadingLinkage();
         boolean loop = startNode.getId() == endNode.getId();
 
         if ( !startNode.isDense() )
@@ -121,13 +121,13 @@ public class RelationshipDeleter
                 startNode.setNextRel( rel.getFirstNextRel() );
             }
             decrementTotalRelationshipCount( startNode.getId(), rel, startNode.getNextRel(),
-                    recordChanges.getRelRecords() );
+                    recordChanges.getRelationshipChanges() );
         }
         else
         {
             RecordProxy<Long, RelationshipGroupRecord, Integer> groupChange =
                     relGroupGetter.getRelationshipGroup( startNode, rel.getType(),
-                            recordChanges.getRelGroupRecords() ).group();
+                            recordChanges.getRelationshipGroupChanges() ).group();
             assert groupChange != null : "Relationship group " + rel.getType() + " should have existed here";
             RelationshipGroupRecord group = groupChange.forReadingData();
             RelIdArray.DirectionWrapper dir = DirectionIdentifier.wrapDirection( rel, startNode );
@@ -137,11 +137,11 @@ public class RelationshipDeleter
                 dir.setNextRel( group, rel.getFirstNextRel() );
                 if ( groupIsEmpty( group ) )
                 {
-                    deleteGroup( startNodeChange, group, recordChanges.getRelGroupRecords() );
+                    deleteGroup( startNodeChange, group, recordChanges.getRelationshipGroupChanges() );
                 }
             }
             decrementTotalRelationshipCount( startNode.getId(), rel, dir.getNextRel( group ),
-                    recordChanges.getRelRecords() );
+                    recordChanges.getRelationshipChanges() );
         }
 
         if ( !endNode.isDense() )
@@ -154,14 +154,14 @@ public class RelationshipDeleter
             if ( !loop )
             {
                 decrementTotalRelationshipCount( endNode.getId(), rel, endNode.getNextRel(),
-                        recordChanges.getRelRecords() );
+                        recordChanges.getRelationshipChanges() );
             }
         }
         else
         {
             RecordProxy<Long, RelationshipGroupRecord, Integer> groupChange =
                     relGroupGetter.getRelationshipGroup( endNode, rel.getType(),
-                            recordChanges.getRelGroupRecords() ).group();
+                            recordChanges.getRelationshipGroupChanges() ).group();
             RelIdArray.DirectionWrapper dir = DirectionIdentifier.wrapDirection( rel, endNode );
             assert groupChange != null || loop : "Group has been deleted";
             if ( groupChange != null )
@@ -173,14 +173,14 @@ public class RelationshipDeleter
                     dir.setNextRel( group, rel.getSecondNextRel() );
                     if ( groupIsEmpty( group ) )
                     {
-                        deleteGroup( endNodeChange, group, recordChanges.getRelGroupRecords() );
+                        deleteGroup( endNodeChange, group, recordChanges.getRelationshipGroupChanges() );
                     }
                 }
             } // Else this is a loop-rel and the group was deleted when dealing with the start node
             if ( !loop )
             {
                 decrementTotalRelationshipCount( endNode.getId(), rel, dir.getNextRel( groupChange.forChangingData() ),
-                        recordChanges.getRelRecords() );
+                        recordChanges.getRelationshipChanges() );
             }
         }
     }

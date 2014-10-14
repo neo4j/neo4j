@@ -29,7 +29,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.index.IndexCommandFactory;
 import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.graphdb.index.IndexManager;
-import org.neo4j.graphdb.index.LegacyIndexProviderTransaction;
+import org.neo4j.graphdb.index.LegacyIndexProviderTransactionState;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 
@@ -62,7 +62,7 @@ public class LuceneIndexImplementation implements IndexImplementation
     }
 
     @Override
-    public LegacyIndexProviderTransaction newTransaction( IndexCommandFactory commandFactory )
+    public LegacyIndexProviderTransactionState newTransaction( IndexCommandFactory commandFactory )
     {
         return new LuceneLegacyIndexTransaction( dataSource, commandFactory );
     }

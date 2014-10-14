@@ -23,6 +23,7 @@ import java.util.Collection;
 
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
+import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
@@ -34,21 +35,25 @@ import org.neo4j.kernel.impl.store.record.SchemaRule;
 
 public interface RecordAccessSet
 {
-    RecordAccess<Long, NodeRecord, Void> getNodeRecords();
+    RecordAccess<Long, NodeRecord, Void> getNodeChanges();
 
-    RecordAccess<Long, PropertyRecord, PrimitiveRecord> getPropertyRecords();
+    RecordAccess<Long, PropertyRecord, PrimitiveRecord> getPropertyChanges();
 
-    RecordAccess<Long, RelationshipRecord, Void> getRelRecords();
+    RecordAccess<Long, RelationshipRecord, Void> getRelationshipChanges();
 
-    RecordAccess<Long, RelationshipGroupRecord, Integer> getRelGroupRecords();
+    RecordAccess<Long, RelationshipGroupRecord, Integer> getRelationshipGroupChanges();
 
     RecordAccess<Long, Collection<DynamicRecord>, SchemaRule> getSchemaRuleChanges();
-    
+
     RecordAccess<Integer, PropertyKeyTokenRecord, Void> getPropertyKeyTokenChanges();
 
     RecordAccess<Integer, LabelTokenRecord, Void> getLabelTokenChanges();
 
     RecordAccess<Integer, RelationshipTypeTokenRecord, Void> getRelationshipTypeTokenChanges();
+
+    RecordAccess<Long, NeoStoreRecord, Void> getNeoStoreChanges();
+
+    boolean hasChanges();
 
     void close();
 }

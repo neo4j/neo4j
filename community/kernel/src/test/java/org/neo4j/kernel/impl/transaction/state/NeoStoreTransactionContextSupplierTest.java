@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContext;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContextSupplier;
+import org.neo4j.kernel.impl.transaction.state.TransactionRecordStateContext;
+import org.neo4j.kernel.impl.transaction.state.TransactionRecordStateContextSupplier;
 
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
@@ -34,10 +34,10 @@ public class NeoStoreTransactionContextSupplierTest
     public void shouldReturnTheSameWhenOnlyOneExists() throws Exception
     {
         // GIVEN
-        NeoStoreTransactionContextSupplier supplier = new NeoStoreTransactionContextSupplier( mockNeoStore() );
+        TransactionRecordStateContextSupplier supplier = new TransactionRecordStateContextSupplier( mockNeoStore() );
 
         // WHEN
-        NeoStoreTransactionContext retrieved = supplier.acquire();
+        TransactionRecordStateContext retrieved = supplier.acquire();
         retrieved.close();
 
         // THEN
@@ -48,11 +48,11 @@ public class NeoStoreTransactionContextSupplierTest
     public void shouldCreateNewInstanceWhenNeeded() throws Exception
     {
         // GIVEN
-        NeoStoreTransactionContextSupplier supplier = new NeoStoreTransactionContextSupplier( mockNeoStore() );
+        TransactionRecordStateContextSupplier supplier = new TransactionRecordStateContextSupplier( mockNeoStore() );
 
         // WHEN
-        NeoStoreTransactionContext firstRetrieved = supplier.acquire();
-        NeoStoreTransactionContext secondRetrieved = supplier.acquire();
+        TransactionRecordStateContext firstRetrieved = supplier.acquire();
+        TransactionRecordStateContext secondRetrieved = supplier.acquire();
 
         // THEN
         assertNotEquals( firstRetrieved, secondRetrieved );
@@ -63,15 +63,15 @@ public class NeoStoreTransactionContextSupplierTest
     {
 
         // GIVEN
-        NeoStoreTransactionContextSupplier supplier = new NeoStoreTransactionContextSupplier( mockNeoStore() );
+        TransactionRecordStateContextSupplier supplier = new TransactionRecordStateContextSupplier( mockNeoStore() );
 
-        NeoStoreTransactionContext firstRetrieved = supplier.acquire();
-        NeoStoreTransactionContext secondRetrieved = supplier.acquire();
+        TransactionRecordStateContext firstRetrieved = supplier.acquire();
+        TransactionRecordStateContext secondRetrieved = supplier.acquire();
 
         firstRetrieved.close();
 
         // WHEN
-        NeoStoreTransactionContext thirdRetrieved = supplier.acquire();
+        TransactionRecordStateContext thirdRetrieved = supplier.acquire();
 
         // THEN
         assertEquals( firstRetrieved, thirdRetrieved );

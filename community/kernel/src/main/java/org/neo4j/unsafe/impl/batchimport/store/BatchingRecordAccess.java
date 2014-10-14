@@ -23,12 +23,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.helpers.collection.IterableWrapper;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContext;
+import org.neo4j.kernel.impl.transaction.state.TransactionRecordStateContext;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess;
 
 /**
  * {@link RecordAccess} optimized for batching and an access pattern where records are created sequentially.
- * Mostly here as a bridge between a batch importer and existing record logic in {@link NeoStoreTransactionContext}
+ * Mostly here as a bridge between a batch importer and existing record logic in {@link TransactionRecordStateContext}
  * and friends.
  */
 public abstract class BatchingRecordAccess<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RECORD,ADDITIONAL>

@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
+import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
@@ -45,11 +46,11 @@ import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
-public class NeoStoreTransactionContext
+public class TransactionRecordStateContext
 {
     private final RelationshipCreator relationshipCreator;
     private final RelationshipDeleter relationshipDeleter;
-    private final NeoStoreTransactionContextSupplier supplier;
+    private final TransactionRecordStateContextSupplier supplier;
     private final PropertyTraverser propertyTraverser;
     private final PropertyCreator propertyCreator;
     private final PropertyDeleter propertyDeleter;
@@ -60,7 +61,7 @@ public class NeoStoreTransactionContext
     private final RecordChangeSet recordChangeSet;
     private final NeoStore neoStore;
 
-    public NeoStoreTransactionContext( NeoStoreTransactionContextSupplier supplier, NeoStore neoStore )
+    public TransactionRecordStateContext( TransactionRecordStateContextSupplier supplier, NeoStore neoStore )
     {
         this.supplier = supplier;
         this.neoStore = neoStore;
@@ -90,50 +91,51 @@ public class NeoStoreTransactionContext
     public ArrayMap<Integer, DefinedProperty>  getAndDeletePropertyChain( NodeRecord nodeRecord )
     {
         return propertyDeleter.getAndDeletePropertyChain( nodeRecord,
-                recordChangeSet.getPropertyRecords() );
+                recordChangeSet.getPropertyChanges() );
     }
 
     public <T extends PrimitiveRecord> void removeProperty( RecordProxy<Long,T,Void> primitiveProxy, int propertyKey )
     {
-        propertyDeleter.removeProperty( primitiveProxy, propertyKey, getPropertyRecords() );
+        propertyDeleter.removeProperty( primitiveProxy, propertyKey, getPropertyChanges() );
     }
 
     public <P extends PrimitiveRecord> void primitiveChangeProperty( RecordProxy<Long, P, Void> primitive,
             int propertyKey, Object value )
     {
-        propertyCreator.primitiveChangeProperty( primitive, propertyKey, value, getPropertyRecords() );
+        propertyCreator.primitiveChangeProperty( primitive, propertyKey, value, getPropertyChanges() );
     }
 
     public <P extends PrimitiveRecord> void primitiveAddProperty( RecordProxy<Long, P, Void> primitive,
             int propertyKey, Object value )
     {
-        propertyCreator.primitiveAddProperty( primitive, propertyKey, value, getPropertyRecords() );
+        propertyCreator.primitiveAddProperty( primitive, propertyKey, value, getPropertyChanges() );
     }
 
     public void createPropertyKeyToken( String name, int id )
     {
         TokenCreator<PropertyKeyTokenRecord> creator =
                 new TokenCreator<>( neoStore.getPropertyKeyTokenStore() );
-        creator.createToken( name, id, getPropertyKeyTokenRecords() );
+        creator.createToken( name, id, getPropertyKeyTokenChanges() );
     }
 
     public void createLabelToken( String name, int id )
     {
         TokenCreator<LabelTokenRecord> creator =
                 new TokenCreator<>( neoStore.getLabelTokenStore() );
-        creator.createToken( name, id, getLabelTokenRecords() );
+        creator.createToken( name, id, getLabelTokenChanges() );
     }
 
     public void createRelationshipTypeToken( String name, int id )
     {
         TokenCreator<RelationshipTypeTokenRecord> creator =
                 new TokenCreator<>( neoStore.getRelationshipTypeTokenStore() );
-        creator.createToken( name, id, getRelationshipTypeTokenRecords() );
+        creator.createToken( name, id, getRelationshipTypeTokenChanges() );
     }
 
-    public void bind( Client locksClient )
+    public TransactionRecordStateContext bind( Client locksClient )
     {
         locker.setLockClient( locksClient );
+        return this;
     }
 
     public void initialize()
@@ -149,14 +151,14 @@ public class NeoStoreTransactionContext
         supplier.release( this );
     }
 
-    public RecordChanges<Long, NodeRecord, Void> getNodeRecords()
+    public RecordChanges<Long, NodeRecord, Void> getNodeChanges()
     {
-        return recordChangeSet.getNodeRecords();
+        return recordChangeSet.getNodeChanges();
     }
 
-    public RecordChanges<Long, RelationshipRecord, Void> getRelRecords()
+    public RecordChanges<Long, RelationshipRecord, Void> getRelationshipChanges()
     {
-        return recordChangeSet.getRelRecords();
+        return recordChangeSet.getRelationshipChanges();
     }
 
     public RecordChanges<Long, Collection<DynamicRecord>, SchemaRule> getSchemaRuleChanges()
@@ -164,29 +166,34 @@ public class NeoStoreTransactionContext
         return recordChangeSet.getSchemaRuleChanges();
     }
 
-    public RecordChanges<Long, PropertyRecord, PrimitiveRecord> getPropertyRecords()
+    public RecordChanges<Long, PropertyRecord, PrimitiveRecord> getPropertyChanges()
     {
-        return recordChangeSet.getPropertyRecords();
+        return recordChangeSet.getPropertyChanges();
     }
 
-    public RecordChanges<Long, RelationshipGroupRecord, Integer> getRelGroupRecords()
+    public RecordChanges<Long, RelationshipGroupRecord, Integer> getRelationshipGroupChanges()
     {
-        return recordChangeSet.getRelGroupRecords();
+        return recordChangeSet.getRelationshipGroupChanges();
     }
 
-    public RecordChanges<Integer,PropertyKeyTokenRecord,Void> getPropertyKeyTokenRecords()
+    public RecordChanges<Integer,PropertyKeyTokenRecord,Void> getPropertyKeyTokenChanges()
     {
         return recordChangeSet.getPropertyKeyTokenChanges();
     }
 
-    public RecordChanges<Integer,LabelTokenRecord,Void> getLabelTokenRecords()
+    public RecordChanges<Integer,LabelTokenRecord,Void> getLabelTokenChanges()
     {
         return recordChangeSet.getLabelTokenChanges();
     }
 
-    public RecordChanges<Integer,RelationshipTypeTokenRecord,Void> getRelationshipTypeTokenRecords()
+    public RecordChanges<Integer,RelationshipTypeTokenRecord,Void> getRelationshipTypeTokenChanges()
     {
         return recordChangeSet.getRelationshipTypeTokenChanges();
+    }
+
+    public RecordChanges<Long,NeoStoreRecord,Void> getNeoStoreChanges()
+    {
+        return recordChangeSet.getNeoStoreChanges();
     }
 
     public RecordProxy<Long, RelationshipGroupRecord, Integer> getRelationshipGroup( NodeRecord node, int type )
@@ -197,7 +204,7 @@ public class NeoStoreTransactionContext
         while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
             RecordProxy<Long, RelationshipGroupRecord, Integer> change =
-                    recordChangeSet.getRelGroupRecords().getOrLoad( groupId, type );
+                    recordChangeSet.getRelationshipGroupChanges().getOrLoad( groupId, type );
             RelationshipGroupRecord record = change.forReadingData();
             record.setPrev( previousGroupId ); // not persistent so not a "change"
             allTypes.add( record.getType() );
@@ -231,5 +238,10 @@ public class NeoStoreTransactionContext
     public RelationshipLoadingPosition getRelationshipLoadingChainPoisition( long id )
     {
         return relationshipLoader.getRelationshipChainPosition( id );
+    }
+
+    public boolean hasChanges()
+    {
+        return recordChangeSet.hasChanges();
     }
 }

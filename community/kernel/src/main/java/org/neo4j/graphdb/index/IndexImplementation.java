@@ -35,14 +35,14 @@ import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 public interface IndexImplementation
 {
     /**
-     * Returns a {@link LegacyIndexProviderTransaction} that keeps transaction state for all
+     * Returns a {@link LegacyIndexProviderTransactionState} that keeps transaction state for all
      * indexes for a given provider in a transaction.
      *
      * @param configuration that return a legacy index SPI for.
      * @return a {@link LegacyIndexSPI} which represents a type of index suitable for the
      * given configuration.
      */
-    LegacyIndexProviderTransaction newTransaction( IndexCommandFactory commandFactory );
+    LegacyIndexProviderTransactionState newTransaction( IndexCommandFactory commandFactory );
 
     /**
      * @return an index applier that will get notifications about commands to apply.
