@@ -20,11 +20,18 @@
 
 package org.neo4j.server.rest.repr;
 
+import java.io.IOException;
+import javax.ws.rs.core.MediaType;
+
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
+import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
+import org.neo4j.server.rest.domain.GraphDbHelper;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -37,6 +44,22 @@ public class XForwardFilterIT extends AbstractRestFunctionalTestBase
     public static final String X_FORWARDED_HOST = "X-Forwarded-Host";
     public static final String X_FORWARDED_PROTO = "X-Forwarded-Proto";
     private Client client = Client.create();
+
+    private static GraphDbHelper helper;
+
+    @BeforeClass
+    public static void setupServer() throws IOException
+    {
+        FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper( server() );
+        helper = functionalTestHelper.getGraphDbHelper();
+    }
+
+    @Before
+    public void setupTheDatabase()
+    {
+        cleanDatabase();
+        helper.createRelationship( "RELATES_TO", helper.createNode(), helper.createNode() );
+    }
 
     @Test
     public void shouldUseXForwardedHostHeaderWhenPresent() throws Exception
@@ -138,6 +161,26 @@ public class XForwardFilterIT extends AbstractRestFunctionalTestBase
         // then
         String entity = response.getEntity( String.class );
         assertTrue( entity.contains( "https://jimwebber.org" ) );
+        assertFalse( entity.contains( "http://localhost:7474" ) );
+    }
+
+    @Test
+    public void shouldUseXForwardedHostAndXForwardedProtoHeadersInCypherResponseRepresentations()
+    {
+        // when
+        String jsonString = "{\"statements\" : [{ \"statement\": \"MATCH (n) RETURN n\", " +
+                "\"resultDataContents\":[\"REST\"] }] }";
+
+        ClientResponse response = client.resource( "http://localhost:7474/db/data/transaction" )
+                .accept( APPLICATION_JSON )
+                .header( X_FORWARDED_HOST, "jimwebber.org:2354" )
+                .header( X_FORWARDED_PROTO, "https" )
+                .entity( jsonString, MediaType.APPLICATION_JSON_TYPE )
+                .post( ClientResponse.class );
+
+        // then
+        String entity = response.getEntity( String.class );
+        assertTrue( entity.contains( "https://jimwebber.org:2354" ) );
         assertFalse( entity.contains( "http://localhost:7474" ) );
     }
 }
