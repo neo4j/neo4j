@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.kvstore;
 
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
-
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -32,6 +30,8 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 
 /*
  * Implementation of  a key value store based on storing a sequence of records sorted
@@ -146,6 +146,12 @@ public abstract class SortedKeyValueStore<K extends Comparable<K>, VR> implement
     {
         return header.lastTxId();
     }
+
+    public long minorVersion()
+    {
+        return header.minorVersion();
+    }
+
     public long totalRecordsStored()
     {
         return header.dataRecords();

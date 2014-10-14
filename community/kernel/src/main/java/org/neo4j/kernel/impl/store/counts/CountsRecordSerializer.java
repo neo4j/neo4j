@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
-import static org.neo4j.kernel.impl.api.CountsKey.indexKey;
-import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
-import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
-
 import java.nio.ByteBuffer;
 
 import org.neo4j.io.pagecache.PageCursor;
@@ -30,6 +26,10 @@ import org.neo4j.kernel.impl.api.CountsKey;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordSerializer;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
 import org.neo4j.register.Register;
+
+import static org.neo4j.kernel.impl.api.CountsKey.indexKey;
+import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
+import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
 
 /**
  * Node Key:
@@ -57,10 +57,7 @@ import org.neo4j.register.Register;
  */
 public class CountsRecordSerializer implements KeyValueRecordSerializer<CountsKey, Register.LongRegister>
 {
-    static final byte EMPTY_RECORD_KEY = 0;
-    static final byte NODE_KEY = 1;
-    static final byte RELATIONSHIP_KEY = 2;
-    static final byte INDEX_KEY = 4;
+
 
     @Override
     public boolean visitRecord(ByteBuffer buffer, KeyValueRecordVisitor<CountsKey, Register.LongRegister> visitor)
@@ -82,26 +79,27 @@ public class CountsRecordSerializer implements KeyValueRecordSerializer<CountsKe
         visitor.valueRegister().write( count );
 
         CountsKey key;
-        switch ( type )
+        switch ( CountsRecordType.fromCode( type ) )
         {
-            case EMPTY_RECORD_KEY:
+            case EMPTY:
                 assert one == 0;
                 assert two == 0;
                 assert three == 0;
                 assert count == 0;
                 return false;
 
-            case NODE_KEY:
+            case NODE:
                 assert one == 0;
                 assert two == 0;
                 key = nodeKey( three /* label id*/ );
                 break;
 
-            case RELATIONSHIP_KEY:
+            case RELATIONSHIP:
                 key = relationshipKey( one /* start label id */, two /* rel type id */, three /* end label id */ );
                 break;
 
-            case INDEX_KEY:
+            case INDEX:
+                assert one == 0;
                 key = indexKey( three /* label id */, two /* pk id */ );
                 break;
 
@@ -129,25 +127,33 @@ public class CountsRecordSerializer implements KeyValueRecordSerializer<CountsKe
         // read value
         cursor.getLong(); // skip unused long
         long count =  cursor.getLong();
+        value.write( count );
 
         CountsKey key;
-        switch ( type )
+        switch ( CountsRecordType.fromCode( type ) )
         {
-            case EMPTY_RECORD_KEY:
+            case EMPTY:
                 throw new IllegalStateException( "Reading empty record" );
-            case NODE_KEY:
+
+            case NODE:
                 assert one == 0;
                 assert two == 0;
                 key = nodeKey( three /* label id*/ );
-                value.write( count );
                 break;
-            case RELATIONSHIP_KEY:
+
+            case RELATIONSHIP:
                 key = relationshipKey( one /* start label id */, two /* rel type id */, three /* end label id */ );
-                value.write( count );
                 break;
+
+            case INDEX:
+                assert one == 0;
+                key = indexKey( three /* label id */, two /* pk id */ );
+                break;
+
             default:
                 throw new IllegalStateException( "Unknown counts key type: " + type );
         }
+
         return key;
     }
 

@@ -20,7 +20,12 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.impl.store.counts.CountsRecordType;
 import org.neo4j.register.Register;
+
+import static org.neo4j.kernel.impl.store.counts.CountsRecordType.INDEX;
+import static org.neo4j.kernel.impl.store.counts.CountsRecordType.NODE;
+import static org.neo4j.kernel.impl.store.counts.CountsRecordType.RELATIONSHIP;
 
 public abstract class CountsKey implements Comparable<CountsKey>
 {
@@ -43,6 +48,8 @@ public abstract class CountsKey implements Comparable<CountsKey>
     {
         // all subclasses are internal
     }
+
+    public abstract CountsRecordType recordType();
 
     @Override
     public abstract int hashCode();
@@ -70,12 +77,6 @@ public abstract class CountsKey implements Comparable<CountsKey>
         }
 
         @Override
-        public boolean equals( Object o )
-        {
-            return this == o || (o instanceof NodeKey) && labelId == ((NodeKey) o).labelId;
-        }
-
-        @Override
         public String toString()
         {
             return String.format( "CountsKey[(%s)]", label( labelId ) );
@@ -88,22 +89,34 @@ public abstract class CountsKey implements Comparable<CountsKey>
         }
 
         @Override
+        public CountsRecordType recordType()
+        {
+            return NODE;
+        }
+
+        @Override
         public int hashCode()
         {
             return labelId;
         }
 
         @Override
-        public int compareTo( CountsKey o )
+        public boolean equals( Object o )
         {
-            if ( o instanceof NodeKey )
+            return this == o || (o instanceof NodeKey) && labelId == ((NodeKey) o).labelId;
+        }
+
+        @Override
+        public int compareTo( CountsKey other )
+        {
+            if ( other instanceof NodeKey )
             {
-                NodeKey that = (NodeKey) o;
+                NodeKey that = (NodeKey) other;
                 return this.labelId - that.labelId;
             }
             else
             {
-                return -1;
+                return recordType().ordinal() - other.recordType().ordinal();
             }
         }
     }
@@ -137,21 +150,6 @@ public abstract class CountsKey implements Comparable<CountsKey>
         }
 
         @Override
-        public boolean equals( Object o )
-        {
-            if ( this == o )
-            {
-                return true;
-            }
-            if ( (o instanceof RelationshipKey) )
-            {
-                RelationshipKey that = (RelationshipKey) o;
-                return endLabelId == that.endLabelId && startLabelId == that.startLabelId && typeId == that.typeId;
-            }
-            return false;
-        }
-
-        @Override
         public String toString()
         {
             return String.format( "CountsKey[(%s)-%s->(%s)]",
@@ -165,12 +163,33 @@ public abstract class CountsKey implements Comparable<CountsKey>
         }
 
         @Override
+        public CountsRecordType recordType()
+        {
+            return RELATIONSHIP;
+        }
+
+        @Override
         public int hashCode()
         {
             int result = startLabelId;
             result = 31 * result + typeId;
             result = 31 * result + endLabelId;
             return result;
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( (o instanceof RelationshipKey) )
+            {
+                RelationshipKey that = (RelationshipKey) o;
+                return endLabelId == that.endLabelId && startLabelId == that.startLabelId && typeId == that.typeId;
+            }
+            return false;
         }
 
         @Override
@@ -191,7 +210,7 @@ public abstract class CountsKey implements Comparable<CountsKey>
             }
             else
             {
-                return 1;
+                return recordType().ordinal() - o.recordType().ordinal();
             }
         }
     }
@@ -230,6 +249,20 @@ public abstract class CountsKey implements Comparable<CountsKey>
         }
 
         @Override
+        public CountsRecordType recordType()
+        {
+            return INDEX;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            int result = labelId;
+            result = 31 * result + propertyKeyId;
+            return result;
+        }
+
+        @Override
         public boolean equals( Object o )
         {
             if ( this == o )
@@ -247,19 +280,11 @@ public abstract class CountsKey implements Comparable<CountsKey>
         }
 
         @Override
-        public int hashCode()
+        public int compareTo( CountsKey other )
         {
-            int result = labelId;
-            result = 31 * result + propertyKeyId;
-            return result;
-        }
-
-        @Override
-        public int compareTo( CountsKey o )
-        {
-            if ( o instanceof IndexKey )
+            if ( other instanceof IndexKey )
             {
-                IndexKey that = (IndexKey) o;
+                IndexKey that = (IndexKey) other;
                 int cmp = this.labelId - that.labelId;
                 if ( cmp == 0 )
                 {
@@ -269,7 +294,7 @@ public abstract class CountsKey implements Comparable<CountsKey>
             }
             else
             {
-                return -1;
+                return recordType().ordinal() - other.recordType().ordinal();
             }
         }
     }
