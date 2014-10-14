@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.collection.pool.Pool;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.ThisShouldNotHappenError;
@@ -72,6 +73,12 @@ import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
  */
 public class KernelTransactionImplementation implements KernelTransaction, TxState.Holder
 {
+    /*
+     * IMPORTANT:
+     * This class is pooled and re-used. If you add *any* state to it, you *must* make sure that the #initialize()
+     * method resets that state for re-use.
+     */
+
     // Logic
     private final SchemaWriteGuard schemaWriteGuard;
     private final IndexingService indexService;
@@ -83,7 +90,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final UpdateableSchemaState schemaState;
     private final StatementOperationParts operations;
     private final boolean readOnly;
-    private final Locks.Client locks;
+    private final Pool<KernelTransactionImplementation> pool;
 
     // State
     private final TransactionRecordState recordState;
@@ -91,6 +98,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private TxStateImpl txState;
     private TransactionType transactionType = TransactionType.ANY;
     private TransactionHooks.TransactionHooksState hooksState;
+    private Locks.Client locks;
     private boolean closing, closed;
     private boolean failure, success;
     private volatile boolean terminated;
@@ -122,6 +130,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             PersistenceCache persistenceCache,
                                             StoreReadLayer storeLayer,
                                             LegacyIndexTransactionState legacyIndexTransaction,
+                                            Pool<KernelTransactionImplementation> pool,
                                             Clock clock )
     {
         this.operations = operations;
@@ -141,6 +150,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.persistenceCache = persistenceCache;
         this.storeLayer = storeLayer;
         this.legacyIndexTransactionState = legacyIndexTransaction;
+        this.pool = pool;
         this.clock = clock;
         this.schemaStorage = new SchemaStorage( neoStore.getSchemaStore() );
     }
@@ -148,6 +158,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     /** Reset this transaction to a vanilla state, turning it into a logically new transaction. */
     public KernelTransactionImplementation initialize( TransactionHeaderInformation txHeader, long lastCommittedTx )
     {
+        assert locks != null : "This transaction has been disposed off, it should not be used.";
         this.headerInformation = txHeader;
         this.terminated = closing = closed = failure = success = false;
         this.transactionType = TransactionType.ANY;
@@ -155,6 +166,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.txState = null; // TODO: Implement txState.clear() instead, to re-use data structures
         this.legacyIndexTransactionState.initialize();
         this.recordState.initialize( lastCommittedTx );
+        this.counts.initialize();
         this.startTimeMillis = clock.currentTimeMillis();
         this.lastTransactionIdWhenStarted = lastCommittedTx;
         return this;
@@ -699,12 +711,21 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             closed = true;
             closing = false;
-            dispose();
         }
     }
 
     protected void dispose()
     {
+        if(locks != null)
+        {
+            locks.close();
+        }
+
+        this.locks = null;
+        this.headerInformation = null;
+        this.transactionType = null;
+        this.hooksState = null;
+        this.txState = null;
     }
 
     private void commit() throws TransactionFailureException
@@ -848,6 +869,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     /** Release resources held up by this transaction & return it to the transaction pool. */
     private void release()
     {
-        locks.close();
+        locks.releaseAll();
+        pool.release( this );
     }
 }
