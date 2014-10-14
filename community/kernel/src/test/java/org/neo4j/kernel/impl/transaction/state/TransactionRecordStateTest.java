@@ -180,7 +180,7 @@ public class TransactionRecordStateTest
 
     private TransactionRecordState recordState( NeoStore store, NeoStoreTransactionContext context )
     {
-        return new TransactionRecordState( 1, store,
+        return new TransactionRecordState( store,
                 new IntegrityValidator( store, mock( IndexingService.class ) ), context );
     }
 

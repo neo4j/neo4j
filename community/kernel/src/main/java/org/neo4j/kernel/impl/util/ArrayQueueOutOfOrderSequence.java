@@ -27,7 +27,7 @@ import static java.lang.String.format;
  */
 public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
 {
-    private long highestGapFreeNumber;
+    private volatile long highestGapFreeNumber;
     private final SortedArray outOfOrderQueue;
 
     public ArrayQueueOutOfOrderSequence( long startingNumber, int initialArraySize )
@@ -50,7 +50,7 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
     }
 
     @Override
-    public synchronized long get()
+    public long get()
     {
         return highestGapFreeNumber;
     }
