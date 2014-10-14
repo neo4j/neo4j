@@ -19,11 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.Limit
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter.unnestOptional
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{PlannerQuery, LogicalPlanningTestSupport2}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{Expression, Identifier, Equals, RelTypeName}
+import org.neo4j.cypher.internal.compiler.v2_2.ast
 
 class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -54,8 +56,8 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
     )
   }
 
-  ignore("should build simple optional expand") { // This should be built using plan rewriting
-    planFor("MATCH n OPTIONAL MATCH n-[:NOT_EXIST]->x RETURN n").plan match {
+  test("should build simple optional expand") {
+    planFor("MATCH n OPTIONAL MATCH n-[:NOT_EXIST]->x RETURN n").plan.endoRewrite(unnestOptional) match {
       case Projection(OptionalExpand(
         AllNodesScan(IdName("n"), _),
         IdName("n"),
@@ -82,7 +84,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
           )
         ))
       ), _) => {
-        val predicate: Expression = Equals(Identifier("a1")_, Identifier("a1$$$_")_)_
+        val predicate: ast.Expression = ast.Equals(ast.Identifier("a1")_, ast.Identifier("a1$$$_")_)_
         predicates should equal(Seq(predicate))
       }
     }
@@ -104,10 +106,10 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       ), _) => {
         args should equal(Set(IdName("r"), IdName("a1")))
 
-        val predicate1: Expression = Equals(Identifier("a2")_, Identifier("a2$$$_")_)_
+        val predicate1: ast.Expression = ast.Equals(ast.Identifier("a2")_, ast.Identifier("a2$$$_")_)_
         predicates1 should equal(Seq(predicate1))
 
-        val predicate2: Expression = Equals(Identifier("a1")_, Identifier("a2")_)_
+        val predicate2: ast.Expression = ast.Equals(ast.Identifier("a1")_, ast.Identifier("a2")_)_
         predicates2 should equal(Seq(predicate2))
       }
     }
@@ -127,21 +129,35 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
           )
         ))
       ), _) => {
-        val predicate: Expression = Equals(Identifier("a2")_, Identifier("a2$$$_")_)_
+        val predicate: ast.Expression = ast.Equals(ast.Identifier("a2")_, ast.Identifier("a2$$$_")_)_
         predicates should equal(Seq(predicate))
       }
     }
   }
 
-  ignore("should solve multiple optional matches") { // This should be built using plan rewriting
-    planFor("MATCH a OPTIONAL MATCH (a)-[:R1]->(x1) OPTIONAL MATCH (a)-[:R2]->(x2) RETURN a, x1, x2").plan should equal(
+  test("should solve multiple optional matches") {
+    val plan = planFor("MATCH a OPTIONAL MATCH (a)-[:R1]->(x1) OPTIONAL MATCH (a)-[:R2]->(x2) RETURN a, x1, x2").plan.endoRewrite(unnestOptional)
+    plan should equal(
       Projection(
         OptionalExpand(
           OptionalExpand(
             AllNodesScan(IdName("a"), Set.empty)(PlannerQuery.empty),
-            IdName("a"), Direction.OUTGOING, List(RelTypeName("R1") _), IdName("x1"), IdName("  UNNAMED26"), SimplePatternLength, Seq.empty)(PlannerQuery.empty),
-          IdName("a"), Direction.OUTGOING, List(RelTypeName("R2") _), IdName("x2"), IdName("  UNNAMED57"), SimplePatternLength, Seq.empty)(PlannerQuery.empty),
+            IdName("a"), Direction.OUTGOING, List(ast.RelTypeName("R1") _), IdName("x1"), IdName("  UNNAMED27"), SimplePatternLength, Seq.empty)(PlannerQuery.empty),
+          IdName("a"), Direction.OUTGOING, List(ast.RelTypeName("R2") _), IdName("x2"), IdName("  UNNAMED58"), SimplePatternLength, Seq.empty)(PlannerQuery.empty),
         Map("a" -> ident("a"), "x1" -> ident("x1"), "x2" -> ident("x2"))
+      )(PlannerQuery.empty)
+    )
+  }
+
+  test("should solve optional matches with predicates ") {
+    val plan = planFor("MATCH (n) OPTIONAL MATCH n-[r]-(m) WHERE m.prop = 42 RETURN m").plan.endoRewrite(unnestOptional)
+    val predicates: Seq[ast.Expression] = List(ast.In(ast.Property(ast.Identifier("m")_, ast.PropertyKeyName("prop")_)_,ast.Collection(List(ast.SignedDecimalIntegerLiteral("42")_))_)_)
+    plan should equal(
+      Projection(
+        OptionalExpand(
+            AllNodesScan(IdName("n"), Set.empty)(PlannerQuery.empty),
+          IdName("n"), Direction.BOTH, List.empty, IdName("m"), IdName("r"), SimplePatternLength, predicates)(PlannerQuery.empty),
+        Map("m" -> ident("m"))
       )(PlannerQuery.empty)
     )
   }
