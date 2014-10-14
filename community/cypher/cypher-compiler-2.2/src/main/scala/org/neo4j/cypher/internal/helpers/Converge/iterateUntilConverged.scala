@@ -20,28 +20,17 @@
 package org.neo4j.cypher.internal.helpers.Converge
 
 object iterateUntilConverged {
-  implicit class SlidingPairs[T](val it: Iterator[T]) {
-    def slidingPairs: Iterator[(T, T)] = {
-      if (it.hasNext) {
-        new Iterator[(T, T)] {
-          var last = it.next()
-          def hasNext: Boolean = it.hasNext
-          def next(): (T, T) = {
-            val result = (last, it.next())
-            last = result._2
-            result
-          }
-        }
-      } else {
-        Iterator.empty
-      }
-    }
-  }
 
   def apply[A](f: (A => A)): (A => A) = {
     (seed: A) => {
-      val it = Iterator.iterate(seed)(f)
-      it.slidingPairs.find { case (a, b) => a == b }.get._1
+      var current = seed
+      var next = f(current)
+      while (current != next) {
+        current = next
+        next = f(current)
+      }
+
+      current
     }
   }
 }
