@@ -21,7 +21,9 @@ package org.neo4j.server.rest.discovery;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+
 import javax.ws.rs.GET;
+import javax.ws.rs.HeaderParam;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
@@ -31,10 +33,14 @@ import javax.ws.rs.core.Response;
 import org.apache.commons.configuration.Configuration;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-
 import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.rest.dbms.AuthenticationService;
+import org.neo4j.server.rest.repr.AccessDeniedDiscoveryRepresentation;
 import org.neo4j.server.rest.repr.DiscoveryRepresentation;
 import org.neo4j.server.rest.repr.OutputFormat;
+import org.neo4j.server.security.auth.SecurityCentral;
+
+import static org.neo4j.server.rest.dbms.AuthenticateHeaders.extractToken;
 
 /**
  * Used to discover the rest of the server URIs through a HTTP GET request to
@@ -47,24 +53,33 @@ public class DiscoveryService
     private static final Logger LOGGER = Log.getLogger(DiscoveryService.class);
     private final Configuration configuration;
     private final OutputFormat outputFormat;
+    private final SecurityCentral security;
 
-    public DiscoveryService( @Context Configuration configuration, @Context OutputFormat outputFormat )
+    public DiscoveryService( @Context Configuration configuration, @Context OutputFormat outputFormat,
+                             @Context SecurityCentral security )
     {
         this.configuration = configuration;
         this.outputFormat = outputFormat;
+        this.security = security;
     }
 
     @GET
     @Produces( MediaType.APPLICATION_JSON )
-    public Response getDiscoveryDocument() throws URISyntaxException
+    public Response getDiscoveryDocument( @HeaderParam( "Authorization" ) String auth ) throws URISyntaxException
     {
-        String webAdminManagementUri = configuration.getString( Configurator.MANAGEMENT_PATH_PROPERTY_KEY,
-                Configurator.DEFAULT_MANAGEMENT_API_PATH );
-        String dataUri = configuration.getString( Configurator.REST_API_PATH_PROPERTY_KEY,
-                Configurator.DEFAULT_DATA_API_PATH );
-
-        DiscoveryRepresentation dr = new DiscoveryRepresentation( webAdminManagementUri, dataUri );
-        return outputFormat.ok( dr );
+        if( !configuration.getBoolean( Configurator.AUTHORIZATION_ENABLED_PROPERTY_KEY, Configurator.DEFAULT_AUTHORIZATION_ENABLED )
+            || security.userForToken(extractToken( auth )).privileges().APIAccess() )
+        {
+            String webAdminManagementUri = configuration.getString( Configurator.MANAGEMENT_PATH_PROPERTY_KEY,
+                    Configurator.DEFAULT_MANAGEMENT_API_PATH );
+            String dataUri = configuration.getString( Configurator.REST_API_PATH_PROPERTY_KEY,
+                    Configurator.DEFAULT_DATA_API_PATH );
+            return outputFormat.ok( new DiscoveryRepresentation( webAdminManagementUri, dataUri ) );
+        }
+        else
+        {
+            return outputFormat.ok( new AccessDeniedDiscoveryRepresentation( AuthenticationService.AUTHENTICATE_PATH ) );
+        }
     }
 
     @GET

@@ -38,7 +38,15 @@ define(
         # JQuery global setup
         jQuery.ajaxSetup({
           timeout : 1000 * 60 * 60 * 6 # Let requests run up to six hours
+          beforeSend: (xhr) ->
+            token = localStorage.getItem("neo4j.authorization_token")
+            xhr.setRequestHeader("Authorization", "Basic realm=\"Neo4j\" " + token) unless token is null
         })
+
+        $(document).ajaxError( (ev, xhr) -> 
+          if xhr.status is 401 
+            $("#auth-error").show()
+        )
 
         @appState = new ApplicationState
         @appState.set server : new neo4js.GraphDatabase(location.protocol + "//" + location.host)

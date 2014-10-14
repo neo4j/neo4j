@@ -1,0 +1,33 @@
+div
+  .outer
+    include partials/frame-common-actions
+    .inner
+      .view-result
+        article.guide
+          div
+            .row
+              .span4
+                h3
+                  | Connection status
+                p.lead
+                  | This is your current server connection information.
+              .span1
+              .span7(ng-hide="!frame.response.user")
+                p
+                ul.big.undecorated
+                  li
+                    span.center-tbl-left-col 
+                      | Current user: 
+                    code
+                      | {{frame.response.user}}
+                  li
+                    span.center-tbl-left-col
+                      | Authorization token: 
+                    code
+                      | {{frame.response.authorization_token}}
+              .span5.error(ng-show="!frame.response.user")
+                | You are not connected to the server.
+      .status-bar(ng-class='{error: frame.hasErrors, loading: frame.isLoading}')
+        div(ng-show="frame.errorText")
+          .icon-warning-sign
+          {{frame.errorText}}: {{frame.detailedErrorText}}

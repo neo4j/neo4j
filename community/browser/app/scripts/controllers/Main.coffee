@@ -26,9 +26,11 @@ angular.module('neo4jApp.controllers')
       '$rootScope',
       '$window'
       'Server'
+      'Frame'
+      'AuthService'
       'Settings'
       'motdService'
-      ($scope, $window, Server, Settings, motdService) ->
+      ($scope, $window, Server, Frame, AuthService, Settings, motdService) ->
         refresh = ->
           $scope.labels = Server.labels()
           $scope.relationships = Server.relationships()
@@ -70,6 +72,20 @@ angular.module('neo4jApp.controllers')
         $scope.$watch 'offline', (serverIsOffline) ->
           if not serverIsOffline
             refresh()
+          else $scope.errorMessage = motdService.disconnected
+
+        $scope.$watch 'unauthorized', (isUnauthorized) ->
+          if not isUnauthorized
+            refresh()
+          else $scope.errorMessage = motdService.unauthorized
+
+        $scope.$on 'auth:status_updated', () ->
+          $scope.check()
+
+        # Authorization
+        AuthService.hasValidAuthorization().then(
+          -> Frame.create({input:"#{Settings.cmdchar}play welcome"})
+        )
 
         # XXX: Temporary for now having to change all help files
         $scope.$watch 'server', (val) ->

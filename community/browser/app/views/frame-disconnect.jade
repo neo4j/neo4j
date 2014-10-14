@@ -1,0 +1,17 @@
+div
+  .outer
+    include partials/frame-common-actions
+    .inner
+      .view-result(ng-hide="password_change_required")
+        article.guide
+          div
+            .row
+              .span4
+                h3 Disconnected
+                p.lead
+                  | You are now disconnected from the server.
+              .span1
+      .status-bar(ng-class='{error: error_text, loading: frame.isLoading}')
+        div(ng-show="error_text")
+          .icon-warning-sign
+          {{error_text}}

@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.modules.DiscoveryModule;
+import org.neo4j.server.modules.DBMSModule;
 import org.neo4j.server.modules.ManagementApiModule;
 import org.neo4j.server.modules.Neo4jBrowserModule;
 import org.neo4j.server.modules.RESTApiModule;
@@ -84,7 +84,7 @@ public class CommunityNeoServer extends AbstractNeoServer
     protected Iterable<ServerModule> createServerModules()
     {
         return Arrays.asList(
-                new DiscoveryModule(webServer, logging),
+                new DBMSModule(webServer, security, configurator.configuration().getBoolean( Configurator.AUTHORIZATION_ENABLED_PROPERTY_KEY, Configurator.DEFAULT_AUTHORIZATION_ENABLED )),
                 new RESTApiModule(webServer, database, configurator.configuration(), logging),
                 new ManagementApiModule(webServer, configurator.configuration(), logging),
                 new ThirdPartyJAXRSModule(webServer, configurator, logging, this),

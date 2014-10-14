@@ -75,6 +75,7 @@ angular.module('neo4jApp.services')
                 @isLoading = no
                 @hasErrors = yes
                 @response = null
+                result = result.data?.errors || result.errors?[0] || result
                 @errorText = result.message or "Unknown error"
                 if result.length > 0 and result[0].code
                   @errorText = result[0].code
@@ -103,6 +104,11 @@ angular.module('neo4jApp.services')
               @add(frame.exec())
               @remove(@first()) until @length <= Settings.maxFrames
             frame or rv
+
+          createOne: (data = {}) ->
+            last = @last()
+            return if last?.input == data.input
+            @create data
 
           interpreterFor: (input = '') ->
             intr = null

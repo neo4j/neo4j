@@ -111,30 +111,6 @@ angular.module('neo4jApp')
       ]
 
     FrameProvider.interpreters.push
-      type: 'account'
-      templateUrl: 'views/frame-login.html'
-      matches: ["#{cmdchar}login"]
-      exec: ['NTN', (NTN) ->
-        (input, q) ->
-          NTN.open()
-          .then(q.resolve, ->
-            q.reject(message: "Unable to log in")
-          )
-          q.promise
-      ]
-
-    FrameProvider.interpreters.push
-      type: 'account'
-      templateUrl: 'views/frame-logout.html'
-      matches: ["#{cmdchar}logout"]
-      exec: ['NTN', (NTN) ->
-        (input, q) ->
-          p = NTN.logout()
-          p.then(q.resolve, -> q.reject(message: "Unable to log out"))
-          q.promise
-      ]
-
-    FrameProvider.interpreters.push
       type: 'config'
       templateUrl: 'views/frame-config.html'
       matches: ["#{cmdchar}config"]
@@ -226,6 +202,87 @@ angular.module('neo4jApp')
 
           q.promise
       ]
+
+    FrameProvider.interpreters.push
+      type: 'auth'
+      templateUrl: 'views/frame-connect.html'
+      matches: (input) ->
+        pattern = new RegExp("^#{cmdchar}server connect")
+        input.match(pattern)
+      exec: ['AuthService', (AuthService) ->
+        (input, q) -> q.resolve()
+      ]
+
+    FrameProvider.interpreters.push
+      type: 'auth'
+      templateUrl: 'views/frame-disconnect.html'
+      matches:  (input) ->
+        pattern = new RegExp("^#{cmdchar}server disconnect")
+        input.match(pattern)
+      exec: ['Settings', 'AuthService', (Settings, AuthService) ->
+        (input, q) -> 
+          AuthService.forget()
+          q.resolve()
+      ]
+
+    FrameProvider.interpreters.push
+      type: 'auth'
+      templateUrl: 'views/frame-server-status.html'
+      matches:  (input) ->
+        pattern = new RegExp("^#{cmdchar}server status")
+        input.match(pattern)
+      exec: ['AuthService', (AuthService) ->
+        (input, q) -> 
+          AuthService.getAuthInfo()
+          .then(
+            (r) ->
+              q.resolve(r)
+            ,
+            (r) ->
+              q.reject(r)
+            )
+          q.promise
+      ]
+
+    FrameProvider.interpreters.push
+      type: 'auth'
+      templateUrl: 'views/frame-change-password.html'
+      matches:  (input) ->
+        pattern = new RegExp("^#{cmdchar}server change-password")
+        input.match(pattern)
+      exec: ['AuthService', (AuthService) ->
+        (input, q) -> 
+          q.resolve()
+          q.promise
+      ]
+
+    FrameProvider.interpreters.push
+      type: 'auth'
+      templateUrl: 'views/frame-invalidate-token.html'
+      matches:  (input) ->
+        pattern = new RegExp("^#{cmdchar}server invalidate-token")
+        input.match(pattern)
+      exec: ['AuthService', (AuthService) ->
+        (input, q) -> 
+          q.resolve()
+          q.promise
+      ]
+
+    FrameProvider.interpreters.push
+      type: 'auth'
+      templateUrl: 'views/frame-set-token.html'
+      matches:  (input) ->
+        pattern = new RegExp("^#{cmdchar}server set-token")
+        input.match(pattern)
+      exec: ['AuthService', (AuthService) ->
+        (input, q) -> 
+          q.resolve()
+          q.promise
+      ]
+
+    
+
+      
 
     # Profile a cypher command
     # FrameProvider.interpreters.push

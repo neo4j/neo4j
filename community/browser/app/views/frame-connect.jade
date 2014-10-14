@@ -1,0 +1,38 @@
+div(ng-controller="AuthCtrl")
+  .outer
+    include partials/frame-common-actions
+    .inner
+      .view-result(ng-hide="password_change_required")
+        article.guide
+          div
+            .row
+              .span4
+                h3 Welcome to Neo4j!
+                p.lead
+                  | Before we start, please provide your username and password.
+                  | The default values for username and password are 
+                  b neo4j
+                  /
+                  b neo4j
+              .span1
+              .span5(ng-hide="auth_service.isAuthenticated()")
+                .form
+                  p
+                    | Username
+                    br
+                    input(type='text', ng-model="username", style="margin: 0")
+                  p
+                    | Password
+                    br
+                    input(type='password', ng-model="password", style="margin: 0")
+                  p
+                    button.btn(ng-click="authenticate()", style="margin: 0") Connect
+              .span5(ng-show="auth_service.isAuthenticated()")
+                p You now have a working connection with Neo4j.
+            .row(ng-show="password_change_required")
+      .view-result(ng-show="password_change_required")
+        include partials/frame-change-password
+      .status-bar(ng-class='{error: error_text, loading: frame.isLoading}')
+        div(ng-show="error_text")
+          .icon-warning-sign
+          {{error_text}}
