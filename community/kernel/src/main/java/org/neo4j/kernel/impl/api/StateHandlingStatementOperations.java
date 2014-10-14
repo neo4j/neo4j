@@ -61,7 +61,6 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
-import org.neo4j.kernel.impl.api.operations.IndexCountsOperations;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.impl.api.operations.LegacyIndexReadOperations;
@@ -94,7 +93,6 @@ public class StateHandlingStatementOperations implements
         SchemaReadOperations,
         SchemaWriteOperations,
         CountsOperations,
-        IndexCountsOperations,
         LegacyIndexReadOperations,
         LegacyIndexWriteOperations
 {
@@ -920,58 +918,28 @@ public class StateHandlingStatementOperations implements
     @Override
     public long countsForNode( KernelStatement statement, int labelId )
     {
-        long count = storeLayer.countsForNode( labelId );
-        // TODO: figure out how to read proper numbers from the txState
-//        if ( statement.hasTxState() )
-//        {
-//            if ( labelId != ReadOperations.ANY_LABEL )
-//            {
-//                throw new UnsupportedOperationException( "not implemented" );
-//            }
-//            count += statement.txState().addedAndRemovedNodes().delta();
-//        }
-        return count;
+        return storeLayer.countsForNode( labelId );
     }
 
     @Override
     public long countsForRelationship( KernelStatement statement, int startLabelId, int typeId, int endLabelId )
     {
-        long count = storeLayer.countsForRelationship( startLabelId, typeId, endLabelId );
-        // TODO: figure out how to read proper numbers from the txState
-//        if ( statement.hasTxState() )
-//        {
-//            if ( startLabelId == ReadOperations.ANY_LABEL && endLabelId == ReadOperations.ANY_LABEL )
-//            {
-//                if ( typeId == ReadOperations.ANY_RELATIONSHIP_TYPE )
-//                {
-//                    count += statement.txState().addedAndRemovedRels().delta();
-//                }
-//                else
-//                {
-//                    throw new UnsupportedOperationException( "not implemented" );
-//                }
-//            }
-//            else if ( startLabelId == ReadOperations.ANY_LABEL )
-//            {
-//                throw new UnsupportedOperationException( "not implemented" );
-//            }
-//            else if ( endLabelId == ReadOperations.ANY_LABEL )
-//            {
-//                throw new UnsupportedOperationException( "not implemented" );
-//            }
-//            else
-//            {
-//                throw new UnsupportedOperationException( "not implemented" );
-//            }
-//        }
-        return count;
+        return storeLayer.countsForRelationship( startLabelId, typeId, endLabelId );
     }
 
     @Override
-    public double indexUniqueValuesPercentage( KernelStatement statement, int labelId, int propertyKeyId )
+    public double indexUniqueValuesPercentage( KernelStatement statement, IndexDescriptor descriptor )
             throws IndexNotFoundKernelException
     {
-        return storeLayer.indexUniqueValuesPercentage( labelId, propertyKeyId );
+        return storeLayer.indexUniqueValuesPercentage( descriptor );
+    }
+
+    @Override
+    public long indexNumberOfEntries( KernelStatement statement, IndexDescriptor descriptor )
+            throws IndexNotFoundKernelException
+
+    {
+        return storeLayer.indexNumberOfEntries( descriptor );
     }
 
     @Override

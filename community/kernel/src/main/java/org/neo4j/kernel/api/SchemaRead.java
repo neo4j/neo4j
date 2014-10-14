@@ -24,8 +24,8 @@ import java.util.Iterator;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.InternalIndexState;
 
 interface SchemaRead
 {
@@ -51,6 +51,12 @@ interface SchemaRead
 
     /** Retrieve the state of an index. */
     InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+
+    /** Calculate the index unique values percentage. */
+    double indexUniqueValuesPercentage( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+
+    /** Get the number of index entries. */
+    long indexNumberOfEntries( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /** Returns the failure description of a failed index. */
     String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;

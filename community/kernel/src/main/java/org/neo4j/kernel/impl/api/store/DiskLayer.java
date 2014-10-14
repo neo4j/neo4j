@@ -821,13 +821,26 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public double indexUniqueValuesPercentage( int labelId, int propertyKeyId ) throws IndexNotFoundKernelException
+    public double indexUniqueValuesPercentage( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        final IndexRule indexRule = schemaStorage.indexRule( labelId, propertyKeyId );
+        final IndexRule indexRule = getIndexRuleOrFail( descriptor );
+        return indexService.indexUniqueValuesPercentage( indexRule.getId() );
+    }
+
+    @Override
+    public long indexNumberOfEntries( IndexDescriptor descriptor  ) throws IndexNotFoundKernelException
+    {
+        final IndexRule indexRule = getIndexRuleOrFail( descriptor );
+        return indexService.indexNumberOfEntries( indexRule.getId() );
+    }
+
+    private IndexRule getIndexRuleOrFail( IndexDescriptor descriptor  ) throws IndexNotFoundKernelException
+    {
+        final IndexRule indexRule = schemaStorage.indexRule( descriptor.getLabelId(), descriptor.getPropertyKeyId() );
         if (indexRule == null)
         {
-            throw new IndexNotFoundKernelException( "No index for labelId " + labelId + " and " + propertyKeyId );
+            throw new IndexNotFoundKernelException( "No index for " + descriptor );
         }
-        return indexService.indexUniqueValuesPercentage( indexRule );
+        return indexRule;
     }
 }
