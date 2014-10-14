@@ -21,32 +21,15 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.util.IdOrderingQueue;
-
-public class PhysicalTransactionAppender extends AbstractPhysicalTransactionAppender
+public interface WriteFuture
 {
-    public PhysicalTransactionAppender( LogFile logFile,
-            TransactionMetadataCache transactionMetadataCache, TransactionIdStore transactionIdStore,
-            IdOrderingQueue legacyIndexTransactionOrdering )
-    {
-        super( logFile, transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering );
-    }
+    void write() throws IOException;
 
-    @Override
-    protected void emptyBufferIntoChannel() throws IOException
+    public static final WriteFuture VOID = new WriteFuture()
     {
-        channel.switchBuffer().write();
-    }
-
-    @Override
-    protected void forceAfterAppend( long ticket ) throws IOException
-    {
-        forceChannel();
-    }
-
-    @Override
-    protected long getNextTicket()
-    {
-        return 0;
-    }
+        @Override
+        public void write() throws IOException
+        {   // Do nothing
+        }
+    };
 }

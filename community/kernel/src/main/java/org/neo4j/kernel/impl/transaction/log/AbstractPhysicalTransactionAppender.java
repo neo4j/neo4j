@@ -31,7 +31,7 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
 {
     protected final WritableLogChannel channel;
     private final TransactionMetadataCache transactionMetadataCache;
-    private final LogFile logFile;
+    protected final LogFile logFile;
     private final TransactionIdStore transactionIdStore;
     private final TransactionLogWriter transactionLogWriter;
     private final LogPositionMarker positionMarker = new LogPositionMarker();
@@ -73,7 +73,7 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
                 transaction.getAuthorId(), LogEntryStart.checksum( transaction.additionalHeader(),
                         transaction.getMasterId(), transaction.getAuthorId() ) );
 
-        channel.emptyBufferIntoChannelAndClearIt();
+        emptyBufferIntoChannel();
 
         // Offer this transaction id to the queue so that the legacy index applier can take part in the ordering
         if ( indexCommandDetector.hasWrittenAnyLegacyIndexCommand() )
@@ -82,6 +82,8 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
         }
         return indexCommandDetector.hasWrittenAnyLegacyIndexCommand();
     }
+
+    protected abstract void emptyBufferIntoChannel() throws IOException;
 
     @Override
     public long append( TransactionRepresentation transaction ) throws IOException

@@ -87,7 +87,6 @@ public class BatchingPhysicalTransactionAppenderTest
         long ticket = appendCounter.incrementAndGet();
         // THEN forcing as part of append (forceAfterAppend) should await that ticket
         Future<Object> forceFuture = t2.executeDontWait( forceAfterAppend( appender, ticket ) );
-        System.out.println( t2.waitUntilWaiting() );
         forceThreadControl.letLoose();
         forceFuture.get();
     }

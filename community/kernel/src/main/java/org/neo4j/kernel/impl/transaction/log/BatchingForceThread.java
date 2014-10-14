@@ -35,7 +35,7 @@ class BatchingForceThread extends Thread
          * @return {@code true} if there were transactions that were forced to disk, otherwise {@code false}.
          * @throws IOException
          */
-        boolean force() throws IOException;
+        boolean perform() throws IOException;
     }
 
     private volatile boolean run = true;
@@ -66,7 +66,7 @@ class BatchingForceThread extends Thread
         {
             try
             {
-                if ( !operation.force() )
+                if ( !operation.perform() )
                 {
                     waitStrategy.wait( this );
                 }

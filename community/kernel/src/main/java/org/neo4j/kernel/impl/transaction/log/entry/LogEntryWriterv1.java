@@ -35,12 +35,21 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersions.CURRE
 public class LogEntryWriterv1 implements LogEntryWriter
 {
     private final WritableLogChannel channel;
-    private final NeoCommandHandler commandWriter;
+    private final Visitor<Command,IOException> serializer;
 
-    public LogEntryWriterv1( WritableLogChannel channel, NeoCommandHandler commandWriter )
+    public LogEntryWriterv1( WritableLogChannel channel, final NeoCommandHandler commandWriter )
     {
         this.channel = channel;
-        this.commandWriter = commandWriter;
+        this.serializer = new Visitor<Command, IOException>()
+        {
+            @Override
+            public boolean visit( Command command ) throws IOException
+            {
+                writeLogEntryHeader( COMMAND );
+                command.handle( commandWriter );
+                return true;
+            }
+        };
     }
 
     private void writeLogEntryHeader( byte type ) throws IOException
@@ -67,16 +76,6 @@ public class LogEntryWriterv1 implements LogEntryWriter
     @Override
     public void serialize( TransactionRepresentation tx ) throws IOException
     {
-        tx.accept( new Visitor<Command, IOException>()
-        {
-            @Override
-            public boolean visit( Command command ) throws IOException
-            {
-                writeLogEntryHeader( COMMAND );
-                command.handle( commandWriter );
-                return true;
-            }
-        } );
+        tx.accept( serializer );
     }
-
 }

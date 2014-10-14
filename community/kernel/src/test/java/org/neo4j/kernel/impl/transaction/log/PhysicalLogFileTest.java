@@ -107,7 +107,7 @@ public class PhysicalLogFileTest
             long longValue = 4854587;
             writer.putInt( intValue );
             writer.putLong( longValue );
-            writer.emptyBufferIntoChannelAndClearIt();
+            writer.switchBuffer().write();
             writer.force();
 
             // THEN
@@ -149,14 +149,14 @@ public class PhysicalLogFileTest
             writer.putInt( intValue );
             writer.putLong( longValue );
             writer.put( someBytes, someBytes.length );
-            writer.emptyBufferIntoChannelAndClearIt();
+            writer.switchBuffer().write();
             writer.force();
             writer.getCurrentPosition( positionMarker );
             LogPosition position2 = positionMarker.newPosition();
             long longValue2 = 123456789L;
             writer.putLong( longValue2 );
             writer.put( someBytes, someBytes.length );
-            writer.emptyBufferIntoChannelAndClearIt();
+            writer.switchBuffer().write();
             writer.force();
 
             // THEN
@@ -197,7 +197,7 @@ public class PhysicalLogFileTest
         {
             writer.put( (byte)i );
         }
-        writer.emptyBufferIntoChannelAndClearIt();
+        writer.switchBuffer().write();
 
         // WHEN/THEN
         final AtomicBoolean called = new AtomicBoolean();
