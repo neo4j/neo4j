@@ -25,7 +25,6 @@ import javax.ws.rs.core.MediaType;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.config.ClientConfig;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -36,7 +35,6 @@ import org.neo4j.server.rest.domain.GraphDbHelper;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -167,13 +165,6 @@ public class XForwardFilterIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldDELETEME() throws Exception
-    {
-        ClientResponse response = client.resource( "http://localhost:7474/db/data" ).accept( APPLICATION_JSON ).get( ClientResponse.class );
-        System.out.println("------->  "+response.getStatus());
-    }
-
-    @Test
     public void shouldUseXForwardedHostAndXForwardedProtoHeadersInCypherResponseRepresentations()
     {
         // when
@@ -191,22 +182,5 @@ public class XForwardFilterIT extends AbstractRestFunctionalTestBase
         String entity = response.getEntity( String.class );
         assertTrue( entity.contains( "https://jimwebber.org:2354" ) );
         assertFalse( entity.contains( "http://localhost:7474" ) );
-    }
-
-    @Test
-    public void shouldUseXForwardedHostAndXForwardedProtoWhenDoingSlashRedirects()
-    {
-        // when
-        client.getProperties().put( ClientConfig.PROPERTY_FOLLOW_REDIRECTS, false );
-        ClientResponse response = client.resource( "http://localhost:7474/db/data" )
-                .accept( APPLICATION_JSON )
-                .header( X_FORWARDED_HOST, "jimwebber.org:2342" )
-                .header( X_FORWARDED_PROTO, "https" )
-                .post( ClientResponse.class );
-
-        // then
-        assertEquals( 302, response.getStatus() );
-        String location = response.getHeaders().getFirst( "Location" );
-        assertEquals( "https://jimwebber.org:2342/db/data/", location );
     }
 }
