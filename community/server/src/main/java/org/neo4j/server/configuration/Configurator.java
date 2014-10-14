@@ -109,6 +109,12 @@ public interface Configurator
     String TRANSACTION_TIMEOUT = "org.neo4j.server.transaction.timeout";
     int DEFAULT_TRANSACTION_TIMEOUT = 60/*seconds*/;
 
+    String AUTHORIZATION_ENABLED_PROPERTY_KEY = "dbms.security.require_authorization";
+    boolean DEFAULT_AUTHORIZATION_ENABLED = true; // TODO temporarily on
+
+    String AUTHORIZATION_FILE_LOCATION_KEY = "dbms.security.authorization_location";
+    String DEFAULT_AUTHORIZATION_FILE_LOCATION = "data/dbms/authorization";
+
     Configuration configuration();
 
     Map<String, String> getDatabaseTuningProperties();

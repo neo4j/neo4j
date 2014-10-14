@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security;
+package org.neo4j.server.security.ssl;
 
 import java.io.File;
 import java.security.PrivateKey;
@@ -26,6 +26,7 @@ import java.security.cert.Certificate;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.server.security.ssl.SslCertificateFactory;
 
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;

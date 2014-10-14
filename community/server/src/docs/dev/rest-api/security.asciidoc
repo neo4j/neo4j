@@ -1,0 +1,9 @@
+[[rest-api-security]]
+== Neo4j Security ==
+
+In order to prevent unauthorized access to Neo4j, clients of the REST API must be authenticated. Authentication is done
+by sending a username and a password to the authentication endpoint.
+
+include::authenticate-to-obtain-authorization-token.asciidoc[]
+
+include::incorrect-username-or-password.asciidoc[]

@@ -391,7 +391,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
         String response = cypherRestCall( script, Status.BAD_REQUEST, Pair.of( "startName", "I" ), Pair.of( "name", "you" ) );
 
         Map<String, Object> responseMap = jsonToMap( response );
-        assertEquals( 4, responseMap.size() );
+        assertEquals( 5, responseMap.size() );
         assertThat( response, containsString( "message" ) );
         assertThat( ((String) responseMap.get( "message" )), containsString( "frien not defined" ) );
     }
