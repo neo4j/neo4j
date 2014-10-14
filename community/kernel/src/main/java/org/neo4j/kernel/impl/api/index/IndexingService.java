@@ -488,6 +488,11 @@ public class IndexingService extends LifecycleAdapter
         }
     }
 
+    private CountingIndexUpdater.IndexUpdateCountVisitor replacingIndexCountVisitor( IndexDescriptor descriptor )
+    {
+        return IndexStoreView.IndexCountVisitors.newReplacingIndexCountVisitor( storeView, descriptor );
+    }
+
     private IndexProxy createAndStartPopulatingIndexProxy( final long ruleId,
                                                            final IndexDescriptor descriptor,
                                                            final SchemaIndexProvider.Descriptor providerDescriptor,
@@ -500,8 +505,13 @@ public class IndexingService extends LifecycleAdapter
         IndexPopulator populator =
             getPopulatorFromProvider( providerDescriptor, ruleId, descriptor, new IndexConfiguration( constraint ) );
 
-        FailedIndexProxyFactory failureDelegateFactory =
-            new FailedPopulatingIndexProxyFactory( descriptor, providerDescriptor, populator, indexUserDescription );
+        FailedIndexProxyFactory failureDelegateFactory = new FailedPopulatingIndexProxyFactory(
+            descriptor,
+            providerDescriptor,
+            populator,
+            indexUserDescription,
+            replacingIndexCountVisitor( descriptor )
+        );
 
         PopulatingIndexProxy populatingIndex =
             new PopulatingIndexProxy( scheduler, descriptor, providerDescriptor,
@@ -569,9 +579,14 @@ public class IndexingService extends LifecycleAdapter
         IndexPopulator indexPopulator = getPopulatorFromProvider( providerDescriptor, ruleId,
                 descriptor, new IndexConfiguration( unique ) );
         String indexUserDescription = indexUserDescription(descriptor, providerDescriptor);
-        IndexProxy result =
-            new FailedIndexProxy( descriptor, providerDescriptor, indexUserDescription,
-                                  indexPopulator, populationFailure );
+        IndexProxy result = new FailedIndexProxy(
+            descriptor,
+            providerDescriptor,
+            indexUserDescription,
+            indexPopulator,
+            populationFailure,
+            replacingIndexCountVisitor( descriptor )
+        );
         result = contractCheckedProxy( result, true );
         return result;
     }

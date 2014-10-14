@@ -37,19 +37,25 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
 {
     protected final IndexPopulator populator;
     private final String indexUserDescription;
+    private final CountingIndexUpdater.IndexUpdateCountVisitor replacingIndexCountVisitor;
 
-    public FailedIndexProxy(IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
+    public FailedIndexProxy(IndexDescriptor descriptor,
+                            SchemaIndexProvider.Descriptor providerDescriptor,
                             String indexUserDescription,
-                            IndexPopulator populator, IndexPopulationFailure populationFailure)
+                            IndexPopulator populator,
+                            IndexPopulationFailure populationFailure,
+                            CountingIndexUpdater.IndexUpdateCountVisitor replacingIndexCountVisitor)
     {
         super( descriptor, providerDescriptor, populationFailure );
         this.populator = populator;
         this.indexUserDescription = indexUserDescription;
+        this.replacingIndexCountVisitor = replacingIndexCountVisitor;
     }
 
     @Override
     public Future<Void> drop() throws IOException
     {
+        replacingIndexCountVisitor.visitIndexUpdateCount( 0l );
         populator.drop();
         return VOID;
     }
@@ -71,7 +77,7 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
     {
         throw new UnsupportedOperationException( "Cannot activate a failed index." );
     }
-    
+
     @Override
     public void validate() throws IndexPopulationFailedKernelException
     {

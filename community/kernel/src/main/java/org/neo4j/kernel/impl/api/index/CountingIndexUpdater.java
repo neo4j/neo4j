@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-
 import java.io.IOException;
 
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+
+import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 public class CountingIndexUpdater implements IndexUpdater
 {
@@ -75,5 +75,6 @@ public class CountingIndexUpdater implements IndexUpdater
     interface IndexUpdateCountVisitor
     {
         void visitIndexUpdateCount( long indexUpdates );
+
     }
 }

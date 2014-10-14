@@ -19,18 +19,20 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
-
 import java.io.IOException;
 
 import org.junit.Test;
+
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
+import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 
 public class CountsStoreApplierTest
 {
