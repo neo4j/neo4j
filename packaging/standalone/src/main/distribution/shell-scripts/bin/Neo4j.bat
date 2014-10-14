@@ -17,6 +17,30 @@ rem
 rem You should have received a copy of the GNU General Public License
 rem along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+echo  +=~~~~+
+echo +~~~~~~~~ OOO
+echo =~~~~~~~~  O OOO                                                          O
+echo +~~~~~~~~      ++=~~~~=+      OOOO  OOOOOO                        OO     OOO
+echo  =~~~~~=     ++~~~~~~~~~~+     OOOO   OO                         OOO      O
+echo             ++~~~~~~~~~~~~+    OOOOO  OO    OOOOO    OOOOO      OOO    OOOOO
+echo   OO        +~~~~~~~~~~~~~~    OO OOO OO   OO  OOO  OOO OOO    OOO OO  OOOOO
+echo             +~~~~~~~~~~~~~~+   OO  OO OO  OOO   OO  OO   OOO  OOO  OO    OOO
+echo   OO        +~~~~~~~~~~~~~~+   OO   OOOO  OOOOOOOO  OO   OOO OOOOOOOOOO  OOO
+echo   OO        +~~~~~~~~~~~~~=    OO   OOOO  OOO       OO   OOO OOOOOOOOOO  OOO
+echo    O         +~~~~~~~~~~~+    OOOOO  OOO   OOOOOOO  OOOOOOO        OO    OOO
+echo    OO          +~~~~~~~=+                     O        OO          OO    OOO
+echo     OO            +++                                                    OOO
+echo     OO  ++         OO                                                 OOOOO
+echo      +~~~~~~~+     OO
+echo     +~~~~~~~~~~  OO
+echo    +~~~~~~~~~~~+
+echo    +~~~~~~~~~~~=
+echo    +~~~~~~~~~~~+
+echo    +~~~~~~~~~~~
+echo      =~~~~~~~+
+echo        ++=++
+
+
 set serviceName=Neo4j-Server
 set serviceDisplayName=Neo4j-Server
 set serviceStartType=auto
