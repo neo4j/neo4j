@@ -29,7 +29,7 @@ case class namespaceIdentifiers(scopeTree: Scope) extends Rewriter {
 
   val identifierNames = namespacedIdentifierNames(scopeTree)
 
-  def apply(in: AnyRef): Option[AnyRef] = bottomUp(getRewriter(in)).apply(in)
+  def apply(in: AnyRef): AnyRef = bottomUp(getRewriter(in)).apply(in)
 
   import Foldable._
   private def findReturnIdentifiers(any: AnyRef): Seq[Identifier] = {

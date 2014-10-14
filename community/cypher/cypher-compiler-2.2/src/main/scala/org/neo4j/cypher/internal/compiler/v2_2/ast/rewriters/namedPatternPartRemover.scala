@@ -31,5 +31,5 @@ object namedPatternPartRemover extends Rewriter {
     }
   }
 
-  def apply(v: AnyRef): Option[AnyRef] = instance.apply(v)
+  def apply(v: AnyRef): AnyRef = instance.apply(v)
 }

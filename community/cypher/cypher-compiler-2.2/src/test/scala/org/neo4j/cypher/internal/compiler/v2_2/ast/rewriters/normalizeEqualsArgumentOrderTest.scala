@@ -34,7 +34,7 @@ class NormalizeEqualsArgumentOrderTest extends CypherFunSuite with AstConstructi
 
     val input: Expression = Equals(lhs, rhs)_
 
-    normalizeEqualsArgumentOrder(input) should equal(Some(input))
+    normalizeEqualsArgumentOrder(input) should equal(input)
   }
 
   test("12 = a.prop rewritten to: a.prop = 12") {
@@ -44,7 +44,7 @@ class NormalizeEqualsArgumentOrderTest extends CypherFunSuite with AstConstructi
     val input: Expression = Equals(lhs, rhs)_
     val expected: Expression = Equals(rhs, lhs)_
 
-    normalizeEqualsArgumentOrder(input) should equal(Some(expected))
+    normalizeEqualsArgumentOrder(input) should equal(expected)
   }
 
   test("id(a) = id(b) rewritten to: id(a) = id(b)") {
@@ -53,7 +53,7 @@ class NormalizeEqualsArgumentOrderTest extends CypherFunSuite with AstConstructi
 
     val input: Expression = Equals(lhs, rhs)_
 
-    normalizeEqualsArgumentOrder(input) should equal(Some(input))
+    normalizeEqualsArgumentOrder(input) should equal(input)
   }
 
   test("23 = id(a) rewritten to: id(a) = 23") {
@@ -63,7 +63,7 @@ class NormalizeEqualsArgumentOrderTest extends CypherFunSuite with AstConstructi
     val input: Expression = Equals(lhs, rhs)_
     val expected: Expression = Equals(rhs, lhs)_
 
-    normalizeEqualsArgumentOrder(input) should equal(Some(expected))
+    normalizeEqualsArgumentOrder(input) should equal(expected)
   }
 
   private def id(name: String): FunctionInvocation =

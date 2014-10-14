@@ -26,7 +26,7 @@ import org.neo4j.helpers.ThisShouldNotHappenError
 
 case class expandStar(state: SemanticState) extends Rewriter {
 
-  def apply(that: AnyRef): Option[AnyRef] = bottomUp(instance).apply(that)
+  def apply(that: AnyRef): AnyRef = bottomUp(instance).apply(that)
 
   private val instance: Rewriter = Rewriter.lift {
     case clause@With(_, ri, _, _, _, _) if ri.includeExisting =>

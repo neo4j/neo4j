@@ -27,10 +27,8 @@ case class SingleRow(coveredIds: Set[IdName])(val solved: PlannerQuery)
                     (val typeInfo: Map[String, CypherType] = coveredIds.map( id => id.name -> CTNode).toMap) extends LogicalLeafPlan {
   def availableSymbols = coveredIds
 
-  override def dup(children: Seq[AnyRef]) = children match {
-    case newCoveredIds :: Nil =>
-      copy(newCoveredIds.asInstanceOf[Set[IdName]])(solved)(typeInfo).asInstanceOf[this.type]
-    case _                    =>
-      throw new InternalException("Did not expect this code path to be used.")
+  override def dup(children: Seq[AnyRef]) = children.size match {
+    case 1 =>
+      copy(children.head.asInstanceOf[Set[IdName]])(solved)(typeInfo).asInstanceOf[this.type]
   }
 }

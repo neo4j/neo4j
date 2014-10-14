@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 
 case object normalizeEqualsArgumentOrder extends Rewriter {
-  override def apply(that: AnyRef): Option[AnyRef] = topDown(instance).apply(that)
+  override def apply(that: AnyRef): AnyRef = topDown(instance).apply(that)
 
   private val instance: Rewriter = Rewriter.lift {
     // move n.prop on equals to the left
