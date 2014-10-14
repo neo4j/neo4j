@@ -309,7 +309,7 @@ public abstract class AbstractNeoServer implements NeoServer
                 new TransitionalPeriodTransactionMessContainer( database.getGraph() ),
                 new ServerExecutionEngine( database.getGraph(), dependencies.logging().getMessagesLog( ExecutionEngine.class ) ),
                 transactionRegistry,
-                baseUri(), dependencies.logging().getMessagesLog(TransactionFacade.class)
+                dependencies.logging().getMessagesLog(TransactionFacade.class)
         );
     }
 
