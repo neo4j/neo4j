@@ -23,9 +23,9 @@ import java.io.IOException;
 
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Version;
-
 import org.neo4j.index.impl.lucene.LuceneDataSource;
 import org.neo4j.index.impl.lucene.MultipleBackupDeletionPolicy;
 
@@ -42,6 +42,14 @@ public class IndexWriterFactories
                 writerConfig.setMaxBufferedDocs( 100000 ); // TODO figure out depending on environment?
                 writerConfig.setIndexDeletionPolicy( new MultipleBackupDeletionPolicy() );
                 writerConfig.setTermIndexInterval( 14 );
+
+                LogByteSizeMergePolicy mergePolicy = new LogByteSizeMergePolicy();
+                mergePolicy.setUseCompoundFile( true );
+                mergePolicy.setNoCFSRatio( 1.0 );
+                mergePolicy.setMinMergeMB( 0.1 );
+                mergePolicy.setMergeFactor( 2 );
+                writerConfig.setMergePolicy( mergePolicy );
+
                 return new IndexWriter( directory, writerConfig );
             }
         };

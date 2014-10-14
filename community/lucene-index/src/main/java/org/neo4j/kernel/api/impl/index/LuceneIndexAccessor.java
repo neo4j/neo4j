@@ -198,8 +198,10 @@ abstract class LuceneIndexAccessor implements IndexAccessor
         }
 
         @Override
-        public void close() throws IOException, IndexEntryConflictException
+        public synchronized void close() throws IOException, IndexEntryConflictException
         {
+            // This method should be synchronized because we need every thread to perform actual refresh
+            // and not just skip it because some other refresh is in progress
             searcherManager.maybeRefresh();
         }
 
