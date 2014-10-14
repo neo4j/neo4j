@@ -31,16 +31,19 @@ public class FailedPopulatingIndexProxyFactory implements FailedIndexProxyFactor
     private final SchemaIndexProvider.Descriptor providerDescriptor;
     private final IndexPopulator populator;
     private final String indexUserDescription;
+    private final CountingIndexUpdater.IndexUpdateCountVisitor replacingIndexCountVisitor;
 
     FailedPopulatingIndexProxyFactory( IndexDescriptor descriptor,
                                        SchemaIndexProvider.Descriptor providerDescriptor,
                                        IndexPopulator populator,
-                                       String indexUserDescription )
+                                       String indexUserDescription,
+                                       CountingIndexUpdater.IndexUpdateCountVisitor replacingIndexCountVisitor )
     {
         this.descriptor = descriptor;
         this.providerDescriptor = providerDescriptor;
         this.populator = populator;
         this.indexUserDescription = indexUserDescription;
+        this.replacingIndexCountVisitor = replacingIndexCountVisitor;
     }
 
     @Override
@@ -49,6 +52,6 @@ public class FailedPopulatingIndexProxyFactory implements FailedIndexProxyFactor
         return
             new FailedIndexProxy(
                 descriptor, providerDescriptor,
-                indexUserDescription, populator, failure( failure ) );
+                indexUserDescription, populator, failure( failure ), replacingIndexCountVisitor );
     }
 }

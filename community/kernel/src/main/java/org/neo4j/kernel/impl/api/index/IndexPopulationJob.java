@@ -66,7 +66,7 @@ public class IndexPopulationJob implements Runnable
     private final UpdateableSchemaState updateableSchemaState;
     private final StringLogger log;
     private final CountDownLatch doneSignal = new CountDownLatch( 1 );
-
+    private final CountingIndexUpdater.IndexUpdateCountVisitor replacingIndexCountVisitor;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
 
     private volatile StoreScan<IndexPopulationFailedKernelException> storeScan;
@@ -89,6 +89,7 @@ public class IndexPopulationJob implements Runnable
         this.updateableSchemaState = updateableSchemaState;
         this.indexUserDescription = indexUserDescription;
         this.failureDelegate = failureDelegateFactory;
+        this.replacingIndexCountVisitor = IndexStoreView.IndexCountVisitors.newReplacingIndexCountVisitor( storeView, descriptor );
         this.log = logging.getMessagesLog( getClass() );
     }
 
@@ -112,6 +113,8 @@ public class IndexPopulationJob implements Runnable
                 indexAllNodes( countVisitor );
                 if ( cancelled )
                 {
+                    storeView.replaceIndexCount( descriptor, 0 );
+
                     // We remain in POPULATING state
                     return;
                 }
@@ -166,7 +169,7 @@ public class IndexPopulationJob implements Runnable
                 // place is that we would otherwise introduce a race condition where updates could come
                 // in to the old context, if something failed in the job we send to the flipper.
                 flipper.flipTo( new FailedIndexProxy( descriptor, providerDescriptor, indexUserDescription,
-                                                      populator, failure( t ) ) );
+                                                      populator, failure( t ), replacingIndexCountVisitor ) );
             }
             finally
             {
@@ -255,7 +258,6 @@ public class IndexPopulationJob implements Runnable
         {
             cancelled = true;
             storeScan.stop();
-            storeView.replaceIndexCount( descriptor, 0 );
         }
 
         return latchGuardedValue( NO_VALUE, doneSignal, "Index population job cancel" );
