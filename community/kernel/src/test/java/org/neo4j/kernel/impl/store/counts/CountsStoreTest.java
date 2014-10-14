@@ -19,19 +19,13 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
-import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
-import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
-
 import java.io.File;
 import java.io.IOException;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
@@ -43,6 +37,15 @@ import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
+import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
+import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
+import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.BASE_MINOR_VERSION;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class CountsStoreTest
 {
@@ -57,6 +60,7 @@ public class CountsStoreTest
             assertEquals( 0, get( counts, nodeKey( 0 ) ) );
             assertEquals( 0, get( counts, relationshipKey( 1, 2, 3 ) ) );
             assertEquals( BASE_TX_ID, counts.lastTxId() );
+            assertEquals( BASE_MINOR_VERSION, counts.minorVersion() );
             assertEquals( 0, counts.totalRecordsStored() );
             assertEquals( alpha, counts.file() );
             counts.accept( new KeyValueRecordVisitor<CountsKey, Register.LongRegister>()
@@ -75,6 +79,26 @@ public class CountsStoreTest
                     fail( "should not have been called" );
                 }
             } );
+        }
+    }
+
+    @Test
+    public void shouldBumpMinorVersion() throws IOException
+    {
+        // when
+        CountsStore.createEmpty( pageCache, alpha, ALL_STORES_VERSION );
+        try ( CountsStore counts = CountsStore.open( fs, pageCache, alpha ) )
+        {
+            // when
+            long initialMinorVersion = counts.minorVersion();
+
+            SortedKeyValueStore.Writer<CountsKey, Register.LongRegister> writer = counts.newWriter( beta, counts.lastTxId() );
+            writer.close();
+
+            try ( CountsStore updated = (CountsStore) writer.openForReading() )
+            {
+                assertEquals( initialMinorVersion + 1l, updated.minorVersion() );
+            }
         }
     }
 
@@ -101,6 +125,7 @@ public class CountsStoreTest
             assertEquals( 21, get( updated, nodeKey( 0 ) ) );
             assertEquals( 32, get( updated, relationshipKey( 1, 2, 3 ) ) );
             assertEquals( lastCommittedTxId, updated.lastTxId() );
+            assertEquals( BASE_MINOR_VERSION, updated.minorVersion() );
             assertEquals( 2, updated.totalRecordsStored() );
             assertEquals( beta, updated.file() );
             updated.accept( new KeyValueRecordVisitor<CountsKey, Register.LongRegister>()

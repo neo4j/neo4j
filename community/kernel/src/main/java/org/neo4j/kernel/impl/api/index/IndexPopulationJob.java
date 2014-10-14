@@ -123,6 +123,7 @@ public class IndexPopulationJob implements Runnable
                     {
                         populateFromQueueIfAvailable( Long.MAX_VALUE, countVisitor );
                         storeView.replaceIndexCount( descriptor, countVisitor.count() );
+                        storeView.flushIndexCounts();
                         populator.close( true );
                         updateableSchemaState.clear();
                         return null;

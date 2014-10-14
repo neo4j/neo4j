@@ -92,7 +92,6 @@ import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
 
 public class IndexPopulationJobTest
 {
-
     @Test
     public void shouldPopulateIndexWithOneNode() throws Exception
     {

@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
-import static org.neo4j.kernel.impl.api.CountsKey.indexKey;
-import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
-import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
-
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -40,6 +36,10 @@ import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
+
+import static org.neo4j.kernel.impl.api.CountsKey.indexKey;
+import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
+import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
 
 /**
  * {@link CountsTracker} maintains two files, the {@link #alphaFile} and the {@link #betaFile} that it rotates between.
@@ -92,8 +92,8 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
             {
                 CountsStore alphaStore = CountsStore.open( fs, pageCache, alpha );
                 CountsStore betaStore = CountsStore.open( fs, pageCache, beta );
-                long alphaTxId = alphaStore.lastTxId(), betaTxId = betaStore.lastTxId();
-                if ( alphaTxId > betaTxId )  // TODO: compare to what the txIdProvider says...
+
+                if ( isAlphaStoreMoreRecent( alphaStore, betaStore ) )
                 {
                     betaStore.close();
                     return alphaStore;
@@ -120,6 +120,27 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
         catch ( IOException e )
         {
             throw new UnderlyingStorageException( e );
+        }
+    }
+
+    private static boolean isAlphaStoreMoreRecent( CountsStore alphaStore, CountsStore betaStore )
+    {
+        long alphaTxId = alphaStore.lastTxId(), betaTxId = betaStore.lastTxId();
+        long alphaVersion = alphaStore.minorVersion(), betaVersion = betaStore.minorVersion();
+
+        // TODO: Check with txIdProvider to infer if these numbers make any sense
+
+        if ( alphaTxId == betaTxId )
+        {
+            if ( alphaVersion == betaVersion )
+            {
+                throw new IllegalStateException( "Found two storage files with same last tx id and minor version" );
+            }
+            return alphaVersion > betaVersion;
+        }
+        else
+        {
+            return alphaTxId > betaTxId;
         }
     }
 
@@ -266,6 +287,11 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
         {
             return state.newWriter( alphaFile, lastCommittedTxId );
         }
+    }
+
+    File storeFile()
+    {
+        return state.storeFile();
     }
 
     private static File storeFile( File base, String version )

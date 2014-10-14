@@ -19,10 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.EMPTY_LONG_ARRAY;
-import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
-import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
-
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -39,7 +36,6 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.api.CountsAcceptor;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.Lock;
@@ -48,29 +44,37 @@ import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.StoreIdIterator;
+import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.EMPTY_LONG_ARRAY;
+import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
+import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
 public class NeoStoreIndexStoreView implements IndexStoreView
 {
     private final PropertyStore propertyStore;
     private final NodeStore nodeStore;
     private final LockService locks;
-    private final CountsAcceptor counts;
+    private final CountsTracker counts;
+    private final TransactionIdStore txIdStore;
 
     public NeoStoreIndexStoreView( LockService locks, NeoStore neoStore )
     {
-        this( locks, neoStore.getNodeStore(), neoStore.getPropertyStore(), neoStore.getCounts() );
+        this( locks, neoStore.getNodeStore(), neoStore.getPropertyStore(), neoStore.getCounts(), neoStore  );
     }
 
-    public NeoStoreIndexStoreView( LockService locks, NodeStore nodeStore, PropertyStore propertyStore, CountsAcceptor counts )
+    public NeoStoreIndexStoreView( LockService locks, NodeStore nodeStore, PropertyStore propertyStore, CountsTracker counts, TransactionIdStore txIdStore )
     {
         this.locks = locks;
         this.propertyStore = propertyStore;
         this.nodeStore = nodeStore;
         this.counts = counts;
+        this.txIdStore = txIdStore;
     }
 
     @Override
@@ -83,6 +87,12 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     public void updateIndexCount( IndexDescriptor descriptor, long delta )
     {
         counts.updateCountsForIndex( descriptor.getLabelId(), descriptor.getPropertyKeyId(), delta );
+    }
+
+    @Override
+    public void flushIndexCounts() throws IOException
+    {
+        counts.rotate( txIdStore.getLastCommittedTransactionId() );
     }
 
     @Override

@@ -19,11 +19,7 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.NodeIndexSeekPipe
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, NodeIndexSeek}
-
 
 class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport{
   test("should be able to use indexes") {
