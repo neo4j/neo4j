@@ -26,7 +26,7 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBase
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.index.IndexCommandFactory;
 import org.neo4j.graphdb.index.IndexImplementation;
-import org.neo4j.graphdb.index.LegacyIndexProviderTransaction;
+import org.neo4j.graphdb.index.LegacyIndexProviderTransactionState;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.LegacyIndex;
 import org.neo4j.kernel.api.LegacyIndexHits;
@@ -171,9 +171,9 @@ public class DummyIndexImplementation implements IndexImplementation
     }
 
     @Override
-    public LegacyIndexProviderTransaction newTransaction( IndexCommandFactory commandFactory )
+    public LegacyIndexProviderTransactionState newTransaction( IndexCommandFactory commandFactory )
     {
-        return new LegacyIndexProviderTransaction()
+        return new LegacyIndexProviderTransactionState()
         {
             @Override
             public LegacyIndex relationshipIndex( String indexName, Map<String, String> configuration )

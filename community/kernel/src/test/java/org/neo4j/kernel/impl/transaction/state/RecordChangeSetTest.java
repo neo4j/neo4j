@@ -45,11 +45,11 @@ public class RecordChangeSetTest
         // nothing really
 
         // THEN
-        assertEquals( 0, changeSet.getNodeRecords().changeSize() );
-        assertEquals( 0, changeSet.getPropertyRecords().changeSize() );
-        assertEquals( 0, changeSet.getRelRecords().changeSize() );
+        assertEquals( 0, changeSet.getNodeChanges().changeSize() );
+        assertEquals( 0, changeSet.getPropertyChanges().changeSize() );
+        assertEquals( 0, changeSet.getRelationshipChanges().changeSize() );
         assertEquals( 0, changeSet.getSchemaRuleChanges().changeSize() );
-        assertEquals( 0, changeSet.getRelGroupRecords().changeSize() );
+        assertEquals( 0, changeSet.getRelationshipGroupChanges().changeSize() );
     }
 
     @Test
@@ -70,19 +70,19 @@ public class RecordChangeSetTest
          * We need to make sure some stuff is stored in the sets being managed. That is why forChangingLinkage() is
          * called - otherwise, no changes will be stored and changeSize() would return 0 anyway.
          */
-        changeSet.getNodeRecords().create( 1l, null ).forChangingLinkage();
-        changeSet.getPropertyRecords().create( 1l, null ).forChangingLinkage();
-        changeSet.getRelRecords().create( 1l, null ).forChangingLinkage();
+        changeSet.getNodeChanges().create( 1l, null ).forChangingLinkage();
+        changeSet.getPropertyChanges().create( 1l, null ).forChangingLinkage();
+        changeSet.getRelationshipChanges().create( 1l, null ).forChangingLinkage();
         changeSet.getSchemaRuleChanges().create( 1l, null ).forChangingLinkage();
-        changeSet.getRelGroupRecords().create( 1l, 1 ).forChangingLinkage();
+        changeSet.getRelationshipGroupChanges().create( 1l, 1 ).forChangingLinkage();
 
         changeSet.close();
 
         // THEN
-        assertEquals( 0, changeSet.getNodeRecords().changeSize() );
-        assertEquals( 0, changeSet.getPropertyRecords().changeSize() );
-        assertEquals( 0, changeSet.getRelRecords().changeSize() );
+        assertEquals( 0, changeSet.getNodeChanges().changeSize() );
+        assertEquals( 0, changeSet.getPropertyChanges().changeSize() );
+        assertEquals( 0, changeSet.getRelationshipChanges().changeSize() );
         assertEquals( 0, changeSet.getSchemaRuleChanges().changeSize() );
-        assertEquals( 0, changeSet.getRelGroupRecords().changeSize() );
+        assertEquals( 0, changeSet.getRelationshipGroupChanges().changeSize() );
     }
 }

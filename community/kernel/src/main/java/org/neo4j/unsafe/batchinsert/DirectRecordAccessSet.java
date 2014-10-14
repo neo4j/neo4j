@@ -24,6 +24,7 @@ import java.util.Collection;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
+import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
@@ -60,25 +61,25 @@ public class DirectRecordAccessSet implements RecordAccessSet
     }
 
     @Override
-    public RecordAccess<Long, NodeRecord, Void> getNodeRecords()
+    public RecordAccess<Long, NodeRecord, Void> getNodeChanges()
     {
         return nodeRecords;
     }
 
     @Override
-    public RecordAccess<Long, PropertyRecord, PrimitiveRecord> getPropertyRecords()
+    public RecordAccess<Long, PropertyRecord, PrimitiveRecord> getPropertyChanges()
     {
         return propertyRecords;
     }
 
     @Override
-    public RecordAccess<Long, RelationshipRecord, Void> getRelRecords()
+    public RecordAccess<Long, RelationshipRecord, Void> getRelationshipChanges()
     {
         return relationshipRecords;
     }
 
     @Override
-    public RecordAccess<Long, RelationshipGroupRecord, Integer> getRelGroupRecords()
+    public RecordAccess<Long, RelationshipGroupRecord, Integer> getRelationshipGroupChanges()
     {
         return relationshipGroupRecords;
     }
@@ -106,7 +107,19 @@ public class DirectRecordAccessSet implements RecordAccessSet
     {
         return relationshipTypeTokenRecords;
     }
-    
+
+    @Override
+    public RecordAccess<Long, NeoStoreRecord, Void> getNeoStoreChanges()
+    {
+        throw new UnsupportedOperationException( "Not needed. Implement if needed" );
+    }
+
+    @Override
+    public boolean hasChanges()
+    {
+        return true;
+    }
+
     @Override
     public void close()
     {
@@ -115,7 +128,6 @@ public class DirectRecordAccessSet implements RecordAccessSet
         propertyRecords.close();
         relationshipRecords.close();
         relationshipGroupRecords.close();
-//        schemaRecords.close(); // TODO
         relationshipTypeTokenRecords.close();
         labelTokenRecords.close();
         propertyKeyTokenRecords.close();
@@ -127,7 +139,6 @@ public class DirectRecordAccessSet implements RecordAccessSet
         propertyRecords.commit();
         relationshipGroupRecords.commit();
         relationshipRecords.commit();
-//        schemaRecords.commit(); // TODO
         relationshipTypeTokenRecords.commit();
         labelTokenRecords.commit();
         propertyKeyTokenRecords.commit();

@@ -60,7 +60,7 @@ public class TxStateTransactionDataViewTest
     private final Statement stmt = mock(Statement.class);
     private final StoreReadLayer ops = mock(StoreReadLayer.class);
     private final TxState state = new TxStateImpl(
-            mock( LegacyIndexTransactionState.class) );
+            mock( LegacyIndexTransactionState.class ) );
 
 
     @Before

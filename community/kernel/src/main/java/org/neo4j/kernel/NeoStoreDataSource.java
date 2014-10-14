@@ -124,7 +124,7 @@ import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreInjectedTransactionValidator;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContextSupplier;
+import org.neo4j.kernel.impl.transaction.state.TransactionRecordStateContextSupplier;
 import org.neo4j.kernel.impl.transaction.state.RecoveryVisitor;
 import org.neo4j.kernel.impl.transaction.state.RelationshipChainLoader;
 import org.neo4j.kernel.impl.util.Dependencies;
@@ -423,8 +423,8 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
 
             LegacyPropertyTrackers legacyPropertyTrackers = new LegacyPropertyTrackers( propertyKeyTokenHolder,
                     nodeManager.getNodePropertyTrackers(), nodeManager.getRelationshipPropertyTrackers(), nodeManager );
-            final NeoStoreTransactionContextSupplier neoStoreTransactionContextSupplier =
-                    new NeoStoreTransactionContextSupplier( neoStore );
+            final TransactionRecordStateContextSupplier neoStoreTransactionContextSupplier =
+                    new TransactionRecordStateContextSupplier( neoStore );
 
             final TransactionHooks hooks = new TransactionHooks();
             File directory = config.get( GraphDatabaseSettings.store_dir );

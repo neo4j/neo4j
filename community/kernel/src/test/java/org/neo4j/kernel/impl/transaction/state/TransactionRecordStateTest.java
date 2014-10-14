@@ -141,7 +141,7 @@ public class TransactionRecordStateTest
     private TransactionRecordState nodeWithDynamicLabelRecord( NeoStore store,
             AtomicLong nodeId, AtomicLong dynamicLabelRecordId )
     {
-        NeoStoreTransactionContext context = context( store );
+        TransactionRecordStateContext context = context( store );
         TransactionRecordState recordState = recordState( store, context );
 
         nodeId.set( store.getNodeStore().nextId() );
@@ -159,7 +159,7 @@ public class TransactionRecordStateTest
         }
 
         // Extract the dynamic label record id (which is also a verification that we allocated one)
-        NodeRecord node = single( context.getNodeRecords().changes() ).forReadingData();
+        NodeRecord node = single( context.getNodeChanges().changes() ).forReadingData();
         dynamicLabelRecordId.set( single( node.getDynamicLabelRecords() ).getId() );
 
         return recordState;
@@ -167,7 +167,7 @@ public class TransactionRecordStateTest
 
     private TransactionRecordState deleteNode( NeoStore store, long nodeId )
     {
-        NeoStoreTransactionContext context = context( store );
+        TransactionRecordStateContext context = context( store );
         TransactionRecordState recordState = recordState( store, context );
         recordState.nodeDelete( nodeId );
         return recordState;
@@ -178,16 +178,16 @@ public class TransactionRecordStateTest
         transaction.accept( new CommandApplierFacade( applier ) );
     }
 
-    private TransactionRecordState recordState( NeoStore store, NeoStoreTransactionContext context )
+    private TransactionRecordState recordState( NeoStore store, TransactionRecordStateContext context )
     {
         return new TransactionRecordState( store,
                 new IntegrityValidator( store, mock( IndexingService.class ) ), context );
     }
 
-    private NeoStoreTransactionContext context( NeoStore store )
+    private TransactionRecordStateContext context( NeoStore store )
     {
-        NeoStoreTransactionContextSupplier contextSupplier = new NeoStoreTransactionContextSupplier( store );
-        NeoStoreTransactionContext context = new NeoStoreTransactionContext( contextSupplier, store );
+        TransactionRecordStateContextSupplier contextSupplier = new TransactionRecordStateContextSupplier( store );
+        TransactionRecordStateContext context = new TransactionRecordStateContext( contextSupplier, store );
         return context;
     }
 

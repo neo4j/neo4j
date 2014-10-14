@@ -29,7 +29,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.IndexCommandFactory;
 import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.graphdb.index.IndexManager;
-import org.neo4j.graphdb.index.LegacyIndexProviderTransaction;
+import org.neo4j.graphdb.index.LegacyIndexProviderTransactionState;
 import org.neo4j.kernel.api.LegacyIndex;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.impl.api.LegacyIndexApplier.ProviderLookup;
@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.transaction.state.RecordState;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 
 /**
@@ -51,16 +52,16 @@ import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
  *
  * @see TransactionRecordState
  */
-public class LegacyIndexTransactionState implements IndexCommandFactory
+public class LegacyIndexTransactionState implements IndexCommandFactory, RecordState
 {
-    private final Map<String, LegacyIndexProviderTransaction> transactions = new HashMap<>();
+    private final Map<String, LegacyIndexProviderTransactionState> providerStates = new HashMap<>();
     private final IndexConfigStore indexConfigStore;
     private final ProviderLookup providerLookup;
 
     // Commands
     private IndexDefineCommand defineCommand;
-    private Map<String, List<IndexCommand>> nodeCommands;
-    private Map<String, List<IndexCommand>> relationshipCommands;
+    private final Map<String, List<IndexCommand>> nodeCommands = new HashMap<>();
+    private final Map<String, List<IndexCommand>> relationshipCommands = new HashMap<>();
 
     public LegacyIndexTransactionState( IndexConfigStore indexConfigStore, ProviderLookup providerLookup )
     {
@@ -77,12 +78,12 @@ public class LegacyIndexTransactionState implements IndexCommandFactory
         }
         String providerName = configuration.get( IndexManager.PROVIDER );
         IndexImplementation provider = providerLookup.lookup( providerName );
-        LegacyIndexProviderTransaction transaction = transactions.get( providerName );
-        if ( transaction == null )
+        LegacyIndexProviderTransactionState providerState = providerStates.get( providerName );
+        if ( providerState == null )
         {
-            transactions.put( providerName, transaction = provider.newTransaction( this ) );
+            providerStates.put( providerName, providerState = provider.newTransaction( this ) );
         }
-        return transaction.nodeIndex( indexName, configuration );
+        return providerState.nodeIndex( indexName, configuration );
     }
 
     public LegacyIndex relationshipChanges( String indexName ) throws LegacyIndexNotFoundKernelException
@@ -94,14 +95,15 @@ public class LegacyIndexTransactionState implements IndexCommandFactory
         }
         String providerName = configuration.get( IndexManager.PROVIDER );
         IndexImplementation provider = providerLookup.lookup( providerName );
-        LegacyIndexProviderTransaction transaction = transactions.get( providerName );
-        if ( transaction == null )
+        LegacyIndexProviderTransactionState providerState = providerStates.get( providerName );
+        if ( providerState == null )
         {
-            transactions.put( providerName, transaction = provider.newTransaction( this ) );
+            providerStates.put( providerName, providerState = provider.newTransaction( this ) );
         }
-        return transaction.relationshipIndex( indexName, configuration );
+        return providerState.relationshipIndex( indexName, configuration );
     }
 
+    @Override
     public void extractCommands( List<Command> target )
     {
         if ( defineCommand != null )
@@ -111,7 +113,7 @@ public class LegacyIndexTransactionState implements IndexCommandFactory
             extractCommands( target, relationshipCommands );
         }
 
-        for ( LegacyIndexProviderTransaction providerTransaction : transactions.values() )
+        for ( LegacyIndexProviderTransactionState providerTransaction : providerStates.values() )
         {
             providerTransaction.close();
         }
@@ -123,7 +125,10 @@ public class LegacyIndexTransactionState implements IndexCommandFactory
         {
             for ( List<IndexCommand> commands : commandMap.values() )
             {
-                target.addAll( commands );
+                if ( !commands.isEmpty() )
+                {
+                    target.addAll( commands );
+                }
             }
         }
     }
@@ -148,10 +153,6 @@ public class LegacyIndexTransactionState implements IndexCommandFactory
         List<IndexCommand> commands = null;
         if ( command.getEntityType() == IndexEntityType.Node.id() )
         {
-            if ( nodeCommands == null )
-            {
-                nodeCommands = new HashMap<>();
-            }
             commands = nodeCommands.get( indexName );
             if ( commands == null )
             {
@@ -160,10 +161,6 @@ public class LegacyIndexTransactionState implements IndexCommandFactory
         }
         else if ( command.getEntityType() == IndexEntityType.Relationship.id() )
         {
-            if ( nodeCommands == null )
-            {
-                nodeCommands = new HashMap<>();
-            }
             commands = nodeCommands.get( indexName );
             if ( commands == null )
             {
@@ -236,18 +233,27 @@ public class LegacyIndexTransactionState implements IndexCommandFactory
         addCommand( indexName, command );
     }
 
-    public boolean isReadOnly()
-    {
-        return defineCommand == null;
-    }
-
-    /** Set this datastructure to it's initial state, allowing it to be re-used as if it had just been new'ed up. */
     public LegacyIndexTransactionState initialize()
     {
-        transactions.clear();
+        if ( !providerStates.isEmpty() )
+        {
+            providerStates.clear();
+        }
         defineCommand = null;
-        nodeCommands = null;
-        relationshipCommands = null;
+        if ( !nodeCommands.isEmpty() )
+        {
+            nodeCommands.clear();
+        }
+        if ( !relationshipCommands.isEmpty() )
+        {
+            relationshipCommands.clear();
+        }
         return this;
+    }
+
+    @Override
+    public boolean hasChanges()
+    {
+        return defineCommand != null;
     }
 }

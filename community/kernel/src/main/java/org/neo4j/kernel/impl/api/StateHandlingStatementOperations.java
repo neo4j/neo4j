@@ -71,7 +71,6 @@ import org.neo4j.kernel.impl.api.state.AugmentWithLocalStateExpandCursor;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.core.Token;
-import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.util.DiffSets;
@@ -1426,8 +1425,7 @@ public class StateHandlingStatementOperations implements
     @Override
     public void nodeLegacyIndexDrop( KernelStatement statement, String indexName ) throws LegacyIndexNotFoundKernelException
     {
-        statement.txState().getNodeLegacyIndexChanges( indexName ).drop();
-        statement.legacyIndexTransactionState().deleteIndex( IndexEntityType.Node, indexName );
+        statement.txState().nodeLegacyIndexDoDelete( indexName );
     }
 
     @Override
@@ -1435,7 +1433,6 @@ public class StateHandlingStatementOperations implements
             throws LegacyIndexNotFoundKernelException
     {
         statement.txState().getRelationshipLegacyIndexChanges( indexName ).drop();
-        statement.legacyIndexTransactionState().deleteIndex( IndexEntityType.Relationship, indexName );
     }
 
     @Override

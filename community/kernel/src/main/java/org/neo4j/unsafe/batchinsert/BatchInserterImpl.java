@@ -305,14 +305,14 @@ public class BatchInserterImpl implements BatchInserter
     public boolean relationshipHasProperty( long relationship, String propertyName )
     {
         return primitiveHasProperty(
-                recordAccess.getRelRecords().getOrLoad( relationship, null ).forReadingData(), propertyName );
+                recordAccess.getRelationshipChanges().getOrLoad( relationship, null ).forReadingData(), propertyName );
     }
 
     @Override
     public void setNodeProperty( long node, String propertyName, Object newValue )
     {
         propertyCreator.setPrimitiveProperty( getNodeRecord( node ), getOrCreatePropertyKeyId( propertyName ),
-                newValue, recordAccess.getPropertyRecords() );
+                newValue, recordAccess.getPropertyChanges() );
         recordAccess.commit();
     }
 
@@ -320,7 +320,7 @@ public class BatchInserterImpl implements BatchInserter
     public void setRelationshipProperty( long relationship, String propertyName, Object propertyValue )
     {
         propertyCreator.setPrimitiveProperty( getRelationshipRecord( relationship ),
-                getOrCreatePropertyKeyId( propertyName ), propertyValue, recordAccess.getPropertyRecords() );
+                getOrCreatePropertyKeyId( propertyName ), propertyValue, recordAccess.getPropertyChanges() );
         recordAccess.commit();
     }
 
@@ -328,7 +328,7 @@ public class BatchInserterImpl implements BatchInserter
     public void removeNodeProperty( long node, String propertyName )
     {
         int propertyKey = getOrCreatePropertyKeyId( propertyName );
-        propertyDeletor.removeProperty( getNodeRecord( node ), propertyKey, recordAccess.getPropertyRecords() );
+        propertyDeletor.removeProperty( getNodeRecord( node ), propertyKey, recordAccess.getPropertyChanges() );
         recordAccess.commit();
     }
 
@@ -338,7 +338,7 @@ public class BatchInserterImpl implements BatchInserter
     {
         int propertyKey = getOrCreatePropertyKeyId( propertyName );
         propertyDeletor.removeProperty( getRelationshipRecord( relationship ), propertyKey,
-                recordAccess.getPropertyRecords() );
+                recordAccess.getPropertyChanges() );
         recordAccess.commit();
     }
 
@@ -558,7 +558,7 @@ public class BatchInserterImpl implements BatchInserter
     {
         int propertyKeyId = propertyKeyTokens.idOf( propertyName );
         return propertyKeyId != -1 && propertyTraverser.findPropertyRecordContaining( record, propertyKeyId,
-                recordAccess.getPropertyRecords(), false ) != Record.NO_NEXT_PROPERTY.intValue();
+                recordAccess.getPropertyChanges(), false ) != Record.NO_NEXT_PROPERTY.intValue();
     }
 
     private void rejectAutoUpgrade( Map<String, String> params )
@@ -578,11 +578,11 @@ public class BatchInserterImpl implements BatchInserter
 
     private long internalCreateNode( long nodeId, Map<String, Object> properties, Label... labels )
     {
-        NodeRecord nodeRecord = recordAccess.getNodeRecords().create( nodeId, null ).forChangingData();
+        NodeRecord nodeRecord = recordAccess.getNodeChanges().create( nodeId, null ).forChangingData();
         nodeRecord.setInUse( true );
         nodeRecord.setCreated();
         nodeRecord.setNextProp( propertyCreator.createPropertyChain( nodeRecord,
-                propertiesIterator( properties ), recordAccess.getPropertyRecords() ) );
+                propertiesIterator( properties ), recordAccess.getPropertyChanges() ) );
 
         if ( labels.length > 0 )
         {
@@ -704,9 +704,9 @@ public class BatchInserterImpl implements BatchInserter
         relationshipCreator.relationshipCreate( id, typeId, node1, node2, recordAccess );
         if ( properties != null && !properties.isEmpty() )
         {
-            RelationshipRecord record = recordAccess.getRelRecords().getOrLoad( id, null ).forChangingData();
+            RelationshipRecord record = recordAccess.getRelationshipChanges().getOrLoad( id, null ).forChangingData();
             record.setNextProp( propertyCreator.createPropertyChain( record,
-                    propertiesIterator( properties ), recordAccess.getPropertyRecords() ) );
+                    propertiesIterator( properties ), recordAccess.getPropertyChanges() ) );
         }
         recordAccess.commit();
         return id;
@@ -718,23 +718,23 @@ public class BatchInserterImpl implements BatchInserter
         NodeRecord record = getNodeRecord( node ).forChangingData();
         if ( record.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
         {
-            propertyDeletor.getAndDeletePropertyChain( record, recordAccess.getPropertyRecords() );
+            propertyDeletor.getAndDeletePropertyChain( record, recordAccess.getPropertyChanges() );
         }
         record.setNextProp( propertyCreator.createPropertyChain( record, propertiesIterator( properties ),
-                recordAccess.getPropertyRecords() ) );
+                recordAccess.getPropertyChanges() ) );
         recordAccess.commit();
     }
 
     @Override
     public void setRelationshipProperties( long rel, Map<String, Object> properties )
     {
-        RelationshipRecord record = recordAccess.getRelRecords().getOrLoad( rel, null ).forChangingData();
+        RelationshipRecord record = recordAccess.getRelationshipChanges().getOrLoad( rel, null ).forChangingData();
         if ( record.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
         {
-            propertyDeletor.getAndDeletePropertyChain( record, recordAccess.getPropertyRecords() );
+            propertyDeletor.getAndDeletePropertyChain( record, recordAccess.getPropertyChanges() );
         }
         record.setNextProp( propertyCreator.createPropertyChain( record, propertiesIterator( properties ),
-                recordAccess.getPropertyRecords() ) );
+                recordAccess.getPropertyChanges() ) );
         recordAccess.commit();
     }
 
@@ -780,7 +780,7 @@ public class BatchInserterImpl implements BatchInserter
     @Override
     public Map<String, Object> getRelationshipProperties( long relId )
     {
-        RelationshipRecord record = recordAccess.getRelRecords().getOrLoad( relId, null ).forChangingData();
+        RelationshipRecord record = recordAccess.getRelationshipChanges().getOrLoad( relId, null ).forChangingData();
         if ( record.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
         {
             return getPropertyChain( record.getNextProp() );
@@ -849,7 +849,7 @@ public class BatchInserterImpl implements BatchInserter
     private Map<String, Object> getPropertyChain( long nextProp )
     {
         final Map<String, Object> map = new HashMap<>();
-        propertyTraverser.getPropertyChain( nextProp, recordAccess.getPropertyRecords(), new Listener<PropertyBlock>()
+        propertyTraverser.getPropertyChain( nextProp, recordAccess.getPropertyChanges(), new Listener<PropertyBlock>()
         {
             @Override
             public void receive( PropertyBlock propBlock )
@@ -947,7 +947,7 @@ public class BatchInserterImpl implements BatchInserter
         {
             throw new NotFoundException( "id=" + id );
         }
-        return recordAccess.getNodeRecords().getOrLoad( id, null );
+        return recordAccess.getNodeChanges().getOrLoad( id, null );
     }
 
     private RecordProxy<Long,RelationshipRecord,Void> getRelationshipRecord( long id )
@@ -956,7 +956,7 @@ public class BatchInserterImpl implements BatchInserter
         {
             throw new NotFoundException( "id=" + id );
         }
-        return recordAccess.getRelRecords().getOrLoad( id, null );
+        return recordAccess.getRelationshipChanges().getOrLoad( id, null );
     }
 
     @Override

@@ -120,17 +120,19 @@ public final class TxStateImpl implements TxState
 
     private Map<String, Map<String, String>> createdNodeLegacyIndexes;
     private Map<String, Map<String, String>> createdRelationshipLegacyIndexes;
+    private Set<String> deletedNodeLegacyIndexes;
+    private Set<String> deletedRelationshipLegacyIndexes;
 
-    private final LegacyIndexTransactionState legacyChangesIndexProvider;
+    private final LegacyIndexTransactionState legacyIndexState;
     private Map<String, LegacyIndex> nodeLegacyIndexChanges;
     private Map<String, LegacyIndex> relationshipLegacyIndexChanges;
     private PrimitiveIntObjectMap<Map<DefinedProperty, DiffSets<Long>>> indexUpdates;
 
     private boolean hasChanges;
 
-    public TxStateImpl( LegacyIndexTransactionState legacyChangesIndexProvider )
+    public TxStateImpl( LegacyIndexTransactionState legacyIndexState )
     {
-        this.legacyChangesIndexProvider = legacyChangesIndexProvider;
+        this.legacyIndexState = legacyIndexState;
     }
 
     @Override
@@ -280,6 +282,22 @@ public final class TxStateImpl implements TxState
             for ( Map.Entry<String, Map<String, String>> entry : createdRelationshipLegacyIndexes.entrySet() )
             {
                 visitor.visitCreatedRelationshipLegacyIndex(entry.getKey(), entry.getValue());
+            }
+        }
+
+        if ( deletedNodeLegacyIndexes != null )
+        {
+            for ( String index : deletedNodeLegacyIndexes )
+            {
+                visitor.visitDeletedNodeLegacyIndex( index );
+            }
+        }
+
+        if ( deletedRelationshipLegacyIndexes != null )
+        {
+            for ( String index : deletedRelationshipLegacyIndexes )
+            {
+                visitor.visitDeletedRelationshipLegacyIndex( index );
             }
         }
     }
@@ -1283,9 +1301,9 @@ public final class TxStateImpl implements TxState
     {
         assert customConfig != null;
 
-        if ( createdNodeLegacyIndexes == null)
+        if ( createdNodeLegacyIndexes == null )
         {
-            createdNodeLegacyIndexes = new HashMap<>(  );
+            createdNodeLegacyIndexes = new HashMap<>();
         }
 
         createdNodeLegacyIndexes.put(indexName, customConfig);
@@ -1298,13 +1316,37 @@ public final class TxStateImpl implements TxState
     {
         assert customConfig != null;
 
-        if ( createdRelationshipLegacyIndexes == null)
+        if ( createdRelationshipLegacyIndexes == null )
         {
-            createdRelationshipLegacyIndexes = new HashMap<>(  );
+            createdRelationshipLegacyIndexes = new HashMap<>();
         }
 
         createdRelationshipLegacyIndexes.put(indexName, customConfig);
 
+        hasChanges = true;
+    }
+
+    @Override
+    public void nodeLegacyIndexDoDelete( String indexName ) throws LegacyIndexNotFoundKernelException
+    {
+        getNodeLegacyIndexChanges( indexName ).drop();
+        if ( deletedNodeLegacyIndexes == null )
+        {
+            deletedNodeLegacyIndexes = new HashSet<>();
+        }
+        deletedNodeLegacyIndexes.add( indexName );
+        hasChanges = true;
+    }
+
+    @Override
+    public void relationshipLegacyIndexDoDelete( String indexName ) throws LegacyIndexNotFoundKernelException
+    {
+        getRelationshipLegacyIndexChanges( indexName ).drop();
+        if ( deletedRelationshipLegacyIndexes == null )
+        {
+            deletedRelationshipLegacyIndexes = new HashSet<>();
+        }
+        deletedRelationshipLegacyIndexes.add( indexName );
         hasChanges = true;
     }
 
@@ -1318,7 +1360,7 @@ public final class TxStateImpl implements TxState
         LegacyIndex changes = nodeLegacyIndexChanges.get( indexName );
         if ( changes == null )
         {
-            nodeLegacyIndexChanges.put( indexName, changes = legacyChangesIndexProvider.nodeChanges( indexName ) );
+            nodeLegacyIndexChanges.put( indexName, changes = legacyIndexState.nodeChanges( indexName ) );
         }
         return changes;
     }
@@ -1334,7 +1376,7 @@ public final class TxStateImpl implements TxState
         if ( changes == null )
         {
             relationshipLegacyIndexChanges.put( indexName,
-                    changes = legacyChangesIndexProvider.relationshipChanges( indexName ) );
+                    changes = legacyIndexState.relationshipChanges( indexName ) );
         }
         return changes;
     }

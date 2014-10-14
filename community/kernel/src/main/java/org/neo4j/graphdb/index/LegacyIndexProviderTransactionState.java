@@ -28,7 +28,7 @@ import org.neo4j.kernel.api.LegacyIndex;
  * Provides access to {@link LegacyIndex indexes}. Holds transaction state for a specific provider in a transaction.
  * This interface is implemented by the index provider.
  */
-public interface LegacyIndexProviderTransaction extends Closeable
+public interface LegacyIndexProviderTransactionState extends Closeable
 {
     LegacyIndex nodeIndex( String indexName, Map<String, String> configuration );
 

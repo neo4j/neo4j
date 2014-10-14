@@ -59,6 +59,7 @@ import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
@@ -95,6 +96,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     // State
     private final TransactionRecordState recordState;
     private final CountsState counts = new CountsState();
+    private final LegacyIndexTransactionState legacyIndexState;
     private TxStateImpl txState;
     private TransactionType transactionType = TransactionType.ANY;
     private TransactionHooks.TransactionHooksState hooksState;
@@ -104,12 +106,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private volatile boolean terminated;
 
     // For committing
-    private TransactionHeaderInformation headerInformation;
+    private final TransactionHeaderInformationFactory headerInformationFactory;
     private final TransactionCommitProcess commitProcess;
     private final TransactionMonitor transactionMonitor;
     private final PersistenceCache persistenceCache;
     private final StoreReadLayer storeLayer;
-    private final LegacyIndexTransactionState legacyIndexTransactionState;
     private final Clock clock;
 
     // Some header information
@@ -124,12 +125,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             SchemaIndexProviderMap providerMap, NeoStore neoStore,
                                             Locks.Client locks, TransactionHooks hooks,
                                             ConstraintIndexCreator constraintIndexCreator,
-                                            TransactionHeaderInformation transactionHeaderInformation,
+                                            TransactionHeaderInformationFactory headerInformationFactory,
                                             TransactionCommitProcess commitProcess,
                                             TransactionMonitor transactionMonitor,
                                             PersistenceCache persistenceCache,
                                             StoreReadLayer storeLayer,
-                                            LegacyIndexTransactionState legacyIndexTransaction,
+                                            LegacyIndexTransactionState legacyIndexState,
                                             Pool<KernelTransactionImplementation> pool,
                                             Clock clock )
     {
@@ -144,29 +145,28 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.hooks = hooks;
         this.locks = locks;
         this.constraintIndexCreator = constraintIndexCreator;
-        this.headerInformation = transactionHeaderInformation;
+        this.headerInformationFactory = headerInformationFactory;
         this.commitProcess = commitProcess;
         this.transactionMonitor = transactionMonitor;
         this.persistenceCache = persistenceCache;
         this.storeLayer = storeLayer;
-        this.legacyIndexTransactionState = legacyIndexTransaction;
+        this.legacyIndexState = legacyIndexState;
         this.pool = pool;
         this.clock = clock;
         this.schemaStorage = new SchemaStorage( neoStore.getSchemaStore() );
     }
 
     /** Reset this transaction to a vanilla state, turning it into a logically new transaction. */
-    public KernelTransactionImplementation initialize( TransactionHeaderInformation txHeader, long lastCommittedTx )
+    public KernelTransactionImplementation initialize( long lastCommittedTx )
     {
         assert locks != null : "This transaction has been disposed off, it should not be used.";
-        this.headerInformation = txHeader;
         this.terminated = closing = closed = failure = success = false;
         this.transactionType = TransactionType.ANY;
         this.hooksState = null;
         this.txState = null; // TODO: Implement txState.clear() instead, to re-use data structures
-        this.legacyIndexTransactionState.initialize();
         this.recordState.initialize( lastCommittedTx );
         this.counts.initialize();
+        this.legacyIndexState.initialize();
         this.startTimeMillis = clock.currentTimeMillis();
         this.lastTransactionIdWhenStarted = lastCommittedTx;
         return this;
@@ -217,7 +217,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         if ( currentStatement == null )
         {
             currentStatement = new KernelStatement( this, new IndexReaderFactory.Caching( indexService ),
-                    labelScanStore, this, locks, operations, legacyIndexTransactionState );
+                    labelScanStore, this, locks, operations );
         }
         currentStatement.acquire();
         return currentStatement;
@@ -241,7 +241,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         transactionType = transactionType.upgradeToSchemaTransaction();
     }
 
-    public void doUpgradeToSchemaTransaction() throws InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException
+    private void doUpgradeToSchemaTransaction() throws InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException
     {
         assertDatabaseWritable();
         schemaWriteGuard.assertSchemaWritesAllowed();
@@ -289,7 +289,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         if ( !hasTxState() )
         {
-            txState = new TxStateImpl( legacyIndexTransactionState );
+            txState = new TxStateImpl( legacyIndexState );
         }
         return txState;
     }
@@ -612,13 +612,25 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 @Override
                 public void visitCreatedNodeLegacyIndex( String name, Map<String, String> config )
                 {
-                    legacyIndexTransactionState.createIndex( IndexEntityType.Node, name, config );
+                    legacyIndexState.createIndex( IndexEntityType.Node, name, config );
                 }
 
                 @Override
                 public void visitCreatedRelationshipLegacyIndex( String name, Map<String, String> config )
                 {
-                    legacyIndexTransactionState.createIndex( IndexEntityType.Relationship, name, config );
+                    legacyIndexState.createIndex( IndexEntityType.Relationship, name, config );
+                }
+
+                @Override
+                public void visitDeletedNodeLegacyIndex( String name )
+                {
+                    legacyIndexState.deleteIndex( IndexEntityType.Node, name );
+                }
+
+                @Override
+                public void visitDeletedRelationshipLegacyIndex( String name )
+                {
+                    legacyIndexState.deleteIndex( IndexEntityType.Relationship, name );
                 }
             } );
             if ( clearState.get() )
@@ -636,12 +648,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
-    public boolean isReadOnly()
+    private boolean hasChanges()
     {
-        return !hasTxStateWithChanges() && recordState.isReadOnly() &&
-                legacyIndexTransactionState.isReadOnly();
+        return hasTxStateWithChanges() ||
+               recordState.hasChanges() ||
+               legacyIndexState.hasChanges();
     }
 
+    // TODO only exposed for a test
     public TransactionRecordState getTransactionRecordState()
     {
         return recordState;
@@ -716,22 +730,16 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     protected void dispose()
     {
-        if(locks != null)
+        if ( locks != null )
         {
             locks.close();
         }
-
         this.locks = null;
-        this.headerInformation = null;
-        this.transactionType = null;
-        this.hooksState = null;
-        this.txState = null;
     }
 
     private void commit() throws TransactionFailureException
     {
         boolean success = false;
-
         try ( LockGroup lockGroup = new LockGroup() )
         {
             // Trigger transaction "before" hooks
@@ -740,15 +748,15 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 throw new TransactionFailureException( Status.Transaction.HookFailed, hooksState.failure(), "" );
             }
 
+            // Convert transaction state into record state
             prepareRecordChangesFromTransactionState();
 
-            // Convert changes into commands and commit
-            if ( !isReadOnly() )
+            if ( hasChanges() )
             {
-                // Gather up commands from the various sources
+                // Convert record changes into commands and commit
                 List<Command> commands = new ArrayList<>();
                 recordState.extractCommands( commands );
-                legacyIndexTransactionState.extractCommands( commands );
+                legacyIndexState.extractCommands( commands );
                 counts.extractCommands( commands );
 
                 /* Here's the deal: we track a quick-to-access hasChanges in transaction state which is true
@@ -764,6 +772,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     // Finish up the whole transaction representation
                     PhysicalTransactionRepresentation transactionRepresentation =
                             new PhysicalTransactionRepresentation( commands );
+                    TransactionHeaderInformation headerInformation = headerInformationFactory.create();
                     transactionRepresentation.setHeader( headerInformation.getAdditionalHeader(),
                             headerInformation.getMasterId(),
                             headerInformation.getAuthorId(),
@@ -809,7 +818,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             }
 
             // Free any acquired id's
-            if (txState != null)
+            if ( txState != null )
             {
                 txState.accept( new TxState.VisitorAdapter()
                 {

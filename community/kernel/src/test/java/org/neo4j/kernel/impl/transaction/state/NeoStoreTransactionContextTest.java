@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.transaction.state;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.store.NeoStore;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContext;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContextSupplier;
+import org.neo4j.kernel.impl.transaction.state.TransactionRecordStateContext;
+import org.neo4j.kernel.impl.transaction.state.TransactionRecordStateContextSupplier;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.spy;
@@ -40,21 +40,21 @@ public class NeoStoreTransactionContextTest
     {
         // GIVEN
         NeoStore mockStore = mockNeoStore();
-        NeoStoreTransactionContextSupplier supplier = new NeoStoreTransactionContextSupplier( mockStore );
-        NeoStoreTransactionContext toClose = new NeoStoreTransactionContext( supplier, mockStore );
+        TransactionRecordStateContextSupplier supplier = new TransactionRecordStateContextSupplier( mockStore );
+        TransactionRecordStateContext toClose = new TransactionRecordStateContext( supplier, mockStore );
 
-        toClose.getNodeRecords().create( 1L, null ).forChangingData();
-        toClose.getRelGroupRecords().create( 2L, 1 ).forChangingData();
-        assertEquals( 1, toClose.getNodeRecords().changeSize() );
-        assertEquals( 0, toClose.getPropertyRecords().changeSize() );
-        assertEquals( 1, toClose.getRelGroupRecords().changeSize() );
+        toClose.getNodeChanges().create( 1L, null ).forChangingData();
+        toClose.getRelationshipGroupChanges().create( 2L, 1 ).forChangingData();
+        assertEquals( 1, toClose.getNodeChanges().changeSize() );
+        assertEquals( 0, toClose.getPropertyChanges().changeSize() );
+        assertEquals( 1, toClose.getRelationshipGroupChanges().changeSize() );
 
         // WHEN
         toClose.close();
 
         // THEN
-        assertEquals( 0, toClose.getNodeRecords().changeSize() );
-        assertEquals( 0, toClose.getRelGroupRecords().changeSize() );
+        assertEquals( 0, toClose.getNodeChanges().changeSize() );
+        assertEquals( 0, toClose.getRelationshipGroupChanges().changeSize() );
     }
 
     @Test
@@ -62,9 +62,9 @@ public class NeoStoreTransactionContextTest
     {
         // GIVEN
         NeoStore mockStore = mockNeoStore();
-        NeoStoreTransactionContextSupplier supplier = spy( new NeoStoreTransactionContextSupplier( mockStore ) );
+        TransactionRecordStateContextSupplier supplier = spy( new TransactionRecordStateContextSupplier( mockStore ) );
 
-        NeoStoreTransactionContext toClose = new NeoStoreTransactionContext(
+        TransactionRecordStateContext toClose = new TransactionRecordStateContext(
                 supplier, mockStore );
 
         // WHEN

@@ -147,6 +147,10 @@ public interface TxState
         void visitCreatedNodeLegacyIndex( String name, Map<String, String> config );
 
         void visitCreatedRelationshipLegacyIndex( String name, Map<String, String> config );
+
+        void visitDeletedNodeLegacyIndex( String name );
+
+        void visitDeletedRelationshipLegacyIndex( String name );
     }
 
     public static class VisitorAdapter implements Visitor
@@ -238,13 +242,21 @@ public interface TxState
         @Override
         public void visitCreatedNodeLegacyIndex( String name, Map<String, String> config )
         {   // Ignore
-
         }
 
         @Override
         public void visitCreatedRelationshipLegacyIndex( String name, Map<String, String> config )
         {   // Ignore
+        }
 
+        @Override
+        public void visitDeletedNodeLegacyIndex( String name )
+        {   // Ignore
+        }
+
+        @Override
+        public void visitDeletedRelationshipLegacyIndex( String name )
+        {   // Ignore
         }
     }
 
@@ -400,6 +412,10 @@ public interface TxState
     void nodeLegacyIndexDoCreate( String indexName, Map<String, String> customConfig );
 
     void relationshipLegacyIndexDoCreate( String indexName, Map<String, String> customConfig );
+
+    void nodeLegacyIndexDoDelete( String indexName ) throws LegacyIndexNotFoundKernelException;
+
+    void relationshipLegacyIndexDoDelete( String indexName ) throws LegacyIndexNotFoundKernelException;
 
     LegacyIndex getNodeLegacyIndexChanges( String indexName ) throws LegacyIndexNotFoundKernelException;
 

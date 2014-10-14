@@ -17,43 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util.statistics;
+package org.neo4j.kernel.impl.transaction.state;
 
-/**
- * A wrapper for a primitive int counter, allowing it to be passed around different components.
- */
-public class IntCounter
+import org.neo4j.collection.pool.LinkedQueuePool;
+import org.neo4j.kernel.impl.store.NeoStore;
+
+public class TransactionRecordStateContextSupplier extends LinkedQueuePool<TransactionRecordStateContext>
 {
-    private int count = 0;
+    private final NeoStore neoStore;
 
-    public int value()
+    public TransactionRecordStateContextSupplier( NeoStore neoStore )
     {
-        return count;
-    }
-
-    public void increment()
-    {
-        count++;
-    }
-
-    public void decrement()
-    {
-        count--;
-    }
-
-    public void clear()
-    {
-        this.count = 0;
+        super( Runtime.getRuntime().availableProcessors() * 2, null,
+                new CheckStrategy.TimeoutCheckStrategy( 1000 ),
+                new Monitor.Adapter<>() );
+        this.neoStore = neoStore;
     }
 
     @Override
-    public String toString()
+    protected TransactionRecordStateContext create()
     {
-        return Integer.toString( count );
-    }
-
-    public void add( int delta )
-    {
-        count += delta;
+        return new TransactionRecordStateContext( this, neoStore );
     }
 }

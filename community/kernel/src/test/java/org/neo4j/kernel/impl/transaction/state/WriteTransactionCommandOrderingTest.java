@@ -94,7 +94,7 @@ public class WriteTransactionCommandOrderingTest
 
     private TransactionRecordState injectAllPossibleCommands()
     {
-        NeoStoreTransactionContext context = mock( NeoStoreTransactionContext.class );
+        TransactionRecordStateContext context = mock( TransactionRecordStateContext.class );
 
         RecordChanges<Integer,LabelTokenRecord,Void> labelTokenChanges = mock( RecordChanges.class);
         RecordChanges<Integer,RelationshipTypeTokenRecord,Void> relationshipTypeTokenChanges = mock( RecordChanges.class);
@@ -105,13 +105,13 @@ public class WriteTransactionCommandOrderingTest
         RecordChanges<Long,RelationshipGroupRecord,Integer> relationshipGroupChanges = mock( RecordChanges.class);
         RecordChanges<Long, Collection<DynamicRecord>, SchemaRule> schemaRuleChanges = mock( RecordChanges.class);
 
-        when( context.getLabelTokenRecords() ).thenReturn( labelTokenChanges );
-        when( context.getRelationshipTypeTokenRecords() ).thenReturn( relationshipTypeTokenChanges );
-        when( context.getPropertyKeyTokenRecords() ).thenReturn( propertyKeyTokenChanges );
-        when( context.getNodeRecords() ).thenReturn( nodeRecordChanges );
-        when( context.getRelRecords() ).thenReturn( relationshipRecordChanges );
-        when( context.getPropertyRecords() ).thenReturn( propertyRecordChanges );
-        when( context.getRelGroupRecords() ).thenReturn( relationshipGroupChanges );
+        when( context.getLabelTokenChanges() ).thenReturn( labelTokenChanges );
+        when( context.getRelationshipTypeTokenChanges() ).thenReturn( relationshipTypeTokenChanges );
+        when( context.getPropertyKeyTokenChanges() ).thenReturn( propertyKeyTokenChanges );
+        when( context.getNodeChanges() ).thenReturn( nodeRecordChanges );
+        when( context.getRelationshipChanges() ).thenReturn( relationshipRecordChanges );
+        when( context.getPropertyChanges() ).thenReturn( propertyRecordChanges );
+        when( context.getRelationshipGroupChanges() ).thenReturn( relationshipGroupChanges );
         when( context.getSchemaRuleChanges() ).thenReturn( schemaRuleChanges );
 
         List<RecordChange<Long, NodeRecord, Void>> nodeChanges = new LinkedList<>();
