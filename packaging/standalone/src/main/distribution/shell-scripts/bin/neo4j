@@ -69,6 +69,7 @@ function parseConfig {
 findBaseDirAndCdThere
 source bin/utils
 parseConfig
+show_logo
 
 JAVA_OPTS="-server -XX:+DisableExplicitGC ${wrapper_java_additional}"
 [ -z "${wrapper_java_initmemory}" ] || JAVA_OPTS="$JAVA_OPTS -Xms${wrapper_java_initmemory}m"
