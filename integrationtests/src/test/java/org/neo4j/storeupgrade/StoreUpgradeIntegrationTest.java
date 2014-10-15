@@ -24,6 +24,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 import org.junit.Test;
@@ -33,6 +35,8 @@ import org.junit.runners.Parameterized;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -40,8 +44,12 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UpgradingStoreVersionNotFoundException;
 import org.neo4j.server.Bootstrapper;
 import org.neo4j.server.NeoServer;
@@ -53,6 +61,7 @@ import org.neo4j.tooling.GlobalGraphOperations;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
@@ -262,6 +271,60 @@ public class StoreUpgradeIntegrationTest
 
     private static void checkInstance( Store store, GraphDatabaseAPI db )
     {
+        checkProvidedParameters( store, db );
+        checkGlobalNodeCount( store, db );
+        checkLabelCounts( db );
+    }
+
+    private static void checkLabelCounts( GraphDatabaseAPI db )
+    {
+        try ( Transaction ignored = db.beginTx() )
+        {
+            HashMap<Label, Long> counts = new HashMap<>();
+            for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+            {
+                for (Label label : node.getLabels() )
+                {
+                    Long count = counts.get( label );
+                    if ( count != null )
+                    {
+                        counts.put( label, count + 1 );
+                    }
+                    else
+                    {
+                        counts.put( label, 1l );
+                    }
+                }
+            }
+
+            ThreadToStatementContextBridge bridge = db.getDependencyResolver()
+                    .resolveDependency( ThreadToStatementContextBridge.class );
+            Statement statement = bridge.instance();
+
+            for ( Map.Entry<Label, Long> entry : counts.entrySet() )
+            {
+                assertEquals(
+                    entry.getValue().longValue(),
+                    statement.readOperations().countsForNode( statement.readOperations().labelGetForName( entry.getKey().name() ) )
+                );
+            }
+        }
+    }
+
+    private static void checkGlobalNodeCount( Store store, GraphDatabaseAPI db )
+    {
+        try ( Transaction ignored = db.beginTx() )
+        {
+            ThreadToStatementContextBridge bridge = db.getDependencyResolver()
+                    .resolveDependency( ThreadToStatementContextBridge.class );
+            Statement statement = bridge.instance();
+
+            assertThat( statement.readOperations().countsForNode( -1 ), is( store.expectedNodeCount ) );
+        }
+    }
+
+    private static void checkProvidedParameters( Store store, GraphDatabaseAPI db )
+    {
         try ( Transaction ignored = db.beginTx() )
         {
             // count nodes
@@ -273,10 +336,16 @@ public class StoreUpgradeIntegrationTest
             assertThat( indexCount, is( store.expectedIndexCount ) );
 
             // check last committed tx
-            long lastCommittedTxId = db.getDependencyResolver()
+            NeoStore neoStore = db.getDependencyResolver()
                     .resolveDependency( NeoStoreDataSource.class )
-                    .getNeoStore()
-                    .getLastCommittedTransactionId();
+                    .getNeoStore();
+            long lastCommittedTxId = neoStore.getLastCommittedTransactionId();
+
+            CountsTracker counts = neoStore.getCounts();
+            assertTrue(
+                    "expected correct last tx id to be used by counts store",
+                    !counts.acceptTx( lastCommittedTxId ) && counts.acceptTx( lastCommittedTxId + 1 )
+            );
 
             assertThat( lastCommittedTxId, is( store.lastTxId ) );
         }
