@@ -35,7 +35,6 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.LegacyIndexApplier.ProviderLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -60,6 +59,8 @@ public class NeoStoreFileListingTest
             "messages.log",
             "neostore",
             "neostore.id",
+            "neostore.counts.db.alpha",
+            "neostore.counts.db.beta",
             "neostore.labeltokenstore.db",
             "neostore.labeltokenstore.db.id",
             "neostore.labeltokenstore.db.names",
@@ -120,6 +121,8 @@ public class NeoStoreFileListingTest
         assertThat( asSetOfPaths( result ), equalTo( asSet(
                 "neostore.labeltokenstore.db",
                 "neostore.labeltokenstore.db.names",
+                "neostore.counts.db.alpha",
+                "neostore.counts.db.beta",
                 "neostore.nodestore.db",
                 "neostore.nodestore.db.labels",
                 "neostore.propertystore.db",
@@ -147,9 +150,12 @@ public class NeoStoreFileListingTest
         ResourceIterator<File> result = fileListing.listStoreFiles();
 
         // Then
-        assertThat( asSetOfPaths( result ), equalTo( asSet(
+        Set<String> pathSet = asSetOfPaths( result );
+        assertThat( pathSet, equalTo( asSet(
                 "neostore.labeltokenstore.db",
                 "neostore.labeltokenstore.db.names",
+                "neostore.counts.db.alpha",
+                "neostore.counts.db.beta",
                 "neostore.nodestore.db",
                 "neostore.nodestore.db.labels",
                 "neostore.propertystore.db",
@@ -177,9 +183,12 @@ public class NeoStoreFileListingTest
         ResourceIterator<File> result = fileListing.listStoreFiles();
 
         // Then
-        assertThat( asSetOfPaths( result ), equalTo( asSet(
+        Set<String> pathSet = asSetOfPaths( result );
+        assertThat( pathSet, equalTo( asSet(
                 "neostore.labeltokenstore.db",
                 "neostore.labeltokenstore.db.names",
+                "neostore.counts.db.alpha",
+                "neostore.counts.db.beta",
                 "neostore.nodestore.db",
                 "neostore.nodestore.db.labels",
                 "neostore.propertystore.db",
@@ -214,6 +223,8 @@ public class NeoStoreFileListingTest
                 "schema/index/their.index",
                 "neostore.labeltokenstore.db",
                 "neostore.labeltokenstore.db.names",
+                "neostore.counts.db.alpha",
+                "neostore.counts.db.beta",
                 "neostore.nodestore.db",
                 "neostore.nodestore.db.labels",
                 "neostore.propertystore.db",
