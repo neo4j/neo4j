@@ -19,6 +19,13 @@
  */
 package org.neo4j.kernel.impl.transaction.command;
 
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.kernel.impl.transaction.command.CommandReaderFactory.COLLECTION_DYNAMIC_RECORD_ADDER;
+import static org.neo4j.kernel.impl.transaction.command.CommandReaderFactory.PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER;
+import static org.neo4j.kernel.impl.transaction.command.CommandReaderFactory.PROPERTY_DELETED_DYNAMIC_RECORD_ADDER;
+import static org.neo4j.kernel.impl.transaction.command.CommandReaderFactory.PROPERTY_INDEX_DYNAMIC_RECORD_ADDER;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -41,13 +48,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.transaction.command.CommandReaderFactory.DynamicRecordAdder;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
-
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.kernel.impl.transaction.command.CommandReaderFactory.COLLECTION_DYNAMIC_RECORD_ADDER;
-import static org.neo4j.kernel.impl.transaction.command.CommandReaderFactory.PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER;
-import static org.neo4j.kernel.impl.transaction.command.CommandReaderFactory.PROPERTY_DELETED_DYNAMIC_RECORD_ADDER;
-import static org.neo4j.kernel.impl.transaction.command.CommandReaderFactory.PROPERTY_INDEX_DYNAMIC_RECORD_ADDER;
 
 public class PhysicalLogNeoCommandReaderV0_19 implements CommandReader
 {
@@ -168,6 +168,18 @@ public class PhysicalLogNeoCommandReaderV0_19 implements CommandReader
                 record.setSecondPrevRel( channel.getLong() );
                 record.setSecondNextRel( channel.getLong() );
                 record.setNextProp( channel.getLong() );
+
+                /*
+                 * Logs for version 1.9 do not contain the proper values for the following two flags. Also,
+                 * the defaults won't do, because the pointers for prev in the fist record will not be interpreted
+                 * properly. So we need to set the flags explicitly here.
+                 *
+                 * Note that this leaves the prev field for the first record in the chain having a value of -1,
+                 * which is not correct, as it should contain the relationship count instead. However, we cannot
+                 * determine this value from the contents of the log alone.
+                 */
+                record.setFirstInFirstChain( record.getFirstPrevRel() == Record.NO_PREV_RELATIONSHIP.intValue() );
+                record.setFirstInSecondChain( record.getSecondPrevRel() == Record.NO_PREV_RELATIONSHIP.intValue() );
             }
             else
             {
