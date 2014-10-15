@@ -3418,7 +3418,6 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
                 try
                 {
                     cursor.next( 0 );
-                    fail( "Page fault did not throw as expected" );
                 }
                 catch ( IOException ignored )
                 {

@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache.impl;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.channels.ClosedChannelException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -42,10 +43,14 @@ public class SingleFilePageSwapper implements PageSwapper
     private static final long fileSizeOffset =
             UnsafeUtil.getFieldOffset( SingleFilePageSwapper.class, "fileSize" );
 
+    private final FileSystemAbstraction fs;
     private final File file;
-    private final StoreChannel channel;
     private final int filePageSize;
     private final PageEvictionCallback onEviction;
+    private volatile StoreChannel channel;
+
+    // Guarded by synchronized(this). See tryReopen() and close().
+    private boolean closed;
 
     // Accessed through unsafe
     private volatile long fileSize;
@@ -56,6 +61,7 @@ public class SingleFilePageSwapper implements PageSwapper
             int filePageSize,
             PageEvictionCallback onEviction ) throws IOException
     {
+        this.fs = fs;
         this.file = file;
         this.channel = fs.open( file, "rw" );
         this.filePageSize = filePageSize;
@@ -83,9 +89,26 @@ public class SingleFilePageSwapper implements PageSwapper
     public void read( long filePageId, Page page ) throws IOException
     {
         long offset = pageIdToPosition( filePageId );
-        if ( offset < getCurrentFileSize() )
+        try
         {
-            page.swapIn( channel, offset, filePageSize );
+            if ( offset < getCurrentFileSize() )
+            {
+                page.swapIn( channel, offset, filePageSize );
+            }
+        }
+        catch ( ClosedChannelException e )
+        {
+            // AsynchronousCloseException is a subclass of
+            // ClosedChannelException, and ClosedByInterruptException is in
+            // turn a subclass of AsynchronousCloseException.
+            tryReopen( e );
+            boolean interrupted = Thread.interrupted();
+            // Recurse because this is hopefully a very rare occurrence.
+            read( filePageId, page );
+            if ( interrupted )
+            {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 
@@ -94,7 +117,24 @@ public class SingleFilePageSwapper implements PageSwapper
     {
         long offset = pageIdToPosition( filePageId );
         increaseFileSizeTo( offset + filePageSize );
-        page.swapOut( channel, offset, filePageSize );
+        try
+        {
+            page.swapOut( channel, offset, filePageSize );
+        }
+        catch ( ClosedChannelException e )
+        {
+            // AsynchronousCloseException is a subclass of
+            // ClosedChannelException, and ClosedByInterruptException is in
+            // turn a subclass of AsynchronousCloseException.
+            tryReopen( e );
+            boolean interrupted = Thread.interrupted();
+            // Recurse because this is hopefully a very rare occurrence.
+            write( filePageId, page );
+            if ( interrupted )
+            {
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 
     @Override
@@ -137,9 +177,48 @@ public class SingleFilePageSwapper implements PageSwapper
         return channel != null ? channel.hashCode() : 0;
     }
 
-    @Override
-    public void close() throws IOException
+    /**
+     * Reopens the channel if it has been closed and the close() method on
+     * this swapper has not been called. In other words, if the channel has
+     * been "accidentally" closed by an interrupt or the like.
+     *
+     * If the channel has been explicitly closed with the PageSwapper#close()
+     * method, then this method will re-throw the passed-in exception.
+     *
+     * If the reopening of the file fails with an exception for some reason,
+     * then that exception is added as a suppressed exception to the passed in
+     * ClosedChannelException, and the CCE is then rethrown.
+     */
+    private synchronized void tryReopen( ClosedChannelException closedException ) throws ClosedChannelException
     {
+        if ( channel.isOpen() )
+        {
+            // Someone got ahead of us, presumably. Nothing to do.
+            return;
+        }
+
+        if ( closed )
+        {
+            // We've been explicitly closed, so we shouldn't reopen the
+            // channel.
+            throw closedException;
+        }
+
+        try
+        {
+            channel = fs.open( file, "rw" );
+        }
+        catch ( IOException e )
+        {
+            closedException.addSuppressed( e );
+            throw closedException;
+        }
+    }
+
+    @Override
+    public synchronized void close() throws IOException
+    {
+        closed = true;
         channel.close();
     }
 

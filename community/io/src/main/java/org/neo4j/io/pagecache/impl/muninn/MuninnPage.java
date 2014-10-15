@@ -25,6 +25,7 @@ import static org.neo4j.io.pagecache.impl.muninn.UnsafeUtil.storeByteOrderIsNati
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.Page;
@@ -324,6 +325,10 @@ final class MuninnPage extends StampedLock implements Page
             {
                 bufferProxy.put( (byte) 0 );
             }
+        }
+        catch ( ClosedChannelException e )
+        {
+            throw e;
         }
         catch ( Exception e )
         {

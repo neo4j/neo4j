@@ -119,6 +119,8 @@ public interface Page
      *                     For instance, if the file has been closed, moved or deleted,
      *                     or if the requested range of data goes beyond the length of the file.
      *                     The possible causes of an IOException is platform dependent.
+     *                     If the channel has been closed, then it must be
+     *                     reopened and the swapIn operation must be retried.
      */
     void swapIn( StoreChannel channel, long offset, int length ) throws IOException;
 
@@ -141,6 +143,8 @@ public interface Page
      *                     For instance, if the storage device is out of space,
      *                     or the file has been moved or deleted.
      *                     The possible causes of an IOException is platform dependent.
+     *                     If the channel has been closed, then it must be
+     *                     reopened and the swapIn operation must be retried.
      */
     void swapOut( StoreChannel channel, long offset, int length ) throws IOException;
 }
