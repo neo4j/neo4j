@@ -51,7 +51,7 @@ public interface PageSwapper
      * Notification that a page has been evicted, used to clean up state in structures
      * outside the page table.
      */
-    void evicted( long pageId );
+    void evicted( long pageId, Page page );
 
     /**
      * Get the human-readable name for the file that this PageSwapper represents.

@@ -50,9 +50,9 @@ final class MonitoredPageSwapper implements PageSwapper
     }
 
     @Override
-    public void evicted( long pageId )
+    public void evicted( long pageId, Page page )
     {
-        pageSwapper.evicted( pageId );
+        pageSwapper.evicted( pageId, page );
     }
 
     @Override

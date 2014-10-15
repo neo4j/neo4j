@@ -19,6 +19,10 @@
  */
 package org.neo4j.io.pagecache;
 
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.channels.ClosedByInterruptException;
@@ -31,14 +35,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
-
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 @RunWith( Parameterized.class )
 public abstract class PageSwappingTest
@@ -46,7 +45,7 @@ public abstract class PageSwappingTest
     private static PageEvictionCallback NO_CALLBACK = new PageEvictionCallback()
     {
         @Override
-        public void onEvict( long pageId )
+        public void onEvict( long pageId, Page page )
         {
         }
     };

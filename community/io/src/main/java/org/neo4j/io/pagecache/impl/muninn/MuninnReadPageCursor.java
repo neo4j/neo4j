@@ -104,23 +104,17 @@ final class MuninnReadPageCursor extends MuninnPageCursor
             // Because of the race, we have to check the table again once we have
             // the write lock.
             stamp = translationTableLock.writeLock();
-            try
+            page = translationTable.get( filePageId );
+            if ( page == null )
             {
-                page = translationTable.get( filePageId );
-                if ( page == null )
-                {
-                    // Our translation table is still outdated. Go ahead and page
-                    // fault.
-                    pageFault( filePageId, translationTable, swapper );
-                    return;
-                }
-                // Another thread completed the page fault ahead of us.
-                // Let's proceed like nothing happened.
+                // Our translation table is still outdated. Go ahead and page
+                // fault.
+                pageFault( filePageId, translationTable, translationTableLock, stamp, swapper );
+                return;
             }
-            finally
-            {
-                translationTableLock.unlockWrite( stamp );
-            }
+            // Another thread completed the page fault ahead of us.
+            // Let's proceed like nothing happened.
+            translationTableLock.unlockWrite( stamp );
         }
 
         lockStamp = page.tryOptimisticRead();
@@ -143,36 +137,30 @@ final class MuninnReadPageCursor extends MuninnPageCursor
         // again, since another thread might have already completed the page fault
         // for us.
         stamp = translationTableLock.writeLock();
-        try
+        // Someone might have completed the page fault ahead of us, so we need
+        // to check again if the translation table is still outdated.
+        page = translationTable.get( filePageId );
+        if ( page != null )
         {
-            // Someone might have completed the page fault ahead of us, so we need
-            // to check again if the translation table is still outdated.
-            page = translationTable.get( filePageId );
-            if ( page != null )
+            // Either someone completed the page fault, or eviction has not yet
+            // cleared out our translation table entry.
+            // If we can pin the page now, someone already completed the page
+            // fault ahead of us.
+            lockStamp = page.readLock();
+            if ( page.isBoundTo( swapper, filePageId ) )
             {
-                // Either someone completed the page fault, or eviction has not yet
-                // cleared out our translation table entry.
-                // If we can pin the page now, someone already completed the page
-                // fault ahead of us.
-                lockStamp = page.readLock();
-                if ( page.isBoundTo( swapper, filePageId ) )
-                {
-                    pinCursorToPage( page, filePageId, swapper );
-                    optimisticLock = false;
-                    return;
-                }
-                page.unlockRead( lockStamp );
-                // The translation table still contain a stale entry.
-                // We'll overwrite it further down.
+                translationTableLock.unlockWrite( stamp );
+                pinCursorToPage( page, filePageId, swapper );
+                optimisticLock = false;
+                return;
             }
-            // The page is definitely no good, and our translation table is
-            // definitely out of date.
-            pageFault( filePageId, translationTable, swapper );
+            page.unlockRead( lockStamp );
+            // The translation table still contain a stale entry.
+            // We'll overwrite it further down.
         }
-        finally
-        {
-            translationTableLock.unlockWrite( stamp );
-        }
+        // The page is definitely no good, and our translation table is
+        // definitely out of date.
+        pageFault( filePageId, translationTable, translationTableLock, stamp, swapper );
     }
 
     @Override

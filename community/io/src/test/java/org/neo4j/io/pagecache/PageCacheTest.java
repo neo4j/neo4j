@@ -62,7 +62,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.adversaries.RandomAdversary;
@@ -1516,9 +1515,8 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
         }
     }
 
-    @Ignore
     @RepeatRule.Repeat( times = 12000 )
-    @Test( timeout = 60000 )
+    @Test( timeout = 10000 )
     public void mustNotLoseUpdates() throws Exception
     {
         // Another test that tries to squeeze out data race bugs. The idea is

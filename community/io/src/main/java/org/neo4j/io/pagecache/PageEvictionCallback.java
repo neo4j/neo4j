@@ -21,5 +21,5 @@ package org.neo4j.io.pagecache;
 
 public interface PageEvictionCallback
 {
-    public void onEvict( long pageId );
+    public void onEvict( long pageId, Page page );
 }
