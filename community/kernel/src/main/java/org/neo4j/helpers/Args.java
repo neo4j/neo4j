@@ -114,6 +114,11 @@ public class Args
         String value = this.map.get( key );
         return value != null ? Double.parseDouble( value ) : defaultValue;
     }
+    
+    public long getDuration(String key, long defaultValueInMillis) {
+        String value = this.map.get( key );
+        return value != null ? TimeUtil.parseTimeMillis.apply(value) : defaultValueInMillis;
+    }
 
     public Boolean getBoolean( String key, Boolean defaultValue )
     {

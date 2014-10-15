@@ -97,7 +97,8 @@ public class BackupToolUrisTest
                     eq( port ),
                     eq( "/var/backup/graph" ),
                     eq( true ),
-                    any( Config.class )
+                    any( Config.class ),
+                    eq( BackupClient.BIG_READ_TIMEOUT )
             );
         }
     }
@@ -199,7 +200,8 @@ public class BackupToolUrisTest
                     eq( port ),
                     eq( "/var/backup/graph" ),
                     eq( true ),
-                    any( Config.class )
+                    any( Config.class ),
+                    eq( BackupClient.BIG_READ_TIMEOUT )
             );
         }
     }

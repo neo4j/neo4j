@@ -122,7 +122,7 @@ class BackupService
     }
 
     BackupOutcome doFullBackup( final String sourceHostNameOrIp, final int sourcePort, String targetDirectory,
-            boolean checkConsistency, Config tuningConfiguration )
+            boolean checkConsistency, Config tuningConfiguration, final long timeout )
     {
         if ( directoryContainsDb( targetDirectory ) )
         {
@@ -148,7 +148,7 @@ class BackupService
                 {
                     Monitors monitors = new Monitors();
                     client = new BackupClient( sourceHostNameOrIp, sourcePort, new DevNullLoggingService(),
-                            StoreId.DEFAULT, ResponseUnpacker.NO_OP_RESPONSE_UNPACKER,
+                            StoreId.DEFAULT, timeout, ResponseUnpacker.NO_OP_RESPONSE_UNPACKER, 
                             monitors.newMonitor( ByteCounterMonitor.class ),
                             monitors.newMonitor( RequestMonitor.class ) );
                     client.start();
@@ -196,7 +196,7 @@ class BackupService
     }
 
     BackupOutcome doIncrementalBackup( String sourceHostNameOrIp, int sourcePort, String targetDirectory,
-            boolean verification ) throws IncrementalBackupNotPossibleException
+            boolean verification, long timeout ) throws IncrementalBackupNotPossibleException
     {
         if ( !directoryContainsDb( targetDirectory ) )
         {
@@ -216,7 +216,7 @@ class BackupService
         BackupOutcome outcome = null;
         try
         {
-            outcome = doIncrementalBackup( sourceHostNameOrIp, sourcePort, targetDb );
+            outcome = doIncrementalBackup( sourceHostNameOrIp, sourcePort, targetDb, timeout );
         }
         finally
         {
@@ -227,15 +227,15 @@ class BackupService
     }
 
     BackupOutcome doIncrementalBackupOrFallbackToFull( String sourceHostNameOrIp, int sourcePort,
-            String targetDirectory, boolean verification, Config config )
+            String targetDirectory, boolean verification, Config config, long timeout )
     {
         if ( !directoryContainsDb( targetDirectory ) )
         {
-            return doFullBackup( sourceHostNameOrIp, sourcePort, targetDirectory, verification, config );
+            return doFullBackup( sourceHostNameOrIp, sourcePort, targetDirectory, verification, config, timeout );
         }
         try
         {
-            return doIncrementalBackup( sourceHostNameOrIp, sourcePort, targetDirectory, verification );
+            return doIncrementalBackup( sourceHostNameOrIp, sourcePort, targetDirectory, verification, timeout );
         }
         catch ( IncrementalBackupNotPossibleException e )
         {
@@ -246,7 +246,7 @@ class BackupService
                 File targetDirFile = new File( targetDirectory );
                 FileUtils.deleteRecursively( targetDirFile );
                 return doFullBackup( sourceHostNameOrIp, sourcePort, targetDirFile.getAbsolutePath(), verification,
-                        config );
+                        config, timeout );
             }
             catch ( Exception fullBackupFailure )
             {
@@ -256,10 +256,10 @@ class BackupService
         }
     }
 
-    BackupOutcome doIncrementalBackup( String sourceHostNameOrIp, int sourcePort, GraphDatabaseAPI targetDb )
+    BackupOutcome doIncrementalBackup( String sourceHostNameOrIp, int sourcePort, GraphDatabaseAPI targetDb, long timeout )
             throws IncrementalBackupNotPossibleException
     {
-        return incrementalWithContext( sourceHostNameOrIp, sourcePort, targetDb, slaveContextOf( targetDb ) );
+        return incrementalWithContext( sourceHostNameOrIp, sourcePort, targetDb, timeout, slaveContextOf( targetDb ) );
     }
 
     private RequestContext slaveContextOf( GraphDatabaseAPI graphDb )
@@ -302,7 +302,7 @@ class BackupService
      * @return A backup context, ready to perform
      */
     private BackupOutcome incrementalWithContext( String sourceHostNameOrIp, int sourcePort, GraphDatabaseAPI targetDb,
-                                                  RequestContext context ) throws IncrementalBackupNotPossibleException
+                                                  long timeout, RequestContext context ) throws IncrementalBackupNotPossibleException
     {
         DependencyResolver resolver = targetDb.getDependencyResolver();
 
@@ -311,7 +311,7 @@ class BackupService
 
         Monitors monitors = resolver.resolveDependency( Monitors.class );
         BackupClient client = new BackupClient( sourceHostNameOrIp, sourcePort,
-                resolver.resolveDependency( Logging.class ), targetDb.storeId(), unpacker,
+                resolver.resolveDependency( Logging.class ), targetDb.storeId(), timeout, unpacker,
                 monitors.newMonitor( ByteCounterMonitor.class, BackupClient.class ),
                 monitors.newMonitor( RequestMonitor.class, BackupClient.class ) );
 

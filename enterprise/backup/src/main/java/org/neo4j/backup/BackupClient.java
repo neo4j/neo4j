@@ -44,13 +44,13 @@ import static org.neo4j.backup.BackupServer.PROTOCOL_VERSION;
 class BackupClient extends Client<TheBackupInterface> implements TheBackupInterface
 {
 
-    private static final int BIG_READ_TIMEOUT = 40 * 1000;
+    static final long BIG_READ_TIMEOUT = 40 * 1000;
 
-    public BackupClient( String hostNameOrIp, int port, Logging logging, StoreId storeId, ResponseUnpacker unpacker,
-                         ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
+    public BackupClient( String hostNameOrIp, int port, Logging logging, StoreId storeId, long timeout,
+                         ResponseUnpacker unpacker, ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
     {
         super( hostNameOrIp, port, logging, storeId, FRAME_LENGTH,
-                new ProtocolVersion( PROTOCOL_VERSION, ProtocolVersion.INTERNAL_PROTOCOL_VERSION ), BIG_READ_TIMEOUT,
+                new ProtocolVersion( PROTOCOL_VERSION, ProtocolVersion.INTERNAL_PROTOCOL_VERSION ), timeout,
                 Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT, FRAME_LENGTH, unpacker,
                 byteCounterMonitor, requestMonitor );
     }
