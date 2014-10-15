@@ -27,13 +27,12 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 
 /**
  * Queues {@link TransactionRepresentation} for application at a later point. Queued transactions can be visited
- * with {@link #acceptAndKeep(TransactionVisitor)} where the transactions are intact in the queue after that call.
+ * with {@link #accept(TransactionVisitor)} where the transactions are intact in the queue after that call.
  * Or using {@link #acceptAndRemove(TransactionVisitor)} which clear the queue after that call.
  */
 public class TransactionQueue
 {
     private final Transaction[] queue;
-    private final int threshold;
     private int queueIndex;
 
     public TransactionQueue( int threshold )
@@ -43,35 +42,28 @@ public class TransactionQueue
         {
             this.queue[i] = new Transaction();
         }
-        this.threshold = threshold;
     }
 
     public boolean queue( CommittedTransactionRepresentation transaction, TxHandler txHandler )
     {
+        assert queueIndex < queue.length : "Tried to queue beyond capacity, qIndex " + queueIndex;
         queue[queueIndex++].set( transaction, txHandler );
-        return queueIndex >= threshold;
+        return queueIndex >= queue.length;
     }
 
-    public int acceptAndKeep( TransactionVisitor visitor )
+    public int accept( TransactionVisitor visitor )
             throws IOException
-    {
-        accept( visitor );
-        return queueIndex;
-    }
-
-    private void accept( TransactionVisitor visitor ) throws IOException
     {
         for ( int i = 0; i < queueIndex; i++ )
         {
             Transaction tx = queue[i];
             visitor.visit( tx.transaction, tx.txHandler );
         }
+        return queueIndex;
     }
 
-    public void acceptAndRemove( TransactionVisitor visitor )
-            throws IOException
+    public void clear()
     {
-        accept( visitor );
         queueIndex = 0;
     }
 
