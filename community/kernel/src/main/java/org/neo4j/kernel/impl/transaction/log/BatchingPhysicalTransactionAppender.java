@@ -108,18 +108,17 @@ public class BatchingPhysicalTransactionAppender extends AbstractPhysicalTransac
     {
         LockSupport.unpark( forceThread );
 
-        // Stay a while and listen... while:
-        while (  // the forcer hasn't yet caught up with me
-                 (ticket > forceTicket.get() ||
-                 // OR I've wrapped around Long.MAX_VALUE
-                 !haveSameSign( ticket, forceTicket.get() )) &&
-
-                 // AND this appender hasn't yet been shut down
-                 !shutDown &&
-                 // AND the forcer is of good health
-                 forceThread.checkHealth() )
+        // Stay while...
+        while ( // the forcer is of good health
+                forceThread.checkHealth() &&
+                // AND this appender hasn't yet been shut down
+                !shutDown && // AND
+                // EITHER the forcer has caught up with me
+                (ticket > forceTicket.get() ||
+                // OR I've wrapped around Long.MAX_VALUE
+                !haveSameSign( ticket, forceTicket.get())) )
         {
-            LockSupport.parkNanos( 100_000 ); // 0,1 ms
+            Thread.yield();
         }
     }
 
