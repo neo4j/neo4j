@@ -31,7 +31,6 @@ trait GraphStatistics {
   The average selectivity for all indexed values in the index.
    */
   def indexSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity]
-
 }
 
 object GraphStatistics {

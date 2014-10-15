@@ -111,6 +111,7 @@ public class IndexPopulationJob implements Runnable
                 storeView.replaceIndexCount( descriptor, 0 );
 
                 indexAllNodes( countVisitor );
+                verifyDeferredConstraints();
                 if ( cancelled )
                 {
                     storeView.replaceIndexCount( descriptor, 0 );
@@ -221,6 +222,10 @@ public class IndexPopulationJob implements Runnable
             }
         });
         storeScan.run();
+    }
+
+    private void verifyDeferredConstraints() throws IndexPopulationFailedKernelException
+    {
         try
         {
             populator.verifyDeferredConstraints( storeView );
@@ -231,7 +236,7 @@ public class IndexPopulationJob implements Runnable
         }
     }
 
-    private void populateFromQueueIfAvailable( final long highestIndexedNodeId, CountVisitor countVisitor )
+    private void populateFromQueueIfAvailable( final long currentlyIndexedNodeId, CountVisitor countVisitor )
             throws IndexEntryConflictException, IOException
     {
         if ( !queue.isEmpty() )
@@ -241,8 +246,9 @@ public class IndexPopulationJob implements Runnable
             {
                 do
                 {
+                    // no need to check for null as nobody else is emptying this queue
                     NodePropertyUpdate update = queue.poll();
-                    if ( update.getNodeId() <= highestIndexedNodeId )
+                    if ( update.getNodeId() <= currentlyIndexedNodeId )
                     {
                         updater.process( update );
                     }
