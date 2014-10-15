@@ -49,7 +49,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  */
 public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, Lifecycle
 {
-    private static final int DEFAULT_BATCH_SIZE = 30;
+    private static final int DEFAULT_BATCH_SIZE = 100;
 
     private class BatchingResponseHandler implements Response.Handler,
             Visitor<CommittedTransactionRepresentation, IOException>
