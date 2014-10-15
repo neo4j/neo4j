@@ -224,7 +224,6 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   test("reports COST compiler when showing plan description") {
     val executionPlanDescription = eengine.execute("cypher 2.2-cost match n return n").executionPlanDescription()
-     println(executionPlanDescription.toString)
     executionPlanDescription.toString should include("2.2-cost")
   }
 
@@ -239,6 +238,11 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     val a = profile("match n return n, count(*) as c order by c")
 
     a.executionPlanDescription().toString should not include "Apply"
+  }
+
+  test("should not use eager plans for distinct") {
+    val a = profile("match n return distinct n.name")
+    a.executionPlanDescription().toString should not include "Eager"
   }
 
   private def assertRows(expectedRows: Int)(result: InternalExecutionResult)(names: String*) {

@@ -196,6 +196,14 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
         case SortedLimit(input, exp, sortItems) =>
           TopPipe(buildPipe(input), sortItems.map(_.asCommandSortItem).toList, exp.asCommandExpression)()
 
+        // TODO: Maybe we shouldn't encode distinct as an empty aggregation.
+        case Aggregation(Projection(input, expressions), groupingExpressions, aggregatingExpressions)
+          if aggregatingExpressions.isEmpty && expressions == groupingExpressions =>
+          DistinctPipe(buildPipe(input), groupingExpressions.mapValues(_.asCommandExpression))()
+
+        case Aggregation(input, groupingExpressions, aggregatingExpressions) if aggregatingExpressions.isEmpty =>
+          DistinctPipe(buildPipe(input), groupingExpressions.mapValues(_.asCommandExpression))()
+
         case Aggregation(input, groupingExpressions, aggregatingExpressions) =>
           EagerAggregationPipe(
             buildPipe(input),
