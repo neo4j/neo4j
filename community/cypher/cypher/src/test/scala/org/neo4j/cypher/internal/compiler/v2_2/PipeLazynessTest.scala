@@ -79,7 +79,7 @@ class PipeLazynessTest extends GraphDatabaseFunSuite with QueryStateTestSupport 
   private def distinctPipe = {
     val iter = new LazyIterator[Map[String, Any]](10, (n) => Map("x" -> n))
     val src = new FakePipe(iter, "x" -> CTNumber)
-    val pipe = new DistinctPipe(src, Map("x" -> Identifier("x")))
+    val pipe = new DistinctPipe(src, Map("x" -> Identifier("x")))()
     (pipe, iter)
   }
 

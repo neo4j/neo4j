@@ -41,7 +41,7 @@ class UnionBuilder(queryBuilder: GraphQueryBuilder) {
     val unionPipe = new UnionPipe(pipes.toList, union.queries.head.columns)
     val pipe = if (union.distinct) {
       val expressions: Map[String, Expression] = union.queries.head.columns.map(k => k -> Identifier(k)).toMap
-      new DistinctPipe(unionPipe, expressions)
+      new DistinctPipe(unionPipe, expressions)()
     } else {
       unionPipe
     }
