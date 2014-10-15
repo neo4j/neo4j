@@ -37,9 +37,6 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 
-/**
- * TODO
- */
 public class TestBasicHaOperations
 {
     @Rule

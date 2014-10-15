@@ -181,10 +181,10 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
         life.add( responseUnpacker );
 
-        UpdatePuller updatePuller = life.add( new UpdatePuller( memberStateMachine, availabilityGuard,
-                requestContextFactory, master, lastUpdateTime, logging, serverId ) );
+        UpdatePuller updatePuller = dependencies.satisfyDependency( life.add(
+                new UpdatePuller( memberStateMachine, requestContextFactory, master, lastUpdateTime, logging ) ) );
         dependencies.satisfyDependency( life.add( new UpdatePullerClient( config.get( HaSettings.pull_interval ),
-                jobScheduler, logging, updatePuller ) ) );
+                jobScheduler, logging, updatePuller, availabilityGuard ) ) );
         dependencies.satisfyDependency( life.add( new UpdatePullingTransactionObligationFulfiller(
                 updatePuller, memberStateMachine, serverId, dependencies ) ) );
 

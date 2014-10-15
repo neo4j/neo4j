@@ -21,6 +21,7 @@ package org.neo4j.kernel.ha;
 
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.JobScheduler.JobHandle;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -32,21 +33,23 @@ public class UpdatePullerClient extends LifecycleAdapter
     private final JobScheduler scheduler;
     private final StringLogger logger;
     private final UpdatePuller updatePuller;
+    private final AvailabilityGuard availabilityGuard;
     private final long pullIntervalMillis;
     private JobHandle intervalJobHandle;
 
     public UpdatePullerClient( long pullIntervalMillis, JobScheduler scheduler, final Logging logging,
-            UpdatePuller updatePullingThread )
+            UpdatePuller updatePullingThread, AvailabilityGuard availabilityGuard )
     {
         this.pullIntervalMillis = pullIntervalMillis;
         this.scheduler = scheduler;
+        this.availabilityGuard = availabilityGuard;
         this.logger = logging.getMessagesLog( getClass() );
         updatePuller = updatePullingThread;
     }
 
     public void pullUpdates() throws InterruptedException
     {
-        if ( !updatePuller.isActive() )
+        if ( !updatePuller.isActive() || !availabilityGuard.isAvailable( 5000 ) )
         {
             return;
         }
