@@ -19,42 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.asResourceIterator;
-import static org.neo4j.helpers.collection.IteratorUtil.iterator;
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
-import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
-import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
-import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.impl.store.record.IndexRule.constraintIndexRule;
-import static org.neo4j.kernel.impl.store.record.IndexRule.indexRule;
-import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
-import static org.neo4j.test.AwaitAnswer.afterAwaiting;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.Before;
@@ -63,6 +31,7 @@ import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.ArrayIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
@@ -87,6 +56,36 @@ import org.neo4j.kernel.impl.util.TestLogger;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.logging.Logging;
+
+import static java.util.Arrays.asList;
+
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
+
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.asResourceIterator;
+import static org.neo4j.helpers.collection.IteratorUtil.iterator;
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
+import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
+import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
+import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.impl.store.record.IndexRule.constraintIndexRule;
+import static org.neo4j.kernel.impl.store.record.IndexRule.indexRule;
+import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
+import static org.neo4j.test.AwaitAnswer.afterAwaiting;
 
 public class IndexingServiceTest
 {
@@ -180,9 +179,10 @@ public class IndexingServiceTest
         IndexProxy proxy = indexingService.getProxyForRule( 0 );
         assertEquals( InternalIndexState.POPULATING, proxy.getState() );
 
+        NodePropertyUpdate value2 = add( 2, "value2" );
         try (IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE ))
         {
-            updater.process( add( 2, "value2" ) );
+            updater.process( value2 );
         }
 
         latch.countDown();

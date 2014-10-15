@@ -381,8 +381,7 @@ public class IndexPopulationJobTest
     {
         createNode( map( name, "irrelephant" ), FIRST );
         TestLogger logger = new TestLogger();
-        FlippableIndexProxy index = mock( FlippableIndexProxy.class );
-
+        FlippableIndexProxy index = new FlippableIndexProxy( mock( IndexProxy.class ) );
         IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, indexStoreView, logger );
 
         IndexEntryConflictException failure = new PreexistingIndexEntryConflictException( "duplicate value", 0, 1 );
