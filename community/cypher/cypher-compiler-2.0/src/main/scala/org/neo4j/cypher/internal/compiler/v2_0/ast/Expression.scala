@@ -46,6 +46,9 @@ object Expression {
   }
 
   implicit class InferrableTypeTraversableOnce[A <: Expression](traversable: TraversableOnce[A]) {
+    def unionOfTypes: TypeGenerator = state =>
+      TypeSpec.union(traversable.map(_.types(state)).toSeq: _*)
+
     def leastUpperBoundsOfTypes: TypeGenerator =
       if (traversable.isEmpty)
         _ => CTAny.invariant
