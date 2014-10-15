@@ -43,7 +43,7 @@ angular.module('neo4jApp.services')
         exploreNeighbours: (node) ->
           q = $q.defer()
           Cypher.transaction()
-          .commit("START a = node(#{node.id}) MATCH (a)-[r]-() RETURN r;")
+          .commit("MATCH (a)-[r]-() WHERE id(a)= #{node.id} RETURN r;")
           .then(q.resolve)
           q.promise
 
@@ -55,8 +55,9 @@ angular.module('neo4jApp.services')
           ids = nodes.map((node) -> node.id)
           Cypher.transaction()
           .commit("""
-            START a = node(#{ids.join(',')}), b = node(#{ids.join(',')})
-            MATCH a -[r]-> b RETURN r;"""
+            MATCH a -[r]-> b WHERE id(a) IN[#{ids.join(',')}]
+            AND id(b) IN[#{ids.join(',')}]
+            RETURN r;"""
           )
           .then(q.resolve)
           q.promise
