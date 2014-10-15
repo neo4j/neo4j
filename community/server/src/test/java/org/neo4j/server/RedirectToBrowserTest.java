@@ -19,11 +19,13 @@
  */
 package org.neo4j.server;
 
+import java.io.IOException;
 import java.net.URI;
 import javax.ws.rs.core.MediaType;
 
 import com.sun.jersey.api.client.Client;
-import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.neo4j.server.helpers.ServerHelper;
@@ -35,10 +37,16 @@ import static org.junit.Assert.assertEquals;
 
 public class RedirectToBrowserTest extends ExclusiveServerTestBase
 {
-    private NeoServer server;
+    private static NeoServer server;
 
-    @After
-    public void stopServer()
+    @BeforeClass
+    public static void startServer() throws IOException
+    {
+        server = ServerHelper.createNonPersistentServer();
+    }
+
+    @AfterClass
+    public static void stopServer()
     {
         if ( server != null )
         {
@@ -49,8 +57,6 @@ public class RedirectToBrowserTest extends ExclusiveServerTestBase
     @Test
     public void shouldRedirectToBrowser() throws Exception
     {
-        server = ServerHelper.createNonPersistentServer();
-
         Client nonRedirectingClient = Client.create();
         nonRedirectingClient.setFollowRedirects( false );
         final JaxRsResponse response = new RestRequest( server.baseUri(), nonRedirectingClient ).accept( MediaType
@@ -64,8 +70,6 @@ public class RedirectToBrowserTest extends ExclusiveServerTestBase
     @Test
     public void shouldRedirectToBrowserUsingXForwardedHeaders() throws Exception
     {
-        server = ServerHelper.createNonPersistentServer();
-
         Client nonRedirectingClient = Client.create();
         nonRedirectingClient.setFollowRedirects( false );
         final JaxRsResponse response = new RestRequest( server.baseUri(), nonRedirectingClient ).accept( MediaType
