@@ -27,6 +27,7 @@ import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.com.storecopy.TransactionQueue.TransactionVisitor;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.locking.LockGroup;
@@ -139,6 +140,8 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
         }
     };
 
+    private KernelHealth kernelHealth;
+
     public TransactionCommittingResponseUnpacker( DependencyResolver resolver )
     {
         this( resolver, DEFAULT_BATCH_SIZE );
@@ -158,11 +161,16 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
             throw new IllegalStateException( "Component is currently stopped" );
         }
 
-        response.accept( new BatchingResponseHandler( txHandler ) );
-
-        if ( response.hasTransactionsToBeApplied() )
+        try
         {
-            applyQueuedTransactions();
+            response.accept( new BatchingResponseHandler( txHandler ) );
+        }
+        finally
+        {
+            if ( response.hasTransactionsToBeApplied() )
+            {
+                applyQueuedTransactions();
+            }
         }
     }
 
@@ -178,15 +186,28 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
                 logFile.prune();
             }
 
-            // Apply whatever is in the queue
-            if ( transactionQueue.acceptAndKeep( batchAppender ) > 0 )
+            try
             {
-                // TODO if this instance is set to "slave_only" then we can actually skip the force call here.
-                // Reason being that even if there would be a reordering in some layer where a store file would be
-                // changed before that change would have ended up in the log, it would be fine sine as a slave
-                // you would pull that transaction again anyhow before making changes to (after reading) any record.
-                appender.force();
-                transactionQueue.acceptAndRemove( batchCommitterAndApplier );
+                // Apply whatever is in the queue
+                if ( transactionQueue.accept( batchAppender ) > 0 )
+                {
+                    // TODO if this instance is set to "slave_only" then we can actually skip the force call here.
+                    // Reason being that even if there would be a reordering in some layer where a store file would be
+                    // changed before that change would have ended up in the log, it would be fine sine as a slave
+                    // you would pull that transaction again anyhow before making changes to (after reading) any record.
+                    appender.force();
+                    transactionQueue.accept( batchCommitterAndApplier );
+                }
+            }
+            catch ( IOException e )
+            {
+                // Kernel panic is done on this level, i.e. append and apply doesn't do that themselves.
+                kernelHealth.panic( e );
+                throw e;
+            }
+            finally
+            {
+                transactionQueue.clear();
             }
         }
     }
@@ -204,6 +225,7 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
         this.transactionIdStore = resolver.resolveDependency( TransactionIdStore.class );
         this.obligationFulfiller = resolveTransactionObligationFulfiller( resolver );
         this.logFile = resolver.resolveDependency( LogFile.class );
+        this.kernelHealth = resolver.resolveDependency( KernelHealth.class );
         this.stopped = false;
     }
 

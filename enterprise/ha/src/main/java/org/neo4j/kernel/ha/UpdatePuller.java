@@ -22,7 +22,6 @@ package org.neo4j.kernel.ha;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
-import org.neo4j.cluster.InstanceId;
 import org.neo4j.com.ComException;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.TransactionObligationResponse;
@@ -30,7 +29,6 @@ import org.neo4j.com.TransactionStream;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.com.storecopy.TransactionObligationFulfiller;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberChangeEvent;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberListener;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
@@ -121,7 +119,6 @@ public class UpdatePuller implements Runnable, Lifecycle
     private volatile boolean halted;
     private volatile boolean paused = true;
     private final AtomicInteger targetTicket = new AtomicInteger(), currentTicket = new AtomicInteger();
-    private final AvailabilityGuard availabilityGuard;
     private final RequestContextFactory requestContextFactory;
     private final Master master;
     private final StringLogger logger;
@@ -131,12 +128,10 @@ public class UpdatePuller implements Runnable, Lifecycle
     private final HighAvailabilityMemberStateMachine memberStateMachine;
     private Thread me;
 
-    UpdatePuller( HighAvailabilityMemberStateMachine memberStateMachine, AvailabilityGuard availabilityGuard,
-            RequestContextFactory requestContextFactory, Master master, LastUpdateTime lastUpdateTime, Logging logging,
-            InstanceId serverId )
+    UpdatePuller( HighAvailabilityMemberStateMachine memberStateMachine,
+            RequestContextFactory requestContextFactory, Master master, LastUpdateTime lastUpdateTime, Logging logging )
     {
         this.memberStateMachine = memberStateMachine;
-        this.availabilityGuard = availabilityGuard;
         this.requestContextFactory = requestContextFactory;
         this.master = master;
         this.lastUpdateTime = lastUpdateTime;
@@ -150,7 +145,7 @@ public class UpdatePuller implements Runnable, Lifecycle
                 logger.warn( event.first(), event.other() );
             }
         };
-        this.listener = new PauseListener( serverId );
+        this.listener = new PauseListener();
     }
 
     @Override
@@ -206,7 +201,7 @@ public class UpdatePuller implements Runnable, Lifecycle
         }
     }
 
-    private void pause( boolean paused )
+    public void pause( boolean paused )
     {
         boolean wasPaused = this.paused;
         this.paused = paused;
@@ -257,52 +252,31 @@ public class UpdatePuller implements Runnable, Lifecycle
 
     private void doPullUpdates()
     {
-        if ( availabilityGuard.isAvailable( 5000 ) )
+        try
         {
-            try
-            {
-                RequestContext context = requestContextFactory.newRequestContext();
-                master.pullUpdates( context );
-            }
-            catch ( ComException e )
-            {
-                cappedLogger.event( Pair.of( "Pull updates failed due to network error.", e ) );
-            }
-            catch ( Exception e )
-            {
-                logger.error( "Pull updates failed", e );
-            }
-            lastUpdateTime.setLastUpdateTime( currentTimeMillis() );
+            RequestContext context = requestContextFactory.newRequestContext();
+            master.pullUpdates( context );
         }
+        catch ( ComException e )
+        {
+            cappedLogger.event( Pair.of( "Pull updates failed due to network error.", e ) );
+        }
+        catch ( Exception e )
+        {
+            logger.error( "Pull updates failed", e );
+        }
+        lastUpdateTime.setLastUpdateTime( currentTimeMillis() );
     }
 
     private class PauseListener extends HighAvailabilityMemberListener.Adapter
     {
-        private final InstanceId myInstanceId;
-
-        private PauseListener( InstanceId myInstanceId )
-        {
-            this.myInstanceId = myInstanceId;
-        }
-
         @Override
-        public void masterIsAvailable( HighAvailabilityMemberChangeEvent event )
+        public void masterIsElected( HighAvailabilityMemberChangeEvent event )
         {
-            if ( event.getInstanceId().equals( myInstanceId ) )
-            {
-                // I'm the master, no need to pull updates
-                pause( true );
-            }
+            // A new master is elected, pause here until we know about its availability
+            pause( true );
         }
 
-        @Override
-        public void slaveIsAvailable( HighAvailabilityMemberChangeEvent event )
-        {
-            if ( event.getInstanceId().equals( myInstanceId ) )
-            {
-                // I'm a slave, let the transactions stream in
-                pause( false );
-            }
-        }
+        // We will be unpaused from the outside, from code that knows when we switch to slave
     }
 }
