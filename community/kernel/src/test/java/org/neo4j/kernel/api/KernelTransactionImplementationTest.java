@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
@@ -334,7 +335,7 @@ public class KernelTransactionImplementationTest
         } ).when( recordState ).extractCommands( anyListOf( Command.class ) );
         try ( KernelTransactionImplementation transaction = newTransaction() )
         {
-            transaction.initialize( headerInformation, 5L );
+            transaction.initialize( 5L );
 
             // WHEN committing it at a later point
             clock.forward( 5, MILLISECONDS );
@@ -356,18 +357,21 @@ public class KernelTransactionImplementationTest
     private final TransactionMonitor transactionMonitor = mock( TransactionMonitor.class );
     private final CapturingCommitProcess commitProcess = new CapturingCommitProcess();
     private final TransactionHeaderInformation headerInformation = mock( TransactionHeaderInformation.class );
+    private final TransactionHeaderInformationFactory headerInformationFactory =
+            mock( TransactionHeaderInformationFactory.class );
     private final FakeClock clock = new FakeClock();
 
     @Before
     public void before()
     {
         when( headerInformation.getAdditionalHeader() ).thenReturn( new byte[0] );
+        when( headerInformationFactory.create() ).thenReturn( headerInformation );
     }
 
     private KernelTransactionImplementation newTransaction()
     {
         return new KernelTransactionImplementation( null, false, null, null, null, null, recordState,
-                null, neoStore, new NoOpClient(), hooks, null, headerInformation, commitProcess, transactionMonitor,
+                null, neoStore, new NoOpClient(), hooks, null, headerInformationFactory, commitProcess, transactionMonitor,
                 null, null, legacyIndexState, mock(Pool.class), clock );
     }
 

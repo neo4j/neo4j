@@ -59,6 +59,7 @@ import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
@@ -104,7 +105,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private volatile boolean terminated;
 
     // For committing
-    private TransactionHeaderInformation headerInformation;
+    private final TransactionHeaderInformationFactory headerInformationFactory;
     private final TransactionCommitProcess commitProcess;
     private final TransactionMonitor transactionMonitor;
     private final PersistenceCache persistenceCache;
@@ -124,7 +125,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             SchemaIndexProviderMap providerMap, NeoStore neoStore,
                                             Locks.Client locks, TransactionHooks hooks,
                                             ConstraintIndexCreator constraintIndexCreator,
-                                            TransactionHeaderInformation transactionHeaderInformation,
+                                            TransactionHeaderInformationFactory headerInformationFactory,
                                             TransactionCommitProcess commitProcess,
                                             TransactionMonitor transactionMonitor,
                                             PersistenceCache persistenceCache,
@@ -144,7 +145,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.hooks = hooks;
         this.locks = locks;
         this.constraintIndexCreator = constraintIndexCreator;
-        this.headerInformation = transactionHeaderInformation;
+        this.headerInformationFactory = headerInformationFactory;
         this.commitProcess = commitProcess;
         this.transactionMonitor = transactionMonitor;
         this.persistenceCache = persistenceCache;
@@ -156,10 +157,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     /** Reset this transaction to a vanilla state, turning it into a logically new transaction. */
-    public KernelTransactionImplementation initialize( TransactionHeaderInformation txHeader, long lastCommittedTx )
+    public KernelTransactionImplementation initialize( long lastCommittedTx )
     {
         assert locks != null : "This transaction has been disposed off, it should not be used.";
-        this.headerInformation = txHeader;
         this.terminated = closing = closed = failure = success = false;
         this.transactionType = TransactionType.ANY;
         this.hooksState = null;
@@ -724,7 +724,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
 
         this.locks = null;
-        this.headerInformation = null;
         this.transactionType = null;
         this.hooksState = null;
         this.txState = null;
@@ -766,6 +765,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     // Finish up the whole transaction representation
                     PhysicalTransactionRepresentation transactionRepresentation =
                             new PhysicalTransactionRepresentation( commands );
+                    TransactionHeaderInformation headerInformation = headerInformationFactory.create();
                     transactionRepresentation.setHeader( headerInformation.getAdditionalHeader(),
                             headerInformation.getMasterId(),
                             headerInformation.getAuthorId(),

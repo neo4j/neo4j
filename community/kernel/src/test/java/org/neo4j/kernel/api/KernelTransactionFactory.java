@@ -33,22 +33,26 @@ import org.neo4j.kernel.impl.api.store.PersistenceCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class KernelTransactionFactory
 {
     static KernelTransaction kernelTransaction()
     {
         TransactionHeaderInformation headerInformation = new TransactionHeaderInformation( -1, -1, new byte[0] );
+        TransactionHeaderInformationFactory headerInformationFactory = mock( TransactionHeaderInformationFactory.class );
+        when( headerInformationFactory.create() ).thenReturn( headerInformation );
 
         return new KernelTransactionImplementation( mock( StatementOperationParts.class ), false,
                 mock( SchemaWriteGuard.class ), null, null,
                 null, mock( TransactionRecordState.class ),
                 null, mock( NeoStore.class ), new NoOpClient(), new TransactionHooks(),
-                mock( ConstraintIndexCreator.class ), headerInformation,
+                mock( ConstraintIndexCreator.class ), headerInformationFactory,
                 mock( TransactionRepresentationCommitProcess.class ), mock( TransactionMonitor.class ),
                 mock( PersistenceCache.class ),
                 mock( StoreReadLayer.class ),
