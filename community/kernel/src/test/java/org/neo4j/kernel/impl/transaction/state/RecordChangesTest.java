@@ -19,17 +19,17 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.neo4j.kernel.impl.transaction.state.RecordAccess;
-import org.neo4j.kernel.impl.transaction.state.RecordChanges;
-
 import org.junit.Test;
+
+import org.neo4j.kernel.impl.util.statistics.IntCounter;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 
 public class RecordChangesTest
 {
 
-    private RecordAccess.Loader<Object, Object, Object> loader = new RecordAccess.Loader<Object, Object, Object>()
+    private final RecordAccess.Loader<Object, Object, Object> loader = new RecordAccess.Loader<Object, Object, Object>()
     {
         @Override
         public Object newUnused( Object o, Object additionalData )
@@ -60,7 +60,7 @@ public class RecordChangesTest
     public void shouldCountChanges() throws Exception
     {
         // Given
-        RecordChanges<Object, Object, Object> change = new RecordChanges<>( loader, false );
+        RecordChanges<Object, Object, Object> change = new RecordChanges<>( loader, false, new IntCounter() );
 
         // When
         change.getOrLoad( "K1", null ).forChangingData();

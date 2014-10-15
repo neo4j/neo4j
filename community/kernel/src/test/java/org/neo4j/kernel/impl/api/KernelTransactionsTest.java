@@ -166,6 +166,7 @@ public class KernelTransactionsTest
             protected NeoStoreTransactionContext create()
             {
                 NeoStoreTransactionContext context = super.create();
+                when( context.hasChanges() ).thenReturn( true );
 
                 RecordChanges<Long, NodeRecord, Void> recordChanges = mock( RecordChanges.class );
                 when( recordChanges.changeSize() ).thenReturn( 1 );

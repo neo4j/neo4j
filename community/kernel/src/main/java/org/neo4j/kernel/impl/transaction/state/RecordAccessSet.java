@@ -43,7 +43,7 @@ public interface RecordAccessSet
     RecordAccess<Long, RelationshipGroupRecord, Integer> getRelGroupRecords();
 
     RecordAccess<Long, Collection<DynamicRecord>, SchemaRule> getSchemaRuleChanges();
-    
+
     RecordAccess<Integer, PropertyKeyTokenRecord, Void> getPropertyKeyTokenChanges();
 
     RecordAccess<Integer, LabelTokenRecord, Void> getLabelTokenChanges();

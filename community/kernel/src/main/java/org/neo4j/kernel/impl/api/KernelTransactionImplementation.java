@@ -636,10 +636,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
-    public boolean isReadOnly()
+    private boolean hasChanges()
     {
-        return !hasTxStateWithChanges() && recordState.isReadOnly() &&
-                legacyIndexTransactionState.isReadOnly();
+        return hasTxStateWithChanges() ||
+               recordState.hasChanges() ||
+               legacyIndexTransactionState.hasChanges() ||
+               counts.hasChanges();
     }
 
     public TransactionRecordState getTransactionRecordState()
@@ -743,7 +745,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             prepareRecordChangesFromTransactionState();
 
             // Convert changes into commands and commit
-            if ( !isReadOnly() )
+            if ( hasChanges() )
             {
                 // Gather up commands from the various sources
                 List<Command> commands = new ArrayList<>();

@@ -25,6 +25,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -43,9 +44,16 @@ import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.test.DoubleLatch;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.junit.Assert.*;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyListOf;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 public class KernelTransactionImplementationTest
 {
@@ -313,7 +321,7 @@ public class KernelTransactionImplementationTest
     {
         // GIVEN a transaction starting at one point in time
         long startingTime = clock.currentTimeMillis();
-        when( recordState.isReadOnly() ).thenReturn( false );
+        when( recordState.hasChanges() ).thenReturn( true );
         doAnswer( new Answer<Void>()
         {
             @Override
@@ -353,8 +361,6 @@ public class KernelTransactionImplementationTest
     @Before
     public void before()
     {
-        when( recordState.isReadOnly() ).thenReturn( true );
-        when( legacyIndexState.isReadOnly() ).thenReturn( true );
         when( headerInformation.getAdditionalHeader() ).thenReturn( new byte[0] );
     }
 

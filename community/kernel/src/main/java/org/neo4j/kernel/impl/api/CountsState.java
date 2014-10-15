@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api;
 
 import static java.util.Objects.requireNonNull;
+
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
@@ -31,9 +32,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.transaction.state.RecordState;
 import org.neo4j.register.Register;
 
-public class CountsState implements CountsVisitor.Visitable, CountsAcceptor
+public class CountsState implements CountsVisitor.Visitable, CountsAcceptor, RecordState
 {
     private final Map<CountsKey, Count> counts = new HashMap<>();
 
@@ -89,13 +91,22 @@ public class CountsState implements CountsVisitor.Visitable, CountsAcceptor
         visitable.accept( verifier );
         return verifier.differences();
     }
+    
+    @Override
+    public boolean hasChanges()
+    {
+        return !counts.isEmpty();
+    }
 
     /**
      * Set this counter up to a pristine state, as if it had just been initialized.
      */
     public void initialize()
     {
-        counts.clear();
+        if ( !counts.isEmpty() )
+        {
+            counts.clear();
+        }
     }
 
     public static final class Difference
