@@ -112,6 +112,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final LegacyIndexTransactionState legacyIndexTransactionState;
     private final Clock clock;
     private final TransactionToRecordStateVisitor txStateToRecordStateVisitor = new TransactionToRecordStateVisitor();
+    private final List<Command> extractedCommands = new ArrayList<>();
 
     // Some header information
     private long startTimeMillis;
@@ -764,10 +765,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 try ( LockGroup lockGroup = new LockGroup() )
                 {
                     // Gather up commands from the various sources
-                    List<Command> commands = new ArrayList<>();
-                    recordState.extractCommands( commands );
-                    legacyIndexTransactionState.extractCommands( commands );
-                    counts.extractCommands( commands );
+                    extractedCommands.clear();
+                    recordState.extractCommands( extractedCommands );
+                    legacyIndexTransactionState.extractCommands( extractedCommands );
+                    counts.extractCommands( extractedCommands );
 
                     /* Here's the deal: we track a quick-to-access hasChanges in transaction state which is true
                      * if there are any changes imposed by this transaction. Some changes made inside a transaction undo
@@ -777,11 +778,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                      * and get right.... So to really make sure the transaction has changes we re-check by looking if we
                      * have produced any commands to add to the logical log.
                      */
-                    if ( !commands.isEmpty() )
+                    if ( !extractedCommands.isEmpty() )
                     {
                         // Finish up the whole transaction representation
                         PhysicalTransactionRepresentation transactionRepresentation =
-                                new PhysicalTransactionRepresentation( commands );
+                                new PhysicalTransactionRepresentation( extractedCommands );
                         TransactionHeaderInformation headerInformation = headerInformationFactory.create();
                         transactionRepresentation.setHeader( headerInformation.getAdditionalHeader(),
                                 headerInformation.getMasterId(),
