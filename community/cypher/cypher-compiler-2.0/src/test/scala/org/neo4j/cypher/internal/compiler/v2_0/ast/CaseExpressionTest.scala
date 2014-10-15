@@ -25,7 +25,7 @@ import symbols._
 
 class CaseExpressionTest extends CypherFunSuite {
 
-  test("Simple: Should merge types of alternatives") {
+  test("Simple: Should combine types of alternatives") {
     val caseExpression = CaseExpression(
       expression = Some(DummyExpression(CTString)),
       alternatives = Seq(
@@ -42,10 +42,10 @@ class CaseExpressionTest extends CypherFunSuite {
 
     val result = caseExpression.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assert(result.errors === Seq())
-    assert(caseExpression.types(result.state) === CTNumber.invariant)
+    assert(caseExpression.types(result.state) === (CTInteger | CTFloat))
   }
 
-  test("Generic: Should merge types of alternatives") {
+  test("Generic: Should combine types of alternatives") {
     val caseExpression = CaseExpression(
       None,
       Seq(
@@ -62,7 +62,7 @@ class CaseExpressionTest extends CypherFunSuite {
 
     val result = caseExpression.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assert(result.errors === Seq())
-    assert(caseExpression.types(result.state) === (CTNumber | CTAny))
+    assert(caseExpression.types(result.state) === (CTInteger | CTFloat | CTString | CTNode))
   }
 
   test("Generic: should type check predicates") {
