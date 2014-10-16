@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import java.util.Collection;
 import java.util.List;
 
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -41,5 +42,5 @@ public interface RecordState
      * @param target list that commands will be added into.
      * @throws TransactionFailureException if the state is invalid or not applicable.
      */
-    void extractCommands( List<Command> target ) throws TransactionFailureException;
+    void extractCommands( Collection<Command> target ) throws TransactionFailureException;
 }

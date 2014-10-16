@@ -19,14 +19,8 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static java.util.Objects.requireNonNull;
-
-import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
-import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
-import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
-import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
-
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,15 +29,24 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.state.RecordState;
 import org.neo4j.register.Register;
 
+import static java.util.Objects.requireNonNull;
+
+import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
+import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
+import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
+import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
+
 public class CountsState implements CountsVisitor.Visitable, CountsAcceptor, RecordState
 {
     private final Map<CountsKey, Count> counts = new HashMap<>();
 
+    @Override
     public void updateCountsForNode( int labelId, long delta )
     {
         count( nodeKey( labelId ) ).update( delta );
     }
 
+    @Override
     public void updateCountsForRelationship( int startLabelId, int typeId, int endLabelId, long delta )
     {
         count( relationshipKey( startLabelId, typeId, endLabelId ) ).update( delta );
@@ -78,11 +81,10 @@ public class CountsState implements CountsVisitor.Visitable, CountsAcceptor, Rec
         }
     }
 
-    public void extractCommands( List<Command> target )
+    @Override
+    public void extractCommands( Collection<Command> target )
     {
-        List<Command.CountsCommand> commands = new ArrayList<>( counts.size() );
-        accept( new CommandCollector( commands ) );
-        target.addAll( commands );
+        accept( new CommandCollector( target ) );
     }
 
     public List<Difference> verify( CountsVisitor.Visitable visitable )
@@ -91,7 +93,7 @@ public class CountsState implements CountsVisitor.Visitable, CountsAcceptor, Rec
         visitable.accept( verifier );
         return verifier.differences();
     }
-    
+
     @Override
     public boolean hasChanges()
     {
@@ -238,9 +240,9 @@ public class CountsState implements CountsVisitor.Visitable, CountsAcceptor, Rec
 
     private static class CommandCollector implements CountsVisitor
     {
-        private final List<Command.CountsCommand> commands;
+        private final Collection<Command> commands;
 
-        CommandCollector( List<Command.CountsCommand> commands )
+        CommandCollector( Collection<Command> commands )
         {
             this.commands = commands;
         }

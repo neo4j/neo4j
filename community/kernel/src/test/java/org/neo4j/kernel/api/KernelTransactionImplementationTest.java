@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api;
 
-import java.util.List;
+import java.util.Collection;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -328,7 +328,7 @@ public class KernelTransactionImplementationTest
             @Override
             public Void answer( InvocationOnMock invocationOnMock ) throws Throwable
             {
-                List<Command> commands = (List<Command>) invocationOnMock.getArguments()[0];
+                Collection<Command> commands = (Collection<Command>) invocationOnMock.getArguments()[0];
                 commands.add( new Command.NodeCommand() );
                 return null;
             }

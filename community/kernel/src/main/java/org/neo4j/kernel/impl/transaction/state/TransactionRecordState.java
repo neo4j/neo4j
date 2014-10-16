@@ -118,9 +118,11 @@ public class TransactionRecordState implements RecordState
     }
 
     @Override
-    public void extractCommands( List<Command> target ) throws TransactionFailureException
+    public void extractCommands( Collection<Command> commands ) throws TransactionFailureException
     {
     	assert !prepared : "Transaction has already been prepared";
+
+        integrityValidator.validateTransactionStartKnowledge( lastCommittedTxWhenTransactionStarted );
 
         int noOfCommands = context.getNodeRecords().changeSize() +
                            context.getRelRecords().changeSize() +
@@ -132,7 +134,6 @@ public class TransactionRecordState implements RecordState
                            context.getRelGroupRecords().changeSize() +
                            (neoStoreRecord != null ? neoStoreRecord.changeSize() : 0);
 
-        List<Command> commands = new ArrayList<>( noOfCommands );
         for ( RecordProxy<Integer, LabelTokenRecord, Void> record : context.getLabelTokenRecords().changes() )
         {
             Command.LabelTokenCommand command = new Command.LabelTokenCommand();
@@ -215,9 +216,7 @@ public class TransactionRecordState implements RecordState
         assert commands.size() == noOfCommands : "Expected " + noOfCommands + " final commands, got "
                 + commands.size() + " instead";
 
-        integrityValidator.validateTransactionStartKnowledge( lastCommittedTxWhenTransactionStarted );
         prepared = true;
-        target.addAll( commands );
     }
 
     public void relCreate( long id, int typeId, long startNodeId, long endNodeId )

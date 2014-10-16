@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.state;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -104,7 +105,7 @@ public class LegacyIndexTransactionState implements IndexCommandFactory, RecordS
     }
 
     @Override
-    public void extractCommands( List<Command> target )
+    public void extractCommands( Collection<Command> target )
     {
         if ( defineCommand != null )
         {
@@ -119,7 +120,7 @@ public class LegacyIndexTransactionState implements IndexCommandFactory, RecordS
         }
     }
 
-    private void extractCommands( List<Command> target, Map<String, List<IndexCommand>> commandMap )
+    private void extractCommands( Collection<Command> target, Map<String, List<IndexCommand>> commandMap )
     {
         if ( commandMap != null )
         {

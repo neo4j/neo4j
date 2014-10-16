@@ -19,9 +19,8 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -63,6 +62,7 @@ import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
+import org.neo4j.kernel.impl.util.collection.ArrayCollection;
 
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
@@ -112,7 +112,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final LegacyIndexTransactionState legacyIndexTransactionState;
     private final Clock clock;
     private final TransactionToRecordStateVisitor txStateToRecordStateVisitor = new TransactionToRecordStateVisitor();
-    private final List<Command> extractedCommands = new ArrayList<>();
+    private final Collection<Command> extractedCommands = new ArrayCollection<>( 20 );
 
     // Some header information
     private long startTimeMillis;
