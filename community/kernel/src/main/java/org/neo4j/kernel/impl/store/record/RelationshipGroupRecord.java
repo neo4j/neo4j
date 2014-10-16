@@ -38,6 +38,17 @@ public class RelationshipGroupRecord extends Abstract64BitRecord
         this.type = type;
     }
 
+    public RelationshipGroupRecord( long id, int type, long firstOut, long firstIn, long firstLoop, long owningNode, boolean inUse )
+    {
+        super( id );
+        setInUse( inUse );
+        this.type = type;
+        this.firstOut = firstOut;
+        this.firstIn = firstIn;
+        this.firstLoop = firstLoop;
+        this.owningNode = owningNode;
+    }
+
     public int getType()
     {
         return type;
