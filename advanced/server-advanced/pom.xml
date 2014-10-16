@@ -158,6 +158,12 @@
     </dependency>
 
     <dependency>
+      <groupId>commons-logging</groupId>
+      <artifactId>commons-logging</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-shell</artifactId>
       <version>${project.version}</version>
@@ -218,6 +224,7 @@
         </executions>
         <configuration>
           <mainClass>${neo4j-server.mainClass}</mainClass>
+          <classpathScope>test</classpathScope>
           <systemProperties>
             <systemProperty>
               <key>org.neo4j.server.properties</key>
