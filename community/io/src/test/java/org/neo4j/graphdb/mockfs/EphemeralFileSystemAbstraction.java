@@ -19,6 +19,10 @@
  */
 package org.neo4j.graphdb.mockfs;
 
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+import static java.util.Arrays.asList;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -36,6 +40,7 @@ import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
@@ -62,10 +67,6 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.test.impl.ChannelInputStream;
 import org.neo4j.test.impl.ChannelOutputStream;
-
-import static java.lang.Math.max;
-import static java.lang.Math.min;
-import static java.util.Arrays.asList;
 
 public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
 {
@@ -504,8 +505,13 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             return String.format( "%s[%s]", getClass().getSimpleName(), openedAt.filename );
         }
 
-        private void checkInterrupted() throws IOException
+        private void checkIfClosedOrInterrupted() throws IOException
         {
+            if ( !isOpen() )
+            {
+                throw new ClosedChannelException();
+            }
+
             if ( Thread.currentThread().isInterrupted() )
             {
                 close();
@@ -516,42 +522,42 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         @Override
         public int read( ByteBuffer dst ) throws IOException
         {
-            checkInterrupted();
+            checkIfClosedOrInterrupted();
             return data.read( this, dst );
         }
 
         @Override
         public long read( ByteBuffer[] dsts, int offset, int length ) throws IOException
         {
-            checkInterrupted();
+            checkIfClosedOrInterrupted();
             throw new UnsupportedOperationException();
         }
 
         @Override
         public int write( ByteBuffer src ) throws IOException
         {
-            checkInterrupted();
+            checkIfClosedOrInterrupted();
             return data.write( this, src );
         }
 
         @Override
         public long write( ByteBuffer[] srcs, int offset, int length ) throws IOException
         {
-            checkInterrupted();
+            checkIfClosedOrInterrupted();
             throw new UnsupportedOperationException();
         }
 
         @Override
         public long position() throws IOException
         {
-            checkInterrupted();
+            checkIfClosedOrInterrupted();
             return position;
         }
 
         @Override
         public FileChannel position( long newPosition ) throws IOException
         {
-            checkInterrupted();
+            checkIfClosedOrInterrupted();
             this.position = newPosition;
             return this;
         }
@@ -559,14 +565,14 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         @Override
         public long size() throws IOException
         {
-            checkInterrupted();
+            checkIfClosedOrInterrupted();
             return data.size();
         }
 
         @Override
         public FileChannel truncate( long size ) throws IOException
         {
-            checkInterrupted();
+            checkIfClosedOrInterrupted();
             data.truncate( size );
             return this;
         }
@@ -574,7 +580,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         @Override
         public void force(boolean metaData) throws IOException
         {
-            checkInterrupted();
+            checkIfClosedOrInterrupted();
             // Otherwise no forcing of an in-memory file
         }
 
@@ -587,7 +593,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         @Override
         public long transferFrom( ReadableByteChannel src, long position, long count ) throws IOException
         {
-            checkInterrupted();
+            checkIfClosedOrInterrupted();
             long previousPos = position();
             position( position );
             try
@@ -617,28 +623,28 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         @Override
         public int read( ByteBuffer dst, long position ) throws IOException
         {
-            checkInterrupted();
+            checkIfClosedOrInterrupted();
             return data.read( new LocalPosition( position ), dst );
         }
 
         @Override
         public int write( ByteBuffer src, long position ) throws IOException
         {
-            checkInterrupted();
+            checkIfClosedOrInterrupted();
             return data.write( new LocalPosition( position ), src );
         }
 
         @Override
         public MappedByteBuffer map( FileChannel.MapMode mode, long position, long size ) throws IOException
         {
-            checkInterrupted();
+            checkIfClosedOrInterrupted();
             throw new IOException("Not supported");
         }
 
         @Override
         public java.nio.channels.FileLock lock( long position, long size, boolean shared ) throws IOException
         {
-            checkInterrupted();
+            checkIfClosedOrInterrupted();
             synchronized ( data.channels )
             {
                 if ( !data.lock() )

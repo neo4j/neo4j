@@ -35,6 +35,11 @@ public interface PageSwapper
      *
      * This should be implemented using the
      * {@link Page#swapIn(org.neo4j.io.fs.StoreChannel, long, int)} method.
+     *
+     * Note: It is possible for the channel to be asynchronously closed while
+     * this operation is taking place. For instance, if the current thread is
+     * interrupted. If this happens, then the implementation must reopen the
+     * channel and the operation must be retried.
      */
     void read( long filePageId, Page page ) throws IOException;
 
@@ -44,6 +49,11 @@ public interface PageSwapper
      *
      * This should be implemented using the
      * {@link Page#swapOut(org.neo4j.io.fs.StoreChannel, long, int)} method.
+     *
+     * Note: It is possible for the channel to be asynchronously closed while
+     * this operation is taking place. For instance, if the current thread is
+     * interrupted. If this happens, then implementation must reopen the
+     * channel and the operation must be retried.
      */
     void write( long filePageId, Page page ) throws IOException;
 
