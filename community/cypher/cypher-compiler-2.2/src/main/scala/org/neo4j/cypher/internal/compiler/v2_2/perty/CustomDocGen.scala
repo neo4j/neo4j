@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.perty
 
-import org.neo4j.cypher.internal.compiler.v2_2.perty.print.{ToPrettyString, pprintToString}
-
 import scala.reflect.runtime.universe._
 
 abstract class CustomDocGen[S : TypeTag] extends SimpleExtractor[S, DocRecipe[Any]]

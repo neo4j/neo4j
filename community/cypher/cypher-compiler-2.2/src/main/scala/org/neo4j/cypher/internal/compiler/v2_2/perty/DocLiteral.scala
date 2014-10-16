@@ -20,13 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_2.perty
 
 import org.neo4j.cypher.internal.compiler.v2_2.perty.gen.docStructureDocGen
-import org.neo4j.cypher.internal.compiler.v2_2.perty.print.{pprintToString, ToPrettyString}
 
 final case class DocLiteral(doc: Doc)
-  extends ToPretty with ToPrettyString[DocLiteral] with LineDocFormatting {
+  extends ToPretty { // with ToPrettyString[DocLiteral] with LineDocFormatting {
 
   override def toPretty: Option[DocRecipe[Any]] = docStructureDocGen(doc)
 
-  def toDefaultPrettyString(formatter: DocFormatter): String =
-    pprintToString(doc, formatter)(docStructureDocGen.lift[Any])
+//  def toDefaultPrettyString(formatter: DocFormatter): String =
+//    pprintToString(doc, formatter)(docStructureDocGen.lift[Any])
 }
