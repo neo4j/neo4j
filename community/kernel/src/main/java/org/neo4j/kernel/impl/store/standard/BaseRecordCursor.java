@@ -19,19 +19,19 @@
  */
 package org.neo4j.kernel.impl.store.standard;
 
-import java.io.IOException;
-
-import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.kernel.impl.store.UnderlyingStorageException;
-import org.neo4j.kernel.impl.store.format.Store;
-
 import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_TRANSIENT;
 import static org.neo4j.kernel.impl.store.format.Store.SF_REVERSE_CURSOR;
 import static org.neo4j.kernel.impl.store.format.Store.SF_SCAN;
 import static org.neo4j.kernel.impl.store.standard.StoreFormat.RecordFormat;
+
+import java.io.IOException;
+
+import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.store.format.Store;
 
 /**
  * A complete cursor implementation to be used on it's own or as a base class for building custom cursors.
@@ -118,8 +118,10 @@ public class BaseRecordCursor<RECORD, FORMAT extends RecordFormat<RECORD>> imple
                 pageCursor = file.io( pageId, pageCacheFlags );
                 return pageCursor.next( pageId );
             }
-            // Either we're on the right page, or we move to it
-            else return pageId == pageCursor.getCurrentPageId() || pageCursor.next( pageId );
+            else // Either we're on the right page, or we move to it
+            {
+                return pageId == pageCursor.getCurrentPageId() || pageCursor.next( pageId );
+            }
         }
         catch(IOException e)
         {
@@ -130,9 +132,9 @@ public class BaseRecordCursor<RECORD, FORMAT extends RecordFormat<RECORD>> imple
     @Override
     public boolean next()
     {
-        while(position( currentRecordId + stepSize ))
+        while( position( currentRecordId + stepSize ) )
         {
-            if( inUse())
+            if( inUse() )
             {
                 return true;
             }

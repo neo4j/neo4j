@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.store.standard;
 
+import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
+
 import java.io.File;
 import java.io.IOException;
 
@@ -31,10 +35,6 @@ import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.format.Store;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-
-import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
-import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 
 public class StandardStore<RECORD, CURSOR extends Store.RecordCursor> extends LifecycleAdapter
              implements Store<RECORD, CURSOR>
@@ -58,11 +58,12 @@ public class StandardStore<RECORD, CURSOR extends Store.RecordCursor> extends Li
      */
     private StoreChannel channel;
 
-    public StandardStore(StoreFormat<RECORD, CURSOR> format, File dbFileName, StoreIdGenerator idGenerator,
+    public StandardStore( StoreFormat<RECORD, CURSOR> format, File dbFileName, StoreIdGenerator idGenerator,
                          PageCache pageCache, FileSystemAbstraction fs, StringLogger log )
     {
         this(format, dbFileName, idGenerator, pageCache, fs,
-                new IdGeneratorRebuilder.FindHighestInUseRebuilderFactory(), new StoreOpenCloseCycle( log, dbFileName, format, fs ));
+                new IdGeneratorRebuilder.FindHighestInUseRebuilderFactory(),
+                new StoreOpenCloseCycle( log, dbFileName, format, fs ) );
     }
 
     public StandardStore( StoreFormat<RECORD, CURSOR> format, File dbFileName, StoreIdGenerator idGenerator,
@@ -80,7 +81,7 @@ public class StandardStore<RECORD, CURSOR extends Store.RecordCursor> extends Li
     }
 
     @Override
-    public CURSOR cursor(int flags)
+    public CURSOR cursor( int flags )
     {
         return storeFormat.createCursor(file, toolkit, flags);
     }
@@ -174,8 +175,15 @@ public class StandardStore<RECORD, CURSOR extends Store.RecordCursor> extends Li
     {
         channel = fs.open(dbFileName, "rw");
         initializeToolkit();
+        // We make sure to do the file truncation before we map the file with the page cache:
+        boolean idGeneratorNeedsRebuilding = openCloseLogic.openStore( channel );
         file = pageCache.map( dbFileName, toolkit.pageSize() );
-        openCloseLogic.openStore( channel, idGeneratorRebuilding.newIdGeneratorRebuilder( this, toolkit, idGenerator ));
+        if ( idGeneratorNeedsRebuilding )
+        {
+            IdGeneratorRebuilder rebuilder = idGeneratorRebuilding.newIdGeneratorRebuilder(
+                    this, toolkit, idGenerator );
+            rebuilder.rebuildIdGenerator();
+        }
     }
 
     private void createNewStore() throws IOException

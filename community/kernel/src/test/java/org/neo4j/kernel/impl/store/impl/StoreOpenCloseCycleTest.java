@@ -19,6 +19,12 @@
  */
 package org.neo4j.kernel.impl.store.impl;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import java.io.File;
 import java.io.IOException;
 
@@ -34,8 +40,6 @@ import org.neo4j.kernel.impl.store.standard.StoreFormat;
 import org.neo4j.kernel.impl.store.standard.StoreOpenCloseCycle;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.EphemeralFileSystemRule;
-
-import static org.mockito.Mockito.*;
 
 public class StoreOpenCloseCycleTest
 {
@@ -62,7 +66,7 @@ public class StoreOpenCloseCycleTest
                 dbFileName, format, fs );
 
         // When
-        logic.openStore(channel, mock(IdGeneratorRebuilder.class));
+        logic.openStore(channel );
 
         // Then
         verify( fs ).tryLock(dbFileName, channel );
@@ -75,11 +79,10 @@ public class StoreOpenCloseCycleTest
     }
 
     @Test
-    public void shouldRebuildIdGeneratorIfStoreIsNotClean() throws Exception
+    public void shouldReturnTrueIfStoreIsNotClean() throws Exception
     {
         // Given
         File storeFile = new File( "store" );
-        IdGeneratorRebuilder idGenRebuilder = mock(IdGeneratorRebuilder.class);
         EphemeralFileSystemAbstraction fs = fsRule.get();
         TestHeaderlessStoreFormat format = new TestHeaderlessStoreFormat();
 
@@ -91,11 +94,10 @@ public class StoreOpenCloseCycleTest
         StoreChannel channel = fs.open( storeFile, "rw" );
 
         // When
-        cycle.openStore( channel, idGenRebuilder);
+        boolean uncleanShutdown = cycle.openStore( channel );
 
         // Then
-        verify( idGenRebuilder ).rebuildIdGenerator();
-        verifyNoMoreInteractions( idGenRebuilder );
+        assertTrue( uncleanShutdown );
     }
 
     @Test
@@ -112,10 +114,10 @@ public class StoreOpenCloseCycleTest
                 storeFile, new TestHeaderlessStoreFormat(), fs );
 
         // When
-        cycle.openStore( channel, mock(IdGeneratorRebuilder.class));
+        boolean uncleanShutdown = cycle.openStore( channel );
 
         // Then
-        verifyNoMoreInteractions( idGenRebuilder );
+        assertFalse( uncleanShutdown );
     }
 
     private StoreChannel newCleanStore( File storeFile ) throws IOException
@@ -127,7 +129,7 @@ public class StoreOpenCloseCycleTest
         // And given a cleanly shut down store
         fs.create( storeFile );
         StoreChannel channel = fs.open( storeFile, "rw" );
-        cycle.openStore( channel, mock(IdGeneratorRebuilder.class));
+        cycle.openStore( channel );
         cycle.closeStore( channel, 1 );
         return channel;
     }

@@ -42,8 +42,8 @@ public class NoOpStoreOpenCloseCycle extends StoreOpenCloseCycle
     }
 
     @Override
-    public void openStore( StoreChannel channel, IdGeneratorRebuilder idGenRebuilder ) throws IOException
+    public boolean openStore( StoreChannel channel ) throws IOException
     {
-
+        return false;
     }
 }

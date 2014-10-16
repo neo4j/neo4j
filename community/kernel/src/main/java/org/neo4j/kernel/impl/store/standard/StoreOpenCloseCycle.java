@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.store.standard;
 
+import static java.nio.ByteBuffer.wrap;
+import static org.neo4j.helpers.UTF8.encode;
+import static org.neo4j.io.fs.FileUtils.windowsSafeIOOperation;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -33,10 +37,6 @@ import org.neo4j.kernel.impl.store.NotCurrentStoreVersionException;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.util.Charsets;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static java.nio.ByteBuffer.wrap;
-import static org.neo4j.helpers.UTF8.encode;
-import static org.neo4j.io.fs.FileUtils.windowsSafeIOOperation;
 
 /**
  * Manages the "opening" and "closing" of store files. In this context, a "closed" store is one that has a footer
@@ -122,24 +122,30 @@ public class StoreOpenCloseCycle
         this.fs = fs;
     }
 
-    /** Opens the store, potentially rebuilding the id generator if the store was not cleanly closed. */
-    public void openStore(StoreChannel channel, IdGeneratorRebuilder idGenRebuilder ) throws IOException
+    /**
+     * Opens the store, truncating off the footer if it exists.
+     * Returns 'true' if the store has not been cleanly shut down and the id
+     * generator should be rebuilt, 'false' otherwise.
+     */
+    public boolean openStore( StoreChannel channel ) throws IOException
     {
-        lock(channel);
+        lock( channel );
         StateDescription result = determineState( channel );
-        switch ( result.state() )
+        StoreState state = result.state();
+        switch ( state )
         {
             case CLEAN:
                 // Cut off the footer, indicating the store is open
                 channel.truncate( channel.size() - UTF8.encode( footer() ).length );
-                break;
+                return false;
             case UNCLEAN:
                 // Store was not closed properly, indicating a crash or some other event causing the process
                 // to exit without running shut down procedures. We need to rebuild our id generator at this point.
-                idGenRebuilder.rebuildIdGenerator();
-                break;
+                return true;
             case WRONG_VERSION:
                 throw new NotCurrentStoreVersionException( result.expectedFooter(), result.foundFooter(), "", false );
+            default:
+                throw new IllegalStateException( "Unknown store state: " + state );
         }
     }
 
