@@ -77,7 +77,7 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  * If, however, it is {@link org.neo4j.kernel.api.index.InternalIndexState#ONLINE}, the index provider is required to
  * also guarantee that the index had been flushed to disk.
  */
-public class IndexingService extends LifecycleAdapter
+public class IndexingService extends LifecycleAdapter implements IndexMapSnapshotProvider
 {
     private final IndexMapReference indexMapReference = new IndexMapReference();
 
@@ -160,7 +160,7 @@ public class IndexingService extends LifecycleAdapter
     @Override
     public void init()
     {
-        IndexMap indexMap = indexMapReference.getIndexMapCopy();
+        IndexMap indexMap = indexMapSnapshot();
 
         for ( IndexRule indexRule : indexRules )
         {
@@ -208,7 +208,7 @@ public class IndexingService extends LifecycleAdapter
         state = State.STARTING;
 
         applyRecoveredUpdates();
-        IndexMap indexMap = indexMapReference.getIndexMapCopy();
+        IndexMap indexMap = indexMapSnapshot();
 
         final Map<Long, Pair<IndexDescriptor, SchemaIndexProvider.Descriptor>> rebuildingDescriptors = new HashMap<>();
 
@@ -262,6 +262,8 @@ public class IndexingService extends LifecycleAdapter
 
         indexMapReference.setIndexMap( indexMap );
         state = State.RUNNING;
+
+        // scheduler.scheduleRecurring( JobScheduler.Group.indexSamplingController, new IndexSamplingController( logging, scheduler, this, 4 ), 10, TimeUnit.SECONDS );
     }
 
     @Override
@@ -319,7 +321,7 @@ public class IndexingService extends LifecycleAdapter
      */
     public void createIndex( IndexRule rule )
     {
-        IndexMap indexMap = indexMapReference.getIndexMapCopy();
+        IndexMap indexMap = indexMapSnapshot();
 
         long ruleId = rule.getId();
         IndexProxy index = indexMap.getIndexProxy( ruleId );
@@ -349,6 +351,12 @@ public class IndexingService extends LifecycleAdapter
 
         indexMap.putIndexProxy( rule.getId(), index );
         indexMapReference.setIndexMap( indexMap );
+    }
+
+    @Override
+    public IndexMap indexMapSnapshot()
+    {
+        return indexMapReference.getIndexMapCopy();
     }
 
     private String indexUserDescription( final IndexDescriptor descriptor,
