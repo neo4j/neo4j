@@ -70,6 +70,7 @@ public class TopLevelTransaction implements Transaction
     private final AbstractTransactionManager transactionManager;
     protected final TransactionOutcome transactionOutcome = new TransactionOutcome();
     private final TransactionState state;
+    private boolean closed;
 
     public TopLevelTransaction( PersistenceManager persistenceManager, AbstractTransactionManager transactionManager,
             TransactionState state )
@@ -110,23 +111,23 @@ public class TopLevelTransaction implements Transaction
     {
         close();
     }
-    
+
     @Override
     public void close()
     {
+        if ( closed )
+        {
+            return;
+        }
         try
         {
-            javax.transaction.Transaction transaction = transactionManager.getTransaction();
-            if ( transaction != null )
+            if ( transactionOutcome.canCommit() )
             {
-                if ( transactionOutcome.canCommit()  )
-                {
-                    transaction.commit();
-                }
-                else
-                {
-                    transaction.rollback();
-                }
+                transactionManager.commit();
+            }
+            else
+            {
+                transactionManager.rollback();
             }
         }
         catch ( RollbackException e )
@@ -144,8 +145,12 @@ public class TopLevelTransaction implements Transaction
                 throw new TransactionFailureException( "Unable to rollback transaction", e );
             }
         }
+        finally
+        {
+            closed = true;
+        }
     }
-    
+
     @Override
     public Lock acquireWriteLock( PropertyContainer entity )
     {
