@@ -161,19 +161,23 @@ public class StoreMigrator implements StoreMigrationParticipant
     {
         progressMonitor.started();
 
+        long lastTxId = NeoStore.getTxId( fileSystem, new File( storeDir, NeoStore.DEFAULT_NAME ) );
+
         if ( versionToUpgradeFrom( fileSystem, storeDir ).equals( Legacy21Store.LEGACY_VERSION ) )
         {
             // ensure the stores have the new versions set before reading them to create a counts store
             ensureStoreVersions( storeDir );
+
             // create counters from scratch
-            rebuildCountsFromScratch( storeDir, migrationDir );
+            rebuildCountsFromScratch( storeDir, migrationDir, lastTxId );
         }
         else
         {
             // migrate stores
             migrateWithBatchImporter( storeDir, migrationDir );
+
             // create counters from scratch
-            rebuildCountsFromScratch( migrationDir, migrationDir );
+            rebuildCountsFromScratch( migrationDir, migrationDir, lastTxId );
         }
 
         // migrate logs
@@ -182,7 +186,7 @@ public class StoreMigrator implements StoreMigrationParticipant
         progressMonitor.finished();
     }
 
-    private void rebuildCountsFromScratch( File storeDir, File migrationDir ) throws IOException
+    private void rebuildCountsFromScratch( File storeDir, File migrationDir, long lastTxId ) throws IOException
     {
         final LifeSupport life = new LifeSupport();
         life.start();
@@ -201,7 +205,7 @@ public class StoreMigrator implements StoreMigrationParticipant
             {
                 CountsComputer.computeCounts( nodeStore, relationshipStore ).
                         accept( new CountsAcceptor.Initializer( tracker ) );
-                tracker.rotate( NeoStore.getTxId( fileSystem, new File( storeDir, NeoStore.DEFAULT_NAME ) ) );
+                tracker.rotate( lastTxId );
             }
         }
         finally
