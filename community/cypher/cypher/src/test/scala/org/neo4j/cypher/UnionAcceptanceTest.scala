@@ -43,7 +43,10 @@ class UnionAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
 
     // Then
     result.columns should not be empty
-    result.toList should equal(List(Map("x" -> 2), Map("x" -> 1)))
+    val cachedResult = result.toList
+    cachedResult.toSet should equal(Set(Map("x" -> 2), Map("x" -> 1)))
+    cachedResult should have size 2
+
   }
 
   test("three elements, two unique, distinct") {
@@ -57,7 +60,9 @@ class UnionAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
 
     // Then
     result.columns should not be empty
-    result.toList should equal(List(Map("x" -> 2), Map("x" -> 1)))
+    val cachedResult = result.toList
+    cachedResult.toSet should equal(Set(Map("x" -> 2), Map("x" -> 1)))
+    cachedResult should have size 2
   }
 
   test("three elements, two unique, not distinct") {

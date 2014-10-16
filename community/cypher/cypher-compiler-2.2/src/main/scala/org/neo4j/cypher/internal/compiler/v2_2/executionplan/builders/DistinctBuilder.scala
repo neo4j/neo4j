@@ -31,7 +31,7 @@ class DistinctBuilder extends PlanBuilder {
 
     val expressions = getExpressions(plan)
 
-    val pipe = new DistinctPipe(plan.pipe, expressions)
+    val pipe = new DistinctPipe(plan.pipe, expressions)()
 
     //Mark stuff as done
     val query = plan.query.copy(

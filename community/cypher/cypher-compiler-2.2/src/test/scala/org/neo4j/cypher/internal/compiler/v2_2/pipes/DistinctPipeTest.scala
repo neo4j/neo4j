@@ -63,6 +63,6 @@ class DistinctPipeTest extends CypherFunSuite {
 
   def createDistinctPipe(input: List[Map[String, Int]], expressions: Map[String, Expression] = Map("x" -> Identifier("x"))) = {
     val source = new FakePipe(input, "x" -> CTNumber)
-    new DistinctPipe(source, expressions)
+    new DistinctPipe(source, expressions)()
   }
 }

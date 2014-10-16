@@ -22,13 +22,16 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects._
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.Arguments.KeyNames
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.cypher.internal.helpers._
 
 import scala.collection.mutable
 
-case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])
-                       (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
+case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])(val estimatedCardinality: Option[Long] = None)
+                       (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
+
+  def withEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 
   val keyNames: Seq[String] = expressions.keys.toSeq
 
@@ -59,7 +62,7 @@ case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])
     }
   }
 
-  def planDescription = source.planDescription.andThen(this, "Distinct")
+  def planDescription = source.planDescription.andThen(this, "Distinct", KeyNames(expressions.keys.toSeq))
 
   def symbols: SymbolTable = {
     val identifiers = Eagerly.immutableMapValues(expressions, (e: Expression) => e.evaluateType(CTAny, source.symbols))
@@ -68,7 +71,7 @@ case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources
-    copy(source = source)
+    copy(source = source)(estimatedCardinality)
   }
 
   override def localEffects = expressions.effects
