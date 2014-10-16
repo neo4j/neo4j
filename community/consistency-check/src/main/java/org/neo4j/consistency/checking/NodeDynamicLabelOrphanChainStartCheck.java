@@ -19,13 +19,14 @@
  */
 package org.neo4j.consistency.checking;
 
+import org.neo4j.consistency.report.ConsistencyReport.DynamicLabelConsistencyReport;
 import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
-import static org.neo4j.consistency.report.ConsistencyReport.DynamicLabelConsistencyReport;
-import static org.neo4j.kernel.impl.store.NodeLabelsField.fieldDynamicLabelRecordId;
+import static org.neo4j.kernel.impl.store.NodeLabelsField.fieldPointsToDynamicRecordOfLabels;
+import static org.neo4j.kernel.impl.store.NodeLabelsField.firstDynamicLabelRecordId;
 import static org.neo4j.kernel.impl.store.NodeStore.readOwnerFromDynamicLabelsRecord;
 
 /**
@@ -56,11 +57,14 @@ public class NodeDynamicLabelOrphanChainStartCheck
                     {
                         // if this node record is in use but doesn't point to the dynamic label record
                         // that label record has an invalid owner
-                        Long dynamicLabelRecordId = fieldDynamicLabelRecordId( nodeRecord.getLabelField() );
                         long recordId = record.getLongId();
-                        if ( dynamicLabelRecordId == null || dynamicLabelRecordId.longValue() != recordId )
+                        if ( fieldPointsToDynamicRecordOfLabels( nodeRecord.getLabelField() ) )
                         {
-                            engine.report().orphanDynamicLabelRecordDueToInvalidOwner( nodeRecord );
+                            long dynamicLabelRecordId = firstDynamicLabelRecordId( nodeRecord.getLabelField() );
+                            if ( dynamicLabelRecordId != recordId )
+                            {
+                                engine.report().orphanDynamicLabelRecordDueToInvalidOwner( nodeRecord );
+                            }
                         }
                     }
                 }

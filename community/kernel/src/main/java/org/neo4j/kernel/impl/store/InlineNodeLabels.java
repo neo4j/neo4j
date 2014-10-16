@@ -52,7 +52,12 @@ public class InlineNodeLabels implements NodeLabels
     @Override
     public long[] get( NodeStore nodeStore )
     {
-        return getIfLoaded();
+        return get( node );
+    }
+
+    public static long[] get( NodeRecord node )
+    {
+        return parseInlined( node.getLabelField() );
     }
 
     @Override
@@ -64,14 +69,18 @@ public class InlineNodeLabels implements NodeLabels
     @Override
     public Collection<DynamicRecord> put( long[] labelIds, NodeStore nodeStore, DynamicRecordAllocator allocator )
     {
-        if ( tryInlineInNodeRecord( labelIds, node.getDynamicLabelRecords() ) )
+        return put( node, labelIds, nodeStore, allocator );
+    }
+
+    public static Collection<DynamicRecord> put( NodeRecord node, long[] labelIds, NodeStore nodeStore,
+            DynamicRecordAllocator allocator )
+    {
+        if ( tryInlineInNodeRecord( node, labelIds, node.getDynamicLabelRecords() ) )
         {
             return Collections.emptyList();
         }
-        else
-        {
-            return new DynamicNodeLabels( 0, node ).put( labelIds, nodeStore, allocator );
-        }
+
+        return DynamicNodeLabels.put( node, labelIds, nodeStore, allocator );
     }
 
     @Override
@@ -87,7 +96,7 @@ public class InlineNodeLabels implements NodeLabels
     public Collection<DynamicRecord> remove( long labelId, NodeStore nodeStore )
     {
         long[] newLabelIds = filter( parseInlined( labelField ), labelId );
-        boolean inlined = tryInlineInNodeRecord( newLabelIds, node.getDynamicLabelRecords() );
+        boolean inlined = tryInlineInNodeRecord( node, newLabelIds, node.getDynamicLabelRecords() );
         assert inlined;
         return Collections.emptyList();
     }
@@ -98,7 +107,7 @@ public class InlineNodeLabels implements NodeLabels
         // no dynamic records
     }
 
-    boolean tryInlineInNodeRecord( long[] ids, Collection<DynamicRecord> changedDynamicRecords )
+    static boolean tryInlineInNodeRecord( NodeRecord node, long[] ids, Collection<DynamicRecord> changedDynamicRecords )
     {
         // We reserve the high header bit for future extensions of the format of the in-lined label bits
         // i.e. the 0-valued high header bit can allow for 0-7 in-lined labels in the bit-packed format.
