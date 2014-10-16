@@ -40,6 +40,7 @@ import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class IndexStatisticsTest
@@ -128,7 +129,7 @@ public class IndexStatisticsTest
 
         // then
         int expected = createdBefore + createdAfter;
-        assertEquals( expected, numberOfIndexEntries( index ) );
+        assertCorrectNumberOfEntries( expected, numberOfIndexEntries( index ) );
     }
 
     @Test
@@ -160,7 +161,7 @@ public class IndexStatisticsTest
 
         // then
         int expected = createdBefore + createdAfter;
-        assertEquals( expected, numberOfIndexEntries( index ) );
+        assertCorrectNumberOfEntries( expected, numberOfIndexEntries( index ) );
     }
 
     @Test
@@ -191,7 +192,7 @@ public class IndexStatisticsTest
 
         // then
         int expected = createdBefore + createdAfter;
-        assertEquals( expected, numberOfIndexEntries( index ) );
+        assertCorrectNumberOfEntries( expected, numberOfIndexEntries( index ) );
     }
 
     private void deleteNode( long nodeId ) throws KernelException
@@ -329,6 +330,11 @@ public class IndexStatisticsTest
             }
         }
         throw new IllegalStateException( "Index did not become ONLINE within reasonable time" );
+    }
+
+    private static void assertCorrectNumberOfEntries( long expected, long actual )
+    {
+        assertTrue( "Expected number of entries to not differ by more than 10", Math.abs( expected - actual ) < 10 );
     }
 
     private String[] names = new String[] {

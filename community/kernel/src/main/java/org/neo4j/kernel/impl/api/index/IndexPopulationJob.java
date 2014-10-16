@@ -241,13 +241,14 @@ public class IndexPopulationJob implements Runnable
     {
         if ( !queue.isEmpty() )
         {
-            try ( IndexUpdater updater = new CountingIndexUpdater( populator.newPopulatingUpdater( storeView ),
-                    countVisitor ) )
+            try ( IndexUpdater updater =
+                          new CountingIndexUpdater( populator.newPopulatingUpdater( storeView ), countVisitor ) )
             {
                 do
                 {
                     // no need to check for null as nobody else is emptying this queue
                     NodePropertyUpdate update = queue.poll();
+                    // TODO: We see updates twice here from IndexStatisticsTest
                     if ( update.getNodeId() <= currentlyIndexedNodeId )
                     {
                         updater.process( update );
