@@ -27,6 +27,7 @@ import java.util.List;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
@@ -34,23 +35,17 @@ import org.apache.lucene.store.Directory;
 
 class AllNodesCollector extends Collector
 {
-    static List<Long> getAllNodes( DirectoryFactory directoryFactory, File indexDir, Object propertyValue ) throws IOException
+    static List<Long> getAllNodes( DirectoryFactory dirFactory, File indexDir, Object propertyValue ) throws IOException
     {
-        Directory directory = directoryFactory.open( indexDir );
-        SearcherManager manager = new SearcherManager( directory, new SearcherFactory() );
-        IndexSearcher searcher = manager.acquire();
-        try
+        try ( Directory directory = dirFactory.open( indexDir );
+              SearcherManager manager = new SearcherManager( directory, new SearcherFactory() );
+              IndexSearcher searcher = manager.acquire() )
         {
-            List<Long> nodes = new ArrayList<Long>();
+            List<Long> nodes = new ArrayList<>();
             LuceneDocumentStructure documentStructure = new LuceneDocumentStructure();
-            searcher.search( documentStructure.newQuery( propertyValue ), new AllNodesCollector( documentStructure, nodes ) );
+            Query query = documentStructure.newQuery( propertyValue );
+            searcher.search( query, new AllNodesCollector( documentStructure, nodes ) );
             return nodes;
-        }
-        finally
-        {
-            manager.release( searcher );
-            manager.close();
-            directory.close();
         }
     }
 
