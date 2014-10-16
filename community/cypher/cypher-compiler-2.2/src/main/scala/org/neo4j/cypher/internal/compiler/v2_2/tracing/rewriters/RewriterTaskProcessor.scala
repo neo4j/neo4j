@@ -21,14 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters
 
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_2.Rewriter
-import org.neo4j.cypher.internal.compiler.v2_2.docgen.InternalDocHandler
-import org.neo4j.cypher.internal.compiler.v2_2.perty.print.{pprintToDoc, printCommandsToString}
-import org.neo4j.cypher.internal.compiler.v2_2.perty.recipe.Pretty._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.recipe.{DocRecipe, Pretty}
-import org.neo4j.cypher.internal.compiler.v2_2.perty._
-import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.TracingRewriterTaskProcessor.{Result, ResultHandler}
-
-import scala.reflect.runtime.universe.TypeTag
 
 trait RewriterTaskProcessor extends (RewriterTask => Rewriter) {
   def sequenceName: String
@@ -74,8 +66,9 @@ case class TracingRewriterTaskProcessor(sequenceName: String, onlyWhenChanged: B
         val result = innerRewriter(in)
         val always = !onlyWhenChanged
         if (always || in != result) {
-          val resultDoc = pprintToDoc[AnyRef, Any](Result(result))(ResultHandler.docGen)
-          val resultString = printCommandsToString(DocFormatters.defaultFormatter(resultDoc))
+//          val resultDoc = pprintToDoc[AnyRef, Any](Result(result))(ResultHandler.docGen)
+//          val resultString = printCommandsToString(DocFormatters.defaultFormatter(resultDoc))
+          val resultString = result.toString
           Console.print(s"*** $name ($sequenceName):$resultString\n")
         } else {
           Console.print(s"*** $name ($sequenceName):\n--\n")
@@ -86,20 +79,20 @@ case class TracingRewriterTaskProcessor(sequenceName: String, onlyWhenChanged: B
       super.apply(task)
   }
 }
-
-object TracingRewriterTaskProcessor {
-  import Pretty._
-
-  object ResultHandler extends CustomDocHandler[Any] {
-    def docGen = resultDocGen orElse InternalDocHandler.docGen
-  }
-
-  object resultDocGen extends CustomDocGen[Any] {
-    def apply[X <: Any : TypeTag](x: X): Option[DocRecipe[Any]] = x match {
-      case Result(result) => Pretty(page(nestWith(indent = 2, group(break :: group(pretty(result))))))
-      case _              => None
-    }
-  }
-
-  case class Result(v: Any)
-}
+//
+//object TracingRewriterTaskProcessor {
+//  import Pretty._
+//
+//  object ResultHandler extends CustomDocHandler[Any] {
+//    def docGen = resultDocGen orElse InternalDocHandler.docGen
+//  }
+//
+//  object resultDocGen extends CustomDocGen[Any] {
+//    def apply[X <: Any : TypeTag](x: X): Option[DocRecipe[Any]] = x match {
+//      case Result(result) => Pretty(page(nestWith(indent = 2, group(break :: group(pretty(result))))))
+//      case _              => None
+//    }
+//  }
+//
+//  case class Result(v: Any)
+//}

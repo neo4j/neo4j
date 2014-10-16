@@ -21,6 +21,4 @@ package org.neo4j.cypher.internal.compiler.v2_2.perty
 
 import scala.reflect.runtime.universe._
 
-import org.neo4j.cypher.internal.compiler.v2_2.perty.print.{ToPrettyString, pprintToString}
-
 abstract class CustomDocHandler[T : TypeTag] extends DocHandler[T]

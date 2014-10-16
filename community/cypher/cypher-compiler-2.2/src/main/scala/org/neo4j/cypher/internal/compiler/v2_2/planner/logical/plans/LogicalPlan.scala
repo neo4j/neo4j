@@ -24,11 +24,9 @@ import java.lang.reflect.Method
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
 import org.neo4j.cypher.internal.compiler.v2_2.Rewritable
-import org.neo4j.cypher.internal.compiler.v2_2.docgen.InternalDocHandler
+import org.neo4j.cypher.internal.compiler.v2_2.Rewritable._
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
-import org.neo4j.cypher.internal.compiler.v2_2.perty.print.{pprintToString, ToPrettyString}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
-import Rewritable._
 
 /*
 A LogicalPlan is an algebraic query, which is represented by a query tree whose leaves are database relations and
@@ -39,11 +37,11 @@ to data in the database, to the root, which is the final operator producing the 
 abstract class LogicalPlan
   extends Product
   with Rewritable
-  with PageDocFormatting
-  with ToPrettyString[LogicalPlan] {
+  with PageDocFormatting {
+//  with ToPrettyString[LogicalPlan] {
 
-  def toDefaultPrettyString(formatter: DocFormatter) =
-    toPrettyString(formatter)(InternalDocHandler.docGen)
+//  def toDefaultPrettyString(formatter: DocFormatter) =
+//    toPrettyString(formatter)(InternalDocHandler.docGen)
 
   def lhs: Option[LogicalPlan]
   def rhs: Option[LogicalPlan]
@@ -84,10 +82,9 @@ abstract class LogicalLeafPlan extends LogicalPlan {
   final val rhs = None
 }
 
-final case class IdName(name: String) extends PageDocFormatting with ToPrettyString[IdName] {
-  def toDefaultPrettyString(formatter: DocFormatter) =
-    toPrettyString(formatter)(InternalDocHandler.docGen)
-}
+final case class IdName(name: String) extends PageDocFormatting // with ToPrettyString[IdName] {
+//  def toDefaultPrettyString(formatter: DocFormatter) =
+//    toPrettyString(formatter)(InternalDocHandler.docGen)
 
 object IdName {
   implicit val byName = Ordering[String].on[IdName](_.name)

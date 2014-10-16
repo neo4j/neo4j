@@ -21,16 +21,14 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast
 import org.neo4j.cypher.internal.compiler.v2_2.ast.RelTypeName
-import org.neo4j.cypher.internal.compiler.v2_2.docgen.InternalDocHandler
-import org.neo4j.cypher.internal.compiler.v2_2.perty.{DocFormatter, PageDocFormatting}
-import org.neo4j.cypher.internal.compiler.v2_2.perty.print.ToPrettyString
+import org.neo4j.cypher.internal.compiler.v2_2.perty.PageDocFormatting
 import org.neo4j.graphdb.Direction
 
 final case class PatternRelationship(name: IdName, nodes: (IdName, IdName), dir: Direction, types: Seq[RelTypeName], length: PatternLength)
-  extends PageDocFormatting with ToPrettyString[PatternRelationship] {
+  extends PageDocFormatting { // with ToPrettyString[PatternRelationship] {
 
-  def toDefaultPrettyString(formatter: DocFormatter) =
-    toPrettyString(formatter)(InternalDocHandler.docGen)
+//  def toDefaultPrettyString(formatter: DocFormatter) =
+//    toPrettyString(formatter)(InternalDocHandler.docGen)
 
   def directionRelativeTo(node: IdName): Direction = if (node == left) dir else dir.reverse()
 
@@ -54,10 +52,10 @@ object PatternRelationship {
 
 // TODO: Remove ast representation
 final case class ShortestPathPattern(name: Option[IdName], rel: PatternRelationship, single: Boolean)(val expr: ast.ShortestPaths)
-  extends PageDocFormatting with ToPrettyString[ShortestPathPattern] {
+  extends PageDocFormatting { // with ToPrettyString[ShortestPathPattern] {
 
-  def toDefaultPrettyString(formatter: DocFormatter) =
-    toPrettyString(formatter)(InternalDocHandler.docGen)
+//  def toDefaultPrettyString(formatter: DocFormatter) =
+//    toPrettyString(formatter)(InternalDocHandler.docGen)
 
   def isFindableFrom(symbols: Set[IdName]) = symbols.contains(rel.left) && symbols.contains(rel.right)
 
@@ -68,10 +66,10 @@ object ShortestPathPattern {
   implicit val byRelName = Ordering.by { (sp: ShortestPathPattern) => sp.rel }
 }
 
-trait PatternLength extends PageDocFormatting with ToPrettyString[PatternLength] {
+trait PatternLength extends PageDocFormatting { // with ToPrettyString[PatternLength] {
 
-  def toDefaultPrettyString(formatter: DocFormatter) =
-    toPrettyString(formatter)(InternalDocHandler.docGen)
+//  def toDefaultPrettyString(formatter: DocFormatter) =
+//    toPrettyString(formatter)(InternalDocHandler.docGen)
 
   def implicitPatternNodeCount: Int
   def isSimple: Boolean
