@@ -117,21 +117,30 @@ public class InlineNodeLabels implements NodeLabels
         }
 
         byte bitsPerLabel = (byte) (ids.length > 0 ? (LABEL_BITS / ids.length) : LABEL_BITS);
-        long limit = 1L << bitsPerLabel;
         Bits bits = bits( 5 );
-        for ( long id : ids )
+        if ( !inlineValues( ids, bitsPerLabel, bits ) )
         {
-            if ( highestOneBit( id ) < limit )
+            return false;
+        }
+        node.setLabelField( combineLabelCountAndLabelStorage( (byte) ids.length, bits.getLongs()[0] ),
+                            changedDynamicRecords );
+        return true;
+    }
+
+    private static boolean inlineValues( long[] values, int maxBitsPerLabel, Bits target )
+    {
+        long limit = 1L << maxBitsPerLabel;
+        for ( long value : values )
+        {
+            if ( highestOneBit( value ) < limit )
             {
-                bits.put( id, bitsPerLabel );
+                target.put( value, maxBitsPerLabel );
             }
             else
             {
                 return false;
             }
         }
-        node.setLabelField( combineLabelCountAndLabelStorage( (byte) ids.length, bits.getLongs()[0] ),
-                            changedDynamicRecords );
         return true;
     }
 

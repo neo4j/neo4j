@@ -1,0 +1,97 @@
+/**
+ * Copyright (c) 2002-2014 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.unsafe.impl.batchimport;
+
+import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
+import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
+
+/**
+ * Calculates counts as labelId --[type]--> labelId for relationships with the labels coming from its start/end nodes.
+ */
+public class RelationshipCountsStep extends RelationshipStoreProcessorStep
+{
+    private final NodeLabelsCache nodeLabelCache;
+    // start node label id | relationship type | end node label id. Roughly 8Mb for 100,100,100
+    private final long[][][] counts;
+    private int[] startScratch = new int[20], endScratch = new int[20]; // and grows on demand
+    private final CountsTracker countsTracker;
+
+    protected RelationshipCountsStep( StageControl control, int batchSize, RelationshipStore relationshipStore,
+            NodeLabelsCache nodeLabelCache, int highLabelId, int highRelationshipTypeId, CountsTracker countsTracker )
+    {
+        super( control, "RELATIONSHIP COUNTS", batchSize, relationshipStore );
+        this.nodeLabelCache = nodeLabelCache;
+        this.countsTracker = countsTracker;
+        this.counts = new long[highLabelId][highRelationshipTypeId][highLabelId];
+    }
+
+    @Override
+    protected boolean process( RelationshipRecord record )
+    {
+        long startNode = record.getFirstNode();
+        long endNode = record.getSecondNode();
+        int type = record.getType();
+
+        startScratch = nodeLabelCache.get( startNode, startScratch );
+        for ( int startNodeLabelId : startScratch )
+        {
+            if ( startNodeLabelId == -1 )
+            {   // We reached the end of it
+                break;
+            }
+
+            endScratch = nodeLabelCache.get( endNode, endScratch );
+            for ( int endNodeLabelId : endScratch )
+            {
+                if ( endNodeLabelId == -1 )
+                {   // We reached the end of it
+                    break;
+                }
+
+                counts[startNodeLabelId][type][endNodeLabelId]++;
+            }
+
+        }
+
+        // No need to update the store, we're just reading things here
+        return false;
+    }
+
+    @Override
+    protected void done()
+    {
+        for ( int startNodeLabelId = 0; startNodeLabelId < counts.length; startNodeLabelId++ )
+        {
+            long[][] types = counts[startNodeLabelId];
+            for ( int type = 0; type < types.length; type++ )
+            {
+                long[] endNodeLabelIds = types[type];
+                for ( int endNodeLabelId = 0; endNodeLabelId < endNodeLabelIds.length; endNodeLabelId++ )
+                {
+                    long count = endNodeLabelIds[endNodeLabelId];
+                    countsTracker.updateCountsForRelationship( startNodeLabelId, type, endNodeLabelId, count );
+                }
+            }
+        }
+    }
+}

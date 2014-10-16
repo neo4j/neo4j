@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.impl.util.Bits.bits;
-
 import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.kernel.impl.util.Bits.bits;
 
 public class TestBits
 {
@@ -35,14 +35,14 @@ public class TestBits
         {
             bits.put( i );
         }
-        
+
         byte[] bytes = bits.asBytes();
         for ( byte i = 0; i < numberOfBytes; i++ )
         {
             assertEquals( i, bytes[i] );
         }
     }
-    
+
     @Test
     public void doubleAsBytes() throws Exception
     {
@@ -57,7 +57,7 @@ public class TestBits
         String other = Bits.bitsFromBytes( asBytes ).toString();
         assertEquals( first, other );
     }
-    
+
     @Test
     public void writeAndRead() throws Exception
     {
@@ -73,7 +73,7 @@ public class TestBits
                 assertEquals( expected, bits.getByte( b ) );
             }
         }
-        
+
         for ( byte value = Byte.MIN_VALUE; value < Byte.MAX_VALUE; value++ )
         {
             Bits bits = Bits.bits( 8 );

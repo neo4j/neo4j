@@ -70,6 +70,21 @@ public abstract class BatchingTokenRepository<T extends TokenRecord>
         return id;
     }
 
+    public long[] getOrCreateIds( String[] labels )
+    {
+        long[] result = new long[labels.length];
+        for ( int i = 0; i < labels.length; i++ )
+        {
+            result[i] = getOrCreateId( labels[i] );
+        }
+        return result;
+    }
+
+    public int getHighId()
+    {
+        return highId;
+    }
+
     protected abstract T createRecord( int key );
 
     public void close()

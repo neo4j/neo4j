@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -129,6 +130,11 @@ public class BatchingNeoStore implements AutoCloseable
     public RelationshipGroupStore getRelationshipGroupStore()
     {
         return neoStore.getRelationshipGroupStore();
+    }
+
+    public CountsTracker getCountsStore()
+    {
+        return neoStore.getCounts();
     }
 
     public void switchToUpdateMode()
