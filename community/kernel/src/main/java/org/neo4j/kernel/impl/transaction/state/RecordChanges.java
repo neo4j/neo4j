@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.util.statistics.IntCounter;
  */
 public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RECORD,ADDITIONAL>
 {
-    private final Map<KEY, RecordChange<KEY,RECORD,ADDITIONAL>> recordChanges = new HashMap<>();
+    private Map<KEY, RecordChange<KEY,RECORD,ADDITIONAL>> recordChanges = new HashMap<>();
     private final Loader<KEY,RECORD,ADDITIONAL> loader;
     private final boolean manageBeforeState;
     private IntCounter changeCounter = new IntCounter();
@@ -83,7 +83,15 @@ public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RE
     @Override
     public void close()
     {
-        recordChanges.clear();
+        if ( recordChanges.size() <= 32 )
+        {
+            recordChanges.clear();
+        }
+        else
+        {
+            // Let's not allow the internal maps to grow too big over time.
+            recordChanges = new HashMap<>();
+        }
         changeCounter.set(0);
     }
 
