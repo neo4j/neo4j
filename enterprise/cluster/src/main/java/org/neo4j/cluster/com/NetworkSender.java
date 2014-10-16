@@ -19,6 +19,9 @@
  */
 package org.neo4j.cluster.com;
 
+import static org.neo4j.cluster.com.NetworkReceiver.CLUSTER_SCHEME;
+import static org.neo4j.helpers.NamedThreadFactory.daemon;
+
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -45,7 +48,6 @@ import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.ChannelStateEvent;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.ExceptionEvent;
-import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
@@ -53,7 +55,6 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
 import org.jboss.netty.util.ThreadNameDeterminer;
 import org.jboss.netty.util.ThreadRenamingRunnable;
-
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageSender;
 import org.neo4j.cluster.com.message.MessageType;
@@ -62,9 +63,6 @@ import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
-
-import static org.neo4j.cluster.com.NetworkReceiver.CLUSTER_SCHEME;
-import static org.neo4j.helpers.NamedThreadFactory.daemon;
 
 /**
  * TCP version of sending messages. This handles sending messages from state machines to other instances
@@ -423,14 +421,6 @@ public class NetworkSender
             Channel ctxChannel = ctx.getChannel();
             openedChannel( getURI( (InetSocketAddress) ctxChannel.getRemoteAddress() ), ctxChannel );
             channels.add( ctxChannel );
-        }
-
-        @Override
-        public void messageReceived( ChannelHandlerContext ctx, MessageEvent event ) throws Exception
-        {
-            final Message message = (Message) event.getMessage();
-            msgLog.debug( "Received: " + message );
-            receiver.receive( message );
         }
 
         @Override
