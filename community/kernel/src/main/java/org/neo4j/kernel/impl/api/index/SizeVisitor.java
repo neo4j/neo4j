@@ -19,25 +19,25 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-interface IndexCountVisitor
+class SizeVisitor implements IndexSizeVisitor
 {
-    /**
-     * Increment the associated index count by deltaCount
-     * if the underlying counts tracker has processed updates
-     * with txId < transactionId
-     *
-     * @param transactionId of the index count change
-     * @param deltaCount increment for the index count
-     */
-    void incrementIndexCount( long transactionId, long deltaCount );
+    private long count = 0;
 
-    /**
-     * Replace the associated index count with totalCount
-     * if the underlying counts tracker has processed updates
-     * with txId < transactionId
-     *
-     * @param transactionId of the index count change
-     * @param totalCount new index count
-     */
-    void replaceIndexCount( long transactionId, long totalCount );
+    @Override
+    public long indexSize()
+    {
+        return count;
+    }
+
+    @Override
+    public void incrementIndexSize( long transactionId, long sizeDelta )
+    {
+        this.count += sizeDelta;
+    }
+
+    @Override
+    public void replaceIndexSize( long transactionId, long totalSize )
+    {
+        this.count = totalSize;
+    }
 }

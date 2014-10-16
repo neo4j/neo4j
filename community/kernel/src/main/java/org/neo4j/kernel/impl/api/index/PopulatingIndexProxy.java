@@ -35,7 +35,9 @@ import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.PopulatingValueSampler;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.logging.Logging;
@@ -58,15 +60,17 @@ public class PopulatingIndexProxy implements IndexProxy
                                  IndexPopulator writer,
                                  FlippableIndexProxy flipper,
                                  IndexStoreView storeView,
-                                 String indexUserDescription,
+                                 IndexSizeVisitor sizeVisitor,
+                                 PopulatingValueSampler populatingSampler,
                                  UpdateableSchemaState updateableSchemaState,
-                                 Logging logging )
+                                 Logging logging,
+                                 String indexUserDescription )
     {
         this.scheduler  = scheduler;
         this.descriptor = descriptor;
         this.providerDescriptor = providerDescriptor;
         this.job  = new IndexPopulationJob( descriptor, providerDescriptor,
-                indexUserDescription, failureDelegateFactory, writer, flipper, storeView,
+                indexUserDescription, failureDelegateFactory, writer, flipper, storeView, sizeVisitor, populatingSampler,
                 updateableSchemaState, logging );
     }
 

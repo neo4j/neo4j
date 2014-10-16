@@ -28,7 +28,7 @@ trait GraphStatistics {
   def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality
 
   /*
-  The average selectivity for all indexed values in the index.
+      Probability of any node with the given label, to have a property with a given value
    */
   def indexSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity]
 }

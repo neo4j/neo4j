@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KEY;
-
 import java.io.Closeable;
 import java.io.IOException;
 
@@ -33,6 +28,15 @@ import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.search.IndexSearcher;
 import org.junit.Before;
 import org.junit.Test;
+
+import org.neo4j.register.Register.DoubleLongRegister;
+import org.neo4j.register.Registers;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KEY;
 
 public class LuceneUniqueIndexAccessorReaderTest
 {
@@ -56,10 +60,11 @@ public class LuceneUniqueIndexAccessorReaderTest
         final LuceneUniqueIndexAccessorReader accessor = new LuceneUniqueIndexAccessorReader( searcher, documentLogic, closeable );
 
         // When
-        final double percentageOfUniqueValuesInSample = accessor.uniqueValuesFrequencyInSample( 1, 1 );
+        DoubleLongRegister output = sampleAccessor( accessor, 1, 0 );
 
         // Then
-        assertEquals( 1.0d, percentageOfUniqueValuesInSample, 0.00001d );
+        assertEquals( 0, output.readFirst() );
+        assertEquals( 0, output.readSecond() );
     }
 
     @Test
@@ -76,9 +81,17 @@ public class LuceneUniqueIndexAccessorReaderTest
         final LuceneUniqueIndexAccessorReader accessor = new LuceneUniqueIndexAccessorReader( searcher, documentLogic, closeable );
 
         // When
-        final double percentageOfUniqueValuesInSample = accessor.uniqueValuesFrequencyInSample( 3, 1 );
+        DoubleLongRegister output = sampleAccessor( accessor, 3, 2 );
 
         // Then
-        assertEquals( 1.0d, percentageOfUniqueValuesInSample, 0.00001d );
+        assertEquals( 0, output.readFirst() );
+        assertEquals( 0, output.readSecond() );
+    }
+
+    private DoubleLongRegister sampleAccessor( LuceneIndexAccessorReader accessor, int sampleSize, int indexSize )
+    {
+        final DoubleLongRegister output = Registers.newDoubleLongRegister();
+        accessor.sampleIndex( new SkipOracleSampler( SkipOracle.Factory.FULL_SCAN_SKIP_ORACLE ), output );
+        return output;
     }
 }

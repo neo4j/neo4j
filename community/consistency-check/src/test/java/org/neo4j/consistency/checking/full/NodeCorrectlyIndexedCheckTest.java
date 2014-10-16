@@ -19,17 +19,6 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import static java.util.Arrays.asList;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyIterator;
-import static org.neo4j.kernel.api.properties.Property.stringProperty;
-import static org.neo4j.kernel.impl.store.record.IndexRule.constraintIndexRule;
-import static org.neo4j.kernel.impl.store.record.IndexRule.indexRule;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
@@ -37,6 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.Test;
+
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.consistency.checking.CheckerEngine;
@@ -49,11 +39,26 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
+import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
+import org.neo4j.register.Register;
+
+import static java.util.Arrays.asList;
+
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
+
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyIterator;
+import static org.neo4j.kernel.api.properties.Property.stringProperty;
+import static org.neo4j.kernel.impl.store.record.IndexRule.constraintIndexRule;
+import static org.neo4j.kernel.impl.store.record.IndexRule.indexRule;
 
 public class NodeCorrectlyIndexedCheckTest
 {
@@ -235,7 +240,7 @@ public class NodeCorrectlyIndexedCheckTest
                 }
 
                 @Override
-                public double uniqueValuesFrequencyInSample( long sampleSize, int frequency )
+                public void sampleIndex( ValueSampler sampler, Register.DoubleLongRegister samplingResult )
                 {
                     throw new UnsupportedOperationException();
                 }

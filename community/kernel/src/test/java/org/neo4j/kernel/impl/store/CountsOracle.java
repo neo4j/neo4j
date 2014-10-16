@@ -29,7 +29,6 @@ import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class CountsOracle
 {
@@ -58,7 +57,7 @@ public class CountsOracle
 
     public void indexSize( int labelId, int propertyKeyId, long size )
     {
-        state.replaceIndexSizeCount( labelId, propertyKeyId, size );
+        state.replaceIndexSize( labelId, propertyKeyId, size );
     }
 
     public void indexSampling( int labelId, int propertyKeyId, long unique, long size )
@@ -102,21 +101,21 @@ public class CountsOracle
                     }
 
                     @Override
-                    public void visitIndexSizeCount( int labelId, int propertyKeyId, long count )
+                    public void visitIndexSize( int labelId, int propertyKeyId, long count )
                     {
                         assertEquals( "Should be able to read visited state.",
-                                tracker.indexSizeCount( labelId, propertyKeyId ), count );
-                        verifier.visitIndexSizeCount( labelId, propertyKeyId, count );
+                                tracker.indexSize( labelId, propertyKeyId ), count );
+                        verifier.visitIndexSize( labelId, propertyKeyId, count );
                     }
 
                     @Override
-                    public void visitIndexSampleCount( int labelId, int propertyKeyId, long unique, long size )
+                    public void visitIndexSample( int labelId, int propertyKeyId, long unique, long size )
                     {
                         Register.DoubleLongRegister output = Registers.newDoubleLongRegister();
-                        assertTrue( "Should find value in tracker", tracker.indexSample( labelId, propertyKeyId, output ) );
+                        tracker.indexSample( labelId, propertyKeyId, output );
                         assertEquals( "Should be able to read visited state.", output.readFirst(), unique );
                         assertEquals( "Should be able to read visited state.", output.readSecond(), size );
-                        verifier.visitIndexSampleCount( labelId, propertyKeyId, unique, size );
+                        verifier.visitIndexSample( labelId, propertyKeyId, unique, size );
                     }
                 } );
             }

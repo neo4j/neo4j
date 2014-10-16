@@ -72,7 +72,7 @@ class ConcurrentCountsTrackerState implements CountsTrackerState
     @Override
     public long nodeCount( NodeKey nodeKey )
     {
-        return getCount( nodeKey );
+        return readCount( nodeKey );
     }
 
     @Override
@@ -84,13 +84,13 @@ class ConcurrentCountsTrackerState implements CountsTrackerState
     @Override
     public long relationshipCount( RelationshipKey relationshipKey )
     {
-        return getCount( relationshipKey );
+        return readCount( relationshipKey );
     }
 
     @Override
-    public boolean indexSample( IndexSampleKey indexSampleKey, DoubleLongRegister target )
+    public void indexSample( IndexSampleKey indexSampleKey, DoubleLongRegister target )
     {
-        return getSample( indexSampleKey, target );
+        readSample( indexSampleKey, target );
     }
 
     @Override
@@ -102,17 +102,17 @@ class ConcurrentCountsTrackerState implements CountsTrackerState
     @Override
     public long indexSizeCount( IndexSizeKey indexSizeKey )
     {
-        return getCount( indexSizeKey );
+        return readCount( indexSizeKey );
     }
 
     @Override
-    public long incrementIndexSizeCount( IndexSizeKey indexSizeKey, long delta )
+    public long incrementIndexSize( IndexSizeKey indexSizeKey, long delta )
     {
         return incrementCount( indexSizeKey, delta );
     }
 
     @Override
-    public void replaceIndexSizeCount( IndexSizeKey indexSizeKey, long total )
+    public void replaceIndexSize( IndexSizeKey indexSizeKey, long total )
     {
         replaceCount( indexSizeKey, total );
     }
@@ -123,7 +123,7 @@ class ConcurrentCountsTrackerState implements CountsTrackerState
         replaceSample( indexSampleKey, unique, size );
     }
 
-    private long getCount( CountsKey key )
+    private long readCount( CountsKey key )
     {
         /*
          * no need to copy values in the state since we delegate the caching to the page cache in CountStore.get(key)
@@ -172,18 +172,16 @@ class ConcurrentCountsTrackerState implements CountsTrackerState
         }
     }
 
-    private boolean getSample( CountsKey key, DoubleLongRegister target )
+    private void readSample( CountsKey key, DoubleLongRegister target )
     {
         DoubleLongRegister sample = samples.get( key );
         if ( sample == null )
         {
             store.get( key, target );
-            return true;
         }
         else
         {
             sample.copyTo( target );
-            return true;
         }
     }
 

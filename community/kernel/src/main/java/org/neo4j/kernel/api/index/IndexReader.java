@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.index;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Resource;
+import org.neo4j.register.Register.DoubleLongRegister;
 
 /**
  * Reader for an {@link IndexAccessor}.
@@ -40,6 +41,7 @@ public interface IndexReader extends Resource
             return PrimitiveLongCollections.emptyIterator();
         }
 
+        // Used for checking index correctness
         @Override
         public int getIndexedCount( long nodeId, Object propertyValue )
         {
@@ -47,7 +49,10 @@ public interface IndexReader extends Resource
         }
 
         @Override
-        public double uniqueValuesFrequencyInSample( long sampleSize, int frequency ) { return 1.0d; }
+        public void sampleIndex( ValueSampler sampler, DoubleLongRegister samplingResult )
+        {
+            sampler.result( samplingResult );
+        }
 
         @Override
         public void close()
@@ -60,5 +65,10 @@ public interface IndexReader extends Resource
      */
     int getIndexedCount( long nodeId, Object propertyValue );
 
-    public double uniqueValuesFrequencyInSample( long sampleSize, int frequency );
+    /**
+     * Sample this index (on the current thread)
+     * @param sampler to use for reporting values
+     * @param samplingResult register holding unique values found and actual number of sampled entries (in that order)
+     */
+    public void sampleIndex( ValueSampler sampler, DoubleLongRegister samplingResult );
 }

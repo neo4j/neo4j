@@ -436,6 +436,18 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
+    public long indexSize( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    {
+        return indexService.indexSize( indexId( descriptor ) );
+    }
+
+    @Override
+    public double indexUniqueValuesPercentage( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    {
+        return indexService.indexUniqueValuesPercentage( indexId( descriptor ) );
+    }
+
+    @Override
     public String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexService.getProxyForRule( indexId( descriptor ) ).getPopulationFailure().asString();
@@ -817,29 +829,5 @@ public class DiskLayer implements StoreReadLayer
             throw new UnsupportedOperationException( "not implemented" );
         }
         return counts.relationshipCount( startLabelId, typeId, endLabelId );
-    }
-
-    @Override
-    public double indexUniqueValuesPercentage( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
-    {
-        final IndexRule indexRule = getIndexRuleOrFail( descriptor );
-        return indexService.indexUniqueValuesPercentage( indexRule.getId() );
-    }
-
-    @Override
-    public long indexNumberOfEntries( IndexDescriptor descriptor  ) throws IndexNotFoundKernelException
-    {
-        final IndexRule indexRule = getIndexRuleOrFail( descriptor );
-        return indexService.indexNumberOfEntries( indexRule.getId() );
-    }
-
-    private IndexRule getIndexRuleOrFail( IndexDescriptor descriptor  ) throws IndexNotFoundKernelException
-    {
-        final IndexRule indexRule = schemaStorage.indexRule( descriptor.getLabelId(), descriptor.getPropertyKeyId() );
-        if (indexRule == null)
-        {
-            throw new IndexNotFoundKernelException( "No index for " + descriptor );
-        }
-        return indexRule;
     }
 }

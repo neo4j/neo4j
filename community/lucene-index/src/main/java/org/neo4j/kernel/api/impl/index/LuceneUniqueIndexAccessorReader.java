@@ -23,6 +23,9 @@ import java.io.Closeable;
 
 import org.apache.lucene.search.IndexSearcher;
 
+import org.neo4j.kernel.api.index.ValueSampler;
+import org.neo4j.register.Register.DoubleLongRegister;
+
 class LuceneUniqueIndexAccessorReader extends LuceneIndexAccessorReader
 {
      LuceneUniqueIndexAccessorReader( IndexSearcher searcher, LuceneDocumentStructure documentLogic, Closeable onClose )
@@ -31,8 +34,8 @@ class LuceneUniqueIndexAccessorReader extends LuceneIndexAccessorReader
      }
 
     @Override
-    public double uniqueValuesFrequencyInSample( long sampleSize, int frequency )
+    public void sampleIndex( ValueSampler sampler, DoubleLongRegister samplingResult )
     {
-        return 1.0d;
+        sampler.result( samplingResult );
     }
 }

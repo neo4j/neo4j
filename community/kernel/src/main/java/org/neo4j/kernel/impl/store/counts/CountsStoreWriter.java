@@ -121,7 +121,7 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
     }
 
     @Override
-    public void visitIndexSizeCount( int labelId, int propertyKeyId, long count )
+    public void visitIndexSize( int labelId, int propertyKeyId, long count )
     {
         assert count > 0 :
                 String.format( "visitIndexSizeCount(labelId=%d, propertyKeyId=%d, count=%d)" +
@@ -130,7 +130,7 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
     }
 
     @Override
-    public void visitIndexSampleCount( int labelId, int propertyKeyId, long unique, long size )
+    public void visitIndexSample( int labelId, int propertyKeyId, long unique, long size )
     {
         assert unique >= 0 :
                 String.format( "visitIndexSampleCount(labelId=%d, propertyKeyId=%d, unique=%d, size=%d)" +

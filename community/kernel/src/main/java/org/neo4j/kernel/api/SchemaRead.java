@@ -53,10 +53,10 @@ interface SchemaRead
     InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /** Calculate the index unique values percentage. */
-    double indexUniqueValuesPercentage( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    double indexUniqueValuesSelectivity( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /** Get the number of index entries. */
-    long indexNumberOfEntries( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    long indexSize( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /** Returns the failure description of a failed index. */
     String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;

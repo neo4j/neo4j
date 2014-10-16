@@ -411,14 +411,14 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public long indexNumberOfEntries( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public long indexSize( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         statement.assertOpen();
         return schemaRead().indexNumberOfEntries( statement, descriptor );
     }
 
     @Override
-    public double indexUniqueValuesPercentage( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public double indexUniqueValuesSelectivity( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         statement.assertOpen();
         return schemaRead().indexUniqueValuesPercentage( statement, descriptor );

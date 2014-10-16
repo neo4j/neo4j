@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.test.DatabaseRule;
@@ -55,7 +56,8 @@ public class IndexStatisticsTest
         IndexDescriptor index = awaitOnline( createIndex( "Person", "name" ) );
 
         // then
-        assertEquals( 4l, numberOfIndexEntries( index ) );
+        assertEquals( 4l, indexSize( index ) );
+        assertEquals( 0.75d, indexSelectivity( index ), TOLERANCE );
     }
 
     @Test
@@ -68,12 +70,12 @@ public class IndexStatisticsTest
         createSomePersons();
 
         // then
-        assertEquals( 4l, numberOfIndexEntries( index ) );
+        assertEquals( 4l, indexSize( index ) );
     }
 
     @Test
-    public void shouldProvideIndexStatisticsForDataCreatedBeforeAndAfterTheIndexOnceIndexIsOnline() throws
-            KernelException
+    public void shouldProvideIndexStatisticsForDataCreatedBeforeAndAfterTheIndexOnceIndexIsOnline()
+            throws KernelException
     {
         // given
         createSomePersons();
@@ -83,7 +85,9 @@ public class IndexStatisticsTest
         createSomePersons();
 
         // then
-        assertEquals( 8l, numberOfIndexEntries( index ) );
+        assertEquals( 8l, indexSize( index ) );
+        // selectivity after population without the newly created nodes
+        assertEquals( 0.75d, indexSelectivity( index ), TOLERANCE );
     }
 
     @Test
@@ -99,13 +103,32 @@ public class IndexStatisticsTest
         // then
         try
         {
-            numberOfIndexEntries( index );
+            indexSize( index );
             fail( "Expected IndexNotFoundKernelException to be thrown" );
         }
         catch ( IndexNotFoundKernelException e )
         {
             // expected
         }
+    }
+
+    @Test
+    public void shouldProvideIndexSelectivityWhenThereAreManyDuplicates() throws KernelException
+    {
+        // given some initial data
+        int created = 0;
+        while ( created < 10000 )
+        {
+            created += createNamedPeople();
+        }
+
+        // when
+        IndexDescriptor index = awaitOnline( createIndex( "Person", "name" ) );
+
+        // then
+        assertCorrectIndexSize( created, indexSize( index ) );
+        double expectedSelectivity = UNIQUE_NAMES / ( (double) created);
+        assertCorrectIndexSelectivity( expectedSelectivity, indexSelectivity( index ) );
     }
 
     @Test
@@ -121,20 +144,38 @@ public class IndexStatisticsTest
         // when populating while creating
         IndexDescriptor index = createIndex( "Person", "name" );
         int createdAfter = 0;
+        int updatesSeenWhilePopulating = -1;
         while ( createdAfter < 10000 )
         {
             createdAfter += createNamedPeople();
+            if ( createdAfter % 5 == 0)
+            {
+                if ( updatesSeenWhilePopulating < 0 && isIndexOnline( index ) )
+                {
+                    updatesSeenWhilePopulating = createdAfter;
+                }
+            }
         }
         awaitOnline( index );
 
+        if ( updatesSeenWhilePopulating == -1 )
+        {
+            updatesSeenWhilePopulating = createdAfter;
+        }
+
         // then
         int expected = createdBefore + createdAfter;
-        assertCorrectNumberOfEntries( expected, numberOfIndexEntries( index ) );
+        assertCorrectIndexSize( expected, indexSize( index ) );
+
+        // selectivity after population without sampling
+        int seenWhilePopulating = createdBefore + updatesSeenWhilePopulating;
+        double expectedSelectivity = UNIQUE_NAMES / ( (double) seenWhilePopulating );
+        assertCorrectIndexSelectivity( expectedSelectivity, indexSelectivity( index ) );
     }
 
     @Test
-    public void shouldProvideIndexStatisticsWhenIndexIsBuiltViaPopulationAndConcurrentAdditionsAndDeletions() throws
-            KernelException
+    public void shouldProvideIndexStatisticsWhenIndexIsBuiltViaPopulationAndConcurrentAdditionsAndDeletions()
+            throws KernelException
     {
         // given some initial data
         ArrayList<Long> nodes = new ArrayList<>( 10000 );
@@ -147,6 +188,7 @@ public class IndexStatisticsTest
         // when populating while creating
         IndexDescriptor index = createIndex( "Person", "name" );
         int createdAfter = 0;
+        int updatesSeenWhilePopulating = -1;
         while ( createdAfter < 10000 )
         {
             createdAfter += createNamedPeople( nodes );
@@ -155,18 +197,33 @@ public class IndexStatisticsTest
                 long nodeId = nodes.get( nodes.size() / 2 );
                 deleteNode( nodeId );
                 createdAfter--;
+
+                if ( updatesSeenWhilePopulating < 0 && isIndexOnline( index ) )
+                {
+                    updatesSeenWhilePopulating = createdAfter;
+                }
             }
         }
         awaitOnline( index );
 
+        if ( updatesSeenWhilePopulating == -1 )
+        {
+            updatesSeenWhilePopulating = createdAfter;
+        }
+
         // then
         int expected = createdBefore + createdAfter;
-        assertCorrectNumberOfEntries( expected, numberOfIndexEntries( index ) );
+        assertCorrectIndexSize( expected, indexSize( index ) );
+
+        // selectivity after population without sampling
+        int seenWhilePopulating = createdBefore + updatesSeenWhilePopulating;
+        double expectedSelectivity = UNIQUE_NAMES / ( (double) seenWhilePopulating );
+        assertCorrectIndexSelectivity( expectedSelectivity, indexSelectivity( index ) );
     }
 
     @Test
-    public void shouldProvideIndexStatisticsWhenIndexIsBuiltViaPopulationAndConcurrentAdditionsAndChanges() throws
-            KernelException
+    public void shouldProvideIndexStatisticsWhenIndexIsBuiltViaPopulationAndConcurrentAdditionsAndChanges()
+            throws KernelException
     {
         // given some initial data
         ArrayList<Long> nodes = new ArrayList<>( 10000 );
@@ -179,20 +236,36 @@ public class IndexStatisticsTest
         // when populating while creating
         IndexDescriptor index = createIndex( "Person", "name" );
         int createdAfter = 0;
+        int updatesSeenWhilePopulating = -1;
         while ( createdAfter < 10000 )
         {
             createdAfter += createNamedPeople( nodes );
             if ( createdAfter % 5 == 0 )
             {
                 long nodeId = nodes.get( nodes.size() / 2 );
-                changeName( nodeId, "name", names[ (int) (nodeId % names.length) ] );
+                changeName( nodeId, "name", NAMES[ (int) (nodeId % NAMES.length) ] );
+
+                if ( updatesSeenWhilePopulating < 0 && isIndexOnline( index ) )
+                {
+                    updatesSeenWhilePopulating = createdAfter;
+                }
             }
         }
         awaitOnline( index );
 
+        if ( updatesSeenWhilePopulating == -1 )
+        {
+            updatesSeenWhilePopulating = createdAfter;
+        }
+
         // then
         int expected = createdBefore + createdAfter;
-        assertCorrectNumberOfEntries( expected, numberOfIndexEntries( index ) );
+        assertCorrectIndexSize( expected, indexSize( index ) );
+
+        // selectivity after population without sampling
+        int seenWhilePopulating = createdBefore + updatesSeenWhilePopulating;
+        double expectedSelectivity = UNIQUE_NAMES / ( (double) seenWhilePopulating );
+        assertCorrectIndexSelectivity( expectedSelectivity, indexSelectivity( index ) );
     }
 
     private void deleteNode( long nodeId ) throws KernelException
@@ -226,7 +299,7 @@ public class IndexStatisticsTest
         try ( Transaction tx = db.beginTx() )
         {
             Statement statement = bridge.instance();
-            for ( String name : names )
+            for ( String name : NAMES )
             {
                 long nodeId = createNode( statement, "Person", "name", name );
                 if ( nodeSet != null )
@@ -236,7 +309,7 @@ public class IndexStatisticsTest
             }
             tx.success();
         }
-        return names.length;
+        return NAMES.length;
     }
 
     private void dropIndex( IndexDescriptor index ) throws KernelException
@@ -249,14 +322,36 @@ public class IndexStatisticsTest
         }
     }
 
-    private long numberOfIndexEntries( IndexDescriptor descriptor ) throws KernelException
+    private boolean isIndexOnline( IndexDescriptor indexDescriptor ) throws IndexNotFoundKernelException
     {
         try ( Transaction tx = db.beginTx() )
         {
             Statement statement = bridge.instance();
-            long numberOfEntries = statement.readOperations().indexNumberOfEntries( descriptor );
+            InternalIndexState state = statement.readOperations().indexGetState( indexDescriptor );
             tx.success();
-            return numberOfEntries;
+            return state == InternalIndexState.ONLINE;
+        }
+    }
+
+    private long indexSize( IndexDescriptor descriptor ) throws KernelException
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            Statement statement = bridge.instance();
+            long indexSize = statement.readOperations().indexSize( descriptor );
+            tx.success();
+            return indexSize;
+        }
+    }
+
+    private double indexSelectivity( IndexDescriptor descriptor ) throws KernelException
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            Statement statement = bridge.instance();
+            double selectivity = statement.readOperations().indexUniqueValuesSelectivity( descriptor );
+            tx.success();
+            return selectivity;
         }
     }
 
@@ -332,17 +427,30 @@ public class IndexStatisticsTest
         throw new IllegalStateException( "Index did not become ONLINE within reasonable time" );
     }
 
-    private static void assertCorrectNumberOfEntries( long expected, long actual )
+    private static void assertCorrectIndexSize( long expected, long actual )
     {
         String message = String.format(
             "Expected number of entries to not differ by more than 10 (expected: %d actual: %d)", expected, actual
         );
+        // TODO: fix this assertion to be precise
         assertTrue( message, Math.abs( expected - actual ) < 100 );
     }
 
-    private String[] names = new String[] {
+    private static void assertCorrectIndexSelectivity( double expected, double actual )
+    {
+        String message = String.format(
+            "Expected number of entries to not differ by more than 10 (expected: %f actual: %f with tollerance: %f)",
+            expected, actual, TOLERANCE
+        );
+        assertEquals( message, expected, actual, TOLERANCE );
+    }
+
+    private static final double UNIQUE_NAMES = 10.0;
+    private static final String[] NAMES = new String[] {
         "Andres", "Davide", "Jakub", "Chris", "Tobias", "Stefan", "Petra", "Rickard", "Mattias", "Emil", "Chris", "Chris"
     };
+
+    private static final double TOLERANCE = 0.00001d;
 
     @Rule
     public DatabaseRule dbRule = new EmbeddedDatabaseRule();
