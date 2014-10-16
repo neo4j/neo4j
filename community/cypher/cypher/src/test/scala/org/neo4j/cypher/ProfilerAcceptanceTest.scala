@@ -19,14 +19,13 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v2_2
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription
-import org.neo4j.cypher.internal.helpers.TxCounts
 import org.neo4j.cypher.internal.commons.CreateTempFileTestSupport
+import org.neo4j.cypher.internal.compiler.v2_2
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.StringHelper.RichString
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.Arguments.{DbHits, Rows}
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.Argument
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.Arguments.{DbHits, Rows}
+import org.neo4j.cypher.internal.helpers.TxCounts
 
 class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFileTestSupport with NewPlannerTestSupport {
 
@@ -224,7 +223,6 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   test("reports COST compiler when showing plan description") {
     val executionPlanDescription = eengine.execute("cypher 2.2-cost match n return n").executionPlanDescription()
-     println(executionPlanDescription.toString)
     executionPlanDescription.toString should include("2.2-cost")
   }
 
