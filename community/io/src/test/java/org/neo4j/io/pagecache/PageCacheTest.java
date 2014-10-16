@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.pagecache;
 
+import static java.lang.Long.toHexString;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -3379,7 +3380,7 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
         }
     }
 
-    @Test(timeout = 1000)
+    @Test( timeout = 1000 )
     public void pagesMustReturnToFreelistIfSwapInThrows() throws IOException
     {
         generateFileWithRecords( file, recordCount, recordSize );
@@ -3560,5 +3561,45 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
                 readAndVerifyAdversarialPage( cursor, pagedFile.pageSize() );
             }
         }
+    }
+
+    // NOTE: This test is CPU architecture dependent, but it should fail on no
+    // architecture that we support.
+    // This test has no timeout because one may want to run it on a CPU
+    // emulator, where it's not unthinkable for it to take minutes.
+    @Test
+    public void mustSupportUnalignedWordAccesses() throws Exception
+    {
+        // 8 MB pages, 10 of them for 80 MB.
+        // This way we are sure to write across OS page boundaries. The default
+        // size of Huge Pages on Linux is 2 MB, but it can be configured to be
+        // as large as 1 GB - at least I have not heard of anyone trying to
+        // configure it to be more than that.
+        int pageSize = 1024 * 1024 * 8;
+        getPageCache( fs, 10, pageSize, PageCacheMonitor.NULL );
+
+        PagedFile pagedFile = pageCache.map( file, pageSize );
+        ThreadLocalRandom rng = ThreadLocalRandom.current();
+
+        try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+
+            for ( int i = 0; i < pageSize - 8; i++ )
+            {
+                cursor.setOffset( i );
+                long x = rng.nextLong();
+                cursor.putLong( x );
+                cursor.setOffset( i );
+                String reason =
+                        "Failed to read back the value that was written at " +
+                        "offset " + toHexString( i );
+                assertThat( reason,
+                        toHexString( cursor.getLong() ),
+                        is( toHexString( x ) ) );
+            }
+        }
+
+        pageCache.unmap( file );
     }
 }

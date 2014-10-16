@@ -23,17 +23,22 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
+import java.nio.ByteOrder;
 
 import sun.misc.Unsafe;
 
 public final class UnsafeUtil
 {
     private static final Unsafe unsafe;
-    private static final MethodHandle getAndAddInt;
-    private static final MethodHandle getAndSetObject;
     private static final Object nullSentinelBase;
     private static final long nullSentinelOffset;
+    private static final MethodHandle getAndAddInt;
+    private static final MethodHandle getAndSetObject;
     private static Object nullSentinel; // see the retainReference() method
+    private static final String allowUnalignedMemoryAccessProperty =
+            "org.neo4j.io.pagecache.impl.muninn.UnsafeUtil.allowUnalignedMemoryAccess";
+    public static final boolean allowUnalignedMemoryAccess;
+    public static final boolean storeByteOrderIsNative;
 
     static
     {
@@ -60,6 +65,24 @@ public final class UnsafeUtil
         MethodHandles.Lookup lookup = MethodHandles.lookup();
         getAndAddInt = getGetAndAddIntMethodHandle( lookup );
         getAndSetObject = getGetAndSetObjectMethodHandle( lookup );
+
+        // See java.nio.Bits.unaligned() and its uses.
+        String alignmentProperty = System.getProperty(
+                allowUnalignedMemoryAccessProperty );
+        if ( alignmentProperty != null &&
+                (alignmentProperty.equalsIgnoreCase( "true" )
+                        || alignmentProperty.equalsIgnoreCase( "false" )) )
+        {
+            allowUnalignedMemoryAccess = Boolean.parseBoolean( alignmentProperty );
+        }
+        else
+        {
+            String arch = System.getProperty( "os.arch", "?" );
+            allowUnalignedMemoryAccess =
+                    arch.equals( "x86_64" ) || arch.equals( "i386" )
+                    || arch.equals( "x86" ) || arch.equals( "amd64" );
+        }
+        storeByteOrderIsNative = ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN;
     }
 
     private static MethodHandle getGetAndAddIntMethodHandle(
