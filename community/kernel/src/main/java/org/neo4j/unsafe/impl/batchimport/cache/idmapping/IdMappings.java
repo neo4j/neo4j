@@ -35,12 +35,18 @@ public class IdMappings
      */
     public static IdMapping actual()
     {
-        return new PreInitializedIdMapping( IdMappers.actual(), IdGenerators.fromInput() )
+        return new IdMapping()
         {
             @Override
-            public String toString()
+            public IdMapper idMapper()
             {
-                return "IdMapping[actual node ids]";
+                return IdMappers.actual();
+            }
+
+            @Override
+            public IdGenerator idGenerator()
+            {
+                return IdGenerators.fromInput();
             }
         };
     }
@@ -52,37 +58,25 @@ public class IdMappings
      */
     public static IdMapping strings( final LongArrayFactory cacheFactory )
     {
-        return new PreInitializedIdMapping( IdMappers.strings( cacheFactory ), IdGenerators.startingFrom( 0 ) )
+        return new IdMapping()
         {
+            @Override
+            public IdMapper idMapper()
+            {
+                return IdMappers.strings( cacheFactory );
+            }
+
+            @Override
+            public IdGenerator idGenerator()
+            {
+                return IdGenerators.startingFrom( 0 );
+            }
+
             @Override
             public String toString()
             {
                 return "IdMapping[string node ids]";
             }
         };
-    }
-
-    private static class PreInitializedIdMapping implements IdMapping
-    {
-        private final IdMapper idMapper;
-        private final IdGenerator idGenerator;
-
-        PreInitializedIdMapping( IdMapper idMapper, IdGenerator idGenerator )
-        {
-            this.idMapper = idMapper;
-            this.idGenerator = idGenerator;
-        }
-
-        @Override
-        public IdMapper idMapper()
-        {
-            return idMapper;
-        }
-
-        @Override
-        public IdGenerator idGenerator()
-        {
-            return idGenerator;
-        }
     }
 }
