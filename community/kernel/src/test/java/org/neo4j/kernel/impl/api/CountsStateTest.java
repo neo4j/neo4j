@@ -41,14 +41,14 @@ public class CountsStateTest
         // given
         CountsState oracle = new CountsState();
         CountsState victim = new CountsState();
-        oracle.updateCountsForNode( 17, 5 );
-        victim.updateCountsForNode( 17, 3 );
-        oracle.updateCountsForNode( 12, 9 );
-        victim.updateCountsForNode( 12, 9 );
-        oracle.updateCountsForRelationship( 1, 2, 3, 19 );
-        victim.updateCountsForRelationship( 1, 2, 3, 22 );
-        oracle.updateCountsForRelationship( 1, 4, 3, 25 );
-        victim.updateCountsForRelationship( 1, 4, 3, 25 );
+        oracle.incrementCountsForNode( 17, 5 );
+        victim.incrementCountsForNode( 17, 3 );
+        oracle.incrementCountsForNode( 12, 9 );
+        victim.incrementCountsForNode( 12, 9 );
+        oracle.incrementCountsForRelationship( 1, 2, 3, 19 );
+        victim.incrementCountsForRelationship( 1, 2, 3, 22 );
+        oracle.incrementCountsForRelationship( 1, 4, 3, 25 );
+        victim.incrementCountsForRelationship( 1, 4, 3, 25 );
 
         // when
         List<CountsState.Difference> differences = oracle.verify( victim );
@@ -65,12 +65,12 @@ public class CountsStateTest
         // given
         CountsState oracle = new CountsState();
         CountsState victim = new CountsState();
-        oracle.updateCountsForNode( 17, 5 );
-        victim.updateCountsForNode( 17, 5 );
-        oracle.updateCountsForNode( 12, 9 );
-        victim.updateCountsForNode( 12, 9 );
-        oracle.updateCountsForRelationship( 1, 4, 3, 25 );
-        victim.updateCountsForRelationship( 1, 4, 3, 25 );
+        oracle.incrementCountsForNode( 17, 5 );
+        victim.incrementCountsForNode( 17, 5 );
+        oracle.incrementCountsForNode( 12, 9 );
+        victim.incrementCountsForNode( 12, 9 );
+        oracle.incrementCountsForRelationship( 1, 4, 3, 25 );
+        victim.incrementCountsForRelationship( 1, 4, 3, 25 );
 
         // when
         List<CountsState.Difference> differences = oracle.verify( victim );

@@ -44,6 +44,7 @@ import static java.lang.Thread.currentThread;
 import static org.neo4j.helpers.FutureAdapter.latchGuardedValue;
 import static org.neo4j.helpers.ValueGetter.NO_VALUE;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.MAX_TX_ID;
 
 /**
  * Represents one job of initially populating an index over existing data in the database.
@@ -108,13 +109,13 @@ public class IndexPopulationJob implements Runnable
                 log.info( format("Index population started: [%s]", indexUserDescription) );
                 log.flush();
                 populator.create();
-                storeView.replaceIndexCount( descriptor, 0 );
+                storeView.replaceIndexCount( MAX_TX_ID, descriptor, 0 );
 
                 indexAllNodes( countVisitor );
                 verifyDeferredConstraints();
                 if ( cancelled )
                 {
-                    storeView.replaceIndexCount( descriptor, 0 );
+                    storeView.replaceIndexCount( MAX_TX_ID, descriptor, 0 );
 
                     // We remain in POPULATING state
                     return;
@@ -126,7 +127,7 @@ public class IndexPopulationJob implements Runnable
                     public Void call() throws Exception
                     {
                         populateFromQueueIfAvailable( Long.MAX_VALUE, countVisitor );
-                        storeView.replaceIndexCount( descriptor, countVisitor.count() );
+                        storeView.replaceIndexCount( MAX_TX_ID, descriptor, countVisitor.count() );
                         storeView.flushIndexCounts();
                         populator.close( true );
                         updateableSchemaState.clear();
@@ -211,8 +212,7 @@ public class IndexPopulationJob implements Runnable
                 try
                 {
                     populator.add( update.getNodeId(), update.getValueAfter() );
-                    // TODO
-                    countVisitor.incrementIndexCount( Long.MAX_VALUE, 1 );
+                    countVisitor.incrementIndexCount( MAX_TX_ID, 1 );
                     populateFromQueueIfAvailable( update.getNodeId(), countVisitor );
                 }
                 catch ( IndexEntryConflictException | IOException conflict )
@@ -242,9 +242,7 @@ public class IndexPopulationJob implements Runnable
     {
         if ( !queue.isEmpty() )
         {
-            // TODO
-            try ( IndexUpdater updater =
-                          new CountingIndexUpdater( Long.MAX_VALUE, populator.newPopulatingUpdater( storeView ), countVisitor ) )
+            try ( IndexUpdater updater = createCountingIndexUpdater( countVisitor ) )
             {
                 do
                 {
@@ -258,6 +256,11 @@ public class IndexPopulationJob implements Runnable
                 } while ( !queue.isEmpty() );
             }
         }
+    }
+
+    private CountingIndexUpdater createCountingIndexUpdater( CountVisitor countVisitor ) throws IOException
+    {
+        return new CountingIndexUpdater( MAX_TX_ID, populator.newPopulatingUpdater( storeView ), countVisitor );
     }
 
     public Future<Void> cancel()

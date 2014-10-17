@@ -202,7 +202,7 @@ public class CountsTrackerTest
         {
             CountsTracker tracker = new CountsTracker( fs, pageCache, storeFile() );
             assertEquals( alphaFile, tracker.storeFile() );
-            tracker.updateCountsForNode( 1, 1l );
+            tracker.incrementCountsForNode( 1, 1l );
             tracker.rotate( BASE_TX_ID + 1 );
             assertEquals( betaFile, tracker.storeFile() );
             tracker.close();

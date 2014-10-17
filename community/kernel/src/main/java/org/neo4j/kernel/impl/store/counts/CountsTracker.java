@@ -160,9 +160,9 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     }
 
     @Override
-    public void updateCountsForNode( int labelId, long delta )
+    public void incrementCountsForNode( int labelId, long delta )
     {
-        update( nodeKey( labelId ), delta );
+        increment( nodeKey( labelId ), delta );
     }
 
     public long countsForRelationship( int startLabelId, int typeId, int endLabelId )
@@ -171,9 +171,9 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     }
 
     @Override
-    public void updateCountsForRelationship( int startLabelId, int typeId, int endLabelId, long delta )
+    public void incrementCountsForRelationship( int startLabelId, int typeId, int endLabelId, long delta )
     {
-        update( relationshipKey( startLabelId, typeId, endLabelId ), delta );
+        increment( relationshipKey( startLabelId, typeId, endLabelId ), delta );
     }
 
     public long countsForIndex( int labelId, int propertyKeyId )
@@ -182,9 +182,9 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     }
 
     @Override
-    public void updateCountsForIndex( int labelId, int propertyKeyId, long delta )
+    public void incrementCountsForIndex( int labelId, int propertyKeyId, long delta )
     {
-        update( indexKey( labelId, propertyKeyId ), delta );
+        increment( indexKey( labelId, propertyKeyId ), delta );
     }
 
     @Override
@@ -218,14 +218,14 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
         return state.getCount( key );
     }
 
-    private void update( CountsKey key, long delta )
+    private void increment( CountsKey key, long delta )
     {
         if ( delta != 0 )
         {
             try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
             {
                 long value = state.updateCount( key, delta );
-                assert value >= 0 : String.format( "update(key=%s, delta=%d) -> value=%d", key, delta, value );
+                assert value >= 0 : String.format( "increment(key=%s, delta=%d) -> value=%d", key, delta, value );
             }
         }
     }
@@ -235,7 +235,7 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
         assert total >= 0 : String.format( "replace(key=%s, value=%d)", key, total );
         try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
         {
-            state.updateCount( key, total );
+            state.replaceCount( key, total );
         }
     }
 
