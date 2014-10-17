@@ -31,7 +31,7 @@ import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader;
 import org.neo4j.register.Register;
 
-public class CountsStore extends SortedKeyValueStore<CountsKey, Register.LongRegister>
+public class CountsStore extends SortedKeyValueStore<CountsKey, Register.DoubleLongRegister>
 {
     static final CountsRecordSerializer RECORD_SERIALIZER = new CountsRecordSerializer();
     static final CountsStoreWriter.Factory WRITER_FACTORY = new CountsStoreWriter.Factory();

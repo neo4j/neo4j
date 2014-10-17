@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -31,6 +27,7 @@ import java.util.Collection;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -54,6 +51,10 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class CountsRotationTest
 {
@@ -192,21 +193,21 @@ public class CountsRotationTest
     }
 
 
-    private Collection<Pair<CountsKey, Long>> allRecords( SortedKeyValueStore<CountsKey, Register.LongRegister> store )
+    private Collection<Pair<CountsKey, Long>> allRecords( SortedKeyValueStore<CountsKey, Register.DoubleLongRegister> store )
     {
         final Collection<Pair<CountsKey, Long>> records = new ArrayList<>();
-        store.accept( new KeyValueRecordVisitor<CountsKey, Register.LongRegister>()
+        store.accept( new KeyValueRecordVisitor<CountsKey, Register.DoubleLongRegister>()
         {
-            private final Register.LongRegister valueRegister = Registers.newLongRegister();
+            private final Register.DoubleLongRegister valueRegister = Registers.newDoubleLongRegister();
 
             @Override
             public void visit( CountsKey key  )
             {
-                records.add( Pair.of( key, valueRegister.read() ) );
+                records.add( Pair.of( key, valueRegister.readSecond() ) );
             }
 
             @Override
-            public Register.LongRegister valueRegister()
+            public Register.DoubleLongRegister valueRegister()
             {
                 return valueRegister;
             }

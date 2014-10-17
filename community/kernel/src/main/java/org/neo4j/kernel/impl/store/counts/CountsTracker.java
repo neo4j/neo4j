@@ -59,16 +59,16 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
 
         long getCount( CountsKey key );
 
-        long updateCount( CountsKey key, long delta );
+        long incrementCount( CountsKey key, long delta );
 
         void replaceCount( CountsKey key, long total );
 
         File storeFile();
 
-        SortedKeyValueStore.Writer<CountsKey, Register.LongRegister> newWriter( File file, long lastCommittedTxId )
+        SortedKeyValueStore.Writer<CountsKey, Register.DoubleLongRegister> newWriter( File file, long lastCommittedTxId )
                 throws IOException;
 
-        void accept( KeyValueRecordVisitor<CountsKey, Register.LongRegister> visitor );
+        void accept( KeyValueRecordVisitor<CountsKey, Register.DoubleLongRegister> visitor );
     }
 
     public static final String ALPHA = ".alpha", BETA = ".beta";
@@ -195,12 +195,12 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
 
     public void accept( final CountsVisitor visitor )
     {
-        state.accept( new KeyValueRecordVisitor<CountsKey, Register.LongRegister>()
+        state.accept( new KeyValueRecordVisitor<CountsKey, Register.DoubleLongRegister>()
         {
-            private final Register.LongRegister valueRegister = Registers.newLongRegister();
+            private final Register.DoubleLongRegister valueRegister = Registers.newDoubleLongRegister();
 
             @Override
-            public Register.LongRegister valueRegister()
+            public Register.DoubleLongRegister valueRegister()
             {
                 return valueRegister;
             }
@@ -224,7 +224,7 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
         {
             try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
             {
-                long value = state.updateCount( key, delta );
+                long value = state.incrementCount( key, delta );
                 assert value >= 0 : String.format( "increment(key=%s, delta=%d) -> value=%d", key, delta, value );
             }
         }
@@ -263,7 +263,7 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
             if ( state.hasChanges() )
             {
                 // select the next file, and create a writer for it
-                try ( CountsStore.Writer<CountsKey, Register.LongRegister> writer =
+                try ( CountsStore.Writer<CountsKey, Register.DoubleLongRegister> writer =
                               nextWriter( state, lastCommittedTxId ) )
                 {
                     state.accept( writer );
@@ -276,7 +276,7 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
         }
     }
 
-    CountsStore.Writer<CountsKey, Register.LongRegister> nextWriter( State state, long lastCommittedTxId )
+    CountsStore.Writer<CountsKey, Register.DoubleLongRegister> nextWriter( State state, long lastCommittedTxId )
             throws IOException
     {
         if ( alphaFile.equals( state.storeFile() ) )

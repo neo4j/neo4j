@@ -39,9 +39,9 @@ import static org.neo4j.kernel.impl.store.counts.CountsRecordType.INDEX;
 import static org.neo4j.kernel.impl.store.counts.CountsRecordType.NODE;
 import static org.neo4j.kernel.impl.store.counts.CountsRecordType.RELATIONSHIP;
 
-public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, Register.LongRegister>, CountsVisitor
+public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, Register.DoubleLongRegister>, CountsVisitor
 {
-    public static class Factory implements SortedKeyValueStore.WriterFactory<CountsKey, Register.LongRegister>
+    public static class Factory implements SortedKeyValueStore.WriterFactory<CountsKey, Register.DoubleLongRegister>
     {
         @Override
         public CountsStoreWriter create( FileSystemAbstraction fs, PageCache pageCache,
@@ -53,7 +53,7 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
         }
     }
 
-    private final Register.LongRegister valueRegister = Registers.newLongRegister();
+    private final Register.DoubleLongRegister valueRegister = Registers.newDoubleLongRegister();
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
     private final SortedKeyValueStoreHeader oldHeader;
@@ -88,7 +88,7 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
     }
 
     @Override
-    public Register.LongRegister valueRegister()
+    public Register.DoubleLongRegister valueRegister()
     {
         return valueRegister;
     }
@@ -96,7 +96,7 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
     @Override
     public void visit( CountsKey key )
     {
-        if ( valueRegister.read() != 0 /* only writeToBuffer values that count */ )
+        if ( valueRegister.readSecond() != 0 /* only writeToBuffer values that count */ )
         {
             totalRecords++;
             key.accept( this, valueRegister );

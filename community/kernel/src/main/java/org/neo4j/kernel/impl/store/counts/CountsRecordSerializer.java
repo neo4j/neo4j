@@ -56,10 +56,10 @@ import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
  *                         |
  *                       value
  */
-public class CountsRecordSerializer implements KeyValueRecordSerializer<CountsKey, Register.LongRegister>
+public class CountsRecordSerializer implements KeyValueRecordSerializer<CountsKey, Register.DoubleLongRegister>
 {
     @Override
-    public boolean visitRecord(ByteBuffer buffer, KeyValueRecordVisitor<CountsKey, Register.LongRegister> visitor)
+    public boolean visitRecord(ByteBuffer buffer, KeyValueRecordVisitor<CountsKey, Register.DoubleLongRegister> visitor)
     {
         // read type
         byte type = buffer.get();
@@ -73,9 +73,9 @@ public class CountsRecordSerializer implements KeyValueRecordSerializer<CountsKe
         int three = buffer.getInt();
 
         // read value
-        buffer.getLong(); // skip unused long
-        long count = buffer.getLong();
-        visitor.valueRegister().write( count );
+        long first = buffer.getLong();
+        long second = buffer.getLong();
+        visitor.valueRegister().write( first, second );
 
         CountsKey key;
         switch ( CountsRecordType.fromCode( type ) )
@@ -84,21 +84,25 @@ public class CountsRecordSerializer implements KeyValueRecordSerializer<CountsKe
                 assert one == 0;
                 assert two == 0;
                 assert three == 0;
-                assert count == 0;
+                assert first == 0;
+                assert second == 0;
                 return false;
 
             case NODE:
                 assert one == 0;
                 assert two == 0;
+                assert first == 0;
                 key = nodeKey( three /* label id*/ );
                 break;
 
             case RELATIONSHIP:
+                assert first == 0;
                 key = relationshipKey( one /* start label id */, two /* rel type id */, three /* end label id */ );
                 break;
 
             case INDEX:
                 assert one == 0;
+                assert first == 0;
                 key = indexKey( three /* label id */, two /* pk id */ );
                 break;
 
@@ -110,11 +114,11 @@ public class CountsRecordSerializer implements KeyValueRecordSerializer<CountsKe
     }
 
     @Override
-    public CountsKey readRecord( PageCursor cursor, int offset, Register.LongRegister value ) throws IOException
+    public CountsKey readRecord( PageCursor cursor, int offset, Register.DoubleLongRegister value ) throws IOException
     {
         byte type;
         int one, two, three;
-        long count;
+        long first, second;
 
         do
         {
@@ -132,11 +136,11 @@ public class CountsRecordSerializer implements KeyValueRecordSerializer<CountsKe
             three = cursor.getInt();
 
             // read value
-            cursor.getLong(); // skip unused long
-            count = cursor.getLong();
+            first = cursor.getLong();
+            second = cursor.getLong();
         } while ( cursor.shouldRetry() );
 
-        value.write( count );
+        value.write(first, second );
 
         CountsKey key;
         switch ( CountsRecordType.fromCode( type ) )
@@ -167,8 +171,8 @@ public class CountsRecordSerializer implements KeyValueRecordSerializer<CountsKe
     }
 
     @Override
-    public void writeDefaultValue( Register.LongRegister valueRegister )
+    public void writeDefaultValue( Register.DoubleLongRegister valueRegister )
     {
-        valueRegister.write( 0 );
+        valueRegister.write( 0l, 0l );
     }
 }

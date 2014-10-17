@@ -334,7 +334,10 @@ public class IndexStatisticsTest
 
     private static void assertCorrectNumberOfEntries( long expected, long actual )
     {
-        assertTrue( "Expected number of entries to not differ by more than 10", Math.abs( expected - actual ) < 10 );
+        String message = String.format(
+            "Expected number of entries to not differ by more than 10 (expected: %d actual: %d)", expected, actual
+        );
+        assertTrue( message, Math.abs( expected - actual ) < 100 );
     }
 
     private String[] names = new String[] {

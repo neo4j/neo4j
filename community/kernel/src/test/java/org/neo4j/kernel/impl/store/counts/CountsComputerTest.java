@@ -19,18 +19,13 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
-import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
-import static org.neo4j.kernel.impl.store.StoreFactory.buildTypeDescriptorAndVersion;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
-
 import java.io.File;
 import java.io.IOException;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
@@ -54,6 +49,13 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
+import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
+import static org.neo4j.kernel.impl.store.StoreFactory.buildTypeDescriptorAndVersion;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class CountsComputerTest
 {
@@ -326,8 +328,8 @@ public class CountsComputerTest
 
     private long get( CountsStore store, CountsKey key )
     {
-        Register.LongRegister value = Registers.newLongRegister();
+        Register.DoubleLongRegister value = Registers.newDoubleLongRegister();
         store.get( key, value );
-        return value.read();
+        return value.readSecond();
     }
 }

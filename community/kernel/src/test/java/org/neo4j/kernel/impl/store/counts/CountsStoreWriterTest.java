@@ -19,16 +19,13 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
-import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
-
 import java.io.File;
 import java.io.IOException;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
@@ -43,6 +40,11 @@ import org.neo4j.register.Registers;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
+import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
+import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
+
 public class CountsStoreWriterTest
 {
     @Test
@@ -52,9 +54,9 @@ public class CountsStoreWriterTest
         final CountsStoreWriter writer = new CountsStoreWriter( fs, pageCache, emptyHeader, file, lastTxId );
 
         // when
-        writer.valueRegister().write( 42 );
+        writer.valueRegister().write( 0, 42 );
         writer.visit( nodeKey( 0 ) );
-        writer.valueRegister().write( 24 );
+        writer.valueRegister().write( 0, 24 );
         writer.visit( relationshipKey( 1, 2, 3 ) );
         writer.close();
 
@@ -66,12 +68,12 @@ public class CountsStoreWriterTest
             assertEquals( lastTxId, counts.lastTxId() );
             assertEquals( 2, counts.totalRecordsStored() );
             assertEquals( file, counts.file() );
-            counts.accept( new KeyValueRecordVisitor<CountsKey, Register.LongRegister>()
+            counts.accept( new KeyValueRecordVisitor<CountsKey, Register.DoubleLongRegister>()
             {
-                private final Register.LongRegister valueRegister = Registers.newLongRegister();
+                private final Register.DoubleLongRegister valueRegister = Registers.newDoubleLongRegister();
 
                 @Override
-                public Register.LongRegister valueRegister()
+                public Register.DoubleLongRegister valueRegister()
                 {
                     return valueRegister;
                 }
