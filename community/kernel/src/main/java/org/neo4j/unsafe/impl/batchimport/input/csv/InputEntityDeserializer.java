@@ -64,7 +64,6 @@ abstract class InputEntityDeserializer<ENTITY extends InputEntity> extends Prefe
             for ( int i = 0; i < entries.length; i++ )
             {
                 // Seek the next value
-                Header.Entry entry = entries[i];
                 if ( !data.seek( mark, delimiter ) )
                 {
                     if ( i > 0 )
@@ -76,6 +75,7 @@ abstract class InputEntityDeserializer<ENTITY extends InputEntity> extends Prefe
                 }
 
                 // Extract it, type according to our header
+                Header.Entry entry = entries[i];
                 Object value = data.extract( mark, entry.extractor() );
                 boolean handled = true;
                 switch ( entry.type() )
@@ -98,10 +98,24 @@ abstract class InputEntityDeserializer<ENTITY extends InputEntity> extends Prefe
                 {
                     handleValue( entry, value );
                 }
+
+                if ( mark.isEndOfLine() )
+                {   // We're at the end of the line, break and return an entity with what we have.
+                    break;
+                }
             }
 
-            // When we have everything create an input entity out of it
-            return convertToInputEntity( properties() );
+            // When we have everything, create an input entity out of it
+            ENTITY entity = convertToInputEntity( properties() );
+
+            // If there are more values on this line, ignore them
+            // TODO perhaps log about them?
+            while ( !mark.isEndOfLine() )
+            {
+                data.seek( mark, delimiter );
+            }
+
+            return entity;
         }
         catch ( IOException e )
         {

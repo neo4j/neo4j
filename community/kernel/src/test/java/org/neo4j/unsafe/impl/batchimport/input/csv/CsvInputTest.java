@@ -25,10 +25,11 @@ import java.util.Iterator;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
-import org.neo4j.unsafe.impl.batchimport.input.InputException;
+import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.csv.reader.BufferedCharSeeker;
@@ -39,7 +40,6 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.reader.Extractors;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -107,25 +107,50 @@ public class CsvInputTest
     }
 
     @Test
-    public void shouldFailForDataThatLacksEntries() throws Exception
+    public void shouldCopeWithLinesThatHasTooFewValuesButStillValidates() throws Exception
     {
         // GIVEN
-        IdType idType = IdType.ACTUAL;
-        Input input = new CsvInput( data( "10" ),
-                header( entry( "id", Type.ID, idType.extractor() ),
-                        entry( "name", Type.PROPERTY, idType.extractor() ) ),
-                null, null, idType, COMMAS );
+        Input input = new CsvInput(
+                data( "1,ultralisk,ZERG,10\n" +
+                      "2,corruptor,ZERG\n" +
+                      "3,mutalisk,ZERG,3" ),
+                header(
+                      entry( "id", Type.ID, Extractors.LONG ),
+                      entry( "unit", Type.PROPERTY, Extractors.STRING ),
+                      entry( "type", Type.LABEL, Extractors.STRING ),
+                      entry( "kills", Type.PROPERTY, Extractors.INT ) ),
+                null, null, IdType.ACTUAL, Configuration.COMMAS );
 
-        // WHEN/THEN
-        Iterator<InputNode> nodes = input.nodes().iterator();
-        try
+        // WHEN
+        try ( ResourceIterator<InputNode> nodes = input.nodes().iterator() )
         {
-            nodes.next();
-            fail( "Should fail" );
+            // THEN
+            assertNode( nodes.next(), 1L, new Object[] { "unit", "ultralisk", "kills", 10 }, new String[] { "ZERG" } );
+            assertNode( nodes.next(), 2L, new Object[] { "unit", "corruptor" }, new String[] { "ZERG" } );
+            assertNode( nodes.next(), 3L, new Object[] { "unit", "mutalisk", "kills", 3 }, new String[] { "ZERG" } );
+            assertFalse( nodes.hasNext() );
         }
-        catch ( InputException e )
+    }
+
+    @Test
+    public void shouldIgnoreValuesAfterHeaderEntries() throws Exception
+    {
+        // GIVEN
+        Input input = new CsvInput(
+                data( "1,zergling,bubble,bobble\n" +
+                      "2,scv,pun,intended" ),
+                header(
+                      entry( "id", Type.ID, Extractors.LONG ),
+                      entry( "name", Type.PROPERTY, Extractors.STRING ) ),
+                null, null, IdType.ACTUAL, Configuration.COMMAS );
+
+        // WHEN
+        try ( ResourceIterator<InputNode> nodes = input.nodes().iterator() )
         {
-            // Good
+            // THEN
+            assertNode( nodes.next(), 1L, new Object[] { "name", "zergling" }, InputEntity.NO_LABELS );
+            assertNode( nodes.next(), 2L, new Object[] { "name", "scv" }, InputEntity.NO_LABELS );
+            assertFalse( nodes.hasNext() );
         }
     }
 

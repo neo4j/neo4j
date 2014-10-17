@@ -47,16 +47,19 @@ public abstract class LonelyProcessingStep extends AbstractStep<Void>
                 assertHealthy();
                 try
                 {
-                    lastProcessingTimestamp = currentTimeMillis();
-                    process();
+                    try
+                    {
+                        lastProcessingTimestamp = currentTimeMillis();
+                        process();
+                    }
+                    finally
+                    {
+                        endOfUpstream();
+                    }
                 }
                 catch ( Throwable e )
                 {
                     issuePanic( e );
-                }
-                finally
-                {
-                    endOfUpstream();
                 }
             }
         }.start();

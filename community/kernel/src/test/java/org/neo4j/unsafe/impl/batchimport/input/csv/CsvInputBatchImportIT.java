@@ -24,11 +24,9 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -36,6 +34,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
@@ -54,10 +53,12 @@ import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.SilentExecutionMonitor;
 
+import static java.lang.System.currentTimeMillis;
+
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
 import static org.neo4j.unsafe.impl.batchimport.input.Inputs.csv;
@@ -75,20 +76,29 @@ public class CsvInputBatchImportIT
         List<InputRelationship> relationshipData = randomRelationshipData( nodeData );
 
         // WHEN
-        importer.doImport( csv(
-                nodeDataAsFile( nodeData ),
-                relationshipDataAsFile( relationshipData ),
-                IdType.STRING, COMMAS ) );
-
-        // THEN
-        verifyImportedData( nodeData, relationshipData );
+        boolean success = false;
+        try
+        {
+            importer.doImport( csv( nodeDataAsFile( nodeData ), relationshipDataAsFile( relationshipData ),
+                    IdType.STRING, COMMAS ) );
+            // THEN
+            verifyImportedData( nodeData, relationshipData );
+            success = true;
+        }
+        finally
+        {
+            if ( !success )
+            {
+                System.err.println( "Seed " + seed );
+            }
+        }
     }
 
     private void verifyImportedData( List<InputNode> nodeData, List<InputRelationship> relationshipData )
     {
         // Build up expected data for the verification below
         Map<String/*id*/, InputNode> expectedNodes = new HashMap<>();
-        Set<String> expectedNodeNames = new HashSet<>();
+        Map<String,String[]> expectedNodeNames = new HashMap<>();
         Map<String/*start node name*/, Map<String/*end node name*/, Map<String, AtomicInteger>>>
             expectedRelationships = new HashMap<>();
         buildUpExpectedData( nodeData, relationshipData, expectedNodes, expectedNodeNames, expectedRelationships );
@@ -101,7 +111,8 @@ public class CsvInputBatchImportIT
             for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
             {
                 String name = (String) node.getProperty( "name" );
-                assertTrue( expectedNodeNames.remove( name ) );
+                String[] labels = expectedNodeNames.remove( name );
+                assertArrayEquals( labels, names( node.getLabels() ) );
             }
             assertEquals( 0, expectedNodeNames.size() );
 
@@ -139,17 +150,27 @@ public class CsvInputBatchImportIT
         }
     }
 
+    private String[] names( Iterable<Label> labels )
+    {
+        List<String> names = new ArrayList<>();
+        for ( Label label : labels )
+        {
+            names.add( label.name() );
+        }
+        return names.toArray( new String[names.size()] );
+    }
+
     private void buildUpExpectedData(
             List<InputNode> nodeData,
             List<InputRelationship> relationshipData,
             Map<String, InputNode> expectedNodes,
-            Set<String> expectedNodeNames,
+            Map<String, String[]> expectedNodeNames,
             Map<String, Map<String, Map<String, AtomicInteger>>> expectedRelationships )
     {
         for ( InputNode node : nodeData )
         {
             expectedNodes.put( (String) node.id(), node );
-            expectedNodeNames.add( nameOf( node ) );
+            expectedNodeNames.put( nameOf( node ), node.labels() );
         }
         for ( InputRelationship relationship : relationshipData )
         {
@@ -202,15 +223,31 @@ public class CsvInputBatchImportIT
         try ( Writer writer = fs.openAsWriter( file, "utf-8", false ) )
         {
             // Header
-            println( writer, "id:ID,name" );
+            println( writer, "id:ID,name,some-labels:LABEL" );
 
             // Data
             for ( InputNode node : nodeData )
             {
-                println( writer, node.id() + "," + node.properties()[1] );
+                String csvLabels = csvLabels( node.labels() );
+                println( writer, node.id() + "," + node.properties()[1] +
+                        (csvLabels != null && csvLabels.length() > 0 ? "," + csvLabels : "") );
             }
         }
         return file;
+    }
+
+    private String csvLabels( String[] labels )
+    {
+        if ( labels == null || labels.length == 0 )
+        {
+            return null;
+        }
+        StringBuilder builder = new StringBuilder();
+        for ( String label : labels )
+        {
+            builder.append( builder.length() > 0 ? ";" : "" ).append( label );
+        }
+        return builder.toString();
     }
 
     private void println( Writer writer, String string ) throws IOException
@@ -237,7 +274,8 @@ public class CsvInputBatchImportIT
         for ( int i = 0; i < 300; i++ )
         {
             Object[] properties = new Object[] { "name", "Node " + i };
-            nodes.add( new InputNode( UUID.randomUUID().toString(), properties, null,
+            String id = UUID.randomUUID().toString();
+            nodes.add( new InputNode( id, properties, null,
                     randomLabels( random ), null ) );
         }
         return nodes;
@@ -273,5 +311,6 @@ public class CsvInputBatchImportIT
 
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     public final @Rule TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
-    private final Random random = new Random();
+    private final long seed = currentTimeMillis();
+    private final Random random = new Random( seed );
 }
