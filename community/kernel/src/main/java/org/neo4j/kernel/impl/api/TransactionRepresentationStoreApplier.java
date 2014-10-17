@@ -90,7 +90,7 @@ public class TransactionRepresentationStoreApplier
         // Schema index application
         IndexTransactionApplier indexApplier = new IndexTransactionApplier( indexingService,
                 labelScanStore, neoStore.getNodeStore(), neoStore.getPropertyStore(), cacheAccess,
-                propertyLoader, mode );
+                propertyLoader, transactionId, mode );
 
         // Legacy index application
         LegacyIndexApplier legacyIndexApplier = new LegacyIndexApplier( indexConfigStore,

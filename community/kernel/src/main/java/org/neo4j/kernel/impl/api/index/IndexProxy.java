@@ -58,7 +58,7 @@ public interface IndexProxy
 {
     void start() throws IOException;
 
-    IndexUpdater newUpdater( IndexUpdateMode mode );
+    IndexUpdater newUpdater( IndexUpdateMode mode, long transactionId );
 
     /**
      * Initiates dropping this index context. The returned {@link Future} can be used to await
@@ -78,14 +78,14 @@ public interface IndexProxy
     SchemaIndexProvider.Descriptor getProviderDescriptor();
 
     InternalIndexState getState();
-    
+
     /**
      * @return failure message. Expect a call to it if {@link #getState()} returns {@link InternalIndexState#FAILED}.
      */
     IndexPopulationFailure getPopulationFailure() throws IllegalStateException;
 
     void force() throws IOException;
-    
+
     /**
      * @throws IndexNotFoundKernelException if the index isn't online yet.
      */

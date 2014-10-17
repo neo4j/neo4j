@@ -56,7 +56,7 @@ public abstract class AbstractSwallowingIndexProxy implements IndexProxy
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode )
+    public IndexUpdater newUpdater( IndexUpdateMode mode, long transactionId )
     {
         return SwallowingIndexUpdater.INSTANCE;
     }
@@ -83,7 +83,7 @@ public abstract class AbstractSwallowingIndexProxy implements IndexProxy
     {
         return VOID;
     }
-    
+
     @Override
     public IndexReader newReader()
     {

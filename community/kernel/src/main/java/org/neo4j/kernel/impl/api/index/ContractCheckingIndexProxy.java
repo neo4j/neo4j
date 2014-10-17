@@ -89,12 +89,12 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode )
+    public IndexUpdater newUpdater( IndexUpdateMode mode, long transactionId )
     {
         if ( IndexUpdateMode.ONLINE == mode )
         {
             openCall( "update" );
-            return new DelegatingIndexUpdater( super.newUpdater( mode ) )
+            return new DelegatingIndexUpdater( super.newUpdater( mode, transactionId ) )
             {
                 @Override
                 public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
@@ -118,7 +118,7 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
         }
         else
         {
-            return super.newUpdater( mode );
+            return super.newUpdater( mode, transactionId );
         }
     }
 

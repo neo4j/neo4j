@@ -366,12 +366,13 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
         return String.format( "%s [provider: %s]", userDescription, providerDescriptor.toString() );
     }
 
-    public void updateIndexes( IndexUpdates updates, boolean forceIdempotency )
+    public void updateIndexes( IndexUpdates updates, long transactionId, boolean forceIdempotency )
     {
         if ( state == State.RUNNING )
         {
-            try ( IndexUpdaterMap updaterMap = indexMapReference.createIndexUpdaterMap(
-                    forceIdempotency ? IndexUpdateMode.RECOVERY : IndexUpdateMode.ONLINE ) )
+
+            IndexUpdateMode mode = forceIdempotency ? IndexUpdateMode.RECOVERY : IndexUpdateMode.ONLINE;
+            try ( IndexUpdaterMap updaterMap = indexMapReference.createIndexUpdaterMap( mode, transactionId ) )
             {
                 applyUpdates( updates, updaterMap );
             }
@@ -399,7 +400,8 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
         monitor.applyingRecoveredData( recoveredNodeIds );
         if ( !recoveredNodeIds.isEmpty() )
         {
-            try ( IndexUpdaterMap updaterMap = indexMapReference.createIndexUpdaterMap( IndexUpdateMode.RECOVERY ) )
+            // TODO: Get the real id here somehow
+            try ( IndexUpdaterMap updaterMap = indexMapReference.createIndexUpdaterMap( IndexUpdateMode.RECOVERY, Long.MAX_VALUE ) )
             {
                 for ( IndexUpdater updater : updaterMap )
                 {
@@ -416,7 +418,7 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
         recoveredNodeIds.clear();
     }
 
-    private void applyUpdates( Iterable<NodePropertyUpdate> updates, IndexUpdaterMap updaterMap )
+    private void applyUpdates( Iterable<NodePropertyUpdate> updates,  IndexUpdaterMap updaterMap )
     {
         for ( NodePropertyUpdate update : updates )
         {
@@ -472,8 +474,7 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
         }
     }
 
-    private IndexDescriptor processUpdateIfIndexExists( IndexUpdaterMap updaterMap, NodePropertyUpdate update,
-                                                        IndexDescriptor descriptor )
+    private IndexDescriptor processUpdateIfIndexExists(  IndexUpdaterMap updaterMap, NodePropertyUpdate update, IndexDescriptor descriptor )
     {
         try
         {
