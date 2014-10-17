@@ -80,7 +80,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     @Override
     public long getIndexCount( IndexDescriptor descriptor )
     {
-        return counts.countsForIndex( descriptor.getLabelId(), descriptor.getPropertyKeyId() );
+        return counts.indexSizeCount( descriptor.getLabelId(), descriptor.getPropertyKeyId() );
     }
 
     @Override
@@ -88,7 +88,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     {
         if ( counts.acceptTx( transactionId ) )
         {
-            counts.replaceCountsForIndex( descriptor.getLabelId(), descriptor.getPropertyKeyId(), total );
+            counts.replaceIndexSizeCount( descriptor.getLabelId(), descriptor.getPropertyKeyId(), total );
         }
     }
 
@@ -97,7 +97,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     {
         if ( counts.acceptTx( transactionId ) )
         {
-            counts.incrementCountsForIndex( descriptor.getLabelId(), descriptor.getPropertyKeyId(), delta );
+            counts.incrementIndexSizeCount( descriptor.getLabelId(), descriptor.getPropertyKeyId(), delta );
         }
     }
 

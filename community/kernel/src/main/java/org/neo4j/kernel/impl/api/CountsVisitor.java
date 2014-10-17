@@ -30,5 +30,5 @@ public interface CountsVisitor
 
     void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count );
 
-    void visitIndexCount( int labelId, int propertyKeyId, long count );
+    void visitIndexSizeCount( int labelId, int propertyKeyId, long count );
 }

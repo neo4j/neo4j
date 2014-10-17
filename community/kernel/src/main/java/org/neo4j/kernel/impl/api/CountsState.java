@@ -34,7 +34,7 @@ import static java.util.Objects.requireNonNull;
 
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
-import static org.neo4j.kernel.impl.api.CountsKey.indexKey;
+import static org.neo4j.kernel.impl.api.CountsKey.indexSizeKey;
 import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
 import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
 
@@ -43,47 +43,27 @@ public class CountsState implements CountsVisitor.Visitable, CountsAcceptor, Rec
     private final Map<CountsKey, Register.DoubleLongRegister> counts = new HashMap<>();
 
     @Override
-    public void incrementCountsForNode( int labelId, long delta )
+    public void incrementNodeCount( int labelId, long delta )
     {
         count( nodeKey( labelId ) ).incrementSecond( delta );
     }
 
     @Override
-    public void incrementCountsForRelationship( int startLabelId, int typeId, int endLabelId, long delta )
+    public void incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta )
     {
         count( relationshipKey( startLabelId, typeId, endLabelId ) ).incrementSecond( delta );
     }
 
     @Override
-    public void incrementCountsForIndex( int labelId, int propertyKeyId, long delta )
+    public void incrementIndexSizeCount( int labelId, int propertyKeyId, long delta )
     {
-        count( indexKey( labelId, propertyKeyId ) ).incrementSecond( delta );
+        count( indexSizeKey( labelId, propertyKeyId ) ).incrementSecond( delta );
     }
 
     @Override
-    public void replaceCountsForIndex( int labelId, int propertyKeyId, long total )
+    public void replaceIndexSizeCount( int labelId, int propertyKeyId, long total )
     {
-        count( indexKey( labelId, propertyKeyId ) ).writeSecond( total );
-    }
-
-    public void increment( int labelId )
-    {
-        incrementCountsForNode( labelId, 1 );
-    }
-
-    public void decrement( int labelId )
-    {
-        incrementCountsForNode( labelId, -1 );
-    }
-
-    public void increment( int startLabelId, int typeId, int endLabelId )
-    {
-        incrementCountsForRelationship( startLabelId, typeId, endLabelId, 1 );
-    }
-
-    public void decrement( int startLabelId, int typeId, int endLabelId )
-    {
-        incrementCountsForRelationship( startLabelId, typeId, endLabelId, -1 );
+        count( indexSizeKey( labelId, propertyKeyId ) ).writeSecond( total );
     }
 
     @Override
@@ -204,31 +184,31 @@ public class CountsState implements CountsVisitor.Visitable, CountsAcceptor, Rec
 
     public void addNode( long[] labels )
     {
-        increment( ANY_LABEL );
+        incrementNodeCount( ANY_LABEL, 1 );
         for ( long label : labels )
         {
-            increment( (int) label );
+            incrementNodeCount( (int) label, 1 );
         }
     }
 
     public void addRelationship( long[] startLabels, int type, long[] endLabels )
     {
-        increment( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL );
-        increment( ANY_LABEL, type, ANY_LABEL );
+        incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, 1 );
+        incrementRelationshipCount( ANY_LABEL, type, ANY_LABEL, 1 );
         for ( long startLabelId : startLabels )
         {
-            increment( (int) startLabelId, ANY_RELATIONSHIP_TYPE, ANY_LABEL );
-            increment( (int) startLabelId, type, ANY_LABEL );
+            incrementRelationshipCount( (int) startLabelId, ANY_RELATIONSHIP_TYPE, ANY_LABEL, 1 );
+            incrementRelationshipCount( (int) startLabelId, type, ANY_LABEL, 1 );
             for ( long endLabelId : endLabels )
             {
-                increment( (int) startLabelId, ANY_RELATIONSHIP_TYPE, (int) endLabelId );
-                increment( (int) startLabelId, type, (int) endLabelId );
+                incrementRelationshipCount( (int) startLabelId, ANY_RELATIONSHIP_TYPE, (int) endLabelId, 1 );
+                incrementRelationshipCount( (int) startLabelId, type, (int) endLabelId, 1 );
             }
         }
         for ( long endLabelId : endLabels )
         {
-            increment( ANY_LABEL, ANY_RELATIONSHIP_TYPE, (int) endLabelId );
-            increment( ANY_LABEL, type, (int) endLabelId );
+            incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, (int) endLabelId, 1 );
+            incrementRelationshipCount( ANY_LABEL, type, (int) endLabelId, 1 );
         }
     }
 
@@ -261,7 +241,7 @@ public class CountsState implements CountsVisitor.Visitable, CountsAcceptor, Rec
         }
 
         @Override
-        public void visitIndexCount( int labelId, int propertyKeyId, long count )
+        public void visitIndexSizeCount( int labelId, int propertyKeyId, long count )
         {
             // not updated through commands
         }
@@ -296,9 +276,9 @@ public class CountsState implements CountsVisitor.Visitable, CountsAcceptor, Rec
         }
 
         @Override
-        public void visitIndexCount( int labelId, int propertyKey, long count )
+        public void visitIndexSizeCount( int labelId, int propertyKey, long count )
         {
-            verify( indexKey( labelId, propertyKey ), 0, count );
+            verify( indexSizeKey( labelId, propertyKey ), 0, count );
         }
 
         private void verify( CountsKey key, long actualFirst, long actualSecond )

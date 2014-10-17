@@ -154,7 +154,7 @@ public class CountsStoreApplier extends NeoCommandHandler.Adapter
     public boolean visitUpdateCountsCommand( Command.CountsCommand command ) throws IOException
     {
         long delta = command.delta();
-        countsAcceptor.incrementCountsForRelationship(
+        countsAcceptor.incrementRelationshipCount(
                 command.startLabelId(), command.typeId(), command.endLabelId(), delta );
         return false;
     }
@@ -168,17 +168,17 @@ public class CountsStoreApplier extends NeoCommandHandler.Adapter
     public void apply()
     {
         // nodes
-        countsAcceptor.incrementCountsForNode( ANY_LABEL, nodesDelta );
+        countsAcceptor.incrementNodeCount( ANY_LABEL, nodesDelta );
         for ( Map.Entry<Integer,IntCounter> label : labelDelta.entrySet() )
         {
-            countsAcceptor.incrementCountsForNode( label.getKey(), label.getValue().value() );
+            countsAcceptor.incrementNodeCount( label.getKey(), label.getValue().value() );
         }
 
         // relationships
-        countsAcceptor.incrementCountsForRelationship( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, relsDelta );
+        countsAcceptor.incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, relsDelta );
         for ( Map.Entry<Integer, IntCounter> type : relationshipTypeDelta.entrySet() )
         {
-            countsAcceptor.incrementCountsForRelationship( ANY_LABEL, type.getKey(), ANY_LABEL, type.getValue().value() );
+            countsAcceptor.incrementRelationshipCount( ANY_LABEL, type.getKey(), ANY_LABEL, type.getValue().value() );
         }
     }
 

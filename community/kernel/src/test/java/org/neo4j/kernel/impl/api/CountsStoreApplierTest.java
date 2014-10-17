@@ -49,7 +49,7 @@ public class CountsStoreApplierTest
         applier.apply();
 
         // THEN
-        verify( countsAcceptor, times( 1 ) ).incrementCountsForNode( ANY_LABEL, 1 );
+        verify( countsAcceptor, times( 1 ) ).incrementNodeCount( ANY_LABEL, 1 );
     }
 
     private Command.NodeCommand addNodeCommand()

@@ -19,13 +19,10 @@
  */
 package org.neo4j.kernel;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
-
 import java.io.File;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
@@ -37,6 +34,11 @@ import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
+
+import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
+import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 
 public class HACountsPropagationTest
 {
@@ -67,8 +69,8 @@ public class HACountsPropagationTest
             for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
             {
                 CountsTracker counts = db.dependencyResolver.resolveDependency( NeoStore.class ).getCounts();
-                assertEquals( 2, counts.countsForNode( -1 ) );
-                assertEquals( 1, counts.countsForNode( 0 /* A */ ) );
+                assertEquals( 2, counts.nodeCount( -1 ) );
+                assertEquals( 1, counts.nodeCount( 0 /* A */ ) );
             }
         }
         finally
@@ -104,10 +106,10 @@ public class HACountsPropagationTest
             for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
             {
                 CountsTracker counts = db.dependencyResolver.resolveDependency( NeoStore.class ).getCounts();
-                assertEquals( 1, counts.countsForRelationship( -1, -1, -1 ) );
-                assertEquals( 1, counts.countsForRelationship( -1, -1, 0 ) );
-                assertEquals( 1, counts.countsForRelationship( -1, 0, -1 ) );
-                assertEquals( 1, counts.countsForRelationship( -1, 0, 0 ) );
+                assertEquals( 1, counts.relationshipCount( -1, -1, -1 ) );
+                assertEquals( 1, counts.relationshipCount( -1, -1, 0 ) );
+                assertEquals( 1, counts.relationshipCount( -1, 0, -1 ) );
+                assertEquals( 1, counts.relationshipCount( -1, 0, 0 ) );
             }
         }
         finally

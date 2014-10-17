@@ -116,7 +116,7 @@ public class RelationshipCountsStep extends RelationshipStoreProcessorStep
                     int type = typeId == anyRelationshipType ? ReadOperations.ANY_RELATIONSHIP_TYPE : typeId;
                     int endLabel = endNodeLabelId == anyLabel ? ReadOperations.ANY_LABEL : endNodeLabelId;
                     long count = endNodeLabelIds[endNodeLabelId];
-                    countsTracker.incrementCountsForRelationship( startLabel, type, endLabel, count );
+                    countsTracker.incrementRelationshipCount( startLabel, type, endLabel, count );
                 }
             }
         }

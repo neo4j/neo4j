@@ -641,7 +641,8 @@ public class IndexPopulationJobTest
         try ( Transaction tx = db.beginTx() )
         {
             ReadOperations statement = ctxProvider.instance().readOperations();
-            result = counts.countsForIndex( statement.labelGetForName( label.name() ), statement.propertyKeyGetForName( propertyKey ) );
+            result = counts.indexSizeCount( statement.labelGetForName( label.name() ), statement.propertyKeyGetForName(
+                    propertyKey ) );
             tx.success();
         }
         return result;

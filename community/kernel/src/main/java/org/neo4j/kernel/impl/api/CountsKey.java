@@ -23,9 +23,10 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.impl.store.counts.CountsRecordType;
 import org.neo4j.register.Register;
 
-import static org.neo4j.kernel.impl.store.counts.CountsRecordType.INDEX;
-import static org.neo4j.kernel.impl.store.counts.CountsRecordType.NODE;
-import static org.neo4j.kernel.impl.store.counts.CountsRecordType.RELATIONSHIP;
+import static org.neo4j.kernel.impl.store.counts.CountsRecordType.ENTITY_NODE;
+import static org.neo4j.kernel.impl.store.counts.CountsRecordType.ENTITY_RELATIONSHIP;
+import static org.neo4j.kernel.impl.store.counts.CountsRecordType.INDEX_SAMPLE;
+import static org.neo4j.kernel.impl.store.counts.CountsRecordType.INDEX_SIZE;
 
 public abstract class CountsKey implements Comparable<CountsKey>
 {
@@ -39,9 +40,14 @@ public abstract class CountsKey implements Comparable<CountsKey>
         return new RelationshipKey( startLabelId, typeId, endLabelId );
     }
 
-    public static IndexKey indexKey( int labelId, int propertyKeyId )
+    public static IndexKey indexSizeKey( int labelId, int propertyKeyId )
     {
-        return new IndexKey( labelId, propertyKeyId );
+        return new IndexSizeKey( labelId, propertyKeyId );
+    }
+
+    public static IndexKey indexSampleKey( int labelId, int propertyKeyId )
+    {
+        return new IndexSampleKey( labelId, propertyKeyId );
     }
 
     private CountsKey()
@@ -91,13 +97,15 @@ public abstract class CountsKey implements Comparable<CountsKey>
         @Override
         public CountsRecordType recordType()
         {
-            return NODE;
+            return ENTITY_NODE;
         }
 
         @Override
         public int hashCode()
         {
-            return labelId;
+            int result = labelId;
+            result = 31 * result + recordType().hashCode();
+            return result;
         }
 
         @Override
@@ -165,7 +173,7 @@ public abstract class CountsKey implements Comparable<CountsKey>
         @Override
         public CountsRecordType recordType()
         {
-            return RELATIONSHIP;
+            return ENTITY_RELATIONSHIP;
         }
 
         @Override
@@ -174,6 +182,7 @@ public abstract class CountsKey implements Comparable<CountsKey>
             int result = startLabelId;
             result = 31 * result + typeId;
             result = 31 * result + endLabelId;
+            result = 31 * result + recordType().hashCode();
             return result;
         }
 
@@ -193,11 +202,11 @@ public abstract class CountsKey implements Comparable<CountsKey>
         }
 
         @Override
-        public int compareTo( CountsKey o )
+        public int compareTo( CountsKey other )
         {
-            if ( o instanceof RelationshipKey )
+            if ( other instanceof RelationshipKey )
             {
-                RelationshipKey that = (RelationshipKey) o;
+                RelationshipKey that = (RelationshipKey) other;
                 if ( this.typeId != that.typeId )
                 {
                     return this.typeId - that.typeId;
@@ -210,20 +219,22 @@ public abstract class CountsKey implements Comparable<CountsKey>
             }
             else
             {
-                return recordType().ordinal() - o.recordType().ordinal();
+                return recordType().ordinal() - other.recordType().ordinal();
             }
         }
     }
 
-    public static final class IndexKey extends CountsKey
+    public static abstract class IndexKey extends CountsKey
     {
         private final int labelId;
         private final int propertyKeyId;
+        private final CountsRecordType type;
 
-        private IndexKey( int labelId, int propertyKeyId )
+        private IndexKey( int labelId, int propertyKeyId, CountsRecordType type )
         {
             this.labelId = labelId;
             this.propertyKeyId = propertyKeyId;
+            this.type = type;
         }
 
         public int labelId()
@@ -239,43 +250,45 @@ public abstract class CountsKey implements Comparable<CountsKey>
         @Override
         public String toString()
         {
-            return String.format( "IndexKey[(%s {%s})", label( labelId ), propertyKey( propertyKeyId ) );
+            return String.format( "IndexKey[%s (%s {%s})]", type.name(), label( labelId ), propertyKey( propertyKeyId ) );
         }
 
         @Override
         public void accept( CountsVisitor visitor, Register.DoubleLongRegister count )
         {
-            visitor.visitIndexCount( labelId, propertyKeyId, count.readSecond() );
+            visitor.visitIndexSizeCount( labelId, propertyKeyId, count.readSecond() );
         }
 
         @Override
         public CountsRecordType recordType()
         {
-            return INDEX;
+            return type;
         }
+
 
         @Override
         public int hashCode()
         {
             int result = labelId;
             result = 31 * result + propertyKeyId;
+            result = 31 * result + type.hashCode();
             return result;
         }
 
         @Override
-        public boolean equals( Object o )
+        public boolean equals( Object other )
         {
-            if ( this == o )
+            if ( this == other )
             {
                 return true;
             }
-            if ( o == null || getClass() != o.getClass() )
+            if ( other == null || getClass() != other.getClass() )
             {
                 return false;
             }
 
-            IndexKey indexKey = (IndexKey) o;
-            return labelId == indexKey.labelId && propertyKeyId == indexKey.propertyKeyId;
+            IndexKey indexKey = (IndexKey) other;
+            return labelId == indexKey.labelId && propertyKeyId == indexKey.propertyKeyId && type == indexKey.type;
 
         }
 
@@ -312,5 +325,21 @@ public abstract class CountsKey implements Comparable<CountsKey>
     public static String relationshipType( int id )
     {
         return id == ReadOperations.ANY_RELATIONSHIP_TYPE ? "" : ("[:type=" + id + "]");
+    }
+
+    public final static class IndexSizeKey extends IndexKey
+    {
+        public IndexSizeKey( int labelId, int propertyKeyId )
+        {
+            super( labelId, propertyKeyId, INDEX_SIZE );
+        }
+    }
+
+    public final static class IndexSampleKey extends IndexKey
+    {
+        public IndexSampleKey( int labelId, int propertyKeyId )
+        {
+            super( labelId, propertyKeyId, INDEX_SAMPLE );
+        }
     }
 }

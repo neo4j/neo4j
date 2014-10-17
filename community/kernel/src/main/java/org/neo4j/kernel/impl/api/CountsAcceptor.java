@@ -21,13 +21,13 @@ package org.neo4j.kernel.impl.api;
 
 public interface CountsAcceptor
 {
-    void incrementCountsForNode( int labelId, long delta );
+    void incrementNodeCount( int labelId, long delta );
 
-    void incrementCountsForRelationship( int startLabelId, int typeId, int endLabelId, long delta );
+    void incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta );
 
-    void incrementCountsForIndex( int labelId, int propertyKeyId, long delta );
+    void incrementIndexSizeCount( int labelId, int propertyKeyId, long delta );
 
-    void replaceCountsForIndex( int labelId, int propertyKeyId, long total );
+    void replaceIndexSizeCount( int labelId, int propertyKeyId, long total );
 
     final class Initializer implements CountsVisitor
     {
@@ -41,19 +41,19 @@ public interface CountsAcceptor
         @Override
         public void visitNodeCount( int labelId, long count )
         {
-            target.incrementCountsForNode( labelId, count );
+            target.incrementNodeCount( labelId, count );
         }
 
         @Override
         public void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count )
         {
-            target.incrementCountsForRelationship( startLabelId, typeId, endLabelId, count );
+            target.incrementRelationshipCount( startLabelId, typeId, endLabelId, count );
         }
 
         @Override
-        public void visitIndexCount( int labelId, int propertyKeyId, long count )
+        public void visitIndexSizeCount( int labelId, int propertyKeyId, long count )
         {
-            target.incrementCountsForIndex( labelId, propertyKeyId, count );
+            target.incrementIndexSizeCount( labelId, propertyKeyId, count );
         }
     }
 }

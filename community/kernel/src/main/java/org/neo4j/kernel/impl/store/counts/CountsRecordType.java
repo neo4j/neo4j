@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.store.counts;
 
 public enum CountsRecordType
 {
-    EMPTY( 0 ), NODE( 1 ), RELATIONSHIP( 2 ), INDEX( 4 );
+    EMPTY( 0 ), ENTITY_NODE( 1 ), ENTITY_RELATIONSHIP( 2 ), INDEX_SIZE( 4 ), INDEX_SAMPLE( 5 );
 
     public final byte code;
 
@@ -35,9 +35,11 @@ public enum CountsRecordType
         switch ( code )
         {
             case 0: return EMPTY;
-            case 1: return NODE;
-            case 2: return RELATIONSHIP;
-            case 4: return INDEX;
+            case 1: return ENTITY_NODE;
+            case 2: return ENTITY_RELATIONSHIP;
+            case 4: return INDEX_SIZE;
+            case 5: return INDEX_SAMPLE;
+
             default:
                 throw new IllegalArgumentException( "Invalid counts record type code: " + code );
         }

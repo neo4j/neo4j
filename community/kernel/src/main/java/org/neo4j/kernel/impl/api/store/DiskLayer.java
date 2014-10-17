@@ -806,7 +806,7 @@ public class DiskLayer implements StoreReadLayer
     @Override
     public long countsForNode( int labelId )
     {
-        return counts.countsForNode( labelId );
+        return counts.nodeCount( labelId );
     }
 
     @Override
@@ -816,7 +816,7 @@ public class DiskLayer implements StoreReadLayer
         {
             throw new UnsupportedOperationException( "not implemented" );
         }
-        return counts.countsForRelationship( startLabelId, typeId, endLabelId );
+        return counts.relationshipCount( startLabelId, typeId, endLabelId );
     }
 
     @Override

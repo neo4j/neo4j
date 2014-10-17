@@ -37,7 +37,7 @@ import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 
-import static org.neo4j.kernel.impl.api.CountsKey.indexKey;
+import static org.neo4j.kernel.impl.api.CountsKey.indexSizeKey;
 import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
 import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
 
@@ -149,9 +149,9 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
         CountsStore.createEmpty( pageCache, storeFile( file, ALPHA ), version );
     }
 
-    public long countsForNode( int labelId )
+    public long nodeCount( int labelId )
     {
-        return get( nodeKey( labelId ) );
+        return getSecond( nodeKey( labelId ) );
     }
 
     public boolean acceptTx( long txId )
@@ -160,37 +160,37 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     }
 
     @Override
-    public void incrementCountsForNode( int labelId, long delta )
+    public void incrementNodeCount( int labelId, long delta )
     {
-        increment( nodeKey( labelId ), delta );
+        incrementSecond( nodeKey( labelId ), delta );
     }
 
-    public long countsForRelationship( int startLabelId, int typeId, int endLabelId )
+    public long relationshipCount( int startLabelId, int typeId, int endLabelId )
     {
-        return get( relationshipKey( startLabelId, typeId, endLabelId ) );
-    }
-
-    @Override
-    public void incrementCountsForRelationship( int startLabelId, int typeId, int endLabelId, long delta )
-    {
-        increment( relationshipKey( startLabelId, typeId, endLabelId ), delta );
-    }
-
-    public long countsForIndex( int labelId, int propertyKeyId )
-    {
-        return get( indexKey( labelId, propertyKeyId ) );
+        return getSecond( relationshipKey( startLabelId, typeId, endLabelId ) );
     }
 
     @Override
-    public void incrementCountsForIndex( int labelId, int propertyKeyId, long delta )
+    public void incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta )
     {
-        increment( indexKey( labelId, propertyKeyId ), delta );
+        incrementSecond( relationshipKey( startLabelId, typeId, endLabelId ), delta );
+    }
+
+    public long indexSizeCount( int labelId, int propertyKeyId )
+    {
+        return getSecond( indexSizeKey( labelId, propertyKeyId ) );
     }
 
     @Override
-    public void replaceCountsForIndex( int labelId, int propertyKeyId, long total )
+    public void incrementIndexSizeCount( int labelId, int propertyKeyId, long delta )
     {
-        replace( indexKey( labelId, propertyKeyId ), total );
+        incrementSecond( indexSizeKey( labelId, propertyKeyId ), delta );
+    }
+
+    @Override
+    public void replaceIndexSizeCount( int labelId, int propertyKeyId, long total )
+    {
+        replaceSecond( indexSizeKey( labelId, propertyKeyId ), total );
     }
 
     public void accept( final CountsVisitor visitor )
@@ -213,26 +213,26 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
         } );
     }
 
-    private long get( CountsKey key )
+    private long getSecond( CountsKey key )
     {
         return state.getCount( key );
     }
 
-    private void increment( CountsKey key, long delta )
+    private void incrementSecond( CountsKey key, long delta )
     {
         if ( delta != 0 )
         {
             try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
             {
                 long value = state.incrementCount( key, delta );
-                assert value >= 0 : String.format( "increment(key=%s, delta=%d) -> value=%d", key, delta, value );
+                assert value >= 0 : String.format( "incrementSecond(key=%s, delta=%d) -> value=%d", key, delta, value );
             }
         }
     }
 
-    private void replace( CountsKey key, long total )
+    private void replaceSecond( CountsKey key, long total )
     {
-        assert total >= 0 : String.format( "replace(key=%s, value=%d)", key, total );
+        assert total >= 0 : String.format( "replaceSecond(key=%s, value=%d)", key, total );
         try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
         {
             state.replaceCount( key, total );
@@ -267,7 +267,7 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
                               nextWriter( state, lastCommittedTxId ) )
                 {
                     state.accept( writer );
-                    // replace the old store with the
+                    // replaceSecond the old store with the
                     this.state = new ConcurrentTrackerState( writer.openForReading() );
                 }
                 // close the old store
