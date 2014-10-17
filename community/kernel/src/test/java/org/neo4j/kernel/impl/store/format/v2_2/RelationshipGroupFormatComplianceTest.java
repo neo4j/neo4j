@@ -20,12 +20,11 @@
 package org.neo4j.kernel.impl.store.format.v2_2;
 
 import java.io.File;
-import java.util.Date;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.helpers.Platforms;
+
 import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
@@ -41,9 +40,12 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 
 import static java.util.Arrays.asList;
+
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.*;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.Assert.assertThat;
+
+import static org.neo4j.kernel.impl.store.NeoStore.DEFAULT_NAME;
+import static org.neo4j.kernel.impl.store.StoreFactory.RELATIONSHIP_GROUP_STORE_NAME;
 import static org.neo4j.kernel.impl.store.impl.StoreMatchers.records;
 
 public class RelationshipGroupFormatComplianceTest
@@ -51,20 +53,18 @@ public class RelationshipGroupFormatComplianceTest
     @Rule
     public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     private StoreFactory storeFactory;
+    private final File storeDir = new File( "dir" ).getAbsoluteFile();
 
     @Before
     public void setup()
     {
         MuninnPageCache pageCache = new MuninnPageCache( fsRule.get(), 1024, 1024, PageCacheMonitor.NULL );
-        storeFactory = new StoreFactory( StoreFactory.configForStoreDir( new Config(), new File( "/" ) ), new DefaultIdGeneratorFactory(), pageCache, fsRule.get(), StringLogger.DEV_NULL, new Monitors() );
+        storeFactory = new StoreFactory( StoreFactory.configForStoreDir( new Config(), storeDir ), new DefaultIdGeneratorFactory(), pageCache, fsRule.get(), StringLogger.DEV_NULL, new Monitors() );
     }
 
     @Test
     public void readsRecords() throws Throwable
     {
-        assertTrue( "If you see this, call jacob.", !Platforms.platformIsWindows() || new Date().getTime() < new Date(2014-1900, 9, 25).getTime() );
-        assumeTrue( !Platforms.platformIsWindows() ); // Temporarly skipping windows here, some sort of bug on win.
-
         // Given
         NeoStore neoStore = storeFactory.createNeoStore();
         RelationshipGroupStore groupStore = neoStore.getRelationshipGroupStore();
@@ -85,9 +85,6 @@ public class RelationshipGroupFormatComplianceTest
     @Test
     public void writesRecords() throws Throwable
     {
-        assertTrue( "If you see this, call jacob.", !Platforms.platformIsWindows() || new Date().getTime() < new Date(2014-1900, 9, 25).getTime() );
-        assumeTrue( !Platforms.platformIsWindows() ); // Temporarly skipping windows here, some sort of bug on win.
-
         // Given
         storeFactory.createNeoStore().close(); // RelGroupStore wont start unless it's child stores exist, so create those
 
@@ -110,8 +107,10 @@ public class RelationshipGroupFormatComplianceTest
 
     private StandardStore<RelationshipGroupRecord, RelationshipGroupStoreFormat_v2_2.RelationshipGroupRecordCursor> newStore()
     {
-        return new StandardStore<>( new RelationshipGroupStoreFormat_v2_2(), new File( "/neostore.relationshipgroupstore.db" ),
-                new TestStoreIdGenerator(), new MuninnPageCache( fsRule.get(), 1024, 1024, PageCacheMonitor.NULL ), fsRule.get(),
+        return new StandardStore<>( new RelationshipGroupStoreFormat_v2_2(),
+                new File( storeDir, DEFAULT_NAME + RELATIONSHIP_GROUP_STORE_NAME ),
+                new TestStoreIdGenerator(), new MuninnPageCache( fsRule.get(), 1024, 1024, PageCacheMonitor.NULL ),
+                fsRule.get(),
                 StringLogger.DEV_NULL );
     }
 }
