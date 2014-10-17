@@ -151,8 +151,8 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
         case NodeHashJoin(nodes, left, right) =>
           NodeHashJoinPipe(nodes.map(_.name), buildPipe(left), buildPipe(right))()
 
-        case OuterHashJoin(node, left, right) =>
-          NodeOuterHashJoinPipe(node.name, buildPipe(left), buildPipe(right), (right.availableSymbols -- left.availableSymbols).map(_.name))()
+        case OuterHashJoin(nodes, left, right) =>
+          NodeOuterHashJoinPipe(nodes.map(_.name), buildPipe(left), buildPipe(right), (right.availableSymbols -- left.availableSymbols).map(_.name))()
 
         case Optional(inner) =>
           OptionalPipe(inner.availableSymbols.map(_.name), buildPipe(inner))()

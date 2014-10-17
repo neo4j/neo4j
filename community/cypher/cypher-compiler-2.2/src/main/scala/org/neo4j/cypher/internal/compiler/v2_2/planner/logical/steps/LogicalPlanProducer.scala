@@ -196,8 +196,8 @@ object LogicalPlanProducer {
       )
     )
 
-  def planOuterHashJoin(node: IdName, left: LogicalPlan, right: LogicalPlan) =
-    OuterHashJoin(node, left, right)(
+  def planOuterHashJoin(nodes: Set[IdName], left: LogicalPlan, right: LogicalPlan) =
+    OuterHashJoin(nodes, left, right)(
       left.solved.updateGraph(_.withAddedOptionalMatch(right.solved.graph))
     )
 

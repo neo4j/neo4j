@@ -25,6 +25,8 @@ import org.mockito.Matchers._
 import org.neo4j.graphdb.Node
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_2.symbols._
+
 
 class NodeOuterHashJoinPipeTest extends CypherFunSuite {
 
@@ -46,7 +48,7 @@ class NodeOuterHashJoinPipeTest extends CypherFunSuite {
       row("b" -> node3, "a" -> 3))
 
     // when
-    val result = NodeOuterHashJoinPipe("b", left, right, Set("a"))().createResults(queryState)
+    val result = NodeOuterHashJoinPipe(Set("b"), left, right, Set("a"))().createResults(queryState)
 
     // then
     result.map(_("a")).toSet should equal(Set(null, 2))
@@ -65,7 +67,7 @@ class NodeOuterHashJoinPipeTest extends CypherFunSuite {
       row("b" -> node2, "c" -> 40))
 
     // when
-    val result = NodeOuterHashJoinPipe("b", left, right, Set("c"))().createResults(queryState)
+    val result = NodeOuterHashJoinPipe(Set("b"), left, right, Set("c"))().createResults(queryState)
 
     // then
     result.toSet should equal(Set(
@@ -86,7 +88,7 @@ class NodeOuterHashJoinPipeTest extends CypherFunSuite {
       row("b" -> node2, "c" -> 40))
 
     // when
-    val result = NodeOuterHashJoinPipe("b", left, right, Set("c"))().createResults(queryState)
+    val result = NodeOuterHashJoinPipe(Set("b"), left, right, Set("c"))().createResults(queryState)
 
     // then
     result.toList shouldBe 'empty
@@ -104,7 +106,7 @@ class NodeOuterHashJoinPipeTest extends CypherFunSuite {
     val right = newMockedPipe("b")
 
     // when
-    val result = NodeOuterHashJoinPipe("b", left, right, Set("c"))().createResults(queryState)
+    val result = NodeOuterHashJoinPipe(Set("b"), left, right, Set("c"))().createResults(queryState)
 
     // then
     result.toSet should equal(Set(
@@ -129,7 +131,7 @@ class NodeOuterHashJoinPipeTest extends CypherFunSuite {
       row("b" -> node3, "c" -> 30))
 
     // when
-    val result = NodeOuterHashJoinPipe("b", left, right, Set("c"))().createResults(queryState)
+    val result = NodeOuterHashJoinPipe(Set("b"), left, right, Set("c"))().createResults(queryState)
 
     // then
     result.toSet should equal(Set(
@@ -154,7 +156,7 @@ class NodeOuterHashJoinPipeTest extends CypherFunSuite {
       row("b" -> node3, "c" -> 30))
 
     // when
-    val result = NodeOuterHashJoinPipe("b", left, right, Set("c"))().createResults(queryState)
+    val result = NodeOuterHashJoinPipe(Set("b"), left, right, Set("c"))().createResults(queryState)
 
     // then
     result.toSet should equal(Set(
@@ -175,11 +177,42 @@ class NodeOuterHashJoinPipeTest extends CypherFunSuite {
       row("b" -> null,  "c" -> 20))
 
     // when
-    val result = NodeOuterHashJoinPipe("b", left, right, Set("c"))().createResults(queryState)
+    val result = NodeOuterHashJoinPipe(Set("b"), left, right, Set("c"))().createResults(queryState)
 
     // then
     result.toSet should equal(Set(
       Map("a" -> 20, "b" -> null , "c" -> null)
+    ))
+  }
+
+  test("should support joining on two different identifiers") {
+    // given
+    val queryState = QueryStateHelper.empty
+
+    val left = newMockedPipe("b",
+      row("a" -> node1, "b" -> node2, "c" -> 1),
+      row("a" -> node1, "b" -> node3, "c" -> 2),
+      row("a" -> node1, "b" -> node3, "c" -> 3),
+      row("a" -> node2, "b" -> node3, "c" -> 4),
+      row("a" -> node1, "b" -> null,  "c" -> 5))
+
+
+    val right = newMockedPipe("b",
+      row("a" -> node1, "b" -> node2, "d" -> 1),
+      row("a" -> node1, "b" -> node3, "d" -> 2),
+      row("a" -> node3, "b" -> node3, "d" -> 3),
+      row("a" -> null, "b" -> node3,  "d" -> 4))
+
+    // when
+    val result = NodeOuterHashJoinPipe(Set("a","b"), left, right, Set("d"))().createResults(queryState)
+
+    // then
+    result.toSet should equal(Set(
+      Map("a" -> node1, "b" -> node2, "c" -> 1, "d" -> 1),
+      Map("a" -> node1, "b" -> node3, "c" -> 2, "d" -> 2),
+      Map("a" -> node1, "b" -> node3, "c" -> 3, "d" -> 2),
+      Map("a" -> node2, "b" -> node3, "c" -> 4, "d" -> null),
+      Map("a" -> node1, "b" -> null, "c" -> 5, "d" -> null)
     ))
   }
 
@@ -188,6 +221,7 @@ class NodeOuterHashJoinPipeTest extends CypherFunSuite {
   private def newMockedNode(id: Int) = {
     val node = mock[Node]
     when(node.getId).thenReturn(id)
+    when(node.toString).thenReturn(s"MockedNode($id)")
     node
   }
 
