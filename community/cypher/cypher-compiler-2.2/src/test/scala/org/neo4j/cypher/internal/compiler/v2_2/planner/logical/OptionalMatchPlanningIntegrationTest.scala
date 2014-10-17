@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast
 
 class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  ignore("should build plans containing joins") { // This should be built using plan rewriting
+  test("should build plans containing joins") {
     (new given {
       cardinality = mapCardinality {
         case _: AllNodesScan => 2000000
@@ -41,7 +41,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       }
     } planFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b").plan should equal(
       Projection(
-        OuterHashJoin("b",
+        OuterHashJoin(Set("b"),
           Expand(NodeByLabelScan("a", Left("X"), Set.empty)(PlannerQuery.empty), "a", Direction.OUTGOING, Direction.OUTGOING, Seq(), "b", "r1", SimplePatternLength)(PlannerQuery.empty),
           Expand(NodeByLabelScan("c", Left("Y"), Set.empty)(PlannerQuery.empty), "c", Direction.INCOMING, Direction.OUTGOING, Seq(), "b", "r2", SimplePatternLength)(PlannerQuery.empty)
         )(PlannerQuery.empty),
