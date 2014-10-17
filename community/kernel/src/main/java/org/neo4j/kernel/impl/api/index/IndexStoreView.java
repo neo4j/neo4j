@@ -26,7 +26,6 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.impl.api.index.CountingIndexUpdater.IndexUpdateCountVisitor;
 
 /** The indexing services view of the universe. */
 public interface IndexStoreView extends PropertyAccessor
@@ -61,26 +60,21 @@ public interface IndexStoreView extends PropertyAccessor
 
     static class IndexCountVisitors
     {
-        public static IndexUpdateCountVisitor newUpdatingIndexCountVisitor( final IndexStoreView view, final IndexDescriptor descriptor )
+        public static IndexCountVisitor newIndexCountVisitor( final IndexStoreView view, final IndexDescriptor descriptor )
         {
-            return new IndexUpdateCountVisitor()
+            return new IndexCountVisitor()
             {
                 @Override
-                public void visitIndexUpdateCount( long indexUpdates )
+                public void incrementIndexCount( long transactionId, long deltaCount )
                 {
-                    view.updateIndexCount( descriptor, indexUpdates );
+                    view.updateIndexCount( descriptor, deltaCount );
                 }
-            };
-        };
 
-        public static IndexUpdateCountVisitor newReplacingIndexCountVisitor( final IndexStoreView view, final IndexDescriptor descriptor )
-        {
-            return new IndexUpdateCountVisitor()
-            {
                 @Override
-                public void visitIndexUpdateCount( long indexUpdates )
+                public void replaceIndexCount( long transactionId, long totalCount )
                 {
-                    view.replaceIndexCount( descriptor, indexUpdates );
+                    view.replaceIndexCount( descriptor, totalCount );
+
                 }
             };
         };

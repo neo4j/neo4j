@@ -31,13 +31,13 @@ public class FailedPopulatingIndexProxyFactory implements FailedIndexProxyFactor
     private final SchemaIndexProvider.Descriptor providerDescriptor;
     private final IndexPopulator populator;
     private final String indexUserDescription;
-    private final CountingIndexUpdater.IndexUpdateCountVisitor replacingIndexCountVisitor;
+    private final IndexCountVisitor replacingIndexCountVisitor;
 
     FailedPopulatingIndexProxyFactory( IndexDescriptor descriptor,
                                        SchemaIndexProvider.Descriptor providerDescriptor,
                                        IndexPopulator populator,
                                        String indexUserDescription,
-                                       CountingIndexUpdater.IndexUpdateCountVisitor replacingIndexCountVisitor )
+                                       IndexCountVisitor replacingIndexCountVisitor )
     {
         this.descriptor = descriptor;
         this.providerDescriptor = providerDescriptor;

@@ -511,9 +511,9 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
         }
     }
 
-    private CountingIndexUpdater.IndexUpdateCountVisitor replacingIndexCountVisitor( IndexDescriptor descriptor )
+    private IndexCountVisitor indexCountVisitor( IndexDescriptor descriptor )
     {
-        return IndexStoreView.IndexCountVisitors.newReplacingIndexCountVisitor( storeView, descriptor );
+        return IndexStoreView.IndexCountVisitors.newIndexCountVisitor( storeView, descriptor );
     }
 
     private IndexProxy createAndStartPopulatingIndexProxy( final long ruleId,
@@ -533,7 +533,7 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
             providerDescriptor,
             populator,
             indexUserDescription,
-            replacingIndexCountVisitor( descriptor )
+            indexCountVisitor( descriptor )
         );
 
         PopulatingIndexProxy populatingIndex =
@@ -608,7 +608,7 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
             indexUserDescription,
             indexPopulator,
             populationFailure,
-            replacingIndexCountVisitor( descriptor )
+            indexCountVisitor( descriptor )
         );
         result = contractCheckedProxy( result, true );
         return result;

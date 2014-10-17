@@ -66,7 +66,7 @@ public class IndexPopulationJob implements Runnable
     private final UpdateableSchemaState updateableSchemaState;
     private final StringLogger log;
     private final CountDownLatch doneSignal = new CountDownLatch( 1 );
-    private final CountingIndexUpdater.IndexUpdateCountVisitor replacingIndexCountVisitor;
+    private final IndexCountVisitor indexCountVisitor;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
 
     private volatile StoreScan<IndexPopulationFailedKernelException> storeScan;
@@ -89,7 +89,7 @@ public class IndexPopulationJob implements Runnable
         this.updateableSchemaState = updateableSchemaState;
         this.indexUserDescription = indexUserDescription;
         this.failureDelegate = failureDelegateFactory;
-        this.replacingIndexCountVisitor = IndexStoreView.IndexCountVisitors.newReplacingIndexCountVisitor( storeView, descriptor );
+        this.indexCountVisitor = IndexStoreView.IndexCountVisitors.newIndexCountVisitor( storeView, descriptor );
         this.log = logging.getMessagesLog( getClass() );
     }
 
@@ -170,7 +170,7 @@ public class IndexPopulationJob implements Runnable
                 // place is that we would otherwise introduce a race condition where updates could come
                 // in to the old context, if something failed in the job we send to the flipper.
                 flipper.flipTo( new FailedIndexProxy( descriptor, providerDescriptor, indexUserDescription,
-                                                      populator, failure( t ), replacingIndexCountVisitor ) );
+                                                      populator, failure( t ), indexCountVisitor ) );
             }
             finally
             {
@@ -211,7 +211,8 @@ public class IndexPopulationJob implements Runnable
                 try
                 {
                     populator.add( update.getNodeId(), update.getValueAfter() );
-                    countVisitor.visitIndexUpdateCount( 1 );
+                    // TODO
+                    countVisitor.incrementIndexCount( Long.MAX_VALUE, 1 );
                     populateFromQueueIfAvailable( update.getNodeId(), countVisitor );
                 }
                 catch ( IndexEntryConflictException | IOException conflict )
@@ -241,8 +242,9 @@ public class IndexPopulationJob implements Runnable
     {
         if ( !queue.isEmpty() )
         {
+            // TODO
             try ( IndexUpdater updater =
-                          new CountingIndexUpdater( populator.newPopulatingUpdater( storeView ), countVisitor ) )
+                          new CountingIndexUpdater( Long.MAX_VALUE, populator.newPopulatingUpdater( storeView ), countVisitor ) )
             {
                 do
                 {
@@ -290,7 +292,7 @@ public class IndexPopulationJob implements Runnable
         doneSignal.await();
     }
 
-    private class CountVisitor implements CountingIndexUpdater.IndexUpdateCountVisitor
+    private class CountVisitor implements IndexCountVisitor
     {
         private long count = 0;
 
@@ -300,9 +302,15 @@ public class IndexPopulationJob implements Runnable
         }
 
         @Override
-        public void visitIndexUpdateCount( long indexUpdates )
+        public void incrementIndexCount( long transactionId, long deltaCount )
         {
-            this.count += indexUpdates;
+            this.count += deltaCount;
+        }
+
+        @Override
+        public void replaceIndexCount( long transactionId, long totalCount )
+        {
+            this.count = totalCount;
         }
     }
 }

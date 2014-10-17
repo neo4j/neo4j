@@ -29,14 +29,17 @@ import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 public class CountingIndexUpdater implements IndexUpdater
 {
-    private long delta;
+    private final long transactionId;
     private final IndexUpdater delegate;
-    private final IndexUpdateCountVisitor indexUpdateCountVisitor;
+    private final IndexCountVisitor indexCountVisitor;
 
-    public CountingIndexUpdater( IndexUpdater delegate, IndexUpdateCountVisitor indexUpdateCountVisitor )
+    private long delta;
+
+    public CountingIndexUpdater( long transactionId, IndexUpdater delegate, IndexCountVisitor indexCountVisitor )
     {
+        this.transactionId = transactionId;
         this.delegate = delegate;
-        this.indexUpdateCountVisitor = indexUpdateCountVisitor;
+        this.indexCountVisitor = indexCountVisitor;
     }
 
     @Override
@@ -61,7 +64,7 @@ public class CountingIndexUpdater implements IndexUpdater
     @Override
     public void close() throws IOException, IndexEntryConflictException
     {
-        indexUpdateCountVisitor.visitIndexUpdateCount( delta );
+        indexCountVisitor.incrementIndexCount( transactionId, delta );
         delegate.close();
     }
 
@@ -72,9 +75,4 @@ public class CountingIndexUpdater implements IndexUpdater
         delegate.remove( nodeIds );
     }
 
-    interface IndexUpdateCountVisitor
-    {
-        void visitIndexUpdateCount( long indexUpdates );
-
-    }
 }
