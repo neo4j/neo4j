@@ -21,36 +21,35 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 'use strict'
 
 angular.module('neo4jApp.controllers')
-  .controller 'ChangePasswordCtrl', [
+  .controller 'AuthCtrl', [
     '$scope'
     'AuthService'
     'Frame'
     ($scope, AuthService, Frame) ->
-      $scope.new_password = ''
-      $scope.new_password2 = ''
-      $scope.current_password = AuthService.current_password
-      $scope.password_changed = false
+      $scope.username = 'neo4j'
+      $scope.password = ''
+      $scope.authenticated = no
+      $scope.invalid_auth_error = false
 
-      $scope.setNewPassword = ->
-        $scope.mismatch_error = false
+      $scope.authenticate = ->
         $scope.empty_error = false
         $scope.current_empty_error = false
         errors = 0
 
-        if not $scope.new_password.length
+        if not $scope.password.length
           $scope.empty_error = true
           errors++
-        if not $scope.current_password.length
+        if not $scope.username.length
           $scope.current_empty_error = true
-          errors++
-        if $scope.new_password != $scope.new_password2
-          $scope.mismatch_error = true
           errors++
         return if errors > 0
 
-        AuthService.setNewPassword($scope.current_password, $scope.new_password).then(
-          -> 
-            Frame.create({input:":play"})
-            $scope.password_changed = true
+        AuthService.authenticate($scope.username, $scope.password).then(
+          (r) -> 
+            $scope.authenticated = yes
+            Frame.create({input:':play'})
+          ,
+          (r) -> 
+            $scope.invalid_auth_error = true
         )
   ]

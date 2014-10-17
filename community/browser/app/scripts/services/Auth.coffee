@@ -36,27 +36,44 @@ angular.module('neo4jApp.services')
       @is_authenticated = false
       @current_user = false
 
+      # This is only kept during login, to simplify the change-password 
+      # flow. This shouldn't be here, but I couldn't figure out how to include
+      # the password in the password_change_requested event. 
+      # Same goes for current_user
+      @current_password = ""
+
       authenticate: (username, password) =>
         that = @
+        @current_password = password
         promise = Server.post(Settings.endpoint.auth, {user: username, password: password})
         promise.then(
           (r) ->
             response = r.data
+            that.current_user ?= response.user
             
-            if response.password_change_requested is true
+            if response.password_change_required is true
               $rootScope.$emit 'auth:password_change_requested', response.user
               return r
 
+            that.current_password = ""
             updatePersistentAuthToken response
             that.is_authenticated = true
-            that.current_user ?= response.user
             r
           ,
           (r) ->
+            that.current_password = ""
             that.forget()
             r
         )
         promise
+
+      hasValidAuthorization : =>
+        that = @
+        Server.get(Settings.endpoint.auth).then(
+          (r) -> 
+            that.is_authenticated = true
+            that.current_user = r.user
+        )
 
       forget: =>
         updatePersistentAuthToken false
@@ -64,12 +81,17 @@ angular.module('neo4jApp.services')
         @current_user = false
 
       getAuthInfo: ->
-        promise = Server.get(Settings.endpoint.auth)
-        promise
+        Server.get(Settings.endpoint.auth)
 
       setNewPassword: (old_passwd, new_passwd) ->
+        that = @
         promise = Server.put("#{Settings.endpoint.authUser}/#{@current_user}/password"
           , {password: old_passwd, new_password: new_passwd})
+        .then(
+          (r) -> 
+            updatePersistentAuthToken r.data
+            that.is_authenticated = true
+        )
         promise
 
       setNewAuthToken: (passwd, new_authorization_token) ->

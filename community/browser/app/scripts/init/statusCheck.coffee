@@ -38,9 +38,13 @@ angular.module('neo4jApp').run([
           $scope.offline = no
           timer = $timeout(check, Settings.heartbeat * 1000)
       ,
-        ->
-          $scope.offline = yes
-          timer = $timeout(check, Settings.heartbeat * 1000)
+        (response) ->
+          if response.status is 401
+            $scope.offline = no
+            timer = $timeout(check, Settings.heartbeat * 1000)
+          else
+            $scope.offline = yes
+            timer = $timeout(check, Settings.heartbeat * 1000)
       )
     check()
 ])

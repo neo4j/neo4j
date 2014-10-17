@@ -36,5 +36,5 @@ angular.module('neo4jApp.directives')
       $scope.editor = Editor
     ]
     link: (scope, element, attrs) ->
-      scope.frames.create({"input":":play welcome"})
+      #scope.frames.create({"input":":play welcome"})
 ])

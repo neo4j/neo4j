@@ -26,9 +26,11 @@ angular.module('neo4jApp.controllers')
       '$rootScope',
       '$window'
       'Server'
+      'Frame'
+      'AuthService'
       'Settings'
       'motdService'
-      ($scope, $window, Server, Settings, motdService) ->
+      ($scope, $window, Server, Frame, AuthService, Settings, motdService) ->
         refresh = ->
           $scope.labels = Server.labels()
           $scope.relationships = Server.relationships()
@@ -71,6 +73,19 @@ angular.module('neo4jApp.controllers')
           if not serverIsOffline
             refresh()
 
+        # Authorization
+        AuthService.hasValidAuthorization().then(
+          -> Frame.create({input:":play"})
+          ,
+          -> 
+            # Not authorized. Check if we can authenticate with neo4j:neo4j
+            AuthService.authenticate("neo4j", "neo4j").then(
+              -> # This worked, nothing to do now
+              ,
+              -> Frame.create({input:":server connect"})
+            )
+        )
+#
         # XXX: Temporary for now having to change all help files
         $scope.$watch 'server', (val) ->
           $scope.neo4j.version = val.neo4j_version

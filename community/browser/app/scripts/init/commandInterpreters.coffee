@@ -230,29 +230,33 @@ angular.module('neo4jApp')
     FrameProvider.interpreters.push
       type: 'auth'
       templateUrl: 'views/frame-auth.html'
-      matches: "#{cmdchar}connect"
+      matches: (input) ->
+        pattern = new RegExp("^#{cmdchar}server connect")
+        input.match(pattern)
       exec: ['AuthService', (AuthService) ->
-        (input, q) ->
-          cred_input = input.replace("#{cmdchar}connect", '')
-          re = /^\s*([^\s:]+)(?:\s?:\s?|\s)([^\s$:]+)\s*$/
-          creds = cred_input.match re
-          
-          unless creds and creds[1] and creds[2]
-            q.reject(error("You have to enter a username and password."))
-            return q.promise
-          username = creds[1]
-          password = creds[2]
+        (input, q) -> q.resolve()
+      ]
 
-          qq = AuthService.authenticate(username, password)
-          qq.then(
-            (r) ->
-              response = r.data
-              q.resolve(response)
-            ,
-            (r) ->
-              q.reject(error("Server responded #{r.data.errors[0].code}: #{r.data.errors[0].message}"))
-          )
-          q.promise
+    FrameProvider.interpreters.push
+      type: 'auth'
+      templateUrl: 'views/frame-change-password.html'
+      matches:  (input) ->
+        pattern = new RegExp("^#{cmdchar}server change-password")
+        input.match(pattern)
+      exec: ['AuthService', (AuthService) ->
+        (input, q) -> q.resolve()
+      ]
+
+    FrameProvider.interpreters.push
+      type: 'auth'
+      templateUrl: 'views/frame-auth.html'
+      matches:  (input) ->
+        pattern = new RegExp("^#{cmdchar}server disconnect")
+        input.match(pattern)
+      exec: ['Settings', 'AuthService', (Settings, AuthService) ->
+        (input, q) -> 
+          AuthService.forget()
+          q.resolve()
       ]
 
     # Profile a cypher command
