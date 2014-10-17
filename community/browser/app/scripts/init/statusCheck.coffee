@@ -36,14 +36,17 @@ angular.module('neo4jApp').run([
       Server.status('?t='+ts).then(
         ->
           $scope.offline = no
+          $scope.unauthorized = no
           timer = $timeout(check, Settings.heartbeat * 1000)
       ,
         (response) ->
           if response.status is 401
             $scope.offline = no
+            $scope.unauthorized = yes
             timer = $timeout(check, Settings.heartbeat * 1000)
           else
             $scope.offline = yes
+            $scope.unauthorized = no
             timer = $timeout(check, Settings.heartbeat * 1000)
       )
     check()
