@@ -42,11 +42,14 @@ angular.module('neo4jApp.services')
         promise.then(
           (r) ->
             response = r.data
+            
+            if response.password_change_requested is true
+              $rootScope.$emit 'auth:password_change_requested', response.user
+              return r
+
             updatePersistentAuthToken response
             that.is_authenticated = true
             that.current_user ?= response.user
-            if response.password_change_requested is true
-              $rootScope.$emit 'auth:password_change_requested', response.user
             r
           ,
           (r) ->

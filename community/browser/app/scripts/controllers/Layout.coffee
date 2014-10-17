@@ -46,6 +46,9 @@ angular.module('neo4jApp.controllers')
 
       $scope.Auth = AuthService
       
+      $scope.$on 'auth:password_change_requested', ->
+        $scope.togglePopup 'change-server-password'
+
       $scope.showDoc = () ->
         Frame.create(input: ':play')
 
