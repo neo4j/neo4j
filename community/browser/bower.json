@@ -18,6 +18,7 @@
     "UUID.js": "git@github.com:LiosK/UUID.js.git",
     "jquery": "~2.0.3",
     "jquery-ui": "~1.10.3",
+    "angular-base64": "~2.0.2",
     "angular-ui-sortable": "~0.0.1",
     "angular-ui-bootstrap": "~0.5.0",
     "bootstrap": "http://getbootstrap.com/2.3.2/assets/bootstrap.zip",

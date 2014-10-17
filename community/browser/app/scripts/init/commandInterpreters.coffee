@@ -227,6 +227,34 @@ angular.module('neo4jApp')
           q.promise
       ]
 
+    FrameProvider.interpreters.push
+      type: 'auth'
+      templateUrl: 'views/frame-auth.html'
+      matches: "#{cmdchar}connect"
+      exec: ['AuthService', (AuthService) ->
+        (input, q) ->
+          cred_input = input.replace("#{cmdchar}connect", '')
+          re = /^\s*([^\s:]+)(?:\s?:\s?|\s)([^\s$:]+)\s*$/
+          creds = cred_input.match re
+          
+          unless creds and creds[1] and creds[2]
+            q.reject(error("You have to enter a username and password."))
+            return q.promise
+          username = creds[1]
+          password = creds[2]
+
+          qq = AuthService.authenticate(username, password)
+          qq.then(
+            (r) ->
+              response = r.data
+              q.resolve(response)
+            ,
+            (r) ->
+              q.reject(error("Server responded #{r.data.errors[0].code}: #{r.data.errors[0].message}"))
+          )
+          q.promise
+      ]
+
     # Profile a cypher command
     # FrameProvider.interpreters.push
     #   type: 'cypher'
