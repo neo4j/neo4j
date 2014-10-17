@@ -52,9 +52,9 @@ public interface IndexStoreView extends PropertyAccessor
 
     long getIndexCount( IndexDescriptor descriptor );
 
-    void replaceIndexCount( IndexDescriptor descriptor, long total );
+    void replaceIndexCount( long transactionId, IndexDescriptor descriptor, long total );
 
-    void updateIndexCount( IndexDescriptor descriptor, long delta );
+    void incrementIndexCount( long transactionId, IndexDescriptor descriptor, long delta );
 
     void flushIndexCounts() throws IOException;
 
@@ -67,13 +67,13 @@ public interface IndexStoreView extends PropertyAccessor
                 @Override
                 public void incrementIndexCount( long transactionId, long deltaCount )
                 {
-                    view.updateIndexCount( descriptor, deltaCount );
+                    view.incrementIndexCount( transactionId, descriptor, deltaCount );
                 }
 
                 @Override
                 public void replaceIndexCount( long transactionId, long totalCount )
                 {
-                    view.replaceIndexCount( descriptor, totalCount );
+                    view.replaceIndexCount( transactionId, descriptor, totalCount );
 
                 }
             };

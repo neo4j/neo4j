@@ -51,7 +51,7 @@ public class CountsStoreApplierTest
         applier.apply();
 
         // THEN
-        verify( countsAcceptor, times( 1 ) ).updateCountsForNode( ANY_LABEL, 1 );
+        verify( countsAcceptor, times( 1 ) ).incrementCountsForNode( ANY_LABEL, 1 );
         verify( cacheAccess, times( 1 ) ).applyCountUpdates( 1, 0, 0, 0 );
     }
 

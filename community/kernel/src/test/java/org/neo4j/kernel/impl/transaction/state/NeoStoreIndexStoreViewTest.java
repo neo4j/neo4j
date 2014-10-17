@@ -53,7 +53,7 @@ import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreIndexStoreView;
+import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -80,7 +80,9 @@ public class NeoStoreIndexStoreViewTest
 
     Node alistair;
     Node stefan;
-    private LockService locks;
+    LockService locks;
+    NeoStore neoStore;
+    CountsTracker counts;
 
     @Test
     public void shouldScanExistingNodesForALabel() throws Exception
@@ -155,6 +157,53 @@ public class NeoStoreIndexStoreViewTest
         assertTrue( property.valueEquals( "Alistair" ) );
     }
 
+
+    @Test
+    public void shouldOnlyApplyIndexCountReplacementsPastLastTxIdOfCountsStore()
+    {
+        // given
+        long initialTxId = neoStore.getLastCommittedTransactionId();
+        counts.replaceCountsForIndex( 1, 2, 42l );
+        long lastTxId = initialTxId + 1;
+        neoStore.setLastCommittedAndClosedTransactionId( lastTxId );
+        neoStore.flush();
+
+        // when
+        storeView.replaceIndexCount( lastTxId, new IndexDescriptor( 1, 2 ), 84l );
+
+        // then
+        assertEquals( 42l, counts.countsForIndex( 1, 2 ) );
+
+        // also when
+        storeView.replaceIndexCount( lastTxId + 1, new IndexDescriptor( 1, 2 ), 23l );
+
+        // then
+        assertEquals( 23l, counts.countsForIndex( 1, 2 ) );
+    }
+
+    @Test
+    public void shouldOnlyApplyIndexCountUpdatesPastLastTxIdOfCountsStore()
+    {
+        // given
+        long initialTxId = neoStore.getLastCommittedTransactionId();
+        counts.replaceCountsForIndex( 1, 2, 42l );
+        long lastTxId = initialTxId + 1;
+        neoStore.setLastCommittedAndClosedTransactionId( lastTxId );
+        neoStore.flush();
+
+        // when
+        storeView.incrementIndexCount( lastTxId, new IndexDescriptor( 1, 2 ), 84l );
+
+        // then
+        assertEquals( 42l, counts.countsForIndex( 1, 2 ) );
+
+        // also when
+        storeView.incrementIndexCount( lastTxId + 1, new IndexDescriptor( 1, 2 ), 23l );
+
+        // then
+        assertEquals( 65l, counts.countsForIndex( 1, 2 ) );
+    }
+
     Map<Long, Lock> lockMocks = new HashMap<>();
 
     @Before
@@ -166,7 +215,8 @@ public class NeoStoreIndexStoreViewTest
         createAlistairAndStefanNodes();
         getOrCreateIds();
 
-        NeoStore neoStore = new StoreAccess( graphDb ).getRawNeoStore();
+        neoStore = new StoreAccess( graphDb ).getRawNeoStore();
+        counts = neoStore.getCounts();
         locks = mock( LockService.class, new Answer()
         {
             @Override

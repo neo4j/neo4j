@@ -535,20 +535,20 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                             for ( Integer label : added )
                             {
                                 // untyped
-                                counts.updateCountsForRelationship( label, -1, -1, outgoing );
-                                counts.updateCountsForRelationship( -1, -1, label, incoming );
+                                counts.incrementCountsForRelationship( label, -1, -1, outgoing );
+                                counts.incrementCountsForRelationship( -1, -1, label, incoming );
                                 // typed
-                                counts.updateCountsForRelationship( label, type, -1, outgoing );
-                                counts.updateCountsForRelationship( -1, type, label, incoming );
+                                counts.incrementCountsForRelationship( label, type, -1, outgoing );
+                                counts.incrementCountsForRelationship( -1, type, label, incoming );
                             }
                             for ( Integer label : removed )
                             {
                                 // untyped
-                                counts.updateCountsForRelationship( label, -1, -1, -outgoing );
-                                counts.updateCountsForRelationship( -1, -1, label, -incoming );
+                                counts.incrementCountsForRelationship( label, -1, -1, -outgoing );
+                                counts.incrementCountsForRelationship( -1, -1, label, -incoming );
                                 // typed
-                                counts.updateCountsForRelationship( label, type, -1, -outgoing );
-                                counts.updateCountsForRelationship( -1, type, label, -incoming );
+                                counts.incrementCountsForRelationship( label, type, -1, -outgoing );
+                                counts.incrementCountsForRelationship( -1, type, label, -incoming );
                             }
                         }
                     } );

@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 
 import static org.neo4j.helpers.FutureAdapter.VOID;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.MAX_TX_ID;
 
 public class OnlineIndexProxy implements IndexProxy
 {
@@ -64,8 +65,7 @@ public class OnlineIndexProxy implements IndexProxy
     @Override
     public Future<Void> drop() throws IOException
     {
-        // TODO
-        indexCountVisitor.replaceIndexCount( Long.MAX_VALUE, 0 );
+        indexCountVisitor.replaceIndexCount( MAX_TX_ID, 0 );
         accessor.drop();
         return VOID;
     }

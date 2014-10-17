@@ -21,11 +21,11 @@ package org.neo4j.kernel.impl.api;
 
 public interface CountsAcceptor
 {
-    void updateCountsForNode( int labelId, long delta );
+    void incrementCountsForNode( int labelId, long delta );
 
-    void updateCountsForRelationship( int startLabelId, int typeId, int endLabelId, long delta );
+    void incrementCountsForRelationship( int startLabelId, int typeId, int endLabelId, long delta );
 
-    void updateCountsForIndex( int labelId, int propertyKeyId, long delta );
+    void incrementCountsForIndex( int labelId, int propertyKeyId, long delta );
 
     void replaceCountsForIndex( int labelId, int propertyKeyId, long total );
 
@@ -41,19 +41,19 @@ public interface CountsAcceptor
         @Override
         public void visitNodeCount( int labelId, long count )
         {
-            target.updateCountsForNode( labelId, count );
+            target.incrementCountsForNode( labelId, count );
         }
 
         @Override
         public void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count )
         {
-            target.updateCountsForRelationship( startLabelId, typeId, endLabelId, count );
+            target.incrementCountsForRelationship( startLabelId, typeId, endLabelId, count );
         }
 
         @Override
         public void visitIndexCount( int labelId, int propertyKeyId, long count )
         {
-            target.updateCountsForIndex( labelId, propertyKeyId, count );
+            target.incrementCountsForIndex( labelId, propertyKeyId, count );
         }
     }
 }

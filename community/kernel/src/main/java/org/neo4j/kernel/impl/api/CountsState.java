@@ -42,19 +42,19 @@ public class CountsState implements CountsVisitor.Visitable, CountsAcceptor, Rec
     private final Map<CountsKey, Count> counts = new HashMap<>();
 
     @Override
-    public void updateCountsForNode( int labelId, long delta )
+    public void incrementCountsForNode( int labelId, long delta )
     {
         count( nodeKey( labelId ) ).update( delta );
     }
 
     @Override
-    public void updateCountsForRelationship( int startLabelId, int typeId, int endLabelId, long delta )
+    public void incrementCountsForRelationship( int startLabelId, int typeId, int endLabelId, long delta )
     {
         count( relationshipKey( startLabelId, typeId, endLabelId ) ).update( delta );
     }
 
     @Override
-    public void updateCountsForIndex( int labelId, int propertyKeyId, long delta )
+    public void incrementCountsForIndex( int labelId, int propertyKeyId, long delta )
     {
         count( indexKey( labelId, propertyKeyId ) ).update( delta );
     }
@@ -67,22 +67,22 @@ public class CountsState implements CountsVisitor.Visitable, CountsAcceptor, Rec
 
     public void increment( int labelId )
     {
-        updateCountsForNode( labelId, 1 );
+        incrementCountsForNode( labelId, 1 );
     }
 
     public void decrement( int labelId )
     {
-        updateCountsForNode( labelId, -1 );
+        incrementCountsForNode( labelId, -1 );
     }
 
     public void increment( int startLabelId, int typeId, int endLabelId )
     {
-        updateCountsForRelationship( startLabelId, typeId, endLabelId, 1 );
+        incrementCountsForRelationship( startLabelId, typeId, endLabelId, 1 );
     }
 
     public void decrement( int startLabelId, int typeId, int endLabelId )
     {
-        updateCountsForRelationship( startLabelId, typeId, endLabelId, -1 );
+        incrementCountsForRelationship( startLabelId, typeId, endLabelId, -1 );
     }
 
     @Override

@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KEY;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.HashSet;
@@ -35,9 +33,12 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.index.impl.lucene.Hits;
 import org.neo4j.kernel.api.index.IndexReader;
+
+import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KEY;
 
 class LuceneIndexAccessorReader implements IndexReader
 {
@@ -57,6 +58,9 @@ class LuceneIndexAccessorReader implements IndexReader
     public double uniqueValuesFrequencyInSample( final long sampleSize, final int frequency )
     {
         long remainingSamples = sampleSize;
+
+        // sampleSize / indexSize => frequency
+
         final SkipOracle oracle = frequencySkipOracle( frequency );
         final Set<Object> values = new HashSet<>();
         try ( TermEnum terms = searcher.getIndexReader().terms() )

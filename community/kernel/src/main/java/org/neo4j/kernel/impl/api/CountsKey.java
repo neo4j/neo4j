@@ -79,7 +79,7 @@ public abstract class CountsKey implements Comparable<CountsKey>
         @Override
         public String toString()
         {
-            return String.format( "CountsKey[(%s)]", label( labelId ) );
+            return String.format( "NodeKey[(%s)]", label( labelId ) );
         }
 
         @Override
@@ -152,7 +152,7 @@ public abstract class CountsKey implements Comparable<CountsKey>
         @Override
         public String toString()
         {
-            return String.format( "CountsKey[(%s)-%s->(%s)]",
+            return String.format( "RelationshipKey[(%s)-%s->(%s)]",
                                   label( startLabelId ), relationshipType( typeId ), label( endLabelId ) );
         }
 
@@ -239,7 +239,7 @@ public abstract class CountsKey implements Comparable<CountsKey>
         @Override
         public String toString()
         {
-            return String.format( "CountsKey[(%s {%s})", label( labelId ), propertyKey( propertyKeyId ) );
+            return String.format( "IndexKey[(%s {%s})", label( labelId ), propertyKey( propertyKeyId ) );
         }
 
         @Override
