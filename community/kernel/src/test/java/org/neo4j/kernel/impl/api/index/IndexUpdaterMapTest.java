@@ -31,14 +31,17 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class IndexUpdaterMapTest
 {
+    private final long transactionId = 42l;
+
     private IndexMap indexMap;
-    
+
     private IndexProxy indexProxy1;
     private IndexDescriptor indexDescriptor1;
     private IndexUpdater indexUpdater1;
@@ -52,23 +55,23 @@ public class IndexUpdaterMapTest
     public void before() throws IOException
     {
         indexMap = new IndexMap();
-        
+
         indexProxy1 = mock( IndexProxy.class );
         indexDescriptor1 = new IndexDescriptor( 2, 3 );
         indexUpdater1 = mock( IndexUpdater.class );
         when( indexProxy1.getDescriptor() ).thenReturn( indexDescriptor1 );
-        when( indexProxy1.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( indexUpdater1 );
+        when( indexProxy1.newUpdater( any( IndexUpdateMode.class ), anyLong()) ).thenReturn( indexUpdater1 );
 
         indexProxy2 = mock( IndexProxy.class );
         indexDescriptor2 = new IndexDescriptor( 5, 6 );
         IndexUpdater indexUpdater2 = mock( IndexUpdater.class );
         when( indexProxy2.getDescriptor() ).thenReturn( indexDescriptor2 );
-        when( indexProxy2.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( indexUpdater2 );
+        when( indexProxy2.newUpdater( any( IndexUpdateMode.class ), anyLong() ) ).thenReturn( indexUpdater2 );
 
-        updaterMap = new IndexUpdaterMap( IndexUpdateMode.ONLINE, indexMap );
+        updaterMap = new IndexUpdaterMap( indexMap, IndexUpdateMode.ONLINE, transactionId );
     }
 
-    
+
     @Test
     public void shouldRetrieveUpdaterFromIndexMapForExistingIndex() throws Exception
     {

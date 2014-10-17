@@ -31,6 +31,8 @@ import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.mockIndexPro
 
 public class ContractCheckingIndexProxyTest
 {
+    private final long transactionId = 42l;
+
     @Test( expected = /* THEN */ IllegalStateException.class )
     public void shouldNotCreateIndexTwice() throws IOException
     {
@@ -118,7 +120,7 @@ public class ContractCheckingIndexProxyTest
         IndexProxy outer = newContractCheckingIndexProxy( inner );
 
         // WHEN
-        try (IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE ))
+        try (IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE, transactionId ) )
         {
             updater.process( null );
         }
@@ -134,7 +136,7 @@ public class ContractCheckingIndexProxyTest
         // WHEN
         outer.start();
         outer.close();
-        try (IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE ))
+        try (IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE, transactionId ))
         {
             updater.process( null );
         }
@@ -245,9 +247,9 @@ public class ContractCheckingIndexProxyTest
         final IndexProxy inner = new IndexProxyAdapter()
         {
             @Override
-            public IndexUpdater newUpdater( IndexUpdateMode mode )
+            public IndexUpdater newUpdater( IndexUpdateMode mode, long transactionId )
             {
-                return super.newUpdater( mode );
+                return super.newUpdater( mode, transactionId );
             }
         };
         final IndexProxy outer = newContractCheckingIndexProxy( inner );
@@ -259,7 +261,7 @@ public class ContractCheckingIndexProxyTest
             @Override
             public void run() throws IOException
             {
-                try (IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE ))
+                try (IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE, transactionId ))
                 {
                     updater.process( null );
                     latch.startAndAwaitFinish();
@@ -318,12 +320,12 @@ public class ContractCheckingIndexProxyTest
             latch.finish();
         }
     }
-    
+
     private interface ThrowingRunnable
     {
         void run() throws IOException;
     }
-    
+
     private void runInSeparateThread( final ThrowingRunnable action )
     {
         new Thread( new Runnable()

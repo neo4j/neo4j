@@ -27,12 +27,12 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 
 public abstract class AbstractDelegatingIndexProxy implements IndexProxy
 {
@@ -45,9 +45,9 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode )
+    public IndexUpdater newUpdater( IndexUpdateMode mode, long transactionId )
     {
-        return getDelegate().newUpdater( mode );
+        return getDelegate().newUpdater( mode, transactionId );
     }
 
     @Override
@@ -79,7 +79,7 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     {
         getDelegate().force();
     }
-    
+
     @Override
     public Future<Void> close() throws IOException
     {
@@ -109,7 +109,7 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     {
         getDelegate().validate();
     }
-    
+
     @Override
     public IndexPopulationFailure getPopulationFailure() throws IllegalStateException
     {

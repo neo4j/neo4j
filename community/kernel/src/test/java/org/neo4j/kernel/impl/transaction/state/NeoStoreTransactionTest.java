@@ -108,6 +108,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
@@ -901,7 +902,7 @@ public class NeoStoreTransactionTest
 
         // -- and a tx creating a node with that label and property key
         IteratorCollector<NodePropertyUpdate> indexUpdates = new IteratorCollector<>( 0 );
-        doAnswer( indexUpdates ).when( mockIndexing ).updateIndexes( any( IndexUpdates.class ), anyBoolean() );
+        doAnswer( indexUpdates ).when( mockIndexing ).updateIndexes( any( IndexUpdates.class ), anyLong(), anyBoolean() );
         tx = newWriteTransaction().first();
         tx.nodeCreate( nodeId );
         tx.addLabelToNode( labelId, nodeId );
@@ -913,17 +914,17 @@ public class NeoStoreTransactionTest
         {
             commitProcess().commit( representation, locks );
         }
-        verify( mockIndexing, times( 1 ) ).updateIndexes( any( IndexUpdates.class ), anyBoolean() );
+        verify( mockIndexing, times( 1 ) ).updateIndexes( any( IndexUpdates.class ), anyLong(), anyBoolean() );
         indexUpdates.assertContent( expectedUpdate );
 
         reset( mockIndexing );
         indexUpdates = new IteratorCollector<>( 0 );
-        doAnswer( indexUpdates ).when( mockIndexing ).updateIndexes( any( IndexUpdates.class ), anyBoolean() );
+        doAnswer( indexUpdates ).when( mockIndexing ).updateIndexes( any( IndexUpdates.class ), anyLong(), anyBoolean() );
 
         // WHEN
         // -- later recovering that tx, there should be only one update
         commit( recoverer.getAsRecovered(), 2, TransactionApplicationMode.RECOVERY );
-        verify( mockIndexing, times( 1 ) ).updateIndexes( any( IndexUpdates.class ), anyBoolean() );
+        verify( mockIndexing, times( 1 ) ).updateIndexes( any( IndexUpdates.class ), anyLong(), anyBoolean() );
         indexUpdates.assertContent( expectedUpdate );
     }
 
@@ -1539,7 +1540,7 @@ public class NeoStoreTransactionTest
         }
 
         @Override
-        public void updateIndexes( IndexUpdates updates, boolean forceIdempotency )
+        public void updateIndexes( IndexUpdates updates, long transactionId, boolean forceIdempotency )
         {
             this.updates.addAll( asCollection( updates ) );
         }

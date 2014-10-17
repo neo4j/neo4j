@@ -77,7 +77,7 @@ public class PopulatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public IndexUpdater newUpdater( final IndexUpdateMode mode )
+    public IndexUpdater newUpdater( final IndexUpdateMode mode, long transactionId )
     {
         switch( mode )
         {
