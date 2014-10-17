@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import static org.junit.Assert.assertEquals;
-
 import java.util.List;
 
 import org.neo4j.kernel.impl.api.CountsAcceptor;
 import org.neo4j.kernel.impl.api.CountsState;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
+
+import static org.junit.Assert.assertEquals;
 
 public class CountsOracle
 {
@@ -76,7 +76,7 @@ public class CountsOracle
                     public void visitNodeCount( int labelId, long count )
                     {
                         assertEquals( "Should be able to read visited state.",
-                                      tracker.countsForNode( labelId ), count );
+                                      tracker.nodeCount( labelId ), count );
                         verifier.visitNodeCount( labelId, count );
                     }
 
@@ -84,16 +84,16 @@ public class CountsOracle
                     public void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count )
                     {
                         assertEquals( "Should be able to read visited state.",
-                                      tracker.countsForRelationship( startLabelId, typeId, endLabelId ), count );
+                                      tracker.relationshipCount( startLabelId, typeId, endLabelId ), count );
                         verifier.visitRelationshipCount( startLabelId, typeId, endLabelId, count );
                     }
 
                     @Override
-                    public void visitIndexCount( int labelId, int propertyKeyId, long count )
+                    public void visitIndexSizeCount( int labelId, int propertyKeyId, long count )
                     {
                         assertEquals( "Should be able to read visited state.",
-                                tracker.countsForIndex( labelId, propertyKeyId ), count );
-                        verifier.visitIndexCount( labelId, propertyKeyId, count );
+                                tracker.indexSizeCount( labelId, propertyKeyId ), count );
+                        verifier.visitIndexSizeCount( labelId, propertyKeyId, count );
                     }
                 } );
             }

@@ -145,11 +145,11 @@ public class CountsRotationTest
 
         // on the other hand the tracker should read the correct value by merging data on disk and data in memory
         final CountsTracker tracker = db.getDependencyResolver().resolveDependency( NeoStore.class ).getCounts();
-        assertEquals( 1 + 1, tracker.countsForNode( -1 ) );
+        assertEquals( 1 + 1, tracker.nodeCount( -1 ) );
 
         final LabelTokenHolder holder = db.getDependencyResolver().resolveDependency( LabelTokenHolder.class );
         int labelId = holder.getIdByName( C.name() );
-        assertEquals( 1, tracker.countsForNode( labelId ) );
+        assertEquals( 1, tracker.nodeCount( labelId ) );
 
         db.shutdown();
     }

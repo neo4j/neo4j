@@ -163,7 +163,7 @@ public class NeoStoreIndexStoreViewTest
     {
         // given
         long initialTxId = neoStore.getLastCommittedTransactionId();
-        counts.replaceCountsForIndex( 1, 2, 42l );
+        counts.replaceIndexSizeCount( 1, 2, 42l );
         long lastTxId = initialTxId + 1;
         neoStore.setLastCommittedAndClosedTransactionId( lastTxId );
         neoStore.flush();
@@ -172,13 +172,13 @@ public class NeoStoreIndexStoreViewTest
         storeView.replaceIndexCount( lastTxId, new IndexDescriptor( 1, 2 ), 84l );
 
         // then
-        assertEquals( 42l, counts.countsForIndex( 1, 2 ) );
+        assertEquals( 42l, counts.indexSizeCount( 1, 2 ) );
 
         // also when
         storeView.replaceIndexCount( lastTxId + 1, new IndexDescriptor( 1, 2 ), 23l );
 
         // then
-        assertEquals( 23l, counts.countsForIndex( 1, 2 ) );
+        assertEquals( 23l, counts.indexSizeCount( 1, 2 ) );
     }
 
     @Test
@@ -186,7 +186,7 @@ public class NeoStoreIndexStoreViewTest
     {
         // given
         long initialTxId = neoStore.getLastCommittedTransactionId();
-        counts.replaceCountsForIndex( 1, 2, 42l );
+        counts.replaceIndexSizeCount( 1, 2, 42l );
         long lastTxId = initialTxId + 1;
         neoStore.setLastCommittedAndClosedTransactionId( lastTxId );
         neoStore.flush();
@@ -195,13 +195,13 @@ public class NeoStoreIndexStoreViewTest
         storeView.incrementIndexCount( lastTxId, new IndexDescriptor( 1, 2 ), 84l );
 
         // then
-        assertEquals( 42l, counts.countsForIndex( 1, 2 ) );
+        assertEquals( 42l, counts.indexSizeCount( 1, 2 ) );
 
         // also when
         storeView.incrementIndexCount( lastTxId + 1, new IndexDescriptor( 1, 2 ), 23l );
 
         // then
-        assertEquals( 65l, counts.countsForIndex( 1, 2 ) );
+        assertEquals( 65l, counts.indexSizeCount( 1, 2 ) );
     }
 
     Map<Long, Lock> lockMocks = new HashMap<>();

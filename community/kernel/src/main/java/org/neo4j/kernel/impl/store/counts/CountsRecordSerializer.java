@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordSerializer;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
 import org.neo4j.register.Register;
 
-import static org.neo4j.kernel.impl.api.CountsKey.indexKey;
+import static org.neo4j.kernel.impl.api.CountsKey.indexSizeKey;
 import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
 import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
 
@@ -89,22 +89,22 @@ public class CountsRecordSerializer implements KeyValueRecordSerializer<CountsKe
                 assert second == 0;
                 return false;
 
-            case NODE:
+            case ENTITY_NODE:
                 assert one == 0;
                 assert two == 0;
                 assert first == 0;
                 key = nodeKey( three /* label id*/ );
                 break;
 
-            case RELATIONSHIP:
+            case ENTITY_RELATIONSHIP:
                 assert first == 0;
                 key = relationshipKey( one /* start label id */, two /* rel type id */, three /* end label id */ );
                 break;
 
-            case INDEX:
+            case INDEX_SIZE:
                 assert one == 0;
                 assert first == 0;
-                key = indexKey( three /* label id */, two /* pk id */ );
+                key = indexSizeKey( three /* label id */, two /* pk id */ );
                 break;
 
             default:
@@ -139,19 +139,19 @@ public class CountsRecordSerializer implements KeyValueRecordSerializer<CountsKe
             case EMPTY:
                 throw new IllegalStateException( "Reading empty record" );
 
-            case NODE:
+            case ENTITY_NODE:
                 assert one == 0;
                 assert two == 0;
                 key = nodeKey( three /* label id*/ );
                 break;
 
-            case RELATIONSHIP:
+            case ENTITY_RELATIONSHIP:
                 key = relationshipKey( one /* start label id */, two /* rel type id */, three /* end label id */ );
                 break;
 
-            case INDEX:
+            case INDEX_SIZE:
                 assert one == 0;
-                key = indexKey( three /* label id */, two /* pk id */ );
+                key = indexSizeKey( three /* label id */, two /* pk id */ );
                 break;
 
             default:

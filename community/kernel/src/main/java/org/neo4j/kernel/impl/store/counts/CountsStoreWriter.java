@@ -35,9 +35,9 @@ import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
-import static org.neo4j.kernel.impl.store.counts.CountsRecordType.INDEX;
-import static org.neo4j.kernel.impl.store.counts.CountsRecordType.NODE;
-import static org.neo4j.kernel.impl.store.counts.CountsRecordType.RELATIONSHIP;
+import static org.neo4j.kernel.impl.store.counts.CountsRecordType.ENTITY_NODE;
+import static org.neo4j.kernel.impl.store.counts.CountsRecordType.ENTITY_RELATIONSHIP;
+import static org.neo4j.kernel.impl.store.counts.CountsRecordType.INDEX_SIZE;
 
 public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, Register.DoubleLongRegister>, CountsVisitor
 {
@@ -108,7 +108,7 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
     {
         assert count > 0 :
                 String.format( "visitNodeCount(labelId=%d, count=%d) - count must be positive", labelId, count );
-        write( NODE, 0, 0, labelId, count );
+        write( ENTITY_NODE, 0, 0, labelId, count );
     }
 
     @Override
@@ -117,16 +117,16 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
         assert count > 0 :
                 String.format( "visitRelationshipCount(startLabelId=%d, typeId=%d, endLabelId=%d, count=%d)" +
                         " - count must be positive", startLabelId, typeId, endLabelId, count );
-        write( RELATIONSHIP, startLabelId, typeId, endLabelId, count );
+        write( ENTITY_RELATIONSHIP, startLabelId, typeId, endLabelId, count );
     }
 
     @Override
-    public void visitIndexCount( int labelId, int propertyKeyId, long count )
+    public void visitIndexSizeCount( int labelId, int propertyKeyId, long count )
     {
         assert count > 0 :
-                String.format( "visitIndexCount(labelId=%d, propertyKeyId=%d, count=%d)" +
+                String.format( "visitIndexSizeCount(labelId=%d, propertyKeyId=%d, count=%d)" +
                                " - count must be positive", labelId, propertyKeyId, count );
-        write( INDEX, 0, propertyKeyId, labelId, count );
+        write( INDEX_SIZE, 0, propertyKeyId, labelId, count );
     }
 
     /**
