@@ -63,12 +63,12 @@ public class CountsStoreTest
             assertEquals( BASE_MINOR_VERSION, counts.minorVersion() );
             assertEquals( 0, counts.totalRecordsStored() );
             assertEquals( alpha, counts.file() );
-            counts.accept( new KeyValueRecordVisitor<CountsKey, Register.LongRegister>()
+            counts.accept( new KeyValueRecordVisitor<CountsKey, Register.DoubleLongRegister>()
             {
-                private final Register.LongRegister valueRegister = Registers.newLongRegister();
+                private final Register.DoubleLongRegister valueRegister = Registers.newDoubleLongRegister();
 
                 @Override
-                public Register.LongRegister valueRegister()
+                public Register.DoubleLongRegister valueRegister()
                 {
                     return valueRegister;
                 }
@@ -92,7 +92,7 @@ public class CountsStoreTest
             // when
             long initialMinorVersion = counts.minorVersion();
 
-            SortedKeyValueStore.Writer<CountsKey, Register.LongRegister> writer = counts.newWriter( beta, counts.lastTxId() );
+            SortedKeyValueStore.Writer<CountsKey, Register.DoubleLongRegister> writer = counts.newWriter( beta, counts.lastTxId() );
             writer.close();
 
             try ( CountsStore updated = (CountsStore) writer.openForReading() )
@@ -107,14 +107,14 @@ public class CountsStoreTest
     {
         // given
         CountsStore.createEmpty( pageCache, alpha, ALL_STORES_VERSION );
-        SortedKeyValueStore.Writer<CountsKey, Register.LongRegister> writer;
+        SortedKeyValueStore.Writer<CountsKey, Register.DoubleLongRegister> writer;
         try ( CountsStore counts = CountsStore.open( fs, pageCache, alpha ) )
         {
             // when
             writer = counts.newWriter( beta, lastCommittedTxId );
-            writer.valueRegister().write( 21 );
+            writer.valueRegister().write( 0, 21 );
             writer.visit( nodeKey( 0 ) );
-            writer.valueRegister().write( 32 );
+            writer.valueRegister().write( 0, 32 );
             writer.visit( relationshipKey( 1, 2, 3 )  );
             writer.close();
         }
@@ -128,12 +128,12 @@ public class CountsStoreTest
             assertEquals( BASE_MINOR_VERSION, updated.minorVersion() );
             assertEquals( 2, updated.totalRecordsStored() );
             assertEquals( beta, updated.file() );
-            updated.accept( new KeyValueRecordVisitor<CountsKey, Register.LongRegister>()
+            updated.accept( new KeyValueRecordVisitor<CountsKey, Register.DoubleLongRegister>()
             {
-                private final Register.LongRegister valueRegister = Registers.newLongRegister();
+                private final Register.DoubleLongRegister valueRegister = Registers.newDoubleLongRegister();
 
                 @Override
-                public Register.LongRegister valueRegister()
+                public Register.DoubleLongRegister valueRegister()
                 {
                     return valueRegister;
                 }
@@ -189,8 +189,8 @@ public class CountsStoreTest
 
     private long get( CountsStore store, CountsKey key )
     {
-        Register.LongRegister value = Registers.newLongRegister();
+        Register.DoubleLongRegister value = Registers.newDoubleLongRegister();
         store.get( key, value );
-        return value.read();
+        return value.readSecond();
     }
 }

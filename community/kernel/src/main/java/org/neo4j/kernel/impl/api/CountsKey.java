@@ -60,7 +60,7 @@ public abstract class CountsKey implements Comparable<CountsKey>
     @Override
     public abstract String toString();
 
-    public abstract void accept( CountsVisitor visitor, Register.LongRegister count );
+    public abstract void accept( CountsVisitor visitor, Register.DoubleLongRegister count );
 
     public static final class NodeKey extends CountsKey
     {
@@ -83,9 +83,9 @@ public abstract class CountsKey implements Comparable<CountsKey>
         }
 
         @Override
-        public void accept( CountsVisitor visitor, Register.LongRegister count )
+        public void accept( CountsVisitor visitor, Register.DoubleLongRegister count )
         {
-            visitor.visitNodeCount( labelId, count.read() );
+            visitor.visitNodeCount( labelId, count.readSecond() );
         }
 
         @Override
@@ -157,9 +157,9 @@ public abstract class CountsKey implements Comparable<CountsKey>
         }
 
         @Override
-        public void accept( CountsVisitor visitor, Register.LongRegister count )
+        public void accept( CountsVisitor visitor, Register.DoubleLongRegister count )
         {
-            visitor.visitRelationshipCount( startLabelId, typeId, endLabelId, count.read() );
+            visitor.visitRelationshipCount( startLabelId, typeId, endLabelId, count.readSecond() );
         }
 
         @Override
@@ -243,9 +243,9 @@ public abstract class CountsKey implements Comparable<CountsKey>
         }
 
         @Override
-        public void accept( CountsVisitor visitor, Register.LongRegister count )
+        public void accept( CountsVisitor visitor, Register.DoubleLongRegister count )
         {
-            visitor.visitIndexCount( labelId, propertyKeyId, count.read() );
+            visitor.visitIndexCount( labelId, propertyKeyId, count.readSecond() );
         }
 
         @Override

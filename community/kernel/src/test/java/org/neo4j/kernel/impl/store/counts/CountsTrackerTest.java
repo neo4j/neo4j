@@ -277,16 +277,16 @@ public class CountsTrackerTest
         }
 
         @Override
-        CountsStore.Writer<CountsKey, Register.LongRegister> nextWriter( State state, long lastCommittedTxId )
+        CountsStore.Writer<CountsKey, Register.DoubleLongRegister> nextWriter( State state, long lastCommittedTxId )
                 throws IOException
         {
             final CountsStoreWriter writer = (CountsStoreWriter) super.nextWriter( state, lastCommittedTxId );
-            return new CountsStore.Writer<CountsKey, Register.LongRegister>()
+            return new CountsStore.Writer<CountsKey, Register.DoubleLongRegister>()
             {
-                private final Register.LongRegister valueRegister = Registers.newLongRegister();
+                private final Register.DoubleLongRegister valueRegister = Registers.newDoubleLongRegister();
 
                 @Override
-                public SortedKeyValueStore<CountsKey, Register.LongRegister> openForReading() throws IOException
+                public SortedKeyValueStore<CountsKey, Register.DoubleLongRegister> openForReading() throws IOException
                 {
                     barrier.reached();
                     return writer.openForReading();
@@ -301,12 +301,12 @@ public class CountsTrackerTest
                 @Override
                 public void visit( CountsKey key )
                 {
-                    writer.valueRegister().write( valueRegister.read() );
+                    writer.valueRegister().write( valueRegister.readFirst(), valueRegister.readSecond() );
                     writer.visit( key );
                 }
 
                 @Override
-                public Register.LongRegister valueRegister()
+                public Register.DoubleLongRegister valueRegister()
                 {
                     return valueRegister;
                 }

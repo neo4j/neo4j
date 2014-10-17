@@ -55,8 +55,8 @@ public class CountsStateTest
 
         // then
         assertThat( differences, hasContent(
-                new CountsState.Difference( nodeKey( 17 ), 5, 3 ),
-                new CountsState.Difference( relationshipKey( 1, 2, 3 ), 19, 22 ) ) );
+                new CountsState.Difference( nodeKey( 17 ), 0, 5, 0, 3 ),
+                new CountsState.Difference( relationshipKey( 1, 2, 3 ), 0, 19, 0, 22 ) ) );
     }
 
     @Test

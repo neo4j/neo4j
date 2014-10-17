@@ -28,6 +28,7 @@ import java.util.Map;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.state.RecordState;
 import org.neo4j.register.Register;
+import org.neo4j.register.Registers;
 
 import static java.util.Objects.requireNonNull;
 
@@ -39,30 +40,30 @@ import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
 
 public class CountsState implements CountsVisitor.Visitable, CountsAcceptor, RecordState
 {
-    private final Map<CountsKey, Count> counts = new HashMap<>();
+    private final Map<CountsKey, Register.DoubleLongRegister> counts = new HashMap<>();
 
     @Override
     public void incrementCountsForNode( int labelId, long delta )
     {
-        count( nodeKey( labelId ) ).update( delta );
+        count( nodeKey( labelId ) ).incrementSecond( delta );
     }
 
     @Override
     public void incrementCountsForRelationship( int startLabelId, int typeId, int endLabelId, long delta )
     {
-        count( relationshipKey( startLabelId, typeId, endLabelId ) ).update( delta );
+        count( relationshipKey( startLabelId, typeId, endLabelId ) ).incrementSecond( delta );
     }
 
     @Override
     public void incrementCountsForIndex( int labelId, int propertyKeyId, long delta )
     {
-        count( indexKey( labelId, propertyKeyId ) ).update( delta );
+        count( indexKey( labelId, propertyKeyId ) ).incrementSecond( delta );
     }
 
     @Override
     public void replaceCountsForIndex( int labelId, int propertyKeyId, long total )
     {
-        count( indexKey( labelId, propertyKeyId ) ).write( total );
+        count( indexKey( labelId, propertyKeyId ) ).writeSecond( total );
     }
 
     public void increment( int labelId )
@@ -88,7 +89,7 @@ public class CountsState implements CountsVisitor.Visitable, CountsAcceptor, Rec
     @Override
     public void accept( CountsVisitor visitor )
     {
-        for ( Map.Entry<CountsKey, Count> entry : counts.entrySet() )
+        for ( Map.Entry<CountsKey, Register.DoubleLongRegister> entry : counts.entrySet() )
         {
             entry.getKey().accept( visitor, entry.getValue() );
         }
@@ -127,20 +128,24 @@ public class CountsState implements CountsVisitor.Visitable, CountsAcceptor, Rec
     public static final class Difference
     {
         private final CountsKey key;
-        private final long expected;
-        private final long actual;
+        private final long expectedFirst;
+        private final long expectedSecond;
+        private final long actualFirst;
+        private final long actualSecond;
 
-        public Difference( CountsKey key, long expected, long actual )
+        public Difference( CountsKey key, long expectedFirst, long expectedSecond, long actualFirst, long actualSecond )
         {
+            this.expectedFirst = expectedFirst;
+            this.expectedSecond = expectedSecond;
+            this.actualFirst = actualFirst;
+            this.actualSecond = actualSecond;
             this.key = requireNonNull( key, "key" );
-            this.expected = expected;
-            this.actual = actual;
         }
 
         @Override
         public String toString()
         {
-            return String.format( "%s[%s expected=%d, actual=%d]", getClass().getSimpleName(), key, expected, actual );
+            return String.format( "%s[%s expected=%d:%d, actual=%d:%d]", getClass().getSimpleName(), key, expectedFirst, expectedSecond, actualFirst, actualSecond );
         }
 
         public CountsKey key()
@@ -148,14 +153,24 @@ public class CountsState implements CountsVisitor.Visitable, CountsAcceptor, Rec
             return key;
         }
 
-        public long expectedCount()
+        public long expectedFirstCount()
         {
-            return expected;
+            return expectedFirst;
         }
 
-        public long actualCount()
+        public long expectedSecondCount()
         {
-            return actual;
+            return expectedSecond;
+        }
+
+        public long actualFirstCount()
+        {
+            return actualFirst;
+        }
+
+        public long actualSecondCount()
+        {
+            return actualSecond;
         }
 
         @Override
@@ -168,7 +183,9 @@ public class CountsState implements CountsVisitor.Visitable, CountsAcceptor, Rec
             if ( (obj instanceof Difference) )
             {
                 Difference that = (Difference) obj;
-                return actual == that.actual && expected == that.expected && key.equals( that.key );
+                return actualFirst == that.actualFirst && expectedFirst == that.expectedFirst
+                       && actualSecond == that.actualSecond && expectedSecond == that.expectedSecond
+                       && key.equals( that.key );
             }
             return false;
         }
@@ -177,8 +194,10 @@ public class CountsState implements CountsVisitor.Visitable, CountsAcceptor, Rec
         public int hashCode()
         {
             int result = key.hashCode();
-            result = 31 * result + (int) (expected ^ (expected >>> 32));
-            result = 31 * result + (int) (actual ^ (actual >>> 32));
+            result = 31 * result + (int) (expectedFirst ^ (expectedFirst >>> 32));
+            result = 31 * result + (int) (expectedSecond ^ (expectedSecond >>> 32));
+            result = 31 * result + (int) (actualFirst ^ (actualFirst >>> 32));
+            result = 31 * result + (int) (actualSecond ^ (actualSecond >>> 32));
             return result;
         }
     }
@@ -213,42 +232,14 @@ public class CountsState implements CountsVisitor.Visitable, CountsAcceptor, Rec
         }
     }
 
-    private Count count( CountsKey key )
+    private Register.DoubleLongRegister count( CountsKey key )
     {
-        Count count = counts.get( key );
+        Register.DoubleLongRegister count = counts.get( key );
         if ( count == null )
         {
-            counts.put( key, count = new Count() );
+            counts.put( key, count = Registers.newDoubleLongRegister( 0, 0 ) );
         }
         return count;
-    }
-
-    private static class Count implements Register.LongRegister
-    {
-        private long value;
-
-        void update( long delta )
-        {
-            value += delta;
-        }
-
-        @Override
-        public String toString()
-        {
-            return Long.toString( value );
-        }
-
-        @Override
-        public long read()
-        {
-            return value;
-        }
-
-        @Override
-        public void write( long value )
-        {
-            this.value = value;
-        }
     }
 
     private static class CommandCollector implements CountsVisitor
@@ -284,10 +275,10 @@ public class CountsState implements CountsVisitor.Visitable, CountsAcceptor, Rec
 
     private static class Verifier implements CountsVisitor
     {
-        private final Map<CountsKey, Count> counts;
+        private final Map<CountsKey, Register.DoubleLongRegister> counts;
         private final List<Difference> differences = new ArrayList<>();
 
-        Verifier( Map<CountsKey, Count> counts )
+        Verifier( Map<CountsKey, Register.DoubleLongRegister> counts )
         {
             this.counts = new HashMap<>( counts );
         }
@@ -295,42 +286,47 @@ public class CountsState implements CountsVisitor.Visitable, CountsAcceptor, Rec
         @Override
         public void visitNodeCount( int labelId, long count )
         {
-            verify( nodeKey( labelId ), count );
+            verify( nodeKey( labelId ), 0, count );
         }
 
         @Override
         public void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count )
         {
-            verify( relationshipKey( startLabelId, typeId, endLabelId ), count );
+            verify( relationshipKey( startLabelId, typeId, endLabelId ), 0, count );
         }
 
         @Override
         public void visitIndexCount( int labelId, int propertyKey, long count )
         {
-            verify( indexKey( labelId, propertyKey ), count );
+            verify( indexKey( labelId, propertyKey ), 0, count );
         }
 
-        private void verify( CountsKey key, long actual )
+        private void verify( CountsKey key, long actualFirst, long actualSecond )
         {
-            Count expected = counts.remove( key );
+            Register.DoubleLongRegister expected = counts.remove( key );
             if ( expected == null )
             {
-                if ( actual != 0 )
+                if ( actualFirst != 0 || actualSecond != 0 )
                 {
-                    differences.add( new Difference( key, 0, actual ) );
+                    differences.add( new Difference( key, 0, 0, actualFirst, actualSecond ) );
                 }
             }
-            else if ( expected.value != actual )
-            {
-                differences.add( new Difference( key, expected.value, actual ) );
+            else {
+                long expectedFirst = expected.readFirst();
+                long expectedSecond = expected.readSecond();
+                if ( expectedFirst != actualFirst || expectedSecond != actualSecond )
+                {
+                    differences.add( new Difference( key, expectedFirst, expectedSecond, actualFirst, actualSecond ) );
+                }
             }
         }
 
         public List<Difference> differences()
         {
-            for ( Map.Entry<CountsKey, Count> entry : counts.entrySet() )
+            for ( Map.Entry<CountsKey, Register.DoubleLongRegister> entry : counts.entrySet() )
             {
-                differences.add( new Difference( entry.getKey(), entry.getValue().value, 0 ) );
+                Register.DoubleLongRegister value = entry.getValue();
+                differences.add( new Difference( entry.getKey(), value.readFirst(), value.readSecond(), 0, 0 ) );
             }
             counts.clear();
             return differences;
