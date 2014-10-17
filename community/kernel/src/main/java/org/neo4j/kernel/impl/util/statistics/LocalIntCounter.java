@@ -20,40 +20,47 @@
 package org.neo4j.kernel.impl.util.statistics;
 
 /**
- * A wrapper for a primitive int counter, allowing it to be passed around different components.
+ * Used as a local counter, which manages its own counter as well as delegating changes to a global counter.
  */
-public class IntCounter
+public class LocalIntCounter extends IntCounter
 {
-    private int count = 0;
+    private final IntCounter global;
 
-    public int value()
+    public LocalIntCounter( IntCounter globalCounter )
     {
-        return count;
+        this.global = globalCounter;
     }
 
+    @Override
     public void increment()
     {
-        count++;
+        super.increment();
+        global.increment();
     }
 
+    @Override
     public void decrement()
     {
-        count--;
+        super.decrement();
+        global.decrement();
     }
 
+    @Override
     public void clear()
     {
-        this.count = 0;
+        super.clear();
+    }
+
+    @Override
+    public void add( int delta )
+    {
+        super.add( delta );
+        global.add( delta );
     }
 
     @Override
     public String toString()
     {
-        return Integer.toString( count );
-    }
-
-    public void add( int delta )
-    {
-        count += delta;
+        return "local:" + super.toString() + ",global:" + global.toString();
     }
 }

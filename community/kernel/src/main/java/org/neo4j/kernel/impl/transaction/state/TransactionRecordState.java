@@ -50,6 +50,7 @@ import org.neo4j.kernel.impl.transaction.command.Command.Mode;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.transaction.state.RecordChanges.RecordChange;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.statistics.IntCounter;
 
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
@@ -72,7 +73,7 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
  * having to contend with the JTA compliance layers. In short, it would encapsulate the logical log/storage logic better
  * and thus make it easier to change.
  */
-public class TransactionRecordState
+public class TransactionRecordState implements RecordState
 {
     private final NeoStore neoStore;
     private final IntegrityValidator integrityValidator;
@@ -109,20 +110,19 @@ public class TransactionRecordState
         prepared = false;
     }
 
-    public boolean isReadOnly()
+    @Override
+    public boolean hasChanges()
     {
-        return context.getNodeRecords().changeSize() == 0 && context.getRelRecords().changeSize() == 0 &&
-                context.getSchemaRuleChanges().changeSize() == 0 &&
-                context.getPropertyRecords().changeSize() == 0 &&
-                context.getRelGroupRecords().changeSize() == 0 &&
-                context.getPropertyKeyTokenRecords().changeSize() == 0 &&
-                context.getLabelTokenRecords().changeSize() == 0 &&
-                context.getRelationshipTypeTokenRecords().changeSize() == 0;
+        return context.hasChanges() ||
+                (neoStoreRecord != null && neoStoreRecord.changeSize() > 0);
     }
 
-    public void extractCommands( List<Command> target ) throws TransactionFailureException
+    @Override
+    public void extractCommands( Collection<Command> commands ) throws TransactionFailureException
     {
     	assert !prepared : "Transaction has already been prepared";
+
+        integrityValidator.validateTransactionStartKnowledge( lastCommittedTxWhenTransactionStarted );
 
         int noOfCommands = context.getNodeRecords().changeSize() +
                            context.getRelRecords().changeSize() +
@@ -134,7 +134,6 @@ public class TransactionRecordState
                            context.getRelGroupRecords().changeSize() +
                            (neoStoreRecord != null ? neoStoreRecord.changeSize() : 0);
 
-        List<Command> commands = new ArrayList<>( noOfCommands );
         for ( RecordProxy<Integer, LabelTokenRecord, Void> record : context.getLabelTokenRecords().changes() )
         {
             Command.LabelTokenCommand command = new Command.LabelTokenCommand();
@@ -217,9 +216,7 @@ public class TransactionRecordState
         assert commands.size() == noOfCommands : "Expected " + noOfCommands + " final commands, got "
                 + commands.size() + " instead";
 
-        integrityValidator.validateTransactionStartKnowledge( lastCommittedTxWhenTransactionStarted );
         prepared = true;
-        target.addAll( commands );
     }
 
     public void relCreate( long id, int typeId, long startNodeId, long endNodeId )
@@ -468,6 +465,7 @@ public class TransactionRecordState
 
     private RecordProxy<Long, NeoStoreRecord, Void> getOrLoadNeoStoreRecord()
     {
+        // TODO Move this neo store record thingie into RecordAccessSet
         if ( neoStoreRecord == null )
         {
             neoStoreRecord = new RecordChanges<>( new RecordChanges.Loader<Long, NeoStoreRecord, Void>()
@@ -494,7 +492,7 @@ public class TransactionRecordState
                     // We do not expect to manage the before state, so this operation will not be called.
                     throw new UnsupportedOperationException("Clone on NeoStoreRecord");
                 }
-            }, false );
+            }, false, new IntCounter() );
         }
         return neoStoreRecord.getOrLoad( 0L, null );
     }

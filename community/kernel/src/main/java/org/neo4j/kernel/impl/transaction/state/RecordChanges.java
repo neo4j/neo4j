@@ -25,6 +25,7 @@ import java.util.Map;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.statistics.IntCounter;
+import org.neo4j.kernel.impl.util.statistics.LocalIntCounter;
 
 /**
  * Manages changes to records in a transaction. Before/after state is supported as well as
@@ -42,12 +43,13 @@ public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RE
     private Map<KEY, RecordChange<KEY,RECORD,ADDITIONAL>> recordChanges = new HashMap<>();
     private final Loader<KEY,RECORD,ADDITIONAL> loader;
     private final boolean manageBeforeState;
-    private IntCounter changeCounter = new IntCounter();
+    private final IntCounter changeCounter;
 
-    public RecordChanges( Loader<KEY,RECORD,ADDITIONAL> loader, boolean manageBeforeState )
+    public RecordChanges( Loader<KEY,RECORD,ADDITIONAL> loader, boolean manageBeforeState, IntCounter globalCounter )
     {
         this.loader = loader;
         this.manageBeforeState = manageBeforeState;
+        this.changeCounter = new LocalIntCounter( globalCounter );
     }
 
     public RecordChange<KEY, RECORD, ADDITIONAL> getIfLoaded( KEY key )
@@ -92,7 +94,7 @@ public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RE
             // Let's not allow the internal maps to grow too big over time.
             recordChanges = new HashMap<>();
         }
-        changeCounter.set(0);
+        changeCounter.clear();
     }
 
     @Override

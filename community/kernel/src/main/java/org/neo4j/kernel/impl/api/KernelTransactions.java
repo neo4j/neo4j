@@ -118,7 +118,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
             KernelTransactionImplementation tx = new KernelTransactionImplementation(
                     statementOperations, readOnly, schemaWriteGuard,
                     labelScanStore, indexingService, updateableSchemaState, recordState, providerMap,
-                    neoStore, locksClient, hooks, constraintIndexCreator, transactionHeaderInformationFactory.create(),
+                    neoStore, locksClient, hooks, constraintIndexCreator, transactionHeaderInformationFactory,
                     transactionCommitProcess, transactionMonitor, persistenceCache, storeLayer,
                     legacyIndexTransactionState, localTxPool, Clock.SYSTEM_CLOCK );
 
@@ -187,9 +187,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
     public KernelTransaction newInstance()
     {
         assertDatabaseIsRunning();
-        return localTxPool.acquire().initialize(
-                transactionHeaderInformationFactory.create(),
-                neoStore.getLastCommittedTransactionId());
+        return localTxPool.acquire().initialize( neoStore.getLastCommittedTransactionId());
     }
 
     /**

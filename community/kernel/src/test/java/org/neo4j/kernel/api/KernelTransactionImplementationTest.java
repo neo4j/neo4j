@@ -19,12 +19,13 @@
  */
 package org.neo4j.kernel.api;
 
-import java.util.List;
+import java.util.Collection;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -36,6 +37,7 @@ import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
@@ -43,9 +45,16 @@ import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.test.DoubleLatch;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.junit.Assert.*;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyListOf;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 public class KernelTransactionImplementationTest
 {
@@ -313,20 +322,20 @@ public class KernelTransactionImplementationTest
     {
         // GIVEN a transaction starting at one point in time
         long startingTime = clock.currentTimeMillis();
-        when( recordState.isReadOnly() ).thenReturn( false );
+        when( recordState.hasChanges() ).thenReturn( true );
         doAnswer( new Answer<Void>()
         {
             @Override
             public Void answer( InvocationOnMock invocationOnMock ) throws Throwable
             {
-                List<Command> commands = (List<Command>) invocationOnMock.getArguments()[0];
+                Collection<Command> commands = (Collection<Command>) invocationOnMock.getArguments()[0];
                 commands.add( new Command.NodeCommand() );
                 return null;
             }
         } ).when( recordState ).extractCommands( anyListOf( Command.class ) );
         try ( KernelTransactionImplementation transaction = newTransaction() )
         {
-            transaction.initialize( headerInformation, 5L );
+            transaction.initialize( 5L );
 
             // WHEN committing it at a later point
             clock.forward( 5, MILLISECONDS );
@@ -348,20 +357,21 @@ public class KernelTransactionImplementationTest
     private final TransactionMonitor transactionMonitor = mock( TransactionMonitor.class );
     private final CapturingCommitProcess commitProcess = new CapturingCommitProcess();
     private final TransactionHeaderInformation headerInformation = mock( TransactionHeaderInformation.class );
+    private final TransactionHeaderInformationFactory headerInformationFactory =
+            mock( TransactionHeaderInformationFactory.class );
     private final FakeClock clock = new FakeClock();
 
     @Before
     public void before()
     {
-        when( recordState.isReadOnly() ).thenReturn( true );
-        when( legacyIndexState.isReadOnly() ).thenReturn( true );
         when( headerInformation.getAdditionalHeader() ).thenReturn( new byte[0] );
+        when( headerInformationFactory.create() ).thenReturn( headerInformation );
     }
 
     private KernelTransactionImplementation newTransaction()
     {
         return new KernelTransactionImplementation( null, false, null, null, null, null, recordState,
-                null, neoStore, new NoOpClient(), hooks, null, headerInformation, commitProcess, transactionMonitor,
+                null, neoStore, new NoOpClient(), hooks, null, headerInformationFactory, commitProcess, transactionMonitor,
                 null, null, legacyIndexState, mock(Pool.class), clock );
     }
 

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.state;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +44,7 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.transaction.state.RecordState;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 
 /**
@@ -51,7 +53,7 @@ import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
  *
  * @see TransactionRecordState
  */
-public class LegacyIndexTransactionState implements IndexCommandFactory
+public class LegacyIndexTransactionState implements IndexCommandFactory, RecordState
 {
     private final Map<String, LegacyIndexProviderTransaction> transactions = new HashMap<>();
     private final IndexConfigStore indexConfigStore;
@@ -59,8 +61,8 @@ public class LegacyIndexTransactionState implements IndexCommandFactory
 
     // Commands
     private IndexDefineCommand defineCommand;
-    private Map<String, List<IndexCommand>> nodeCommands;
-    private Map<String, List<IndexCommand>> relationshipCommands;
+    private final Map<String, List<IndexCommand>> nodeCommands = new HashMap<>();
+    private final Map<String, List<IndexCommand>> relationshipCommands = new HashMap<>();
 
     public LegacyIndexTransactionState( IndexConfigStore indexConfigStore, ProviderLookup providerLookup )
     {
@@ -102,7 +104,8 @@ public class LegacyIndexTransactionState implements IndexCommandFactory
         return transaction.relationshipIndex( indexName, configuration );
     }
 
-    public void extractCommands( List<Command> target )
+    @Override
+    public void extractCommands( Collection<Command> target )
     {
         if ( defineCommand != null )
         {
@@ -117,7 +120,7 @@ public class LegacyIndexTransactionState implements IndexCommandFactory
         }
     }
 
-    private void extractCommands( List<Command> target, Map<String, List<IndexCommand>> commandMap )
+    private void extractCommands( Collection<Command> target, Map<String, List<IndexCommand>> commandMap )
     {
         if ( commandMap != null )
         {
@@ -148,10 +151,6 @@ public class LegacyIndexTransactionState implements IndexCommandFactory
         List<IndexCommand> commands = null;
         if ( command.getEntityType() == IndexEntityType.Node.id() )
         {
-            if ( nodeCommands == null )
-            {
-                nodeCommands = new HashMap<>();
-            }
             commands = nodeCommands.get( indexName );
             if ( commands == null )
             {
@@ -160,10 +159,6 @@ public class LegacyIndexTransactionState implements IndexCommandFactory
         }
         else if ( command.getEntityType() == IndexEntityType.Relationship.id() )
         {
-            if ( nodeCommands == null )
-            {
-                nodeCommands = new HashMap<>();
-            }
             commands = nodeCommands.get( indexName );
             if ( commands == null )
             {
@@ -236,18 +231,28 @@ public class LegacyIndexTransactionState implements IndexCommandFactory
         addCommand( indexName, command );
     }
 
-    public boolean isReadOnly()
+    @Override
+    public boolean hasChanges()
     {
-        return defineCommand == null;
+        return defineCommand != null;
     }
 
-    /** Set this datastructure to it's initial state, allowing it to be re-used as if it had just been new'ed up. */
+    /** Set this data structure to it's initial state, allowing it to be re-used as if it had just been new'ed up. */
     public LegacyIndexTransactionState initialize()
     {
-        transactions.clear();
+        if ( !transactions.isEmpty() )
+        {
+            transactions.clear();
+        }
         defineCommand = null;
-        nodeCommands = null;
-        relationshipCommands = null;
+        if ( !nodeCommands.isEmpty() )
+        {
+            nodeCommands.clear();
+        }
+        if ( !relationshipCommands.isEmpty() )
+        {
+            relationshipCommands.clear();
+        }
         return this;
     }
 }

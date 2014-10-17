@@ -211,6 +211,11 @@ public class NeoStoreTransactionContext
         return null;
     }
 
+    public boolean hasChanges()
+    {
+        return recordChangeSet.hasChanges();
+    }
+
     public Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, RelationshipLoadingPosition> getMoreRelationships(
             long nodeId, RelationshipLoadingPosition position, DirectionWrapper direction,
             int[] types, RelationshipStore relationshipStore )

@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacylogs;
 
-import static org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogFilenames.getLegacyLogVersion;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -46,6 +43,9 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterv1;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter;
+
+import static org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogFilenames.getLegacyLogVersion;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
 
 class LegacyLogEntryWriter
 {

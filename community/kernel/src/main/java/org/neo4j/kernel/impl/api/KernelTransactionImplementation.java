@@ -19,12 +19,10 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
@@ -59,10 +57,12 @@ import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
+import org.neo4j.kernel.impl.util.collection.ArrayCollection;
 
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
@@ -104,13 +104,15 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private volatile boolean terminated;
 
     // For committing
-    private TransactionHeaderInformation headerInformation;
+    private final TransactionHeaderInformationFactory headerInformationFactory;
     private final TransactionCommitProcess commitProcess;
     private final TransactionMonitor transactionMonitor;
     private final PersistenceCache persistenceCache;
     private final StoreReadLayer storeLayer;
     private final LegacyIndexTransactionState legacyIndexTransactionState;
     private final Clock clock;
+    private final TransactionToRecordStateVisitor txStateToRecordStateVisitor = new TransactionToRecordStateVisitor();
+    private final Collection<Command> extractedCommands = new ArrayCollection<>( 20 );
 
     // Some header information
     private long startTimeMillis;
@@ -124,7 +126,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             SchemaIndexProviderMap providerMap, NeoStore neoStore,
                                             Locks.Client locks, TransactionHooks hooks,
                                             ConstraintIndexCreator constraintIndexCreator,
-                                            TransactionHeaderInformation transactionHeaderInformation,
+                                            TransactionHeaderInformationFactory headerInformationFactory,
                                             TransactionCommitProcess commitProcess,
                                             TransactionMonitor transactionMonitor,
                                             PersistenceCache persistenceCache,
@@ -144,7 +146,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.hooks = hooks;
         this.locks = locks;
         this.constraintIndexCreator = constraintIndexCreator;
-        this.headerInformation = transactionHeaderInformation;
+        this.headerInformationFactory = headerInformationFactory;
         this.commitProcess = commitProcess;
         this.transactionMonitor = transactionMonitor;
         this.persistenceCache = persistenceCache;
@@ -156,10 +158,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     /** Reset this transaction to a vanilla state, turning it into a logically new transaction. */
-    public KernelTransactionImplementation initialize( TransactionHeaderInformation txHeader, long lastCommittedTx )
+    public KernelTransactionImplementation initialize( long lastCommittedTx )
     {
         assert locks != null : "This transaction has been disposed off, it should not be used.";
-        this.headerInformation = txHeader;
         this.terminated = closing = closed = failure = success = false;
         this.transactionType = TransactionType.ANY;
         this.hooksState = null;
@@ -338,293 +339,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         if ( hasTxStateWithChanges() )
         {
-            final AtomicBoolean clearState = new AtomicBoolean( false );
-            txState().accept( new TxState.VisitorAdapter()
-            {
-                @Override
-                public void visitCreatedNode( long id )
-                {
-                    recordState.nodeCreate( id );
-                }
-
-                @Override
-                public void visitDeletedNode( long id )
-                {
-                    recordState.nodeDelete( id );
-                }
-
-                @Override
-                public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
-                {
-                    try
-                    {
-                        // update counts
-                        for ( PrimitiveIntIterator labels = labelsOf( startNode ); labels.hasNext(); )
-                        {
-                            int label = labels.next();
-                            counts.increment( label, ANY_RELATIONSHIP_TYPE, ANY_LABEL );
-                            counts.increment( label, type, ANY_LABEL );
-                        }
-                        for ( PrimitiveIntIterator labels = labelsOf( endNode ); labels.hasNext(); )
-                        {
-                            int label = labels.next();
-                            counts.increment( ANY_LABEL, ANY_RELATIONSHIP_TYPE, label );
-                            counts.increment( ANY_LABEL, type, label );
-                        }
-                    }
-                    catch ( EntityNotFoundException e )
-                    {
-                        throw new IllegalStateException( "Nodes with added relationships should exist.", e );
-                    }
-
-                    // record the state changes to be made to the store
-                    recordState.relCreate( id, type, startNode, endNode );
-                }
-
-                @Override
-                public void visitDeletedRelationship( long id, int type, long startNode, long endNode )
-                {
-                    try
-                    {
-                        // update counts
-                        RelationshipDataExtractor rel = new RelationshipDataExtractor();
-                        storeLayer.relationshipVisit( id, rel );
-                        for ( PrimitiveIntIterator labels = labelsOf( rel.startNode() ); labels.hasNext(); )
-                        {
-                            int label = labels.next();
-                            counts.decrement( label, ANY_RELATIONSHIP_TYPE, ANY_LABEL );
-                            counts.decrement( label, rel.type(), ANY_LABEL );
-                        }
-                        for ( PrimitiveIntIterator labels = labelsOf( rel.endNode() ); labels.hasNext(); )
-                        {
-                            int label = labels.next();
-                            counts.decrement( ANY_LABEL, ANY_RELATIONSHIP_TYPE, label );
-                            counts.decrement( ANY_LABEL, rel.type(), label );
-                        }
-                    }
-                    catch ( EntityNotFoundException e )
-                    {
-                        throw new IllegalStateException(
-                                "Relationship being deleted should exist along with its nodes.", e );
-                    }
-
-                    // record the state changes to be made to the store
-                    recordState.relDelete( id );
-                }
-
-                private PrimitiveIntIterator labelsOf( long nodeId ) throws EntityNotFoundException
-                {
-                    return StateHandlingStatementOperations.nodeGetLabels( storeLayer, txState, nodeId );
-                }
-
-                @Override
-                public void visitNodePropertyChanges( long id, Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed, Iterator<Integer> removed )
-                {
-                    while(removed.hasNext())
-                    {
-                        recordState.nodeRemoveProperty( id, removed.next() );
-                    }
-                    while(changed.hasNext())
-                    {
-                        DefinedProperty prop = changed.next();
-                        recordState.nodeChangeProperty( id, prop.propertyKeyId(), prop.value() );
-                    }
-                    while(added.hasNext())
-                    {
-                        DefinedProperty prop = added.next();
-                        recordState.nodeAddProperty( id, prop.propertyKeyId(), prop.value() );
-                    }
-                }
-
-                @Override
-                public void visitRelPropertyChanges( long id, Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed, Iterator<Integer> removed )
-                {
-                    while(removed.hasNext())
-                    {
-                        recordState.relRemoveProperty( id, removed.next() );
-                    }
-                    while(changed.hasNext())
-                    {
-                        DefinedProperty prop = changed.next();
-                        recordState.relChangeProperty( id, prop.propertyKeyId(), prop.value() );
-                    }
-                    while(added.hasNext())
-                    {
-                        DefinedProperty prop = added.next();
-                        recordState.relAddProperty( id, prop.propertyKeyId(), prop.value() );
-                    }
-                }
-
-                @Override
-                public void visitGraphPropertyChanges( Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed, Iterator<Integer> removed )
-                {
-                    while(removed.hasNext())
-                    {
-                        recordState.graphRemoveProperty( removed.next() );
-                    }
-                    while(changed.hasNext())
-                    {
-                        DefinedProperty prop = changed.next();
-                        recordState.graphChangeProperty( prop.propertyKeyId(), prop.value() );
-                    }
-                    while(added.hasNext())
-                    {
-                        DefinedProperty prop = added.next();
-                        recordState.graphAddProperty( prop.propertyKeyId(), prop.value() );
-                    }
-                }
-
-                @Override
-                public void visitNodeLabelChanges( long id, final Set<Integer> added, final Set<Integer> removed )
-                {
-                    try
-                    {
-                        // update counts
-                        if ( !(added.isEmpty() && removed.isEmpty()) )
-                        {
-                            // get the relationship counts from *before* this transaction,
-                            // the relationship changes will compensate for what happens during the transaction
-                            storeLayer.nodeVisitDegrees( id, new DegreeVisitor()
-                            {
-                                @Override
-                                public void visitDegree( int type, int outgoing, int incoming )
-                                {
-                                    for ( Integer label : added )
-                                    {
-                                        // untyped
-                                        counts.updateCountsForRelationship( label, -1, -1, outgoing );
-                                        counts.updateCountsForRelationship( -1, -1, label, incoming );
-                                        // typed
-                                        counts.updateCountsForRelationship( label, type, -1, outgoing );
-                                        counts.updateCountsForRelationship( -1, type, label, incoming );
-                                    }
-                                    for ( Integer label : removed )
-                                    {
-                                        // untyped
-                                        counts.updateCountsForRelationship( label, -1, -1, -outgoing );
-                                        counts.updateCountsForRelationship( -1, -1, label, -incoming );
-                                        // typed
-                                        counts.updateCountsForRelationship( label, type, -1, -outgoing );
-                                        counts.updateCountsForRelationship( -1, type, label, -incoming );
-                                    }
-                                }
-                            } );
-                        }
-                    }
-                    catch ( EntityNotFoundException e )
-                    {
-                         // ok, the node was created in this transaction
-                    }
-
-                    // record the state changes to be made to the store
-                    for ( Integer label : removed )
-                    {
-                        recordState.removeLabelFromNode( label, id );
-                    }
-                    for ( Integer label : added )
-                    {
-                        recordState.addLabelToNode( label, id );
-                    }
-                }
-
-                @Override
-                public void visitAddedIndex( IndexDescriptor element, boolean isConstraintIndex )
-                {
-                    SchemaIndexProvider.Descriptor providerDescriptor = providerMap.getDefaultProvider()
-                            .getProviderDescriptor();
-                    IndexRule rule;
-                    if ( isConstraintIndex )
-                    {
-                        rule = IndexRule.constraintIndexRule( schemaStorage.newRuleId(), element.getLabelId(),
-                                element.getPropertyKeyId(), providerDescriptor,
-                                null );
-                    }
-                    else
-                    {
-                        rule = IndexRule.indexRule( schemaStorage.newRuleId(), element.getLabelId(),
-                                element.getPropertyKeyId(), providerDescriptor );
-                    }
-                    recordState.createSchemaRule( rule );
-                }
-
-                @Override
-                public void visitRemovedIndex( IndexDescriptor element, boolean isConstraintIndex )
-                {
-                    SchemaStorage.IndexRuleKind kind = isConstraintIndex?
-                            SchemaStorage.IndexRuleKind.CONSTRAINT : SchemaStorage.IndexRuleKind.INDEX;
-                    IndexRule rule = schemaStorage.indexRule( element.getLabelId(), element.getPropertyKeyId(), kind );
-                    recordState.dropSchemaRule( rule );
-                }
-
-                @Override
-                public void visitAddedConstraint( UniquenessConstraint element )
-                {
-                    clearState.set( true );
-                    long constraintId = schemaStorage.newRuleId();
-                    IndexRule indexRule = schemaStorage.indexRule(
-                            element.label(),
-                            element.propertyKeyId(),
-                            SchemaStorage.IndexRuleKind.CONSTRAINT );
-                    recordState.createSchemaRule( UniquenessConstraintRule.uniquenessConstraintRule(
-                            constraintId, element.label(), element.propertyKeyId(), indexRule.getId() ) );
-                    recordState.setConstraintIndexOwner( indexRule, constraintId );
-                }
-
-                @Override
-                public void visitRemovedConstraint( UniquenessConstraint element )
-                {
-                    try
-                    {
-                        clearState.set( true );
-                        UniquenessConstraintRule rule = schemaStorage
-                                .uniquenessConstraint( element.label(), element.propertyKeyId() );
-                        recordState.dropSchemaRule( rule );
-                    }
-                    catch ( SchemaRuleNotFoundException e )
-                    {
-                        throw new ThisShouldNotHappenError(
-                                "Tobias Lindaaker",
-                                "Constraint to be removed should exist, since its existence should " +
-                                        "have been validated earlier and the schema should have been locked." );
-                    }
-                    // Remove the index for the constraint as well
-                    visitRemovedIndex( new IndexDescriptor( element.label(), element.propertyKeyId() ), true );
-                }
-
-                @Override
-                public void visitCreatedLabelToken( String name, int id )
-                {
-                    recordState.createLabelToken( name, id );
-                }
-
-                @Override
-                public void visitCreatedPropertyKeyToken( String name, int id )
-                {
-                    recordState.createPropertyKeyToken( name, id );
-                }
-
-                @Override
-                public void visitCreatedRelationshipTypeToken( String name, int id )
-                {
-                    recordState.createRelationshipTypeToken( name, id );
-                }
-
-                @Override
-                public void visitCreatedNodeLegacyIndex( String name, Map<String, String> config )
-                {
-                    legacyIndexTransactionState.createIndex( IndexEntityType.Node, name, config );
-                }
-
-                @Override
-                public void visitCreatedRelationshipLegacyIndex( String name, Map<String, String> config )
-                {
-                    legacyIndexTransactionState.createIndex( IndexEntityType.Relationship, name, config );
-                }
-            } );
-            if ( clearState.get() )
-            {
-                schemaState.clear();
-            }
+            txState().accept( txStateToRecordStateVisitor );
+            txStateToRecordStateVisitor.done();
         }
     }
 
@@ -636,15 +352,317 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
-    public boolean isReadOnly()
+    private boolean hasChanges()
     {
-        return !hasTxStateWithChanges() && recordState.isReadOnly() &&
-                legacyIndexTransactionState.isReadOnly();
+        return hasTxStateWithChanges() ||
+               recordState.hasChanges() ||
+               legacyIndexTransactionState.hasChanges() ||
+               counts.hasChanges();
     }
 
     public TransactionRecordState getTransactionRecordState()
     {
         return recordState;
+    }
+
+    private class TransactionToRecordStateVisitor extends TxState.VisitorAdapter
+    {
+        private boolean clearState;
+        private final RelationshipDataExtractor relationshipData = new RelationshipDataExtractor();
+
+        void done()
+        {
+            try
+            {
+                if ( clearState )
+                {
+                    schemaState.clear();
+                }
+            }
+            finally
+            {
+                clearState = false;
+            }
+        }
+
+        @Override
+        public void visitCreatedNode( long id )
+        {
+            recordState.nodeCreate( id );
+        }
+
+        @Override
+        public void visitDeletedNode( long id )
+        {
+            recordState.nodeDelete( id );
+        }
+
+        @Override
+        public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
+        {
+            try
+            {
+                // update counts
+                for ( PrimitiveIntIterator labels = labelsOf( startNode ); labels.hasNext(); )
+                {
+                    int label = labels.next();
+                    counts.increment( label, ANY_RELATIONSHIP_TYPE, ANY_LABEL );
+                    counts.increment( label, type, ANY_LABEL );
+                }
+                for ( PrimitiveIntIterator labels = labelsOf( endNode ); labels.hasNext(); )
+                {
+                    int label = labels.next();
+                    counts.increment( ANY_LABEL, ANY_RELATIONSHIP_TYPE, label );
+                    counts.increment( ANY_LABEL, type, label );
+                }
+            }
+            catch ( EntityNotFoundException e )
+            {
+                throw new IllegalStateException( "Nodes with added relationships should exist.", e );
+            }
+
+            // record the state changes to be made to the store
+            recordState.relCreate( id, type, startNode, endNode );
+        }
+
+        @Override
+        public void visitDeletedRelationship( long id, int type, long startNode, long endNode )
+        {
+            try
+            {
+                // update counts
+                storeLayer.relationshipVisit( id, relationshipData );
+                for ( PrimitiveIntIterator labels = labelsOf( relationshipData.startNode() ); labels.hasNext(); )
+                {
+                    int label = labels.next();
+                    counts.decrement( label, ANY_RELATIONSHIP_TYPE, ANY_LABEL );
+                    counts.decrement( label, relationshipData.type(), ANY_LABEL );
+                }
+                for ( PrimitiveIntIterator labels = labelsOf( relationshipData.endNode() ); labels.hasNext(); )
+                {
+                    int label = labels.next();
+                    counts.decrement( ANY_LABEL, ANY_RELATIONSHIP_TYPE, label );
+                    counts.decrement( ANY_LABEL, relationshipData.type(), label );
+                }
+            }
+            catch ( EntityNotFoundException e )
+            {
+                throw new IllegalStateException(
+                        "Relationship being deleted should exist along with its nodes.", e );
+            }
+
+            // record the state changes to be made to the store
+            recordState.relDelete( id );
+        }
+
+        private PrimitiveIntIterator labelsOf( long nodeId ) throws EntityNotFoundException
+        {
+            return StateHandlingStatementOperations.nodeGetLabels( storeLayer, txState, nodeId );
+        }
+
+        @Override
+        public void visitNodePropertyChanges( long id, Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed, Iterator<Integer> removed )
+        {
+            while(removed.hasNext())
+            {
+                recordState.nodeRemoveProperty( id, removed.next() );
+            }
+            while(changed.hasNext())
+            {
+                DefinedProperty prop = changed.next();
+                recordState.nodeChangeProperty( id, prop.propertyKeyId(), prop.value() );
+            }
+            while(added.hasNext())
+            {
+                DefinedProperty prop = added.next();
+                recordState.nodeAddProperty( id, prop.propertyKeyId(), prop.value() );
+            }
+        }
+
+        @Override
+        public void visitRelPropertyChanges( long id, Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed, Iterator<Integer> removed )
+        {
+            while(removed.hasNext())
+            {
+                recordState.relRemoveProperty( id, removed.next() );
+            }
+            while(changed.hasNext())
+            {
+                DefinedProperty prop = changed.next();
+                recordState.relChangeProperty( id, prop.propertyKeyId(), prop.value() );
+            }
+            while(added.hasNext())
+            {
+                DefinedProperty prop = added.next();
+                recordState.relAddProperty( id, prop.propertyKeyId(), prop.value() );
+            }
+        }
+
+        @Override
+        public void visitGraphPropertyChanges( Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed, Iterator<Integer> removed )
+        {
+            while(removed.hasNext())
+            {
+                recordState.graphRemoveProperty( removed.next() );
+            }
+            while(changed.hasNext())
+            {
+                DefinedProperty prop = changed.next();
+                recordState.graphChangeProperty( prop.propertyKeyId(), prop.value() );
+            }
+            while(added.hasNext())
+            {
+                DefinedProperty prop = added.next();
+                recordState.graphAddProperty( prop.propertyKeyId(), prop.value() );
+            }
+        }
+
+        @Override
+        public void visitNodeLabelChanges( long id, final Set<Integer> added, final Set<Integer> removed )
+        {
+            try
+            {
+                // update counts
+                if ( !(added.isEmpty() && removed.isEmpty()) )
+                {
+                    // get the relationship counts from *before* this transaction,
+                    // the relationship changes will compensate for what happens during the transaction
+                    storeLayer.nodeVisitDegrees( id, new DegreeVisitor()
+                    {
+                        @Override
+                        public void visitDegree( int type, int outgoing, int incoming )
+                        {
+                            for ( Integer label : added )
+                            {
+                                // untyped
+                                counts.updateCountsForRelationship( label, -1, -1, outgoing );
+                                counts.updateCountsForRelationship( -1, -1, label, incoming );
+                                // typed
+                                counts.updateCountsForRelationship( label, type, -1, outgoing );
+                                counts.updateCountsForRelationship( -1, type, label, incoming );
+                            }
+                            for ( Integer label : removed )
+                            {
+                                // untyped
+                                counts.updateCountsForRelationship( label, -1, -1, -outgoing );
+                                counts.updateCountsForRelationship( -1, -1, label, -incoming );
+                                // typed
+                                counts.updateCountsForRelationship( label, type, -1, -outgoing );
+                                counts.updateCountsForRelationship( -1, type, label, -incoming );
+                            }
+                        }
+                    } );
+                }
+            }
+            catch ( EntityNotFoundException e )
+            {
+                 // ok, the node was created in this transaction
+            }
+
+            // record the state changes to be made to the store
+            for ( Integer label : removed )
+            {
+                recordState.removeLabelFromNode( label, id );
+            }
+            for ( Integer label : added )
+            {
+                recordState.addLabelToNode( label, id );
+            }
+        }
+
+        @Override
+        public void visitAddedIndex( IndexDescriptor element, boolean isConstraintIndex )
+        {
+            SchemaIndexProvider.Descriptor providerDescriptor = providerMap.getDefaultProvider()
+                    .getProviderDescriptor();
+            IndexRule rule;
+            if ( isConstraintIndex )
+            {
+                rule = IndexRule.constraintIndexRule( schemaStorage.newRuleId(), element.getLabelId(),
+                        element.getPropertyKeyId(), providerDescriptor,
+                        null );
+            }
+            else
+            {
+                rule = IndexRule.indexRule( schemaStorage.newRuleId(), element.getLabelId(),
+                        element.getPropertyKeyId(), providerDescriptor );
+            }
+            recordState.createSchemaRule( rule );
+        }
+
+        @Override
+        public void visitRemovedIndex( IndexDescriptor element, boolean isConstraintIndex )
+        {
+            SchemaStorage.IndexRuleKind kind = isConstraintIndex?
+                    SchemaStorage.IndexRuleKind.CONSTRAINT : SchemaStorage.IndexRuleKind.INDEX;
+            IndexRule rule = schemaStorage.indexRule( element.getLabelId(), element.getPropertyKeyId(), kind );
+            recordState.dropSchemaRule( rule );
+        }
+
+        @Override
+        public void visitAddedConstraint( UniquenessConstraint element )
+        {
+            clearState = true;
+            long constraintId = schemaStorage.newRuleId();
+            IndexRule indexRule = schemaStorage.indexRule(
+                    element.label(),
+                    element.propertyKeyId(),
+                    SchemaStorage.IndexRuleKind.CONSTRAINT );
+            recordState.createSchemaRule( UniquenessConstraintRule.uniquenessConstraintRule(
+                    constraintId, element.label(), element.propertyKeyId(), indexRule.getId() ) );
+            recordState.setConstraintIndexOwner( indexRule, constraintId );
+        }
+
+        @Override
+        public void visitRemovedConstraint( UniquenessConstraint element )
+        {
+            try
+            {
+                clearState = true;
+                UniquenessConstraintRule rule = schemaStorage
+                        .uniquenessConstraint( element.label(), element.propertyKeyId() );
+                recordState.dropSchemaRule( rule );
+            }
+            catch ( SchemaRuleNotFoundException e )
+            {
+                throw new ThisShouldNotHappenError(
+                        "Tobias Lindaaker",
+                        "Constraint to be removed should exist, since its existence should " +
+                                "have been validated earlier and the schema should have been locked." );
+            }
+            // Remove the index for the constraint as well
+            visitRemovedIndex( new IndexDescriptor( element.label(), element.propertyKeyId() ), true );
+        }
+
+        @Override
+        public void visitCreatedLabelToken( String name, int id )
+        {
+            recordState.createLabelToken( name, id );
+        }
+
+        @Override
+        public void visitCreatedPropertyKeyToken( String name, int id )
+        {
+            recordState.createPropertyKeyToken( name, id );
+        }
+
+        @Override
+        public void visitCreatedRelationshipTypeToken( String name, int id )
+        {
+            recordState.createRelationshipTypeToken( name, id );
+        }
+
+        @Override
+        public void visitCreatedNodeLegacyIndex( String name, Map<String, String> config )
+        {
+            legacyIndexTransactionState.createIndex( IndexEntityType.Node, name, config );
+        }
+
+        @Override
+        public void visitCreatedRelationshipLegacyIndex( String name, Map<String, String> config )
+        {
+            legacyIndexTransactionState.createIndex( IndexEntityType.Relationship, name, config );
+        }
     }
 
     private enum TransactionType
@@ -722,7 +740,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
 
         this.locks = null;
-        this.headerInformation = null;
         this.transactionType = null;
         this.hooksState = null;
         this.txState = null;
@@ -732,7 +749,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         boolean success = false;
 
-        try ( LockGroup lockGroup = new LockGroup() )
+        try
         {
             // Trigger transaction "before" hooks
             if ( (hooksState = hooks.beforeCommit( txState, this, storeLayer )) != null && hooksState.failed() )
@@ -743,41 +760,45 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             prepareRecordChangesFromTransactionState();
 
             // Convert changes into commands and commit
-            if ( !isReadOnly() )
+            if ( hasChanges() )
             {
-                // Gather up commands from the various sources
-                List<Command> commands = new ArrayList<>();
-                recordState.extractCommands( commands );
-                legacyIndexTransactionState.extractCommands( commands );
-                counts.extractCommands( commands );
-
-                /* Here's the deal: we track a quick-to-access hasChanges in transaction state which is true
-                 * if there are any changes imposed by this transaction. Some changes made inside a transaction undo
-                 * previously made changes in that same transaction, and so at some point a transaction may have
-                 * changes and at another point, after more changes seemingly, the transaction may not have any changes.
-                 * However, to track that "undoing" of the changes is a bit tedious, intrusive and hard to maintain
-                 * and get right.... So to really make sure the transaction has changes we re-check by looking if we
-                 * have produced any commands to add to the logical log.
-                 */
-                if ( !commands.isEmpty() )
+                try ( LockGroup lockGroup = new LockGroup() )
                 {
-                    // Finish up the whole transaction representation
-                    PhysicalTransactionRepresentation transactionRepresentation =
-                            new PhysicalTransactionRepresentation( commands );
-                    transactionRepresentation.setHeader( headerInformation.getAdditionalHeader(),
-                            headerInformation.getMasterId(),
-                            headerInformation.getAuthorId(),
-                            startTimeMillis, lastTransactionIdWhenStarted, clock.currentTimeMillis(),
-                            locks.getLockSessionId() );
+                    // Gather up commands from the various sources
+                    extractedCommands.clear();
+                    recordState.extractCommands( extractedCommands );
+                    legacyIndexTransactionState.extractCommands( extractedCommands );
+                    counts.extractCommands( extractedCommands );
 
-                    // Commit the transaction
-                    commitProcess.commit( transactionRepresentation, lockGroup );
+                    /* Here's the deal: we track a quick-to-access hasChanges in transaction state which is true
+                     * if there are any changes imposed by this transaction. Some changes made inside a transaction undo
+                     * previously made changes in that same transaction, and so at some point a transaction may have
+                     * changes and at another point, after more changes seemingly, the transaction may not have any changes.
+                     * However, to track that "undoing" of the changes is a bit tedious, intrusive and hard to maintain
+                     * and get right.... So to really make sure the transaction has changes we re-check by looking if we
+                     * have produced any commands to add to the logical log.
+                     */
+                    if ( !extractedCommands.isEmpty() )
+                    {
+                        // Finish up the whole transaction representation
+                        PhysicalTransactionRepresentation transactionRepresentation =
+                                new PhysicalTransactionRepresentation( extractedCommands );
+                        TransactionHeaderInformation headerInformation = headerInformationFactory.create();
+                        transactionRepresentation.setHeader( headerInformation.getAdditionalHeader(),
+                                headerInformation.getMasterId(),
+                                headerInformation.getAuthorId(),
+                                startTimeMillis, lastTransactionIdWhenStarted, clock.currentTimeMillis(),
+                                locks.getLockSessionId() );
+
+                        // Commit the transaction
+                        commitProcess.commit( transactionRepresentation, lockGroup );
+                    }
+
+                    if ( hasTxStateWithChanges() )
+                    {
+                        persistenceCache.apply( txState );
+                    }
                 }
-            }
-
-            if ( hasTxStateWithChanges() )
-            {
-                persistenceCache.apply( txState );
             }
             success = true;
         }

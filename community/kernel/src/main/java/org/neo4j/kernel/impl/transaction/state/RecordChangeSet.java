@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
+import org.neo4j.kernel.impl.util.statistics.IntCounter;
 
 public class RecordChangeSet implements RecordAccessSet
 {
@@ -43,20 +44,26 @@ public class RecordChangeSet implements RecordAccessSet
     private final RecordChanges<Integer, PropertyKeyTokenRecord, Void> propertyKeyTokenChanges;
     private final RecordChanges<Integer, LabelTokenRecord, Void> labelTokenChanges;
     private final RecordChanges<Integer, RelationshipTypeTokenRecord, Void> relationshipTypeTokenChanges;
+    private final IntCounter changeCounter = new IntCounter();
 
     public RecordChangeSet( NeoStore neoStore )
     {
-        this.nodeRecords = new RecordChanges<>( Loaders.nodeLoader( neoStore.getNodeStore() ), true );
-        this.propertyRecords = new RecordChanges<>( Loaders.propertyLoader( neoStore.getPropertyStore() ), true );
-        this.relRecords = new RecordChanges<>( Loaders.relationshipLoader( neoStore.getRelationshipStore() ), false );
-        this.relGroupRecords = new RecordChanges<>( Loaders.relationshipGroupLoader( neoStore.getRelationshipGroupStore() ), false );
-        this.schemaRuleChanges = new RecordChanges<>( Loaders.schemaRuleLoader( neoStore.getSchemaStore() ), true );
+        this.nodeRecords = new RecordChanges<>(
+                Loaders.nodeLoader( neoStore.getNodeStore() ), true, changeCounter );
+        this.propertyRecords = new RecordChanges<>(
+                Loaders.propertyLoader( neoStore.getPropertyStore() ), true, changeCounter );
+        this.relRecords = new RecordChanges<>(
+                Loaders.relationshipLoader( neoStore.getRelationshipStore() ), false, changeCounter );
+        this.relGroupRecords = new RecordChanges<>(
+                Loaders.relationshipGroupLoader( neoStore.getRelationshipGroupStore() ), false, changeCounter );
+        this.schemaRuleChanges = new RecordChanges<>(
+                Loaders.schemaRuleLoader( neoStore.getSchemaStore() ), true, changeCounter );
         this.propertyKeyTokenChanges = new RecordChanges<>(
-                Loaders.propertyKeyTokenLoader( neoStore.getPropertyKeyTokenStore() ), false );
+                Loaders.propertyKeyTokenLoader( neoStore.getPropertyKeyTokenStore() ), false, changeCounter );
         this.labelTokenChanges = new RecordChanges<>(
-                Loaders.labelTokenLoader( neoStore.getLabelTokenStore() ), false );
+                Loaders.labelTokenLoader( neoStore.getLabelTokenStore() ), false, changeCounter );
         this.relationshipTypeTokenChanges = new RecordChanges<>(
-                Loaders.relationshipTypeTokenLoader( neoStore.getRelationshipTypeTokenStore() ), false );
+                Loaders.relationshipTypeTokenLoader( neoStore.getRelationshipTypeTokenStore() ), false, changeCounter );
     }
 
     @Override
@@ -107,16 +114,25 @@ public class RecordChangeSet implements RecordAccessSet
         return relationshipTypeTokenChanges;
     }
 
+    public boolean hasChanges()
+    {
+        return changeCounter.value() > 0;
+    }
+
     @Override
     public void close()
     {
-        nodeRecords.close();
-        propertyRecords.close();
-        relRecords.close();
-        schemaRuleChanges.close();
-        relGroupRecords.close();
-        propertyKeyTokenChanges.close();
-        labelTokenChanges.close();
-        relationshipTypeTokenChanges.close();
+        if ( hasChanges() )
+        {
+            nodeRecords.close();
+            propertyRecords.close();
+            relRecords.close();
+            schemaRuleChanges.close();
+            relGroupRecords.close();
+            propertyKeyTokenChanges.close();
+            labelTokenChanges.close();
+            relationshipTypeTokenChanges.close();
+            changeCounter.clear();
+        }
     }
 }
