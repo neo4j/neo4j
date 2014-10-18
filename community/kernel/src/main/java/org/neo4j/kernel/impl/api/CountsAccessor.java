@@ -19,21 +19,27 @@
  */
 package org.neo4j.kernel.impl.api;
 
-public interface CountsAcceptor
+public interface CountsAccessor
 {
-    void incrementNodeCount( int labelId, long delta );
+    long nodeCount( int labelId );
 
-    void incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta );
+    long relationshipCount( int startLabelId, int typeId, int endLabelId );
 
-    void incrementIndexSizeCount( int labelId, int propertyKeyId, long delta );
+    long indexSizeCount( int labelId, int propertyKeyId );
+
+    long incrementNodeCount( int labelId, long delta );
+
+    long incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta );
+
+    long incrementIndexSizeCount( int labelId, int propertyKeyId, long delta );
 
     void replaceIndexSizeCount( int labelId, int propertyKeyId, long total );
 
     final class Initializer implements CountsVisitor
     {
-        private final CountsAcceptor target;
+        private final CountsAccessor target;
 
-        public Initializer( CountsAcceptor target )
+        public Initializer( CountsAccessor target )
         {
             this.target = target;
         }

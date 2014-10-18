@@ -17,16 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.impl.store.counts;
 
 import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.impl.store.counts.CountsRecordType;
+import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.register.Register;
 
-import static org.neo4j.kernel.impl.store.counts.CountsRecordType.ENTITY_NODE;
-import static org.neo4j.kernel.impl.store.counts.CountsRecordType.ENTITY_RELATIONSHIP;
-import static org.neo4j.kernel.impl.store.counts.CountsRecordType.INDEX_SAMPLE;
-import static org.neo4j.kernel.impl.store.counts.CountsRecordType.INDEX_SIZE;
+import static org.neo4j.kernel.impl.store.counts.CountsKeyType.ENTITY_NODE;
+import static org.neo4j.kernel.impl.store.counts.CountsKeyType.ENTITY_RELATIONSHIP;
+import static org.neo4j.kernel.impl.store.counts.CountsKeyType.INDEX_SAMPLE;
+import static org.neo4j.kernel.impl.store.counts.CountsKeyType.INDEX_SIZE;
 
 public abstract class CountsKey implements Comparable<CountsKey>
 {
@@ -40,12 +40,12 @@ public abstract class CountsKey implements Comparable<CountsKey>
         return new RelationshipKey( startLabelId, typeId, endLabelId );
     }
 
-    public static IndexKey indexSizeKey( int labelId, int propertyKeyId )
+    public static IndexSizeKey indexSizeKey( int labelId, int propertyKeyId )
     {
         return new IndexSizeKey( labelId, propertyKeyId );
     }
 
-    public static IndexKey indexSampleKey( int labelId, int propertyKeyId )
+    public static IndexSampleKey indexSampleKey( int labelId, int propertyKeyId )
     {
         return new IndexSampleKey( labelId, propertyKeyId );
     }
@@ -55,7 +55,7 @@ public abstract class CountsKey implements Comparable<CountsKey>
         // all subclasses are internal
     }
 
-    public abstract CountsRecordType recordType();
+    public abstract CountsKeyType recordType();
 
     @Override
     public abstract int hashCode();
@@ -95,7 +95,7 @@ public abstract class CountsKey implements Comparable<CountsKey>
         }
 
         @Override
-        public CountsRecordType recordType()
+        public CountsKeyType recordType()
         {
             return ENTITY_NODE;
         }
@@ -171,7 +171,7 @@ public abstract class CountsKey implements Comparable<CountsKey>
         }
 
         @Override
-        public CountsRecordType recordType()
+        public CountsKeyType recordType()
         {
             return ENTITY_RELATIONSHIP;
         }
@@ -228,9 +228,9 @@ public abstract class CountsKey implements Comparable<CountsKey>
     {
         private final int labelId;
         private final int propertyKeyId;
-        private final CountsRecordType type;
+        private final CountsKeyType type;
 
-        private IndexKey( int labelId, int propertyKeyId, CountsRecordType type )
+        private IndexKey( int labelId, int propertyKeyId, CountsKeyType type )
         {
             this.labelId = labelId;
             this.propertyKeyId = propertyKeyId;
@@ -260,7 +260,7 @@ public abstract class CountsKey implements Comparable<CountsKey>
         }
 
         @Override
-        public CountsRecordType recordType()
+        public CountsKeyType recordType()
         {
             return type;
         }

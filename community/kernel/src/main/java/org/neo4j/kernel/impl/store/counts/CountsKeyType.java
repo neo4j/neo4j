@@ -19,24 +19,24 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
-public enum CountsRecordType
+public enum CountsKeyType
 {
-    EMPTY( 0 ), ENTITY_NODE( 1 ), ENTITY_RELATIONSHIP( 2 ), INDEX_SIZE( 4 ), INDEX_SAMPLE( 5 );
+    EMPTY( 0 ), ENTITY_NODE( 2 ), ENTITY_RELATIONSHIP( 3 ), INDEX_SIZE( 4 ), INDEX_SAMPLE( 5 );
 
     public final byte code;
 
-    private CountsRecordType( int code )
+    private CountsKeyType( int code )
     {
         this.code = (byte) code;
     }
 
-    public static CountsRecordType fromCode( byte code )
+    public static CountsKeyType fromCode( byte code )
     {
         switch ( code )
         {
             case 0: return EMPTY;
-            case 1: return ENTITY_NODE;
-            case 2: return ENTITY_RELATIONSHIP;
+            case 2: return ENTITY_NODE;
+            case 3: return ENTITY_RELATIONSHIP;
             case 4: return INDEX_SIZE;
             case 5: return INDEX_SAMPLE;
 

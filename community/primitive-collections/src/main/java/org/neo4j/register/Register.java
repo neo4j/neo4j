@@ -40,8 +40,8 @@ public interface Register
             void writeFirst( long value );
             void writeSecond( long value );
 
-            void incrementFirst( long delta );
-            void incrementSecond( long delta );
+            long incrementFirst( long delta );
+            long incrementSecond( long delta );
         }
     }
 

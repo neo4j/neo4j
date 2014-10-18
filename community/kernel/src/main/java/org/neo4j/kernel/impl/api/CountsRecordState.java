@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.kernel.impl.store.counts.CountsKey;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.state.RecordState;
 import org.neo4j.register.Register;
@@ -34,30 +35,48 @@ import static java.util.Objects.requireNonNull;
 
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
-import static org.neo4j.kernel.impl.api.CountsKey.indexSizeKey;
-import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
-import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
+import static org.neo4j.kernel.impl.store.counts.CountsKey.indexSizeKey;
+import static org.neo4j.kernel.impl.store.counts.CountsKey.nodeKey;
+import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipKey;
 
-public class CountsState implements CountsVisitor.Visitable, CountsAcceptor, RecordState
+public class CountsRecordState implements CountsVisitor.Visitable, CountsAccessor, RecordState
 {
     private final Map<CountsKey, Register.DoubleLongRegister> counts = new HashMap<>();
 
     @Override
-    public void incrementNodeCount( int labelId, long delta )
+    public long nodeCount( int labelId )
     {
-        count( nodeKey( labelId ) ).incrementSecond( delta );
+        return count( nodeKey( labelId ) ).readSecond();
     }
 
     @Override
-    public void incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta )
+    public long incrementNodeCount( int labelId, long delta )
     {
-        count( relationshipKey( startLabelId, typeId, endLabelId ) ).incrementSecond( delta );
+        return count( nodeKey( labelId ) ).incrementSecond( delta );
     }
 
     @Override
-    public void incrementIndexSizeCount( int labelId, int propertyKeyId, long delta )
+    public long relationshipCount( int startLabelId, int typeId, int endLabelId )
     {
-        count( indexSizeKey( labelId, propertyKeyId ) ).incrementSecond( delta );
+        return count( relationshipKey( startLabelId, typeId, endLabelId ) ).readSecond();
+    }
+
+    @Override
+    public long incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta )
+    {
+        return count( relationshipKey( startLabelId, typeId, endLabelId ) ).incrementSecond( delta );
+    }
+
+    @Override
+    public long indexSizeCount( int labelId, int propertyKeyId )
+    {
+        return count( indexSizeKey( labelId, propertyKeyId ) ).readSecond();
+    }
+
+    @Override
+    public long incrementIndexSizeCount( int labelId, int propertyKeyId, long delta )
+    {
+        return count( indexSizeKey( labelId, propertyKeyId ) ).incrementSecond( delta );
     }
 
     @Override

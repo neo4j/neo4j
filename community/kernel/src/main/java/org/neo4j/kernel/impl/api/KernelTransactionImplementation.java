@@ -94,7 +94,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     // State
     private final TransactionRecordState recordState;
-    private final CountsState counts = new CountsState();
+    private final CountsRecordState counts = new CountsRecordState();
     private TxStateImpl txState;
     private TransactionType transactionType = TransactionType.ANY;
     private TransactionHooks.TransactionHooksState hooksState;

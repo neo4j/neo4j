@@ -29,19 +29,18 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.kernel.impl.api.CountsKey;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 
-class ConcurrentTrackerState implements CountsTracker.State
+class ConcurrentCountsTrackerState implements CountsTrackerState
 {
     private static final int INITIAL_CHANGES_CAPACITY = 1024;
     private final SortedKeyValueStore<CountsKey, Register.DoubleLongRegister> store;
     private final ConcurrentMap<CountsKey, AtomicLong> state = new ConcurrentHashMap<>( INITIAL_CHANGES_CAPACITY );
 
-    ConcurrentTrackerState( SortedKeyValueStore<CountsKey, Register.DoubleLongRegister> store )
+    ConcurrentCountsTrackerState( SortedKeyValueStore<CountsKey, Register.DoubleLongRegister> store )
     {
         this.store = store;
     }
@@ -58,7 +57,48 @@ class ConcurrentTrackerState implements CountsTracker.State
     }
 
     @Override
-    public long getCount( CountsKey key )
+    public long nodeCount( CountsKey.NodeKey nodeKey )
+    {
+        return getCount( nodeKey );
+    }
+
+    @Override
+    public long incrementNodeCount( CountsKey.NodeKey nodeKey, long delta )
+    {
+        return incrementCount( nodeKey, delta );
+    }
+
+    @Override
+    public long relationshipCount( CountsKey.RelationshipKey relationshipKey )
+    {
+        return getCount( relationshipKey );
+    }
+
+    @Override
+    public long incrementRelationshipCount( CountsKey.RelationshipKey relationshipKey, long delta )
+    {
+        return incrementCount( relationshipKey, delta );
+    }
+
+    @Override
+    public long indexSizeCount( CountsKey.IndexSizeKey indexSizeKey )
+    {
+        return getCount( indexSizeKey );
+    }
+
+    @Override
+    public long incrementIndexSizeCount( CountsKey.IndexSizeKey indexSizeKey, long delta )
+    {
+        return incrementCount( indexSizeKey, delta );
+    }
+
+    @Override
+    public void replaceIndexSizeCount( CountsKey.IndexSizeKey indexSizeKey, long total )
+    {
+        replaceCount( indexSizeKey, total );
+    }
+
+    private long getCount( CountsKey key )
     {
         /*
          * no need to copy values in the state since we delegate the caching to the page cache in CountStore.get(key)
@@ -76,8 +116,7 @@ class ConcurrentTrackerState implements CountsTracker.State
         return value.readSecond();
     }
 
-    @Override
-    public long incrementCount( CountsKey key, long delta )
+    private long incrementCount( CountsKey key, long delta )
     {
         AtomicLong count = state.get( key );
         if ( count == null )
@@ -94,8 +133,7 @@ class ConcurrentTrackerState implements CountsTracker.State
         return count.addAndGet( delta );
     }
 
-    @Override
-    public void replaceCount( CountsKey key, long total )
+    private void replaceCount( CountsKey key, long total )
     {
         AtomicLong count = state.get( key );
         if ( count == null )

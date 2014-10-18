@@ -22,14 +22,13 @@ package org.neo4j.kernel.impl.store.counts;
 import java.nio.ByteBuffer;
 
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.impl.api.CountsKey;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordSerializer;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
 import org.neo4j.register.Register;
 
-import static org.neo4j.kernel.impl.api.CountsKey.indexSizeKey;
-import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
-import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
+import static org.neo4j.kernel.impl.store.counts.CountsKey.indexSizeKey;
+import static org.neo4j.kernel.impl.store.counts.CountsKey.nodeKey;
+import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipKey;
 
 /**
  * Node Key:
@@ -79,7 +78,7 @@ public class CountsRecordSerializer implements KeyValueRecordSerializer<CountsKe
         visitor.valueRegister().write( first, second );
 
         CountsKey key;
-        switch ( CountsRecordType.fromCode( type ) )
+        switch ( CountsKeyType.fromCode( type ) )
         {
             case EMPTY:
                 assert one == 0;
@@ -134,7 +133,7 @@ public class CountsRecordSerializer implements KeyValueRecordSerializer<CountsKe
         value.write(first, second );
 
         CountsKey key;
-        switch ( CountsRecordType.fromCode( type ) )
+        switch ( CountsKeyType.fromCode( type ) )
         {
             case EMPTY:
                 throw new IllegalStateException( "Reading empty record" );

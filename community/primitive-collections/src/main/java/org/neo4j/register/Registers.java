@@ -61,15 +61,18 @@ public class Registers
             }
 
             @Override
-            public void incrementFirst( long delta )
+            public long incrementFirst( long delta )
             {
                 first += delta;
+                return first;
             }
 
             @Override
-            public void incrementSecond( long delta )
+            public long incrementSecond( long delta )
             {
+
                 second += delta;
+                return second;
             }
         };
     }
