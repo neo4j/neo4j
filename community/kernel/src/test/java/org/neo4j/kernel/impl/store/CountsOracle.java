@@ -25,8 +25,11 @@ import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.CountsRecordState;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.register.Register;
+import org.neo4j.register.Registers;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class CountsOracle
 {
@@ -51,6 +54,16 @@ public class CountsOracle
     public void relationship( Node start, int type, Node end )
     {
         state.addRelationship( start.labels, type, end.labels );
+    }
+
+    public void indexSize( int labelId, int propertyKeyId, long size )
+    {
+        state.replaceIndexSizeCount( labelId, propertyKeyId, size );
+    }
+
+    public void indexSampling( int labelId, int propertyKeyId, long unique, long size )
+    {
+        state.replaceIndexSample( labelId, propertyKeyId, unique, size );
     }
 
     public void update( CountsAccessor target )
@@ -94,6 +107,16 @@ public class CountsOracle
                         assertEquals( "Should be able to read visited state.",
                                 tracker.indexSizeCount( labelId, propertyKeyId ), count );
                         verifier.visitIndexSizeCount( labelId, propertyKeyId, count );
+                    }
+
+                    @Override
+                    public void visitIndexSampleCount( int labelId, int propertyKeyId, long unique, long size )
+                    {
+                        Register.DoubleLongRegister output = Registers.newDoubleLongRegister();
+                        assertTrue( "Should find value in tracker", tracker.indexSample( labelId, propertyKeyId, output ) );
+                        assertEquals( "Should be able to read visited state.", output.readFirst(), unique );
+                        assertEquals( "Should be able to read visited state.", output.readSecond(), size );
+                        verifier.visitIndexSampleCount( labelId, propertyKeyId, unique, size );
                     }
                 } );
             }

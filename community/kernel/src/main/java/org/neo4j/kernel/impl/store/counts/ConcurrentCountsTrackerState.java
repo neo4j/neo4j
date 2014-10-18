@@ -31,16 +31,29 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
-import org.neo4j.register.Register;
+import org.neo4j.register.ConcurrentRegisters;
+import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
+
+import static org.neo4j.kernel.impl.store.counts.CountsKey.IndexSampleKey;
+import static org.neo4j.kernel.impl.store.counts.CountsKey.IndexSizeKey;
+import static org.neo4j.kernel.impl.store.counts.CountsKey.NodeKey;
+import static org.neo4j.kernel.impl.store.counts.CountsKey.RelationshipKey;
 
 class ConcurrentCountsTrackerState implements CountsTrackerState
 {
     private static final int INITIAL_CHANGES_CAPACITY = 1024;
-    private final SortedKeyValueStore<CountsKey, Register.DoubleLongRegister> store;
-    private final ConcurrentMap<CountsKey, AtomicLong> state = new ConcurrentHashMap<>( INITIAL_CHANGES_CAPACITY );
+    private static final int INITIAL_INDICES_CAPACITY = 32;
 
-    ConcurrentCountsTrackerState( SortedKeyValueStore<CountsKey, Register.DoubleLongRegister> store )
+    private final SortedKeyValueStore<CountsKey, DoubleLongRegister> store;
+
+    private final ConcurrentMap<CountsKey, AtomicLong> counts =
+        new ConcurrentHashMap<>( INITIAL_CHANGES_CAPACITY );
+
+    private final ConcurrentMap<CountsKey, DoubleLongRegister> samples =
+        new ConcurrentHashMap<>( INITIAL_INDICES_CAPACITY );
+
+    ConcurrentCountsTrackerState( SortedKeyValueStore<CountsKey, DoubleLongRegister> store )
     {
         this.store = store;
     }
@@ -53,49 +66,61 @@ class ConcurrentCountsTrackerState implements CountsTrackerState
 
     public boolean hasChanges()
     {
-        return !state.isEmpty();
+        return !(counts.isEmpty() && samples.isEmpty());
     }
 
     @Override
-    public long nodeCount( CountsKey.NodeKey nodeKey )
+    public long nodeCount( NodeKey nodeKey )
     {
         return getCount( nodeKey );
     }
 
     @Override
-    public long incrementNodeCount( CountsKey.NodeKey nodeKey, long delta )
+    public long incrementNodeCount( NodeKey nodeKey, long delta )
     {
         return incrementCount( nodeKey, delta );
     }
 
     @Override
-    public long relationshipCount( CountsKey.RelationshipKey relationshipKey )
+    public long relationshipCount( RelationshipKey relationshipKey )
     {
         return getCount( relationshipKey );
     }
 
     @Override
-    public long incrementRelationshipCount( CountsKey.RelationshipKey relationshipKey, long delta )
+    public boolean indexSample( IndexSampleKey indexSampleKey, DoubleLongRegister target )
+    {
+        return getSample( indexSampleKey, target );
+    }
+
+    @Override
+    public long incrementRelationshipCount( RelationshipKey relationshipKey, long delta )
     {
         return incrementCount( relationshipKey, delta );
     }
 
     @Override
-    public long indexSizeCount( CountsKey.IndexSizeKey indexSizeKey )
+    public long indexSizeCount( IndexSizeKey indexSizeKey )
     {
         return getCount( indexSizeKey );
     }
 
     @Override
-    public long incrementIndexSizeCount( CountsKey.IndexSizeKey indexSizeKey, long delta )
+    public long incrementIndexSizeCount( IndexSizeKey indexSizeKey, long delta )
     {
         return incrementCount( indexSizeKey, delta );
     }
 
     @Override
-    public void replaceIndexSizeCount( CountsKey.IndexSizeKey indexSizeKey, long total )
+    public void replaceIndexSizeCount( IndexSizeKey indexSizeKey, long total )
     {
         replaceCount( indexSizeKey, total );
+    }
+
+    @Override
+    public void replaceIndexSample( IndexSampleKey indexSampleKey, long unique, long size )
+    {
+        replaceSample( indexSampleKey, unique, size );
     }
 
     private long getCount( CountsKey key )
@@ -105,26 +130,26 @@ class ConcurrentCountsTrackerState implements CountsTrackerState
          * moreover it will be faster to sort entries in the state if we do not add extra value when reading there
          * (see Merger)
          */
-        final AtomicLong count = state.get( key );
+        final AtomicLong count = counts.get( key );
         if ( count != null )
         {
             return count.get();
         }
 
-        final Register.DoubleLongRegister value = Registers.newDoubleLongRegister();
+        final DoubleLongRegister value = Registers.newDoubleLongRegister();
         store.get( key, value );
         return value.readSecond();
     }
 
     private long incrementCount( CountsKey key, long delta )
     {
-        AtomicLong count = state.get( key );
+        AtomicLong count = counts.get( key );
         if ( count == null )
         {
-            final Register.DoubleLongRegister value = Registers.newDoubleLongRegister();
+            final DoubleLongRegister value = Registers.newDoubleLongRegister();
             store.get( key, value );
             AtomicLong proposal = new AtomicLong( value.readSecond() );
-            count = state.putIfAbsent( key, proposal );
+            count = counts.putIfAbsent( key, proposal );
             if ( count == null )
             {
                 count = proposal;
@@ -135,15 +160,44 @@ class ConcurrentCountsTrackerState implements CountsTrackerState
 
     private void replaceCount( CountsKey key, long total )
     {
-        AtomicLong count = state.get( key );
+        AtomicLong count = counts.get( key );
         if ( count == null )
         {
             count = new AtomicLong( total );
-            state.put( key, count );
+            counts.put( key, count );
         }
         else
         {
             count.set( total );
+        }
+    }
+
+    private boolean getSample( CountsKey key, DoubleLongRegister target )
+    {
+        DoubleLongRegister sample = samples.get( key );
+        if ( sample == null )
+        {
+            store.get( key, target );
+            return true;
+        }
+        else
+        {
+            sample.copyTo( target );
+            return true;
+        }
+    }
+
+    private void replaceSample( CountsKey key, long first, long second )
+    {
+        DoubleLongRegister sample = samples.get( key );
+        if ( sample == null )
+        {
+            sample = ConcurrentRegisters.OptimisticRead.newDoubleLongRegister( first, second );
+            samples.put( key, sample );
+        }
+        else
+        {
+            sample.write( first, second );
         }
     }
 
@@ -160,16 +214,16 @@ class ConcurrentCountsTrackerState implements CountsTrackerState
     }
 
     @Override
-    public CountsStore.Writer<CountsKey, Register.DoubleLongRegister> newWriter( File file, long lastCommittedTxId )
+    public CountsStore.Writer<CountsKey, DoubleLongRegister> newWriter( File file, long lastCommittedTxId )
             throws IOException
     {
         return store.newWriter( file, lastCommittedTxId );
     }
 
     @Override
-    public void accept( KeyValueRecordVisitor<CountsKey, Register.DoubleLongRegister> visitor )
+    public void accept( KeyValueRecordVisitor<CountsKey, DoubleLongRegister> visitor )
     {
-        try ( Merger<CountsKey> merger = new Merger<>( visitor, sortedUpdates( state ) ) )
+        try ( Merger<CountsKey> merger = new Merger<>( visitor, sortedUpdates( counts, samples ) ) )
         {
             store.accept( merger );
         }
@@ -181,36 +235,56 @@ class ConcurrentCountsTrackerState implements CountsTrackerState
         store.close();
     }
 
-    private static Update<CountsKey>[] sortedUpdates( ConcurrentMap<CountsKey, AtomicLong> updates )
+    private static Update<CountsKey>[] sortedUpdates( ConcurrentMap<CountsKey, AtomicLong> singleUpdates,
+                                                      ConcurrentMap<CountsKey, DoubleLongRegister> doubleUpdates )
     {
+        int singleSize = singleUpdates.size();
+        int doubleSize = doubleUpdates.size();
+
         @SuppressWarnings( "unchecked" )
-        Update<CountsKey>[] result = new Update[updates.size()];
-        Iterator<Map.Entry<CountsKey, AtomicLong>> iterator = updates.entrySet().iterator();
-        for ( int i = 0; i < result.length; i++ )
+        Update<CountsKey>[] result = new Update[singleSize + doubleSize];
+
+        Iterator<Map.Entry<CountsKey, AtomicLong>> singleIterator = singleUpdates.entrySet().iterator();
+        for ( int i = 0; i < singleSize; i++ )
         {
-            if ( !iterator.hasNext() )
+            if ( !singleIterator.hasNext() )
             {
                 throw new ConcurrentModificationException( "fewer entries than expected" );
             }
-            result[i] = new Update<>( iterator.next() );
+            result[i] = Update.fromSingleLongEntry( singleIterator.next() );
         }
-        if ( iterator.hasNext() )
+        if ( singleIterator.hasNext() )
         {
             throw new ConcurrentModificationException( "more entries than expected" );
         }
+
+        Iterator<Map.Entry<CountsKey, DoubleLongRegister>> doubleIterator = doubleUpdates.entrySet().iterator();
+        for ( int i = singleSize; i < result.length; i++ )
+        {
+            if ( !doubleIterator.hasNext() )
+            {
+                throw new ConcurrentModificationException( "fewer entries than expected" );
+            }
+            result[i] = Update.fromDoubleLongEntry( doubleIterator.next() );
+        }
+        if ( doubleIterator.hasNext() )
+        {
+            throw new ConcurrentModificationException( "more entries than expected" );
+        }
+
         Arrays.sort( result );
         return result;
     }
 
-    private static final class Merger<K extends Comparable<K>> implements KeyValueRecordVisitor<K, Register.DoubleLongRegister>,
+    private static final class Merger<K extends Comparable<K>> implements KeyValueRecordVisitor<K, DoubleLongRegister>,
             AutoCloseable
     {
-        private final KeyValueRecordVisitor<K, Register.DoubleLongRegister> target;
+        private final KeyValueRecordVisitor<K, DoubleLongRegister> target;
         private final Update<K>[] updates;
         private int next;
-        private final Register.DoubleLongRegister valueRegister;
+        private final DoubleLongRegister valueRegister;
 
-        public Merger( KeyValueRecordVisitor<K, Register.DoubleLongRegister> target, Update<K>[] updates )
+        public Merger( KeyValueRecordVisitor<K, DoubleLongRegister> target, Update<K>[] updates )
         {
             this.target = target;
             this.updates = updates;
@@ -218,7 +292,7 @@ class ConcurrentCountsTrackerState implements CountsTrackerState
         }
 
         @Override
-        public Register.DoubleLongRegister valueRegister()
+        public DoubleLongRegister valueRegister()
         {
             return valueRegister;
         }
@@ -233,14 +307,14 @@ class ConcurrentCountsTrackerState implements CountsTrackerState
                 if ( cmp == 0 )
                 { // overwrite the value in the store
                     next++;
-                    valueRegister.write( 0, nextUpdate.value );
+                    nextUpdate.writeTo( valueRegister );
                 }
                 else if ( cmp > 0 )
                 { // write this before writing the entry from the store
                     next++;
                     long originalFirst = valueRegister.readFirst();
                     long originalSecond = valueRegister.readSecond();
-                    valueRegister.write( 0, nextUpdate.value );
+                    nextUpdate.writeTo( valueRegister );
                     target.visit( nextUpdate.key );
                     valueRegister.write( originalFirst, originalSecond );
                     continue; // then see if there are more entries to consider from the updates...
@@ -254,8 +328,9 @@ class ConcurrentCountsTrackerState implements CountsTrackerState
         {
             for ( int i = next; i < updates.length; i++ )
             {
-                valueRegister.write( 0, updates[i].value );
-                target.visit( updates[i].key );
+                Update<K> update = updates[i];
+                update.writeTo( valueRegister );
+                target.visit( update.key );
             }
         }
     }
@@ -263,23 +338,38 @@ class ConcurrentCountsTrackerState implements CountsTrackerState
     private static final class Update<K extends Comparable<K>> implements Comparable<Update<K>>
     {
         final K key;
-        final long value;
+        final long first;
+        final long second;
 
-        Update( Map.Entry<K, AtomicLong> entry )
+        static <K extends Comparable<K>> Update<K> fromSingleLongEntry( Map.Entry<K, AtomicLong> entry )
         {
-            this( entry.getKey(), entry.getValue().longValue() );
+            return new Update<>( entry.getKey(), 0, entry.getValue().longValue() );
         }
 
-        Update( K key, long value )
+        static <K extends Comparable<K>> Update<K> fromDoubleLongEntry( Map.Entry<K, DoubleLongRegister> entry )
+        {
+            // read out atomically in case the entry value is a concurrent register
+            DoubleLongRegister register = Registers.newDoubleLongRegister();
+            entry.getValue().copyTo( register );
+            return new Update<>( entry.getKey(), register.readFirst(), register.readSecond() );
+        }
+
+        Update( K key, long first, long second )
         {
             this.key = key;
-            this.value = value;
+            this.first = first;
+            this.second = second;
+        }
+
+        void writeTo( DoubleLongRegister target )
+        {
+            target.write( first, second );
         }
 
         @Override
         public String toString()
         {
-            return String.format( "Update{key=%s, value=%d}", key, value );
+            return String.format( "Update{key=%s, first=%d, second=%d}", key, first, second );
         }
 
         @Override

@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 
+import static org.neo4j.kernel.impl.store.counts.CountsKey.indexSampleKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.indexSizeKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.nodeKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipKey;
@@ -206,6 +207,12 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     }
 
     @Override
+    public boolean indexSample( int labelId, int propertyKeyId, Register.DoubleLongRegister target )
+    {
+        return state.indexSample( indexSampleKey( labelId, propertyKeyId ), target );
+    }
+
+    @Override
     public void replaceIndexSizeCount( int labelId, int propertyKeyId, long total )
     {
         try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
@@ -213,6 +220,17 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
             CountsKey.IndexSizeKey key = indexSizeKey( labelId, propertyKeyId );
             assert total >= 0 : String.format( "replaceIndexSizeCount(key=%s, total=%d)", key, total );
             state.replaceIndexSizeCount( key, total );
+        }
+    }
+
+    @Override
+    public void replaceIndexSample( int labelId, int propertyKeyId, long unique, long size )
+    {
+        try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
+        {
+            CountsKey.IndexSampleKey key = indexSampleKey( labelId, propertyKeyId );
+            assert unique >= 0 && size >= 0 && unique < size : String.format( "replaceIndexSample(key=%s, unique=%d, size=%d)", key, unique, size );
+            state.replaceIndexSample( key, unique, size );
         }
     }
 

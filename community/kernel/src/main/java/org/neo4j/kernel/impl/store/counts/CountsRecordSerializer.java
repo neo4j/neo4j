@@ -26,6 +26,7 @@ import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordSerializer;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
 import org.neo4j.register.Register;
 
+import static org.neo4j.kernel.impl.store.counts.CountsKey.indexSampleKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.indexSizeKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.nodeKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipKey;
@@ -36,23 +37,45 @@ import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipKey;
  * [x, , , , , , , , , , , ,x,x,x,x]
  *  _                       _ _ _ _
  *  |                          |
- * entry                      label
- * type                        id
+ *  entry                      label
+ *  type                        id
+ * <p/>
  *
  * Relationship Key:
  *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
  * [x, ,x,x,x,x, ,x,x,x,x, ,x,x,x,x]
  *  _   _ _ _ _   _ _ _ _   _ _ _ _
  *  |      |         |         |
- * entry  label      rel      label
- * type    id        type      id
+ *  entry  label      rel      label
+ *  type    id        type      id
+ *  id
+ * <p/>
+ *
+ * Index Key:
+ *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
+ * [x, , , , , , ,x,x,x,x, ,x,x,x,x]
+ *  _             _ _ _ _   _ _ _ _
+ *  |                |         |
+ *  entry       property key   label
+ *  type             id        id
+ *  id
+ * <p/>
  *
  * Count value:
  *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
  * [ , , , , , , , ,x,x,x,x,x,x,x,x]
  *                  _ _ _ _ _ _ _ _
- *                         |
- *                       value
+ *                  |
+ *                  value
+ * <p/>
+ *
+ * Sample value:
+ *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
+ * [x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x]
+ *  _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+ *  |               |
+ *  unique          size
+ * <p/>
  */
 public class CountsRecordSerializer implements KeyValueRecordSerializer<CountsKey, Register.DoubleLongRegister>
 {
@@ -106,6 +129,11 @@ public class CountsRecordSerializer implements KeyValueRecordSerializer<CountsKe
                 key = indexSizeKey( three /* label id */, two /* pk id */ );
                 break;
 
+            case INDEX_SAMPLE:
+                assert one == 0;
+                key = indexSampleKey( three /* label id */, two /* pk id */ );
+                break;
+
             default:
                 throw new IllegalStateException( "Unknown counts key type: " + type );
         }
@@ -129,7 +157,7 @@ public class CountsRecordSerializer implements KeyValueRecordSerializer<CountsKe
 
         // read value
         long first = cursor.getLong();
-        long second =  cursor.getLong();
+        long second = cursor.getLong();
         value.write(first, second );
 
         CountsKey key;
@@ -151,6 +179,11 @@ public class CountsRecordSerializer implements KeyValueRecordSerializer<CountsKe
             case INDEX_SIZE:
                 assert one == 0;
                 key = indexSizeKey( three /* label id */, two /* pk id */ );
+                break;
+
+            case INDEX_SAMPLE:
+                assert one == 0;
+                key = indexSampleKey( three /* label id */, two /* pk id */ );
                 break;
 
             default:

@@ -41,6 +41,8 @@ import org.neo4j.test.PageCacheRule;
 
 import static org.junit.Assert.assertEquals;
 
+import static org.neo4j.kernel.impl.store.counts.CountsKey.indexSampleKey;
+import static org.neo4j.kernel.impl.store.counts.CountsKey.indexSizeKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.nodeKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipKey;
 
@@ -57,6 +59,10 @@ public class CountsStoreWriterTest
         writer.visit( nodeKey( 0 ) );
         writer.valueRegister().write( 0, 24 );
         writer.visit( relationshipKey( 1, 2, 3 ) );
+        writer.valueRegister().write( 0, 84 );
+        writer.visit( indexSizeKey( 4, 5 ) );
+        writer.valueRegister().write( 24, 84 );
+        writer.visit( indexSampleKey( 4, 5 ) );
         writer.close();
 
         // then
@@ -65,7 +71,7 @@ public class CountsStoreWriterTest
             final SortedKeyValueStore counts = writer.openForReading();
 
             assertEquals( lastTxId, counts.lastTxId() );
-            assertEquals( 2, counts.totalRecordsStored() );
+            assertEquals( 4, counts.totalRecordsStored() );
             assertEquals( file, counts.file() );
             counts.accept( new KeyValueRecordVisitor<CountsKey, Register.DoubleLongRegister>()
             {
@@ -101,7 +107,18 @@ public class CountsStoreWriterTest
                         @Override
                         public void visitIndexSizeCount( int labelId, int propertyKeyId, long count )
                         {
-                            // nothing to check here
+                            assertEquals( 4, labelId );
+                            assertEquals( 5, propertyKeyId );
+                            assertEquals( 84, count );
+                        }
+
+                        @Override
+                        public void visitIndexSampleCount( int labelId, int propertyKeyId, long unique, long size )
+                        {
+                            assertEquals( 4, labelId );
+                            assertEquals( 5, propertyKeyId );
+                            assertEquals( 24, unique );
+                            assertEquals( 84, size );
                         }
                     }, valueRegister );
                 }

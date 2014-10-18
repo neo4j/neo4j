@@ -35,6 +35,7 @@ import static java.util.Objects.requireNonNull;
 
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
+import static org.neo4j.kernel.impl.store.counts.CountsKey.indexSampleKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.indexSizeKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.nodeKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipKey;
@@ -62,6 +63,21 @@ public class CountsRecordState implements CountsVisitor.Visitable, CountsAccesso
     }
 
     @Override
+    public boolean indexSample( int labelId, int propertyKeyId, Register.DoubleLongRegister target )
+    {
+        Register.DoubleLongRegister count = counts.get( indexSampleKey( labelId, propertyKeyId ) );
+        if ( count == null )
+        {
+            return false;
+        }
+        else
+        {
+            count.copyTo( target );
+            return true;
+        }
+    }
+
+    @Override
     public long incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta )
     {
         return count( relationshipKey( startLabelId, typeId, endLabelId ) ).incrementSecond( delta );
@@ -83,6 +99,12 @@ public class CountsRecordState implements CountsVisitor.Visitable, CountsAccesso
     public void replaceIndexSizeCount( int labelId, int propertyKeyId, long total )
     {
         count( indexSizeKey( labelId, propertyKeyId ) ).writeSecond( total );
+    }
+
+    @Override
+    public void replaceIndexSample( int labelId, int propertyKeyId, long unique, long size )
+    {
+        count( indexSampleKey( labelId, propertyKeyId ) ).write( unique, size );
     }
 
     @Override
@@ -241,7 +263,7 @@ public class CountsRecordState implements CountsVisitor.Visitable, CountsAccesso
         return count;
     }
 
-    private static class CommandCollector implements CountsVisitor
+    private static class CommandCollector extends CountsVisitor.Adapter
     {
         private final Collection<Command> commands;
 
@@ -257,18 +279,6 @@ public class CountsRecordState implements CountsVisitor.Visitable, CountsAccesso
             {   // Only add commands for counts that actually change
                 commands.add( new Command.CountsCommand().init( startLabelId, typeId, endLabelId, count ) );
             }
-        }
-
-        @Override
-        public void visitIndexSizeCount( int labelId, int propertyKeyId, long count )
-        {
-            // not updated through commands
-        }
-
-        @Override
-        public void visitNodeCount( int labelId, long count )
-        {
-            // not updated through commands
         }
     }
 
@@ -298,6 +308,12 @@ public class CountsRecordState implements CountsVisitor.Visitable, CountsAccesso
         public void visitIndexSizeCount( int labelId, int propertyKey, long count )
         {
             verify( indexSizeKey( labelId, propertyKey ), 0, count );
+        }
+
+        @Override
+        public void visitIndexSampleCount( int labelId, int propertyKeyId, long unique, long size )
+        {
+            verify( indexSampleKey( labelId, propertyKeyId ), unique, size );
         }
 
         private void verify( CountsKey key, long actualFirst, long actualSecond )

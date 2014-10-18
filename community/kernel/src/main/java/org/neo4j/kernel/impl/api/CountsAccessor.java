@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.neo4j.register.Register;
+
 public interface CountsAccessor
 {
     long nodeCount( int labelId );
@@ -27,6 +29,8 @@ public interface CountsAccessor
 
     long indexSizeCount( int labelId, int propertyKeyId );
 
+    boolean indexSample( int labelId, int propertyKeyId, Register.DoubleLongRegister target );
+
     long incrementNodeCount( int labelId, long delta );
 
     long incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta );
@@ -34,6 +38,8 @@ public interface CountsAccessor
     long incrementIndexSizeCount( int labelId, int propertyKeyId, long delta );
 
     void replaceIndexSizeCount( int labelId, int propertyKeyId, long total );
+
+    void replaceIndexSample( int labelId, int propertyKeyId, long unique, long size );
 
     final class Initializer implements CountsVisitor
     {
@@ -60,6 +66,12 @@ public interface CountsAccessor
         public void visitIndexSizeCount( int labelId, int propertyKeyId, long count )
         {
             target.incrementIndexSizeCount( labelId, propertyKeyId, count );
+        }
+
+        @Override
+        public void visitIndexSampleCount( int labelId, int propertyKeyId, long unique, long size )
+        {
+            target.replaceIndexSample( labelId, propertyKeyId, unique, size );
         }
     }
 }

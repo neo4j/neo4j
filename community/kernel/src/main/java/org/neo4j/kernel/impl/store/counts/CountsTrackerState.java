@@ -23,9 +23,13 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.store.counts.CountsKey.IndexSampleKey;
+import org.neo4j.kernel.impl.store.counts.CountsKey.IndexSizeKey;
+import org.neo4j.kernel.impl.store.counts.CountsKey.NodeKey;
+import org.neo4j.kernel.impl.store.counts.CountsKey.RelationshipKey;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
-import org.neo4j.register.Register;
+import org.neo4j.register.Register.DoubleLongRegister;
 
 interface CountsTrackerState extends Closeable
 {
@@ -33,24 +37,28 @@ interface CountsTrackerState extends Closeable
 
     boolean hasChanges();
 
-    long nodeCount( CountsKey.NodeKey nodeKey );
+    long nodeCount( NodeKey nodeKey );
 
-    long relationshipCount( CountsKey.RelationshipKey relationshipKey );
+    long relationshipCount( RelationshipKey relationshipKey );
 
-    long indexSizeCount( CountsKey.IndexSizeKey indexSizeKey );
+    long indexSizeCount( IndexSizeKey indexSizeKey );
 
-    long incrementNodeCount( CountsKey.NodeKey nodeKey, long delta );
+    boolean indexSample( IndexSampleKey indexSampleKey, DoubleLongRegister target );
 
-    long incrementRelationshipCount( CountsKey.RelationshipKey relationshipKey, long delta );
+    long incrementNodeCount( NodeKey nodeKey, long delta );
 
-    long incrementIndexSizeCount( CountsKey.IndexSizeKey indexSizeKey, long delta );
+    long incrementRelationshipCount( RelationshipKey relationshipKey, long delta );
 
-    void replaceIndexSizeCount( CountsKey.IndexSizeKey indexSizeKey, long total );
+    long incrementIndexSizeCount( IndexSizeKey indexSizeKey, long delta );
+
+    void replaceIndexSizeCount( IndexSizeKey indexSizeKey, long total );
+
+    void replaceIndexSample( IndexSampleKey indexSampleKey, long unique, long size );
 
     File storeFile();
 
-    SortedKeyValueStore.Writer<CountsKey, Register.DoubleLongRegister> newWriter( File file, long lastCommittedTxId )
+    SortedKeyValueStore.Writer<CountsKey, DoubleLongRegister> newWriter( File file, long lastCommittedTxId )
             throws IOException;
 
-    void accept( KeyValueRecordVisitor<CountsKey, Register.DoubleLongRegister> visitor );
+    void accept( KeyValueRecordVisitor<CountsKey, DoubleLongRegister> visitor );
 }
