@@ -125,7 +125,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final Pool<KernelTransactionImplementation> pool;
     // State
     private final TransactionRecordState recordState;
-    private final CountsState counts = new CountsState();
+    private final CountsRecordState counts = new CountsRecordState();
     // For committing
     private final TransactionHeaderInformationFactory headerInformationFactory;
     private final TransactionCommitProcess commitProcess;

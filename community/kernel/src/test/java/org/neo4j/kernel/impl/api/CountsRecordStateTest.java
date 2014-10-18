@@ -30,17 +30,17 @@ import org.junit.Test;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
-import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
+import static org.neo4j.kernel.impl.store.counts.CountsKey.nodeKey;
+import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipKey;
 
-public class CountsStateTest
+public class CountsRecordStateTest
 {
     @Test
     public void shouldReportDifferencesBetweenDifferentStates() throws Exception
     {
         // given
-        CountsState oracle = new CountsState();
-        CountsState victim = new CountsState();
+        CountsRecordState oracle = new CountsRecordState();
+        CountsRecordState victim = new CountsRecordState();
         oracle.incrementNodeCount( 17, 5 );
         victim.incrementNodeCount( 17, 3 );
         oracle.incrementNodeCount( 12, 9 );
@@ -51,20 +51,21 @@ public class CountsStateTest
         victim.incrementRelationshipCount( 1, 4, 3, 25 );
 
         // when
-        List<CountsState.Difference> differences = oracle.verify( victim );
+        List<CountsRecordState.Difference> differences = oracle.verify( victim );
 
         // then
         assertThat( differences, hasContent(
-                new CountsState.Difference( nodeKey( 17 ), 0, 5, 0, 3 ),
-                new CountsState.Difference( relationshipKey( 1, 2, 3 ), 0, 19, 0, 22 ) ) );
+                new CountsRecordState.Difference( nodeKey( 17 ), 0, 5, 0, 3 ),
+                new CountsRecordState.Difference( relationshipKey( 1, 2, 3 ), 0, 19, 0, 22 )
+        ) );
     }
 
     @Test
     public void shouldNotReportAnythingForEqualStates() throws Exception
     {
         // given
-        CountsState oracle = new CountsState();
-        CountsState victim = new CountsState();
+        CountsRecordState oracle = new CountsRecordState();
+        CountsRecordState victim = new CountsRecordState();
         oracle.incrementNodeCount( 17, 5 );
         victim.incrementNodeCount( 17, 5 );
         oracle.incrementNodeCount( 12, 9 );
@@ -73,7 +74,7 @@ public class CountsStateTest
         victim.incrementRelationshipCount( 1, 4, 3, 25 );
 
         // when
-        List<CountsState.Difference> differences = oracle.verify( victim );
+        List<CountsRecordState.Difference> differences = oracle.verify( victim );
 
         // then
         assertTrue( differences.toString(), differences.isEmpty() );

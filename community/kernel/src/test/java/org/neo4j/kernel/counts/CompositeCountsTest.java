@@ -33,10 +33,10 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.impl.api.CountsKey;
-import org.neo4j.kernel.impl.api.CountsState;
+import org.neo4j.kernel.impl.api.CountsRecordState;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.counts.CountsKey;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
@@ -349,11 +349,11 @@ public class CompositeCountsTest
     private void verifyAllCounts()
     {
         NeoStore stores = db.resolveDependency( NeoStoreProvider.class ).evaluate();
-        List<CountsState.Difference> differences = computeCounts( stores ).verify( stores.getCounts() );
+        List<CountsRecordState.Difference> differences = computeCounts( stores ).verify( stores.getCounts() );
         if ( !differences.isEmpty() )
         {
             StringBuilder error = new StringBuilder();
-            for ( CountsState.Difference difference : differences )
+            for ( CountsRecordState.Difference difference : differences )
             {
                 if ( difference.key() instanceof CountsKey.RelationshipKey )
                 {

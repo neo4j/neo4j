@@ -37,7 +37,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.CountsAcceptor;
+import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.CountsComputer;
@@ -213,7 +213,7 @@ public class StoreMigrator implements StoreMigrationParticipant
                   CountsTracker tracker = new CountsTracker( fileSystem, pageCache, storeFileBase ) )
             {
                 CountsComputer.computeCounts( nodeStore, relationshipStore ).
-                        accept( new CountsAcceptor.Initializer( tracker ) );
+                        accept( new CountsAccessor.Initializer( tracker ) );
                 tracker.rotate( lastTxId );
             }
         }

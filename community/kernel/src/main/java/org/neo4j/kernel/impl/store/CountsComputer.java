@@ -20,26 +20,26 @@
 package org.neo4j.kernel.impl.store;
 
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.api.CountsState;
+import org.neo4j.kernel.impl.api.CountsRecordState;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
 
 public class CountsComputer
 {
-    public static CountsState computeCounts( GraphDatabaseAPI api )
+    public static CountsRecordState computeCounts( GraphDatabaseAPI api )
     {
         return computeCounts( api.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate() );
     }
 
-    public static CountsState computeCounts( NeoStore stores )
+    public static CountsRecordState computeCounts( NeoStore stores )
     {
         return computeCounts( stores.getNodeStore(), stores.getRelationshipStore() );
     }
 
-    public static CountsState computeCounts( NodeStore nodeStore, RelationshipStore relationshipStore )
+    public static CountsRecordState computeCounts( NodeStore nodeStore, RelationshipStore relationshipStore )
     {
-        final CountsState result = new CountsState();
+        final CountsRecordState result = new CountsRecordState();
         new CountsComputer( nodeStore, relationshipStore ).update( result );
         return result;
     }
@@ -53,7 +53,7 @@ public class CountsComputer
         this.relationships = relationships;
     }
 
-    public void update( CountsState target )
+    public void update( CountsRecordState target )
     {
         // count nodes
         for ( long id = 0, highId = nodes.getHighId(); id <= highId; id++ )

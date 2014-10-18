@@ -72,7 +72,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
-import org.neo4j.kernel.impl.api.CountsAcceptor;
+import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.index.StoreScan;
@@ -438,7 +438,7 @@ public class BatchInserterImpl implements BatchInserter
 
     private void rebuildCounts()
     {
-        CountsComputer.computeCounts( neoStore ).accept( new CountsAcceptor.Initializer( neoStore.getCounts() ) );
+        CountsComputer.computeCounts( neoStore ).accept( new CountsAccessor.Initializer( neoStore.getCounts() ) );
     }
 
     private class InitialNodeLabelCreationVisitor implements Visitor<NodeLabelUpdate, IOException>

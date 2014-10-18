@@ -78,7 +78,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     }
 
     @Override
-    public long getIndexCount( IndexDescriptor descriptor )
+    public long indexCount( IndexDescriptor descriptor )
     {
         return counts.indexSizeCount( descriptor.getLabelId(), descriptor.getPropertyKeyId() );
     }

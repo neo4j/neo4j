@@ -32,7 +32,6 @@ import org.neo4j.helpers.Function;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.CountsKey;
 import org.neo4j.kernel.impl.store.CountsOracle;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader;
@@ -277,7 +276,7 @@ public class CountsTrackerTest
         }
 
         @Override
-        CountsStore.Writer<CountsKey, Register.DoubleLongRegister> nextWriter( State state, long lastCommittedTxId )
+        CountsStore.Writer<CountsKey, Register.DoubleLongRegister> nextWriter( CountsTrackerState state, long lastCommittedTxId )
                 throws IOException
         {
             final CountsStoreWriter writer = (CountsStoreWriter) super.nextWriter( state, lastCommittedTxId );

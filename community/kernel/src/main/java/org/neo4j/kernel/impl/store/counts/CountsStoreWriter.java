@@ -26,7 +26,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.kernel.impl.api.CountsKey;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
@@ -35,9 +34,9 @@ import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
-import static org.neo4j.kernel.impl.store.counts.CountsRecordType.ENTITY_NODE;
-import static org.neo4j.kernel.impl.store.counts.CountsRecordType.ENTITY_RELATIONSHIP;
-import static org.neo4j.kernel.impl.store.counts.CountsRecordType.INDEX_SIZE;
+import static org.neo4j.kernel.impl.store.counts.CountsKeyType.ENTITY_NODE;
+import static org.neo4j.kernel.impl.store.counts.CountsKeyType.ENTITY_RELATIONSHIP;
+import static org.neo4j.kernel.impl.store.counts.CountsKeyType.INDEX_SIZE;
 
 public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, Register.DoubleLongRegister>, CountsVisitor
 {
@@ -165,7 +164,7 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
      * |
      * value
      */
-    private void write( CountsRecordType keyType, int startLabelId, int relTypeId, int endLabelId, long count )
+    private void write( CountsKeyType keyType, int startLabelId, int relTypeId, int endLabelId, long count )
     {
         try
         {

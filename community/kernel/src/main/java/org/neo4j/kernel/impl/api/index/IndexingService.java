@@ -308,7 +308,7 @@ public class IndexingService extends LifecycleAdapter
     public long indexNumberOfEntries( long indexId ) throws IndexNotFoundKernelException
     {
         final IndexProxy indexProxy = getOnlineProxyForRule( indexId );
-        return storeView.getIndexCount( indexProxy.getDescriptor() );
+        return storeView.indexCount( indexProxy.getDescriptor() );
     }
 
     /*

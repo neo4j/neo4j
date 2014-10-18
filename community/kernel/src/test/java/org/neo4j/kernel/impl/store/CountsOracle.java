@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.store;
 
 import java.util.List;
 
-import org.neo4j.kernel.impl.api.CountsAcceptor;
-import org.neo4j.kernel.impl.api.CountsState;
+import org.neo4j.kernel.impl.api.CountsAccessor;
+import org.neo4j.kernel.impl.api.CountsRecordState;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 
@@ -40,7 +40,7 @@ public class CountsOracle
         }
     }
 
-    private final CountsState state = new CountsState();
+    private final CountsRecordState state = new CountsRecordState();
 
     public Node node( long... labels )
     {
@@ -53,9 +53,9 @@ public class CountsOracle
         state.addRelationship( start.labels, type, end.labels );
     }
 
-    public void update( CountsAcceptor target )
+    public void update( CountsAccessor target )
     {
-        state.accept( new CountsAcceptor.Initializer( target ) );
+        state.accept( new CountsAccessor.Initializer( target ) );
     }
 
     public void update( CountsOracle target )
@@ -65,7 +65,7 @@ public class CountsOracle
 
     public void verify( final CountsTracker tracker )
     {
-        List<CountsState.Difference> differences = state.verify( new CountsVisitor.Visitable()
+        List<CountsRecordState.Difference> differences = state.verify( new CountsVisitor.Visitable()
         {
             @Override
             public void accept( final CountsVisitor verifier )
@@ -102,7 +102,7 @@ public class CountsOracle
         {
             StringBuilder errors = new StringBuilder()
                     .append( "Counts differ in " ).append( differences.size() ).append( " places..." );
-            for ( CountsState.Difference difference : differences )
+            for ( CountsRecordState.Difference difference : differences )
             {
                 errors.append( "\n\t" ).append( difference );
             }
