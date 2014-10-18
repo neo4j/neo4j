@@ -41,6 +41,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
+import static org.neo4j.kernel.impl.store.counts.CountsKey.indexSampleKey;
+import static org.neo4j.kernel.impl.store.counts.CountsKey.indexSizeKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.nodeKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipKey;
 import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.BASE_MINOR_VERSION;
@@ -115,6 +117,10 @@ public class CountsStoreTest
             writer.visit( nodeKey( 0 ) );
             writer.valueRegister().write( 0, 32 );
             writer.visit( relationshipKey( 1, 2, 3 )  );
+            writer.valueRegister().write( 0, 84 );
+            writer.visit( indexSizeKey( 4, 5 ) );
+            writer.valueRegister().write( 24, 84 );
+            writer.visit( indexSampleKey( 4, 5 ) );
             writer.close();
         }
 
@@ -125,7 +131,7 @@ public class CountsStoreTest
             assertEquals( 32, get( updated, relationshipKey( 1, 2, 3 ) ) );
             assertEquals( lastCommittedTxId, updated.lastTxId() );
             assertEquals( BASE_MINOR_VERSION, updated.minorVersion() );
-            assertEquals( 2, updated.totalRecordsStored() );
+            assertEquals( 4, updated.totalRecordsStored() );
             assertEquals( beta, updated.file() );
             updated.accept( new KeyValueRecordVisitor<CountsKey, Register.DoubleLongRegister>()
             {
@@ -161,7 +167,18 @@ public class CountsStoreTest
                         @Override
                         public void visitIndexSizeCount( int labelId, int propertyKeyId, long count )
                         {
-                            // nothing to check here
+                            assertEquals( 4, labelId );
+                            assertEquals( 5, propertyKeyId );
+                            assertEquals( 84, count );
+                        }
+
+                        @Override
+                        public void visitIndexSampleCount( int labelId, int propertyKeyId, long unique, long size )
+                        {
+                            assertEquals( 4, labelId );
+                            assertEquals( 5, propertyKeyId );
+                            assertEquals( 24, unique );
+                            assertEquals( 84, size );
                         }
                     }, valueRegister );
                 }

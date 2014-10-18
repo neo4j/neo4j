@@ -42,6 +42,12 @@ public class Registers
             }
 
             @Override
+            public void copyTo( Register.DoubleLongRegister target )
+            {
+                target.write( first, second );
+            }
+
+            @Override
             public void write( long first, long second )
             {
                 this.first = first;

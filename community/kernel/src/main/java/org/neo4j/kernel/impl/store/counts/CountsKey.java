@@ -21,7 +21,8 @@ package org.neo4j.kernel.impl.store.counts;
 
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.impl.api.CountsVisitor;
-import org.neo4j.register.Register;
+import org.neo4j.register.Register.DoubleLongRegister;
+import org.neo4j.register.Registers;
 
 import static org.neo4j.kernel.impl.store.counts.CountsKeyType.ENTITY_NODE;
 import static org.neo4j.kernel.impl.store.counts.CountsKeyType.ENTITY_RELATIONSHIP;
@@ -66,7 +67,7 @@ public abstract class CountsKey implements Comparable<CountsKey>
     @Override
     public abstract String toString();
 
-    public abstract void accept( CountsVisitor visitor, Register.DoubleLongRegister count );
+    public abstract void accept( CountsVisitor visitor, DoubleLongRegister count );
 
     public static final class NodeKey extends CountsKey
     {
@@ -89,7 +90,7 @@ public abstract class CountsKey implements Comparable<CountsKey>
         }
 
         @Override
-        public void accept( CountsVisitor visitor, Register.DoubleLongRegister count )
+        public void accept( CountsVisitor visitor, DoubleLongRegister count )
         {
             visitor.visitNodeCount( labelId, count.readSecond() );
         }
@@ -165,7 +166,7 @@ public abstract class CountsKey implements Comparable<CountsKey>
         }
 
         @Override
-        public void accept( CountsVisitor visitor, Register.DoubleLongRegister count )
+        public void accept( CountsVisitor visitor, DoubleLongRegister count )
         {
             visitor.visitRelationshipCount( startLabelId, typeId, endLabelId, count.readSecond() );
         }
@@ -242,7 +243,7 @@ public abstract class CountsKey implements Comparable<CountsKey>
             return labelId;
         }
 
-        public int getPropertyKeyId()
+        public int propertyKeyId()
         {
             return propertyKeyId;
         }
@@ -251,12 +252,6 @@ public abstract class CountsKey implements Comparable<CountsKey>
         public String toString()
         {
             return String.format( "IndexKey[%s (%s {%s})]", type.name(), label( labelId ), propertyKey( propertyKeyId ) );
-        }
-
-        @Override
-        public void accept( CountsVisitor visitor, Register.DoubleLongRegister count )
-        {
-            visitor.visitIndexSizeCount( labelId, propertyKeyId, count.readSecond() );
         }
 
         @Override
@@ -291,25 +286,6 @@ public abstract class CountsKey implements Comparable<CountsKey>
             return labelId == indexKey.labelId && propertyKeyId == indexKey.propertyKeyId && type == indexKey.type;
 
         }
-
-        @Override
-        public int compareTo( CountsKey other )
-        {
-            if ( other instanceof IndexKey )
-            {
-                IndexKey that = (IndexKey) other;
-                int cmp = this.labelId - that.labelId;
-                if ( cmp == 0 )
-                {
-                    cmp = this.propertyKeyId - that.propertyKeyId;
-                }
-                return cmp;
-            }
-            else
-            {
-                return recordType().ordinal() - other.recordType().ordinal();
-            }
-        }
     }
 
     public static String label( int id )
@@ -333,6 +309,31 @@ public abstract class CountsKey implements Comparable<CountsKey>
         {
             super( labelId, propertyKeyId, INDEX_SIZE );
         }
+
+        @Override
+        public void accept( CountsVisitor visitor, DoubleLongRegister count )
+        {
+            visitor.visitIndexSizeCount( labelId(), propertyKeyId(), count.readSecond() );
+        }
+
+        @Override
+        public int compareTo( CountsKey other )
+        {
+            if ( other instanceof IndexSizeKey )
+            {
+                IndexSizeKey that = (IndexSizeKey) other;
+                int cmp = this.labelId() - that.labelId();
+                if ( cmp == 0 )
+                {
+                    cmp = this.propertyKeyId() - that.propertyKeyId();
+                }
+                return cmp;
+            }
+            else
+            {
+                return recordType().ordinal() - other.recordType().ordinal();
+            }
+        }
     }
 
     public final static class IndexSampleKey extends IndexKey
@@ -340,6 +341,34 @@ public abstract class CountsKey implements Comparable<CountsKey>
         public IndexSampleKey( int labelId, int propertyKeyId )
         {
             super( labelId, propertyKeyId, INDEX_SAMPLE );
+        }
+
+        @Override
+        public void accept( CountsVisitor visitor, DoubleLongRegister count )
+        {
+            // read out atomically in case count is a concurrent register
+            DoubleLongRegister register = Registers.newDoubleLongRegister();
+            count.copyTo( register );
+            visitor.visitIndexSampleCount( labelId(), propertyKeyId(), count.readFirst(), count.readSecond() );
+        }
+
+        @Override
+        public int compareTo( CountsKey other )
+        {
+            if ( other instanceof IndexSampleKey )
+            {
+                IndexSampleKey that = (IndexSampleKey) other;
+                int cmp = this.labelId() - that.labelId();
+                if ( cmp == 0 )
+                {
+                    cmp = this.propertyKeyId() - that.propertyKeyId();
+                }
+                return cmp;
+            }
+            else
+            {
+                return recordType().ordinal() - other.recordType().ordinal();
+            }
         }
     }
 }

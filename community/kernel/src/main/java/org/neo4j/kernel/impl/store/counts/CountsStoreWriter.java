@@ -36,6 +36,7 @@ import org.neo4j.register.Registers;
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.kernel.impl.store.counts.CountsKeyType.ENTITY_NODE;
 import static org.neo4j.kernel.impl.store.counts.CountsKeyType.ENTITY_RELATIONSHIP;
+import static org.neo4j.kernel.impl.store.counts.CountsKeyType.INDEX_SAMPLE;
 import static org.neo4j.kernel.impl.store.counts.CountsKeyType.INDEX_SIZE;
 
 public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, Register.DoubleLongRegister>, CountsVisitor
@@ -107,7 +108,7 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
     {
         assert count > 0 :
                 String.format( "visitNodeCount(labelId=%d, count=%d) - count must be positive", labelId, count );
-        write( ENTITY_NODE, 0, 0, labelId, count );
+        write( ENTITY_NODE, 0, 0, labelId, 0, count );
     }
 
     @Override
@@ -116,7 +117,7 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
         assert count > 0 :
                 String.format( "visitRelationshipCount(startLabelId=%d, typeId=%d, endLabelId=%d, count=%d)" +
                         " - count must be positive", startLabelId, typeId, endLabelId, count );
-        write( ENTITY_RELATIONSHIP, startLabelId, typeId, endLabelId, count );
+        write( ENTITY_RELATIONSHIP, startLabelId, typeId, endLabelId, 0, count );
     }
 
     @Override
@@ -125,46 +126,27 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
         assert count > 0 :
                 String.format( "visitIndexSizeCount(labelId=%d, propertyKeyId=%d, count=%d)" +
                                " - count must be positive", labelId, propertyKeyId, count );
-        write( INDEX_SIZE, 0, propertyKeyId, labelId, count );
+        write( INDEX_SIZE, 0, propertyKeyId, labelId, 0, count );
     }
 
-    /**
-     * Node Key:
-     *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
-     * [x, , , , , , , , , , , ,x,x,x,x]
-     *  _                       _ _ _ _
-     *  |                          |
-     *  entry                      label
-     *  type                        id
-     * <p/>
-     *
-     * Relationship Key:
-     *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
-     * [x, ,x,x,x,x, ,x,x,x,x, ,x,x,x,x]
-     *  _   _ _ _ _   _ _ _ _   _ _ _ _
-     *  |      |         |         |
-     *  entry  label      rel      label
-     *  type    id        type      id
-     *  id
-     * <p/>
-     *
-     * Index Key:
-     *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
-     * [x, , , , , , ,x,x,x,x, ,x,x,x,x]
-     *  _             _ _ _ _   _ _ _ _
-     *  |                |         |
-     *  entry       property key   label
-     *  type             id        id
-     *  id
-     *
-     * Count value:
-     *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
-     * [ , , , , , , , ,x,x,x,x,x,x,x,x]
-     * _ _ _ _ _ _ _ _
-     * |
-     * value
-     */
-    private void write( CountsKeyType keyType, int startLabelId, int relTypeId, int endLabelId, long count )
+    @Override
+    public void visitIndexSampleCount( int labelId, int propertyKeyId, long unique, long size )
+    {
+        assert unique >= 0 :
+                String.format( "visitIndexSampleCount(labelId=%d, propertyKeyId=%d, unique=%d, size=%d)" +
+                        " - unique must be zero or positive", labelId, propertyKeyId, unique, size );
+        assert size >= 0 :
+                String.format( "visitIndexSampleCount(labelId=%d, propertyKeyId=%d, unique=%d, size=%d)" +
+                        " - size must be zero or positive", labelId, propertyKeyId, unique, size );
+        assert unique <= size :
+                String.format( "visitIndexSampleCount(labelId=%d, propertyKeyId=%d, unique=%d, size=%d)" +
+                        " - unique must be less than or equal to size", labelId, propertyKeyId, unique, size );
+        write( INDEX_SAMPLE, 0, propertyKeyId, labelId, unique, size );
+    }
+
+
+    // See CountsRecordSerializer for format
+    private void write( CountsKeyType keyType, int startLabelId, int relTypeId, int endLabelId, long first, long second )
     {
         try
         {
@@ -186,8 +168,8 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
                 page.putByte( (byte) 0 );
                 page.putInt( endLabelId );
 
-                page.putLong( 0 );
-                page.putLong( count );
+                page.putLong( first );
+                page.putLong( second );
             } while ( page.shouldRetry() );
         }
         catch ( IOException e )
