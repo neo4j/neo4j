@@ -19,17 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSequencer
+import org.neo4j.cypher.internal.compiler.v2_2._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.Selection
 
-class LogicalPlanRewriter {
+case object mergeTwoSelections extends Rewriter {
 
-  private val instance = RewriterStepSequencer.newDefault("LogicalPlanRewriter")(
-    mergeTwoSelections,
-    unnestEmptyApply,
-    unnestOptional
-  )
+  def apply(input: AnyRef) = bottomUp(instance).apply(input)
 
-
-  def rewrite(in: LogicalPlan): LogicalPlan = in.endoRewrite(instance)
+  private val instance: Rewriter = Rewriter.lift {
+    case topSelection@Selection(predicates1, Selection(predicates2, lhs)) =>
+      Selection(predicates1 ++ predicates2, lhs)(topSelection.solved)
+  }
 }
