@@ -9,7 +9,7 @@
 
   <properties>
     <short-name>primitive-collections</short-name>
-    <bundle.namespace>org.neo4j.util.primitive.collection</bundle.namespace>
+    <bundle.namespace>org.neo4j.collection.primitive</bundle.namespace>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
@@ -24,7 +24,7 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
-	  <url>https://github.com/neo4j/neo4j/tree/master/community/primitive-collections</url>
+    <url>https://github.com/neo4j/neo4j/tree/master/community/primitive-collections</url>
   </scm>
 
   <licenses>
@@ -53,10 +53,10 @@ the relevant Commercial Agreement.
       <artifactId>junit</artifactId>
       <scope>test</scope>
     </dependency>
-
     <dependency>
       <groupId>org.hamcrest</groupId>
       <artifactId>hamcrest-all</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
