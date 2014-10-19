@@ -76,7 +76,7 @@ abstract class InputEntityDeserializer<ENTITY extends InputEntity> extends Prefe
 
                 // Extract it, type according to our header
                 Header.Entry entry = entries[i];
-                Object value = data.extract( mark, entry.extractor() );
+                Object value = data.extract( mark, entry.extractor() ).value();
                 boolean handled = true;
                 switch ( entry.type() )
                 {

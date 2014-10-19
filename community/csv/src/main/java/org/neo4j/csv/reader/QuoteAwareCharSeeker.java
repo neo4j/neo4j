@@ -100,7 +100,7 @@ public class QuoteAwareCharSeeker implements CharSeeker
     }
 
     @Override
-    public <T> T extract( Mark mark, Extractor<T> extractor )
+    public <EXTRACTOR extends Extractor<?>> EXTRACTOR extract( Mark mark, EXTRACTOR extractor )
     {
         return actual.extract( mark, extractor );
     }

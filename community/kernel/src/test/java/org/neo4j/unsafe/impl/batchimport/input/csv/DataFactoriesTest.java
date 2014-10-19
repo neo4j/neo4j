@@ -47,18 +47,18 @@ public class DataFactoriesTest
         CharSeeker seeker = new BufferedCharSeeker( new StringReader(
                 "ID:ID,label-one:label,also-labels:LABEL,name,age:long" ) );
         IdType idType = IdType.STRING;
+        Extractors extractors = new Extractors( ',' );
 
         // WHEN
-        Header header = DataFactories.defaultFormatNodeFileHeader().create( seeker, COMMAS, idType.extractor() );
+        Header header = DataFactories.defaultFormatNodeFileHeader().create( seeker, COMMAS, idType );
 
         // THEN
-        Extractors extractors = new Extractors( ',' );
         assertArrayEquals( array(
-                entry( "ID", Type.ID, idType.extractor() ),
+                entry( "ID", Type.ID, idType.extractor( extractors ) ),
                 entry( "label-one", Type.LABEL, extractors.stringArray() ),
                 entry( "also-labels", Type.LABEL, extractors.stringArray() ),
-                entry( "name", Type.PROPERTY, Extractors.STRING ),
-                entry( "age", Type.PROPERTY, Extractors.LONG ) ), header.entries() );
+                entry( "name", Type.PROPERTY, extractors.string() ),
+                entry( "age", Type.PROPERTY, extractors.long_() ) ), header.entries() );
     }
 
     @Test
@@ -68,17 +68,17 @@ public class DataFactoriesTest
         CharSeeker seeker = new BufferedCharSeeker( new StringReader(
                 "node one\tnode two\ttype\tdate:long\tmore:long[]" ) );
         IdType idType = IdType.ACTUAL;
+        Extractors extractors = new Extractors( '\t' );
 
         // WHEN
-        Header header = DataFactories.defaultFormatRelationshipFileHeader().create( seeker, TABS, idType.extractor() );
+        Header header = DataFactories.defaultFormatRelationshipFileHeader().create( seeker, TABS, idType );
 
         // THEN
-        Extractors extractors = new Extractors( '\t' );
         assertArrayEquals( array(
-                entry( "node one", Type.START_NODE, idType.extractor() ),
-                entry( "node two", Type.END_NODE, idType.extractor() ),
-                entry( "type", Type.RELATIONSHIP_TYPE, Extractors.STRING ),
-                entry( "date", Type.PROPERTY, Extractors.LONG ),
+                entry( "node one", Type.START_NODE, idType.extractor( extractors ) ),
+                entry( "node two", Type.END_NODE, idType.extractor( extractors ) ),
+                entry( "type", Type.RELATIONSHIP_TYPE, extractors.string() ),
+                entry( "date", Type.PROPERTY, extractors.long_() ),
                 entry( "more", Type.PROPERTY, extractors.longArray() ) ), header.entries() );
     }
 
@@ -89,16 +89,17 @@ public class DataFactoriesTest
         CharSeeker seeker = new BufferedCharSeeker( new StringReader(
                 "one:id\ttwo\t\tdate:long" ) );
         IdType idType = IdType.ACTUAL;
+        Extractors extractors = new Extractors( '\t' );
 
         // WHEN
-        Header header = DataFactories.defaultFormatNodeFileHeader().create( seeker, TABS, idType.extractor() );
+        Header header = DataFactories.defaultFormatNodeFileHeader().create( seeker, TABS, idType );
 
         // THEN
         assertArrayEquals( array(
-                entry( "one", Type.ID, Extractors.LONG ),
-                entry( "two", Type.PROPERTY, Extractors.STRING ),
+                entry( "one", Type.ID, extractors.long_() ),
+                entry( "two", Type.PROPERTY, extractors.string() ),
                 entry( "", Type.IGNORE, null ),
-                entry( "date", Type.PROPERTY, Extractors.LONG ) ), header.entries() );
+                entry( "date", Type.PROPERTY, extractors.long_() ) ), header.entries() );
     }
 
     @Test
@@ -108,17 +109,18 @@ public class DataFactoriesTest
         CharSeeker seeker = new BufferedCharSeeker( new StringReader(
                 "one:id\tname\tname:long" ) );
         IdType idType = IdType.ACTUAL;
+        Extractors extractors = new Extractors( '\t' );
 
         // WHEN
         try
         {
-            DataFactories.defaultFormatNodeFileHeader().create( seeker, TABS, idType.extractor() );
+            DataFactories.defaultFormatNodeFileHeader().create( seeker, TABS, idType );
             fail( "Should fail" );
         }
         catch ( DuplicateHeaderException e )
         {
-            assertEquals( entry( "name", Type.PROPERTY, Extractors.STRING ), e.getFirst() );
-            assertEquals( entry( "name", Type.PROPERTY, Extractors.LONG ), e.getOther() );
+            assertEquals( entry( "name", Type.PROPERTY, extractors.string() ), e.getFirst() );
+            assertEquals( entry( "name", Type.PROPERTY, extractors.long_() ), e.getOther() );
         }
     }
 
@@ -129,17 +131,18 @@ public class DataFactoriesTest
         CharSeeker seeker = new BufferedCharSeeker( new StringReader(
                 "one:id\ttwo:id" ) );
         IdType idType = IdType.ACTUAL;
+        Extractors extractors = new Extractors( '\t' );
 
         // WHEN
         try
         {
-            DataFactories.defaultFormatNodeFileHeader().create( seeker, TABS, idType.extractor() );
+            DataFactories.defaultFormatNodeFileHeader().create( seeker, TABS, idType );
             fail( "Should fail" );
         }
         catch ( DuplicateHeaderException e )
         {
-            assertEquals( entry( "one", Type.ID, Extractors.LONG ), e.getFirst() );
-            assertEquals( entry( "two", Type.ID, Extractors.LONG ), e.getOther() );
+            assertEquals( entry( "one", Type.ID, extractors.long_() ), e.getFirst() );
+            assertEquals( entry( "two", Type.ID, extractors.long_() ), e.getOther() );
         }
     }
 
@@ -149,11 +152,12 @@ public class DataFactoriesTest
         // GIVEN
         CharSeeker seeker = new BufferedCharSeeker( new StringReader(
                 "one\ttwo" ) );
+        Extractors extractors = new Extractors( '\t' );
 
         // WHEN
         try
         {
-            DataFactories.defaultFormatNodeFileHeader().create( seeker, TABS, Extractors.LONG );
+            DataFactories.defaultFormatNodeFileHeader().create( seeker, TABS, IdType.ACTUAL );
             fail( "Should fail" );
         }
         catch ( MissingHeaderException e )

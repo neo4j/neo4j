@@ -25,7 +25,6 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import static org.neo4j.csv.reader.Extractors.STRING;
 import static org.neo4j.csv.reader.QuoteAwareCharSeeker.quoteAware;
 
 public class QuoteAwareCharSeekerTest
@@ -36,17 +35,16 @@ public class QuoteAwareCharSeekerTest
         // GIVEN
         CharSeeker seeker = quoteAware( new BufferedCharSeeker( new StringReader(
                 "value one\t\"value two\"\tvalue three" ) ), '"' );
-        Mark mark = new Mark();
 
         // WHEN/THEN
         assertTrue( seeker.seek( mark, TAB ) );
-        assertEquals( "value one", seeker.extract( mark, STRING ) );
+        assertEquals( "value one", seeker.extract( mark, extractors.string() ).value() );
 
         assertTrue( seeker.seek( mark, TAB ) );
-        assertEquals( "value two", seeker.extract( mark, STRING ) );
+        assertEquals( "value two", seeker.extract( mark, extractors.string() ).value() );
 
         assertTrue( seeker.seek( mark, TAB ) );
-        assertEquals( "value three", seeker.extract( mark, STRING ) );
+        assertEquals( "value three", seeker.extract( mark, extractors.string() ).value() );
     }
 
     @Test
@@ -59,13 +57,13 @@ public class QuoteAwareCharSeekerTest
 
         // WHEN/THEN
         assertTrue( seeker.seek( mark, TAB ) );
-        assertEquals( "value one", seeker.extract( mark, STRING ) );
+        assertEquals( "value one", seeker.extract( mark, extractors.string() ).value() );
 
         assertTrue( seeker.seek( mark, TAB ) );
-        assertEquals( "value\ttwo", seeker.extract( mark, STRING ) );
+        assertEquals( "value\ttwo", seeker.extract( mark, extractors.string() ).value() );
 
         assertTrue( seeker.seek( mark, TAB ) );
-        assertEquals( "value three", seeker.extract( mark, STRING ) );
+        assertEquals( "value three", seeker.extract( mark, extractors.string() ).value() );
     }
 
     @Test
@@ -78,14 +76,16 @@ public class QuoteAwareCharSeekerTest
 
         // WHEN/THEN
         assertTrue( seeker.seek( mark, TAB ) );
-        assertEquals( "value one", seeker.extract( mark, STRING ) );
+        assertEquals( "value one", seeker.extract( mark, extractors.string() ).value() );
 
         assertTrue( seeker.seek( mark, TAB ) );
-        assertEquals( "value\ntwo", seeker.extract( mark, STRING ) );
+        assertEquals( "value\ntwo", seeker.extract( mark, extractors.string() ).value() );
 
         assertTrue( seeker.seek( mark, TAB ) );
-        assertEquals( "value three", seeker.extract( mark, STRING ) );
+        assertEquals( "value three", seeker.extract( mark, extractors.string() ).value() );
     }
 
     private static final int[] TAB = new int[] {'\t'};
+    private final Mark mark = new Mark();
+    private final Extractors extractors = new Extractors( ',' );
 }

@@ -36,7 +36,7 @@ public class Header
          * @param idExtractor we supply the id extractor explicitly because it's a configuration,
          * or at least input-global concern and not a concern of this particular header.
          */
-        Header create( CharSeeker seeker, Configuration configuration, Extractor<?> idExtractor );
+        Header create( CharSeeker seeker, Configuration configuration, IdType idType );
     }
 
     private final Entry[] entries;
@@ -67,7 +67,7 @@ public class Header
         @Override
         public String toString()
         {
-            return format( "Column[%s,%s]", name, type );
+            return format( "Column[%s,%s,%s]", name, type, extractor );
         }
 
         public Extractor<?> extractor()
@@ -117,7 +117,7 @@ public class Header
             {
                 return first == other;
             }
-            return first.equals( other );
+            return first.getClass().equals( other.getClass() );
         }
     }
 }

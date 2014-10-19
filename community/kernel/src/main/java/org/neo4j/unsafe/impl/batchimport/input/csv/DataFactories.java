@@ -92,7 +92,7 @@ public class DataFactories
                 else if ( typeSpec == null )
                 {
                     type = Type.PROPERTY;
-                    extractor = Extractors.STRING;
+                    extractor = extractors.string();
                 }
                 else if ( typeSpec.equalsIgnoreCase( Type.ID.name() ) )
                 {
@@ -138,7 +138,7 @@ public class DataFactories
                 else if ( index == 2 )
                 {
                     type = Type.RELATIONSHIP_TYPE;
-                    extractor = Extractors.STRING;
+                    extractor = extractors.string();
                 }
                 else
                 {   // Property
@@ -161,17 +161,18 @@ public class DataFactories
         }
 
         @Override
-        public Header create( CharSeeker seeker, Configuration config, Extractor<?> idExtractor )
+        public Header create( CharSeeker seeker, Configuration config, IdType idType )
         {
             try
             {
                 Mark mark = new Mark();
                 Extractors extractors = new Extractors( config.arrayDelimiter() );
+                Extractor<?> idExtractor = idType.extractor( extractors );
                 int[] delimiter = new int[] {config.delimiter()};
                 List<Header.Entry> columns = new ArrayList<>();
                 for ( int i = 0; !mark.isEndOfLine() && seeker.seek( mark, delimiter ); i++ )
                 {
-                    String columnString = seeker.extract( mark, Extractors.STRING );
+                    String columnString = seeker.extract( mark, extractors.string() ).value();
                     int typeIndex = columnString.lastIndexOf( ':' );
                     String name;
                     String typeSpec;
