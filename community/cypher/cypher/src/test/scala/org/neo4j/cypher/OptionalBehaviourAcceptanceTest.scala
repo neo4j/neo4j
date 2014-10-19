@@ -28,6 +28,16 @@ class OptionalBehaviourAcceptanceTest extends ExecutionEngineFunSuite with NewPl
     assert(result.toList === List(Map("r" -> null)))
   }
 
+  test("predicates on optional matches should be respected") {
+    val n = createLabeledNode("A")
+    val m1 = createNode(Map("prop" -> 42))
+    val m2 = createNode(Map("prop" -> 46))
+    relate(n, m1)
+    relate(n, m2)
+    val result = executeWithNewPlanner("match (n:A) optional match n-[r]-(m) where m.prop = 42 return m")
+    assert(result.toList === List(Map("m" -> m1)))
+  }
+
   test("optional nodes with labels in match clause should not return if where is no match") {
     createNode()
     val result = executeWithNewPlanner("match n optional match (n)-[r]-(m) where m:Person return r")
