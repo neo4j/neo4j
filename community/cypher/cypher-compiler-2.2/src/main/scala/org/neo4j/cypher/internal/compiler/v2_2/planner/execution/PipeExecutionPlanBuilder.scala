@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.execution
 
-import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.OtherConverters._
@@ -236,6 +235,6 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
 
     val topLevelPipe = buildPipe(plan)
 
-    PipeInfo(topLevelPipe, updating, None, CypherVersion.v2_2_cost)
+    PipeInfo(topLevelPipe, updating, None, Ronja)
   }
 }

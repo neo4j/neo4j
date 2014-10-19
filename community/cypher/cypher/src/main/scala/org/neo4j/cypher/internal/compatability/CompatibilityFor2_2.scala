@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.v2_2
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{ExecutionPlan => ExecutionPlan_v2_2, InternalExecutionResult}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{ExceptionTranslatingQueryContext => ExceptionTranslatingQueryContext_v2_2}
-import org.neo4j.cypher.internal.compiler.v2_2.CypherCompilerFactory
+import org.neo4j.cypher.internal.compiler.v2_2.{Ronja, Legacy, PlannerName, CypherCompilerFactory}
 import org.neo4j.cypher.internal.spi.v2_2.{TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.GraphDatabaseAPI
@@ -64,12 +64,17 @@ trait CompatibilityFor2_2 {
     }
 
     def profile(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
-      ExecutionResultWrapperFor2_2(inner.profile(queryContext(graph, txInfo), params), inner.version)
+      ExecutionResultWrapperFor2_2(inner.profile(queryContext(graph, txInfo), params), translate(inner.plannerUsed))
 
     def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
-      ExecutionResultWrapperFor2_2(inner.execute(queryContext(graph, txInfo), params), inner.version)
+      ExecutionResultWrapperFor2_2(inner.execute(queryContext(graph, txInfo), params), translate(inner.plannerUsed))
 
     def isPeriodicCommit = inner.isPeriodicCommit
+
+    private def translate(in: PlannerName): CypherVersion = in match {
+      case Legacy => CypherVersion.v2_2_rule
+      case Ronja  => CypherVersion.v2_2_cost
+    }
   }
 }
 

@@ -98,7 +98,7 @@ class ProfilerTest extends CypherFunSuite {
     assertRecorded(decoratedResult, "rhs", expectedRows = 10*20, expectedDbHits = 10*30)
   }
 
-  private def assertRecorded(result: PlanDescription, name: String, expectedRows: Int, expectedDbHits: Int) {
+  private def assertRecorded(result: InternalPlanDescription, name: String, expectedRows: Int, expectedDbHits: Int) {
     val pipeArgs: Seq[Argument] = result.find(name).flatMap(_.arguments)
 
     pipeArgs.foreach {
