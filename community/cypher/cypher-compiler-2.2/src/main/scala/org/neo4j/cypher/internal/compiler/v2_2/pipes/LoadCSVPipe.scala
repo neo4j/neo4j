@@ -21,8 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import java.net.URL
 
-import org.neo4j.cypher.LoadExternalResourceException
-import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_2.{LoadExternalResourceException, ExecutionContext}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription

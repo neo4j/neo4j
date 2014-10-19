@@ -26,19 +26,78 @@ import org.neo4j.cypher._
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.v2_2
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{InternalExecutionResult, ExecutionPlan => ExecutionPlan_v2_2}
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.{Version, DbHits, Rows}
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows, Version}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
-import org.neo4j.cypher.internal.compiler.v2_2.spi.{ExceptionTranslatingQueryContext => ExceptionTranslatingQueryContext_v2_2}
-import org.neo4j.cypher.internal.compiler.v2_2.{CypherCompilerFactory, Legacy, PlannerName, Ronja}
+import org.neo4j.cypher.internal.compiler.v2_2.spi.MapToPublicExceptions
+import org.neo4j.cypher.internal.compiler.v2_2.{CypherCompilerFactory, Legacy, PlannerName, Ronja, CypherException => CypherException_v2_2}
 import org.neo4j.cypher.internal.spi.v2_2.{TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.ProfilerStatistics
-import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.graphdb.{ResourceIterator, GraphDatabaseService}
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.{KernelAPI, Statement}
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 
 import scala.collection.JavaConverters._
 import scala.util.Try
+
+object exceptionHandlerFor2_2 extends MapToPublicExceptions[CypherException] {
+  def syntaxException(message: String, query: String, offset: Option[Int]) = new SyntaxException(message, query, offset)
+
+  def arithmeticException(message: String, cause: Throwable) = new ArithmeticException(message, cause)
+
+  def profilerStatisticsNotReadyException() = {
+    throw new ProfilerStatisticsNotReadyException()
+  }
+
+  def incomparableValuesException(lhs: String, rhs: String) = new IncomparableValuesException(lhs, rhs)
+
+  def unknownLabelException(s: String) = new UnknownLabelException(s)
+
+  def patternException(message: String) = new PatternException(message)
+
+  def invalidArgumentException(message: String, cause: Throwable) = new InvalidArgumentException(message, cause)
+
+  def mergeConstraintConflictException(message: String) = new MergeConstraintConflictException(message)
+
+  def internalException(message: String) = new InternalException(message)
+
+  def missingConstraintException() = new MissingConstraintException
+
+  def loadCsvStatusWrapCypherException(extraInfo: String, cause: CypherException_v2_2) =
+    new LoadCsvStatusWrapCypherException(extraInfo, cause.mapToPublic(exceptionHandlerFor2_2))
+
+  def loadExternalResourceException(message: String, cause: Throwable) = throw new LoadExternalResourceException(message, cause)
+
+  def parameterNotFoundException(message: String, cause: Throwable) = throw new ParameterNotFoundException(message, cause)
+
+  def uniquePathNotUniqueException(message: String) = throw new UniquePathNotUniqueException(message)
+
+  def entityNotFoundException(message: String, cause: Throwable) = throw new EntityNotFoundException(message, cause)
+
+  def cypherTypeException(message: String, cause: Throwable) = throw new CypherTypeException(message, cause)
+
+  def labelScanHintException(identifier: String, label: String, message: String) = throw new LabelScanHintException(identifier, label, message)
+
+  def invalidSemanticException(message: String) = throw new InvalidSemanticsException(message)
+
+  def parameterWrongTypeException(message: String, cause: Throwable) = throw new ParameterWrongTypeException(message, cause)
+
+  def outOfBoundsException(message: String) = throw new OutOfBoundsException(message)
+
+  def nodeStillHasRelationshipsException(nodeId: Long, cause: Throwable) = throw new NodeStillHasRelationshipsException(nodeId, cause)
+
+  def indexHintException(identifier: String, label: String, property: String, message: String) = throw new IndexHintException(identifier, label, property, message)
+
+  def periodicCommitInOpenTransactionException() = throw new PeriodicCommitInOpenTransactionException
+
+  def runSafely[T](body: => T): T = {
+    try {
+      body
+    } catch {
+      case e: CypherException_v2_2 => throw e.mapToPublic(exceptionHandlerFor2_2)
+    }
+  }
+}
 
 trait CompatibilityFor2_2 {
 
@@ -54,7 +113,7 @@ trait CompatibilityFor2_2 {
 
     def isPeriodicCommit = preparedQueryForV_2_2.map(_.isPeriodicCommit).getOrElse(false)
 
-    def plan(statement: Statement): (ExecutionPlan, Map[String, Any]) = {
+    def plan(statement: Statement): (ExecutionPlan, Map[String, Any]) = exceptionHandlerFor2_2.runSafely {
       val planContext = new TransactionBoundPlanContext(statement, graph)
       val (planImpl, extractedParameters) = compiler.planPreparedQuery(preparedQueryForV_2_2.get, planContext)
       (new ExecutionPlanWrapper(planImpl), extractedParameters)
@@ -65,36 +124,49 @@ trait CompatibilityFor2_2 {
 
     private def queryContext(graph: GraphDatabaseAPI, txInfo: TransactionInfo) = {
       val ctx = new TransactionBoundQueryContext(graph, txInfo.tx, txInfo.isTopLevelTx, txInfo.statement)
-      new ExceptionTranslatingQueryContext_v2_2(ctx)
+      new ExceptionTranslatingQueryContext(ctx)
     }
 
     def profile(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
-      ExecutionResultWrapperFor2_2(inner.profile(queryContext(graph, txInfo), params), translate(inner.plannerUsed))
+      exceptionHandlerFor2_2.runSafely {
+        ExecutionResultWrapperFor2_2(inner.profile(queryContext(graph, txInfo), params), translate(inner.plannerUsed))
+      }
 
     def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
-      ExecutionResultWrapperFor2_2(inner.execute(queryContext(graph, txInfo), params), translate(inner.plannerUsed))
+      exceptionHandlerFor2_2.runSafely {
+        ExecutionResultWrapperFor2_2(inner.execute(queryContext(graph, txInfo), params), translate(inner.plannerUsed))
+      }
 
     def isPeriodicCommit = inner.isPeriodicCommit
 
     private def translate(in: PlannerName): CypherVersion = in match {
       case Legacy => CypherVersion.v2_2_rule
-      case Ronja  => CypherVersion.v2_2_cost
+      case Ronja => CypherVersion.v2_2_cost
     }
   }
+
 }
 
 case class ExecutionResultWrapperFor2_2(inner: InternalExecutionResult, version: CypherVersion) extends ExtendedExecutionResult {
-  def planDescriptionRequested = inner.planDescriptionRequested
+  def planDescriptionRequested = exceptionHandlerFor2_2.runSafely {inner.planDescriptionRequested}
 
-  def javaIterator = inner.javaIterator
+  def javaIterator: ResourceIterator[util.Map[String, Any]] = {
+    val innerJavaIterator = inner.javaIterator
+    new ResourceIterator[util.Map[String, Any]] {
+      def close() = exceptionHandlerFor2_2.runSafely{innerJavaIterator.close}
+      def next() = exceptionHandlerFor2_2.runSafely{innerJavaIterator.next}
+      def hasNext() = exceptionHandlerFor2_2.runSafely{innerJavaIterator.hasNext}
+      def remove() =  exceptionHandlerFor2_2.runSafely{innerJavaIterator.remove}
+    }
+  }
 
-  def columnAs[T](column: String) = inner.columnAs[T](column)
+  def columnAs[T](column: String) = exceptionHandlerFor2_2.runSafely{inner.columnAs[T](column)}
 
-  def columns = inner.columns
+  def columns = exceptionHandlerFor2_2.runSafely{inner.columns}
 
-  def javaColumns = inner.javaColumns
+  def javaColumns = exceptionHandlerFor2_2.runSafely{inner.javaColumns}
 
-  def queryStatistics() = {
+  def queryStatistics() = exceptionHandlerFor2_2.runSafely {
     val i = inner.queryStatistics()
     QueryStatistics(nodesCreated = i.nodesCreated,
       relationshipsCreated = i.relationshipsCreated,
@@ -109,52 +181,60 @@ case class ExecutionResultWrapperFor2_2(inner: InternalExecutionResult, version:
       constraintsRemoved = i.constraintsRemoved)
   }
 
-  def dumpToString(writer: PrintWriter) = inner.dumpToString(writer)
+  def dumpToString(writer: PrintWriter) = exceptionHandlerFor2_2.runSafely{inner.dumpToString(writer)}
 
-  def dumpToString() = inner.dumpToString()
+  def dumpToString() = exceptionHandlerFor2_2.runSafely{inner.dumpToString()}
 
-  def javaColumnAs[T](column: String) = inner.javaColumnAs[T](column)
+  def javaColumnAs[T](column: String) = exceptionHandlerFor2_2.runSafely{inner.javaColumnAs[T](column)}
 
-  def executionPlanDescription(): PlanDescription = {
-    convert(
-      inner.executionPlanDescription().
+  def executionPlanDescription(): PlanDescription =
+    exceptionHandlerFor2_2.runSafely {
+      convert(
+        inner.executionPlanDescription().
         addArgument(Version("CYPHER " + version.name))
     )
   }
 
-  def close() = inner.close()
+  def close() = exceptionHandlerFor2_2.runSafely{inner.close}
 
-  def next() = inner.next()
+  def next() = exceptionHandlerFor2_2.runSafely{
+    inner.next
+  }
 
-  def hasNext = inner.hasNext
+  def hasNext = exceptionHandlerFor2_2.runSafely{inner.hasNext}
 
-  def convert(i: InternalPlanDescription): PlanDescription = CompatibilityPlanDescription(i)
+  def convert(i: InternalPlanDescription): PlanDescription = exceptionHandlerFor2_2.runSafely{CompatibilityPlanDescription(i)}
 }
 
 case class CompatibilityPlanDescription(inner: InternalPlanDescription) extends PlanDescription {
   self =>
-  def children = inner.children.toSeq.map(CompatibilityPlanDescription.apply)
+  def children = exceptionHandlerFor2_2.runSafely {
+    inner.children.toSeq.map(CompatibilityPlanDescription.apply)
+  }
 
-  def arguments: Map[String, AnyRef] = inner.arguments.map {
-    arg => arg.name -> PlanDescriptionArgumentSerializer.serialize(arg)
-  }.toMap
+  def arguments: Map[String, AnyRef] =  exceptionHandlerFor2_2.runSafely {
+    inner.arguments.map {
+      arg => arg.name -> PlanDescriptionArgumentSerializer.serialize(arg)
+    }.toMap
+  }
 
-  def hasProfilerStatistics = inner.arguments.exists(_.isInstanceOf[DbHits])
+  def hasProfilerStatistics =  exceptionHandlerFor2_2.runSafely {inner.arguments.exists(_.isInstanceOf[DbHits])}
 
-  def name = inner.name
+  def name =  exceptionHandlerFor2_2.runSafely {inner.name}
 
-  def asJava: javacompat.PlanDescription = asJava(self)
+  def asJava: javacompat.PlanDescription =  exceptionHandlerFor2_2.runSafely {asJava(self)}
 
-  override def toString: String = inner.toString
+  override def toString: String =  exceptionHandlerFor2_2.runSafely {inner.toString}
 
-  def asJava(in: PlanDescription): javacompat.PlanDescription = new javacompat.PlanDescription {
-    def getProfilerStatistics: ProfilerStatistics = new ProfilerStatistics {
-      def getDbHits: Long = extract { case DbHits(count) => count}
-      def getRows: Long = extract { case Rows(count) => count}
+  def asJava(in: PlanDescription): javacompat.PlanDescription =  new javacompat.PlanDescription {
+      def getProfilerStatistics: ProfilerStatistics = new ProfilerStatistics {
+        def getDbHits: Long = extract { case DbHits(count) => count}
 
-      private def extract(f: PartialFunction[Argument, Long]): Long =
-        inner.arguments.collectFirst(f).getOrElse(throw new InternalException("Don't have profiler stats"))
-    }
+        def getRows: Long = extract { case Rows(count) => count}
+
+        private def extract(f: PartialFunction[Argument, Long]): Long =
+          inner.arguments.collectFirst(f).getOrElse(throw new InternalException("Don't have profiler stats"))
+      }
 
     def getName: String = name
 
@@ -169,15 +249,15 @@ case class CompatibilityPlanDescription(inner: InternalPlanDescription) extends 
 }
 
 case class CompatibilityFor2_2Cost(graph: GraphDatabaseService,
-                                           queryCacheSize: Int,
-                                           kernelMonitors: KernelMonitors,
-                                           kernelAPI: KernelAPI) extends CompatibilityFor2_2 {
+                                   queryCacheSize: Int,
+                                   kernelMonitors: KernelMonitors,
+                                   kernelAPI: KernelAPI) extends CompatibilityFor2_2 {
   protected val compiler = CypherCompilerFactory.ronjaCompiler(graph, queryCacheSize, kernelMonitors)
 }
 
 case class CompatibilityFor2_2Rule(graph: GraphDatabaseService,
-                                           queryCacheSize: Int,
-                                           kernelMonitors: KernelMonitors,
-                                           kernelAPI: KernelAPI) extends CompatibilityFor2_2 {
+                                   queryCacheSize: Int,
+                                   kernelMonitors: KernelMonitors,
+                                   kernelAPI: KernelAPI) extends CompatibilityFor2_2 {
   protected val compiler = CypherCompilerFactory.legacyCompiler(graph, queryCacheSize, kernelMonitors)
 }

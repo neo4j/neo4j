@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_2._
 import ast._
-import org.neo4j.cypher.InternalException
 
 
 case object addUniquenessPredicates extends Rewriter {

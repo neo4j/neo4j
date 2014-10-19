@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.compiler.v2_2.planDescription.Argument
 import pipes.{QueryState, EntityProducer}
 import symbols._
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
-import org.neo4j.cypher.{InvalidSemanticsException, MergeConstraintConflictException, InternalException}
 import org.neo4j.graphdb.Node
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.PropertySupport
 

@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_2.commands
 import expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_2._
 import pipes.QueryState
-import org.neo4j.cypher.PatternException
 
 case class SortItem(expression: Expression, ascending: Boolean) {
   def apply(ctx: ExecutionContext)(implicit qtx: QueryState) =

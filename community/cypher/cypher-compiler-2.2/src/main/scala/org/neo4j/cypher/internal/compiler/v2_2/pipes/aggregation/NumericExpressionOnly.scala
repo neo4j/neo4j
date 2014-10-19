@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.pipes.aggregation
 
+import org.neo4j.cypher.internal.compiler.v2_2.CypherTypeException
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Expression
-import org.neo4j.cypher.CypherTypeException
 
 trait NumericExpressionOnly {
   def name: String

@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_2
 
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Identifier
-import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.compiler.v2_2.commands.HasLabel
 import org.neo4j.cypher.internal.compiler.v2_2.commands.values.KeyToken
 

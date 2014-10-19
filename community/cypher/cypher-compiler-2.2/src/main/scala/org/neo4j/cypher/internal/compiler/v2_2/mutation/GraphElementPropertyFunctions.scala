@@ -19,16 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.mutation
 
-import org.neo4j.cypher.internal.compiler.v2_2._
-import commands.expressions.Expression
-import pipes.QueryState
-import symbols._
-import org.neo4j.cypher.CypherTypeException
-import org.neo4j.cypher.internal.helpers._
-import org.neo4j.graphdb.{Node, Relationship, PropertyContainer}
 import java.util.{Map => JavaMap}
+
+import org.neo4j.cypher.internal.compiler.v2_2._
+import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
+import org.neo4j.cypher.internal.helpers._
+import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
+
 import scala.collection.JavaConverters._
-import collection.Map
+import scala.collection.Map
 
 trait GraphElementPropertyFunctions extends CollectionSupport {
 

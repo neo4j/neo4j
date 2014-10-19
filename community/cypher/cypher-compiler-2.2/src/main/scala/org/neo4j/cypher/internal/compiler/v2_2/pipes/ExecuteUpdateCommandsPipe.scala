@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Identifier
 import org.neo4j.cypher.internal.compiler.v2_2.mutation._
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.cypher.internal.helpers.CollectionSupport
-import org.neo4j.cypher.{InternalException, ParameterWrongTypeException, SyntaxException}
 import org.neo4j.graphdb.NotInTransactionException
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects._
 

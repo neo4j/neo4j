@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 
 import org.neo4j.cypher.internal.{Explained, PlanType}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription
-import org.neo4j.cypher.CypherException
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.pipes._
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{QueryContext, CSVResources}

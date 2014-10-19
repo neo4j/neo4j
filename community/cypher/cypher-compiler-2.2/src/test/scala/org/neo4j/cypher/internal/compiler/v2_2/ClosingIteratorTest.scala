@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_2
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.CypherException
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 
 class ClosingIteratorTest extends CypherFunSuite {

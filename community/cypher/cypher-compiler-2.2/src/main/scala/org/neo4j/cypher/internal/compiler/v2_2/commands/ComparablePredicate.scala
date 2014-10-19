@@ -24,7 +24,6 @@ import expressions.{Identifier, Literal, Expression}
 import pipes.QueryState
 import org.neo4j.cypher.internal.helpers.IsCollection
 import org.neo4j.graphdb.{Relationship, Node}
-import org.neo4j.cypher.IncomparableValuesException
 
 abstract sealed class ComparablePredicate(left: Expression, right: Expression) extends Predicate with Comparer {
   def compare(comparisonResult: Int): Boolean

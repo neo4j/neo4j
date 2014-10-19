@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.executionplan.builders
 
+import org.neo4j.cypher.internal.compiler.v2_2.CypherTypeException
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.{PipeMonitor, LegacySortPipe}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{PlanBuilder, ExecutionPlanInProgress}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Identifier, CachedExpression, Expression}
-import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
 
 class SortBuilder extends PlanBuilder with SortingPreparations {

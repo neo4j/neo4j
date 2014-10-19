@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.prettifier
 
-import org.neo4j.cypher.SyntaxException
+import org.neo4j.cypher.internal.compiler.v2_2.SyntaxException
 import org.neo4j.cypher.internal.compiler.v2_2.parser.{Base, Strings}
 import org.parboiled.scala._
 import scala.collection.mutable

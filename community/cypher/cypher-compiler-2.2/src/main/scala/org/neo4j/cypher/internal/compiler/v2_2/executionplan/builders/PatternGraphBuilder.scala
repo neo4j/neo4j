@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.executionplan.builders
 
-import org.neo4j.cypher.SyntaxException
-import collection.mutable
-import org.neo4j.cypher.internal.compiler.v2_2.pipes.matching.{PatternGraph, PatternRelationship, PatternNode}
-import org.neo4j.cypher.internal.compiler.v2_2.commands.{Pattern, VarLengthRelatedTo, RelatedTo}
+import org.neo4j.cypher.internal.compiler.v2_2.SyntaxException
+import org.neo4j.cypher.internal.compiler.v2_2.commands.{Pattern, RelatedTo, VarLengthRelatedTo}
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.matching.{PatternGraph, PatternNode, PatternRelationship}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
+
+import scala.collection.mutable
 
 trait PatternGraphBuilder {
   def buildPatternGraph(symbols: SymbolTable, patterns: Seq[Pattern]): PatternGraph = {

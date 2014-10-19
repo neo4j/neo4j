@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
-import org.neo4j.cypher.PatternException
 import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_2.PatternException
 import org.neo4j.cypher.internal.compiler.v2_2.commands.SortItem
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Add, Identifier, Literal, RandFunction}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._

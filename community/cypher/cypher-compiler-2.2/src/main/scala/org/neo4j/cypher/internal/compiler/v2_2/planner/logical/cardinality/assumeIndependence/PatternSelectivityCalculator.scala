@@ -19,13 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assumeIndependence
 
-import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{LabelName, RelTypeName}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.PatternRelationship
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, Selectivity}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{Selections, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
-import org.neo4j.cypher.internal.compiler.v2_2.{LabelId, NameId, RelTypeId}
+import org.neo4j.cypher.internal.compiler.v2_2.{InternalException, LabelId, NameId, RelTypeId}
 import org.neo4j.graphdb.Direction
 
 trait Pattern2Selectivity {

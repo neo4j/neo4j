@@ -19,21 +19,22 @@
  */
 package org.neo4j.cypher.javacompat;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.core.IsNull.notNullValue;
-import static org.hamcrest.core.IsNull.nullValue;
-
-import java.util.Map;
-
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.cypher.ArithmeticException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import java.util.Map;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.core.IsNull.notNullValue;
+import static org.hamcrest.core.IsNull.nullValue;
 
 public class ExecutionResultTest
 {
@@ -82,6 +83,12 @@ public class ExecutionResultTest
 
         // Then
         assertThat( activeTransaction(), is( nullValue() ) );
+    }
+
+    @Test( expected = ArithmeticException.class)
+    public void shouldThrowAppropriateException() throws Exception
+    {
+       engine.execute( "RETURN rand()/0" ).iterator().next();
     }
 
     private void createNode()

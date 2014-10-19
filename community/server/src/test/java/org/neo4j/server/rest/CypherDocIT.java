@@ -142,7 +142,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
     public void error_gets_returned_as_json() throws Exception {
         String response = cypherRestCall( "MATCH (x {name: 'I'}) RETURN x.dummy/0", Status.BAD_REQUEST );
         Map<String, Object> output = jsonToMap( response );
-        assertTrue( output.containsKey( "message" ) );
+        assertTrue( output.toString(), output.containsKey( "message" ) );
         assertTrue( output.containsKey( "exception" ) );
         assertTrue( output.containsKey( "stacktrace" ) );
     }

@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import pipes.QueryState
 import symbols._
 import org.neo4j.cypher.internal.PathImpl
-import org.neo4j.cypher.SyntaxException
 import org.neo4j.graphdb.Path
 import collection.JavaConverters._
 

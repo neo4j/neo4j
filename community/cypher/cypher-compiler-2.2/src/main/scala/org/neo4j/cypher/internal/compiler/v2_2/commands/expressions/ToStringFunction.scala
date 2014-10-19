@@ -19,11 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.commands.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_2.{symbols, ExecutionContext}
+import org.neo4j.cypher.internal.compiler.v2_2.{ParameterWrongTypeException, symbols, ExecutionContext}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
 import symbols._
-import org.neo4j.cypher.ParameterWrongTypeException
-import java.lang.NumberFormatException
 
 case class ToStringFunction(a: Expression) extends NullInNullOutExpression(a) with StringHelper {
   def symbolTableDependencies: Set[String] = a.symbolTableDependencies

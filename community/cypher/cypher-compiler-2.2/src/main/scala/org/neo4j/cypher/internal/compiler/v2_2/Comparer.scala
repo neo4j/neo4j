@@ -20,8 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_2
 
 import java.math.BigDecimal
-import java.lang.Character
-import org.neo4j.cypher.IncomparableValuesException
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.StringHelper
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
 

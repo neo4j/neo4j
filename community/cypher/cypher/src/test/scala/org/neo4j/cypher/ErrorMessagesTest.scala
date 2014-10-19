@@ -17,12 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2
+package org.neo4j.cypher
 
-import commands.expressions.StringHelper
-import org.neo4j.cypher.{ExecutionEngineFunSuite, CypherException, SyntaxException}
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
+import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.StringHelper
 
 class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
 

@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import pipes.QueryState
 import symbols._
 import org.neo4j.cypher.internal.helpers._
-import org.neo4j.cypher.{CypherTypeException, OutOfBoundsException}
 
 case class CollectionIndex(collection: Expression, index: Expression) extends NullInNullOutExpression(collection)
 with CollectionSupport {

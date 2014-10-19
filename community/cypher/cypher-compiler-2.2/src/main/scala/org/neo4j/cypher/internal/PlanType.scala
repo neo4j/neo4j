@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.InvalidSemanticsException
 import org.neo4j.cypher.internal.PlanType.cantMixProfileAndExplain
+import org.neo4j.cypher.internal.compiler.v2_2.InvalidSemanticsException
 
 object PlanType {
   def cantMixProfileAndExplain: Nothing =  throw new InvalidSemanticsException("Can't mix PROFILE and EXPLAIN")

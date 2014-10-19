@@ -420,6 +420,13 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     )
   }
 
+  test("Range error check") {
+    executeAndEnsureError(
+      "WITH range(2, 8, 0) AS r RETURN r",
+      "step argument to range() cannot be zero"
+    )
+  }
+
   def executeAndEnsureError(query: String, message: String) {
     try {
       execute(query).toList

@@ -25,7 +25,6 @@ import commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import pipes.QueryState
 import symbols._
-import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.helpers._
 import org.neo4j.graphdb._
 

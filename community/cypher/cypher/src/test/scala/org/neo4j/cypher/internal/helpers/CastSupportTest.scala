@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.helpers
 
-import org.neo4j.cypher.CypherTypeException
+import org.neo4j.cypher.internal.compiler.v2_2.CypherTypeException
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 
 class CastSupportTest extends CypherFunSuite {

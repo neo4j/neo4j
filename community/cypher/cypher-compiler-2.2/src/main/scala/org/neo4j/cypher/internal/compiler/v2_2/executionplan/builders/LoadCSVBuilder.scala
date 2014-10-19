@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{ExecutionPlanInPro
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.{PipeMonitor, HasHeaders, NoHeaders, LoadCSVPipe}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.LoadCSV
-import org.neo4j.cypher.LoadExternalResourceException
 
 class LoadCSVBuilder extends PlanBuilder {
   def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor): Boolean = {

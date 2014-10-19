@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.helpers
 
-import org.neo4j.cypher.CypherTypeException
+import org.neo4j.cypher.internal.compiler.v2_2.CypherTypeException
 
 object CastSupport {
 

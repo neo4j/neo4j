@@ -56,10 +56,10 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   test("EXPLAIN for Cypher 2.2") {
     val result = eengine.execute("explain match n return n")
-
+    result.toList
     assert(result.planDescriptionRequested, "result not marked with planDescriptionRequested")
-    result.executionPlanDescription().toString should include("DbHits")
-    result.executionPlanDescription().asJava.toString should include("DbHits")
+    result.executionPlanDescription().toString should include("EstimatedRows")
+    result.executionPlanDescription().asJava.toString should include("EstimatedRows")
   }
 
   test("match n where not n-[:FOO]->() return *") {

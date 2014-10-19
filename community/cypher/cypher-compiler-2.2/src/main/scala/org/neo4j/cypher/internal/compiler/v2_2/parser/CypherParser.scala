@@ -20,12 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_2.parser
 
 
-import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.compiler.v2_2.{ast, _}
-import org.neo4j.helpers.ThisShouldNotHappenError
-import org.parboiled.errors.{InvalidInputError, ParseError}
+import org.parboiled.errors.ParseError
 import org.parboiled.scala._
-import org.parboiled.errors.{ParseError, InvalidInputError}
 
 class CypherParser(monitor: ParserMonitor[ast.Statement]) extends Parser
   with Statement

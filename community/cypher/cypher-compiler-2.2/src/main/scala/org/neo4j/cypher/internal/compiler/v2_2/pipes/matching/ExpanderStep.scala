@@ -20,15 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v2_2.pipes.matching
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import commands._
-import commands.expressions.Expression
-import pipes.{MutableMaps, QueryState}
-import symbols._
-import org.neo4j.cypher.EntityNotFoundException
+import org.neo4j.cypher.internal.compiler.v2_2.commands._
+import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.{MutableMaps, QueryState}
+import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.graphdb._
 import org.neo4j.helpers.ThisShouldNotHappenError
-import collection.mutable
-import collection.mutable.{Map => MutableMap}
+
+import scala.collection.mutable
+import scala.collection.mutable.{Map => MutableMap}
 
 trait ExpanderStep {
   def next: Option[ExpanderStep]

@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.commands.expressions
 
-import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.PathImpl
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
