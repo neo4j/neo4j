@@ -26,7 +26,7 @@ import java.util.Collections
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
 import org.neo4j.cypher.internal.helpers.{Eagerly, CollectionSupport}
 import org.neo4j.cypher.internal.{Profiled, Explained, PlanType}
@@ -38,7 +38,7 @@ import scala.collection.Map
 class PipeExecutionResult(val result: ResultIterator,
                           val columns: List[String],
                           val state: QueryState,
-                          val executionPlanBuilder: () => PlanDescription,
+                          val executionPlanBuilder: () => InternalPlanDescription,
                           val planType: PlanType)
   extends InternalExecutionResult
   with CollectionSupport {
@@ -49,7 +49,7 @@ class PipeExecutionResult(val result: ResultIterator,
 
   def dumpToString(writer: PrintWriter) { withDumper(dumper => dumper.dumpToString(writer)(_)) }
 
-  def executionPlanDescription(): PlanDescription = executionPlanBuilder()
+  def executionPlanDescription(): InternalPlanDescription = executionPlanBuilder()
 
   def javaColumns: java.util.List[String] = columns.asJava
 

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.{LabelId, _}
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.Arguments.{IntroducedIdentifier, LabelName}
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.{IntroducedIdentifier, LabelName}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.{SymbolTable, _}
 

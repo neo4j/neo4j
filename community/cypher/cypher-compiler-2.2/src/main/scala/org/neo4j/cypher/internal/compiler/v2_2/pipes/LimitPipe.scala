@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Expression, NumericHelper}
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.Arguments.LegacyExpression
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.LegacyExpression
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 
 case class LimitPipe(source: Pipe, exp: Expression)

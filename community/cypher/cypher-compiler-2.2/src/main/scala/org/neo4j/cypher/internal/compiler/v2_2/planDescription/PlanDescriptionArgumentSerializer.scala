@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planDescription
 
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.Arguments._
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments._
 
 object PlanDescriptionArgumentSerializer {
   def serialize(arg: Argument): String = {
@@ -38,6 +38,7 @@ object PlanDescriptionArgumentSerializer {
       case IntroducedIdentifier(n) => n
       case Rows(value) => value.toString
       case EstimatedRows(value) => value.toString
+      case Version(version) => version
 
       // Do not add a fallthrough here - we rely on exhaustive checking to ensure
       // that we don't forget to add new types of arguments here

@@ -26,7 +26,7 @@ import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_2.pipes._
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 
 class AddEagernessIfNecessaryTest extends CypherFunSuite {
@@ -142,7 +142,7 @@ class AddEagernessIfNecessaryTest extends CypherFunSuite {
 
     override def effects: Effects = sources.foldLeft(localEffects)(_ | _.effects)
 
-    def planDescription: PlanDescription = ???
+    def planDescription: InternalPlanDescription = ???
 
     def symbols: SymbolTable = ???
 

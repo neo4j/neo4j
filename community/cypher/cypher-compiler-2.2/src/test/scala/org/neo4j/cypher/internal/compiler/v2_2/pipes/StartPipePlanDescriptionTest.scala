@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_2.commands._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Literal
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
@@ -110,7 +110,7 @@ class StartPipePlanDescriptionTest extends CypherFunSuite {
     result should include(label)
   }
 
-  private def createPlanDescription(startItem: StartItem): PlanDescription = {
+  private def createPlanDescription(startItem: StartItem): InternalPlanDescription = {
     val producer = factory.nodeStartItems((planContext, startItem))
     val pipe = new NodeStartPipe(NullPipe(), "n", producer)()
     pipe.planDescription

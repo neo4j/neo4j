@@ -18,15 +18,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.cypher
-
-import org.neo4j.cypher.javacompat.{PlanDescription => JPlanDescription}
-
 /**
  * Abstract description of an execution plan
  */
 trait PlanDescription {
+  self =>
+
   def name: String
-  def asJava: JPlanDescription
-  def render(builder: StringBuilder, separator: String, levelSuffix: String)
-  def render(builder: StringBuilder)
+  def children: Seq[PlanDescription]
+  def arguments: Map[String, AnyRef]
+  def hasProfilerStatistics: Boolean
+  def asJava: javacompat.PlanDescription
+  def render(builder: StringBuilder) {}
+  def render(builder: StringBuilder, separator: String, levelSuffix: String) {}
 }

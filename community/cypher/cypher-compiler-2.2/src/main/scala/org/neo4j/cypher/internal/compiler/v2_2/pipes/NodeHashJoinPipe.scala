@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 import org.neo4j.cypher.{CypherTypeException, InternalException}
 import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.Arguments.KeyNames
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{PlanDescription, PlanDescriptionImpl, TwoChildren}
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.KeyNames
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{InternalPlanDescription, PlanDescriptionImpl, TwoChildren}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.graphdb.Node
 
@@ -49,7 +49,7 @@ case class NodeHashJoinPipe(nodeIdentifiers: Set[String], left: Pipe, right: Pip
     result.flatten
   }
 
-  def planDescription: PlanDescription =
+  def planDescription: InternalPlanDescription =
     new PlanDescriptionImpl(
       pipe = this,
       name = "NodeHashJoin",

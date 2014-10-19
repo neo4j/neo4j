@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{PlanDescription, PlanDescriptionImpl, TwoChildren}
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{InternalPlanDescription, PlanDescriptionImpl, TwoChildren}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Cardinality
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 
@@ -29,7 +29,7 @@ case class CartesianProductPipe(lhs: Pipe, rhs: Pipe)(val estimatedCardinality: 
                                (implicit pipeMonitor: PipeMonitor) extends Pipe with RonjaPipe {
   def exists(pred: (Pipe) => Boolean): Boolean = lhs.exists(pred) || rhs.exists(pred)
 
-  def planDescription: PlanDescription =
+  def planDescription: InternalPlanDescription =
     new PlanDescriptionImpl(this, "CartesianProduct", TwoChildren(lhs.planDescription, rhs.planDescription), Seq.empty)
 
   def symbols: SymbolTable = lhs.symbols.add(rhs.symbols.identifiers)

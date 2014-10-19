@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.commands.values.TokenType.{Label,
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{ExecutionPlanInProgress, _}
 import org.neo4j.cypher.internal.compiler.v2_2.mutation.{CreateNode, DeletePropertyAction}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes._
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.SimpleMetricsFactory
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{Planner, PlanningMonitor, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
@@ -236,7 +236,7 @@ class ExplodingPipeBuilder extends PlanBuilder with MockitoSugar {
 
     def symbols: SymbolTable = new SymbolTable()
 
-    def planDescription: PlanDescription = null
+    def planDescription: InternalPlanDescription = null
 
     def exists(pred: Pipe => Boolean) = ???
 

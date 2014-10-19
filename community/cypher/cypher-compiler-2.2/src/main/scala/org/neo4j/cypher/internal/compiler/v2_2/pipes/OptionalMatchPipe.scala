@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.builders.{IfElseIterator, QueryStateSettingIterator}
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{PlanDescription, PlanDescriptionImpl, TwoChildren}
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{InternalPlanDescription, PlanDescriptionImpl, TwoChildren}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 
 /**
@@ -42,7 +42,7 @@ case class OptionalMatchPipe(source: Pipe,
       finallyClause = () => state.initialContext = None)
   }
 
-  def planDescription: PlanDescription =
+  def planDescription: InternalPlanDescription =
     PlanDescriptionImpl(this, "OptionalMatch", TwoChildren(source.planDescription, matchPipe.planDescription), Seq.empty)
 
   val identifiersBeforeMatch = matchPipe.symbols.identifiers.map(_._1).toSet

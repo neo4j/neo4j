@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.cypher.internal.compatability.ExecutionResultWrapperFor2_2
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
 import org.scalatest.Assertions
 
@@ -31,7 +32,8 @@ trait QueryStatisticsTestSupport {
     }
 
     def apply(actual: InternalExecutionResult) {
-      apply(actual.queryStatistics())
+      val r = new ExecutionResultWrapperFor2_2(actual, CypherVersion.v2_2)
+      apply(r.queryStatistics())
     }
   }
 

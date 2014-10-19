@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.mutation.Effectful
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{ArgumentPlanDescription, PlanDescription}
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{ArgumentPlanDescription, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Cardinality
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.helpers.ThisShouldNotHappenError
@@ -68,7 +68,7 @@ trait Pipe extends Effectful {
 
   def symbols: SymbolTable
 
-  def planDescription: PlanDescription
+  def planDescription: InternalPlanDescription
 
   def sources: Seq[Pipe]
 
@@ -99,7 +99,7 @@ case class NullPipe(symbols: SymbolTable = SymbolTable())
 
   def exists(pred: Pipe => Boolean) = pred(this)
 
-  def planDescription: PlanDescription = new ArgumentPlanDescription(this)
+  def planDescription: InternalPlanDescription = new ArgumentPlanDescription(this)
 
   override def localEffects = Effects.NONE
 
