@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, LogicalPlanningContext, PlanTable}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport, PlannerQuery, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{FakePlan, LogicalPlanningTestSupport, PlannerQuery, QueryGraph}
 import org.neo4j.graphdb.Direction
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -56,9 +56,19 @@ class SolveOptionalMatchesTest extends CypherFunSuite with LogicalPlanningTestSu
   test("should introduce apply for unsolved optional match when all arguments are covered") {
     // Given MATCH a OPTIONAL MATCH (a)-[r]->(b)
     val qg = QueryGraph(patternNodes = Set("a")).withAddedOptionalMatch(qgForAtoB)
-
-    implicit val context = createLogicalPlanContext()
     val lhs = newMockedLogicalPlan("a")
+
+    val factory = newMockedMetricsFactory
+    when(factory.newCardinalityEstimator(any())).thenReturn((plan: LogicalPlan) => plan match {
+      case _: SingleRow => Cardinality(1.0)
+      case _: FakePlan  => Cardinality(1.0)
+      case _            => Cardinality(1000.0)
+    })
+
+    implicit val context = newMockedLogicalPlanningContext(
+      planContext = newMockedPlanContext,
+      metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
+    )
     val planTable = PlanTable(Map(Set(IdName("a")) -> lhs))
 
     // When
@@ -126,7 +136,9 @@ class SolveOptionalMatchesTest extends CypherFunSuite with LogicalPlanningTestSu
     val planTable = PlanTable(Map(Set(IdName("a"), IdName("b")) -> inputPlan))
 
     // When
-    val resultingPlanTable = solveOptionalMatches(planTable, qg)
+    val solver = solveOptionalMatches(solvers = Seq(applyOptional))    // Using a simpler strategy to avoid costs
+
+    val resultingPlanTable = solver(planTable, qg)
 
     // Then
     val innerPlan = Expand(SingleRow(Set("a"))(PlannerQuery.empty)(), "a", Direction.OUTGOING, Direction.OUTGOING, Seq.empty, "c", "r2", SimplePatternLength)(PlannerQuery.empty)
@@ -219,7 +231,8 @@ class SolveOptionalMatchesTest extends CypherFunSuite with LogicalPlanningTestSu
     ))
 
     // When
-    val resultingPlanTable = solveOptionalMatches(planTable, qg)
+    val solver = solveOptionalMatches(solvers = Seq(applyOptional))    // Using a simpler strategy to avoid costs
+    val resultingPlanTable = solver(planTable, qg)
     val expectedRhs = Expand(SingleRow(Set("a"))(PlannerQuery.empty)(), "a", Direction.OUTGOING, Direction.OUTGOING, Seq.empty, "b", "r1", SimplePatternLength)(PlannerQuery.empty)
     val expectedResult = Apply(planForA, Optional(expectedRhs)(PlannerQuery.empty))(PlannerQuery.empty)
 
@@ -244,8 +257,9 @@ class SolveOptionalMatchesTest extends CypherFunSuite with LogicalPlanningTestSu
     ))
 
     // When
-    val step1 = solveOptionalMatches(planTable, qg)
-    val resultingPlanTable = solveOptionalMatches(step1, qg)
+    val solver = solveOptionalMatches(solvers = Seq(applyOptional))    // Using a simpler strategy to avoid costs
+    val step1 = solver(planTable, qg)
+    val resultingPlanTable = solver(step1, qg)
 
     val expectedPlanForAtoB = Expand(SingleRow(Set("a"))(PlannerQuery.empty)(), "a", Direction.OUTGOING, Direction.OUTGOING, Seq.empty, "b", "r1", SimplePatternLength)(PlannerQuery.empty)
     val expectedResult1 = Apply(planForA, Optional(expectedPlanForAtoB)(PlannerQuery.empty))(PlannerQuery.empty)
@@ -278,7 +292,8 @@ class SolveOptionalMatchesTest extends CypherFunSuite with LogicalPlanningTestSu
     val planTable = PlanTable(Map(Set(IdName("a")) -> lhs))
 
     // When
-    val resultingPlanTable = solveOptionalMatches(planTable, qg)
+    val solver = solveOptionalMatches(solvers = Seq(applyOptional))    // Using a simpler strategy to avoid costs
+    val resultingPlanTable = solver(planTable, qg)
 
     // Then
 
