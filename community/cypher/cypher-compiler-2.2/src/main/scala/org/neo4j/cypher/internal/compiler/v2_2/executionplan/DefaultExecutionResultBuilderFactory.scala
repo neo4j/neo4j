@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 
 import org.neo4j.cypher.internal.{Explained, PlanType}
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription
-import org.neo4j.cypher.{ExecutionResult, CypherException}
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription
+import org.neo4j.cypher.CypherException
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.pipes._
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{QueryContext, CSVResources}
@@ -93,7 +93,7 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo, columns: Lis
       resultIterator
     }
 
-    private def buildDescriptor(pipe: Pipe, isProfileReady: => Boolean): () => PlanDescription =
+    private def buildDescriptor(pipe: Pipe, isProfileReady: => Boolean): () => InternalPlanDescription =
       () => pipeDecorator.decorate(pipe.planDescription, isProfileReady)
   }
 }

@@ -23,7 +23,7 @@ import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_2.ast.RelTypeName
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.Arguments.IntroducedIdentifier
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.IntroducedIdentifier
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.graphdb.{Direction, Node, Relationship}

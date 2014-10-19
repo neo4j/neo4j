@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 
 import java.io.PrintWriter
 
-import org.neo4j.cypher.QueryStatistics
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription
+import org.neo4j.cypher.internal.compiler.v2_2.InternalQueryStatistics
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription
 import org.neo4j.graphdb.ResourceIterator
 
 trait InternalExecutionResult extends Iterator[Map[String, Any]] {
@@ -33,8 +33,8 @@ trait InternalExecutionResult extends Iterator[Map[String, Any]] {
   def javaIterator: ResourceIterator[java.util.Map[String, Any]]
   def dumpToString(writer: PrintWriter)
   def dumpToString(): String
-  def queryStatistics(): QueryStatistics
-  def executionPlanDescription(): PlanDescription
+  def queryStatistics(): InternalQueryStatistics
+  def executionPlanDescription(): InternalPlanDescription
   def close()
   def planDescriptionRequested: Boolean
 }

@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_2.profiler
 
 import org.neo4j.cypher.ProfilerStatisticsNotReadyException
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.Arguments
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.{NullPipe, Pipe, PipeDecorator, QueryState}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{DelegatingOperations, DelegatingQueryContext, Operations, QueryContext}
@@ -53,12 +53,12 @@ class Profiler extends PipeDecorator {
   }
 
 
-  def decorate(plan: PlanDescription, isProfileReady: => Boolean): PlanDescription = {
+  def decorate(plan: InternalPlanDescription, isProfileReady: => Boolean): InternalPlanDescription = {
     if (!isProfileReady)
       throw new ProfilerStatisticsNotReadyException()
 
     plan map {
-      input: PlanDescription =>
+      input: InternalPlanDescription =>
         val pipe = input.pipe
         val rows = rowStats.get(pipe).map(_.count).getOrElse(0L)
         val dbhits = dbHitsStats.get(pipe).map(_.count).getOrElse(0L)

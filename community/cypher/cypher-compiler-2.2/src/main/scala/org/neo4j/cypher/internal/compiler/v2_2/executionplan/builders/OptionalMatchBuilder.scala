@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{ExecutionPlanInProgress, Phase, PlanBuilder}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes._
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
 
 case class OptionalMatchBuilder(solveMatch: Phase) extends PlanBuilder {
@@ -29,7 +29,7 @@ case class OptionalMatchBuilder(solveMatch: Phase) extends PlanBuilder {
 
   def apply(in: ExecutionPlanInProgress, context: PlanContext)(implicit pipeMonitor: PipeMonitor): ExecutionPlanInProgress = {
     val listeningPipe = new NullPipe(in.pipe.symbols) {
-      override def planDescription: PlanDescription = in.pipe.planDescription
+      override def planDescription: InternalPlanDescription = in.pipe.planDescription
     }
     val nonOptionalQuery = in.query.copy(optional = false)
     val postMatchPlan = solveMatch(in.copy(pipe = listeningPipe, query = nonOptionalQuery), context)

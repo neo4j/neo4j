@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.Arguments.LegacyExpression
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.LegacyExpression
 import org.neo4j.helpers.ThisShouldNotHappenError
 
 case class SlicePipe(source: Pipe, skip: Option[Expression], limit: Option[Expression])

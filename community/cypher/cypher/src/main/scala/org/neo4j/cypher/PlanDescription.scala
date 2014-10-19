@@ -17,21 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.executionplan
+package org.neo4j.cypher
+/**
+ * Abstract description of an execution plan
+ */
+trait PlanDescription {
+  self =>
 
-import org.neo4j.cypher.internal.compiler.v2_2.pipes._
-import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
-import org.neo4j.cypher.CypherException
-import org.neo4j.graphdb.GraphDatabaseService
-
-trait ExecutionResultBuilder {
-  def setQueryContext(context: QueryContext)
-  def setLoadCsvPeriodicCommitObserver(batchRowCount: Long)
-  def setPipeDecorator(newDecorator: PipeDecorator)
-  def setExceptionDecorator(newDecorator: CypherException => CypherException)
-  def build(graph: GraphDatabaseService, queryId: AnyRef, params: Map[String, Any]): InternalExecutionResult
-}
-
-trait ExecutionResultBuilderFactory {
-  def create(): ExecutionResultBuilder
+  def name: String
+  def children: Seq[PlanDescription]
+  def arguments: Map[String, AnyRef]
+  def hasProfilerStatistics: Boolean
+  def asJava: javacompat.PlanDescription
 }

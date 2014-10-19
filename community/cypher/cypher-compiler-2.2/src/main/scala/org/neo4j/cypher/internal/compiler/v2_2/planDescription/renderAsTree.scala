@@ -19,16 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planDescription
 
-object renderAsTree extends (PlanDescription => String) {
+object renderAsTree extends (InternalPlanDescription => String) {
 
-  def apply(plan: PlanDescription): String = {
+  def apply(plan: InternalPlanDescription): String = {
 
     val result = new StringBuilder()
     val newLine = "%n".format()
-    val names: Map[PlanDescription, String] = createUniqueNames(plan)
+    val names: Map[InternalPlanDescription, String] = createUniqueNames(plan)
 
 
-    def accumulateTree(plan: PlanDescription, prepend: String) {
+    def accumulateTree(plan: InternalPlanDescription, prepend: String) {
       result.append(names(plan))
 
       plan.children match {
@@ -60,7 +60,7 @@ object renderAsTree extends (PlanDescription => String) {
     result.toString()
   }
 
-  def createUniqueNames(plan: PlanDescription): Map[PlanDescription, String] =
+  def createUniqueNames(plan: InternalPlanDescription): Map[InternalPlanDescription, String] =
     plan.toSeq.groupBy(_.name).flatMap {
       case (name, plans) if plans.size == 1 =>
         Some(plans.head -> name)

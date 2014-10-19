@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planDescription
 
-object renderSummary extends (PlanDescription => String) {
-  def apply(plan: PlanDescription): String =
+object renderSummary extends (InternalPlanDescription => String) {
+  def apply(plan: InternalPlanDescription): String =
     "Total database accesses: " + plan.totalDbHits.getOrElse("?")
 }

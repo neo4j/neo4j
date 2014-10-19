@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.Arguments.KeyNames
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.KeyNames
 import org.neo4j.cypher.internal.compiler.v2_2.{Comparer, ExecutionContext}
 
 trait SortDescription {

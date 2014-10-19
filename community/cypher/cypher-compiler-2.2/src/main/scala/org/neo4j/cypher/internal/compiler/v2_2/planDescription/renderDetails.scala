@@ -19,17 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planDescription
 
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.Arguments._
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments._
 
 import scala.collection.mutable
 
-object renderDetails extends (PlanDescription => String) {
+object renderDetails extends (InternalPlanDescription => String) {
 
   val handledArguments = Set(classOf[Rows], classOf[DbHits], classOf[IntroducedIdentifier])
 
-  def apply(plan: PlanDescription): String = {
+  def apply(plan: InternalPlanDescription): String = {
 
-    val plans: Seq[PlanDescription] = plan.toSeq
+    val plans: Seq[InternalPlanDescription] = plan.toSeq
     val names = renderAsTree.createUniqueNames(plan)
 
     val headers = Seq("Operator", "EstimatedRows", "Rows", "DbHits", "Identifiers", "Other")
