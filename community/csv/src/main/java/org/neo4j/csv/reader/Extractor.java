@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.input.csv.reader;
+package org.neo4j.csv.reader;
 
 /**
  * Extracts a value from a part of a {@code char[]} into any type of value, f.ex. a {@link Extractors#STRING string},

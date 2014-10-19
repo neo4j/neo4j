@@ -22,12 +22,12 @@ package org.neo4j.unsafe.impl.batchimport.input.csv;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.neo4j.csv.reader.CharSeeker;
+import org.neo4j.csv.reader.Mark;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.UnexpectedEndOfInputException;
-import org.neo4j.unsafe.impl.batchimport.input.csv.reader.CharSeeker;
-import org.neo4j.unsafe.impl.batchimport.input.csv.reader.Mark;
 
 import static java.util.Arrays.copyOf;
 

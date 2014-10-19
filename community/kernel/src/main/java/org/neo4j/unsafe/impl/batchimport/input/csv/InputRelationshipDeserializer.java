@@ -19,8 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
+import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
-import org.neo4j.unsafe.impl.batchimport.input.csv.reader.CharSeeker;
 
 /**
  * {@link InputEntityDeserializer} that knows the semantics of an {@link InputRelationship} and how to extract that from

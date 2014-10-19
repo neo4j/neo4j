@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.input.csv.reader;
+package org.neo4j.csv.reader;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -52,7 +52,22 @@ import java.io.Reader;
  */
 public interface CharSeeker extends Closeable
 {
+    /**
+     * Seeks the next occurrence of any of the characters in {@code untilOneOfChars}, or if end-of-line,
+     * or even end-of-file.
+     *
+     * @param mark the mutable {@link Mark} which will be updated with the findings, if any.
+     * @param untilOneOfChars array of characters to seek.
+     * @return {@code false} if the end was reached and hence no value found, otherwise {@code true}.
+     * @throws IOException in case of I/O error.
+     */
     boolean seek( Mark mark, int[] untilOneOfChars ) throws IOException;
 
+    /**
+     * Extracts the value specified by the {@link Mark}, previously populated by a call to {@link #seek(Mark, int[])}.
+     * @param mark the {@link Mark} specifying which part of a bigger piece of data contains the found value.
+     * @param extractor {@link Extractor} capable of extracting the value.
+     * @return the extracted value.
+     */
     <T> T extract( Mark mark, Extractor<T> extractor );
 }

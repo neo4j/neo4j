@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.input.csv.reader;
+package org.neo4j.csv.reader;
 
 import java.io.StringReader;
 
@@ -25,8 +25,8 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import static org.neo4j.unsafe.impl.batchimport.input.csv.reader.Extractors.STRING;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.reader.QuoteAwareCharSeeker.quoteAware;
+import static org.neo4j.csv.reader.Extractors.STRING;
+import static org.neo4j.csv.reader.QuoteAwareCharSeeker.quoteAware;
 
 public class QuoteAwareCharSeekerTest
 {

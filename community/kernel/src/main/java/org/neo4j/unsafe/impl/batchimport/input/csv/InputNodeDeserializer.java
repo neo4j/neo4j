@@ -21,9 +21,9 @@ package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import java.util.Arrays;
 
+import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.csv.reader.CharSeeker;
 
 import static java.util.Arrays.copyOf;
 

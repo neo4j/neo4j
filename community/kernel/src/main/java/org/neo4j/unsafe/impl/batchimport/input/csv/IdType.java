@@ -19,11 +19,11 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
+import org.neo4j.csv.reader.Extractor;
+import org.neo4j.csv.reader.Extractors;
 import org.neo4j.unsafe.impl.batchimport.cache.LongArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapping;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappings;
-import org.neo4j.unsafe.impl.batchimport.input.csv.reader.Extractor;
-import org.neo4j.unsafe.impl.batchimport.input.csv.reader.Extractors;
 
 public enum IdType
 {
