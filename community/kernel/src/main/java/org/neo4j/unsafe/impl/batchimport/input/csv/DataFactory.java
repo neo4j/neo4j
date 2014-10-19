@@ -19,8 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
+import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
-import org.neo4j.unsafe.impl.batchimport.input.csv.reader.CharSeeker;
 
 /**
  * Factory for the data provided by an {@link Input}. Produces a {@link CharSeeker} that can seek

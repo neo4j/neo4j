@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.input.csv.reader;
+package org.neo4j.csv.reader;
 
 import java.io.BufferedReader;
 import java.io.Closeable;
@@ -25,13 +25,12 @@ import java.io.IOException;
 import java.io.Reader;
 import java.nio.CharBuffer;
 
-import static org.neo4j.helpers.Format.MB;
-
 /**
  * Much like a {@link BufferedReader} for a {@link Reader}.
  */
 public class BufferedCharSeeker implements CharSeeker
 {
+    private static final int KB = 1024, MB = KB * KB;
     public static final int DEFAULT_BUFFER_SIZE = 2 * MB;
 
     private static final char EOL_CHAR = '\n';

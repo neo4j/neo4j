@@ -23,12 +23,12 @@ import java.io.StringReader;
 
 import org.junit.Test;
 
+import org.neo4j.csv.reader.BufferedCharSeeker;
+import org.neo4j.csv.reader.CharSeeker;
+import org.neo4j.csv.reader.Extractor;
+import org.neo4j.csv.reader.Extractors;
 import org.neo4j.unsafe.impl.batchimport.input.DuplicateHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.MissingHeaderException;
-import org.neo4j.unsafe.impl.batchimport.input.csv.reader.BufferedCharSeeker;
-import org.neo4j.unsafe.impl.batchimport.input.csv.reader.CharSeeker;
-import org.neo4j.unsafe.impl.batchimport.input.csv.reader.Extractor;
-import org.neo4j.unsafe.impl.batchimport.input.csv.reader.Extractors;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;

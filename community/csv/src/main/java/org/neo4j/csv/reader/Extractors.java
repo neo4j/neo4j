@@ -17,13 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.input.csv.reader;
+package org.neo4j.csv.reader;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.neo4j.unsafe.impl.batchimport.Utils;
 
 import static java.lang.reflect.Modifier.isStatic;
 
@@ -158,7 +156,7 @@ public class Extractors
         @Override
         public Integer extract( char[] data, int offset, int length )
         {
-            return Utils.safeCastLongToInt( extractLong( data, offset, length ) );
+            return safeCastLongToInt( extractLong( data, offset, length ) );
         }
     };
 
@@ -167,7 +165,7 @@ public class Extractors
         @Override
         public Short extract( char[] data, int offset, int length )
         {
-            return Utils.safeCastLongToShort( extractLong( data, offset, length ) );
+            return safeCastLongToShort( extractLong( data, offset, length ) );
         }
     };
 
@@ -176,7 +174,7 @@ public class Extractors
         @Override
         public Byte extract( char[] data, int offset, int length )
         {
-            return Utils.safeCastLongToByte( extractLong( data, offset, length ) );
+            return safeCastLongToByte( extractLong( data, offset, length ) );
         }
     };
 
@@ -320,7 +318,7 @@ public class Extractors
             for ( int i = 0, index = 0; i < length; i++, index++ )
             {
                 int numberOfChars = charsToNextDelimiter( data, offset+i, length-i );
-                array[index] = Utils.safeCastLongToByte( extractLong( data, offset+i, numberOfChars ) );
+                array[index] = safeCastLongToByte( extractLong( data, offset+i, numberOfChars ) );
                 i += numberOfChars;
             }
             return array;
@@ -341,7 +339,7 @@ public class Extractors
             for ( int i = 0, index = 0; i < length; i++, index++ )
             {
                 int numberOfChars = charsToNextDelimiter( data, offset+i, length-i );
-                array[index] = Utils.safeCastLongToShort( extractLong( data, offset+i, numberOfChars ) );
+                array[index] = safeCastLongToShort( extractLong( data, offset+i, numberOfChars ) );
                 i += numberOfChars;
             }
             return array;
@@ -362,7 +360,7 @@ public class Extractors
             for ( int i = 0, index = 0; i < length; i++, index++ )
             {
                 int numberOfChars = charsToNextDelimiter( data, offset+i, length-i );
-                array[index] = Utils.safeCastLongToInt( extractLong( data, offset+i, numberOfChars ) );
+                array[index] = safeCastLongToInt( extractLong( data, offset+i, numberOfChars ) );
                 i += numberOfChars;
             }
             return array;
@@ -504,5 +502,32 @@ public class Extractors
             }
         }
         return true;
+    }
+
+    private static int safeCastLongToInt( long value )
+    {
+        if ( value > Integer.MAX_VALUE )
+        {
+            throw new UnsupportedOperationException( "Not supported a.t.m" );
+        }
+        return (int) value;
+    }
+
+    private static short safeCastLongToShort( long value )
+    {
+        if ( value > Short.MAX_VALUE )
+        {
+            throw new UnsupportedOperationException( "Not supported a.t.m" );
+        }
+        return (short) value;
+    }
+
+    private static byte safeCastLongToByte( long value )
+    {
+        if ( value > Byte.MAX_VALUE )
+        {
+            throw new UnsupportedOperationException( "Not supported a.t.m" );
+        }
+        return (byte) value;
     }
 }

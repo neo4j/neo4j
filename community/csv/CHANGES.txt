@@ -1,0 +1,4 @@
+2.2
+---
+o Initial creation of component
+o Efficient and generic CSV reading and parsing

@@ -21,26 +21,23 @@ package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.csv.reader.CharSeeker;
+import org.neo4j.csv.reader.CharSeekers;
+import org.neo4j.csv.reader.Extractor;
+import org.neo4j.csv.reader.Extractors;
+import org.neo4j.csv.reader.Mark;
 import org.neo4j.unsafe.impl.batchimport.input.DuplicateHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.MissingHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
-import org.neo4j.unsafe.impl.batchimport.input.csv.reader.BufferedCharSeeker;
-import org.neo4j.unsafe.impl.batchimport.input.csv.reader.CharSeeker;
-import org.neo4j.unsafe.impl.batchimport.input.csv.reader.Extractor;
-import org.neo4j.unsafe.impl.batchimport.input.csv.reader.Extractors;
-import org.neo4j.unsafe.impl.batchimport.input.csv.reader.Mark;
 
-import static org.neo4j.unsafe.impl.batchimport.input.csv.reader.BufferedCharSeeker.DEFAULT_BUFFER_SIZE;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.reader.QuoteAwareCharSeeker.quoteAware;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.reader.ThreadAheadReadable.threadAhead;
+import static org.neo4j.csv.reader.QuoteAwareCharSeeker.quoteAware;
 
 /**
  * Provides common implementations of factories required by f.ex {@link CsvInput}.
@@ -54,20 +51,12 @@ public class DataFactories
     {
         return new DataFactory()
         {
-            @SuppressWarnings( "resource" )
             @Override
             public CharSeeker create( Configuration config )
             {
                 try
                 {
-                    // Reader for the file
-                    Readable reader = new FileReader( file );
-
-                    // Thread that always has one buffer read ahead
-                    reader = threadAhead( reader, DEFAULT_BUFFER_SIZE );
-
-                    // Give the reader to the char seeker
-                    CharSeeker result = new BufferedCharSeeker( reader, DEFAULT_BUFFER_SIZE );
+                    CharSeeker result = CharSeekers.charSeeker( file );
 
                     // If we so desire make it quote aware
                     if ( config.quoteAware() )
