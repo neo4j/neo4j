@@ -80,6 +80,7 @@ class LogicalPlanDocGenTest extends DocHandlerTestSuite[Any] {
   case class TestLeafPlan(x: Int) extends LogicalLeafPlan {
     def availableSymbols = Set[IdName](IdName("a"))
     def solved: PlannerQuery = ???
+    def argumentIds: Set[IdName] = ???
   }
 
   case class TestPipePlan(left: LogicalPlan) extends LogicalPlan {

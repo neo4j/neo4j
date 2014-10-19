@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{Apply, Sin
 case object unnestEmptyApply extends Rewriter {
 
   private val instance: Rewriter = Rewriter.lift {
-    case Apply(sr: SingleRow, rhs) if sr.coveredIds.isEmpty => rhs
+    case Apply(sr: SingleRow, rhs) if sr.argumentIds.isEmpty => rhs
     case Apply(lhs, _: SingleRow)                           => lhs
   }
 

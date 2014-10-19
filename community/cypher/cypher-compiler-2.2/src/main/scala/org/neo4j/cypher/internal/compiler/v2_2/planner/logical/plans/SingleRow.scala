@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 
-case class SingleRow(coveredIds: Set[IdName])(val solved: PlannerQuery)
-                    (val typeInfo: Map[String, CypherType] = coveredIds.map( id => id.name -> CTNode).toMap) extends LogicalLeafPlan {
-  def availableSymbols = coveredIds
+case class SingleRow(argumentIds: Set[IdName])(val solved: PlannerQuery)
+                    (val typeInfo: Map[String, CypherType] = argumentIds.map( id => id.name -> CTNode).toMap) extends LogicalLeafPlan {
+  def availableSymbols = argumentIds
 
   override def dup(children: Seq[AnyRef]) = children.size match {
     case 1 =>

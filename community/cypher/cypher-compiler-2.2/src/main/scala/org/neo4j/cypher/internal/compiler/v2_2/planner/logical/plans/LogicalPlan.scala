@@ -80,6 +80,7 @@ abstract class LogicalPlan
 abstract class LogicalLeafPlan extends LogicalPlan {
   final val lhs = None
   final val rhs = None
+  def argumentIds: Set[IdName]
 }
 
 final case class IdName(name: String) extends PageDocFormatting // with ToPrettyString[IdName] {
