@@ -21,24 +21,18 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter.{unnestEmptyApply, unnestOptional}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter.LogicalPlanRewriter
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps._
-import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStep._
-import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSequencer
 
-class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default)
+class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default,
+                            rewriter: LogicalPlanRewriter = new LogicalPlanRewriter)
   extends PlanningStrategy {
-
-  val rewriter = RewriterStepSequencer.newDefault("PlanRewriter")(
-    unnestEmptyApply,
-    unnestOptional
-  )
 
   def plan(unionQuery: UnionQuery)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan = unionQuery match {
     case UnionQuery(queries, distinct) =>
       val plan = planQuery(queries, distinct)
-      plan.endoRewrite(rewriter)
+      rewriter.rewrite(plan)
 
     case _ => throw new CantHandleQueryException
   }
