@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.LabelId
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{SignedDecimalIntegerLiteral, PropertyKeyName, Property, Equals}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{PlannerQuery, LogicalPlanningTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.graphdb.Direction
@@ -37,5 +38,30 @@ class UnnestOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport 
 
     input.endoRewrite(unnestOptional) should equal(
       OptionalExpand(lhs, IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), SimplePatternLength, Seq.empty)(solved))
+  }
+
+  test("should rewrite Apply/Optional/Selection/Expand to OptionalExpand when lhs of expand is single row") {
+    val singleRow: LogicalPlan = SingleRow(Set(IdName("a")))(solved)(Map.empty)
+    val expand = Expand(singleRow, IdName("a"), Direction.OUTGOING, Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), SimplePatternLength)(solved)
+    val predicate: Equals = Equals(Property(ident("b"), PropertyKeyName("prop")(pos))(pos), SignedDecimalIntegerLiteral("1")(pos))(pos)
+    val selection = Selection(Seq(predicate), expand)(solved)
+    val rhs:LogicalPlan = Optional(selection)(solved)
+    val lhs = newMockedLogicalPlan("a")
+    val input = Apply(lhs, rhs)(solved)
+
+    input.endoRewrite(unnestOptional) should equal(
+      OptionalExpand(lhs, IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), SimplePatternLength, Seq(predicate))(solved))
+  }
+
+  test("should not rewrite Apply/Optional/Selection/Expand to OptionalExpand when expansion is variable length") {
+    val singleRow: LogicalPlan = SingleRow(Set(IdName("a")))(solved)(Map.empty)
+    val expand = Expand(singleRow, IdName("a"), Direction.OUTGOING, Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), VarPatternLength(1, None))(solved)
+    val predicate: Equals = Equals(Property(ident("b"), PropertyKeyName("prop")(pos))(pos), SignedDecimalIntegerLiteral("1")(pos))(pos)
+    val selection = Selection(Seq(predicate), expand)(solved)
+    val rhs: LogicalPlan = Optional(selection)(solved)
+    val lhs = newMockedLogicalPlan("a")
+    val input = Apply(lhs, rhs)(solved)
+
+    input.endoRewrite(unnestOptional) should equal(input)
   }
 }

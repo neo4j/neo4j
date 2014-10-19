@@ -20,39 +20,28 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{Selections, PlannerQuery}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression
+import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 
 case object unnestOptional extends Rewriter {
-  private def applicable(outerPlan:LogicalPlan, optional: Optional) = {
-    val qg = optional.inputPlan.solved.graph
-    val singleArgumentAvailable = qg.argumentIds.size == 1 && outerPlan.availableSymbols(qg.argumentIds.head) && qg.patternNodes(qg.argumentIds.head)
-    qg.patternRelationships.size == 1 && singleArgumentAvailable
-  }
-  private def canSolveAllPredicates(selections:Selections, ids:Set[IdName]) = selections.predicatesGiven(ids) == selections.flatPredicates
+
+  def apply(input: AnyRef) = bottomUp(instance).apply(input)
 
   private val instance: Rewriter = Rewriter.lift {
-
+    case apply@Apply(lhs,
+      Optional(
+      e@Expand(_:SingleRow, _, _, _, _, _, _, SimplePatternLength, _))) =>
+        optionalExpand(e, lhs)(Seq.empty)(apply.solved)
 
     case apply@Apply(lhs,
       Optional(
-      Expand(_:SingleRow, from, dir, _, types, to, relName, length, _))) =>
-          OptionalExpand(lhs, from, dir, types, to, relName, length, Seq.empty)(apply.solved)
-
-    case apply@Apply(lhs, optional:Optional) if (applicable(lhs, optional)) =>
-      val qg = optional.inputPlan.solved.graph
-      val patternRel = qg.patternRelationships.head
-      val argumentId = qg.argumentIds.head
-      val dir = patternRel.directionRelativeTo(argumentId)
-      val otherSide = patternRel.otherSide(argumentId)
-
-      if (canSolveAllPredicates(qg.selections, lhs.availableSymbols + otherSide + patternRel.name)) {
-        OptionalExpand(lhs, argumentId, dir, patternRel.types, otherSide, patternRel.name, patternRel.length,
-          qg.selections.flatPredicates)(lhs.solved.updateGraph(_.withAddedOptionalMatch(qg)))
-      } else {
-        apply
-      }
+      Selection(predicates,
+      e@Expand(_:SingleRow, _, _, _, _, _, _, SimplePatternLength, _)))) =>
+        optionalExpand(e, lhs)(predicates)(apply.solved)
   }
 
-  override def apply(input: AnyRef) = bottomUp(instance).apply(input)
+  private def optionalExpand(e: Expand, lhs: LogicalPlan): (Seq[Expression] => PlannerQuery => OptionalExpand) =
+    predicates =>
+      OptionalExpand(lhs, e.from, e.dir, e.types, e.to, e.relName, e.length, predicates)
 }
