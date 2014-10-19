@@ -43,8 +43,10 @@ public class BufferedCharSeeker implements CharSeeker
     private final CharBuffer charBuffer;
     private int bufferPos;
     private long bufferStartPos;
+    private long lineStartPos;
     private int seekStartPos;
     private int lineNumber = 1;
+    private boolean eof;
 
     public BufferedCharSeeker( Readable reader )
     {
@@ -63,45 +65,45 @@ public class BufferedCharSeeker implements CharSeeker
     @Override
     public boolean seek( Mark mark, int[] untilOneOfChars ) throws IOException
     {
+        if ( eof )
+        {   // We're at the end
+            return eof( mark );
+        }
+
         // Keep a start position in case we need to further fill the buffer in nextChar, a value can at maximum be the
         // whole buffer, so max one fill per value is supported.
         seekStartPos = bufferPos; // seekStartPos updated in nextChar if buffer flips over, that's why it's a member
         int ch;
-        while ( (ch = nextChar()) != EOL_CHAR && ch != EOL_CHAR_2 && ch != EOF_CHAR )
+        while ( (ch = nextChar()) != EOL_CHAR && ch != EOL_CHAR_2 && !eof )
         {
-            // Found a delimiter?
             for ( int i = 0; i < untilOneOfChars.length; i++ )
             {
                 if ( ch == untilOneOfChars[i] )
-                {
-                    // Yes, set marker and return true
+                {   // We found a delimiter, set marker and return true
                     mark.set( lineNumber, seekStartPos, bufferPos - 1, ch );
                     return true;
                 }
             }
         }
 
-        try
-        {
-            if ( bufferPos - seekStartPos == 1 )
-            {
-                // We didn't find any of the characters sought for
-                mark.set( lineNumber, -1, -1, Mark.END_OF_LINE_CHARACTER );
-                return false;
-            }
-            // We found the last value of the line or stream
-            int skipped = skipEolChars();
-            mark.set( lineNumber, seekStartPos, bufferPos - 1 - skipped, Mark.END_OF_LINE_CHARACTER );
-            lineNumber++;
-            return true;
+        int valueLength = bufferPos - seekStartPos - 1;
+        if ( ch == EOF_CHAR && valueLength == 0 && seekStartPos == lineStartPos )
+        {   // We didn't find any of the characters sought for
+            return eof( mark );
         }
-        finally
-        {
-            if ( ch == EOF_CHAR )
-            {
-                bufferPos--; // so that we see it again next time
-            }
-        }
+
+        // We found the last value of the line or stream
+        int skipped = skipEolChars();
+        mark.set( lineNumber, seekStartPos, bufferPos - 1 - skipped, Mark.END_OF_LINE_CHARACTER );
+        lineNumber++;
+        lineStartPos = bufferPos;
+        return true;
+    }
+
+    private boolean eof( Mark mark )
+    {
+        mark.set( lineNumber, -1, -1, Mark.END_OF_LINE_CHARACTER );
+        return false;
     }
 
     @Override
@@ -127,7 +129,12 @@ public class BufferedCharSeeker implements CharSeeker
     private int nextChar() throws IOException
     {
         fillBufferIfWeHaveExhaustedIt();
-        return buffer[bufferPos++];
+        int result = buffer[bufferPos++];
+        if ( result == EOF_CHAR )
+        {
+            eof = true;
+        }
+        return result;
     }
 
     private void fillBufferIfWeHaveExhaustedIt() throws IOException

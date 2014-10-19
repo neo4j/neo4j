@@ -224,19 +224,54 @@ public class BufferedCharSeekerTest
     }
 
     @Test
-    public void shouldSkipEmptyLastValue() throws Exception
+    public void shouldSeeEofEvenIfBufferAlignsWithEnd() throws Exception
     {
         // GIVEN
-        CharSeeker seeker = new BufferedCharSeeker( new StringReader( "one,two,three," ), 100 );
+        CharSeeker seeker = new BufferedCharSeeker( new StringReader( "123,56" ), 6 );
         Mark mark = new Mark();
 
         // WHEN
-        assertTrue( seeker.seek( mark, COMMA ) ); // one
-        assertTrue( seeker.seek( mark, COMMA ) ); // two
-        assertTrue( seeker.seek( mark, COMMA ) ); // three
+        assertTrue( seeker.seek( mark, COMMA ) );
+        assertEquals( 123, seeker.extract( mark, Extractors.INT ).intValue() );
+        assertTrue( seeker.seek( mark, COMMA ) );
+        assertEquals( 56, seeker.extract( mark, Extractors.INT ).intValue() );
 
         // THEN
         assertFalse( seeker.seek( mark, COMMA ) );
+        assertFalse( seeker.seek( mark, COMMA ) );
+    }
+
+    @Test
+    public void shouldSkipEmptyLastValue() throws Exception
+    {
+        // GIVEN
+        CharSeeker seeker = new BufferedCharSeeker( new StringReader(
+                "one,two,three,\n" +
+                "uno,dos,tres," ), 100 );
+        Mark mark = new Mark();
+
+        // WHEN
+        assertNextValue( seeker, mark, COMMA, "one" );
+        assertNextValue( seeker, mark, COMMA, "two" );
+        assertNextValue( seeker, mark, COMMA, "three" );
+        assertNextValue( seeker, mark, COMMA, "" );
+        assertTrue( mark.isEndOfLine() );
+
+        assertNextValue( seeker, mark, COMMA, "uno" );
+        assertNextValue( seeker, mark, COMMA, "dos" );
+        assertNextValue( seeker, mark, COMMA, "tres" );
+        assertNextValue( seeker, mark, COMMA, "" );
+        assertTrue( mark.isEndOfLine() );
+
+        // THEN
+        assertFalse( seeker.seek( mark, COMMA ) );
+    }
+
+    private void assertNextValue( CharSeeker seeker, Mark mark, int[] delimiter, String expectedValue )
+            throws IOException
+    {
+        assertTrue( seeker.seek( mark, delimiter ) );
+        assertEquals( expectedValue, seeker.extract( mark, Extractors.STRING ) );
     }
 
     @Test
