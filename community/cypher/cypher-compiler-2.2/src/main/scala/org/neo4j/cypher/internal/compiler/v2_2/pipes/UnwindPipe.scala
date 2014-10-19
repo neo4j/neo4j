@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{PlanDescription, PlanDescriptionImpl, SingleChild}
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{InternalPlanDescription, PlanDescriptionImpl, SingleChild}
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 
 case class UnwindPipe(source: Pipe, collection: Expression, identifier: String)
@@ -34,7 +34,7 @@ case class UnwindPipe(source: Pipe, collection: Expression, identifier: String)
         seq.map(x => context.newWith1(identifier, x))
     }
 
-  def planDescription: PlanDescription =
+  def planDescription: InternalPlanDescription =
     PlanDescriptionImpl(this, "UNWIND", SingleChild(source.planDescription), Seq())
 
   def symbols = source.symbols.add(identifier, collection.getType(source.symbols).legacyIteratedType)

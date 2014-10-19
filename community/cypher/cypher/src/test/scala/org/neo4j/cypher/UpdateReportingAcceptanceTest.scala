@@ -17,21 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.executionplan
+package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v2_2.pipes._
-import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
-import org.neo4j.cypher.CypherException
-import org.neo4j.graphdb.GraphDatabaseService
+class UpdateReportingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+  test("creating a node gets reported as such") {
+    val output = execute("create (:A)").dumpToString()
 
-trait ExecutionResultBuilder {
-  def setQueryContext(context: QueryContext)
-  def setLoadCsvPeriodicCommitObserver(batchRowCount: Long)
-  def setPipeDecorator(newDecorator: PipeDecorator)
-  def setExceptionDecorator(newDecorator: CypherException => CypherException)
-  def build(graph: GraphDatabaseService, queryId: AnyRef, params: Map[String, Any]): InternalExecutionResult
-}
-
-trait ExecutionResultBuilderFactory {
-  def create(): ExecutionResultBuilder
+    output should include ("Nodes created: 1")
+    output should include ("Labels added: 1")
+  }
 }

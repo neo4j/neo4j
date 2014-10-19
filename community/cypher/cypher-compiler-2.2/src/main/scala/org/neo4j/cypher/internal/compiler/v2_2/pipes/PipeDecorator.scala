@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription
 
 /*
 A PipeDecorator is used to instrument calls between Pipes, and between a Pipe and the graph
@@ -30,13 +30,13 @@ trait PipeDecorator {
 
   def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext]
 
-  def decorate(plan: PlanDescription, isProfileReady: => Boolean): PlanDescription
+  def decorate(plan: InternalPlanDescription, isProfileReady: => Boolean): InternalPlanDescription
 }
 
 object NullPipeDecorator extends PipeDecorator {
   def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext] = iter
 
-  def decorate(plan: PlanDescription, isProfileReady: => Boolean): PlanDescription = plan
+  def decorate(plan: InternalPlanDescription, isProfileReady: => Boolean): InternalPlanDescription = plan
 
   def decorate(pipe: Pipe, state: QueryState): QueryState = state
 }

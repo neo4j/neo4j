@@ -25,8 +25,8 @@ import org.neo4j.cypher.LoadExternalResourceException
 import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.Arguments.IntroducedIdentifier
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.IntroducedIdentifier
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.{AnyType, CollectionType, MapType, SymbolTable}
 
@@ -81,7 +81,7 @@ case class LoadCSVPipe(source: Pipe,
     })
   }
 
-  def planDescription: PlanDescription =
+  def planDescription: InternalPlanDescription =
     source.planDescription.andThen(this, "LoadCSV", IntroducedIdentifier(identifier))
 
   def symbols: SymbolTable = format match {

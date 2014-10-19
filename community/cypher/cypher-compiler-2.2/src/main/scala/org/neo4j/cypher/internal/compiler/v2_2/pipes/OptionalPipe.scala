@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{PlanDescription, PlanDescriptionImpl, SingleChild}
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{InternalPlanDescription, PlanDescriptionImpl, SingleChild}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 
 case class OptionalPipe(nullableIdentifiers: Set[String], source: Pipe)
@@ -34,7 +34,7 @@ case class OptionalPipe(nullableIdentifiers: Set[String], source: Pipe)
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     if (input.isEmpty) Iterator(notFoundExecutionContext) else input
 
-  def planDescription: PlanDescription =
+  def planDescription: InternalPlanDescription =
     new PlanDescriptionImpl(
       this,
       "Optional",

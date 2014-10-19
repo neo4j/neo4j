@@ -23,15 +23,14 @@ import java.util
 
 import org.neo4j.cypher.{CypherVersion, PlanDescription}
 import org.neo4j.cypher.javacompat.{PlanDescription => JPlanDescription}
-import scala.collection.JavaConverters._
 
-class AmendedRootPlanDescription(child: PlanDescription, version: CypherVersion) extends PlanDescription {
+class AmendedRootPlanDescription(inner: PlanDescription, version: CypherVersion) extends PlanDescription {
 
   self =>
 
-  val childAsJava = child.asJava
+  val childAsJava = inner.asJava
 
-  def name = child.name
+  def name = inner.name
 
   def asJava = new JPlanDescription {
     val getName = name
@@ -60,6 +59,9 @@ class AmendedRootPlanDescription(child: PlanDescription, version: CypherVersion)
     s"Compiler $version\n\n$innerToString"
   }
 
-  def render(builder: StringBuilder, separator: String, levelSuffix: String) = child.render(builder, separator, levelSuffix)
-  def render(builder: StringBuilder) = child.render(builder)
+  def children: Seq[PlanDescription] = inner.children
+
+  def arguments: Map[String, AnyRef] = inner.arguments + ("version" -> version.toString)
+
+  def hasProfilerStatistics: Boolean = inner.hasProfilerStatistics
 }

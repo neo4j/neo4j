@@ -23,8 +23,8 @@ import org.mockito.Matchers._
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.cypher.QueryStatistics
 import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_2.InternalQueryStatistics
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.index.IndexDescriptor
@@ -73,49 +73,49 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   test("create_node") {
     context.createNode()
 
-    context.getStatistics should equal(QueryStatistics(nodesCreated = 1))
+    context.getStatistics should equal(InternalQueryStatistics(nodesCreated = 1))
   }
 
   test("delete_node") {
     context.nodeOps.delete(nodeA)
 
-    context.getStatistics should equal(QueryStatistics(nodesDeleted = 1))
+    context.getStatistics should equal(InternalQueryStatistics(nodesDeleted = 1))
   }
 
   test("create_relationship") {
     context.createRelationship(nodeA, nodeB, "FOO")
 
-    context.getStatistics should equal(QueryStatistics(relationshipsCreated = 1))
+    context.getStatistics should equal(InternalQueryStatistics(relationshipsCreated = 1))
   }
 
   test("delete_relationship") {
     context.relationshipOps.delete(rel)
 
-    context.getStatistics should equal(QueryStatistics(relationshipsDeleted = 1))
+    context.getStatistics should equal(InternalQueryStatistics(relationshipsDeleted = 1))
   }
 
   test("set_property") {
     context.nodeOps.setProperty(nodeAId, 1, "value")
 
-    context.getStatistics should equal(QueryStatistics(propertiesSet = 1))
+    context.getStatistics should equal(InternalQueryStatistics(propertiesSet = 1))
   }
 
   test("remove_property") {
     context.nodeOps.removeProperty(nodeAId, context.getPropertyKeyId("key"))
 
-    context.getStatistics should equal(QueryStatistics(propertiesSet = 1))
+    context.getStatistics should equal(InternalQueryStatistics(propertiesSet = 1))
   }
 
   test("set_property_relationship") {
     context.relationshipOps.setProperty(relId, 1, "value")
 
-    context.getStatistics should equal(QueryStatistics(propertiesSet = 1))
+    context.getStatistics should equal(InternalQueryStatistics(propertiesSet = 1))
   }
 
   test("remove_property_relationship") {
     context.relationshipOps.removeProperty(relId, context.getPropertyKeyId("key"))
 
-    context.getStatistics should equal(QueryStatistics(propertiesSet = 1))
+    context.getStatistics should equal(InternalQueryStatistics(propertiesSet = 1))
   }
 //
 //  test("add_label") {
@@ -127,30 +127,30 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   test("remove_label") {
     context.removeLabelsFromNode(0l, Seq(1, 2, 3).iterator)
 
-    context.getStatistics should equal(QueryStatistics(labelsRemoved = 3))
+    context.getStatistics should equal(InternalQueryStatistics(labelsRemoved = 3))
   }
 
   test("add_index") {
     context.addIndexRule(0, 1)
 
-    context.getStatistics should equal(QueryStatistics(indexesAdded = 1))
+    context.getStatistics should equal(InternalQueryStatistics(indexesAdded = 1))
   }
 
   test("remove_index") {
     context.dropIndexRule(0, 1)
 
-    context.getStatistics should equal(QueryStatistics(indexesRemoved = 1))
+    context.getStatistics should equal(InternalQueryStatistics(indexesRemoved = 1))
   }
 
   test("create_unique_constraint") {
     context.createUniqueConstraint(0, 1)
 
-    context.getStatistics should equal(QueryStatistics(constraintsAdded = 1))
+    context.getStatistics should equal(InternalQueryStatistics(constraintsAdded = 1))
   }
 
   test("constraint_dropped") {
     context.dropUniqueConstraint(0, 42)
 
-    context.getStatistics should equal(QueryStatistics(constraintsRemoved = 1))
+    context.getStatistics should equal(InternalQueryStatistics(constraintsRemoved = 1))
   }
 }

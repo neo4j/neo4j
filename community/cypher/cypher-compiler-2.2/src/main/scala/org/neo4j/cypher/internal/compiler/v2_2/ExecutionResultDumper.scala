@@ -21,11 +21,10 @@ package org.neo4j.cypher.internal.compiler.v2_2
 
 import java.io.{PrintWriter, StringWriter}
 
-import org.neo4j.cypher.QueryStatistics
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.StringHelper
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
 
-case class ExecutionResultDumper(result: Seq[Map[String, Any]], columns: List[String], queryStatistics: QueryStatistics) extends StringHelper {
+case class ExecutionResultDumper(result: Seq[Map[String, Any]], columns: List[String], queryStatistics: InternalQueryStatistics) extends StringHelper {
 
   def dumpToString(implicit query: QueryContext): String = {
     val stringWriter = new StringWriter()

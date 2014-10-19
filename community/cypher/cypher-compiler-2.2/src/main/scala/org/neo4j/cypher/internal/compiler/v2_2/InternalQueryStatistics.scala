@@ -17,33 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.cypher.internal.compiler.v2_2
 
-import java.io.PrintWriter
-
-import org.neo4j.graphdb.ResourceIterator
-
-trait ExecutionResult extends Iterator[Map[String, Any]] {
-  def columns: List[String]
-  def javaColumns: java.util.List[String]
-  def javaColumnAs[T](column: String): ResourceIterator[T]
-  def columnAs[T](column: String): Iterator[T]
-  def javaIterator: ResourceIterator[java.util.Map[String, Any]]
-  def dumpToString(writer: PrintWriter)
-  def dumpToString(): String
-  def queryStatistics(): QueryStatistics
-  def executionPlanDescription(): PlanDescription
-  def close()
-}
-
-// Whenever you add a field here, please update the following classes:
-//
-// org.neo4j.cypher.javacompat.QueryStatistics
-// org.neo4j.server.rest.repr.CypherResultRepresentation
-// org.neo4j.server.rest.CypherFunctionalTest
-// org.neo4j.cypher.QueryStatisticsTestSupport
-//
-case class QueryStatistics(nodesCreated: Int = 0,
+case class InternalQueryStatistics(nodesCreated: Int = 0,
                            relationshipsCreated: Int = 0,
                            propertiesSet: Int = 0,
                            nodesDeleted: Int = 0,
@@ -53,8 +29,7 @@ case class QueryStatistics(nodesCreated: Int = 0,
                            indexesAdded: Int = 0,
                            indexesRemoved: Int = 0,
                            constraintsAdded: Int = 0,
-                           constraintsRemoved: Int = 0)
-{
+                           constraintsRemoved: Int = 0) {
   def containsUpdates =
     nodesCreated > 0 ||
       relationshipsCreated > 0 ||
@@ -67,7 +42,6 @@ case class QueryStatistics(nodesCreated: Int = 0,
       indexesRemoved > 0 ||
       constraintsAdded > 0 ||
       constraintsRemoved > 0
-
 
   override def toString = {
     val builder = new StringBuilder
@@ -93,4 +67,3 @@ case class QueryStatistics(nodesCreated: Int = 0,
     builder.append(message + count.toString + "\n")
   }
 }
-
