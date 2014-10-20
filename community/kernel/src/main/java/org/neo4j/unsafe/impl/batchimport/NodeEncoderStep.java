@@ -53,11 +53,13 @@ public final class NodeEncoderStep extends ExecutorServiceStep<List<InputNode>>
     private final BatchingTokenRepository<?> propertyKeyHolder;
     private final BatchingTokenRepository<?> labelHolder;
     private final PropertyCreator propertyCreator;
+    private final Iterable<Object> allIds;
 
     public NodeEncoderStep( StageControl control, String name, int workAheadSize, int numberOfExecutors,
             IdMapper idMapper, IdGenerator idGenerator, BatchingTokenRepository<?> propertyKeyHolder,
             BatchingTokenRepository<?> labelHolder,
-            NodeStore nodeStore, PropertyStore propertyStore )
+            NodeStore nodeStore, PropertyStore propertyStore,
+            Iterable<Object> allIds )
     {
         super( control, name, workAheadSize, numberOfExecutors );
         this.idMapper = idMapper;
@@ -65,6 +67,7 @@ public final class NodeEncoderStep extends ExecutorServiceStep<List<InputNode>>
         this.nodeStore = nodeStore;
         this.propertyKeyHolder = propertyKeyHolder;
         this.labelHolder = labelHolder;
+        this.allIds = allIds;
         this.propertyCreator = new PropertyCreator( propertyStore, null );
     }
 
@@ -116,8 +119,10 @@ public final class NodeEncoderStep extends ExecutorServiceStep<List<InputNode>>
     @Override
     protected void done()
     {
-        // We're done adding ids to the IdMapper, sort so that the following stages can query it.
-        idMapper.prepare();
+        // We're done adding ids to the IdMapper, prepare for other stages querying it.
+        // We pass in allIds because they may be needed to sort out colliding values in case of String->long
+        // encoding.
+        idMapper.prepare( allIds );
         super.done();
     }
 }

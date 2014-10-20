@@ -20,6 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
 import java.util.HashMap;
+import java.util.Iterator;
 
 import org.neo4j.unsafe.impl.batchimport.Utils.CompareType;
 import org.neo4j.unsafe.impl.batchimport.cache.IntArray;
@@ -69,7 +70,7 @@ public class StringIdMapper implements IdMapper
     {
         this.dataCache = newLongArray( cacheFactory );
         this.trackerCache = newIntArray( cacheFactory );
-        this.strEncoder = new StringEncoder( 128, 2 );
+        this.strEncoder = new StringEncoder( 2 );
         this.collisionCache = newLongArray( cacheFactory );
         this.collisionStringIndex = newIntArray( cacheFactory );
         this.collisionStrings = new StringBuilder();
@@ -121,12 +122,15 @@ public class StringIdMapper implements IdMapper
     }
 
     @Override
-    public void prepare()
+    public void prepare( Iterable<Object> ids )
     {
         sortBuckets = new ParallelSort( radixIndexCount, dataCache, trackerCache,
                 Runtime.getRuntime().availableProcessors()-1 ).run();
 
-        detectAndMarkCollisions();
+        if ( detectAndMarkCollisions() > 0 )
+        {
+            buildCollisionInfo( ids.iterator() );
+        }
         readyForUse = true;
     }
 
@@ -146,10 +150,6 @@ public class StringIdMapper implements IdMapper
                 break;
             }
         }
-
-//        TODO If something went wrong the code earlier this
-//        low = 0;
-//        high = highestSetTrackerIndex;
 
         long returnVal = binarySearch( x, strValue, false, low, high );
         if ( returnVal == -1 )
@@ -209,6 +209,27 @@ public class StringIdMapper implements IdMapper
             }
         }
         return numCollisions;
+    }
+
+    private void buildCollisionInfo( Iterator<Object> ids )
+    {
+        int collisionIndex = 0;
+        for ( int i = 0; ids.hasNext(); i++ )
+        {
+            String id = (String) ids.next();
+            long value = dataCache.get( i );
+            if ( isCollision( value ) )
+            {
+                long val = strEncoder.encode( id );
+                assert val != clearCollision( value );
+                assert val == value;
+                int strIndex = collisionStrings.length();
+                collisionStrings.append( id );
+                collisionCache.set( collisionIndex, i );
+                collisionStringIndex.set( collisionIndex, strIndex );
+                collisionIndex++;
+            }
+        }
     }
 
     private long binarySearch( long x, String strValue, boolean trackerIndex, long low, long high )

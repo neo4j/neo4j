@@ -49,7 +49,7 @@ public class IdMappers
             }
 
             @Override
-            public void prepare()
+            public void prepare( Iterable<Object> nodeData )
             {   // No need to prepare anything
             }
 

@@ -19,12 +19,14 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
+import java.util.Iterator;
 import java.util.Random;
 import java.util.UUID;
 
 import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.unsafe.impl.batchimport.cache.GatheringMemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.LongArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
@@ -41,40 +43,43 @@ public class StringIdMapperTest
     {
         // GIVEN
         IdMapper idMapper = new StringIdMapper( LongArrayFactory.AUTO );
+        Iterable<Object> ids = new Iterable<Object>()
+        {
+            @Override
+            public Iterator<Object> iterator()
+            {
+                resetRandomness();
+                return new PrefetchingIterator<Object>()
+                {
+                    private int i;
+
+                    @Override
+                    protected Object fetchNextOrNull()
+                    {
+                        return i++ < 300_000 ? randomUUID() : null;
+                    }
+                };
+            }
+        };
 
         // WHEN
-        int hundredThousands = 3;
         long index = 0;
-        log( "Putting..." );
-        for ( long m = 0; m < hundredThousands; m++ )
+        for ( Object id : ids )
         {
-            for ( long i = 0; i < 100_000; i++, index++ )
-            {
-                String string = randomUUID();
-                idMapper.put( string, index );
-            }
-            log( "put " + m + " million" );
+            idMapper.put( id, index++ );
         }
-        log( "Sorting..." );
-        idMapper.prepare();
+        idMapper.prepare( ids );
         MemoryStatsVisitor memoryStats = new GatheringMemoryStatsVisitor();
         idMapper.visitMemoryStats( memoryStats );
 
         // THEN
-        resetRandomness();
-        log( "Reading..." );
-        for ( long m = 0; m < hundredThousands; m++ )
+        for ( Object id : ids )
         {
-            for ( long i = 0; i < 100_000; i++, index++ )
+            // the UUIDs here will be generated in the same sequence as above because we reset the random
+            if ( idMapper.get( id ) == -1 )
             {
-                // the UUIDs here will be generated in the same sequence as above because we reset the random
-                String string = randomUUID();
-                if ( idMapper.get( string ) == -1 )
-                {
-                    fail( "Couldn't find " + string + " even though I added it just previously" );
-                }
+                fail( "Couldn't find " + id + " even though I added it just previously" );
             }
-            log( "read " + m + " million" );
         }
     }
 
@@ -94,13 +99,8 @@ public class StringIdMapperTest
         resetRandomness();
     }
 
-    private void resetRandomness() throws Exception
+    private void resetRandomness()
     {
         random = new Random( seed );
-    }
-
-    private void log( String string )
-    {
-//        System.out.println( time() + ": " + string );
     }
 }

@@ -46,8 +46,13 @@ public interface IdMapper
     /**
      * After all mappings have been {@link #put(Object, long)} call this method to prepare for
      * {@link #get(Object) querying}.
+     *
+     * @param all ids put earlier, in the event of difficult collisions so that more information have to be read
+     * from the input data again, data that normally isn't necessary and hence discarded.
+     * TODO Providing the node data here is a bit leaky. Preferably there should be an abstraction encapsulating
+     * data and id mapping, so that this can be removed.
      */
-    void prepare();
+    void prepare( Iterable<Object> allIds );
 
     /**
      * Returns an actual node id representing {@code inputId}. For this call to work {@link #prepare()} must have
