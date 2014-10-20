@@ -36,16 +36,19 @@ class Profiler extends PipeDecorator {
 
 
   def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext] = {
-    val resultIter = new ProfilingIterator(iter)
+
+    val oldCount = rowStats.get(pipe).map(_.count).getOrElse(0L)
+    val resultIter = new ProfilingIterator(iter, oldCount)
 
     rowStats(pipe) = resultIter
     resultIter
   }
 
   def decorate(pipe: Pipe, state: QueryState): QueryState = {
+    val oldCount = dbHitsStats.get(pipe).map(_.count).getOrElse(0L)
     val decoratedContext = state.query match {
-      case p: ProfilingQueryContext => new ProfilingQueryContext(p.inner, pipe)
-      case _                        => new ProfilingQueryContext(state.query, pipe)
+      case p: ProfilingQueryContext => new ProfilingQueryContext(p.inner, pipe, oldCount)
+      case _                        => new ProfilingQueryContext(state.query, pipe, oldCount)
     }
 
     dbHitsStats(pipe) = decoratedContext
@@ -71,8 +74,7 @@ class Profiler extends PipeDecorator {
 }
 
 trait Counter {
-  private var _count = 0L
-
+  protected var _count = 0L
   def count = _count
 
   def increment() {
@@ -80,9 +82,12 @@ trait Counter {
   }
 }
 
-final class ProfilingQueryContext(val inner: QueryContext, val p: Pipe) extends DelegatingQueryContext(inner) with Counter {
+final class ProfilingQueryContext(val inner: QueryContext, val p: Pipe, startValue: Long)
+  extends DelegatingQueryContext(inner) with Counter {
 
   self =>
+
+  _count = startValue
 
   override protected def singleDbHit[A](value: A): A = {
     increment()
@@ -107,7 +112,9 @@ final class ProfilingQueryContext(val inner: QueryContext, val p: Pipe) extends 
   override def relationshipOps: Operations[Relationship] = new ProfilerOperations(inner.relationshipOps)
 }
 
-class ProfilingIterator(inner: Iterator[ExecutionContext]) extends Iterator[ExecutionContext] with Counter {
+class ProfilingIterator(inner: Iterator[ExecutionContext], startValue: Long) extends Iterator[ExecutionContext] with Counter {
+
+  _count = startValue
 
   def hasNext: Boolean = inner.hasNext
 
