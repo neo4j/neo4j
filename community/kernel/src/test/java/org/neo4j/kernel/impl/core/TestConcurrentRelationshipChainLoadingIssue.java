@@ -19,6 +19,17 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static java.lang.Runtime.getRuntime;
+import static java.lang.String.format;
+import static java.lang.System.currentTimeMillis;
+import static java.util.concurrent.Executors.newCachedThreadPool;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cache_type;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.relationship_grab_size;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -27,26 +38,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.kernel.impl.util.MultipleCauseException;
 import org.neo4j.test.TestGraphDatabaseFactory;
-
-import static java.lang.Runtime.getRuntime;
-import static java.lang.String.format;
-import static java.lang.System.currentTimeMillis;
-import static java.util.concurrent.Executors.newCachedThreadPool;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
-import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cache_type;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.relationship_grab_size;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 /**
  * This isn't a deterministic test, but instead tries to trigger a race condition
@@ -153,9 +149,13 @@ public class TestConcurrentRelationshipChainLoadingIssue
 
         if ( !errors.isEmpty() )
         {
-            throw new MultipleCauseException(
-                    format("Exception(s) after %s iterations with %s threads", iterations, threads),
-                    errors );
+            Exception exception = new Exception(
+                    format("Exception(s) after %s iterations with %s threads", iterations, threads));
+            for ( Throwable error : errors )
+            {
+                exception.addSuppressed( error );
+            }
+            throw exception;
         }
     }
 
