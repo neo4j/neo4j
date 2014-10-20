@@ -48,7 +48,7 @@ public class KernelTransactionFactory
         TransactionHeaderInformationFactory headerInformationFactory = mock( TransactionHeaderInformationFactory.class );
         when( headerInformationFactory.create() ).thenReturn( headerInformation );
 
-        return new KernelTransactionImplementation( mock( StatementOperationParts.class ), false,
+        return new KernelTransactionImplementation( mock( StatementOperationParts.class ),
                 mock( SchemaWriteGuard.class ), null, null,
                 null, mock( TransactionRecordState.class ),
                 null, mock( NeoStore.class ), new NoOpClient(), new TransactionHooks(),

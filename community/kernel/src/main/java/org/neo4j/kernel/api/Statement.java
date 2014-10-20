@@ -21,7 +21,6 @@ package org.neo4j.kernel.api;
 
 import org.neo4j.graphdb.Resource;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.kernel.api.exceptions.ReadOnlyDatabaseKernelException;
 
 public interface Statement extends Resource
 {
@@ -33,10 +32,9 @@ public interface Statement extends Resource
      * Generally we know from context which of these transaction types we are trying to execute, but in Cypher it
      * is harder to distinguish the cases. Therefore this operation set is called out separately.
      */
-    TokenWriteOperations tokenWriteOperations() throws ReadOnlyDatabaseKernelException;
+    TokenWriteOperations tokenWriteOperations();
 
-    DataWriteOperations dataWriteOperations() throws InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException;
+    DataWriteOperations dataWriteOperations() throws InvalidTransactionTypeKernelException;
 
-    SchemaWriteOperations schemaWriteOperations() throws InvalidTransactionTypeKernelException,
-            ReadOnlyDatabaseKernelException;
+    SchemaWriteOperations schemaWriteOperations() throws InvalidTransactionTypeKernelException;
 }

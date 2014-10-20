@@ -22,7 +22,6 @@ package org.neo4j.shell.kernel;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -55,7 +54,6 @@ import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
 
@@ -641,13 +639,13 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     public String setConfiguration( Index<? extends PropertyContainer> index, String key,
                                     String value )
     {
-        throw new ReadOnlyDbException();
+        throw new IllegalStateException("Database is in read-only mode");
     }
 
     @Override
     public String removeConfiguration( Index<? extends PropertyContainer> index, String key )
     {
-        throw new ReadOnlyDbException();
+        throw new IllegalStateException("Database is in read-only mode");
     }
 
     @Override

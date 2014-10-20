@@ -19,10 +19,16 @@
  */
 package org.neo4j.kernel.api.exceptions;
 
-public class ReadOnlyDatabaseKernelException extends KernelException
+/**
+ * This exception is thrown when committing an updating transaction if
+ * {@link org.neo4j.graphdb.factory.GraphDatabaseSettings} read_only has been set to true. Can also be thrown when
+ * trying to create tokens (like new property names) in a read only database.
+ */
+
+public class ReadOnlyDbException extends TransactionFailureException
 {
-    public ReadOnlyDatabaseKernelException()
+    public ReadOnlyDbException()
     {
-        super( Status.General.ReadOnly, (Throwable) null, "Cannot modify a read-only database" );
+        super( Status.General.ReadOnly, "This is a read only Neo4j instance" );
     }
 }

@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 
-public class RecoveryVisitor implements Visitor<CommittedTransactionRepresentation, IOException>, Closeable
+public class RecoveryVisitor implements Visitor<CommittedTransactionRepresentation,IOException>, Closeable
 {
     public interface Monitor
     {

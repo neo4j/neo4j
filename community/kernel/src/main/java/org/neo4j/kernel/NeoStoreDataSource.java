@@ -147,88 +147,24 @@ import static org.neo4j.kernel.impl.transaction.state.CacheLoaders.relationshipL
 
 public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotationControl, IndexProviders
 {
-    public static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
-    private KernelTransactions kernelTransactions;
-
-    @SuppressWarnings( "deprecation" )
-    public static abstract class Configuration
-    {
-        public static final Setting<String> keep_logical_logs = GraphDatabaseSettings.keep_logical_logs;
-        public static final Setting<Boolean> read_only = GraphDatabaseSettings.read_only;
-        public static final Setting<File> store_dir = InternalAbstractGraphDatabase.Configuration.store_dir;
-        public static final Setting<File> neo_store = InternalAbstractGraphDatabase.Configuration.neo_store;
-    }
-
-    private Dependencies dependencies;
-    private final StringLogger msgLog;
-    private final Logging logging;
-    private final DependencyResolver dependencyResolver;
-    private final TokenNameLookup tokenNameLookup;
-    private final PropertyKeyTokenHolder propertyKeyTokenHolder;
-    private final LabelTokenHolder labelTokens;
-    private final RelationshipTypeTokenHolder relationshipTypeTokens;
-    private final Locks locks;
-    private final SchemaWriteGuard schemaWriteGuard;
-    private final TransactionEventHandlers transactionEventHandlers;
-    private final StoreFactory storeFactory;
-    private final JobScheduler scheduler;
-    private final UpdateableSchemaState updateableSchemaState;
-    private final Config config;
-    private final LockService lockService;
-
-    private final IndexingService.Monitor indexingServiceMonitor;
-    private final FileSystemAbstraction fs;
-    private final StoreUpgrader storeMigrationProcess;
-    private final TransactionMonitor transactionMonitor;
-    private final KernelHealth kernelHealth;
-    private final TransactionHeaderInformationFactory transactionHeaderInformationFactory;
-    private final StartupStatisticsProvider startupStatistics;
-    private final Caches cacheProvider;
-    private final NodeManager nodeManager;
-    private final CommitProcessFactory commitProcessFactory;
-
-    private LifeSupport life;
-    private KernelAPI kernel;
-    private NeoStore neoStore;
-    private IndexingService indexingService;
-    private SchemaIndexProvider indexProvider;
-    private NeoStoreFileListing fileListing;
-    private File storeDir;
-    private boolean readOnly;
-    private AutoLoadingCache<NodeImpl> nodeCache;
-    private AutoLoadingCache<RelationshipImpl> relationshipCache;
-    private SchemaCache schemaCache;
-    private LabelScanStore labelScanStore;
-
-    private StoreReadLayer storeLayer;
-    private LogFile logFile;
-
-    private final AtomicInteger recoveredCount = new AtomicInteger();
-    private final Guard guard;
-
-    // Legacy index
-    private IndexConfigStore indexConfigStore;
-    private final Map<String, IndexImplementation> indexProviders = new HashMap<>();
-    private final ProviderLookup legacyIndexProviderLookup;
-
     private enum Diagnostics implements DiagnosticsExtractor<NeoStoreDataSource>
     {
         NEO_STORE_VERSIONS( "Store versions:" )
-        {
-            @Override
-            void dump( NeoStoreDataSource source, StringLogger.LineLogger log )
-            {
-                source.neoStore.logVersions( log );
-            }
-        },
+                {
+                    @Override
+                    void dump( NeoStoreDataSource source, StringLogger.LineLogger log )
+                    {
+                        source.neoStore.logVersions( log );
+                    }
+                },
         NEO_STORE_ID_USAGE( "Id usage:" )
-        {
-            @Override
-            void dump( NeoStoreDataSource source, StringLogger.LineLogger log )
-            {
-                source.neoStore.logIdUsage( log );
-            }
-        };
+                {
+                    @Override
+                    void dump( NeoStoreDataSource source, StringLogger.LineLogger log )
+                    {
+                        source.neoStore.logIdUsage( log );
+                    }
+                };
 
         private final String message;
 
@@ -242,7 +178,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
         {
             if ( applicable( phase ) )
             {
-                log.logLongMessage( message, new Visitor<StringLogger.LineLogger, RuntimeException>()
+                log.logLongMessage( message, new Visitor<StringLogger.LineLogger,RuntimeException>()
                 {
                     @Override
                     public boolean visit( StringLogger.LineLogger logger )
@@ -262,6 +198,55 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
         abstract void dump( NeoStoreDataSource source, StringLogger.LineLogger log );
     }
 
+    public static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
+    private final StringLogger msgLog;
+    private final Logging logging;
+    private final DependencyResolver dependencyResolver;
+    private final TokenNameLookup tokenNameLookup;
+    private final PropertyKeyTokenHolder propertyKeyTokenHolder;
+    private final LabelTokenHolder labelTokens;
+    private final RelationshipTypeTokenHolder relationshipTypeTokens;
+    private final Locks locks;
+    private final SchemaWriteGuard schemaWriteGuard;
+    private final TransactionEventHandlers transactionEventHandlers;
+    private final StoreFactory storeFactory;
+    private final JobScheduler scheduler;
+    private final UpdateableSchemaState updateableSchemaState;
+    private final Config config;
+    private final LockService lockService;
+    private final IndexingService.Monitor indexingServiceMonitor;
+    private final FileSystemAbstraction fs;
+    private final StoreUpgrader storeMigrationProcess;
+    private final TransactionMonitor transactionMonitor;
+    private final KernelHealth kernelHealth;
+    private final TransactionHeaderInformationFactory transactionHeaderInformationFactory;
+    private final StartupStatisticsProvider startupStatistics;
+    private final Caches cacheProvider;
+    private final NodeManager nodeManager;
+    private final CommitProcessFactory commitProcessFactory;
+    private final AtomicInteger recoveredCount = new AtomicInteger();
+    private final Guard guard;
+    private final Map<String,IndexImplementation> indexProviders = new HashMap<>();
+    private final ProviderLookup legacyIndexProviderLookup;
+    private KernelTransactions kernelTransactions;
+    private Dependencies dependencies;
+    private LifeSupport life;
+    private KernelAPI kernel;
+    private NeoStore neoStore;
+    private IndexingService indexingService;
+    private SchemaIndexProvider indexProvider;
+    private NeoStoreFileListing fileListing;
+    private File storeDir;
+    private boolean readOnly;
+    private AutoLoadingCache<NodeImpl> nodeCache;
+    private AutoLoadingCache<RelationshipImpl> relationshipCache;
+    private SchemaCache schemaCache;
+    private LabelScanStore labelScanStore;
+    private StoreReadLayer storeLayer;
+    private LogFile logFile;
+    // Legacy index
+    private IndexConfigStore indexConfigStore;
+
     /**
      * Creates a <CODE>NeoStoreXaDataSource</CODE> using configuration from
      * <CODE>params</CODE>. First the map is checked for the parameter
@@ -270,30 +255,30 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
      * {@link Properties#load}). Any parameter that exist in the config file
      * and in the map passed into this constructor will take the value from the
      * map.
-     * <p>
+     * <p/>
      * If <CODE>config</CODE> parameter is set but file doesn't exist an
      * <CODE>IOException</CODE> is thrown. If any problem is found with that
      * configuration file or Neo4j store can't be loaded an <CODE>IOException is
      * thrown</CODE>.
-     *
+     * <p/>
      * Note that the tremendous number of dependencies for this class, clearly, is an architecture smell. It is part
      * of the ongoing work on introducing the Kernel API, where components that were previously spread throughout the
      * core API are now slowly accumulating in the Kernel implementation. Over time, these components should be
      * refactored into bigger components that wrap the very granular things we depend on here.
      */
     public NeoStoreDataSource( Config config, StoreFactory sf, StringLogger stringLogger, JobScheduler scheduler,
-                                 Logging logging, UpdateableSchemaState updateableSchemaState,
-                                 TokenNameLookup tokenNameLookup, DependencyResolver dependencyResolver,
-                                 PropertyKeyTokenHolder propertyKeyTokens, LabelTokenHolder labelTokens,
-                                 RelationshipTypeTokenHolder relationshipTypeTokens, Locks lockManager,
-                                 SchemaWriteGuard schemaWriteGuard, TransactionEventHandlers transactionEventHandlers,
-                                 IndexingService.Monitor indexingServiceMonitor, FileSystemAbstraction fs,
-                                 StoreUpgrader storeMigrationProcess, TransactionMonitor transactionMonitor,
-                                 KernelHealth kernelHealth,
-                                 TransactionHeaderInformationFactory transactionHeaderInformationFactory,
-                                 StartupStatisticsProvider startupStatistics,
-                                 Caches cacheProvider, NodeManager nodeManager, Guard guard,
-                                 IndexConfigStore indexConfigStore, CommitProcessFactory commitProcessFactory )
+                               Logging logging, UpdateableSchemaState updateableSchemaState,
+                               TokenNameLookup tokenNameLookup, DependencyResolver dependencyResolver,
+                               PropertyKeyTokenHolder propertyKeyTokens, LabelTokenHolder labelTokens,
+                               RelationshipTypeTokenHolder relationshipTypeTokens, Locks lockManager,
+                               SchemaWriteGuard schemaWriteGuard, TransactionEventHandlers transactionEventHandlers,
+                               IndexingService.Monitor indexingServiceMonitor, FileSystemAbstraction fs,
+                               StoreUpgrader storeMigrationProcess, TransactionMonitor transactionMonitor,
+                               KernelHealth kernelHealth,
+                               TransactionHeaderInformationFactory transactionHeaderInformationFactory,
+                               StartupStatisticsProvider startupStatistics,
+                               Caches cacheProvider, NodeManager nodeManager, Guard guard,
+                               IndexConfigStore indexConfigStore, CommitProcessFactory commitProcessFactory )
     {
         this.config = config;
         this.tokenNameLookup = tokenNameLookup;
@@ -333,8 +318,9 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
                 if ( provider == null )
                 {
                     throw new IllegalArgumentException( "No index provider '" + name +
-                            "' found. Maybe the intended provider (or one more of its dependencies) " +
-                            "aren't on the classpath or it failed to load." );
+                                                        "' found. Maybe the intended provider (or one more of its " +
+                                                        "dependencies) " +
+                                                        "aren't on the classpath or it failed to load." );
                 }
                 return provider;
             }
@@ -352,16 +338,15 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
     @Override
     public void init()
     { // We do our own internal life management:
-      // start() does life.init() and life.start(),
-      // stop() does life.stop() and life.shutdown().
+        // start() does life.init() and life.start(),
+        // stop() does life.stop() and life.shutdown().
     }
 
     @Override
     public void start() throws IOException
     {
-        dependencies = new Dependencies(  );
+        dependencies = new Dependencies();
         life = new LifeSupport();
-        readOnly = config.get( Configuration.read_only );
         storeDir = config.get( Configuration.store_dir );
         File store = config.get( Configuration.neo_store );
         if ( !storeFactory.storeExists() )
@@ -408,7 +393,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
                 }
             };
 
-            if(config.get( GraphDatabaseSettings.cache_type ).equals( CacheLayer.EXPERIMENTAL_OFF ))
+            if ( config.get( GraphDatabaseSettings.cache_type ).equals( CacheLayer.EXPERIMENTAL_OFF ) )
             {
                 storeLayer = new DiskLayer( propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
                         new SchemaStorage( neoStore.getSchemaStore() ), neoStoreProvider, indexingService );
@@ -475,7 +460,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
             RecoveryVisitor recoveryVisitor = new RecoveryVisitor( neoStore, storeRecoverer,
                     recoveredCount, logMonitor );
             LogEntryReader<ReadableVersionableLogChannel> logEntryReader = new LogEntryReaderFactory().versionable();
-            Visitor<ReadableVersionableLogChannel, IOException> logFileRecoverer =
+            Visitor<ReadableVersionableLogChannel,IOException> logFileRecoverer =
                     new LogFileRecoverer( logEntryReader, recoveryVisitor );
             logFile = dependencies.satisfyDependency( new PhysicalLogFile( fs, logFiles,
                     config.get( GraphDatabaseSettings.logical_log_rotation_threshold ), logPruneStrategy, neoStore,
@@ -489,7 +474,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
             TransactionCommitProcess transactionCommitProcess = dependencies.satisfyDependency(
                     commitProcessFactory.create( logicalTransactionStore, kernelHealth, neoStore, storeApplier,
                             new NeoStoreInjectedTransactionValidator( integrityValidator ),
-                            TransactionApplicationMode.INTERNAL ) );
+                            TransactionApplicationMode.INTERNAL, config ) );
             /*
              * This is used by legacy indexes and constraint indexes whenever a transaction is to be spawned
              * from within an existing transaction. It smells, and we should look over alternatives when time permits.
@@ -503,7 +488,8 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
                 }
             };
 
-            ConstraintIndexCreator constraintIndexCreator = new ConstraintIndexCreator( kernelProvider, indexingService);
+            ConstraintIndexCreator constraintIndexCreator =
+                    new ConstraintIndexCreator( kernelProvider, indexingService );
 
             LegacyIndexStore legacyIndexStore = new LegacyIndexStore( config, indexConfigStore, kernelProvider,
                     legacyIndexProviderLookup );
@@ -511,11 +497,12 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
             StatementOperationParts statementOperations = buildStatementOperations( storeLayer, legacyPropertyTrackers,
                     constraintIndexCreator, updateableSchemaState, guard, legacyIndexStore );
 
-            kernelTransactions = life.add(new KernelTransactions( neoStoreTransactionContextSupplier,
+            kernelTransactions = life.add( new KernelTransactions( neoStoreTransactionContextSupplier,
                     neoStore, locks, integrityValidator, constraintIndexCreator, indexingService, labelScanStore,
                     statementOperations, updateableSchemaState, schemaWriteGuard, providerMap,
-                    transactionHeaderInformationFactory, persistenceCache, storeLayer, transactionCommitProcess, indexConfigStore,
-                    legacyIndexProviderLookup, hooks, transactionMonitor, life, readOnly ));
+                    transactionHeaderInformationFactory, persistenceCache, storeLayer, transactionCommitProcess,
+                    indexConfigStore,
+                    legacyIndexProviderLookup, hooks, transactionMonitor, life ) );
 
             kernel = new Kernel( kernelTransactions, hooks, kernelHealth, transactionMonitor );
 
@@ -612,10 +599,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
     @Override
     public void stop()
     {
-        if ( !readOnly )
-        {
-            forceEverything();
-        }
+        forceEverything();
         life.shutdown();
         neoStore.close();
         msgLog.info( "NeoStore closed" );
@@ -636,8 +620,8 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
     @Override
     public void shutdown()
     { // We do our own internal life management:
-      // start() does life.init() and life.start(),
-      // stop() does life.stop() and life.shutdown().
+        // start() does life.init() and life.start(),
+        // stop() does life.stop() and life.shutdown().
     }
 
     public StoreId getStoreId()
@@ -736,11 +720,13 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
                 new SchemaStateConcern( updateableSchemaState ), null, stateHandlingContext, stateHandlingContext,
                 stateHandlingContext );
         // + Constraints
-        ConstraintEnforcingEntityOperations constraintEnforcingEntityOperations = new ConstraintEnforcingEntityOperations(
-                parts.entityWriteOperations(), parts.entityReadOperations(), parts.schemaReadOperations() );
+        ConstraintEnforcingEntityOperations constraintEnforcingEntityOperations =
+                new ConstraintEnforcingEntityOperations(
+                        parts.entityWriteOperations(), parts.entityReadOperations(), parts.schemaReadOperations() );
         // + Data integrity
-        DataIntegrityValidatingStatementOperations dataIntegrityContext = new DataIntegrityValidatingStatementOperations(
-                parts.keyWriteOperations(), parts.schemaReadOperations(), parts.schemaWriteOperations() );
+        DataIntegrityValidatingStatementOperations dataIntegrityContext =
+                new DataIntegrityValidatingStatementOperations(
+                        parts.keyWriteOperations(), parts.schemaReadOperations(), parts.schemaWriteOperations() );
         parts = parts.override( null, dataIntegrityContext, constraintEnforcingEntityOperations,
                 constraintEnforcingEntityOperations, null, dataIntegrityContext, null, null, null, null, null );
         // + Locking
@@ -755,7 +741,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
             GuardingStatementOperations guardingOperations = new GuardingStatementOperations(
                     parts.entityWriteOperations(), parts.entityReadOperations(), guard );
             parts = parts.override( null, null, guardingOperations, guardingOperations, null, null, null, null, null,
-                                    null, null );
+                    null, null );
         }
 
         return parts;
@@ -786,5 +772,14 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
         // Stop all running transactions and get rid of all pooled transactions, as they will otherwise reference
         // components that have been swapped out during the mode switch.
         kernelTransactions.disposeAll();
+    }
+
+    @SuppressWarnings( "deprecation" )
+    public static abstract class Configuration
+    {
+        public static final Setting<String> keep_logical_logs = GraphDatabaseSettings.keep_logical_logs;
+        public static final Setting<Boolean> read_only = GraphDatabaseSettings.read_only;
+        public static final Setting<File> store_dir = InternalAbstractGraphDatabase.Configuration.store_dir;
+        public static final Setting<File> neo_store = InternalAbstractGraphDatabase.Configuration.neo_store;
     }
 }

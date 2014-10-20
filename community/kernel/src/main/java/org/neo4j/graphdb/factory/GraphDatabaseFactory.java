@@ -24,7 +24,6 @@ import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
 import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
@@ -32,12 +31,9 @@ import org.neo4j.kernel.logging.Logging;
 
 import static java.util.Arrays.asList;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.read_only;
-import static org.neo4j.helpers.Settings.TRUE;
-
 /**
  * Creates a {@link org.neo4j.graphdb.GraphDatabaseService}.
- *
+ * <p/>
  * Use {@link #newEmbeddedDatabase(String)} or
  * {@link #newEmbeddedDatabaseBuilder(String)} to create a database instance.
  */
@@ -50,7 +46,7 @@ public class GraphDatabaseFactory
         this( new GraphDatabaseFactoryState() );
     }
 
-    protected GraphDatabaseFactory(GraphDatabaseFactoryState state)
+    protected GraphDatabaseFactory( GraphDatabaseFactoryState state )
     {
         this.state = state;
     }
@@ -77,18 +73,11 @@ public class GraphDatabaseFactory
         {
             @SuppressWarnings("deprecation")
             @Override
-            public GraphDatabaseService newDatabase( Map<String, String> config )
+            public GraphDatabaseService newDatabase( Map<String,String> config )
             {
                 config.put( "ephemeral", "false" );
                 Dependencies dependencies = state.databaseDependencies();
-                if ( TRUE.equalsIgnoreCase( config.get( read_only.name() ) ) )
-                {
-                    return new EmbeddedReadOnlyGraphDatabase( path, config, dependencies );
-                }
-                else
-                {
-                    return new EmbeddedGraphDatabase( path, config, dependencies );
-                }
+                return new EmbeddedGraphDatabase( path, config, dependencies );
             }
         } );
     }
@@ -116,10 +105,10 @@ public class GraphDatabaseFactory
      * @deprecated Manipulating kernel extensions is deprecated and will be moved to internal components.
      */
     @Deprecated
-    @SuppressWarnings( { "rawtypes", "unchecked" } )
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public GraphDatabaseFactory addKernelExtension( KernelExtensionFactory<?> newKernelExtension )
     {
-        List extensions = asList(newKernelExtension );
+        List extensions = asList( newKernelExtension );
         return addKernelExtensions( extensions );
     }
 
@@ -132,8 +121,7 @@ public class GraphDatabaseFactory
         getCurrentState().setKernelExtensions( newKernelExtensions );
         return this;
     }
-    
-    
+
 
     /**
      * @deprecated Manipulating cache providers is deprecated and will be moved to internal components.

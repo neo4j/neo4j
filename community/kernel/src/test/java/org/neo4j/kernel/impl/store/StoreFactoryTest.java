@@ -19,12 +19,9 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.util.Map;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -32,16 +29,15 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
-import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 
+import java.util.Map;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.store.CommonAbstractStore.Configuration;
 
 public class StoreFactoryTest
 {
@@ -54,7 +50,6 @@ public class StoreFactoryTest
     {
         FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         Map<String, String> configParams = stringMap(
-                Configuration.read_only.name(), "false",
                 GraphDatabaseSettings.neo_store.name(), "graph.db/neostore" );
         life = new LifeSupport();
         life.start();

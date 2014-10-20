@@ -27,7 +27,6 @@ import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
-import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreInjectedTransactionValidator;
 
 public class CommitProcessSwitcher extends AbstractModeSwitcher<TransactionCommitProcess>
@@ -41,7 +40,7 @@ public class CommitProcessSwitcher extends AbstractModeSwitcher<TransactionCommi
                                   RequestContextFactory requestContextFactory,
                                   HighAvailabilityMemberStateMachine memberStateMachine,
                                   NeoStoreInjectedTransactionValidator validator,
-                                  TransactionRepresentationCommitProcess innerCommitProcess )
+                                  TransactionCommitProcess innerCommitProcess )
     {
         super( memberStateMachine, delegate );
         this.masterImpl = new MasterTransactionCommitProcess( innerCommitProcess, pusher, validator );

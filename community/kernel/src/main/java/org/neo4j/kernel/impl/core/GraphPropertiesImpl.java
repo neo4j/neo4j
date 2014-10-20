@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static java.util.Arrays.sort;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.kernel.api.properties.Property.property;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -45,12 +41,15 @@ import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
-import org.neo4j.kernel.api.exceptions.ReadOnlyDatabaseKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
+
+import static java.util.Arrays.sort;
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.kernel.api.properties.Property.property;
 
 /**
  * A {@link PropertyContainer} (just like {@link Node} and {@link Relationship},
@@ -62,8 +61,8 @@ import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 public class GraphPropertiesImpl extends Primitive implements GraphProperties
 {
     private final long epoch;
-    private Map<Integer, DefinedProperty> properties;
     private final ThreadToStatementContextBridge statementContextProvider;
+    private Map<Integer,DefinedProperty> properties;
 
     GraphPropertiesImpl( long epoch, ThreadToStatementContextBridge statementContextProvider )
     {
@@ -168,10 +167,6 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }
-        catch ( ReadOnlyDatabaseKernelException e )
-        {
-            throw new ReadOnlyDbException();
-        }
     }
 
     @Override
@@ -190,10 +185,6 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
         catch ( InvalidTransactionTypeKernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
-        }
-        catch ( ReadOnlyDatabaseKernelException e )
-        {
-            throw new ReadOnlyDbException();
         }
     }
 
@@ -267,10 +258,10 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
         {
             Collection<DefinedProperty> propertiesCollection = asCollection( loadedProperties );
             DefinedProperty[] propertiesArray = propertiesCollection.toArray(
-                    new DefinedProperty[ propertiesCollection.size() ]);
+                    new DefinedProperty[propertiesCollection.size()] );
             sort( propertiesArray, ArrayBasedPrimitive.PROPERTY_DATA_COMPARATOR_FOR_SORTING );
 
-            Map<Integer, DefinedProperty> newProperties = new HashMap<>();
+            Map<Integer,DefinedProperty> newProperties = new HashMap<>();
             for ( DefinedProperty property : propertiesArray )
             {
                 newProperties.put( property.propertyKeyId(), property );
@@ -285,7 +276,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
 
     @Override
     public void commitPropertyMaps( PrimitiveIntObjectMap<DefinedProperty> cowPropertyAddMap,
-            Iterator<Integer> removed )
+                                    Iterator<Integer> removed )
     {
         if ( cowPropertyAddMap != null )
         {

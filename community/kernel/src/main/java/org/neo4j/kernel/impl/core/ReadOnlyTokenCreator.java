@@ -19,10 +19,17 @@
  */
 package org.neo4j.kernel.impl.core;
 
-public class ReadOnlyDbException extends RuntimeException
+import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
+
+/**
+ * When the database is marked as read-only, then no tokens should be created
+ */
+public class ReadOnlyTokenCreator
+        implements TokenCreator
 {
-    public ReadOnlyDbException()
+    @Override
+    public int getOrCreate( String name ) throws ReadOnlyDbException
     {
-        super( "This is a read only embedded Neo4j instance" );
+        throw new ReadOnlyDbException();
     }
 }

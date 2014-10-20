@@ -134,7 +134,7 @@ public class KernelTransactionsTest
         return new KernelTransactions( contextSupplier, mock( NeoStore.class ), locks,
                 mock( IntegrityValidator.class ), null, null, null, null, null, null, null,
                 TransactionHeaderInformationFactory.DEFAULT, null, null, commitProcess, null,
-                null, new TransactionHooks(), mock( TransactionMonitor.class ), life, false );
+                null, new TransactionHooks(), mock( TransactionMonitor.class ), life);
     }
 
     private static TransactionCommitProcess newRememberingCommitProcess( final TransactionRepresentation[] slot )

@@ -46,26 +46,12 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_I
  */
 public class StoreFactory
 {
-    public abstract static class Configuration
-    {
-        public static final Setting<Integer> string_block_size = GraphDatabaseSettings.string_block_size;
-        public static final Setting<Integer> array_block_size = GraphDatabaseSettings.array_block_size;
-        public static final Setting<Integer> label_block_size = GraphDatabaseSettings.label_block_size;
-        public static final Setting<Integer> dense_node_threshold = GraphDatabaseSettings.dense_node_threshold;
-    }
-
-    private final Config config;
-    private final IdGeneratorFactory idGeneratorFactory;
-    private final FileSystemAbstraction fileSystemAbstraction;
-    private final StringLogger stringLogger;
-
     public static final String LABELS_PART = ".labels";
     public static final String NAMES_PART = ".names";
     public static final String INDEX_PART = ".index";
     public static final String KEYS_PART = ".keys";
     public static final String ARRAYS_PART = ".arrays";
     public static final String STRINGS_PART = ".strings";
-
     public static final String NODE_STORE_NAME = ".nodestore.db";
     public static final String NODE_LABELS_STORE_NAME = NODE_STORE_NAME + LABELS_PART;
     public static final String PROPERTY_STORE_NAME = ".propertystore.db";
@@ -76,19 +62,23 @@ public class StoreFactory
     public static final String RELATIONSHIP_STORE_NAME = ".relationshipstore.db";
     public static final String RELATIONSHIP_TYPE_TOKEN_STORE_NAME = ".relationshiptypestore.db";
     public static final String RELATIONSHIP_TYPE_TOKEN_NAMES_STORE_NAME = RELATIONSHIP_TYPE_TOKEN_STORE_NAME +
-            NAMES_PART;
+                                                                          NAMES_PART;
     public static final String LABEL_TOKEN_STORE_NAME = ".labeltokenstore.db";
     public static final String LABEL_TOKEN_NAMES_STORE_NAME = LABEL_TOKEN_STORE_NAME + NAMES_PART;
     public static final String SCHEMA_STORE_NAME = ".schemastore.db";
     public static final String RELATIONSHIP_GROUP_STORE_NAME = ".relationshipgroupstore.db";
     public static final String COUNTS_STORE = ".counts.db";
+    private final Config config;
+    private final IdGeneratorFactory idGeneratorFactory;
+    private final FileSystemAbstraction fileSystemAbstraction;
+    private final StringLogger stringLogger;
     private final StoreVersionMismatchHandler versionMismatchHandler;
     private final File neoStoreFileName;
     private final Monitors monitors;
     private final PageCache pageCache;
 
     public StoreFactory( FileSystemAbstraction fileSystem, File storeDir, PageCache pageCache, StringLogger logger,
-            Monitors monitors )
+                         Monitors monitors )
     {
         this( configForStoreDir( new Config(), storeDir ),
                 new DefaultIdGeneratorFactory(), pageCache, fileSystem,
@@ -115,6 +105,23 @@ public class StoreFactory
         assert neoStoreFileName != null;
         this.monitors = monitors;
         this.pageCache = pageCache;
+    }
+
+    public static String buildTypeDescriptorAndVersion( String typeDescriptor )
+    {
+        return typeDescriptor + " " + CommonAbstractStore.ALL_STORES_VERSION;
+    }
+
+    /**
+     * Fills in neo_store and store_dir based on store dir.
+     *
+     * @return a new modified config, leaves this config unchanged.
+     */
+    public static Config configForStoreDir( Config config, File storeDir )
+    {
+        return config.with( stringMap(
+                GraphDatabaseSettings.neo_store.name(), new File( storeDir, NeoStore.DEFAULT_NAME ).getAbsolutePath(),
+                GraphDatabaseSettings.store_dir.name(), storeDir.getAbsolutePath() ) );
     }
 
     private File storeFileName( String toAppend )
@@ -212,7 +219,7 @@ public class StoreFactory
     }
 
     private PropertyStore newPropertyStore( File propertyStringStore, File propertyArrayStore, File propertyStore,
-            File propertyKeysStore )
+                                            File propertyKeysStore )
     {
         PropertyKeyTokenStore propertyKeyTokenStore = newPropertyKeyTokenStore( propertyKeysStore );
         DynamicStringStore stringPropertyStore = newDynamicStringStore( propertyStringStore, IdType.STRING_BLOCK );
@@ -309,13 +316,6 @@ public class StoreFactory
 
     public NeoStore createNeoStore( StoreId storeId )
     {
-        boolean readOnly = config.get( GraphDatabaseSettings.read_only );
-        if ( readOnly )
-        {   // but we're set to read-only mode
-            throw new UnderlyingStorageException(
-                    "Was told to create a neo store, but I'm in read-only mode" );
-        }
-
         // Go ahead and create the store
         stringLogger.info( "Creating new db @ " + neoStoreFileName );
         try
@@ -325,7 +325,8 @@ public class StoreFactory
         catch ( IOException e )
         {
             throw new UnderlyingStorageException( "Unable to create directory " +
-                    neoStoreFileName.getParentFile() + " for creating a neo store in", e );
+                                                  neoStoreFileName.getParentFile() + " for creating a neo store in",
+                    e );
         }
 
         createEmptyStore( neoStoreFileName, buildTypeDescriptorAndVersion( NeoStore.TYPE_DESCRIPTOR ) );
@@ -464,7 +465,7 @@ public class StoreFactory
     private void createCountsStore()
     {
         CountsTracker.createEmptyCountsStore( pageCache, storeFileName( COUNTS_STORE ),
-                                              buildTypeDescriptorAndVersion( CountsTracker.STORE_DESCRIPTOR ) );
+                buildTypeDescriptorAndVersion( CountsTracker.STORE_DESCRIPTOR ) );
     }
 
     /**
@@ -479,8 +480,8 @@ public class StoreFactory
      * {@link CommonAbstractStore#getTypeDescriptor()}. The internal id generator used by
      * this store will also be created.
      *
-     * @param fileName                 The file name of the store that will be created
-     * @param baseBlockSize            The number of bytes for each block
+     * @param fileName The file name of the store that will be created
+     * @param baseBlockSize The number of bytes for each block
      * @param typeAndVersionDescriptor The type and version descriptor that identifies this store
      */
     public void createEmptyDynamicStore( File fileName, int baseBlockSize,
@@ -495,12 +496,12 @@ public class StoreFactory
         if ( fileSystemAbstraction.fileExists( fileName ) )
         {
             throw new IllegalStateException( "Can't create store[" + fileName
-                    + "], file already exists" );
+                                             + "], file already exists" );
         }
         if ( blockSize < 1 )
         {
             throw new IllegalArgumentException( "Illegal block size["
-                    + blockSize + "]" );
+                                                + blockSize + "]" );
         }
         if ( blockSize > 0xFFFF )
         {
@@ -513,7 +514,7 @@ public class StoreFactory
         {
             StoreChannel channel = fileSystemAbstraction.create( fileName );
             int endHeaderSize = blockSize
-                    + UTF8.encode( typeAndVersionDescriptor ).length;
+                                + UTF8.encode( typeAndVersionDescriptor ).length;
             ByteBuffer buffer = ByteBuffer.allocate( endHeaderSize );
             buffer.putInt( blockSize );
             buffer.position( endHeaderSize - typeAndVersionDescriptor.length() );
@@ -525,7 +526,7 @@ public class StoreFactory
         catch ( IOException e )
         {
             throw new UnderlyingStorageException( "Unable to create store "
-                    + fileName, e );
+                                                  + fileName, e );
         }
         idGeneratorFactory.create( fileSystemAbstraction, new File( fileName.getPath() + ".id" ), 0 );
         // TODO highestIdInUse = 0 works now, but not when slave can create store files.
@@ -562,7 +563,7 @@ public class StoreFactory
         if ( fileSystemAbstraction.fileExists( fileName ) )
         {
             throw new IllegalStateException( "Can't create store[" + fileName
-                    + "], file already exists" );
+                                             + "], file already exists" );
         }
 
         // write the header
@@ -598,30 +599,11 @@ public class StoreFactory
         }
     }
 
-    public static String buildTypeDescriptorAndVersion( String typeDescriptor )
+    public abstract static class Configuration
     {
-        return typeDescriptor + " " + CommonAbstractStore.ALL_STORES_VERSION;
-    }
-
-    /**
-     * Fills in neo_store and store_dir based on store dir.
-     *
-     * @return a new modified config, leaves this config unchanged.
-     */
-    public static Config configForStoreDir( Config config, File storeDir )
-    {
-        return config.with( stringMap(
-                GraphDatabaseSettings.neo_store.name(), new File( storeDir, NeoStore.DEFAULT_NAME ).getAbsolutePath(),
-                GraphDatabaseSettings.store_dir.name(), storeDir.getAbsolutePath() ) );
-    }
-
-    /**
-     * Fills in read_only=true config.
-     *
-     * @return a new modified config, leaves this config unchanged.
-     */
-    public static Config readOnly( Config config )
-    {
-        return config.with( stringMap( GraphDatabaseSettings.read_only.name(), Boolean.TRUE.toString() ) );
+        public static final Setting<Integer> string_block_size = GraphDatabaseSettings.string_block_size;
+        public static final Setting<Integer> array_block_size = GraphDatabaseSettings.array_block_size;
+        public static final Setting<Integer> label_block_size = GraphDatabaseSettings.label_block_size;
+        public static final Setting<Integer> dense_node_threshold = GraphDatabaseSettings.dense_node_threshold;
     }
 }

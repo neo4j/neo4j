@@ -18,20 +18,23 @@
  */
 package org.neo4j.examples;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 /**
@@ -54,12 +57,12 @@ public class ReadOnlyDocTest
         }
         new GraphDatabaseFactory().newEmbeddedDatabase(
                 "target/read-only-db/location" )
-                .shutdown();
+                                  .shutdown();
         // START SNIPPET: createReadOnlyInstance
         graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(
                 "target/read-only-db/location" )
-                .setConfig( GraphDatabaseSettings.read_only, "true" )
-                .newGraphDatabase();
+                                            .setConfig( GraphDatabaseSettings.read_only, "true" )
+                                            .newGraphDatabase();
         // END SNIPPET: createReadOnlyInstance
     }
 
@@ -76,16 +79,19 @@ public class ReadOnlyDocTest
     public void makeSureDbIsOnlyReadable()
     {
         // when
-        try (Transaction tx = graphDb.beginTx())
+        Transaction tx = graphDb.beginTx();
+        try
         {
             graphDb.createNode();
-
-            fail("expected exception");
+            tx.success();
+            tx.close();
+            fail( "expected exception" );
         }
         // then
-        catch ( ReadOnlyDbException e )
+        catch ( TransactionFailureException e )
         {
             // ok
+            assertThat( e.getCause(), instanceOf( ReadOnlyDbException.class ) );
         }
     }
 }
