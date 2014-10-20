@@ -22,6 +22,7 @@ package org.neo4j.csv.reader;
 import org.junit.Test;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 public class ExtractorsTest
 {
@@ -30,9 +31,9 @@ public class ExtractorsTest
     {
         // GIVEN
         Extractors extractors = new Extractors( ',' );
+        String data = "abcde,fghijkl,mnopq";
 
         // WHEN
-        String data = "abcde,fghijkl,mnopq";
         String[] values = (String[]) extractors.valueOf( "STRING[]" ).extract( data.toCharArray(), 0, data.length() );
 
         // THEN
@@ -44,10 +45,10 @@ public class ExtractorsTest
     {
         // GIVEN
         Extractors extractors = new Extractors( ',' );
-
-        // WHEN
         long[] longData = new long[] {123,4567,987654321};
         String data = toString( longData, ',' );
+
+        // WHEN
         long[] values = (long[]) extractors.valueOf( "long[]" ).extract( data.toCharArray(), 0, data.length() );
 
         // THEN
@@ -55,18 +56,70 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldExtractLongArrayWithADelimiterLast() throws Exception
+    public void shouldExtractBooleanArray() throws Exception
+    {
+        // GIVEN
+        Extractors extractors = new Extractors( ',' );
+        boolean[] booleanData = new boolean[] {true, false, true};
+        String data = toString( booleanData, ',' );
+
+        // WHEN
+        boolean[] values = (boolean[]) extractors.valueOf( "boolean[]" ).extract( data.toCharArray(), 0, data.length() );
+
+        // THEN
+        assertBooleanArrayEquals( booleanData, values );
+    }
+
+    @Test
+    public void shouldExtractDoubleArray() throws Exception
+    {
+        // GIVEN
+        Extractors extractors = new Extractors( ',' );
+        double[] doubleData = new double[] {123.123,4567.4567,987654321.0987};
+        String data = toString( doubleData, ',' );
+
+        // WHEN
+        double[] values = extractors.doubleArray().extract( data.toCharArray(), 0, data.length() );
+
+        // THEN
+        assertArrayEquals( doubleData, values, 0.001 );
+    }
+
+    @Test
+    public void shouldFailExtractingLongArrayWhereAnyValueIsEmpty() throws Exception
+    {
+        // GIVEN
+        Extractors extractors = new Extractors( ';' );
+        long[] longData = new long[] {112233,4455,66778899};
+        String data = toString( longData, ';' ) + ";";
+
+        // WHEN extracting long[] from "<number>;<number>...;" i.e. ending with a delimiter
+        try
+        {
+            extractors.valueOf( "long[]" ).extract( data.toCharArray(), 0, data.length() );
+            fail( "Should have failed" );
+        }
+        catch ( NumberFormatException e )
+        {   // Great
+        }
+    }
+
+    @Test
+    public void shouldFailExtractingLongArrayWhereAnyValueIsntReallyANumber() throws Exception
     {
         // GIVEN
         Extractors extractors = new Extractors( ';' );
 
-        // WHEN
-        long[] longData = new long[] {112233,4455,66778899};
-        String data = toString( longData, ';' ) + ";";
-        long[] values = (long[]) extractors.valueOf( "long[]" ).extract( data.toCharArray(), 0, data.length() );
-
-        // THEN
-        assertArrayEquals( longData, values );
+        // WHEN extracting long[] from "<number>;<number>...;" i.e. ending with a delimiter
+        String data = "123;456;abc;789";
+        try
+        {
+            extractors.valueOf( "long[]" ).extract( data.toCharArray(), 0, data.length() );
+            fail( "Should have failed" );
+        }
+        catch ( NumberFormatException e )
+        {   // Great
+        }
     }
 
     @Test
@@ -83,13 +136,84 @@ public class ExtractorsTest
         assertEquals( value, extracted );
     }
 
-    private String toString( long[] longData, char delimiter )
+    @Test
+    public void shouldExtractEmptyStringForEmptyArrayString() throws Exception
+    {
+        // GIVEN
+        Extractors extractors = new Extractors( ',' );
+        String value = "";
+
+        // WHEN
+        String[] extracted = extractors.stringArray().extract( value.toCharArray(), 0, value.length() );
+
+        // THEN
+        assertEquals( 0, extracted.length );
+    }
+
+    @Test
+    public void shouldExtractEmptyLongArrayForEmptyArrayString() throws Exception
+    {
+        // GIVEN
+        Extractors extractors = new Extractors( ',' );
+        String value = "";
+
+        // WHEN
+        long[] extracted = extractors.longArray().extract( value.toCharArray(), 0, value.length() );
+
+        // THEN
+        assertEquals( 0, extracted.length );
+    }
+
+    @Test
+    public void shouldExtractTwoEmptyStringsForSingleDelimiterInArrayString() throws Exception
+    {
+        // GIVEN
+        Extractors extractors = new Extractors( ',' );
+        String value = ",";
+
+        // WHEN
+        String[] extracted = extractors.stringArray().extract( value.toCharArray(), 0, value.length() );
+
+        // THEN
+        assertArrayEquals( new String[] { "", "" }, extracted );
+    }
+
+    private String toString( long[] values, char delimiter )
     {
         StringBuilder builder = new StringBuilder();
-        for ( long value : longData )
+        for ( long value : values )
         {
             builder.append( builder.length() > 0 ? delimiter : "" ).append( value );
         }
         return builder.toString();
+    }
+
+    private String toString( double[] values, char delimiter )
+    {
+        StringBuilder builder = new StringBuilder();
+        for ( double value : values )
+        {
+            builder.append( builder.length() > 0 ? delimiter : "" ).append( value );
+        }
+        return builder.toString();
+    }
+
+    private String toString( boolean[] values, char delimiter )
+    {
+        StringBuilder builder = new StringBuilder();
+        for ( boolean value : values )
+        {
+            builder.append( builder.length() > 0 ? delimiter : "" ).append( value );
+        }
+        return builder.toString();
+    }
+
+    private void assertBooleanArrayEquals( boolean[] expected, boolean[] values )
+    {
+        assertEquals( "Array lengths differ", expected.length, values.length );
+        for ( int i = 0; i < expected.length; i++ )
+        {
+            assertEquals( "Item " + i + " differs", expected[i], values[i] );
+        }
     }
 }

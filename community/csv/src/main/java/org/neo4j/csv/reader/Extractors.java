@@ -240,21 +240,20 @@ public class Extractors
 
         protected int charsToNextDelimiter( char[] data, int offset, int length )
         {
-            for ( int i = 0; i < length-1; i++ )
+            for ( int i = 0; i < length; i++ )
             {
                 if ( data[offset+i] == arrayDelimiter )
                 {
                     return i;
                 }
             }
-            return data[offset+length-1] == arrayDelimiter ? length-1 : length;
+            return length;
         }
 
         protected int numberOfValues( char[] data, int offset, int length )
         {
-            int count = 1;
-            // "length-1" because even if the last char is a delimiter we shouldn't count it anyways
-            for ( int i = 0; i < length-1; i++ )
+            int count = length > 0 ? 1 : 0;
+            for ( int i = 0; i < length; i++ )
             {
                 if ( data[offset+i] == arrayDelimiter )
                 {
@@ -285,6 +284,8 @@ public class Extractors
 
     private static class StringArray extends Array<String[]>
     {
+        private static final String[] EMPTY = new String[0];
+
         StringArray( char arrayDelimiter )
         {
             super( arrayDelimiter, String.class );
@@ -293,12 +294,13 @@ public class Extractors
         @Override
         public String[] extract( char[] data, int offset, int length )
         {
-            String[] array = new String[numberOfValues( data, offset, length )];
-            for ( int i = 0, index = 0; i < length; i++, index++ )
+            int numberOfValues = numberOfValues( data, offset, length );
+            String[] array = numberOfValues > 0 ? new String[numberOfValues] : EMPTY;
+            for ( int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++ )
             {
-                int numberOfChars = charsToNextDelimiter( data, offset+i, length-i );
-                array[index] = new String( data, offset+i, numberOfChars );
-                i += numberOfChars;
+                int numberOfChars = charsToNextDelimiter( data, offset+charIndex, length-charIndex );
+                array[arrayIndex] = new String( data, offset+charIndex, numberOfChars );
+                charIndex += numberOfChars;
             }
             return array;
         }
@@ -306,6 +308,8 @@ public class Extractors
 
     private static class ByteArray extends Array<byte[]>
     {
+        private static final byte[] EMPTY = new byte[0];
+
         ByteArray( char arrayDelimiter )
         {
             super( arrayDelimiter, Byte.TYPE );
@@ -314,12 +318,13 @@ public class Extractors
         @Override
         public byte[] extract( char[] data, int offset, int length )
         {
-            byte[] array = new byte[numberOfValues( data, offset, length )];
-            for ( int i = 0, index = 0; i < length; i++, index++ )
+            int numberOfValues = numberOfValues( data, offset, length );
+            byte[] array = numberOfValues > 0 ? new byte[numberOfValues] : EMPTY;
+            for ( int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++ )
             {
-                int numberOfChars = charsToNextDelimiter( data, offset+i, length-i );
-                array[index] = safeCastLongToByte( extractLong( data, offset+i, numberOfChars ) );
-                i += numberOfChars;
+                int numberOfChars = charsToNextDelimiter( data, offset+charIndex, length-charIndex );
+                array[arrayIndex] = safeCastLongToByte( extractLong( data, offset+charIndex, numberOfChars ) );
+                charIndex += numberOfChars;
             }
             return array;
         }
@@ -327,6 +332,8 @@ public class Extractors
 
     private static class ShortArray extends Array<short[]>
     {
+        private static final short[] EMPTY = new short[0];
+
         ShortArray( char arrayDelimiter )
         {
             super( arrayDelimiter, Short.TYPE );
@@ -335,12 +342,13 @@ public class Extractors
         @Override
         public short[] extract( char[] data, int offset, int length )
         {
-            short[] array = new short[numberOfValues( data, offset, length )];
-            for ( int i = 0, index = 0; i < length; i++, index++ )
+            int numberOfValues = numberOfValues( data, offset, length );
+            short[] array = numberOfValues > 0 ? new short[numberOfValues] : EMPTY;
+            for ( int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++ )
             {
-                int numberOfChars = charsToNextDelimiter( data, offset+i, length-i );
-                array[index] = safeCastLongToShort( extractLong( data, offset+i, numberOfChars ) );
-                i += numberOfChars;
+                int numberOfChars = charsToNextDelimiter( data, offset+charIndex, length-charIndex );
+                array[arrayIndex] = safeCastLongToShort( extractLong( data, offset+charIndex, numberOfChars ) );
+                charIndex += numberOfChars;
             }
             return array;
         }
@@ -348,6 +356,8 @@ public class Extractors
 
     private static class IntArray extends Array<int[]>
     {
+        private static final int[] EMPTY = new int[0];
+
         IntArray( char arrayDelimiter )
         {
             super( arrayDelimiter, Integer.TYPE );
@@ -356,12 +366,13 @@ public class Extractors
         @Override
         public int[] extract( char[] data, int offset, int length )
         {
-            int[] array = new int[numberOfValues( data, offset, length )];
-            for ( int i = 0, index = 0; i < length; i++, index++ )
+            int numberOfValues = numberOfValues( data, offset, length );
+            int[] array = numberOfValues > 0 ? new int[numberOfValues] : EMPTY;
+            for ( int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++ )
             {
-                int numberOfChars = charsToNextDelimiter( data, offset+i, length-i );
-                array[index] = safeCastLongToInt( extractLong( data, offset+i, numberOfChars ) );
-                i += numberOfChars;
+                int numberOfChars = charsToNextDelimiter( data, offset+charIndex, length-charIndex );
+                array[arrayIndex] = safeCastLongToInt( extractLong( data, offset+charIndex, numberOfChars ) );
+                charIndex += numberOfChars;
             }
             return array;
         }
@@ -369,6 +380,8 @@ public class Extractors
 
     private static class LongArray extends Array<long[]>
     {
+        private static final long[] EMPTY = new long[0];
+
         LongArray( char arrayDelimiter )
         {
             super( arrayDelimiter, Long.TYPE );
@@ -377,12 +390,13 @@ public class Extractors
         @Override
         public long[] extract( char[] data, int offset, int length )
         {
-            long[] array = new long[numberOfValues( data, offset, length )];
-            for ( int i = 0, index = 0; i < length; i++, index++ )
+            int numberOfValues = numberOfValues( data, offset, length );
+            long[] array = numberOfValues > 0 ? new long[numberOfValues] : EMPTY;
+            for ( int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++ )
             {
-                int numberOfChars = charsToNextDelimiter( data, offset+i, length-i );
-                array[index] = extractLong( data, offset+i, numberOfChars );
-                i += numberOfChars;
+                int numberOfChars = charsToNextDelimiter( data, offset+charIndex, length-charIndex );
+                array[arrayIndex] = extractLong( data, offset+charIndex, numberOfChars );
+                charIndex += numberOfChars;
             }
             return array;
         }
@@ -390,6 +404,8 @@ public class Extractors
 
     private static class FloatArray extends Array<float[]>
     {
+        private static final float[] EMPTY = new float[0];
+
         FloatArray( char arrayDelimiter )
         {
             super( arrayDelimiter, Float.TYPE );
@@ -398,13 +414,14 @@ public class Extractors
         @Override
         public float[] extract( char[] data, int offset, int length )
         {
-            float[] array = new float[numberOfValues( data, offset, length )];
-            for ( int i = 0, index = 0; i < length; i++, index++ )
+            int numberOfValues = numberOfValues( data, offset, length );
+            float[] array = numberOfValues > 0 ? new float[numberOfValues] : EMPTY;
+            for ( int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++ )
             {
-                int numberOfChars = charsToNextDelimiter( data, offset+i, length-i );
+                int numberOfChars = charsToNextDelimiter( data, offset+charIndex, length-charIndex );
                 // TODO Figure out a way to do this conversion without round tripping to String
-                array[index] = Float.parseFloat( String.valueOf( data, offset+i, length-i ) );
-                i += numberOfChars;
+                array[arrayIndex] = Float.parseFloat( String.valueOf( data, offset+charIndex, numberOfChars ) );
+                charIndex += numberOfChars;
             }
             return array;
         }
@@ -412,6 +429,8 @@ public class Extractors
 
     private static class DoubleArray extends Array<double[]>
     {
+        private static final double[] EMPTY = new double[0];
+
         DoubleArray( char arrayDelimiter )
         {
             super( arrayDelimiter, Double.TYPE );
@@ -420,13 +439,14 @@ public class Extractors
         @Override
         public double[] extract( char[] data, int offset, int length )
         {
-            double[] array = new double[numberOfValues( data, offset, length )];
-            for ( int i = 0, index = 0; i < length; i++, index++ )
+            int numberOfValues = numberOfValues( data, offset, length );
+            double[] array = numberOfValues > 0 ? new double[numberOfValues] : EMPTY;
+            for ( int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++ )
             {
-                int numberOfChars = charsToNextDelimiter( data, offset+i, length-i );
+                int numberOfChars = charsToNextDelimiter( data, offset+charIndex, length-charIndex );
                 // TODO Figure out a way to do this conversion without round tripping to String
-                array[index] = Double.parseDouble( String.valueOf( data, offset+i, length-i ) );
-                i += numberOfChars;
+                array[arrayIndex] = Double.parseDouble( String.valueOf( data, offset+charIndex, numberOfChars ) );
+                charIndex += numberOfChars;
             }
             return array;
         }
@@ -434,6 +454,8 @@ public class Extractors
 
     private static class BooleanArray extends Array<boolean[]>
     {
+        private static final boolean[] EMPTY = new boolean[0];
+
         BooleanArray( char arrayDelimiter )
         {
             super( arrayDelimiter, Boolean.TYPE );
@@ -442,12 +464,13 @@ public class Extractors
         @Override
         public boolean[] extract( char[] data, int offset, int length )
         {
-            boolean[] array = new boolean[numberOfValues( data, offset, length )];
-            for ( int i = 0, index = 0; i < length; i++, index++ )
+            int numberOfValues = numberOfValues( data, offset, length );
+            boolean[] array = numberOfValues > 0 ? new boolean[numberOfValues] : EMPTY;
+            for ( int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++ )
             {
-                int numberOfChars = charsToNextDelimiter( data, offset+i, length-i );
-                array[index] = extractBoolean( data, offset+i, length-i );
-                i += numberOfChars;
+                int numberOfChars = charsToNextDelimiter( data, offset+charIndex, length-charIndex );
+                array[arrayIndex] = extractBoolean( data, offset+charIndex, numberOfChars );
+                charIndex += numberOfChars;
             }
             return array;
         }
@@ -455,6 +478,11 @@ public class Extractors
 
     private static long extractLong( char[] data, int offset, int length )
     {
+        if ( length == 0 )
+        {
+            throw new NumberFormatException( "For input string \"" + String.valueOf( data, offset, length ) + "\"" );
+        }
+
         long result = 0;
         int i = 0;
         boolean negate = false;
