@@ -21,7 +21,7 @@ package org.neo4j.io.pagecache.stresstests;
 
 import org.junit.Test;
 
-import org.neo4j.io.pagecache.CountingPageCacheMonitor;
+import org.neo4j.io.pagecache.monitoring.DefaultPageCacheMonitor;
 import org.neo4j.io.pagecache.stress.PageCacheStressTest;
 
 import static java.lang.Integer.parseInt;
@@ -57,7 +57,7 @@ public class PageCacheStressTesting
 
         String workingDirectory = fromEnvironmentOrDefault( "PAGE_CACHE_STRESS_WORKING_DIRECTORY", getProperty( "java.io.tmpdir" ) );
 
-        CountingPageCacheMonitor monitor = new CountingPageCacheMonitor();
+        DefaultPageCacheMonitor monitor = new DefaultPageCacheMonitor();
 
         PageCacheStressTest runner = new PageCacheStressTest.Builder()
                 .with( timePeriod( durationInMinutes, MINUTES ) )

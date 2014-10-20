@@ -86,14 +86,14 @@ public class SingleFilePageSwapper implements PageSwapper
     }
 
     @Override
-    public void read( long filePageId, Page page ) throws IOException
+    public int read( long filePageId, Page page ) throws IOException
     {
         long offset = pageIdToPosition( filePageId );
         try
         {
             if ( offset < getCurrentFileSize() )
             {
-                page.swapIn( channel, offset, filePageSize );
+                return page.swapIn( channel, offset, filePageSize );
             }
         }
         catch ( ClosedChannelException e )
@@ -104,22 +104,25 @@ public class SingleFilePageSwapper implements PageSwapper
             tryReopen( e );
             boolean interrupted = Thread.interrupted();
             // Recurse because this is hopefully a very rare occurrence.
-            read( filePageId, page );
+            int bytesRead = read( filePageId, page );
             if ( interrupted )
             {
                 Thread.currentThread().interrupt();
             }
+            return bytesRead;
         }
+        return 0;
     }
 
     @Override
-    public void write( long filePageId, Page page ) throws IOException
+    public int write( long filePageId, Page page ) throws IOException
     {
         long offset = pageIdToPosition( filePageId );
         increaseFileSizeTo( offset + filePageSize );
         try
         {
             page.swapOut( channel, offset, filePageSize );
+            return filePageSize;
         }
         catch ( ClosedChannelException e )
         {
@@ -129,11 +132,12 @@ public class SingleFilePageSwapper implements PageSwapper
             tryReopen( e );
             boolean interrupted = Thread.interrupted();
             // Recurse because this is hopefully a very rare occurrence.
-            write( filePageId, page );
+            int bytesWritten = write( filePageId, page );
             if ( interrupted )
             {
                 Thread.currentThread().interrupt();
             }
+            return bytesWritten;
         }
     }
 

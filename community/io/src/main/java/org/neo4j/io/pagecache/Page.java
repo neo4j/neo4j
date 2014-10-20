@@ -115,6 +115,10 @@ public interface Page
      *
      * May throw an AssertionError or a RuntimeException if the given length is greater than the cache-page size.
      *
+     * Returns the number of bytes read in from the file. May be zero if the
+     * requested page was beyond the end of the file. If less than the file
+     * page size, then the rest of the page will contain zeros.
+     *
      * @throws IOException If the file could not be read from.
      *                     For instance, if the file has been closed, moved or deleted,
      *                     or if the requested range of data goes beyond the length of the file.
@@ -122,7 +126,7 @@ public interface Page
      *                     If the channel has been closed, then it must be
      *                     reopened and the swapIn operation must be retried.
      */
-    void swapIn( StoreChannel channel, long offset, int length ) throws IOException;
+    int swapIn( StoreChannel channel, long offset, int length ) throws IOException;
 
     /**
      * Swap the page out to storage.
@@ -147,4 +151,9 @@ public interface Page
      *                     reopened and the swapIn operation must be retried.
      */
     void swapOut( StoreChannel channel, long offset, int length ) throws IOException;
+
+    /**
+     * Get the internal id of this cache page object.
+     */
+    int getCachePageId();
 }

@@ -36,12 +36,16 @@ public interface PageSwapper
      * This should be implemented using the
      * {@link Page#swapIn(org.neo4j.io.fs.StoreChannel, long, int)} method.
      *
+     * Returns the number of bytes read in from the file. May be zero if the
+     * requested page was beyond the end of the file. If less than the file
+     * page size, then the rest of the page will contain zeros.
+     *
      * Note: It is possible for the channel to be asynchronously closed while
      * this operation is taking place. For instance, if the current thread is
      * interrupted. If this happens, then the implementation must reopen the
      * channel and the operation must be retried.
      */
-    void read( long filePageId, Page page ) throws IOException;
+    int read( long filePageId, Page page ) throws IOException;
 
     /**
      * Write the contents of the given page, to the concrete file on the file
@@ -50,12 +54,14 @@ public interface PageSwapper
      * This should be implemented using the
      * {@link Page#swapOut(org.neo4j.io.fs.StoreChannel, long, int)} method.
      *
+     * Returns the number of bytes written to the file.
+     *
      * Note: It is possible for the channel to be asynchronously closed while
      * this operation is taking place. For instance, if the current thread is
      * interrupted. If this happens, then implementation must reopen the
      * channel and the operation must be retried.
      */
-    void write( long filePageId, Page page ) throws IOException;
+    int write( long filePageId, Page page ) throws IOException;
 
     /**
      * Notification that a page has been evicted, used to clean up state in structures
