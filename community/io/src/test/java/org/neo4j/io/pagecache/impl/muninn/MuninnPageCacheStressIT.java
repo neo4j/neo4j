@@ -21,7 +21,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import org.junit.Test;
 
-import org.neo4j.io.pagecache.CountingPageCacheMonitor;
+import org.neo4j.io.pagecache.monitoring.CountingPageCacheMonitor;
 import org.neo4j.io.pagecache.stress.Condition;
 import org.neo4j.io.pagecache.stress.PageCacheStressTest;
 

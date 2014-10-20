@@ -102,7 +102,7 @@ public class ByteBufferPage implements Page
     }
 
     @Override
-    public void swapIn( StoreChannel channel, long offset, int length ) throws IOException
+    public int swapIn( StoreChannel channel, long offset, int length ) throws IOException
     {
         buffer.clear();
         buffer.limit( length );
@@ -117,6 +117,7 @@ public class ByteBufferPage implements Page
         {
             buffer.put( (byte) 0 );
         }
+        return bytesRead;
     }
 
     @Override
@@ -130,6 +131,12 @@ public class ByteBufferPage implements Page
         duplicate.position( 0 );
         duplicate.limit( length );
         channel.writeAll( duplicate, offset );
+    }
+
+    @Override
+    public int getCachePageId()
+    {
+        return 0;
     }
 
     public void setAllBytesToZero()

@@ -17,71 +17,59 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.impl.muninn;
+package org.neo4j.io.pagecache.monitoring;
 
 import java.io.IOException;
 
 import org.neo4j.io.pagecache.Page;
-import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageSwapper;
 
-final class MonitoredPageSwapper implements PageSwapper
+public class DummyPageSwapper implements PageSwapper
 {
-    private final PageSwapper pageSwapper;
-    private final PageCacheMonitor monitor;
+    private final String filename;
 
-    public MonitoredPageSwapper( PageSwapper pageSwapper, PageCacheMonitor monitor )
+    public DummyPageSwapper( String filename )
     {
-        this.pageSwapper = pageSwapper;
-        this.monitor = monitor;
+        this.filename = filename;
     }
 
     @Override
-    public void read( long filePageId, Page page ) throws IOException
+    public int read( long filePageId, Page page ) throws IOException
     {
-        pageSwapper.read( filePageId, page );
+        return 0;
     }
 
     @Override
-    public void write( long filePageId, Page page ) throws IOException
+    public int write( long filePageId, Page page ) throws IOException
     {
-        pageSwapper.write( filePageId, page );
-        monitor.flushed(filePageId, pageSwapper);
+        return 0;
     }
 
     @Override
     public void evicted( long pageId, Page page )
     {
-        pageSwapper.evicted( pageId, page );
+
     }
 
     @Override
     public String fileName()
     {
-        return pageSwapper.fileName();
+        return filename;
     }
 
     @Override
     public void close() throws IOException
     {
-        pageSwapper.close();
     }
 
     @Override
     public void force() throws IOException
     {
-        pageSwapper.force();
     }
 
     @Override
     public long getLastPageId() throws IOException
     {
-        return pageSwapper.getLastPageId();
-    }
-
-    @Override
-    public String toString()
-    {
-        return pageSwapper.toString() + "[*Monitored]";
+        return 0;
     }
 }

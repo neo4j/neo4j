@@ -21,7 +21,7 @@ package org.neo4j.io.pagecache.stresstests;
 
 import org.junit.Test;
 
-import org.neo4j.io.pagecache.CountingPageCacheMonitor;
+import org.neo4j.io.pagecache.monitoring.CountingPageCacheMonitor;
 import org.neo4j.io.pagecache.stress.PageCacheStressTest;
 
 import static java.lang.Integer.parseInt;

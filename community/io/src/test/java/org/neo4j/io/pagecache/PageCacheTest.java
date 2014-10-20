@@ -19,24 +19,12 @@
  */
 package org.neo4j.io.pagecache;
 
-import static java.lang.Long.toHexString;
-import static org.hamcrest.Matchers.both;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
-import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
-import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
-import static org.neo4j.test.ByteArrayMatcher.byteArray;
-import static org.neo4j.test.ThreadTestUtils.awaitThreadState;
-import static org.neo4j.test.ThreadTestUtils.fork;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
 
 import java.io.DataInputStream;
 import java.io.File;
@@ -59,12 +47,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
 import org.neo4j.adversaries.RandomAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
@@ -72,7 +54,28 @@ import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.monitoring.CountingPageCacheMonitor;
+import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
 import org.neo4j.test.RepeatRule;
+
+import static java.lang.Long.toHexString;
+import static org.hamcrest.Matchers.both;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
+import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
+import static org.neo4j.test.ByteArrayMatcher.byteArray;
+import static org.neo4j.test.ThreadTestUtils.awaitThreadState;
+import static org.neo4j.test.ThreadTestUtils.fork;
 
 public abstract class PageCacheTest<T extends RunnablePageCache>
 {
@@ -2042,7 +2045,7 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
 
         PagedFile pagedFile = pageCache.map( file, filePageSize );
 
-        int countedPages = 0;
+        long countedPages = 0;
         try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
         {
             while ( cursor.next() )
@@ -2054,15 +2057,11 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
 
         assertThat( "wrong count of pins", monitor.countPins(), is( countedPages * 2 ) );
         assertThat( "wrong count of unpins", monitor.countUnpins(), is( countedPages * 2 ) );
-        assertThat( "wrong count of exclusive locks taken", monitor.countTakenExclusiveLocks(), is( 0 ) );
-        assertThat( "wrong count of shared locks taken", monitor.countTakenSharedLocks(), is( countedPages * 2 ) );
-        assertThat( "wrong count of exclusive locks released", monitor.countReleasedExclusiveLocks(), is( 0 ) );
-        assertThat( "wrong count of shared locks released", monitor.countReleasedSharedLocks(), is( countedPages * 2 ) );
-        
+
         // We might be unlucky and fault in the second next call, on the page
         // we brought up in the first next call. That's why we assert that we
         // have observed *at least* the countedPages number of faults.
-        int faults = monitor.countFaults();
+        long faults = monitor.countFaults();
         assertThat( "wrong count of faults", faults, greaterThanOrEqualTo( countedPages ) );
         // Every page we move forward can put the freelist behind so the cache
         // wants to evict more pages. Plus, every page fault we do could also
@@ -2078,7 +2077,7 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
     @Test( timeout = 1000 )
     public void monitorMustBeNotifiedAboutPinUnpinFaultFlushAndEvictionEventsWhenWriting() throws IOException
     {
-        int pagesToGenerate = 142;
+        long pagesToGenerate = 142;
         CountingPageCacheMonitor monitor = new CountingPageCacheMonitor();
         fs.create( file ).close();
 
@@ -2105,15 +2104,11 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
 
         assertThat( "wrong count of pins", monitor.countPins(), is( pagesToGenerate * 2 ) );
         assertThat( "wrong count of unpins", monitor.countUnpins(), is( pagesToGenerate * 2 ) );
-        assertThat( "wrong count of exclusive locks taken", monitor.countTakenExclusiveLocks(), is( pagesToGenerate * 2 ) );
-        assertThat( "wrong count of shared locks taken", monitor.countTakenSharedLocks(), is( 0 ) );
-        assertThat( "wrong count of exclusive locks released", monitor.countReleasedExclusiveLocks(), is( pagesToGenerate * 2 ) );
-        assertThat( "wrong count of shared locks released", monitor.countReleasedSharedLocks(), is( 0 ) );
 
         // We might be unlucky and fault in the second next call, on the page
         // we brought up in the first next call. That's why we assert that we
         // have observed *at least* the countedPages number of faults.
-        int faults = monitor.countFaults();
+        long faults = monitor.countFaults();
         assertThat( "wrong count of faults", faults, greaterThanOrEqualTo( pagesToGenerate ) );
         // Every page we move forward can put the freelist behind so the cache
         // wants to evict more pages. Plus, every page fault we do could also
