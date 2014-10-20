@@ -74,7 +74,7 @@ public class CsvInput implements Input
                 // Read the header, given the data stream. This allows the header factory to be able to
                 // parse the header from the data stream directly. Or it can decide to grab the header
                 // from somewhere else, it's up to that factory.
-                final Header dataHeader = nodeHeaderFactory.create( dataStream, config, idType.extractor() );
+                final Header dataHeader = nodeHeaderFactory.create( dataStream, config, idType );
 
                 return new InputNodeDeserializer( dataHeader, dataStream, delimiter );
             }
@@ -95,7 +95,7 @@ public class CsvInput implements Input
                 // Read the header, given the data stream. This allows the header factory to be able to
                 // parse the header from the data stream directly. Or it can decide to grab the header
                 // from somewhere else, it's up to that factory.
-                final Header dataHeader = relationshipHeaderFactory.create( dataStream, config, idType.extractor() );
+                final Header dataHeader = relationshipHeaderFactory.create( dataStream, config, idType );
 
                 return new InputRelationshipDeserializer( dataHeader, dataStream, delimiter );
             }

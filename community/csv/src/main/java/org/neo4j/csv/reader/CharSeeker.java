@@ -67,7 +67,8 @@ public interface CharSeeker extends Closeable
      * Extracts the value specified by the {@link Mark}, previously populated by a call to {@link #seek(Mark, int[])}.
      * @param mark the {@link Mark} specifying which part of a bigger piece of data contains the found value.
      * @param extractor {@link Extractor} capable of extracting the value.
-     * @return the extracted value.
+     * @return the supplied {@link Extractor}, which after the call carries the extracted value itself,
+     * where either {@link Extractor#value()} or a more specific accessor method can be called to access the value.
      */
-    <T> T extract( Mark mark, Extractor<T> extractor );
+    <EXTRACTOR extends Extractor<?>> EXTRACTOR extract( Mark mark, EXTRACTOR extractor );
 }

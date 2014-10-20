@@ -33,9 +33,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import static org.neo4j.csv.reader.Extractors.LONG;
-import static org.neo4j.csv.reader.Extractors.STRING;
-
 public class BufferedCharSeekerTest
 {
     @Test
@@ -50,18 +47,18 @@ public class BufferedCharSeekerTest
         assertTrue( seeker.seek( mark, TAB ) );
         assertEquals( '\t', mark.character() );
         assertFalse( mark.isEndOfLine() );
-        assertEquals( "abcdefg", seeker.extract( mark, STRING ) );
+        assertEquals( "abcdefg", seeker.extract( mark, extractors.string() ).value() );
 
         // second value
         assertTrue( seeker.seek( mark, TAB ) );
         assertEquals( '\t', mark.character() );
         assertFalse( mark.isEndOfLine() );
-        assertEquals( "hijklmnop", seeker.extract( mark, STRING ) );
+        assertEquals( "hijklmnop", seeker.extract( mark, extractors.string() ).value() );
 
         // third value
         assertTrue( seeker.seek( mark, TAB ) );
         assertTrue( mark.isEndOfLine() );
-        assertEquals( "qrstuvxyz", seeker.extract( mark, STRING ) );
+        assertEquals( "qrstuvxyz", seeker.extract( mark, extractors.string() ).value() );
 
         // no more values
         assertFalse( seeker.seek( mark, TAB ) );
@@ -79,28 +76,28 @@ public class BufferedCharSeekerTest
 
         // WHEN/THEN
         assertTrue( seeker.seek( mark, TAB ) );
-        assertEquals( 1L, seeker.extract( mark, LONG ).longValue() );
+        assertEquals( 1L, seeker.extract( mark, extractors.long_() ).longValue() );
         assertEquals( 1, mark.lineNumber() );
 
         assertTrue( seeker.seek( mark, TAB ) );
-        assertEquals( 2L, seeker.extract( mark, LONG ).longValue() );
+        assertEquals( 2L, seeker.extract( mark, extractors.long_() ).longValue() );
         assertEquals( 1, mark.lineNumber() );
 
         assertTrue( seeker.seek( mark, TAB ) );
-        assertEquals( 3L, seeker.extract( mark, LONG ).longValue() );
+        assertEquals( 3L, seeker.extract( mark, extractors.long_() ).longValue() );
         assertTrue( mark.isEndOfLine() );
         assertEquals( 1, mark.lineNumber() );
 
         assertTrue( seeker.seek( mark, TAB ) );
-        assertEquals( 4L, seeker.extract( mark, LONG ).longValue() );
+        assertEquals( 4L, seeker.extract( mark, extractors.long_() ).longValue() );
         assertEquals( 2, mark.lineNumber() );
 
         assertTrue( seeker.seek( mark, TAB ) );
-        assertEquals( 5L, seeker.extract( mark, LONG ).longValue() );
+        assertEquals( 5L, seeker.extract( mark, extractors.long_() ).longValue() );
         assertEquals( 2, mark.lineNumber() );
 
         assertTrue( seeker.seek( mark, TAB ) );
-        assertEquals( 6L, seeker.extract( mark, LONG ).longValue() );
+        assertEquals( 6L, seeker.extract( mark, extractors.long_() ).longValue() );
         assertEquals( 2, mark.lineNumber() );
 
         assertTrue( mark.isEndOfLine() );
@@ -119,13 +116,13 @@ public class BufferedCharSeekerTest
 
         // WHEN/THEN
         seeker.seek( mark, COMMA );
-        assertEquals( 1234L, seeker.extract( mark, LONG ).longValue() );
+        assertEquals( 1234L, seeker.extract( mark, extractors.long_() ).longValue() );
         seeker.seek( mark, COMMA );
-        assertEquals( 5678L, seeker.extract( mark, LONG ).longValue() );
+        assertEquals( 5678L, seeker.extract( mark, extractors.long_() ).longValue() );
         seeker.seek( mark, COMMA );
-        assertEquals( 9012L, seeker.extract( mark, LONG ).longValue() );
+        assertEquals( 9012L, seeker.extract( mark, extractors.long_() ).longValue() );
         seeker.seek( mark, COMMA );
-        assertEquals( 3456L, seeker.extract( mark, LONG ).longValue() );
+        assertEquals( 3456L, seeker.extract( mark, extractors.long_() ).longValue() );
         assertFalse( seeker.seek( mark, COMMA ) );
     }
 
@@ -140,17 +137,17 @@ public class BufferedCharSeekerTest
                 "other,line,endings" ), 100 );
 
         // WHEN/THEN
-        assertEquals( "here", seeker.seek( mark, COMMA ) ? seeker.extract( mark, STRING ) : "" );
-        assertEquals( "comes", seeker.seek( mark, COMMA ) ? seeker.extract( mark, STRING ) : "" );
-        assertEquals( "Windows", seeker.seek( mark, COMMA ) ? seeker.extract( mark, STRING ) : "" );
+        assertEquals( "here", seeker.seek( mark, COMMA ) ? seeker.extract( mark, extractors.string() ).value() : "" );
+        assertEquals( "comes", seeker.seek( mark, COMMA ) ? seeker.extract( mark, extractors.string() ).value() : "" );
+        assertEquals( "Windows", seeker.seek( mark, COMMA ) ? seeker.extract( mark, extractors.string() ).value() : "" );
         assertTrue( mark.isEndOfLine() );
-        assertEquals( "and", seeker.seek( mark, COMMA ) ? seeker.extract( mark, STRING ) : "" );
-        assertEquals( "it", seeker.seek( mark, COMMA ) ? seeker.extract( mark, STRING ) : "" );
-        assertEquals( "has", seeker.seek( mark, COMMA ) ? seeker.extract( mark, STRING ) : "" );
+        assertEquals( "and", seeker.seek( mark, COMMA ) ? seeker.extract( mark, extractors.string() ).value() : "" );
+        assertEquals( "it", seeker.seek( mark, COMMA ) ? seeker.extract( mark, extractors.string() ).value() : "" );
+        assertEquals( "has", seeker.seek( mark, COMMA ) ? seeker.extract( mark, extractors.string() ).value() : "" );
         assertTrue( mark.isEndOfLine() );
-        assertEquals( "other", seeker.seek( mark, COMMA ) ? seeker.extract( mark, STRING ) : "" );
-        assertEquals( "line", seeker.seek( mark, COMMA ) ? seeker.extract( mark, STRING ) : "" );
-        assertEquals( "endings", seeker.seek( mark, COMMA ) ? seeker.extract( mark, STRING ) : "" );
+        assertEquals( "other", seeker.seek( mark, COMMA ) ? seeker.extract( mark, extractors.string() ).value() : "" );
+        assertEquals( "line", seeker.seek( mark, COMMA ) ? seeker.extract( mark, extractors.string() ).value() : "" );
+        assertEquals( "endings", seeker.seek( mark, COMMA ) ? seeker.extract( mark, extractors.string() ).value() : "" );
         assertTrue( mark.isEndOfLine() );
     }
 
@@ -170,7 +167,7 @@ public class BufferedCharSeekerTest
             for ( int col = 0; col < cols; col++ )
             {
                 assertTrue( seeker.seek( mark, TAB ) );
-                assertEquals( data[row][col], seeker.extract( mark, Extractors.STRING ) );
+                assertEquals( data[row][col], seeker.extract( mark, extractors.string() ).value() );
             }
             assertTrue( mark.isEndOfLine() );
         }
@@ -186,15 +183,15 @@ public class BufferedCharSeekerTest
 
         // WHEN
         assertTrue( seeker.seek( mark, COMMA ) );
-        assertEquals( 1, seeker.extract( mark, Extractors.INT ).intValue() );
+        assertEquals( 1, seeker.extract( mark, extractors.int_() ).intValue() );
 
         assertTrue( seeker.seek( mark, COMMA ) );
 
         assertTrue( seeker.seek( mark, COMMA ) );
-        assertEquals( 3, seeker.extract( mark, Extractors.INT ).intValue() );
+        assertEquals( 3, seeker.extract( mark, extractors.int_() ).intValue() );
 
         assertTrue( seeker.seek( mark, COMMA ) );
-        assertEquals( 4, seeker.extract( mark, Extractors.INT ).intValue() );
+        assertEquals( 4, seeker.extract( mark, extractors.int_() ).intValue() );
     }
 
     @Test
@@ -207,18 +204,18 @@ public class BufferedCharSeekerTest
 
         // WHEN
         assertTrue( seeker.seek( mark, COMMA ) );
-        assertEquals( 12, seeker.extract( mark, Extractors.INT ).intValue() );
+        assertEquals( 12, seeker.extract( mark, extractors.int_() ).intValue() );
         assertTrue( seeker.seek( mark, COMMA ) );
-        assertEquals( 34, seeker.extract( mark, Extractors.INT ).intValue() );
+        assertEquals( 34, seeker.extract( mark, extractors.int_() ).intValue() );
         assertTrue( seeker.seek( mark, COMMA ) );
-        assertEquals( 56, seeker.extract( mark, Extractors.INT ).intValue() );
+        assertEquals( 56, seeker.extract( mark, extractors.int_() ).intValue() );
 
         assertTrue( seeker.seek( mark, COMMA ) );
-        assertEquals( 789, seeker.extract( mark, Extractors.INT ).intValue() );
+        assertEquals( 789, seeker.extract( mark, extractors.int_() ).intValue() );
         assertTrue( seeker.seek( mark, COMMA ) );
-        assertEquals( 901, seeker.extract( mark, Extractors.INT ).intValue() );
+        assertEquals( 901, seeker.extract( mark, extractors.int_() ).intValue() );
         assertTrue( seeker.seek( mark, COMMA ) );
-        assertEquals( 23, seeker.extract( mark, Extractors.INT ).intValue() );
+        assertEquals( 23, seeker.extract( mark, extractors.int_() ).intValue() );
 
         assertFalse( seeker.seek( mark, COMMA ) );
     }
@@ -232,9 +229,9 @@ public class BufferedCharSeekerTest
 
         // WHEN
         assertTrue( seeker.seek( mark, COMMA ) );
-        assertEquals( 123, seeker.extract( mark, Extractors.INT ).intValue() );
+        assertEquals( 123, seeker.extract( mark, extractors.int_() ).intValue() );
         assertTrue( seeker.seek( mark, COMMA ) );
-        assertEquals( 56, seeker.extract( mark, Extractors.INT ).intValue() );
+        assertEquals( 56, seeker.extract( mark, extractors.int_() ).intValue() );
 
         // THEN
         assertFalse( seeker.seek( mark, COMMA ) );
@@ -271,7 +268,7 @@ public class BufferedCharSeekerTest
             throws IOException
     {
         assertTrue( seeker.seek( mark, delimiter ) );
-        assertEquals( expectedValue, seeker.extract( mark, Extractors.STRING ) );
+        assertEquals( expectedValue, seeker.extract( mark, extractors.string() ).value() );
     }
 
     @Test
@@ -292,7 +289,7 @@ public class BufferedCharSeekerTest
         List<String> line = new ArrayList<>();
         while ( seeker.seek( mark, COMMA ) )
         {
-            line.add( seeker.extract( mark, Extractors.STRING ) );
+            line.add( seeker.extract( mark, extractors.string() ).value() );
             if ( mark.isEndOfLine() )
             {
                 break;
@@ -376,4 +373,5 @@ public class BufferedCharSeekerTest
     private static final int[] TAB = new int[] { '\t' };
     private static final int[] COMMA = new int[] { ',' };
     private static final Random random = new Random();
+    private final Extractors extractors = new Extractors( ',' );
 }

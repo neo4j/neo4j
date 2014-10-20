@@ -106,11 +106,12 @@ public class BufferedCharSeeker implements CharSeeker
     }
 
     @Override
-    public <T> T extract( Mark mark, Extractor<T> extractor )
+    public <EXTRACTOR extends Extractor<?>> EXTRACTOR extract( Mark mark, EXTRACTOR extractor )
     {
         long from = mark.startPosition();
         long to = mark.position();
-        return extractor.extract( buffer, (int)(from), (int)(to-from) );
+        extractor.extract( buffer, (int)(from), (int)(to-from) );
+        return extractor;
     }
 
     private int skipEolChars() throws IOException

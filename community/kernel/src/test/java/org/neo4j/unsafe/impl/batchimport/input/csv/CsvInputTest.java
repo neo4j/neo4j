@@ -55,9 +55,9 @@ public class CsvInputTest
         IdType idType = IdType.ACTUAL;
         Input input = new CsvInput(
                 data( "123,Mattias Persson,HACKER" ),
-                header( entry( "id", Type.ID, idType.extractor() ),
-                        entry( "name", Type.PROPERTY, Extractors.STRING ),
-                        entry( "labels", Type.LABEL, Extractors.STRING ) ),
+                header( entry( "id", Type.ID, idType.extractor( extractors ) ),
+                        entry( "name", Type.PROPERTY, extractors.string() ),
+                        entry( "labels", Type.LABEL, extractors.string() ) ),
                         null, null, idType, COMMAS );
 
         // WHEN/THEN
@@ -74,10 +74,10 @@ public class CsvInputTest
         Input input = new CsvInput( null, null,
                 data( "node1,node2,KNOWS,1234567\n" +
                       "node2,node10,HACKS,987654" ),
-                header( entry( "from", Type.START_NODE, idType.extractor() ),
-                        entry( "to", Type.END_NODE, idType.extractor() ),
-                        entry( "type", Type.RELATIONSHIP_TYPE, Extractors.STRING ),
-                        entry( "since", Type.PROPERTY, Extractors.LONG ) ), idType, COMMAS );
+                header( entry( "from", Type.START_NODE, idType.extractor( extractors ) ),
+                        entry( "to", Type.END_NODE, idType.extractor( extractors ) ),
+                        entry( "type", Type.RELATIONSHIP_TYPE, extractors.string() ),
+                        entry( "since", Type.PROPERTY, extractors.long_() ) ), idType, COMMAS );
 
         // WHEN/THEN
         Iterator<InputRelationship> relationships = input.relationships().iterator();
@@ -93,8 +93,8 @@ public class CsvInputTest
         CharSeeker relationshipData = mock( CharSeeker.class );
         IdType idType = IdType.STRING;
         Input input = new CsvInput(
-                given( nodeData ), header( entry( "single", Type.IGNORE, idType.extractor() ) ),
-                given( relationshipData ), header( entry( "single", Type.IGNORE, idType.extractor() ) ),
+                given( nodeData ), header( entry( "single", Type.IGNORE, idType.extractor( extractors ) ) ),
+                given( relationshipData ), header( entry( "single", Type.IGNORE, idType.extractor( extractors ) ) ),
                 idType, COMMAS );
 
         // WHEN
@@ -115,10 +115,10 @@ public class CsvInputTest
                       "2,corruptor,ZERG\n" +
                       "3,mutalisk,ZERG,3" ),
                 header(
-                      entry( "id", Type.ID, Extractors.LONG ),
-                      entry( "unit", Type.PROPERTY, Extractors.STRING ),
-                      entry( "type", Type.LABEL, Extractors.STRING ),
-                      entry( "kills", Type.PROPERTY, Extractors.INT ) ),
+                      entry( "id", Type.ID, extractors.long_() ),
+                      entry( "unit", Type.PROPERTY, extractors.string() ),
+                      entry( "type", Type.LABEL, extractors.string() ),
+                      entry( "kills", Type.PROPERTY, extractors.int_() ) ),
                 null, null, IdType.ACTUAL, Configuration.COMMAS );
 
         // WHEN
@@ -140,8 +140,8 @@ public class CsvInputTest
                 data( "1,zergling,bubble,bobble\n" +
                       "2,scv,pun,intended" ),
                 header(
-                      entry( "id", Type.ID, Extractors.LONG ),
-                      entry( "name", Type.PROPERTY, Extractors.STRING ) ),
+                      entry( "id", Type.ID, extractors.long_() ),
+                      entry( "name", Type.PROPERTY, extractors.string() ) ),
                 null, null, IdType.ACTUAL, Configuration.COMMAS );
 
         // WHEN
@@ -198,7 +198,7 @@ public class CsvInputTest
         return new Header.Factory()
         {
             @Override
-            public Header create( CharSeeker from, Configuration configuration, Extractor<?> idExtractor )
+            public Header create( CharSeeker from, Configuration configuration, IdType idType )
             {
                 return new Header( entries );
             }
@@ -223,4 +223,5 @@ public class CsvInputTest
     }
 
     public final @Rule TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    private final Extractors extractors = new Extractors( ',' );
 }

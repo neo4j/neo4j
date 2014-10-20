@@ -31,20 +31,32 @@ public enum IdType
      * Used when node ids int input data are specified as long values and points to actual record ids.
      * ADVANCED usage. Performance advantage, but requires carefully planned input data.
      */
-    ACTUAL( IdMappings.actual(), Extractors.LONG ),
+    ACTUAL( IdMappings.actual() )
+    {
+        @Override
+        public Extractor<?> extractor( Extractors extractors )
+        {
+            return extractors.long_();
+        }
+    },
 
     /**
      * Used when node ids int input data are any string identifier.
      */
-    STRING( IdMappings.strings( LongArrayFactory.AUTO ), Extractors.STRING );
+    STRING( IdMappings.strings( LongArrayFactory.AUTO ) )
+    {
+        @Override
+        public Extractor<?> extractor( Extractors extractors )
+        {
+            return extractors.string();
+        }
+    };
 
     private final IdMapping idMapping;
-    private final Extractor<?> idExtractor;
 
-    private IdType( IdMapping idMapping, Extractor<?> idExtractor )
+    private IdType( IdMapping idMapping )
     {
         this.idMapping = idMapping;
-        this.idExtractor = idExtractor;
     }
 
     public IdMapping idMapping()
@@ -52,8 +64,5 @@ public enum IdType
         return idMapping;
     }
 
-    public Extractor<?> extractor()
-    {
-        return idExtractor;
-    }
+    public abstract Extractor<?> extractor( Extractors extractors );
 }
