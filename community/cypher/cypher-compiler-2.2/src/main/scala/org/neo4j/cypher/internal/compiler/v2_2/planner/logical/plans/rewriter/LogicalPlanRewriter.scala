@@ -17,17 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
+package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
-import org.neo4j.cypher.internal.compiler.v2_2.symbols._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSequencer
 
-case class SingleRow(argumentIds: Set[IdName])(val solved: PlannerQuery)
-                    (val typeInfo: Map[String, CypherType] = argumentIds.map( id => id.name -> CTNode).toMap) extends LogicalLeafPlan {
-  def availableSymbols = argumentIds
+class LogicalPlanRewriter {
 
-  override def dup(children: Seq[AnyRef]) = children.size match {
-    case 1 =>
-      copy(children.head.asInstanceOf[Set[IdName]])(solved)(typeInfo).asInstanceOf[this.type]
-  }
+  private val instance = RewriterStepSequencer.newDefault("LogicalPlanRewriter")(
+    mergeTwoSelections,
+    unnestEmptyApply,
+    unnestOptional
+  )
+
+
+  def rewrite(in: LogicalPlan): LogicalPlan = in.endoRewrite(instance)
 }

@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.ast
 
-import org.neo4j.cypher.internal.compiler.v2_2.{InputPosition, DummyPosition}
 import org.neo4j.cypher.internal.commons.CypherTestSupport
+import org.neo4j.cypher.internal.compiler.v2_2.{DummyPosition, InputPosition}
 
 trait AstConstructionTestSupport extends CypherTestSupport {
   protected val pos = DummyPosition(0)
@@ -28,4 +28,10 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   implicit def withPos[T](expr: InputPosition => T): T = expr(pos)
 
   def ident(name: String) = Identifier(name)(pos)
+
+  def propEquality(identifier: String, propKey: String, intValue: Int) = {
+    val prop: Expression = Property(ident(identifier), PropertyKeyName(propKey)(pos))(pos)
+    val literal: Expression = SignedDecimalIntegerLiteral(intValue.toString)(pos)
+    Equals(prop, literal)(pos)
+  }
 }

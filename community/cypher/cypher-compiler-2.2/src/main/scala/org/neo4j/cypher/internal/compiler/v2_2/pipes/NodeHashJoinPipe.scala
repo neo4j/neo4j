@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
+import org.neo4j.cypher.{CypherTypeException, InternalException}
 import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.Arguments.KeyNames
@@ -87,7 +88,8 @@ case class NodeHashJoinPipe(nodeIdentifiers: Set[String], left: Pipe, right: Pip
     for (idx <- 0 until identifiers.length) {
       key(idx) = context(identifiers(idx)) match {
         case n: Node => n.getId
-        case _ => return None
+        case null => return None
+        case _ => throw new CypherTypeException("Created a plan that uses non-nodes when expecting a node")
       }
     }
     Some(key.toVector)

@@ -20,28 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression
-import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.Selection
 
-case object unnestOptional extends Rewriter {
+case object mergeTwoSelections extends Rewriter {
 
   def apply(input: AnyRef) = bottomUp(instance).apply(input)
 
   private val instance: Rewriter = Rewriter.lift {
-    case apply@Apply(lhs,
-      Optional(
-      e@Expand(_:SingleRow, _, _, _, _, _, _, SimplePatternLength, _))) =>
-        optionalExpand(e, lhs)(Seq.empty)(apply.solved)
-
-    case apply@Apply(lhs,
-      Optional(
-      Selection(predicates,
-      e@Expand(_:SingleRow, _, _, _, _, _, _, SimplePatternLength, _)))) =>
-        optionalExpand(e, lhs)(predicates)(apply.solved)
+    case topSelection@Selection(predicates1, Selection(predicates2, lhs)) =>
+      Selection(predicates1 ++ predicates2, lhs)(topSelection.solved)
   }
-
-  private def optionalExpand(e: Expand, lhs: LogicalPlan): (Seq[Expression] => PlannerQuery => OptionalExpand) =
-    predicates =>
-      OptionalExpand(lhs, e.from, e.dir, e.types, e.to, e.relName, e.length, predicates)
 }

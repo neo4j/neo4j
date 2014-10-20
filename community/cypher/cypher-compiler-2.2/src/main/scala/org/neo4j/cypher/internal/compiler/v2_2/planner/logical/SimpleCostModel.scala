@@ -41,7 +41,7 @@ class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
 
   def apply(plan: LogicalPlan): Cost = plan match {
     case sr: SingleRow =>
-      Cardinality(1.0) * EXPRESSION_PROJECTION_OVERHEAD_PER_ROW * sr.coveredIds.size // This is probably too high but we need non-zero cost, even for sr
+      Cardinality(1.0) * EXPRESSION_PROJECTION_OVERHEAD_PER_ROW * sr.argumentIds.size // This is probably too high but we need non-zero cost, even for sr
 
     case _: AllNodesScan =>
       cardinality(plan) * STORE_ACCESS_COST_PER_ROW
