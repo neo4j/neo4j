@@ -33,7 +33,7 @@ If you are running Neo4j server, specify +org.neo4j.server.database.mode=HA+ in 
 == Database configuration ==
 
 HA configuration parameters should be supplied alongside general Neo4j parameters in _conf/neo4j.properties_.
-There are many configurable parameters, most in most cases it isn't necessary to modify the default values.
+There are many configurable parameters. In most cases it isn't necessary to modify the default values.
 The only parameters that need to be specified are +ha.server_id+ and +ha.initial_hosts+.
 
 include::{importdir}/neo4j-ha-docs-jar/ops/ha-configuration-attributes.asciidoc[]
