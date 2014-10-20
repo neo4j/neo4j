@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.locking.performance;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import javax.transaction.HeuristicMixedException;
@@ -34,7 +35,6 @@ import javax.transaction.xa.XAResource;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.locking.community.LockManagerImpl;
 import org.neo4j.kernel.impl.locking.community.RagManager;
-import org.neo4j.kernel.impl.util.FastRandom;
 
 /**
  * Performance numbers show total number of locks per second, the number of locks listed in the stats denote how many
@@ -74,7 +74,6 @@ public class PerformanceTestLegacyLocks
         {
             executor.execute( new Runnable()
             {
-                private final FastRandom rand = new FastRandom();
                 private final Transaction tx = new NoOpTransaction();
                 final Object[] localResources = newResources( numResources );
 
@@ -82,6 +81,7 @@ public class PerformanceTestLegacyLocks
                 public void run()
                 {
                     Object[] acquired = new Object[numLocks];
+                    ThreadLocalRandom rand = ThreadLocalRandom.current();
 
                     for(int i=iterations;i --> 0;)
                     {
@@ -91,7 +91,7 @@ public class PerformanceTestLegacyLocks
                         {
                             for(; currentLock<numLocks; currentLock++)
                             {
-                                Object resource = localResources[(int)rand.next( numResources )];
+                                Object resource = localResources[rand.nextInt( numResources )];
                                 lockManager.getWriteLock( resource, tx );
                                 acquired[currentLock] = resource;
                             }

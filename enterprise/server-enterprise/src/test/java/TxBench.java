@@ -28,6 +28,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.cypher.javacompat.ExecutionEngine;
@@ -35,7 +36,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.impl.util.FastRandom;
 
 public class TxBench
 {
@@ -77,14 +77,13 @@ public class TxBench
 
     static class Worker
     {
-        private final FastRandom rand = new FastRandom();
         private final Map<String, Object> params = new HashMap<>();
 
         public void operation()
         {
             try ( Transaction tx = db.beginTx() )
             {
-                params.put( "name", rand.next( 100000 ) );
+                params.put( "name", ThreadLocalRandom.current().nextInt( 100000 ) );
                 ee.execute( "MERGE (n:User {name:{name}}) RETURN n", params );
                 tx.success();
             }

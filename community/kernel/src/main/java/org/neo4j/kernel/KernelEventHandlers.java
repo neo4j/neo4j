@@ -24,11 +24,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.graphdb.event.KernelEventHandler;
-import org.neo4j.kernel.impl.util.MultipleCauseException;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-
-import static java.util.Arrays.asList;
 
 /**
  * Handle the collection of kernel event handlers, and fire events as needed.
@@ -120,18 +117,14 @@ public class KernelEventHandlers
             try
             {
                 handler.kernelPanic( error );
-            } catch( Throwable e )
+            }
+            catch( Throwable e )
             {
-                if(cause != null)
+                if ( cause != null )
                 {
-                    log.error( "FATAL: Error while handling kernel panic.", new MultipleCauseException( "This " +
-                            "exception combines the error from the kernel event handler with the reason the event " +
-                            "was triggered in the first place.", asList( e, cause ) ) );
+                    e.addSuppressed( cause );
                 }
-                else
-                {
-                    log.error( "FATAL: Error while handling kernel panic.", e );
-                }
+                log.error( "FATAL: Error while handling kernel panic.", e );
             }
         }
     }
