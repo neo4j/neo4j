@@ -19,13 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KEY;
-
 import java.io.Closeable;
 import java.io.IOException;
 
@@ -35,6 +28,17 @@ import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.search.IndexSearcher;
 import org.junit.Before;
 import org.junit.Test;
+
+import org.neo4j.register.Register.DoubleLongRegister;
+import org.neo4j.register.Registers;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KEY;
 
 public class LuceneIndexAccessorReaderTest
 {
@@ -58,31 +62,32 @@ public class LuceneIndexAccessorReaderTest
         final LuceneIndexAccessorReader accessor = new LuceneIndexAccessorReader( searcher, documentLogic, closeable );
 
         // When
-        final double percentageOfUniqueValuesInSample = accessor.uniqueValuesFrequencyInSample( 1, 1 );
+        final DoubleLongRegister output = sampleAccessor( accessor );
 
         // Then
-        assertEquals( 0d, percentageOfUniqueValuesInSample, 0.00001d );
+        assertEquals( 0, output.readFirst() );
+        assertEquals( 0, output.readSecond() );
     }
 
     @Test
     public void shouldProvideTheIndexUniqueValuesForAnIndexWithDuplicates() throws IOException
     {
         // Given
-        when( terms.next() ).thenReturn( true, true, false );
+        when( terms.next() ).thenReturn( true, true, true, false );
         when( terms.term() ).thenReturn(
                 new Term( "string", "aaa" ),
                 new Term( "string", "ccc" ),
                 new Term( "string", "ccc" )
         );
-        when( terms.docFreq() ).thenReturn( 1, 3 );
 
         final LuceneIndexAccessorReader accessor = new LuceneIndexAccessorReader( searcher, documentLogic, closeable );
 
         // When
-        final double percentageOfUniqueValuesInSample = accessor.uniqueValuesFrequencyInSample( 3, 1 );
+        final DoubleLongRegister output = sampleAccessor( accessor );
 
         // Then
-        assertEquals( 0.66666d, percentageOfUniqueValuesInSample, 0.00001d );
+        assertEquals( 2, output.readFirst() );
+        assertEquals( 3, output.readSecond() );
     }
 
 
@@ -99,10 +104,11 @@ public class LuceneIndexAccessorReaderTest
         final LuceneIndexAccessorReader accessor = new LuceneIndexAccessorReader( searcher, documentLogic, closeable );
 
         // When
-        final double percentageOfUniqueValuesInSample = accessor.uniqueValuesFrequencyInSample( 1, 1 );
+        final DoubleLongRegister output = sampleAccessor( accessor );
 
         // Then
-        assertEquals( 1.0d, percentageOfUniqueValuesInSample, 0.00001d );
+        assertEquals( 1, output.readFirst() );
+        assertEquals( 1, output.readSecond() );
     }
 
     @Test
@@ -116,7 +122,7 @@ public class LuceneIndexAccessorReaderTest
         // When
         try
         {
-            accessor.uniqueValuesFrequencyInSample( 1,1 );
+            sampleAccessor( accessor );
             fail( "should have thrown" );
         }
         catch ( RuntimeException ex )
@@ -124,5 +130,12 @@ public class LuceneIndexAccessorReaderTest
             // Then
             assertSame( ioex, ex.getCause() );
         }
+    }
+
+    private DoubleLongRegister sampleAccessor( LuceneIndexAccessorReader accessor )
+    {
+        final DoubleLongRegister output = Registers.newDoubleLongRegister();
+        accessor.sampleIndex( new SkipOracleSampler( SkipOracle.Factory.FULL_SCAN_SKIP_ORACLE ), output );
+        return output;
     }
 }

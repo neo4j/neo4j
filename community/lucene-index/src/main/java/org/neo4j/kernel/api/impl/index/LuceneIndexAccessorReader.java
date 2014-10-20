@@ -21,10 +21,6 @@ package org.neo4j.kernel.api.impl.index;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
@@ -37,6 +33,8 @@ import org.apache.lucene.search.TermQuery;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.index.impl.lucene.Hits;
 import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.api.index.ValueSampler;
+import org.neo4j.register.Register.DoubleLongRegister;
 
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KEY;
 
@@ -55,31 +53,17 @@ class LuceneIndexAccessorReader implements IndexReader
     }
 
     @Override
-    public double uniqueValuesFrequencyInSample( final long sampleSize, final int frequency )
+    public void sampleIndex( final ValueSampler sampler, DoubleLongRegister samplingResult )
     {
-        long remainingSamples = sampleSize;
-
-        // sampleSize / indexSize => frequency
-
-        final SkipOracle oracle = frequencySkipOracle( frequency );
-        final Set<Object> values = new HashSet<>();
         try ( TermEnum terms = searcher.getIndexReader().terms() )
         {
-            while ( remainingSamples > 0 && terms.next() )
+            while ( terms.next() )
             {
                 Term term = terms.term();
                 if ( !NODE_ID_KEY.equals( term.field() ))
                 {
-                    values.add( term.text() );
-                    remainingSamples--;
-                }
-
-                for ( int toSkip = oracle.skip(); toSkip > 0 && terms.next(); )
-                {
-                    if ( !NODE_ID_KEY.equals( terms.term().field() ) )
-                    {
-                        toSkip--;
-                    }
+                    String value = term.text();
+                    sampler.considerValue( value );
                 }
             }
         }
@@ -88,8 +72,9 @@ class LuceneIndexAccessorReader implements IndexReader
             throw new RuntimeException( e );
         }
 
-        return ((double) values.size()) / ((double) sampleSize);
+        sampler.samplingResult( samplingResult );
     }
+
 
     @Override
     public PrimitiveLongIterator lookup( Object value )
@@ -138,36 +123,4 @@ class LuceneIndexAccessorReader implements IndexReader
         }
     }
 
-    static interface SkipOracle
-    {
-        int skip();
-    }
-
-    static SkipOracle frequencySkipOracle( final int frequency )
-    {
-        return frequency < 2 ? FULL_SCAN_SKIP_ORACLE : randomSkipOracle( 2 * frequency );
-    }
-
-    static SkipOracle FULL_SCAN_SKIP_ORACLE = new SkipOracle()
-    {
-        @Override
-        public int skip()
-        {
-            return 0;
-        }
-    };
-
-    static SkipOracle randomSkipOracle( final int maxValue )
-    {
-        return new SkipOracle()
-        {
-            private final Random random = ThreadLocalRandom.current();
-
-            @Override
-            public int skip()
-            {
-                return random.nextInt( maxValue );
-            }
-        };
-    }
 }

@@ -38,25 +38,25 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
 {
     protected final IndexPopulator populator;
     private final String indexUserDescription;
-    private final IndexCountVisitor indexCountVisitor;
+    private final IndexSizeVisitor indexSizeVisitor;
 
     public FailedIndexProxy(IndexDescriptor descriptor,
                             SchemaIndexProvider.Descriptor providerDescriptor,
                             String indexUserDescription,
                             IndexPopulator populator,
                             IndexPopulationFailure populationFailure,
-                            IndexCountVisitor indexCountVisitor )
+                            IndexSizeVisitor indexSizeVisitor )
     {
         super( descriptor, providerDescriptor, populationFailure );
         this.populator = populator;
         this.indexUserDescription = indexUserDescription;
-        this.indexCountVisitor = indexCountVisitor;
+        this.indexSizeVisitor = indexSizeVisitor;
     }
 
     @Override
     public Future<Void> drop() throws IOException
     {
-        indexCountVisitor.replaceIndexCount( MAX_TX_ID, 0l );
+        indexSizeVisitor.replaceIndexSize( MAX_TX_ID, 0l );
         populator.drop();
         return VOID;
     }

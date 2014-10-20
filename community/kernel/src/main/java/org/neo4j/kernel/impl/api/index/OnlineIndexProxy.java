@@ -40,7 +40,7 @@ public class OnlineIndexProxy implements IndexProxy
     private final IndexDescriptor descriptor;
     final IndexAccessor accessor;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
-    private IndexCountVisitor indexCountVisitor;
+    private IndexSizeVisitor indexSizeVisitor;
 
     public OnlineIndexProxy( IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
                              IndexAccessor accessor, IndexStoreView view )
@@ -48,7 +48,7 @@ public class OnlineIndexProxy implements IndexProxy
         this.descriptor = descriptor;
         this.providerDescriptor = providerDescriptor;
         this.accessor = accessor;
-        this.indexCountVisitor = IndexStoreView.IndexCountVisitors.newIndexCountVisitor( view, descriptor );
+        this.indexSizeVisitor = IndexStoreView.IndexCountVisitors.newIndexSizeVisitor( view, descriptor );
     }
 
     @Override
@@ -59,13 +59,13 @@ public class OnlineIndexProxy implements IndexProxy
     @Override
     public IndexUpdater newUpdater( final IndexUpdateMode mode, long transactionId )
     {
-        return new CountingIndexUpdater( transactionId, accessor.newUpdater( mode ), indexCountVisitor );
+        return new CountingIndexUpdater( transactionId, accessor.newUpdater( mode ), indexSizeVisitor );
     }
 
     @Override
     public Future<Void> drop() throws IOException
     {
-        indexCountVisitor.replaceIndexCount( MAX_TX_ID, 0 );
+        indexSizeVisitor.replaceIndexSize( MAX_TX_ID, 0 );
         accessor.drop();
         return VOID;
     }

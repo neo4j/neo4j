@@ -77,9 +77,13 @@ import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipKey;
  *  unique          size
  * <p/>
  */
-public class CountsRecordSerializer implements KeyValueRecordSerializer<CountsKey, Register.DoubleLongRegister>
+public final class CountsRecordSerializer implements KeyValueRecordSerializer<CountsKey, Register.DoubleLongRegister>
 {
+    public static final CountsRecordSerializer INSTANCE= new CountsRecordSerializer();
 
+    private CountsRecordSerializer()
+    {
+    }
 
     @Override
     public boolean visitRecord(ByteBuffer buffer, KeyValueRecordVisitor<CountsKey, Register.DoubleLongRegister> visitor)

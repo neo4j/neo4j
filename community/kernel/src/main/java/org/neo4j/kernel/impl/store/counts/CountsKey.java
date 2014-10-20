@@ -313,7 +313,7 @@ public abstract class CountsKey implements Comparable<CountsKey>
         @Override
         public void accept( CountsVisitor visitor, DoubleLongRegister count )
         {
-            visitor.visitIndexSizeCount( labelId(), propertyKeyId(), count.readSecond() );
+            visitor.visitIndexSize( labelId(), propertyKeyId(), count.readSecond() );
         }
 
         @Override
@@ -349,7 +349,7 @@ public abstract class CountsKey implements Comparable<CountsKey>
             // read out atomically in case count is a concurrent register
             DoubleLongRegister register = Registers.newDoubleLongRegister();
             count.copyTo( register );
-            visitor.visitIndexSampleCount( labelId(), propertyKeyId(), count.readFirst(), count.readSecond() );
+            visitor.visitIndexSample( labelId(), propertyKeyId(), count.readFirst(), count.readSecond() );
         }
 
         @Override

@@ -194,5 +194,5 @@ public interface StoreReadLayer
 
     double indexUniqueValuesPercentage( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
-    long indexNumberOfEntries( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    long indexSize( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 }

@@ -49,19 +49,26 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
+import org.neo4j.kernel.impl.api.index.sampling.BoundedIndexSamplingJobFactory;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingJobTracker;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.register.Register.DoubleLongRegister;
+import org.neo4j.register.Registers;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.Iterables.concatResourceIterators;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
+import static org.neo4j.kernel.impl.util.JobScheduler.Group.indexSamplingController;
 
 /**
  * Manages the indexes that were introduced in 2.0. These indexes depend on the normal neo4j logical log for
@@ -80,6 +87,8 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  */
 public class IndexingService extends LifecycleAdapter implements IndexMapSnapshotProvider
 {
+    private static final int NUMBER_OF_PARALLEL_INDEX_SAMPLING_JOBS = 1;
+
     private final IndexMapReference indexMapReference = new IndexMapReference();
 
     private final JobScheduler scheduler;
@@ -264,7 +273,7 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
         indexMapReference.setIndexMap( indexMap );
         state = State.RUNNING;
 
-        // scheduler.scheduleRecurring( JobScheduler.Group.indexSamplingController, new IndexSamplingController( logging, scheduler, this, 4 ), 10, TimeUnit.SECONDS );
+        scheduler.scheduleRecurring( indexSamplingController, createIndexSamplingController(), 10, SECONDS );
     }
 
     @Override
@@ -274,43 +283,27 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
         closeAllIndexes();
     }
 
-    public IndexProxy getOnlineProxyForRule( long indexId ) throws IndexNotFoundKernelException
+    public long indexSize( long indexId ) throws IndexNotFoundKernelException
     {
-        IndexProxy indexProxy = getProxyForRule( indexId );
-        switch ( indexProxy.getState() )
-        {
-            case ONLINE:
-                return indexProxy;
-
-            default:
-                throw new IndexNotFoundKernelException( "Expected requested index with id " + indexId + " to be online.");
-        }
-    }
-
-    public IndexProxy getProxyForRule( long indexId ) throws IndexNotFoundKernelException
-    {
-        IndexProxy indexProxy = indexMapReference.getIndexProxy( indexId );
-        if ( indexProxy == null )
-        {
-            throw new IndexNotFoundKernelException( "No index with id " + indexId + " exists." );
-        }
-        return indexProxy;
+        final IndexProxy indexProxy = getOnlineProxyForRule( indexId );
+        return storeView.indexSize( indexProxy.getDescriptor() );
     }
 
     public double indexUniqueValuesPercentage( long indexId ) throws IndexNotFoundKernelException
     {
         final IndexProxy indexProxy = getOnlineProxyForRule( indexId );
-
-        // TODO: compute this numbers by looking at the number of indexed entries in a lucene index
-        final int sampleSize = 100000;
-        final int frequency = 50;
-        return indexProxy.newReader().uniqueValuesFrequencyInSample( sampleSize, frequency );
-    }
-
-    public long indexNumberOfEntries( long indexId ) throws IndexNotFoundKernelException
-    {
-        final IndexProxy indexProxy = getOnlineProxyForRule( indexId );
-        return storeView.indexCount( indexProxy.getDescriptor() );
+        final DoubleLongRegister output = Registers.newDoubleLongRegister();
+        storeView.indexSample( indexProxy.getDescriptor(), output );
+        long unique = output.readFirst();
+        long size = output.readSecond();
+        if ( size == 0 )
+        {
+            return 1.0d;
+        }
+        else
+        {
+            return unique / size;
+        }
     }
 
     /*
@@ -515,9 +508,9 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
         }
     }
 
-    private IndexCountVisitor indexCountVisitor( IndexDescriptor descriptor )
+    private IndexSizeVisitor indexCountVisitor( IndexDescriptor descriptor )
     {
-        return IndexStoreView.IndexCountVisitors.newIndexCountVisitor( storeView, descriptor );
+        return IndexStoreView.IndexCountVisitors.newIndexSizeVisitor( storeView, descriptor );
     }
 
     private IndexProxy createAndStartPopulatingIndexProxy( final long ruleId,
@@ -624,6 +617,37 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
         IndexProxy result = new RecoveringIndexProxy( descriptor, providerDescriptor );
         result = contractCheckedProxy( result, true );
         return result;
+    }
+
+    private IndexSamplingController createIndexSamplingController()
+    {
+        // TODO: make sample size configurable
+        BoundedIndexSamplingJobFactory jobFactory = new BoundedIndexSamplingJobFactory( 10_000, storeView, logging );
+        IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( scheduler, NUMBER_OF_PARALLEL_INDEX_SAMPLING_JOBS );
+        return new IndexSamplingController( jobFactory, jobTracker, this );
+    }
+
+    private IndexProxy getOnlineProxyForRule( long indexId ) throws IndexNotFoundKernelException
+    {
+        IndexProxy indexProxy = getProxyForRule( indexId );
+        switch ( indexProxy.getState() )
+        {
+            case ONLINE:
+                return indexProxy;
+
+            default:
+                throw new IndexNotFoundKernelException( "Expected index with id " + indexId + " to be online.");
+        }
+    }
+
+    public IndexProxy getProxyForRule( long indexId ) throws IndexNotFoundKernelException
+    {
+        IndexProxy indexProxy = indexMapReference.getIndexProxy( indexId );
+        if ( indexProxy == null )
+        {
+            throw new IndexNotFoundKernelException( "No index for index id " + indexId + " exists." );
+        }
+        return indexProxy;
     }
 
     private IndexPopulator getPopulatorFromProvider( SchemaIndexProvider.Descriptor providerDescriptor, long ruleId,

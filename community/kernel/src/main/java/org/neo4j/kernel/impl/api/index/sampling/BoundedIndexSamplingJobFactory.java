@@ -17,27 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.kernel.impl.api.index.sampling;
 
-interface IndexCountVisitor
+import org.neo4j.kernel.impl.api.index.IndexProxy;
+import org.neo4j.kernel.impl.api.index.IndexStoreView;
+import org.neo4j.kernel.logging.Logging;
+
+public class BoundedIndexSamplingJobFactory implements IndexSamplingJobFactory
 {
-    /**
-     * Increment the associated index count by deltaCount
-     * if the underlying counts tracker has processed updates
-     * with txId < transactionId
-     *
-     * @param transactionId of the index count change
-     * @param deltaCount increment for the index count
-     */
-    void incrementIndexCount( long transactionId, long deltaCount );
+    private final long sampleSize;
+    private final IndexStoreView storeView;
+    private final Logging logging;
 
-    /**
-     * Replace the associated index count with totalCount
-     * if the underlying counts tracker has processed updates
-     * with txId < transactionId
-     *
-     * @param transactionId of the index count change
-     * @param totalCount new index count
-     */
-    void replaceIndexCount( long transactionId, long totalCount );
+    public BoundedIndexSamplingJobFactory( long sampleSize, IndexStoreView storeView, Logging logging )
+    {
+        this.sampleSize = sampleSize;
+        this.storeView = storeView;
+        this.logging = logging;
+    }
+
+    @Override
+    public Runnable create( IndexProxy indexProxy )
+    {
+        return new BoundedIndexSamplingJob( indexProxy, sampleSize, storeView, logging );
+    }
 }

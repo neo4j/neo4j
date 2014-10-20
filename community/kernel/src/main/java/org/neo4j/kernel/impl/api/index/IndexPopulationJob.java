@@ -67,7 +67,7 @@ public class IndexPopulationJob implements Runnable
     private final UpdateableSchemaState updateableSchemaState;
     private final StringLogger log;
     private final CountDownLatch doneSignal = new CountDownLatch( 1 );
-    private final IndexCountVisitor indexCountVisitor;
+    private final IndexSizeVisitor indexSizeVisitor;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
 
     private volatile StoreScan<IndexPopulationFailedKernelException> storeScan;
@@ -90,7 +90,7 @@ public class IndexPopulationJob implements Runnable
         this.updateableSchemaState = updateableSchemaState;
         this.indexUserDescription = indexUserDescription;
         this.failureDelegate = failureDelegateFactory;
-        this.indexCountVisitor = IndexStoreView.IndexCountVisitors.newIndexCountVisitor( storeView, descriptor );
+        this.indexSizeVisitor = IndexStoreView.IndexCountVisitors.newIndexSizeVisitor( storeView, descriptor );
         this.log = logging.getMessagesLog( getClass() );
     }
 
@@ -101,7 +101,7 @@ public class IndexPopulationJob implements Runnable
         currentThread().setName( format( "Index populator on %s [runs on: %s]", indexUserDescription, oldThreadName ) );
         boolean success = false;
         Throwable failureCause = null;
-        final CountVisitor countVisitor = new CountVisitor();
+        final SizeVisitor countVisitor = new SizeVisitor();
         try
         {
             try
@@ -109,13 +109,13 @@ public class IndexPopulationJob implements Runnable
                 log.info( format("Index population started: [%s]", indexUserDescription) );
                 log.flush();
                 populator.create();
-                storeView.replaceIndexCount( MAX_TX_ID, descriptor, 0 );
+                storeView.replaceIndexSize( MAX_TX_ID, descriptor, 0 );
 
                 indexAllNodes( countVisitor );
                 verifyDeferredConstraints();
                 if ( cancelled )
                 {
-                    storeView.replaceIndexCount( MAX_TX_ID, descriptor, 0 );
+                    storeView.replaceIndexSize( MAX_TX_ID, descriptor, 0 );
 
                     // We remain in POPULATING state
                     return;
@@ -127,7 +127,7 @@ public class IndexPopulationJob implements Runnable
                     public Void call() throws Exception
                     {
                         populateFromQueueIfAvailable( Long.MAX_VALUE, countVisitor );
-                        storeView.replaceIndexCount( MAX_TX_ID, descriptor, countVisitor.count() );
+                        storeView.replaceIndexSize( MAX_TX_ID, descriptor, countVisitor.count() );
                         storeView.flushIndexCounts();
                         populator.close( true );
                         updateableSchemaState.clear();
@@ -171,7 +171,7 @@ public class IndexPopulationJob implements Runnable
                 // place is that we would otherwise introduce a race condition where updates could come
                 // in to the old context, if something failed in the job we send to the flipper.
                 flipper.flipTo( new FailedIndexProxy( descriptor, providerDescriptor, indexUserDescription,
-                                                      populator, failure( t ), indexCountVisitor ) );
+                                                      populator, failure( t ), indexSizeVisitor ) );
             }
             finally
             {
@@ -201,7 +201,7 @@ public class IndexPopulationJob implements Runnable
         }
     }
 
-    private void indexAllNodes( final CountVisitor countVisitor ) throws IndexPopulationFailedKernelException
+    private void indexAllNodes( final SizeVisitor countVisitor ) throws IndexPopulationFailedKernelException
     {
         storeScan = storeView.visitNodesWithPropertyAndLabel( descriptor, new Visitor<NodePropertyUpdate,
                 IndexPopulationFailedKernelException>()
@@ -212,7 +212,7 @@ public class IndexPopulationJob implements Runnable
                 try
                 {
                     populator.add( update.getNodeId(), update.getValueAfter() );
-                    countVisitor.incrementIndexCount( MAX_TX_ID, 1 );
+                    countVisitor.incrementIndexSize( MAX_TX_ID, 1 );
                     populateFromQueueIfAvailable( update.getNodeId(), countVisitor );
                 }
                 catch ( IndexEntryConflictException | IOException conflict )
@@ -237,7 +237,7 @@ public class IndexPopulationJob implements Runnable
         }
     }
 
-    private void populateFromQueueIfAvailable( final long currentlyIndexedNodeId, CountVisitor countVisitor )
+    private void populateFromQueueIfAvailable( final long currentlyIndexedNodeId, SizeVisitor countVisitor )
             throws IndexEntryConflictException, IOException
     {
         if ( !queue.isEmpty() )
@@ -258,7 +258,7 @@ public class IndexPopulationJob implements Runnable
         }
     }
 
-    private CountingIndexUpdater createCountingIndexUpdater( CountVisitor countVisitor ) throws IOException
+    private CountingIndexUpdater createCountingIndexUpdater( SizeVisitor countVisitor ) throws IOException
     {
         return new CountingIndexUpdater( MAX_TX_ID, populator.newPopulatingUpdater( storeView ), countVisitor );
     }
@@ -295,7 +295,7 @@ public class IndexPopulationJob implements Runnable
         doneSignal.await();
     }
 
-    private class CountVisitor implements IndexCountVisitor
+    private class SizeVisitor implements IndexSizeVisitor
     {
         private long count = 0;
 
@@ -305,15 +305,15 @@ public class IndexPopulationJob implements Runnable
         }
 
         @Override
-        public void incrementIndexCount( long transactionId, long deltaCount )
+        public void incrementIndexSize( long transactionId, long sizeDelta )
         {
-            this.count += deltaCount;
+            this.count += sizeDelta;
         }
 
         @Override
-        public void replaceIndexCount( long transactionId, long totalCount )
+        public void replaceIndexSize( long transactionId, long totalSize )
         {
-            this.count = totalCount;
+            this.count = totalSize;
         }
     }
 }

@@ -105,7 +105,7 @@ public class CountsStoreWriterTest
                         }
 
                         @Override
-                        public void visitIndexSizeCount( int labelId, int propertyKeyId, long count )
+                        public void visitIndexSize( int labelId, int propertyKeyId, long count )
                         {
                             assertEquals( 4, labelId );
                             assertEquals( 5, propertyKeyId );
@@ -113,7 +113,7 @@ public class CountsStoreWriterTest
                         }
 
                         @Override
-                        public void visitIndexSampleCount( int labelId, int propertyKeyId, long unique, long size )
+                        public void visitIndexSample( int labelId, int propertyKeyId, long unique, long size )
                         {
                             assertEquals( 4, labelId );
                             assertEquals( 5, propertyKeyId );

@@ -183,23 +183,23 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     }
 
     @Override
-    public long indexSizeCount( int labelId, int propertyKeyId )
+    public long indexSize( int labelId, int propertyKeyId )
     {
         return state.indexSizeCount( indexSizeKey( labelId, propertyKeyId ) );
     }
 
     @Override
-    public long incrementIndexSizeCount( int labelId, int propertyKeyId, long delta )
+    public long incrementIndexSize( int labelId, int propertyKeyId, long delta )
     {
         if ( delta == 0 )
         {
-            return indexSizeCount( labelId, propertyKeyId );
+            return indexSize( labelId, propertyKeyId );
         }
         {
             try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
             {
                 CountsKey.IndexSizeKey key = indexSizeKey( labelId, propertyKeyId );
-                long value = state.incrementIndexSizeCount( key, delta );
+                long value = state.incrementIndexSize( key, delta );
                 assert value >= 0 : String.format( "incrementIndexSizeCount(key=%s, delta=%d) -> value=%d", key, delta, value );
                 return value;
             }
@@ -207,19 +207,19 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     }
 
     @Override
-    public boolean indexSample( int labelId, int propertyKeyId, Register.DoubleLongRegister target )
+    public void indexSample( int labelId, int propertyKeyId, Register.DoubleLongRegister target )
     {
-        return state.indexSample( indexSampleKey( labelId, propertyKeyId ), target );
+        state.indexSample( indexSampleKey( labelId, propertyKeyId ), target );
     }
 
     @Override
-    public void replaceIndexSizeCount( int labelId, int propertyKeyId, long total )
+    public void replaceIndexSize( int labelId, int propertyKeyId, long total )
     {
         try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
         {
             CountsKey.IndexSizeKey key = indexSizeKey( labelId, propertyKeyId );
             assert total >= 0 : String.format( "replaceIndexSizeCount(key=%s, total=%d)", key, total );
-            state.replaceIndexSizeCount( key, total );
+            state.replaceIndexSize( key, total );
         }
     }
 

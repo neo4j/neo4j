@@ -31,15 +31,15 @@ public class CountingIndexUpdater implements IndexUpdater
 {
     private final long transactionId;
     private final IndexUpdater delegate;
-    private final IndexCountVisitor indexCountVisitor;
+    private final IndexSizeVisitor indexSizeVisitor;
 
     private long delta;
 
-    public CountingIndexUpdater( long transactionId, IndexUpdater delegate, IndexCountVisitor indexCountVisitor )
+    public CountingIndexUpdater( long transactionId, IndexUpdater delegate, IndexSizeVisitor indexSizeVisitor )
     {
         this.transactionId = transactionId;
         this.delegate = delegate;
-        this.indexCountVisitor = indexCountVisitor;
+        this.indexSizeVisitor = indexSizeVisitor;
     }
 
     @Override
@@ -64,7 +64,7 @@ public class CountingIndexUpdater implements IndexUpdater
     @Override
     public void close() throws IOException, IndexEntryConflictException
     {
-        indexCountVisitor.incrementIndexCount( transactionId, delta );
+        indexSizeVisitor.incrementIndexSize( transactionId, delta );
         delegate.close();
     }
 

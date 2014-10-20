@@ -25,11 +25,23 @@ import org.neo4j.cypher.internal.compiler.v2_2.{LabelId, NameId, PropertyKeyId, 
 import org.neo4j.kernel.api.{Statement => KernelStatement}
 
 class TransactionBoundGraphStatistics(statement: KernelStatement) extends GraphStatistics {
-  import TransactionBoundGraphStatistics.WILDCARD
-  import TransactionBoundGraphStatistics.toKernelEncode
+  import org.neo4j.cypher.internal.spi.v2_2.TransactionBoundGraphStatistics.{WILDCARD, toKernelEncode}
 
   def indexSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] =
-    HardcodedGraphStatistics.indexSelectivity(label,property)
+    HardcodedGraphStatistics.indexSelectivity(label, property)
+//   try {
+//      val indexDescriptor = new IndexDescriptor( label, property )
+//      val indexSize = statement.readOperations( ).indexSize( indexDescriptor ).toDouble
+//      val labeledNodes = statement.readOperations().countsForNode( label ).toDouble
+//
+//      val uniqueValuesSelectivity = statement.readOperations( ).indexUniqueValuesSelectivity( indexDescriptor )
+//      val avgIndexNodes = 1.0d / ( uniqueValuesSelectivity *  indexSize )
+//
+//      Some(Selectivity(avgIndexNodes / labeledNodes))
+//    }
+//    catch {
+//      case e: IndexNotFoundKernelException => None
+//    }
 
   def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
     statement.readOperations().countsForNode(labelId)

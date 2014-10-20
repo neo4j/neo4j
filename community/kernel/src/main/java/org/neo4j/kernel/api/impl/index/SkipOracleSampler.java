@@ -19,23 +19,44 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import java.io.Closeable;
-
-import org.apache.lucene.search.IndexSearcher;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.neo4j.kernel.api.index.ValueSampler;
-import org.neo4j.register.Register.DoubleLongRegister;
+import org.neo4j.register.Register;
 
-class LuceneUniqueIndexAccessorReader extends LuceneIndexAccessorReader
+public class SkipOracleSampler implements ValueSampler
 {
-     LuceneUniqueIndexAccessorReader( IndexSearcher searcher, LuceneDocumentStructure documentLogic, Closeable onClose )
+    private final SkipOracle oracle;
+
+    private long leftToSkip = 0l;
+    private long sampleSize = 0l;
+    private Set<Object> values = new HashSet<>();
+
+    public SkipOracleSampler( SkipOracle oracle )
     {
-        super( searcher, documentLogic, onClose );
-     }
+        this.oracle = oracle;
+    }
 
     @Override
-    public void sampleIndex( ValueSampler sampler, DoubleLongRegister samplingResult )
+    public void considerValue( Object value )
     {
-        sampler.samplingResult( samplingResult );
+        if ( leftToSkip == 0 )
+        {
+            //
+            leftToSkip = oracle.skip();
+            values.add( value );
+            sampleSize++;
+        }
+        else
+        {
+            leftToSkip--;
+        }
+    }
+
+    @Override
+    public void samplingResult( Register.DoubleLongRegister register )
+    {
+        register.write( values.size(), sampleSize );
     }
 }

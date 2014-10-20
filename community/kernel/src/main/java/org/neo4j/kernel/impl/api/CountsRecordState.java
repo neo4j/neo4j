@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.kernel.impl.store.counts.CountsKey;
+import org.neo4j.kernel.impl.store.counts.CountsRecordSerializer;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.state.RecordState;
 import org.neo4j.register.Register;
@@ -63,18 +64,9 @@ public class CountsRecordState implements CountsVisitor.Visitable, CountsAccesso
     }
 
     @Override
-    public boolean indexSample( int labelId, int propertyKeyId, Register.DoubleLongRegister target )
+    public void indexSample( int labelId, int propertyKeyId, Register.DoubleLongRegister target )
     {
-        Register.DoubleLongRegister count = counts.get( indexSampleKey( labelId, propertyKeyId ) );
-        if ( count == null )
-        {
-            return false;
-        }
-        else
-        {
-            count.copyTo( target );
-            return true;
-        }
+        count( indexSampleKey( labelId, propertyKeyId ) ).copyTo( target );
     }
 
     @Override
@@ -84,19 +76,19 @@ public class CountsRecordState implements CountsVisitor.Visitable, CountsAccesso
     }
 
     @Override
-    public long indexSizeCount( int labelId, int propertyKeyId )
+    public long indexSize( int labelId, int propertyKeyId )
     {
         return count( indexSizeKey( labelId, propertyKeyId ) ).readSecond();
     }
 
     @Override
-    public long incrementIndexSizeCount( int labelId, int propertyKeyId, long delta )
+    public long incrementIndexSize( int labelId, int propertyKeyId, long delta )
     {
         return count( indexSizeKey( labelId, propertyKeyId ) ).incrementSecond( delta );
     }
 
     @Override
-    public void replaceIndexSizeCount( int labelId, int propertyKeyId, long total )
+    public void replaceIndexSize( int labelId, int propertyKeyId, long total )
     {
         count( indexSizeKey( labelId, propertyKeyId ) ).writeSecond( total );
     }
@@ -258,7 +250,9 @@ public class CountsRecordState implements CountsVisitor.Visitable, CountsAccesso
         Register.DoubleLongRegister count = counts.get( key );
         if ( count == null )
         {
-            counts.put( key, count = Registers.newDoubleLongRegister( 0, 0 ) );
+            count = Registers.newDoubleLongRegister();
+            CountsRecordSerializer.INSTANCE.writeDefaultValue( count );
+            counts.put( key, count );
         }
         return count;
     }
@@ -305,13 +299,13 @@ public class CountsRecordState implements CountsVisitor.Visitable, CountsAccesso
         }
 
         @Override
-        public void visitIndexSizeCount( int labelId, int propertyKey, long count )
+        public void visitIndexSize( int labelId, int propertyKey, long count )
         {
             verify( indexSizeKey( labelId, propertyKey ), 0, count );
         }
 
         @Override
-        public void visitIndexSampleCount( int labelId, int propertyKeyId, long unique, long size )
+        public void visitIndexSample( int labelId, int propertyKeyId, long unique, long size )
         {
             verify( indexSampleKey( labelId, propertyKeyId ), unique, size );
         }

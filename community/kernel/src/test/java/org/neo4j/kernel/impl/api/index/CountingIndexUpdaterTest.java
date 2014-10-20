@@ -39,17 +39,17 @@ public class CountingIndexUpdaterTest
     {
         // given
         IndexUpdater indexUpdater = mock( IndexUpdater.class );
-        IndexCountVisitor indexCountVisitor = mock( IndexCountVisitor.class );
-        CountingIndexUpdater countingIndexUpdater = new CountingIndexUpdater( 42l, indexUpdater, indexCountVisitor );
+        IndexSizeVisitor indexSizeVisitor = mock( IndexSizeVisitor.class );
+        CountingIndexUpdater countingIndexUpdater = new CountingIndexUpdater( 42l, indexUpdater, indexSizeVisitor );
 
         // when
         countingIndexUpdater.close();
 
         // then
-        verify( indexCountVisitor ).incrementIndexCount( eq( 42l ), eq( 0l ) );
+        verify( indexSizeVisitor ).incrementIndexSize( eq( 42l ), eq( 0l ) );
         verify( indexUpdater ).close();
 
-        verifyNoMoreInteractions( indexCountVisitor );
+        verifyNoMoreInteractions( indexSizeVisitor );
         verifyNoMoreInteractions( indexUpdater );
     }
 
@@ -58,8 +58,8 @@ public class CountingIndexUpdaterTest
     {
         // given
         IndexUpdater indexUpdater = mock( IndexUpdater.class );
-        IndexCountVisitor indexCountVisitor = mock( IndexCountVisitor.class );
-        CountingIndexUpdater countingIndexUpdater = new CountingIndexUpdater( 42l, indexUpdater, indexCountVisitor );
+        IndexSizeVisitor indexSizeVisitor = mock( IndexSizeVisitor.class );
+        CountingIndexUpdater countingIndexUpdater = new CountingIndexUpdater( 42l, indexUpdater, indexSizeVisitor );
 
         // when
         NodePropertyUpdate update = NodePropertyUpdate.add( 1, 2, "x", new long[]{3} );
@@ -68,10 +68,10 @@ public class CountingIndexUpdaterTest
 
         // then
         verify( indexUpdater ).process( update );
-        verify( indexCountVisitor ).incrementIndexCount( eq( 42l ), eq( 1l ) );
+        verify( indexSizeVisitor ).incrementIndexSize( eq( 42l ), eq( 1l ) );
         verify( indexUpdater ).close();
 
-        verifyNoMoreInteractions( indexCountVisitor );
+        verifyNoMoreInteractions( indexSizeVisitor );
         verifyNoMoreInteractions( indexUpdater );
     }
 
@@ -80,8 +80,8 @@ public class CountingIndexUpdaterTest
     {
         // given
         IndexUpdater indexUpdater = mock( IndexUpdater.class );
-        IndexCountVisitor indexCountVisitor = mock( IndexCountVisitor.class );
-        CountingIndexUpdater countingIndexUpdater = new CountingIndexUpdater( 42l, indexUpdater, indexCountVisitor );
+        IndexSizeVisitor indexSizeVisitor = mock( IndexSizeVisitor.class );
+        CountingIndexUpdater countingIndexUpdater = new CountingIndexUpdater( 42l, indexUpdater, indexSizeVisitor );
 
         // when
         NodePropertyUpdate update = NodePropertyUpdate.remove( 1, 2, "x", new long[]{3} );
@@ -90,10 +90,10 @@ public class CountingIndexUpdaterTest
 
         // then
         verify( indexUpdater ).process( update );
-        verify( indexCountVisitor ).incrementIndexCount( eq( 42l ), eq( -1l ) );
+        verify( indexSizeVisitor ).incrementIndexSize( eq( 42l ), eq( -1l ) );
         verify( indexUpdater ).close();
 
-        verifyNoMoreInteractions( indexCountVisitor );
+        verifyNoMoreInteractions( indexSizeVisitor );
         verifyNoMoreInteractions( indexUpdater );
     }
 
@@ -102,8 +102,8 @@ public class CountingIndexUpdaterTest
     {
         // given
         IndexUpdater indexUpdater = mock( IndexUpdater.class );
-        IndexCountVisitor indexCountVisitor = mock( IndexCountVisitor.class );
-        CountingIndexUpdater countingIndexUpdater = new CountingIndexUpdater( 42l, indexUpdater, indexCountVisitor );
+        IndexSizeVisitor indexSizeVisitor = mock( IndexSizeVisitor.class );
+        CountingIndexUpdater countingIndexUpdater = new CountingIndexUpdater( 42l, indexUpdater, indexSizeVisitor );
 
         // when
         NodePropertyUpdate update1 = NodePropertyUpdate.add( 1, 2, "x", new long[]{3} );
@@ -118,10 +118,10 @@ public class CountingIndexUpdaterTest
         verify( indexUpdater ).process( update1 );
         verify( indexUpdater ).process( update2 );
         verify( indexUpdater ).process( update3 );
-        verify( indexCountVisitor ).incrementIndexCount( eq( 42l ), eq( 1l ) );
+        verify( indexSizeVisitor ).incrementIndexSize( eq( 42l ), eq( 1l ) );
         verify( indexUpdater ).close();
 
-        verifyNoMoreInteractions( indexCountVisitor );
+        verifyNoMoreInteractions( indexSizeVisitor );
         verifyNoMoreInteractions( indexUpdater );
     }
 }

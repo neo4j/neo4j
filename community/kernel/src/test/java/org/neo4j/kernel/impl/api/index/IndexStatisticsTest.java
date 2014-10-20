@@ -254,7 +254,7 @@ public class IndexStatisticsTest
         try ( Transaction tx = db.beginTx() )
         {
             Statement statement = bridge.instance();
-            long numberOfEntries = statement.readOperations().indexNumberOfEntries( descriptor );
+            long numberOfEntries = statement.readOperations().indexSize( descriptor );
             tx.success();
             return numberOfEntries;
         }

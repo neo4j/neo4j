@@ -17,25 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.index;
+package org.neo4j.kernel.api.index;
 
-import java.io.Closeable;
+import org.neo4j.register.Register;
 
-import org.apache.lucene.search.IndexSearcher;
-
-import org.neo4j.kernel.api.index.ValueSampler;
-import org.neo4j.register.Register.DoubleLongRegister;
-
-class LuceneUniqueIndexAccessorReader extends LuceneIndexAccessorReader
+public interface ValueSampler
 {
-     LuceneUniqueIndexAccessorReader( IndexSearcher searcher, LuceneDocumentStructure documentLogic, Closeable onClose )
-    {
-        super( searcher, documentLogic, onClose );
-     }
-
-    @Override
-    public void sampleIndex( ValueSampler sampler, DoubleLongRegister samplingResult )
-    {
-        sampler.samplingResult( samplingResult );
-    }
+    void considerValue( Object value );
+    void samplingResult( Register.DoubleLongRegister register );
 }

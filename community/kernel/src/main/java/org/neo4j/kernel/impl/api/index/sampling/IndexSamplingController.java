@@ -22,36 +22,38 @@ package org.neo4j.kernel.impl.api.index.sampling;
 import java.util.Iterator;
 
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.index.IndexMap;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
-import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.impl.api.index.IndexProxy;
 
 public class IndexSamplingController implements Runnable
 {
     private final IndexMapSnapshotProvider indexMapSnapshotProvider;
-    private final IndexSamplingJobQueue jobQueue = new IndexSamplingJobQueue();
     private final IndexSamplingJobTracker jobTracker;
-    private final StringLogger logger;
+    private final IndexSamplingJobQueue jobQueue;
+    private final IndexSamplingJobFactory jobFactory;
 
-    public IndexSamplingController( Logging logging, JobScheduler scheduler, IndexMapSnapshotProvider indexMapSnapshotProvider, int samplingJobLimit )
+    public IndexSamplingController( IndexSamplingJobFactory jobFactory,
+                                    IndexSamplingJobTracker jobTracker,
+                                    IndexMapSnapshotProvider indexMapSnapshotProvider )
     {
-        this.logger = logging.getMessagesLog( logging.getClass() );
+        this.jobFactory = jobFactory;
         this.indexMapSnapshotProvider = indexMapSnapshotProvider;
-        this.jobTracker = new IndexSamplingJobTracker( scheduler, samplingJobLimit );
+        this.jobTracker = jobTracker;
+        this.jobQueue = new IndexSamplingJobQueue();
     }
 
     @Override
     public void run()
     {
-        fillQueue();
-        emptyQueue();
+        IndexMap indexMap = indexMapSnapshotProvider.indexMapSnapshot();
+        fillQueue( indexMap );
+        emptyQueue( indexMap );
     }
 
-    private void fillQueue()
+    private void fillQueue( IndexMap indexMap )
     {
-        IndexMap indexMap = indexMapSnapshotProvider.indexMapSnapshot();
         Iterator<IndexDescriptor> descriptors = indexMap.descriptors();
         while ( descriptors.hasNext() )
         {
@@ -60,9 +62,8 @@ public class IndexSamplingController implements Runnable
         }
     }
 
-    private void emptyQueue()
+    private void emptyQueue( IndexMap indexMap )
     {
-
         while ( jobTracker.canExecuteMoreSamplingJobs() )
         {
             IndexDescriptor descriptor = jobQueue.poll();
@@ -71,21 +72,13 @@ public class IndexSamplingController implements Runnable
                 return;
             }
 
-            jobTracker.scheduleSamplingJob( sampleIndex( descriptor ) );
+            IndexProxy proxy = indexMap.getIndexProxy( descriptor );
+            if ( proxy == null || proxy.getState() != InternalIndexState.ONLINE )
+            {
+                continue;
+            }
+
+            jobTracker.scheduleSamplingJob( jobFactory.create( proxy ) );
         }
     }
-
-    private Runnable sampleIndex( final IndexDescriptor descriptor )
-    {
-        return new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                System.out.println( "I has sampled teh index: " + descriptor );
-                logger.warn( "I has sampled teh index: " + descriptor );
-            }
-        };
-    }
-
 }

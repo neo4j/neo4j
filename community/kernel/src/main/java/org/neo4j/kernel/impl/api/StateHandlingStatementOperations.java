@@ -939,7 +939,7 @@ public class StateHandlingStatementOperations implements
             throws IndexNotFoundKernelException
 
     {
-        return storeLayer.indexNumberOfEntries( descriptor );
+        return storeLayer.indexSize( descriptor );
     }
 
     @Override

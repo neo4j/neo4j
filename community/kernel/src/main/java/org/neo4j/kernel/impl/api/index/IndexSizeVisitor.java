@@ -17,25 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.index;
+package org.neo4j.kernel.impl.api.index;
 
-import java.io.Closeable;
-
-import org.apache.lucene.search.IndexSearcher;
-
-import org.neo4j.kernel.api.index.ValueSampler;
-import org.neo4j.register.Register.DoubleLongRegister;
-
-class LuceneUniqueIndexAccessorReader extends LuceneIndexAccessorReader
+interface IndexSizeVisitor
 {
-     LuceneUniqueIndexAccessorReader( IndexSearcher searcher, LuceneDocumentStructure documentLogic, Closeable onClose )
-    {
-        super( searcher, documentLogic, onClose );
-     }
+    /**
+     * Increment the associated index count by deltaCount
+     * if the underlying counts tracker has processed updates
+     * with txId < transactionId
+     *
+     * @param transactionId of the index count change
+     * @param sizeDelta increment for the index count
+     */
+    void incrementIndexSize( long transactionId, long sizeDelta );
 
-    @Override
-    public void sampleIndex( ValueSampler sampler, DoubleLongRegister samplingResult )
-    {
-        sampler.samplingResult( samplingResult );
-    }
+    /**
+     * Replace the associated index count with totalCount
+     * if the underlying counts tracker has processed updates
+     * with txId < transactionId
+     *
+     * @param transactionId of the index count change
+     * @param totalSize new index count
+     */
+    void replaceIndexSize( long transactionId, long totalSize );
 }

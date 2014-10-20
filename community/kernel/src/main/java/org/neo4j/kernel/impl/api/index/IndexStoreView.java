@@ -26,6 +26,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.register.Register.DoubleLongRegister;
 
 /** The indexing services view of the universe. */
 public interface IndexStoreView extends PropertyAccessor
@@ -50,30 +51,35 @@ public interface IndexStoreView extends PropertyAccessor
 
     Iterable<NodePropertyUpdate> nodeAsUpdates( long nodeId );
 
-    long indexCount( IndexDescriptor descriptor );
+    long indexSize( IndexDescriptor descriptor );
 
-    void replaceIndexCount( long transactionId, IndexDescriptor descriptor, long total );
+    void replaceIndexSize( long transactionId, IndexDescriptor descriptor, long total );
 
-    void incrementIndexCount( long transactionId, IndexDescriptor descriptor, long delta );
+    void incrementIndexSize( long transactionId, IndexDescriptor descriptor, long delta );
+
+    void indexSample( IndexDescriptor descriptor, DoubleLongRegister output );
+
+    void replaceIndexSample( long transactionId, IndexDescriptor descriptor, long unique, long size );
 
     void flushIndexCounts() throws IOException;
 
     static class IndexCountVisitors
     {
-        public static IndexCountVisitor newIndexCountVisitor( final IndexStoreView view, final IndexDescriptor descriptor )
+        public static IndexSizeVisitor newIndexSizeVisitor( final IndexStoreView view, final IndexDescriptor
+                descriptor )
         {
-            return new IndexCountVisitor()
+            return new IndexSizeVisitor()
             {
                 @Override
-                public void incrementIndexCount( long transactionId, long deltaCount )
+                public void incrementIndexSize( long transactionId, long sizeDelta )
                 {
-                    view.incrementIndexCount( transactionId, descriptor, deltaCount );
+                    view.incrementIndexSize( transactionId, descriptor, sizeDelta );
                 }
 
                 @Override
-                public void replaceIndexCount( long transactionId, long totalCount )
+                public void replaceIndexSize( long transactionId, long totalSize )
                 {
-                    view.replaceIndexCount( transactionId, descriptor, totalCount );
+                    view.replaceIndexSize( transactionId, descriptor, totalSize );
 
                 }
             };

@@ -32,7 +32,7 @@ import org.neo4j.register.Register;
 
 public class CountsStore extends SortedKeyValueStore<CountsKey, Register.DoubleLongRegister>
 {
-    static final CountsRecordSerializer RECORD_SERIALIZER = new CountsRecordSerializer();
+    static final CountsRecordSerializer RECORD_SERIALIZER = CountsRecordSerializer.INSTANCE;
     static final CountsStoreWriter.Factory WRITER_FACTORY = new CountsStoreWriter.Factory();
 
     public CountsStore( FileSystemAbstraction fs, PageCache pageCache, File file, PagedFile pages,

@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index.inmemory;
 
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
-
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,6 +28,10 @@ import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.kernel.api.index.ValueSampler;
+import org.neo4j.register.Register;
+
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
 
 class HashBasedIndex extends InMemoryIndexImplementation
 {
@@ -135,13 +137,8 @@ class HashBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
-    public double uniqueValuesFrequencyInSample( long sampleSize, int frequency )
+    public void sampleIndex( ValueSampler sampler, Register.DoubleLongRegister samplingResult )
     {
-        double result = 0.0;
-        for ( Map.Entry<Object, Set<Long>> entry : data.entrySet() )
-        {
-            result += entry.getValue().size() / data.size();
-        }
-        return result;
+        samplingResult.write( data.size(), ids().size() );
     }
 }

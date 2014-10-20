@@ -163,22 +163,22 @@ public class NeoStoreIndexStoreViewTest
     {
         // given
         long initialTxId = neoStore.getLastCommittedTransactionId();
-        counts.replaceIndexSizeCount( 1, 2, 42l );
+        counts.replaceIndexSize( 1, 2, 42l );
         long lastTxId = initialTxId + 1;
         neoStore.setLastCommittedAndClosedTransactionId( lastTxId );
         neoStore.flush();
 
         // when
-        storeView.replaceIndexCount( lastTxId, new IndexDescriptor( 1, 2 ), 84l );
+        storeView.replaceIndexSize( lastTxId, new IndexDescriptor( 1, 2 ), 84l );
 
         // then
-        assertEquals( 42l, counts.indexSizeCount( 1, 2 ) );
+        assertEquals( 42l, counts.indexSize( 1, 2 ) );
 
         // also when
-        storeView.replaceIndexCount( lastTxId + 1, new IndexDescriptor( 1, 2 ), 23l );
+        storeView.replaceIndexSize( lastTxId + 1, new IndexDescriptor( 1, 2 ), 23l );
 
         // then
-        assertEquals( 23l, counts.indexSizeCount( 1, 2 ) );
+        assertEquals( 23l, counts.indexSize( 1, 2 ) );
     }
 
     @Test
@@ -186,22 +186,22 @@ public class NeoStoreIndexStoreViewTest
     {
         // given
         long initialTxId = neoStore.getLastCommittedTransactionId();
-        counts.replaceIndexSizeCount( 1, 2, 42l );
+        counts.replaceIndexSize( 1, 2, 42l );
         long lastTxId = initialTxId + 1;
         neoStore.setLastCommittedAndClosedTransactionId( lastTxId );
         neoStore.flush();
 
         // when
-        storeView.incrementIndexCount( lastTxId, new IndexDescriptor( 1, 2 ), 84l );
+        storeView.incrementIndexSize( lastTxId, new IndexDescriptor( 1, 2 ), 84l );
 
         // then
-        assertEquals( 42l, counts.indexSizeCount( 1, 2 ) );
+        assertEquals( 42l, counts.indexSize( 1, 2 ) );
 
         // also when
-        storeView.incrementIndexCount( lastTxId + 1, new IndexDescriptor( 1, 2 ), 23l );
+        storeView.incrementIndexSize( lastTxId + 1, new IndexDescriptor( 1, 2 ), 23l );
 
         // then
-        assertEquals( 65l, counts.indexSizeCount( 1, 2 ) );
+        assertEquals( 65l, counts.indexSize( 1, 2 ) );
     }
 
     Map<Long, Lock> lockMocks = new HashMap<>();
