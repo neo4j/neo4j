@@ -17,10 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.store.io;
+package org.neo4j.kernel.impl.util;
 
 import org.neo4j.collection.pool.Pool;
-import org.neo4j.helpers.Factory;
+import org.neo4j.function.Factory;
 
 /**
  * Just a little GC free pool with a fixed max size.

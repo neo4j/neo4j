@@ -33,8 +33,8 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.util.SimplePool;
 import org.neo4j.unsafe.impl.batchimport.store.io.Monitor;
-import org.neo4j.unsafe.impl.batchimport.store.io.SimplePool;
 
 import static java.lang.Math.min;
 

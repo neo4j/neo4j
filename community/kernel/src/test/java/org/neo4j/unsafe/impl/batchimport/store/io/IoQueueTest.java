@@ -28,6 +28,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.util.SimplePool;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Writer;
 

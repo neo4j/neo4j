@@ -25,6 +25,7 @@ import org.jboss.netty.buffer.ChannelBuffer;
 
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.WriteFuture;
 
 public class NetworkWritableLogChannel implements WritableLogChannel
 {
@@ -101,7 +102,8 @@ public class NetworkWritableLogChannel implements WritableLogChannel
     }
 
     @Override
-    public void emptyBufferIntoChannelAndClearIt() throws IOException
+    public WriteFuture switchBuffer()
     {
+        return WriteFuture.VOID;
     }
 }

@@ -113,7 +113,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public synchronized void shutdown() throws Throwable
     {
         writer.close();
         channel.close();

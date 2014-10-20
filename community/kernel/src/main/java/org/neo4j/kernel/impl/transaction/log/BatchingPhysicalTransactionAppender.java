@@ -60,7 +60,7 @@ public class BatchingPhysicalTransactionAppender extends AbstractPhysicalTransac
     private boolean shutDown;
     private final BatchingForceThread forceThread;
 
-    public BatchingPhysicalTransactionAppender( LogFile logFile,
+    public BatchingPhysicalTransactionAppender( final LogFile logFile,
             TransactionMetadataCache transactionMetadataCache, final TransactionIdStore transactionIdStore,
             IdOrderingQueue legacyIndexTransactionOrdering,
             Factory<Counter> counting,
@@ -75,7 +75,7 @@ public class BatchingPhysicalTransactionAppender extends AbstractPhysicalTransac
              * Called by the forcing thread that forces now and then.
              */
             @Override
-            public boolean force() throws IOException
+            public boolean perform() throws IOException
             {
                 long currentAppenderTicket = appenderTicket.get();
                 if ( forceTicket.get() == currentAppenderTicket )
@@ -83,12 +83,23 @@ public class BatchingPhysicalTransactionAppender extends AbstractPhysicalTransac
                     return false;
                 }
 
-                forceChannel();
+                force();
+
+                // Mark that we've forced at least the ticket we saw when waking up previously.
+                // It's on the pessimistic, but better safe than sorry.
                 forceTicket.set( currentAppenderTicket );
                 return true;
             }
         }, idleBackoffStrategy );
         forceThread.start();
+    }
+
+    /**
+     * Called by the appender.
+     */
+    @Override
+    protected void emptyBufferIntoChannel() throws IOException
+    {   // The force thread will do it himself
     }
 
     /**
@@ -121,6 +132,28 @@ public class BatchingPhysicalTransactionAppender extends AbstractPhysicalTransac
         {
             LockSupport.parkNanos( 100_000 ); // 0,1 ms
         }
+    }
+
+    @Override
+    public void force() throws IOException
+    {
+        // Empty buffer into channel. We want to synchronize with appenders somehow so that they
+        // don't append while we're doing that. The natural way is to synchronize on logFile,
+        // which all other code around transaction appending does. It's just that we want to hold
+        // that lock as short period as possible, well, duh. But, yeah, everything to make appenders
+        // run with as little interruption as possible is a big win.
+        WriteFuture emptier;
+        synchronized ( logFile )
+        {
+            emptier = channel.switchBuffer();
+        }
+        // That is why we have two buffers and switch between them under that lock only,
+        // and write the buffer outside, a buffer that only we hold right here and now so we can
+        // write it in peace.
+        emptier.write();
+
+        // Now force the channel
+        forceChannel();
     }
 
     @Override

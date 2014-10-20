@@ -25,9 +25,9 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.helpers.Factory;
+import org.neo4j.kernel.impl.util.SimplePool;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.OtherThreadRule;
-import org.neo4j.unsafe.impl.batchimport.store.io.SimplePool;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
