@@ -638,7 +638,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         TransactionImpl tx = txThreadMap.get();
         if ( tx == null )
         {
-            throw logAndReturn( "TM error tx commit",
+            throw logAndReturn( "TM error tx rollback",
                     new IllegalStateException( "Not in transaction. Thread: " + Thread.currentThread() ) );
         }
 
