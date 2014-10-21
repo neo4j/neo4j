@@ -1501,13 +1501,7 @@ public class NeoStoreTransactionTest
 
         public CapturingIndexingService()
         {
-            super( null,
-                    new DefaultSchemaIndexProviderMap( NO_INDEX_PROVIDER ),
-                    new NeoStoreIndexStoreView( locks, neoStore ),
-                    null,
-                    new KernelSchemaStateStore(), Collections.<IndexRule>emptyList(),
-                    new SingleLoggingService( DEV_NULL ), IndexingService.NO_MONITOR
-            );
+            super( new Config(), null, new DefaultSchemaIndexProviderMap( NO_INDEX_PROVIDER ), new NeoStoreIndexStoreView( locks, neoStore ), null, new KernelSchemaStateStore(), Collections.<IndexRule>emptyList(), new SingleLoggingService( DEV_NULL ), IndexingService.NO_MONITOR );
         }
 
         @Override
