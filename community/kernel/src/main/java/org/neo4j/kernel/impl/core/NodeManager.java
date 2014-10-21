@@ -27,10 +27,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -127,8 +127,8 @@ public class NodeManager
         {
             loadLocks[i] = new ReentrantLock();
         }
-        nodePropertyTrackers = new LinkedList<PropertyTracker<Node>>();
-        relationshipPropertyTrackers = new LinkedList<PropertyTracker<Relationship>>();
+        nodePropertyTrackers = new CopyOnWriteArrayList<PropertyTracker<Node>>(); // Trackers may be added and removed at runtime, e.g. via the REST interface in server, so we use the thread-safe CopyOnWriteArrayList.
+        relationshipPropertyTrackers = new CopyOnWriteArrayList<PropertyTracker<Relationship>>();
         this.graphProperties = instantiateGraphProperties();
     }
 
