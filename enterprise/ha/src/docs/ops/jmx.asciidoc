@@ -23,6 +23,8 @@ include::jmx-locking.asciidoc[]
 
 include::jmx-memory-mapping.asciidoc[]
 
+include::jmx-page-cache.asciidoc[]
+
 include::jmx-primitive-count.asciidoc[]
 
 include::jmx-store-file-sizes.asciidoc[]
