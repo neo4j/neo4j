@@ -91,11 +91,11 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
     val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments)
 
     renderDetails(plan) should equal(
-      """+----------+---------------+------+--------+-------------+-------+
-        || Operator | EstimatedRows | Rows | DbHits | Identifiers | Other |
-        |+----------+---------------+------+--------+-------------+-------+
-        ||     NAME |             1 |    ? |      ? |           n |       |
-        |+----------+---------------+------+--------+-------------+-------+
+      """+----------+---------------+-------------+-------+
+        || Operator | EstimatedRows | Identifiers | Other |
+        |+----------+---------------+-------------+-------+
+        ||     NAME |             1 |           n |       |
+        |+----------+---------------+-------------+-------+
         |""".stripMargin)
   }
 

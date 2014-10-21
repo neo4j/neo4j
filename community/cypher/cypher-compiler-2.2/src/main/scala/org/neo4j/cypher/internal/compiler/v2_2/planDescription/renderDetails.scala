@@ -28,30 +28,39 @@ object renderDetails extends (PlanDescription => String) {
   val handledArguments = Set(classOf[Rows], classOf[DbHits], classOf[IntroducedIdentifier])
 
   def apply(plan: PlanDescription): String = {
-
     val plans: Seq[PlanDescription] = plan.toSeq
     val names = renderAsTree.createUniqueNames(plan)
 
+
     val headers = Seq("Operator", "EstimatedRows", "Rows", "DbHits", "Identifiers", "Other")
-    val rows = plans.map {
+    val rows: Seq[Seq[(String, Option[String])]] = plans.map {
       p =>
-        val name: String = names(p)
-        val rows: String = p.arguments.collectFirst { case Rows(count) => count.toString }.getOrElse("?")
-        val estimatedRows: String = p.arguments.collectFirst { case EstimatedRows(count) => count.toString }.getOrElse("?")
-        val dbHits: String = p.arguments.collectFirst { case DbHits(count) => count.toString }.getOrElse("?")
-        val ids: String = p.arguments.collect { case IntroducedIdentifier(id) => id }.mkString(", ")
-        val other = p.arguments.collect {
+        val name = Some(names(p))
+        val rows = p.arguments.collectFirst { case Rows(count) => count.toString}
+        val estimatedRows = p.arguments.collectFirst { case EstimatedRows(count) => count.toString}
+        val dbHits = p.arguments.collectFirst { case DbHits(count) => count.toString}
+        val ids = Some(p.arguments.collect { case IntroducedIdentifier(id) => id}.mkString(", "))
+        val other = Some(p.arguments.collect {
           case x
             if !x.isInstanceOf[Rows] &&
               !x.isInstanceOf[DbHits] &&
               !x.isInstanceOf[EstimatedRows] &&
               !x.isInstanceOf[IntroducedIdentifier] => PlanDescriptionArgumentSerializer.serialize(x)
-        }.mkString("; ")
+        }.mkString("; "))
 
-        Seq(name, estimatedRows, rows, dbHits, ids, other)
+        Seq("Operator" -> name, "EstimatedRows" -> estimatedRows, "Rows" -> rows,
+          "DbHits" -> dbHits, "Identifiers" -> ids, "Other" -> other)
     }
 
-    renderTable(headers, rows)
+    //Remove headers where no values are available
+    val headersInUse = rows.flatten.groupBy(_._1).filter {
+      case (_, seq) => !seq.forall(_._2 == None)
+    }.keySet
+
+    val rowsInUse =
+      rows.map(row => row.filter(r => headersInUse.contains(r._1)).map(_._2.getOrElse("-")))
+
+    renderTable(headers.filter(headersInUse.contains), rowsInUse)
   }
 
   private def renderTable(header: Seq[String], rows: Seq[Seq[String]]): String = {

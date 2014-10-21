@@ -244,6 +244,11 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     a.executionPlanDescription().toString should not include "Eager"
   }
 
+  test("should not show  EstimatedRows in legacy profiling") {
+    val result =legacyProfile("create()")
+    result.executionPlanDescription().toString should not include("EstimatedRows")
+  }
+
   private def assertRows(expectedRows: Int)(result: InternalExecutionResult)(names: String*) {
     getPlanDescriptions(result, names).foreach {
       plan => assert(expectedRows === getArgument[Rows](plan).value, s" wrong row count for plan: ${plan.name}")

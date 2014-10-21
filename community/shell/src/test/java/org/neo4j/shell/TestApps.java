@@ -955,7 +955,7 @@ public class TestApps extends AbstractShellTest
     @Test
     public void shouldAllowExplainAsStartForACypherQuery() throws Exception
     {
-        executeCommand( "EXPLAIN OPTIONAL MATCH (n) RETURN n;", "DbHits", "No data returned" );
+        executeCommand( "EXPLAIN OPTIONAL MATCH (n) RETURN n;", "No data returned" );
     }
 
     @Test
