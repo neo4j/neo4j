@@ -159,18 +159,16 @@ public class ShellDocTest
     @Test
     public void testDumpCypherResultSimple() throws Exception
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
         final GraphDatabaseShellServer server = new GraphDatabaseShellServer( db, false );
 
-        try ( Transaction tx = db.beginTx() )
-        {
-            Documenter doc = new Documenter( "simple cypher result dump", server );
-            doc.add( "mknode --cd --np \"{'name':'Neo'}\"", "", "create a new node and go to it" );
-            doc.add( "mkrel -c -d i -t LIKES --np \"{'app':'foobar'}\"", "", "create a relationship" );
-            doc.add( "dump START n=node({self}) MATCH (n)-[r]-(m) return n,r,m;",
-                    "create (_0 {`name`:\"Neo\"})", "Export the cypher statement results" );
-            doc.run();
-        }
+        Documenter doc = new Documenter( "simple cypher result dump", server );
+        doc.add( "mknode --cd --np \"{'name':'Neo'}\"", "", "create a new node and go to it" );
+        doc.add( "mkrel -c -d i -t LIKES --np \"{'app':'foobar'}\"", "", "create a relationship" );
+        doc.add( "dump START n=node({self}) MATCH (n)-[r]-(m) return n,r,m;",
+                "create (_0 {`name`:\"Neo\"})", "Export the cypher statement results" );
+        doc.run();
+
         server.shutdown();
         db.shutdown();
     }
