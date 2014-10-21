@@ -390,7 +390,7 @@ class QueryPlanTest extends DocumentingTestBase {
         """MATCH (p:Person)-[:FRIENDS_WITH]->(f)
            WITH p, count(f) as fs
            WHERE fs > 0
-           MATCH (p)-[:WORKS_IN]->(city)
+           OPTIONAL MATCH (p)-[:WORKS_IN*1..2]->(city)
            RETURN p, city
         """.stripMargin,
       assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("Apply"))

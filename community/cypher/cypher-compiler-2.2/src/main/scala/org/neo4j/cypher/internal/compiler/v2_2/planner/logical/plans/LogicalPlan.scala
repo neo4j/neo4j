@@ -48,6 +48,11 @@ abstract class LogicalPlan
   def solved: PlannerQuery
   def availableSymbols: Set[IdName]
 
+  def leafs: Seq[LogicalPlan] = this.treeFold(Seq.empty[LogicalPlan]) {
+    case plan: LogicalPlan
+      if plan.lhs.isEmpty && plan.rhs.isEmpty => (acc, r) => r(acc :+ plan)
+  }
+
   def updateSolved(newSolved: PlannerQuery): LogicalPlan = {
     val arguments = this.children.toList :+ newSolved
     try {
