@@ -52,22 +52,22 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r1]->(b) WITH a, b, r1 LIMIT 1 RETURN b as `b`").plan
     val expected =
       planRegularProjection(
-          planStarProjection(
-            planLimit(
-              planTailApply(
-                planStarProjection(
-                  planLimit(
-                    planAllNodesScan("a", Set.empty),
-                    UnsignedDecimalIntegerLiteral("1") _
-                  ),
-                  Map[String, Expression]("a" -> ident("a"))
+        planStarProjection(
+          planLimit(
+            planExpand(
+              planStarProjection(
+                planLimit(
+                  planAllNodesScan("a", Set.empty),
+                  UnsignedDecimalIntegerLiteral("1") _
                 ),
-                planExpand(planArgumentRow(Set("a")), "a", Direction.OUTGOING, Direction.OUTGOING, Seq(), "b", "r1", SimplePatternLength, rel)
+                Map[String, Expression]("a" -> ident("a"))
               ),
-              UnsignedDecimalIntegerLiteral("1") _
+              "a", Direction.OUTGOING, Direction.OUTGOING, Seq(), "b", "r1", SimplePatternLength, rel
             ),
-            Map[String, Expression]("a" -> ident("a"), "b" -> ident("b"), "r1" -> ident("r1"))
+            UnsignedDecimalIntegerLiteral("1") _
           ),
+          Map[String, Expression]("a" -> ident("a"), "b" -> ident("b"), "r1" -> ident("r1"))
+        ),
         Map[String, Expression]("b" -> ident("b"))
       )
 
@@ -79,18 +79,17 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r1]->(b) WHERE r1.prop = 42 RETURN r1").plan
     val expected =
       planRegularProjection(
-        planTailApply(
-          planStarProjection(
-            planLimit(
-              planAllNodesScan("a", Set.empty),
-              UnsignedDecimalIntegerLiteral("1") _
+        planSelection(
+          Seq(In(Property(Identifier("r1") _, PropertyKeyName("prop") _) _, Collection(Seq(SignedDecimalIntegerLiteral("42") _)) _) _),
+          planExpand(
+            planStarProjection(
+              planLimit(
+                planAllNodesScan("a", Set.empty),
+                UnsignedDecimalIntegerLiteral("1") _
+              ),
+              Map[String, Expression]("a" -> ident("a"))
             ),
-            Map[String, Expression]("a" -> ident("a"))
-          ),
-          planSelection(
-            Seq(In(Property(Identifier("r1") _, PropertyKeyName("prop") _) _, Collection(Seq(SignedDecimalIntegerLiteral("42")_))_)_),
-            planExpand(planArgumentRow(Set("a")), "a", Direction.OUTGOING, Direction.OUTGOING, Seq(), "b", "r1", SimplePatternLength, rel)
-          )
+            "a", Direction.OUTGOING, Direction.OUTGOING, Seq(), "b", "r1", SimplePatternLength, rel)
         ),
         Map[String, Expression]("r1" -> ident("r1"))
       )
@@ -104,7 +103,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r]->(b) RETURN b").plan
     val expected =
       planRegularProjection(
-        planTailApply(
+        planExpand(
           planStarProjection(
             planLimit(
               planAllNodesScan("a", Set.empty),
@@ -112,10 +111,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
             ),
             Map[String, Expression]("a" -> ident("a"))
           ),
-          planExpand(
-            planArgumentRow(Set("a")),
-            "a", Direction.OUTGOING, Direction.OUTGOING, Seq(), "b", "r", SimplePatternLength, rel
-          )
+          "a", Direction.OUTGOING, Direction.OUTGOING, Seq(), "b", "r", SimplePatternLength, rel
         ),
         Map[String, Expression]("b" -> ident("b"))
       )
@@ -138,13 +134,11 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val plan = planFor("MATCH (a)-[r]->(b) WITH r AS r, a AS a LIMIT 1 MATCH (b2)<-[r]-(a) RETURN r").plan
 
     plan match {
-      case Projection(Apply(_,
-        Selection(
-          Seq(Equals(Identifier("a"), Identifier("a$$$_"))),
-          ProjectEndpoints(sr: SingleRow, IdName("r"), IdName("a$$$_"), IdName("b2"), true, SimplePatternLength)
-        )
-      ), _) =>
-        sr.availableSymbols should equal(Set(IdName("r"), IdName("a")))
+      case Projection(
+            Selection(Seq(Equals(Identifier("a"), Identifier("a$$$_"))),
+              ProjectEndpoints(_, IdName("r"), IdName("a$$$_"), IdName("b2"), true, SimplePatternLength)
+        ), _
+      ) =>
     }
   }
 
@@ -152,13 +146,12 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val plan = planFor("MATCH (a)-[r]->(b) WITH * LIMIT 1 MATCH (a)-[r]->(b) RETURN r").plan
 
     plan match {
-      case Projection(Apply(_,
-        Selection(
-          Seq(Equals(Identifier("a"), Identifier("a$$$_")), Equals(Identifier("b"), Identifier("b$$$_"))),
-          ProjectEndpoints(sr: SingleRow, IdName("r"), IdName("a$$$_"), IdName("b$$$_"), true, SimplePatternLength)
-        )
-      ), _) =>
-        sr.availableSymbols should equal(Set(IdName("r"), IdName("a"), IdName("b")))
+      case Projection(
+            Selection(
+              Seq(Equals(Identifier("a"), Identifier("a$$$_")), Equals(Identifier("b"), Identifier("b$$$_"))),
+              ProjectEndpoints(_, IdName("r"), IdName("a$$$_"), IdName("b$$$_"), true, SimplePatternLength)
+            ), _
+          ) =>
     }
   }
 
@@ -166,13 +159,12 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val plan = planFor("MATCH (a)-[r]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r]->(b2) RETURN r").plan
 
     plan match {
-      case Projection(Apply(_,
-        Selection(
-          Seq(Equals(Identifier("a"), Identifier("a$$$_"))),
-          ProjectEndpoints(sr: SingleRow, IdName("r"), IdName("a$$$_"), IdName("b2"), true, SimplePatternLength)
-        )
-      ), _) =>
-        sr.availableSymbols should equal(Set(IdName("r"), IdName("a")))
+      case Projection(
+            Selection(
+              Seq(Equals(Identifier("a"), Identifier("a$$$_"))),
+              ProjectEndpoints(_, IdName("r"), IdName("a$$$_"), IdName("b2"), true, SimplePatternLength)
+            ), _
+           ) =>
     }
   }
 
@@ -180,13 +172,12 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val plan = planFor("MATCH (a)-[r]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r]-(b2) RETURN r").plan
 
     plan match {
-      case Projection(Apply(_,
-        Selection(
-          Seq(Equals(Identifier("a"), Identifier("a$$$_"))),
-          ProjectEndpoints(sr: SingleRow, IdName("r"), IdName("a$$$_"), IdName("b2"), false, SimplePatternLength)
-        )
-      ), _) =>
-        sr.availableSymbols should equal(Set(IdName("r"), IdName("a")))
+      case Projection(
+            Selection(
+              Seq(Equals(Identifier("a"), Identifier("a$$$_"))),
+              ProjectEndpoints(_, IdName("r"), IdName("a$$$_"), IdName("b2"), false, SimplePatternLength)
+            ), _
+           ) =>
     }
   }
 
@@ -194,13 +185,12 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val plan = planFor("MATCH (a)-[r*]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r*]->(b2) RETURN r").plan
 
     plan match {
-      case Projection(Apply(_,
-        Selection(
-          Seq(Equals(Identifier("a"), Identifier("a$$$_"))),
-          ProjectEndpoints(sr: SingleRow, IdName("r"), IdName("a$$$_"), IdName("b2"), true, VarPatternLength(1, None))
-        )
-      ), _) =>
-        sr.availableSymbols should equal(Set(IdName("r"), IdName("a")))
+      case Projection(
+            Selection(
+              Seq(Equals(Identifier("a"), Identifier("a$$$_"))),
+              ProjectEndpoints(_, IdName("r"), IdName("a$$$_"), IdName("b2"), true, VarPatternLength(1, None))
+            ), _
+          ) =>
     }
   }
 }

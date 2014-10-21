@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport, PlannerQuery}
 
-class LogicalPlanTest extends CypherFunSuite {
+class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport  {
   case class TestPlan()(val solved: PlannerQuery) extends LogicalPlan {
     def lhs: Option[LogicalPlan] = ???
     def availableSymbols: Set[IdName] = ???
@@ -37,5 +37,31 @@ class LogicalPlanTest extends CypherFunSuite {
     val newPlan = initialPlan.updateSolved(updatedPlannerQuery)
 
     newPlan.solved should equal(updatedPlannerQuery)
+  }
+
+  test("single row returns itself as the leafs") {
+    val singleRow = SingleRow(Set(IdName("a")))(solved)()
+
+    singleRow.leafs should equal(Seq(singleRow))
+  }
+
+  test("apply with two singlerows should return them both") {
+    val singleRow1 = SingleRow(Set(IdName("a")))(solved)()
+    val singleRow2 = SingleRow(Set(IdName("b")))(solved)()
+    val apply = Apply(singleRow1, singleRow2)(solved)
+
+    apply.leafs should equal(Seq(singleRow1, singleRow2))
+  }
+
+  test("apply pyramid should work multiple levels deep") {
+    val singleRow1 = SingleRow(Set(IdName("a")))(solved)()
+    val singleRow2 = SingleRow(Set(IdName("b")))(solved)()
+    val singleRow3 = SingleRow(Set(IdName("b")))(solved)()
+    val singleRow4 = SingleRow(Set(IdName("b")))(solved)()
+    val apply1 = Apply(singleRow1, singleRow2)(solved)
+    val apply2 = Apply(singleRow3, singleRow4)(solved)
+    val metaApply = Apply(apply1, apply2)(solved)
+
+    metaApply.leafs should equal(Seq(singleRow1, singleRow2, singleRow3, singleRow4))
   }
 }

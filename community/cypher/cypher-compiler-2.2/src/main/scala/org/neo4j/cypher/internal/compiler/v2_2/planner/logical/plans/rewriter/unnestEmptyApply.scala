@@ -20,14 +20,31 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{Apply, SingleRow}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{Optional, LogicalPlan, Apply, SingleRow}
+import Foldable._
 
 case object unnestEmptyApply extends Rewriter {
 
   private val instance: Rewriter = Rewriter.lift {
     case Apply(sr: SingleRow, rhs) if sr.argumentIds.isEmpty => rhs
-    case Apply(lhs, _: SingleRow)                           => lhs
+
+    case original@Apply(lhs, rhs) if !hasOptionalChild(rhs) =>
+      rhs.leafs.find(applicable(lhs)).map { singleRow =>
+
+        val innerRewriter: Rewriter = topDown(Rewriter.lift {
+          case x if x == singleRow => lhs
+        })
+
+        rhs.endoRewrite(innerRewriter)
+      }.getOrElse(original)
   }
 
+  private def hasOptionalChild(plan: LogicalPlan) = plan.exists { case _: Optional => true}
+
   override def apply(input: AnyRef) = bottomUp(instance).apply(input)
+
+  private def applicable(lhs: LogicalPlan)(plan: LogicalPlan): Boolean = plan match {
+    case sr: SingleRow => sr.argumentIds.forall(lhs.availableSymbols.contains)
+    case _             => false
+  }
 }

@@ -56,4 +56,33 @@ class UnnestEmptyApplyTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
     input.endoRewrite(unnestEmptyApply) should equal(input)
   }
+
+  test("should unnest one level deeper") {
+    val argPlan = SingleRow(Set(IdName("a")))(solved)()
+    val lhs = newMockedLogicalPlan("a")
+    val rhs = newMockedLogicalPlan("a")
+
+    val input =
+      Apply(lhs,
+        OuterHashJoin(Set(IdName("a")),
+          argPlan,
+          rhs
+        )(solved)
+      )(solved)
+
+    input.endoRewrite(unnestEmptyApply) should equal(
+      OuterHashJoin(Set(IdName("a")), lhs, rhs)(solved)
+    )
+  }
+
+  test("should not cross OPTIONAL boundaries") {
+    val argPlan = SingleRow(Set(IdName("a")))(solved)()
+    val lhs = newMockedLogicalPlan("a")
+    val rhs = Selection(Seq(propEquality("a", "prop", 42)), argPlan)(solved)
+    val optional = Optional(rhs)(solved)
+
+    val input = Apply(lhs, optional)(solved)
+
+    input.endoRewrite(unnestEmptyApply) should equal(input)
+  }
 }
