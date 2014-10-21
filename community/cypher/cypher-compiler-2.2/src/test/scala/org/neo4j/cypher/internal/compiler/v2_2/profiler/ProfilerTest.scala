@@ -33,7 +33,7 @@ class ProfilerTest extends CypherFunSuite {
 
   private implicit val monitor = mock[PipeMonitor]
 
-  test("should_report_simplest_case") {
+  test("should report simplest case") {
     //GIVEN
     val start = NullPipe()
     val pipe = new ProfilerPipe(start, "foo", rows = 10, dbAccess = 20)
@@ -49,7 +49,7 @@ class ProfilerTest extends CypherFunSuite {
     assertRecorded(decoratedResult, "foo", expectedRows = 10, expectedDbHits = 20)
   }
 
-  test("should_report_multiple_pipes_case") {
+  test("should report multiple pipes case") {
     //GIVEN
     val start = NullPipe()
     val pipe1 = new ProfilerPipe(start, "foo", rows = 10, dbAccess = 25)
@@ -69,7 +69,7 @@ class ProfilerTest extends CypherFunSuite {
     assertRecorded(decoratedResult, "baz", expectedRows = 1, expectedDbHits = 2)
   }
 
-  test("should_ignore_null_pipe_in_profile") {
+  test("should ignore null pipe in profile") {
     // GIVEN
     val pipes = UnionPipe(List(NullPipe(), NullPipe()), List())
     val queryContext = mock[QueryContext]
@@ -79,6 +79,23 @@ class ProfilerTest extends CypherFunSuite {
     // WHEN we create the results,
     // THEN it should not throw an assertion about profiling the same pipe twice.
     materialize(pipes.createResults(queryState))
+  }
+
+  test("should count stuff going through Apply multiple times") {
+    // GIVEN
+    val lhs = new ProfilerPipe(NullPipe(), "lhs", rows = 10, dbAccess = 10)
+    val rhs = new ProfilerPipe(NullPipe(), "rhs", rows = 20, dbAccess = 30)
+    val apply = new ApplyPipe(lhs, rhs)()
+    val queryContext = mock[QueryContext]
+    val profiler = new Profiler
+    val queryState = QueryStateHelper.emptyWith(query = queryContext, decorator = profiler)
+
+    // WHEN we create the results,
+    materialize(apply.createResults(queryState))
+    val decoratedResult = profiler.decorate(apply.planDescription, isProfileReady = true)
+
+    // THEN
+    assertRecorded(decoratedResult, "rhs", expectedRows = 10*20, expectedDbHits = 10*30)
   }
 
   private def assertRecorded(result: PlanDescription, name: String, expectedRows: Int, expectedDbHits: Int) {

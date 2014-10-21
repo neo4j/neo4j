@@ -44,7 +44,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     assertDbHits(3)(result)("AllNodesScan")
 
     assertRows(0)(result)("Expand")
-    assertDbHits(1)(result)("Expand")
+    assertDbHits(2)(result)("Expand")
   }
 
   test("PROFILE for Cypher 2.0") {
@@ -69,7 +69,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     assertDbHits(3)(result)("AllNodesScan")
 
     assertRows(0)(result)("Expand")
-    assertDbHits(1)(result)("Expand")
+    assertDbHits(2)(result)("Expand")
   }
 
   test("unfinished profiler complains") {
