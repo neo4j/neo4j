@@ -87,6 +87,27 @@ public class PhysicalWritableLogChannelTest
         assertArrayEquals( byteArrayValue, readByteArray );
     }
 
+    @Test
+    public void shouldSeeCorrectPositionEvenBeforeEmptyingDataIntoChannel() throws Exception
+    {
+        // GIVEN
+        final File file = new File( directory.directory(), "file" );
+        StoreChannel storeChannel = fs.open( file, "rw" );
+        PhysicalLogVersionedStoreChannel versionedStoreChannel =
+                new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1 /* ignored */ );
+        PhysicalWritableLogChannel channel = new PhysicalWritableLogChannel( versionedStoreChannel );
+        LogPositionMarker positionMarker = new LogPositionMarker();
+        LogPosition initialPosition = channel.getCurrentPosition( positionMarker ).newPosition();
+
+        // WHEN
+        channel.putLong( 67 );
+        channel.putInt( 1234 );
+        LogPosition positionAfterSomeData = channel.getCurrentPosition( positionMarker ).newPosition();
+
+        // THEN
+        assertEquals( 12, positionAfterSomeData.getByteOffset() - initialPosition.getByteOffset() );
+    }
+
     private ByteBuffer readFile( File file ) throws IOException
     {
         try ( StoreChannel channel = fs.open( file, "r" ) )

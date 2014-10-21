@@ -21,9 +21,11 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
-
+/**
+ * Something that is able to report current position when asked. The supplied {@link LogPositionMarker} is
+ * filled with the details, which later can create a {@link LogPositionMarker#newPosition() new} {@link LogPosition}.
+ */
 public interface PositionAwareChannel
 {
-    void getCurrentPosition( LogPositionMarker positionMarker ) throws IOException;
+    LogPositionMarker getCurrentPosition( LogPositionMarker positionMarker ) throws IOException;
 }

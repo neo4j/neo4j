@@ -70,7 +70,7 @@ public class UpdatePullerTest
     private final Logging logging = new DevNullLoggingService();
     private final RequestContextFactory requestContextFactory = mock( RequestContextFactory.class );
     private final UpdatePuller updatePuller = new UpdatePuller( stateMachine, requestContextFactory,
-            master, lastUpdateTime, logging );
+            master, lastUpdateTime, logging, myId );
 
     @Before
     public void setup() throws Throwable

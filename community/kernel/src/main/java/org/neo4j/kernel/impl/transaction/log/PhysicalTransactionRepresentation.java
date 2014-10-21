@@ -168,4 +168,22 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
         result = 31 * result + (int) (latestCommittedTxWhenStarted ^ (latestCommittedTxWhenStarted >>> 32));
         return result;
     }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder builder = new StringBuilder( getClass().getSimpleName() + "[" );
+        builder.append( "masterId:" + masterId + "," );
+        builder.append( "authorId:" + authorId + "," );
+        builder.append( "timeStarted:" + timeStarted + "," );
+        builder.append( "latestCommittedTxWhenStarted:" + latestCommittedTxWhenStarted + "," );
+        builder.append( "timeCommitted:" + timeCommitted + "," );
+        builder.append( "lockSession:" + lockSessionIdentifier + "," );
+        builder.append( "additionalHeader:" + Arrays.toString( additionalHeader ) );
+        for ( Command command : commands )
+        {
+            builder.append( "\n" + command );
+        }
+        return builder.toString();
+    }
 }

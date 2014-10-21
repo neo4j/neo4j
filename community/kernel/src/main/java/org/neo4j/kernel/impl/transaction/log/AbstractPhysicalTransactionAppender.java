@@ -61,8 +61,7 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
      */
     private boolean append0( TransactionRepresentation transaction, long transactionId ) throws IOException
     {
-        channel.getCurrentPosition( positionMarker );
-        LogPosition logPosition = positionMarker.newPosition();
+        LogPosition logPosition = channel.getCurrentPosition( positionMarker ).newPosition();
 
         // Reset command writer so that we, after we've written the transaction, can ask it whether or
         // not any legacy index command was written. If so then there's additional ordering to care about below.
