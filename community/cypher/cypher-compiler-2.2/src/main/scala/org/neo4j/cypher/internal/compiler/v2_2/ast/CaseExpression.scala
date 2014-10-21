@@ -27,7 +27,7 @@ case class CaseExpression(expression: Option[Expression], alternatives: Seq[(Exp
   lazy val possibleExpressions = alternatives.map(_._2) ++ default
 
   def semanticCheck(ctx: SemanticContext): SemanticCheck = {
-    val possibleTypes: TypeGenerator = possibleExpressions.leastUpperBoundsOfTypes
+    val possibleTypes = possibleExpressions.unionOfTypes
 
     expression.semanticCheck(ctx) chain
     alternatives.flatMap { a => Seq(a._1, a._2) }.semanticCheck(ctx) chain

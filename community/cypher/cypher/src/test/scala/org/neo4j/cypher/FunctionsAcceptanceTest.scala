@@ -74,4 +74,28 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite {
     // Then
     assert(result === "4")
   }
+
+  test("case should handle mixed number types") {
+    val query =
+      """WITH 0.5 AS x
+        |WITH (CASE WHEN x < 1 THEN 1 ELSE 2.0 END) AS x
+        |RETURN x + 1
+      """.stripMargin
+
+      val result = executeScalar[Long](query)
+
+      assert(result === 2)
+  }
+
+  test("case should handle mixed types") {
+    val query =
+      """WITH 0.5 AS x
+        |WITH (CASE WHEN x < 1 THEN "wow" ELSE true END) AS x
+        |RETURN x + "!"
+      """.stripMargin
+
+    val result = executeScalar[String](query)
+
+    assert(result === "wow!")
+  }
 }
