@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
 class CaseExpressionTest extends CypherFunSuite {
 
-  test("Simple: Should merge types of alternatives") {
+  test("Simple: Should combine types of alternatives") {
     val caseExpression = CaseExpression(
       expression = Some(DummyExpression(CTString)),
       alternatives = Seq(
@@ -42,10 +42,10 @@ class CaseExpressionTest extends CypherFunSuite {
 
     val result = caseExpression.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     result.errors shouldBe empty
-    caseExpression.types(result.state) should equal(CTNumber.invariant)
+    caseExpression.types(result.state) should equal(CTInteger | CTFloat)
   }
 
-  test("Generic: Should merge types of alternatives") {
+  test("Generic: Should combine types of alternatives") {
     val caseExpression = CaseExpression(
       None,
       Seq(
@@ -62,7 +62,7 @@ class CaseExpressionTest extends CypherFunSuite {
 
     val result = caseExpression.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     result.errors shouldBe empty
-    caseExpression.types(result.state) should equal(CTNumber | CTAny)
+    caseExpression.types(result.state) should equal(CTInteger | CTFloat | CTString | CTNode)
   }
 
   test("Generic: should type check predicates") {
@@ -85,5 +85,4 @@ class CaseExpressionTest extends CypherFunSuite {
     result.errors.head.msg should equal("Type mismatch: expected Boolean but was String")
     result.errors.head.position should equal(DummyPosition(12))
   }
-
 }

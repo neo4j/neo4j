@@ -24,6 +24,7 @@ object TypeSpec {
   def exact[T <: CypherType](traversable: TraversableOnce[T]): TypeSpec = TypeSpec(traversable.map(t => TypeRange(t, t)))
   val all: TypeSpec = TypeSpec(TypeRange(CTAny, None))
   val none: TypeSpec = new TypeSpec(Vector.empty)
+  def union(typeSpecs: TypeSpec*): TypeSpec = TypeSpec(typeSpecs.flatMap(_.ranges))
 
   private val simpleTypes = Vector(
     CTAny,
