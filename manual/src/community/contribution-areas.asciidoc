@@ -13,7 +13,7 @@ Neo4j is a project with a vast ecosystem and a lot of space for contributions. W
 
 Some parts of the documentation need extra care from the community to stay up to date.
 They typically refer to different kinds of community contributions. 
-The easiest way to contribute fixes is to comment at the http://docs.neo4j.org/chunked/snapshot/[online HTML version].
+The easiest way to contribute fixes is to comment at the http://neo4j.com/docs/milestone/[online HTML version].
 
 == Drivers and bindings to Neo4j ==
 

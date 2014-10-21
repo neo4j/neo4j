@@ -22,7 +22,7 @@ else
 		SYMLINKVERSION=stable
 	fi
 fi
-DOCS_SERVER='neo@docs.neo4j.org'
+DOCS_SERVER='neo@outreach.neotechnology.com'
 ROOTPATHDOCS='/data/www/doc/docs.neo4j.org'
 hostname=$(uname -n)
 

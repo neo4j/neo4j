@@ -33,7 +33,7 @@ public class DeadlockDetectedException extends RuntimeException
                 "between these transactions. This exception was thrown instead of ending up in that deadlock.\n" +
                 "\n" +
                 "See the deadlock section in the Neo4j manual for how to avoid this: " +
-                "http://docs.neo4j.org/chunked/stable/transactions-deadlocks.html\n" +
+                "http://neo4j.com/docs/stable/transactions-deadlocks.html\n" +
                 "\n" +
                 "Details: '" + message + "'." );
     }

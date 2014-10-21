@@ -146,5 +146,5 @@ rem end function remove
 :instructions
   echo * Please use Oracle(R) Java(TM) 7 to run Neo4j Server. Download "Java Platform (JDK) 7" from:
   echo   http://www.oracle.com/technetwork/java/javase/downloads/index.html
-  echo * Please see http://docs.neo4j.org/ for Neo4j Server installation instructions.
+  echo * Please see http://neo4j.com/docs/ for Neo4j Server installation instructions.
   goto:eof
