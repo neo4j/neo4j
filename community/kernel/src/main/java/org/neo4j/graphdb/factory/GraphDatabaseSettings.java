@@ -146,6 +146,12 @@ public abstract class GraphDatabaseSettings
             "_relationships_ only." )
     public static final Setting<String> relationship_keys_indexable = setting("relationship_keys_indexable", STRING, NO_DEFAULT, illegalValueMessage( "must be a comma-separated list of keys to be indexed", matches( ANY ) ) );
 
+    // Index sampling
+    @Description("Controls how much memory is used by index selectivity sampling by limiting how many unique values may be tracked by sampling before aggregating them into a global selectivity value for the index")
+    // default: 5 000 000 -> around 50MB memory consumption per sampling
+    public static final Setting<Integer> max_unique_elements_per_sampling = setting("max_unique_elements_per_sampling", INTEGER, "5000000", min(10_000) );
+
+
     // Lucene settings
     @Description( "The maximum number of open Lucene index searchers." )
     public static Setting<Integer> lucene_searcher_cache_size = setting("lucene_searcher_cache_size",INTEGER, Integer.toString( Integer.MAX_VALUE ), min( 1 ));
@@ -303,7 +309,7 @@ public abstract class GraphDatabaseSettings
 
     @Description( "Relationship count threshold for considering a node to be dense" )
     public static final Setting<Integer> dense_node_threshold = setting( "dense_node_threshold", INTEGER, "50", min(1) );
-    
+
     @Description("Whether or not transactions are appended to the log in batches")
     public static final Setting<Boolean> batched_writes = setting( "batched_writes", BOOLEAN, Boolean.TRUE.toString() );
 

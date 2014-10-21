@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.BiConsumer;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.api.TokenNameLookup;
@@ -48,6 +49,7 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.BoundedIndexSamplingJobFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
@@ -88,8 +90,7 @@ import static org.neo4j.kernel.impl.util.JobScheduler.Group.indexSamplingControl
 public class IndexingService extends LifecycleAdapter implements IndexMapSnapshotProvider
 {
     private static final int NUMBER_OF_PARALLEL_INDEX_SAMPLING_JOBS = 1;
-    // TODO: make sample size configurable
-    private static final int BATCH_SIZE_OF_SAMPLING_ON_POPULATION = 10_000;
+    private final int maxUniqueElementsPerSampling;
 
     private final IndexMapReference indexMapReference = new IndexMapReference();
 
@@ -139,7 +140,8 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
     private volatile State state = State.NOT_STARTED;
 
 
-    public IndexingService( JobScheduler scheduler,
+    public IndexingService( Config config,
+                            JobScheduler scheduler,
                             SchemaIndexProviderMap providerMap,
                             IndexStoreView storeView,
                             TokenNameLookup tokenNameLookup,
@@ -147,6 +149,7 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
                             Iterable<IndexRule> indexRules,
                             Logging logging, Monitor monitor )
     {
+        this.maxUniqueElementsPerSampling = config.get( GraphDatabaseSettings.max_unique_elements_per_sampling );
         this.scheduler = scheduler;
         this.providerMap = providerMap;
         this.storeView = storeView;
@@ -538,7 +541,7 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
         PopulatingIndexProxy populatingIndex =
             new PopulatingIndexProxy( scheduler, descriptor, providerDescriptor,
                     failureDelegateFactory, populator, flipper, storeView, new SizeVisitor(),
-                    new SampleVisitor( BATCH_SIZE_OF_SAMPLING_ON_POPULATION ),
+                    new SampleVisitor( maxUniqueElementsPerSampling ),
                     updateableSchemaState, logging, indexUserDescription );
         flipper.flipTo( populatingIndex );
 
@@ -625,7 +628,7 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
     private IndexSamplingController createIndexSamplingController()
     {
         BoundedIndexSamplingJobFactory jobFactory =
-                new BoundedIndexSamplingJobFactory( BATCH_SIZE_OF_SAMPLING_ON_POPULATION, storeView, logging );
+                new BoundedIndexSamplingJobFactory( maxUniqueElementsPerSampling, storeView, logging );
         IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( scheduler, NUMBER_OF_PARALLEL_INDEX_SAMPLING_JOBS );
         return new IndexSamplingController( jobFactory, jobTracker, this );
     }
@@ -657,7 +660,7 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
                                                      IndexDescriptor descriptor, IndexConfiguration config )
     {
         SchemaIndexProvider indexProvider = providerMap.apply( providerDescriptor );
-        return indexProvider.getPopulator(ruleId, descriptor, config);
+        return indexProvider.getPopulator( ruleId, descriptor, config );
     }
 
     private IndexAccessor getOnlineAccessorFromProvider( SchemaIndexProvider.Descriptor providerDescriptor,
@@ -772,7 +775,7 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
 
     private Pair<IndexDescriptor, SchemaIndexProvider.Descriptor> getIndexProxyDescriptors( IndexProxy indexProxy )
     {
-        return Pair.of(indexProxy.getDescriptor(), indexProxy.getProviderDescriptor());
+        return Pair.of( indexProxy.getDescriptor(), indexProxy.getProviderDescriptor() );
     }
 
     public ResourceIterator<File> snapshotStoreFiles() throws IOException

@@ -383,7 +383,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
                 persistenceCache );
         try
         {
-            indexingService = new IndexingService( scheduler, providerMap, new NeoStoreIndexStoreView(
+            indexingService = new IndexingService( config, scheduler, providerMap, new NeoStoreIndexStoreView(
                     lockService, neoStore ), tokenNameLookup, updateableSchemaState, indexRuleLoader(), logging,
                     indexingServiceMonitor );
             final IntegrityValidator integrityValidator = new IntegrityValidator( neoStore, indexingService );
