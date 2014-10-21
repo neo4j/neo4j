@@ -17,46 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.index;
+package org.neo4j.kernel.impl.api.index;
 
-import java.util.HashSet;
-import java.util.Set;
-
-import org.neo4j.kernel.api.index.ValueSampler;
-import org.neo4j.register.Register;
-
-public class SkipOracleSampler implements ValueSampler
+class SizeVisitor implements IndexSizeVisitor
 {
-    private final SkipOracle oracle;
+    private long count = 0;
 
-    private long leftToSkip = 0l;
-    private long sampleSize = 0l;
-    private Set<Object> values = new HashSet<>();
-
-    public SkipOracleSampler( SkipOracle oracle )
+    @Override
+    public long indexSize()
     {
-        this.oracle = oracle;
+        return count;
     }
 
     @Override
-    public void include( Object value )
+    public void incrementIndexSize( long transactionId, long sizeDelta )
     {
-        if ( leftToSkip == 0 )
-        {
-            //
-            leftToSkip = oracle.skip();
-            values.add( value );
-            sampleSize++;
-        }
-        else
-        {
-            leftToSkip--;
-        }
+        this.count += sizeDelta;
     }
 
     @Override
-    public void result( Register.DoubleLongRegister register )
+    public void replaceIndexSize( long transactionId, long totalSize )
     {
-        register.write( values.size(), sampleSize );
+        this.count = totalSize;
     }
 }

@@ -36,6 +36,6 @@ class LuceneUniqueIndexAccessorReader extends LuceneIndexAccessorReader
     @Override
     public void sampleIndex( ValueSampler sampler, DoubleLongRegister samplingResult )
     {
-        sampler.samplingResult( samplingResult );
+        sampler.result( samplingResult );
     }
 }

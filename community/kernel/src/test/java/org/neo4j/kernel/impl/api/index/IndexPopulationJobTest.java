@@ -19,6 +19,29 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import static java.lang.String.format;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.MapUtil.genericMap;
+import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
+import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.impl.util.TestLogger.LogCall.error;
+import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
+import static org.neo4j.register.Register.DoubleLongRegister;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,7 +55,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Matchers;
-
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -59,36 +81,14 @@ import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.TestLogger;
 import org.neo4j.kernel.logging.SingleLoggingService;
+import org.neo4j.register.Register;
+import org.neo4j.register.Registers;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.TestGraphDatabaseFactory;
-
-import static java.lang.String.format;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.RETURNS_MOCKS;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.MapUtil.genericMap;
-import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
-import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.impl.util.TestLogger.LogCall.error;
-import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
 
 public class IndexPopulationJobTest
 {
@@ -113,6 +113,9 @@ public class IndexPopulationJobTest
 
         // AND ALSO
         assertEquals( 1, indexCount( FIRST, name ) );
+
+        // AND ALSO
+        assertDoubleLongEquals( 1, 1, indexSample( FIRST, name ) );
     }
 
     @Test
@@ -160,6 +163,12 @@ public class IndexPopulationJobTest
         assertEquals( 0, indexCount( FIRST, age ) );
         assertEquals( 0, indexCount( SECOND, name ) );
         assertEquals( 0, indexCount( SECOND, age ) );
+
+        // AND ALSO
+        assertDoubleLongEquals( 1, 2, indexSample( FIRST, name ) );
+        assertDoubleLongEquals( 0, 0, indexSample( FIRST, age ) );
+        assertDoubleLongEquals( 0, 0, indexSample( SECOND, name ) );
+        assertDoubleLongEquals( 0, 0, indexSample( SECOND, age ) );
     }
 
     @Test
@@ -191,6 +200,9 @@ public class IndexPopulationJobTest
 
         // AND ALSO
         assertEquals( 3, indexCount( FIRST, name ) );
+
+        // AND ALSO
+        assertDoubleLongEquals( 3, 3, indexSample( FIRST, name ) );
     }
 
     @Test
@@ -217,6 +229,9 @@ public class IndexPopulationJobTest
 
         // AND ALSO
         assertEquals( 2, indexCount( FIRST, name ) );
+
+        // AND ALSO
+        assertDoubleLongEquals( 2, 2, indexSample( FIRST, name ) );
     }
 
     @Test
@@ -239,6 +254,9 @@ public class IndexPopulationJobTest
 
         // AND ALSO
         assertEquals( 0, indexCount( FIRST, name ) );
+
+        // AND ALSO
+        assertDoubleLongEquals( 0, 0, indexSample( FIRST, name ) );
     }
 
     @Test
@@ -252,7 +270,6 @@ public class IndexPopulationJobTest
         ControlledStoreScan storeScan = new ControlledStoreScan();
         when( storeView.visitNodesWithPropertyAndLabel( any( IndexDescriptor.class ),
                 Matchers.<Visitor<NodePropertyUpdate, RuntimeException>>any() ) ).thenReturn( storeScan );
-
 
         final IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, storeView,
                 StringLogger.DEV_NULL );
@@ -282,6 +299,9 @@ public class IndexPopulationJobTest
 
         // AND ALSO
         assertEquals( 0, indexCount( FIRST, name ) );
+
+        // AND ALSO
+        assertDoubleLongEquals( 0, 0, indexSample( FIRST, name ) );
     }
 
     @Test
@@ -302,9 +322,6 @@ public class IndexPopulationJobTest
                 info( "Index population started: [:FIRST(name)]" ),
                 info( "Index population completed. Index is now online: [:FIRST(name)]" )
         );
-
-        // AND ALSO
-        assertEquals( 0, indexCount( FIRST, name ) );
     }
 
     @Test
@@ -325,9 +342,6 @@ public class IndexPopulationJobTest
 
         // Then
         logger.assertAtLeastOnce( error( "Failed to populate index: [:FIRST(name)]", failure ) );
-
-        // AND ALSO
-        assertEquals( 0, indexCount( FIRST, name ) );
     }
 
     @Test
@@ -351,6 +365,9 @@ public class IndexPopulationJobTest
 
         // AND ALSO
         assertEquals( 0, indexCount( FIRST, name ) );
+
+        // AND ALSO
+        assertDoubleLongEquals( 0, 0, indexSample( FIRST, name ) );
     }
 
     @Test
@@ -374,6 +391,9 @@ public class IndexPopulationJobTest
 
         // AND ALSO
         assertEquals( 0, indexCount( FIRST, name ) );
+
+        // AND ALSO
+        assertDoubleLongEquals( 0, 0, indexSample( FIRST, name ) );
     }
 
     @Test
@@ -395,6 +415,9 @@ public class IndexPopulationJobTest
 
         // AND ALSO
         assertEquals( 0, indexCount( FIRST, name ) );
+
+        // AND ALSO
+        assertDoubleLongEquals( 0, 0, indexSample( FIRST, name ) );
     }
 
     private static class ControlledStoreScan implements StoreScan<RuntimeException>
@@ -631,21 +654,41 @@ public class IndexPopulationJobTest
                 descriptor, PROVIDER_DESCRIPTOR,
                 format( ":%s(%s)", label.name(), propertyKey ),
                 failureDelegateFactory,
-                populator, flipper, storeView,
+                populator, flipper, storeView, new SizeVisitor(), new SampleVisitor( 10_000 ),
                 stateHolder, new SingleLoggingService( logger ) );
     }
 
     private long indexCount( Label label, String propertyKey )
     {
-        long result = -1l;
         try ( Transaction tx = db.beginTx() )
         {
             ReadOperations statement = ctxProvider.instance().readOperations();
-            result = counts.indexSize( statement.labelGetForName( label.name() ), statement.propertyKeyGetForName(
+            long result = counts.indexSize( statement.labelGetForName( label.name() ), statement.propertyKeyGetForName(
                     propertyKey ) );
             tx.success();
+            return result;
         }
-        return result;
+    }
+
+    private DoubleLongRegister indexSample( Label label, String propertyKey )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            ReadOperations statement = ctxProvider.instance().readOperations();
+            DoubleLongRegister result = Registers.newDoubleLongRegister();
+            counts.indexSample( statement.labelGetForName( label.name() ),
+                    statement.propertyKeyGetForName( propertyKey ),
+                    result );
+            tx.success();
+            return result;
+        }
+    }
+
+    private void assertDoubleLongEquals( long expectedUniqueValue, long expectedSampledSize,
+                                         DoubleLongRegister register )
+    {
+        assertEquals( expectedUniqueValue, register.readFirst() );
+        assertEquals( expectedSampledSize, register.readSecond() );
     }
 
     private long createNode( Map<String, Object> properties, Label... labels )

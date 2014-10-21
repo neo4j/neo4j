@@ -65,11 +65,17 @@ public interface IndexStoreView extends PropertyAccessor
 
     static class IndexCountVisitors
     {
-        public static IndexSizeVisitor newIndexSizeVisitor( final IndexStoreView view, final IndexDescriptor
-                descriptor )
+        public static IndexSizeVisitor newIndexSizeVisitor( final IndexStoreView view,
+                                                            final IndexDescriptor descriptor )
         {
             return new IndexSizeVisitor()
             {
+                @Override
+                public long indexSize()
+                {
+                    return view.indexSize( descriptor );
+                }
+
                 @Override
                 public void incrementIndexSize( long transactionId, long sizeDelta )
                 {
@@ -83,6 +89,6 @@ public interface IndexStoreView extends PropertyAccessor
 
                 }
             };
-        };
+        }
     }
 }

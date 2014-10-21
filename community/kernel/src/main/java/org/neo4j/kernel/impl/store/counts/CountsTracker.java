@@ -229,7 +229,7 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
         try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
         {
             CountsKey.IndexSampleKey key = indexSampleKey( labelId, propertyKeyId );
-            assert unique >= 0 && size >= 0 && unique < size : String.format( "replaceIndexSample(key=%s, unique=%d, size=%d)", key, unique, size );
+            assert unique >= 0 && size >= 0 && unique <= size : String.format( "replaceIndexSample(key=%s, unique=%d, size=%d)", key, unique, size );
             state.replaceIndexSample( key, unique, size );
         }
     }

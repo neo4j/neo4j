@@ -88,6 +88,8 @@ import static org.neo4j.kernel.impl.util.JobScheduler.Group.indexSamplingControl
 public class IndexingService extends LifecycleAdapter implements IndexMapSnapshotProvider
 {
     private static final int NUMBER_OF_PARALLEL_INDEX_SAMPLING_JOBS = 1;
+    // TODO: make sample size configurable
+    private static final int BATCH_SIZE_OF_SAMPLING_ON_POPULATION = 10_000;
 
     private final IndexMapReference indexMapReference = new IndexMapReference();
 
@@ -302,7 +304,7 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
         }
         else
         {
-            return unique / size;
+            return ((double) unique) / ((double) size);
         }
     }
 
@@ -535,8 +537,9 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
 
         PopulatingIndexProxy populatingIndex =
             new PopulatingIndexProxy( scheduler, descriptor, providerDescriptor,
-                    failureDelegateFactory, populator, flipper, storeView,
-                indexUserDescription, updateableSchemaState, logging );
+                    failureDelegateFactory, populator, flipper, storeView, new SizeVisitor(),
+                    new SampleVisitor( BATCH_SIZE_OF_SAMPLING_ON_POPULATION ),
+                    updateableSchemaState, logging, indexUserDescription );
         flipper.flipTo( populatingIndex );
 
         // Prepare for flipping to online mode
@@ -621,8 +624,8 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
 
     private IndexSamplingController createIndexSamplingController()
     {
-        // TODO: make sample size configurable
-        BoundedIndexSamplingJobFactory jobFactory = new BoundedIndexSamplingJobFactory( 10_000, storeView, logging );
+        BoundedIndexSamplingJobFactory jobFactory =
+                new BoundedIndexSamplingJobFactory( BATCH_SIZE_OF_SAMPLING_ON_POPULATION, storeView, logging );
         IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( scheduler, NUMBER_OF_PARALLEL_INDEX_SAMPLING_JOBS );
         return new IndexSamplingController( jobFactory, jobTracker, this );
     }

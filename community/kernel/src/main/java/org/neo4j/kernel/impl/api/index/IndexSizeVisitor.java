@@ -22,6 +22,12 @@ package org.neo4j.kernel.impl.api.index;
 interface IndexSizeVisitor
 {
     /**
+     *
+     * @return the underlying index size
+     */
+    long indexSize();
+
+    /**
      * Increment the associated index count by deltaCount
      * if the underlying counts tracker has processed updates
      * with txId < transactionId

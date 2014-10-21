@@ -51,7 +51,7 @@ public interface IndexReader extends Resource
         @Override
         public void sampleIndex( ValueSampler sampler, DoubleLongRegister samplingResult )
         {
-            sampler.samplingResult( samplingResult );
+            sampler.result( samplingResult );
         }
 
         @Override

@@ -19,12 +19,7 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.neo4j.register.Register;
-
-public interface ValueSampler
+public interface PopulatingValueSampler extends ValueSampler
 {
-    void include( Object value );
-
-    void result( Register.DoubleLongRegister register );
-
+    void exclude( Object value );
 }

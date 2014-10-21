@@ -63,7 +63,7 @@ class LuceneIndexAccessorReader implements IndexReader
                 if ( !NODE_ID_KEY.equals( term.field() ))
                 {
                     String value = term.text();
-                    sampler.considerValue( value );
+                    sampler.include( value );
                 }
             }
         }
@@ -72,7 +72,7 @@ class LuceneIndexAccessorReader implements IndexReader
             throw new RuntimeException( e );
         }
 
-        sampler.samplingResult( samplingResult );
+        sampler.result( samplingResult );
     }
 
 
