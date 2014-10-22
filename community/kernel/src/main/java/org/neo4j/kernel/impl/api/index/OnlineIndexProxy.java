@@ -33,7 +33,6 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 
 import static org.neo4j.helpers.FutureAdapter.VOID;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.MAX_TX_ID;
 
 public class OnlineIndexProxy implements IndexProxy
 {
@@ -41,6 +40,7 @@ public class OnlineIndexProxy implements IndexProxy
     final IndexAccessor accessor;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
     private IndexSizeVisitor indexSizeVisitor;
+    private IndexCountsRemover indexCountsRemover;
 
     public OnlineIndexProxy( IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
                              IndexAccessor accessor, IndexStoreView view )
@@ -49,6 +49,7 @@ public class OnlineIndexProxy implements IndexProxy
         this.providerDescriptor = providerDescriptor;
         this.accessor = accessor;
         this.indexSizeVisitor = IndexStoreView.IndexCountVisitors.newIndexSizeVisitor( view, descriptor );
+        this.indexCountsRemover = IndexCountsRemover.Factory.create( view, descriptor );
     }
 
     @Override
@@ -65,7 +66,7 @@ public class OnlineIndexProxy implements IndexProxy
     @Override
     public Future<Void> drop() throws IOException
     {
-        indexSizeVisitor.replaceIndexSize( MAX_TX_ID, 0 );
+        indexCountsRemover.remove();
         accessor.drop();
         return VOID;
     }

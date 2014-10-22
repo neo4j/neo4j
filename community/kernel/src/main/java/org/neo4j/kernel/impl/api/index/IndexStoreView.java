@@ -81,13 +81,6 @@ public interface IndexStoreView extends PropertyAccessor
                 {
                     view.incrementIndexSize( transactionId, descriptor, sizeDelta );
                 }
-
-                @Override
-                public void replaceIndexSize( long transactionId, long totalSize )
-                {
-                    view.replaceIndexSize( transactionId, descriptor, totalSize );
-
-                }
             };
         }
     }

@@ -32,31 +32,30 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 
 import static org.neo4j.helpers.FutureAdapter.VOID;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.MAX_TX_ID;
 
 public class FailedIndexProxy extends AbstractSwallowingIndexProxy
 {
     protected final IndexPopulator populator;
     private final String indexUserDescription;
-    private final IndexSizeVisitor indexSizeVisitor;
+    private final IndexCountsRemover indexCountsRemover;
 
     public FailedIndexProxy(IndexDescriptor descriptor,
                             SchemaIndexProvider.Descriptor providerDescriptor,
                             String indexUserDescription,
                             IndexPopulator populator,
                             IndexPopulationFailure populationFailure,
-                            IndexSizeVisitor indexSizeVisitor )
+                            IndexCountsRemover indexCountsRemover )
     {
         super( descriptor, providerDescriptor, populationFailure );
         this.populator = populator;
         this.indexUserDescription = indexUserDescription;
-        this.indexSizeVisitor = indexSizeVisitor;
+        this.indexCountsRemover = indexCountsRemover;
     }
 
     @Override
     public Future<Void> drop() throws IOException
     {
-        indexSizeVisitor.replaceIndexSize( MAX_TX_ID, 0l );
+        indexCountsRemover.remove();
         populator.drop();
         return VOID;
     }
