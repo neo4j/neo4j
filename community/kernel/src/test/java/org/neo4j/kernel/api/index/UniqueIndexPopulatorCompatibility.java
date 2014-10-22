@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.index;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSizeSampler;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -52,7 +53,9 @@ public class UniqueIndexPopulatorCompatibility extends IndexProviderCompatibilit
         int nodeId1 = 1;
         int nodeId2 = 2;
 
-        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, new IndexConfiguration( true ) );
+        IndexConfiguration config = new IndexConfiguration( true );
+        UniqueIndexSizeSampler sampler = new UniqueIndexSizeSampler();
+        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, sampler );
         populator.create();
         populator.add( nodeId1, value );
         populator.add( nodeId2, value );

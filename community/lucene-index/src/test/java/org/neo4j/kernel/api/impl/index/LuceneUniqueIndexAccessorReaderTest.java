@@ -33,7 +33,7 @@ import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.search.IndexSearcher;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.kernel.impl.api.index.SampleVisitor;
+import org.neo4j.kernel.impl.api.index.sampling.BoundedIndexSampler;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 
@@ -90,7 +90,7 @@ public class LuceneUniqueIndexAccessorReaderTest
     private DoubleLongRegister sampleAccessor( LuceneIndexAccessorReader accessor, int sampleSize, int indexSize )
     {
         final DoubleLongRegister output = Registers.newDoubleLongRegister();
-        accessor.sampleIndex( new SampleVisitor( 10_000 ), output );
+        accessor.sampleIndex( new BoundedIndexSampler( 10_000 ) );
         return output;
     }
 }

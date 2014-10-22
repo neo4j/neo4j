@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.test.DoubleLatch;
 
 import static org.mockito.Mockito.mock;
@@ -45,16 +46,16 @@ public class ControlledPopulationSchemaIndexProvider extends SchemaIndexProvider
     public final AtomicInteger populatorCallCount = new AtomicInteger();
     public final AtomicInteger writerCallCount = new AtomicInteger();
     private String failure;
-    
+
     public static final SchemaIndexProvider.Descriptor PROVIDER_DESCRIPTOR = new SchemaIndexProvider.Descriptor(
             "controlled-population", "1.0" );
-    
+
     public ControlledPopulationSchemaIndexProvider()
     {
         super( PROVIDER_DESCRIPTOR, 10 );
         setInitialIndexState( initialIndexState );
     }
-    
+
     public DoubleLatch installPopulationJobCompletionLatch()
     {
         final DoubleLatch populationCompletionLatch = new DoubleLatch();
@@ -69,14 +70,14 @@ public class ControlledPopulationSchemaIndexProvider extends SchemaIndexProvider
         };
         return populationCompletionLatch;
     }
-    
+
     public void awaitFullyPopulated()
     {
         awaitLatch( writerLatch );
     }
 
     @Override
-    public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexConfiguration config )
+    public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexConfiguration config, ValueSampler sampler )
     {
         populatorCallCount.incrementAndGet();
         return mockedPopulator;
@@ -110,7 +111,7 @@ public class ControlledPopulationSchemaIndexProvider extends SchemaIndexProvider
         }
         return this.failure;
     }
-    
+
     @Override
     public int compareTo( SchemaIndexProvider o )
     {

@@ -63,7 +63,6 @@ public class IndexPopulationJob implements Runnable
     private final IndexPopulator populator;
     private final FlippableIndexProxy flipper;
     private final IndexStoreView storeView;
-    private final IndexSizeVisitor sizeVisitor;
     private final ValueSampler populatingSampler;
     private final UpdateableSchemaState updateableSchemaState;
     private final String indexUserDescription;
@@ -81,7 +80,6 @@ public class IndexPopulationJob implements Runnable
                               FailedIndexProxyFactory failureDelegateFactory,
                               IndexPopulator populator, FlippableIndexProxy flipper,
                               IndexStoreView storeView,
-                              IndexSizeVisitor sizeVisitor,
                               ValueSampler populatingSampler,
                               UpdateableSchemaState updateableSchemaState,
                               Logging logging)
@@ -91,7 +89,6 @@ public class IndexPopulationJob implements Runnable
         this.populator = populator;
         this.flipper = flipper;
         this.storeView = storeView;
-        this.sizeVisitor = sizeVisitor;
         this.populatingSampler = populatingSampler;
         this.updateableSchemaState = updateableSchemaState;
         this.indexUserDescription = indexUserDescription;
@@ -117,7 +114,7 @@ public class IndexPopulationJob implements Runnable
                 populator.create();
                 resetIndexCounts();
 
-                indexAllNodes( sizeVisitor, populatingSampler );
+                indexAllNodes();
                 verifyDeferredConstraints();
                 if ( cancelled )
                 {
@@ -131,11 +128,11 @@ public class IndexPopulationJob implements Runnable
                     @Override
                     public Void call() throws Exception
                     {
-                        populateFromQueueIfAvailable( Long.MAX_VALUE, sizeVisitor, populatingSampler );
-                        storeView.replaceIndexSize( MAX_TX_ID, descriptor, sizeVisitor.indexSize() );
+                        populateFromQueueIfAvailable( Long.MAX_VALUE );
 
                         DoubleLongRegister result = Registers.newDoubleLongRegister();
                         long indexSize = populatingSampler.result( result );
+                        storeView.replaceIndexSize( MAX_TX_ID, descriptor, indexSize );
                         storeView.replaceIndexSample( MAX_TX_ID, descriptor, result.readFirst(), result.readSecond() );
 
                         storeView.flushIndexCounts();
@@ -211,8 +208,7 @@ public class IndexPopulationJob implements Runnable
         }
     }
 
-    private void indexAllNodes( final IndexSizeVisitor sizeVisitor, final ValueSampler populatingSampler )
-    throws IndexPopulationFailedKernelException
+    private void indexAllNodes() throws IndexPopulationFailedKernelException
     {
         storeScan = storeView.visitNodesWithPropertyAndLabel( descriptor,
                 new Visitor<NodePropertyUpdate, IndexPopulationFailedKernelException>()
@@ -223,14 +219,11 @@ public class IndexPopulationJob implements Runnable
                         try
                         {
                             populator.add( update.getNodeId(), update.getValueAfter() );
-                            sizeVisitor.incrementIndexSize( MAX_TX_ID, 1 );
-                            populatingSampler.include( update.getValueAfter() );
-                            populateFromQueueIfAvailable( update.getNodeId(), sizeVisitor, populatingSampler );
+                            populateFromQueueIfAvailable( update.getNodeId() );
                         }
                         catch ( IndexEntryConflictException | IOException conflict )
                         {
-                            throw new IndexPopulationFailedKernelException( descriptor, indexUserDescription,
-                                    conflict );
+                            throw new IndexPopulationFailedKernelException( descriptor, indexUserDescription, conflict );
                         }
                         return false;
                     }
@@ -250,14 +243,12 @@ public class IndexPopulationJob implements Runnable
         }
     }
 
-    private void populateFromQueueIfAvailable( final long currentlyIndexedNodeId,
-                                               IndexSizeVisitor sizeVisitor,
-                                               ValueSampler populatingSampler )
-    throws IndexEntryConflictException, IOException
+    private void populateFromQueueIfAvailable( final long currentlyIndexedNodeId )
+        throws IndexEntryConflictException, IOException
     {
         if ( !queue.isEmpty() )
         {
-            try ( IndexUpdater updater = createCountingIndexUpdater( sizeVisitor, populatingSampler ) )
+            try ( IndexUpdater updater = populator.newPopulatingUpdater( storeView ) )
             {
                 do
                 {
@@ -271,15 +262,6 @@ public class IndexPopulationJob implements Runnable
                 } while ( !queue.isEmpty() );
             }
         }
-    }
-
-    private IndexUpdater createCountingIndexUpdater( IndexSizeVisitor countVisitor,
-                                                     ValueSampler populatingSampler )
-    throws IOException
-    {
-        final IndexUpdater countingIndexUpdater =
-                new CountingIndexUpdater( MAX_TX_ID, populator.newPopulatingUpdater( storeView ), countVisitor );
-        return new SamplingIndexUpdater( countingIndexUpdater, populatingSampler );
     }
 
     public Future<Void> cancel()

@@ -45,6 +45,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
@@ -170,7 +171,8 @@ public class IndexCRUDIT
     {
         GatheringIndexWriter writer = new GatheringIndexWriter( propertyKey );
         when( mockedIndexProvider.getPopulator(
-                anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ) ) ).thenReturn( writer );
+                anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ), any( ValueSampler.class) )
+        ).thenReturn( writer );
         when( mockedIndexProvider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         when( mockedIndexProvider.getOnlineAccessor( anyLong(), any( IndexConfiguration.class ) ) ).thenReturn( writer );
         when( mockedIndexProvider.compareTo( any( SchemaIndexProvider.class ) ) ).thenReturn( 1 ); // always pretend to have highest priority

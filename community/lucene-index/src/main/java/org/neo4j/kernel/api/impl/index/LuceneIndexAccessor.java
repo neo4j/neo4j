@@ -25,6 +25,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SearcherFactory;
@@ -146,8 +147,9 @@ abstract class LuceneIndexAccessor implements IndexAccessor
             TopDocs hits = searcher.search( new TermQuery( documentStructure.newQueryForChangeOrRemove( nodeId ) ), 1 );
             if ( hits.totalHits > 0 )
             {
+                Fieldable encodedValue = documentStructure.encodeAsFieldable( value );
                 writer.updateDocument( documentStructure.newQueryForChangeOrRemove( nodeId ),
-                        documentStructure.newDocumentRepresentingProperty( nodeId, value ) );
+                        documentStructure.newDocumentRepresentingProperty( nodeId, encodedValue ) );
             }
             else
             {
@@ -162,13 +164,15 @@ abstract class LuceneIndexAccessor implements IndexAccessor
 
     protected void add( long nodeId, Object value ) throws IOException
     {
-        writer.addDocument( documentStructure.newDocumentRepresentingProperty( nodeId, value ) );
+        Fieldable encodedValue = documentStructure.encodeAsFieldable( value );
+        writer.addDocument( documentStructure.newDocumentRepresentingProperty( nodeId, encodedValue ) );
     }
 
-    protected void change( long nodeId, Object valueAfter ) throws IOException
+    protected void change( long nodeId, Object value ) throws IOException
     {
+        Fieldable encodedValue = documentStructure.encodeAsFieldable( value );
         writer.updateDocument( documentStructure.newQueryForChangeOrRemove( nodeId ),
-                documentStructure.newDocumentRepresentingProperty( nodeId, valueAfter ) );
+                documentStructure.newDocumentRepresentingProperty( nodeId, encodedValue ) );
     }
 
     protected void remove( long nodeId ) throws IOException

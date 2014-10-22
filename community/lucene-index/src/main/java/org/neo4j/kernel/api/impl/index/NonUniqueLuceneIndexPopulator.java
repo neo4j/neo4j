@@ -24,31 +24,37 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.document.Fieldable;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.kernel.api.index.util.FailureStorage;
 
 class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
 {
     static final int DEFAULT_QUEUE_THRESHOLD = 10000;
     private final int queueThreshold;
+    private final ValueSampler sampler;
     private final List<NodePropertyUpdate> updates = new ArrayList<>();
 
     NonUniqueLuceneIndexPopulator( int queueThreshold, LuceneDocumentStructure documentStructure,
                                    LuceneIndexWriterFactory indexWriterFactory,
                                    IndexWriterStatus writerStatus, DirectoryFactory dirFactory, File dirFile,
-                                   FailureStorage failureStorage, long indexId )
+                                   FailureStorage failureStorage, long indexId, ValueSampler sampler )
     {
         super( documentStructure, indexWriterFactory, writerStatus, dirFactory, dirFile, failureStorage, indexId );
         this.queueThreshold = queueThreshold;
+        this.sampler = sampler;
     }
 
     @Override
     public void add( long nodeId, Object propertyValue ) throws IOException
     {
-        writer.addDocument( documentStructure.newDocumentRepresentingProperty( nodeId, propertyValue ) );
+        Fieldable encodedValue = documentStructure.encodeAsFieldable( propertyValue );
+        sampler.include( encodedValue.stringValue() );
+        writer.addDocument( documentStructure.newDocumentRepresentingProperty( nodeId, encodedValue ) );
     }
 
     @Override
@@ -65,6 +71,28 @@ class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
             @Override
             public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
             {
+                switch ( update.getUpdateMode() )
+                {
+                    case ADDED:
+                        // We don't look at the "before" value, so adding and changing idempotently is done the same way.
+                        Fieldable encodedValue = documentStructure.encodeAsFieldable( update.getValueAfter() );
+                        sampler.include( encodedValue.stringValue() );
+                        break;
+                    case CHANGED:
+                        // We don't look at the "before" value, so adding and changing idempotently is done the same way.
+                        Fieldable encodedValueBefore = documentStructure.encodeAsFieldable( update.getValueBefore() );
+                        sampler.exclude( encodedValueBefore.stringValue() );
+                        Fieldable encodedValueAfter = documentStructure.encodeAsFieldable( update.getValueAfter() );
+                        sampler.include( encodedValueAfter.stringValue() );
+                        break;
+                    case REMOVED:
+                        Fieldable removedValue = documentStructure.encodeAsFieldable( update.getValueBefore() );
+                        sampler.exclude( removedValue.stringValue() );
+                        break;
+                    default:
+                        throw new IllegalStateException( "Unknown update mode " + update.getUpdateMode() );
+                }
+
                 updates.add( update );
             }
 
@@ -98,9 +126,9 @@ class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
             case ADDED:
             case CHANGED:
                 // We don't look at the "before" value, so adding and changing idempotently is done the same way.
+                Fieldable encodedValue = documentStructure.encodeAsFieldable( update.getValueAfter() );
                 writer.updateDocument( documentStructure.newQueryForChangeOrRemove( nodeId ),
-                                       documentStructure.newDocumentRepresentingProperty( nodeId,
-                                               update.getValueAfter() ) );
+                                       documentStructure.newDocumentRepresentingProperty( nodeId, encodedValue ) );
                 break;
             case REMOVED:
                 writer.deleteDocuments( documentStructure.newQueryForChangeOrRemove( nodeId ) );

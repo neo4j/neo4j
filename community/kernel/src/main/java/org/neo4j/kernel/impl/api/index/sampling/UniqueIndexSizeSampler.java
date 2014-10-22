@@ -17,25 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.index;
-
-import java.io.Closeable;
-
-import org.apache.lucene.search.IndexSearcher;
+package org.neo4j.kernel.impl.api.index.sampling;
 
 import org.neo4j.kernel.api.index.ValueSampler;
+import org.neo4j.register.Register;
 
-class LuceneUniqueIndexAccessorReader extends LuceneIndexAccessorReader
+public class UniqueIndexSizeSampler implements ValueSampler
 {
-    LuceneUniqueIndexAccessorReader( IndexSearcher searcher, LuceneDocumentStructure documentLogic, Closeable onClose )
+    long count = 0;
+
+    @Override
+    public void include( String value )
     {
-        super( searcher, documentLogic, onClose );
+        count++;
     }
 
     @Override
-    public void sampleIndex( ValueSampler sampler )
+    public void exclude( String value )
     {
-        // TODO: make it smarter: we simply need to know how many entries are in the index
-        super.sampleIndex( sampler );
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long result( Register.DoubleLongRegister register )
+    {
+        register.write( count, count );
+        return count;
     }
 }

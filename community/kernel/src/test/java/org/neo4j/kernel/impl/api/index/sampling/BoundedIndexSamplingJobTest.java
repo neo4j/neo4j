@@ -89,7 +89,7 @@ public class BoundedIndexSamplingJobTest
         when( indexProxy.getDescriptor() ).thenReturn( indexDescriptor );
         when( indexProxy.newReader() ).thenReturn( indexReader );
         doAnswer( answerWith( indexUniqueValues, indexSize ) ).when( indexReader )
-                .sampleIndex( any( ValueSampler.class ), any( DoubleLongRegister.class ) );
+                .sampleIndex( any( ValueSampler.class ) );
 
     }
 

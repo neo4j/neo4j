@@ -73,6 +73,7 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
+import org.neo4j.kernel.impl.api.index.sampling.BoundedIndexSampler;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
@@ -81,7 +82,6 @@ import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.TestLogger;
 import org.neo4j.kernel.logging.SingleLoggingService;
-import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.DoubleLatch;
@@ -654,7 +654,7 @@ public class IndexPopulationJobTest
                 descriptor, PROVIDER_DESCRIPTOR,
                 format( ":%s(%s)", label.name(), propertyKey ),
                 failureDelegateFactory,
-                populator, flipper, storeView, new SizeVisitor(), new SampleVisitor( 10_000 ),
+                populator, flipper, storeView, new BoundedIndexSampler( 10_000 ),
                 stateHolder, new SingleLoggingService( logger ) );
     }
 

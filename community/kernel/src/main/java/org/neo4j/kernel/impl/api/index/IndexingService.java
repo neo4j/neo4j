@@ -49,11 +49,14 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
+import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
+import org.neo4j.kernel.impl.api.index.sampling.BoundedIndexSampler;
 import org.neo4j.kernel.impl.api.index.sampling.BoundedIndexSamplingJobFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingJobTracker;
+import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSizeSampler;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -522,8 +525,9 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
 
         // TODO: This is here because there is a circular dependency from PopulatingIndexProxy to FlippableIndexProxy
         final String indexUserDescription = indexUserDescription( descriptor, providerDescriptor );
-        IndexPopulator populator =
-            getPopulatorFromProvider( providerDescriptor, ruleId, descriptor, new IndexConfiguration( constraint ) );
+        IndexConfiguration config = new IndexConfiguration( constraint );
+        ValueSampler sampler = valueSampler( constraint );
+        IndexPopulator populator = getPopulatorFromProvider( providerDescriptor, ruleId, descriptor, config, sampler );
 
         FailedIndexProxyFactory failureDelegateFactory = new FailedPopulatingIndexProxyFactory(
             descriptor,
@@ -535,8 +539,8 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
 
         PopulatingIndexProxy populatingIndex =
             new PopulatingIndexProxy( scheduler, descriptor, providerDescriptor,
-                    failureDelegateFactory, populator, flipper, storeView, new SizeVisitor(),
-                    new SampleVisitor( maxUniqueElementsPerSampling ),
+                    failureDelegateFactory, populator, flipper, storeView,
+                    new BoundedIndexSampler( maxUniqueElementsPerSampling ),
                     updateableSchemaState, logging, indexUserDescription );
         flipper.flipTo( populatingIndex );
 
@@ -597,8 +601,10 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
                                                        boolean unique,
                                                        IndexPopulationFailure populationFailure )
     {
-        IndexPopulator indexPopulator = getPopulatorFromProvider( providerDescriptor, ruleId,
-                descriptor, new IndexConfiguration( unique ) );
+        IndexConfiguration config = new IndexConfiguration( unique );
+        ValueSampler sampler = valueSampler( unique );
+        IndexPopulator indexPopulator =
+                getPopulatorFromProvider( providerDescriptor, ruleId, descriptor, config, sampler );
         String indexUserDescription = indexUserDescription(descriptor, providerDescriptor);
         IndexProxy result = new FailedIndexProxy(
             descriptor,
@@ -652,10 +658,18 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
     }
 
     private IndexPopulator getPopulatorFromProvider( SchemaIndexProvider.Descriptor providerDescriptor, long ruleId,
-                                                     IndexDescriptor descriptor, IndexConfiguration config )
+                                                     IndexDescriptor descriptor, IndexConfiguration config,
+                                                     ValueSampler sampler )
     {
         SchemaIndexProvider indexProvider = providerMap.apply( providerDescriptor );
-        return indexProvider.getPopulator( ruleId, descriptor, config );
+        return indexProvider.getPopulator( ruleId, descriptor, config, sampler );
+    }
+
+    private ValueSampler valueSampler( boolean unique )
+    {
+        return unique
+                ? new UniqueIndexSizeSampler()
+                : new BoundedIndexSampler( maxUniqueElementsPerSampling );
     }
 
     private IndexAccessor getOnlineAccessorFromProvider( SchemaIndexProvider.Descriptor providerDescriptor,

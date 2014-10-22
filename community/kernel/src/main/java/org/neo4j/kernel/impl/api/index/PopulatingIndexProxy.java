@@ -59,7 +59,6 @@ public class PopulatingIndexProxy implements IndexProxy
                                  IndexPopulator writer,
                                  FlippableIndexProxy flipper,
                                  IndexStoreView storeView,
-                                 IndexSizeVisitor sizeVisitor,
                                  ValueSampler populatingSampler,
                                  UpdateableSchemaState updateableSchemaState,
                                  Logging logging,
@@ -69,7 +68,7 @@ public class PopulatingIndexProxy implements IndexProxy
         this.descriptor = descriptor;
         this.providerDescriptor = providerDescriptor;
         this.job = new IndexPopulationJob( descriptor, providerDescriptor,
-                indexUserDescription, failureDelegateFactory, writer, flipper, storeView, sizeVisitor,
+                indexUserDescription, failureDelegateFactory, writer, flipper, storeView,
                 populatingSampler,
                 updateableSchemaState, logging );
     }
