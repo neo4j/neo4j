@@ -25,13 +25,13 @@ import org.neo4j.kernel.logging.Logging;
 
 public class BoundedIndexSamplingJobFactory implements IndexSamplingJobFactory
 {
-    private final long sampleSize;
+    private final int numOfUniqueElements;
     private final IndexStoreView storeView;
     private final Logging logging;
 
-    public BoundedIndexSamplingJobFactory( long sampleSize, IndexStoreView storeView, Logging logging )
+    public BoundedIndexSamplingJobFactory( int numOfUniqueElements, IndexStoreView storeView, Logging logging )
     {
-        this.sampleSize = sampleSize;
+        this.numOfUniqueElements = numOfUniqueElements;
         this.storeView = storeView;
         this.logging = logging;
     }
@@ -39,6 +39,6 @@ public class BoundedIndexSamplingJobFactory implements IndexSamplingJobFactory
     @Override
     public Runnable create( IndexProxy indexProxy )
     {
-        return new BoundedIndexSamplingJob( indexProxy, sampleSize, storeView, logging );
+        return new BoundedIndexSamplingJob( indexProxy, numOfUniqueElements, storeView, logging );
     }
 }

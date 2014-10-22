@@ -19,6 +19,13 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KEY;
+
 import java.io.Closeable;
 import java.io.IOException;
 
@@ -28,17 +35,9 @@ import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.search.IndexSearcher;
 import org.junit.Before;
 import org.junit.Test;
-
+import org.neo4j.kernel.impl.api.index.SampleVisitor;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KEY;
 
 public class LuceneIndexAccessorReaderTest
 {
@@ -135,7 +134,7 @@ public class LuceneIndexAccessorReaderTest
     private DoubleLongRegister sampleAccessor( LuceneIndexAccessorReader accessor )
     {
         final DoubleLongRegister output = Registers.newDoubleLongRegister();
-        accessor.sampleIndex( new SkipOracleSampler( SkipOracle.Factory.FULL_SCAN_SKIP_ORACLE ), output );
+        accessor.sampleIndex( new SampleVisitor( 10_000 ), output );
         return output;
     }
 }
