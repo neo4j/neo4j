@@ -513,11 +513,6 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
         }
     }
 
-    private IndexSizeVisitor indexCountVisitor( IndexDescriptor descriptor )
-    {
-        return IndexStoreView.IndexCountVisitors.newIndexSizeVisitor( storeView, descriptor );
-    }
-
     private IndexProxy createAndStartPopulatingIndexProxy( final long ruleId,
                                                            final IndexDescriptor descriptor,
                                                            final SchemaIndexProvider.Descriptor providerDescriptor,
@@ -535,7 +530,7 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
             providerDescriptor,
             populator,
             indexUserDescription,
-            indexCountVisitor( descriptor )
+            IndexCountsRemover.Factory.create( storeView, descriptor )
         );
 
         PopulatingIndexProxy populatingIndex =
@@ -611,7 +606,7 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
             indexUserDescription,
             indexPopulator,
             populationFailure,
-            indexCountVisitor( descriptor )
+            IndexCountsRemover.Factory.create( storeView, descriptor )
         );
         result = contractCheckedProxy( result, true );
         return result;

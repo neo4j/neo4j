@@ -34,10 +34,4 @@ class SizeVisitor implements IndexSizeVisitor
     {
         this.count += sizeDelta;
     }
-
-    @Override
-    public void replaceIndexSize( long transactionId, long totalSize )
-    {
-        this.count = totalSize;
-    }
 }

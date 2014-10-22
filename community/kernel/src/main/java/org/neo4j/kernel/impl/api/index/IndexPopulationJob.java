@@ -55,23 +55,23 @@ import org.neo4j.register.Registers;
  */
 public class IndexPopulationJob implements Runnable
 {
-    private final IndexStoreView storeView;
-    private final String indexUserDescription;
-
     // NOTE: unbounded queue expected here
     private final Queue<NodePropertyUpdate> queue = new ConcurrentLinkedQueue<>();
-
     private final IndexDescriptor descriptor;
-    private final FailedIndexProxyFactory failureDelegate;
+
+    private final SchemaIndexProvider.Descriptor providerDescriptor;
+
     private final IndexPopulator populator;
     private final FlippableIndexProxy flipper;
+    private final IndexStoreView storeView;
     private final IndexSizeVisitor sizeVisitor;
     private final PopulatingValueSampler populatingSampler;
     private final UpdateableSchemaState updateableSchemaState;
+    private final String indexUserDescription;
+    private final FailedIndexProxyFactory failureDelegate;
     private final StringLogger log;
+    private final IndexCountsRemover indexCountsRemover;
     private final CountDownLatch doneSignal = new CountDownLatch( 1 );
-    private final IndexSizeVisitor indexSizeVisitor;
-    private final SchemaIndexProvider.Descriptor providerDescriptor;
 
     private volatile StoreScan<IndexPopulationFailedKernelException> storeScan;
     private volatile boolean cancelled;
@@ -97,8 +97,8 @@ public class IndexPopulationJob implements Runnable
         this.updateableSchemaState = updateableSchemaState;
         this.indexUserDescription = indexUserDescription;
         this.failureDelegate = failureDelegateFactory;
-        this.indexSizeVisitor = IndexStoreView.IndexCountVisitors.newIndexSizeVisitor( storeView, descriptor );
         this.log = logging.getMessagesLog( getClass() );
+        this.indexCountsRemover = IndexCountsRemover.Factory.create( storeView, descriptor );
     }
 
     @Override
@@ -182,7 +182,7 @@ public class IndexPopulationJob implements Runnable
                 // place is that we would otherwise introduce a race condition where updates could come
                 // in to the old context, if something failed in the job we send to the flipper.
                 flipper.flipTo( new FailedIndexProxy( descriptor, providerDescriptor, indexUserDescription,
-                                                      populator, failure( t ), indexSizeVisitor ) );
+                                                      populator, failure( t ), indexCountsRemover ) );
             }
             finally
             {

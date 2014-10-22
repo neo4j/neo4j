@@ -19,13 +19,17 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.register.Register.DoubleLongRegister;
+
 import java.util.ArrayList;
 import java.util.Collection;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -37,12 +41,12 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.register.Register;
+import org.neo4j.register.Registers;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.EmbeddedDatabaseRule;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class IndexStatisticsTest
 {
@@ -108,7 +112,20 @@ public class IndexStatisticsTest
         }
         catch ( IndexNotFoundKernelException e )
         {
-            // expected
+            assertEquals( 0l, getTracker().indexSize( index.getLabelId(), index.getPropertyKeyId() ) );
+        }
+
+        // and also
+        try
+        {
+            indexSelectivity( index );
+            fail( "Expected IndexNotFoundKernelException to be thrown" );
+        }
+        catch ( IndexNotFoundKernelException e )
+        {
+            DoubleLongRegister register = Registers.newDoubleLongRegister();
+            getTracker().indexSample( index.getLabelId(), index.getPropertyKeyId(), register );
+            assertDoubleLongEquals( 0l, 0l, register );
         }
     }
 
@@ -355,6 +372,11 @@ public class IndexStatisticsTest
         }
     }
 
+    private CountsTracker getTracker()
+    {
+        return ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( NeoStore.class ).getCounts();
+    }
+
     private void createSomePersons() throws KernelException
     {
         try ( Transaction tx = db.beginTx() )
@@ -425,6 +447,13 @@ public class IndexStatisticsTest
             }
         }
         throw new IllegalStateException( "Index did not become ONLINE within reasonable time" );
+    }
+
+    private void assertDoubleLongEquals( long expectedUniqueValue, long expectedSampledSize,
+                                         DoubleLongRegister register )
+    {
+        assertEquals( expectedUniqueValue, register.readFirst() );
+        assertEquals( expectedSampledSize, register.readSecond() );
     }
 
     private static void assertCorrectIndexSize( long expected, long actual )
