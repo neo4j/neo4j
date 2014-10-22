@@ -34,7 +34,6 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.index.impl.lucene.Hits;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.ValueSampler;
-import org.neo4j.register.Register.DoubleLongRegister;
 
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KEY;
 
@@ -53,7 +52,7 @@ class LuceneIndexAccessorReader implements IndexReader
     }
 
     @Override
-    public void sampleIndex( final ValueSampler sampler, DoubleLongRegister samplingResult )
+    public void sampleIndex( final ValueSampler sampler )
     {
         try ( TermEnum terms = searcher.getIndexReader().terms() )
         {
@@ -71,8 +70,6 @@ class LuceneIndexAccessorReader implements IndexReader
         {
             throw new RuntimeException( e );
         }
-
-        sampler.result( samplingResult );
     }
 
 

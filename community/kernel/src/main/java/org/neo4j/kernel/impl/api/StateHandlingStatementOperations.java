@@ -935,7 +935,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public long indexNumberOfEntries( KernelStatement statement, IndexDescriptor descriptor )
+    public long indexSize( KernelStatement statement, IndexDescriptor descriptor )
             throws IndexNotFoundKernelException
 
     {

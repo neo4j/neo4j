@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api.index.sampling;
 
 import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.MAX_TX_ID;
 
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -28,7 +27,6 @@ import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
-import org.neo4j.kernel.impl.api.index.SampleVisitor;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.register.Register;
@@ -62,13 +60,14 @@ class BoundedIndexSamplingJob implements Runnable
             try ( IndexReader reader = indexProxy.newReader() )
             {
                 Register.DoubleLongRegister sample = Registers.newDoubleLongRegister();
-                ValueSampler sampler = new SampleVisitor( numOfUniqueElements );
-                reader.sampleIndex( sampler, sample );
+                ValueSampler sampler = new BoundedIndexSampler( numOfUniqueElements );
+                reader.sampleIndex( sampler );
+                final long indexSize = sampler.result( sample );
 
                 // check again if the index is online before saving the counts in the store
                 if ( indexProxy.getState() == ONLINE )
                 {
-                    storeView.replaceIndexSample( MAX_TX_ID, indexDescriptor, sample.readFirst(), sample.readSecond() );
+                    storeView.setIndexCounts( indexDescriptor, sample.readFirst(), sample.readSecond(), indexSize );
                 }
             }
         }

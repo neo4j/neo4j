@@ -414,7 +414,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     public long indexSize( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         statement.assertOpen();
-        return schemaRead().indexNumberOfEntries( statement, descriptor );
+        return schemaRead().indexSize( statement, descriptor );
     }
 
     @Override

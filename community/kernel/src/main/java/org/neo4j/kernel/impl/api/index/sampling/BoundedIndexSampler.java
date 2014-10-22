@@ -17,28 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.kernel.impl.api.index.sampling;
 
 import org.neo4j.helpers.collection.MultiSet;
-import org.neo4j.kernel.api.index.PopulatingValueSampler;
+import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.register.Register;
 
-public class SampleVisitor implements PopulatingValueSampler
+public class BoundedIndexSampler implements ValueSampler
 {
-    private MultiSet<Object> values;
+    private MultiSet<String> values;
     private int sampledSteps = 0;
     private long accumulatedUniqueValues = 0;
     private long accumulatedSampledSize = 0;
     private final int numOfUniqueElements;
 
-    public SampleVisitor( int numOfUniqueElements )
+    public BoundedIndexSampler( int numOfUniqueElements )
     {
         this.numOfUniqueElements = numOfUniqueElements;
         this.values = new MultiSet<>( numOfUniqueElements );
     }
 
     @Override
-    public void include( Object value )
+    public void include( String value )
     {
         if ( values.uniqueValueSize() >= numOfUniqueElements )
         {
@@ -49,13 +49,13 @@ public class SampleVisitor implements PopulatingValueSampler
     }
 
     @Override
-    public void exclude( Object value )
+    public void exclude( String value )
     {
         values.remove( value );
     }
 
     @Override
-    public void result( Register.DoubleLongRegister register )
+    public long result( Register.DoubleLongRegister register )
     {
         if ( !values.isEmpty() )
         {
@@ -65,6 +65,8 @@ public class SampleVisitor implements PopulatingValueSampler
         long uniqueValues = sampledSteps != 0 ? accumulatedUniqueValues / sampledSteps : 0;
         long sampledSize = sampledSteps != 0 ? accumulatedSampledSize / sampledSteps : 0;
         register.write( uniqueValues, sampledSize );
+
+        return accumulatedSampledSize;
     }
 
     private void nextStep()

@@ -17,9 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.index;
+package org.neo4j.kernel.impl.api.index.sampling;
 
-public interface PopulatingValueSampler extends ValueSampler
+import org.neo4j.kernel.api.index.ValueSampler;
+import org.neo4j.register.Register;
+
+public class UniqueIndexSizeSampler implements ValueSampler
 {
-    void exclude( Object value );
+    long count = 0;
+
+    @Override
+    public void include( String value )
+    {
+        count++;
+    }
+
+    @Override
+    public void exclude( String value )
+    {
+        count--;
+    }
+
+    @Override
+    public long result( Register.DoubleLongRegister register )
+    {
+        register.write( count, count );
+        return count;
+    }
 }

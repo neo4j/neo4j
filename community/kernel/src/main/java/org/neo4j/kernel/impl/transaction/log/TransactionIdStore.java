@@ -42,9 +42,6 @@ public interface TransactionIdStore
     // Tx id counting starting from this value (this value means no transaction in the log)
     public static final long BASE_TX_ID = 1;
 
-    // Tx id that is supposed to never be reached in practice; used as a bound
-    public static final long MAX_TX_ID = Long.MAX_VALUE;
-
     /**
      * @return the next transaction id for a committing transaction. The transaction id is incremented
      * with each call. Ids returned from this method will not be visible from {@link #getLastCommittedTransactionId()}

@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.MAX_TX_ID;
-
 import org.neo4j.kernel.api.index.IndexDescriptor;
 
 public interface IndexCountsRemover
@@ -39,8 +37,7 @@ public interface IndexCountsRemover
                 @Override
                 public void remove()
                 {
-                    storeView.replaceIndexSize( MAX_TX_ID, descriptor, 0 );
-                    storeView.replaceIndexSample( MAX_TX_ID, descriptor, 0, 0 );
+                    storeView.setIndexCounts( descriptor, 0, 0, 0 );
                 }
             };
         }

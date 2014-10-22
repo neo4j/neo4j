@@ -35,7 +35,9 @@ import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.search.IndexSearcher;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.kernel.impl.api.index.SampleVisitor;
+import org.neo4j.kernel.api.index.ValueSampler;
+import org.neo4j.kernel.impl.api.index.sampling.BoundedIndexSampler;
+import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSizeSampler;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 
@@ -61,9 +63,11 @@ public class LuceneIndexAccessorReaderTest
         final LuceneIndexAccessorReader accessor = new LuceneIndexAccessorReader( searcher, documentLogic, closeable );
 
         // When
-        final DoubleLongRegister output = sampleAccessor( accessor );
+        final DoubleLongRegister output = Registers.newDoubleLongRegister();
+        long indexSize = sampleAccessor( accessor, output );
 
         // Then
+        assertEquals( 0, indexSize );
         assertEquals( 0, output.readFirst() );
         assertEquals( 0, output.readSecond() );
     }
@@ -82,9 +86,11 @@ public class LuceneIndexAccessorReaderTest
         final LuceneIndexAccessorReader accessor = new LuceneIndexAccessorReader( searcher, documentLogic, closeable );
 
         // When
-        final DoubleLongRegister output = sampleAccessor( accessor );
+        final DoubleLongRegister output = Registers.newDoubleLongRegister();
+        long indexSize = sampleAccessor( accessor, output );
 
         // Then
+        assertEquals( 3, indexSize );
         assertEquals( 2, output.readFirst() );
         assertEquals( 3, output.readSecond() );
     }
@@ -103,9 +109,12 @@ public class LuceneIndexAccessorReaderTest
         final LuceneIndexAccessorReader accessor = new LuceneIndexAccessorReader( searcher, documentLogic, closeable );
 
         // When
-        final DoubleLongRegister output = sampleAccessor( accessor );
+
+        final DoubleLongRegister output = Registers.newDoubleLongRegister();
+        long indexSize = sampleAccessor( accessor, output );
 
         // Then
+        assertEquals( 1, indexSize );
         assertEquals( 1, output.readFirst() );
         assertEquals( 1, output.readSecond() );
     }
@@ -121,7 +130,7 @@ public class LuceneIndexAccessorReaderTest
         // When
         try
         {
-            sampleAccessor( accessor );
+            sampleAccessor( accessor, Registers.newDoubleLongRegister() );
             fail( "should have thrown" );
         }
         catch ( RuntimeException ex )
@@ -131,10 +140,10 @@ public class LuceneIndexAccessorReaderTest
         }
     }
 
-    private DoubleLongRegister sampleAccessor( LuceneIndexAccessorReader accessor )
+    private long sampleAccessor( LuceneIndexAccessorReader accessor, DoubleLongRegister output )
     {
-        final DoubleLongRegister output = Registers.newDoubleLongRegister();
-        accessor.sampleIndex( new SampleVisitor( 10_000 ), output );
-        return output;
+        ValueSampler sampler = new BoundedIndexSampler( 10_000 );
+        accessor.sampleIndex( sampler );
+        return sampler.result( output );
     }
 }

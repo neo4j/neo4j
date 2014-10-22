@@ -65,7 +65,7 @@ public interface SchemaReadOperations
     /**
      * Get the number of index entries.
      **/
-    long indexNumberOfEntries( KernelStatement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    long indexSize( KernelStatement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
      * Calculate the index unique values percentage.

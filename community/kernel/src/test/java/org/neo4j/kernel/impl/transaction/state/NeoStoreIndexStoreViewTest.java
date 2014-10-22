@@ -19,6 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -31,7 +39,6 @@ import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -55,15 +62,6 @@ import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.test.TargetDirectory;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
 
 public class NeoStoreIndexStoreViewTest
 {
@@ -155,53 +153,6 @@ public class NeoStoreIndexStoreViewTest
     {
         Property property = storeView.getProperty( alistair.getId(), propertyKeyId );
         assertTrue( property.valueEquals( "Alistair" ) );
-    }
-
-
-    @Test
-    public void shouldOnlyApplyIndexCountReplacementsPastLastTxIdOfCountsStore()
-    {
-        // given
-        long initialTxId = neoStore.getLastCommittedTransactionId();
-        counts.replaceIndexSize( 1, 2, 42l );
-        long lastTxId = initialTxId + 1;
-        neoStore.setLastCommittedAndClosedTransactionId( lastTxId );
-        neoStore.flush();
-
-        // when
-        storeView.replaceIndexSize( lastTxId, new IndexDescriptor( 1, 2 ), 84l );
-
-        // then
-        assertEquals( 42l, counts.indexSize( 1, 2 ) );
-
-        // also when
-        storeView.replaceIndexSize( lastTxId + 1, new IndexDescriptor( 1, 2 ), 23l );
-
-        // then
-        assertEquals( 23l, counts.indexSize( 1, 2 ) );
-    }
-
-    @Test
-    public void shouldOnlyApplyIndexCountUpdatesPastLastTxIdOfCountsStore()
-    {
-        // given
-        long initialTxId = neoStore.getLastCommittedTransactionId();
-        counts.replaceIndexSize( 1, 2, 42l );
-        long lastTxId = initialTxId + 1;
-        neoStore.setLastCommittedAndClosedTransactionId( lastTxId );
-        neoStore.flush();
-
-        // when
-        storeView.incrementIndexSize( lastTxId, new IndexDescriptor( 1, 2 ), 84l );
-
-        // then
-        assertEquals( 42l, counts.indexSize( 1, 2 ) );
-
-        // also when
-        storeView.incrementIndexSize( lastTxId + 1, new IndexDescriptor( 1, 2 ), 23l );
-
-        // then
-        assertEquals( 65l, counts.indexSize( 1, 2 ) );
     }
 
     Map<Long, Lock> lockMocks = new HashMap<>();

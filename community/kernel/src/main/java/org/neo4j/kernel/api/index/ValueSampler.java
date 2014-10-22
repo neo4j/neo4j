@@ -23,8 +23,8 @@ import org.neo4j.register.Register;
 
 public interface ValueSampler
 {
-    void include( Object value );
+    void include( String value );
+    void exclude( String value );
 
-    void result( Register.DoubleLongRegister register );
-
+    long result( Register.DoubleLongRegister register );
 }

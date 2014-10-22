@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api.index;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.MAX_TX_ID;
 
 import java.io.IOException;
 
@@ -49,8 +48,7 @@ public class OnlineIndexProxyTest
 
         // then
         verify( indexAccessor ).drop();
-        verify( storeView ).replaceIndexSize( MAX_TX_ID, descriptor, 0l );
-        verify( storeView ).replaceIndexSample( MAX_TX_ID, descriptor, 0l, 0l );
+        verify( storeView ).setIndexCounts( descriptor, 0l, 0l, 0l );
         verifyNoMoreInteractions( indexAccessor, storeView );
     }
 }

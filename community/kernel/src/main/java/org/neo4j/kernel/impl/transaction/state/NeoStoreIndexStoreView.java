@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.EMPTY_LONG_ARRAY;
+import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
+import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -52,10 +56,6 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.register.Register;
 
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.EMPTY_LONG_ARRAY;
-import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
-import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
-
 public class NeoStoreIndexStoreView implements IndexStoreView
 {
     private final PropertyStore propertyStore;
@@ -85,36 +85,18 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     }
 
     @Override
-    public void replaceIndexSize( long transactionId, IndexDescriptor descriptor, long total )
+    public void setIndexCounts( IndexDescriptor descriptor,
+                                long uniqueElements, long maxUniqueElements, long indexSize )
     {
-        if ( counts.acceptTx( transactionId ) )
-        {
-            counts.replaceIndexSize( descriptor.getLabelId(), descriptor.getPropertyKeyId(), total );
-        }
-    }
-
-    @Override
-    public void incrementIndexSize( long transactionId, IndexDescriptor descriptor, long delta )
-    {
-        if ( counts.acceptTx( transactionId ) )
-        {
-            counts.incrementIndexSize( descriptor.getLabelId(), descriptor.getPropertyKeyId(), delta );
-        }
+        counts.replaceIndexSize( descriptor.getLabelId(), descriptor.getPropertyKeyId(), indexSize );
+        counts.replaceIndexSample( descriptor.getLabelId(), descriptor.getPropertyKeyId(),
+                uniqueElements, maxUniqueElements );
     }
 
     @Override
     public void indexSample( IndexDescriptor descriptor, Register.DoubleLongRegister output )
     {
         counts.indexSample( descriptor.getLabelId(), descriptor.getPropertyKeyId(), output );
-    }
-
-    @Override
-    public void replaceIndexSample( long transactionId, IndexDescriptor descriptor, long unique, long size )
-    {
-        if ( counts.acceptTx( transactionId ) )
-        {
-            counts.replaceIndexSample( descriptor.getLabelId(), descriptor.getPropertyKeyId(), unique, size );
-        }
     }
 
     @Override

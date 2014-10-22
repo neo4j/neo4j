@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.kernel.api.index.util.FailureStorage;
 import org.neo4j.kernel.api.index.util.FolderLayout;
 import org.neo4j.kernel.configuration.Config;
@@ -61,20 +62,21 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexConfiguration config )
+    public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexConfiguration config,
+                                        ValueSampler sampler )
     {
         if ( config.isUnique() )
         {
             return new DeferredConstraintVerificationUniqueLuceneIndexPopulator(
                     documentStructure, standard(), writerStatus,
                     directoryFactory, folderLayout.getFolder( indexId ), failureStorage,
-                    indexId, descriptor );
+                    indexId, descriptor, sampler );
         }
         else
         {
             return new NonUniqueLuceneIndexPopulator(
                     NonUniqueLuceneIndexPopulator.DEFAULT_QUEUE_THRESHOLD, documentStructure, standard(), writerStatus,
-                    directoryFactory, folderLayout.getFolder( indexId ), failureStorage, indexId );
+                    directoryFactory, folderLayout.getFolder( indexId ), failureStorage, indexId, sampler );
         }
     }
 

@@ -43,7 +43,6 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.EmbeddedDatabaseRule;
@@ -51,7 +50,7 @@ import org.neo4j.test.EmbeddedDatabaseRule;
 public class IndexStatisticsTest
 {
     @Test
-    public void shouldProvideIndexStatisticsForDataCreatedBeforeTheIndexOnceIndexIsOnline() throws KernelException
+    public void shouldProvideIndexStatisticsForDataCreatedWhenPopulationBeforeTheIndexIsOnline() throws KernelException
     {
         // given
         createSomePersons();
@@ -65,7 +64,7 @@ public class IndexStatisticsTest
     }
 
     @Test
-    public void shouldProvideIndexStatisticsForDataCreatedAfterTheIndexOnceIndexIsOnline() throws KernelException
+    public void shouldNotSeeDataCreatedAfterPopulation() throws KernelException
     {
         // given
         IndexDescriptor index = awaitOnline( createIndex( "Person", "name" ) );
@@ -74,11 +73,11 @@ public class IndexStatisticsTest
         createSomePersons();
 
         // then
-        assertEquals( 4l, indexSize( index ) );
+        assertEquals( 0l, indexSize( index ) );
     }
 
     @Test
-    public void shouldProvideIndexStatisticsForDataCreatedBeforeAndAfterTheIndexOnceIndexIsOnline()
+    public void shouldProvideIndexStatisticsForDataSeenDuringPopulationAndIgnoreDataCreatedAfterPopulation()
             throws KernelException
     {
         // given
@@ -89,7 +88,7 @@ public class IndexStatisticsTest
         createSomePersons();
 
         // then
-        assertEquals( 8l, indexSize( index ) );
+        assertEquals( 4l, indexSize( index ) );
         // selectivity after population without the newly created nodes
         assertEquals( 0.75d, indexSelectivity( index ), TOLERANCE );
     }
@@ -181,11 +180,10 @@ public class IndexStatisticsTest
         }
 
         // then
-        int expected = createdBefore + createdAfter;
-        assertCorrectIndexSize( expected, indexSize( index ) );
-
         // selectivity after population without sampling
         int seenWhilePopulating = createdBefore + updatesSeenWhilePopulating;
+        assertCorrectIndexSize( seenWhilePopulating, indexSize( index ) );
+
         double expectedSelectivity = UNIQUE_NAMES / ( (double) seenWhilePopulating );
         assertCorrectIndexSelectivity( expectedSelectivity, indexSelectivity( index ) );
     }
@@ -229,11 +227,10 @@ public class IndexStatisticsTest
         }
 
         // then
-        int expected = createdBefore + createdAfter;
-        assertCorrectIndexSize( expected, indexSize( index ) );
-
         // selectivity after population without sampling
         int seenWhilePopulating = createdBefore + updatesSeenWhilePopulating;
+        assertCorrectIndexSize( seenWhilePopulating, indexSize( index ) );
+
         double expectedSelectivity = UNIQUE_NAMES / ( (double) seenWhilePopulating );
         assertCorrectIndexSelectivity( expectedSelectivity, indexSelectivity( index ) );
     }
@@ -276,11 +273,10 @@ public class IndexStatisticsTest
         }
 
         // then
-        int expected = createdBefore + createdAfter;
-        assertCorrectIndexSize( expected, indexSize( index ) );
-
         // selectivity after population without sampling
         int seenWhilePopulating = createdBefore + updatesSeenWhilePopulating;
+        assertCorrectIndexSize( seenWhilePopulating, indexSize( index ) );
+
         double expectedSelectivity = UNIQUE_NAMES / ( (double) seenWhilePopulating );
         assertCorrectIndexSelectivity( expectedSelectivity, indexSelectivity( index ) );
     }
@@ -458,11 +454,12 @@ public class IndexStatisticsTest
 
     private static void assertCorrectIndexSize( long expected, long actual )
     {
+        int tolerance = 100;
         String message = String.format(
-            "Expected number of entries to not differ by more than 10 (expected: %d actual: %d)", expected, actual
+            "Expected number of entries to not differ by more than %d (expected: %d actual: %d)",
+            tolerance, expected, actual
         );
-        // TODO: fix this assertion to be precise
-        assertTrue( message, Math.abs( expected - actual ) < 100 );
+        assertTrue( message, Math.abs( expected - actual ) <= tolerance );
     }
 
     private static void assertCorrectIndexSelectivity( double expected, double actual )

@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.api.index.inmemory;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Array;
+import java.util.Arrays;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.ResourceIterator;
@@ -33,6 +35,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
@@ -66,9 +69,9 @@ class InMemoryIndex
         }
     }
 
-    final IndexPopulator getPopulator()
+    final IndexPopulator getPopulator( ValueSampler sampler )
     {
-        return new Populator();
+        return new Populator( sampler );
     }
 
     final IndexAccessor getOnlineAccessor()
@@ -81,10 +84,10 @@ class InMemoryIndex
         return indexData.lookup( propertyValue );
     }
 
-    protected void add( long nodeId, Object propertyValue, boolean applyIdempotently )
+    protected boolean add( long nodeId, Object propertyValue, boolean applyIdempotently )
             throws IndexEntryConflictException, IOException
     {
-        indexData.add( nodeId, propertyValue, applyIdempotently );
+        return indexData.add( nodeId, propertyValue, applyIdempotently );
     }
 
     protected void remove( long nodeId, Object propertyValue )
@@ -104,6 +107,13 @@ class InMemoryIndex
 
     private class Populator implements IndexPopulator
     {
+        private final ValueSampler sampler;
+
+        private Populator( ValueSampler sampler )
+        {
+            this.sampler = sampler;
+        }
+
         @Override
         public void create()
         {
@@ -113,7 +123,11 @@ class InMemoryIndex
         @Override
         public void add( long nodeId, Object propertyValue ) throws IndexEntryConflictException, IOException
         {
-            InMemoryIndex.this.add( nodeId, propertyValue, false );
+            boolean added = InMemoryIndex.this.add( nodeId, propertyValue, false );
+            if ( added )
+            {
+                sampler.include( encodeAsString( propertyValue ) );
+            }
         }
 
         @Override
@@ -253,5 +267,51 @@ class InMemoryIndex
         snapshot.failure = this.failure;
         snapshot.state = this.state;
         return snapshot;
+    }
+
+    static String encodeAsString( Object propertyValue )
+    {
+        String repr;
+        if ( propertyValue instanceof int[] )
+        {
+            repr = Arrays.toString( (int[]) propertyValue );
+        }
+        else if ( propertyValue instanceof long[] )
+        {
+            repr = Arrays.toString( (long[]) propertyValue );
+        }
+        else if ( propertyValue instanceof boolean[] )
+        {
+            repr = Arrays.toString( (boolean[]) propertyValue );
+        }
+        else if ( propertyValue instanceof double[] )
+        {
+            repr = Arrays.toString( (double[]) propertyValue );
+        }
+        else if ( propertyValue instanceof float[] )
+        {
+            repr = Arrays.toString( (float[]) propertyValue );
+        }
+        else if ( propertyValue instanceof short[] )
+        {
+            repr = Arrays.toString( (short[]) propertyValue );
+        }
+        else if ( propertyValue instanceof byte[] )
+        {
+            repr = Arrays.toString( (byte[]) propertyValue );
+        }
+        else if ( propertyValue instanceof char[] )
+        {
+            repr = Arrays.toString( (char[]) propertyValue );
+        }
+        else if ( propertyValue instanceof Object[] )
+        {
+            repr = Arrays.toString( (Object[]) propertyValue );
+        }
+        else
+        {
+            repr = propertyValue.toString();
+        }
+        return repr;
     }
 }

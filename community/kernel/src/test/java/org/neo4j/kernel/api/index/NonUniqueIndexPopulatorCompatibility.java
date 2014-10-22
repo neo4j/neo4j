@@ -26,6 +26,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.index.sampling.BoundedIndexSampler;
 
 import static org.junit.Assert.assertEquals;
 
@@ -49,14 +50,16 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     public void shouldProvidePopulatorThatAcceptsDuplicateEntries() throws Exception
     {
         // when
-        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, new IndexConfiguration( false ) );
+        IndexConfiguration config = new IndexConfiguration( false );
+        ValueSampler sampler = new BoundedIndexSampler( 10_000 );
+        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, sampler );
         populator.create();
         populator.add( 1, "value1" );
         populator.add( 2, "value1" );
         populator.close( true );
 
         // then
-        IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, new IndexConfiguration( false ) );
+        IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, config );
         try ( IndexReader reader = accessor.newReader() )
         {
             PrimitiveLongIterator nodes = reader.lookup( "value1" );
@@ -69,7 +72,9 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     public void shouldStorePopulationFailedForRetrievalFromProviderLater() throws Exception
     {
         // GIVEN
-        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, new IndexConfiguration( false ) );
+        IndexConfiguration config = new IndexConfiguration( false );
+        ValueSampler sampler = new BoundedIndexSampler( 10_000 );
+        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, sampler );
         String failure = "The contrived failure";
 
         // WHEN
@@ -83,7 +88,9 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     public void shouldReportInitialStateAsFailedIfPopulationFailed() throws Exception
     {
         // GIVEN
-        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, new IndexConfiguration( false ) );
+        IndexConfiguration config = new IndexConfiguration( false );
+        ValueSampler sampler = new BoundedIndexSampler( 10_000 );
+        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, sampler );
         String failure = "The contrived failure";
 
         // WHEN
@@ -97,7 +104,9 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     public void shouldBeAbleToDropAClosedIndexPopulator() throws Exception
     {
         // GIVEN
-        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, new IndexConfiguration( false ) );
+        IndexConfiguration config = new IndexConfiguration( false );
+        ValueSampler sampler = new BoundedIndexSampler( 10_000 );
+        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, sampler );
         populator.close( false );
 
         // WHEN
@@ -110,7 +119,9 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     public void shouldApplyUpdatesIdempotently() throws Exception
     {
         // GIVEN
-        IndexPopulator populator = indexProvider.getPopulator( 13, descriptor, new IndexConfiguration( false ) );
+        IndexConfiguration config = new IndexConfiguration( false );
+        ValueSampler sampler = new BoundedIndexSampler( 10_000 );
+        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, sampler );
         populator.create();
         long nodeId = 1;
         int propertyKeyId = 10, labelId = 11; // Can we just use arbitrary ids here?
@@ -134,8 +145,10 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
 
         populator.close( true );
 
+
+
         // then
-        IndexAccessor accessor = indexProvider.getOnlineAccessor( 13, new IndexConfiguration( false ) );
+        IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, new IndexConfiguration( false ) );
         try ( IndexReader reader = accessor.newReader() )
         {
             PrimitiveLongIterator nodes = reader.lookup( propertyValue );

@@ -73,6 +73,7 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
+import org.neo4j.kernel.impl.api.index.sampling.BoundedIndexSampler;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
@@ -81,7 +82,6 @@ import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.TestLogger;
 import org.neo4j.kernel.logging.SingleLoggingService;
-import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.DoubleLatch;
@@ -110,12 +110,6 @@ public class IndexPopulationJobTest
         verify( populator ).close( true );
 
         verifyNoMoreInteractions( populator );
-
-        // AND ALSO
-        assertEquals( 1, indexCount( FIRST, name ) );
-
-        // AND ALSO
-        assertDoubleLongEquals( 1, 1, indexSample( FIRST, name ) );
     }
 
     @Test
@@ -157,18 +151,6 @@ public class IndexPopulationJobTest
         verify( populator ).close( true );
 
         verifyNoMoreInteractions( populator );
-
-        // AND ALSO
-        assertEquals( 2, indexCount( FIRST, name ) );
-        assertEquals( 0, indexCount( FIRST, age ) );
-        assertEquals( 0, indexCount( SECOND, name ) );
-        assertEquals( 0, indexCount( SECOND, age ) );
-
-        // AND ALSO
-        assertDoubleLongEquals( 1, 2, indexSample( FIRST, name ) );
-        assertDoubleLongEquals( 0, 0, indexSample( FIRST, age ) );
-        assertDoubleLongEquals( 0, 0, indexSample( SECOND, name ) );
-        assertDoubleLongEquals( 0, 0, indexSample( SECOND, age ) );
     }
 
     @Test
@@ -197,12 +179,6 @@ public class IndexPopulationJobTest
                 Pair.of( node3, value3 ),
                 Pair.of( node1, changedValue ) );
         assertEquals( expected, populator.added );
-
-        // AND ALSO
-        assertEquals( 3, indexCount( FIRST, name ) );
-
-        // AND ALSO
-        assertDoubleLongEquals( 3, 3, indexSample( FIRST, name ) );
     }
 
     @Test
@@ -226,12 +202,6 @@ public class IndexPopulationJobTest
         assertEquals( expectedAdded, populator.added );
         Map<Long, Object> expectedRemoved = genericMap( node2, value2 );
         assertEquals( expectedRemoved, populator.removed );
-
-        // AND ALSO
-        assertEquals( 2, indexCount( FIRST, name ) );
-
-        // AND ALSO
-        assertDoubleLongEquals( 2, 2, indexSample( FIRST, name ) );
     }
 
     @Test
@@ -251,12 +221,6 @@ public class IndexPopulationJobTest
 
         // THEN
         assertThat( index.getState(), equalTo( InternalIndexState.FAILED ) );
-
-        // AND ALSO
-        assertEquals( 0, indexCount( FIRST, name ) );
-
-        // AND ALSO
-        assertDoubleLongEquals( 0, 0, indexSample( FIRST, name ) );
     }
 
     @Test
@@ -654,7 +618,7 @@ public class IndexPopulationJobTest
                 descriptor, PROVIDER_DESCRIPTOR,
                 format( ":%s(%s)", label.name(), propertyKey ),
                 failureDelegateFactory,
-                populator, flipper, storeView, new SizeVisitor(), new SampleVisitor( 10_000 ),
+                populator, flipper, storeView, new BoundedIndexSampler( 10_000 ),
                 stateHolder, new SingleLoggingService( logger ) );
     }
 

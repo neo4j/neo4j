@@ -27,8 +27,6 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
 import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.MAX_TX_ID;
-import static org.neo4j.register.Register.DoubleLongRegister;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -55,7 +53,7 @@ public class BoundedIndexSamplingJobTest
         job.run();
 
         // then
-        verify( indexStoreView ).replaceIndexSample( MAX_TX_ID, indexDescriptor, indexUniqueValues, indexSize );
+        verify( indexStoreView ).setIndexCounts( indexDescriptor, indexUniqueValues, indexSize, indexSize );
         verifyNoMoreInteractions( indexStoreView );
     }
 
@@ -89,7 +87,7 @@ public class BoundedIndexSamplingJobTest
         when( indexProxy.getDescriptor() ).thenReturn( indexDescriptor );
         when( indexProxy.newReader() ).thenReturn( indexReader );
         doAnswer( answerWith( indexUniqueValues, indexSize ) ).when( indexReader )
-                .sampleIndex( any( ValueSampler.class ), any( DoubleLongRegister.class ) );
+                .sampleIndex( any( ValueSampler.class ) );
 
     }
 
@@ -100,8 +98,15 @@ public class BoundedIndexSamplingJobTest
             @Override
             public Void answer( InvocationOnMock invocationOnMock ) throws Throwable
             {
-                final DoubleLongRegister register = (DoubleLongRegister) invocationOnMock.getArguments()[1];
-                register.write( indexUniqueValues, indexSize );
+                final ValueSampler sampler = (ValueSampler) invocationOnMock.getArguments()[0];
+                for ( long i = indexUniqueValues - 1; i > 0 ; i--)
+                {
+                    sampler.include( "" + i );
+                }
+                for ( long i = (indexSize - indexUniqueValues) + 1; i > 0 ; i--)
+                {
+                    sampler.include( "same value" );
+                }
                 return null;
             }
         };

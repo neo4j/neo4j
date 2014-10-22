@@ -33,7 +33,9 @@ import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.search.IndexSearcher;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.kernel.impl.api.index.SampleVisitor;
+import org.neo4j.kernel.api.index.ValueSampler;
+import org.neo4j.kernel.impl.api.index.sampling.BoundedIndexSampler;
+import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSizeSampler;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 
@@ -59,9 +61,11 @@ public class LuceneUniqueIndexAccessorReaderTest
         final LuceneUniqueIndexAccessorReader accessor = new LuceneUniqueIndexAccessorReader( searcher, documentLogic, closeable );
 
         // When
-        DoubleLongRegister output = sampleAccessor( accessor, 1, 0 );
+        final DoubleLongRegister output = Registers.newDoubleLongRegister();
+        long indexSize = sampleAccessor( accessor, output );
 
         // Then
+        assertEquals( 0, indexSize );
         assertEquals( 0, output.readFirst() );
         assertEquals( 0, output.readSecond() );
     }
@@ -70,7 +74,7 @@ public class LuceneUniqueIndexAccessorReaderTest
     public void shouldSkipTheNonNodeIdKeyEntriesWhenCalculatingIndexUniqueValues() throws IOException
     {
         // Given
-        when( terms.next() ).thenReturn( true, true, false );
+        when( terms.next() ).thenReturn( true, true, true, false );
         when( terms.term() ).thenReturn(
                 new Term( NODE_ID_KEY, "aaa" ), // <- this should be ignored
                 new Term( "string", "bbb" ),
@@ -80,17 +84,19 @@ public class LuceneUniqueIndexAccessorReaderTest
         final LuceneUniqueIndexAccessorReader accessor = new LuceneUniqueIndexAccessorReader( searcher, documentLogic, closeable );
 
         // When
-        DoubleLongRegister output = sampleAccessor( accessor, 3, 2 );
+        final DoubleLongRegister output = Registers.newDoubleLongRegister();
+        long indexSize = sampleAccessor( accessor, output );
 
         // Then
-        assertEquals( 0, output.readFirst() );
-        assertEquals( 0, output.readSecond() );
+        assertEquals( 2, indexSize );
+        assertEquals( 2, output.readFirst() );
+        assertEquals( 2, output.readSecond() );
     }
 
-    private DoubleLongRegister sampleAccessor( LuceneIndexAccessorReader accessor, int sampleSize, int indexSize )
+    private long sampleAccessor( LuceneIndexAccessorReader accessor, DoubleLongRegister output )
     {
-        final DoubleLongRegister output = Registers.newDoubleLongRegister();
-        accessor.sampleIndex( new SampleVisitor( 10_000 ), output );
-        return output;
+        ValueSampler sampler = new UniqueIndexSizeSampler();
+        accessor.sampleIndex( sampler );
+        return sampler.result( output );
     }
 }

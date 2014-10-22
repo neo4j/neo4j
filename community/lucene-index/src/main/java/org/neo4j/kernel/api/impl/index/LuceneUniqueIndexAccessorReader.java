@@ -24,18 +24,18 @@ import java.io.Closeable;
 import org.apache.lucene.search.IndexSearcher;
 
 import org.neo4j.kernel.api.index.ValueSampler;
-import org.neo4j.register.Register.DoubleLongRegister;
 
 class LuceneUniqueIndexAccessorReader extends LuceneIndexAccessorReader
 {
-     LuceneUniqueIndexAccessorReader( IndexSearcher searcher, LuceneDocumentStructure documentLogic, Closeable onClose )
+    LuceneUniqueIndexAccessorReader( IndexSearcher searcher, LuceneDocumentStructure documentLogic, Closeable onClose )
     {
         super( searcher, documentLogic, onClose );
-     }
+    }
 
     @Override
-    public void sampleIndex( ValueSampler sampler, DoubleLongRegister samplingResult )
+    public void sampleIndex( ValueSampler sampler )
     {
-        sampler.result( samplingResult );
+        // TODO: make it smarter: we simply need to know how many entries are in the index
+        super.sampleIndex( sampler );
     }
 }

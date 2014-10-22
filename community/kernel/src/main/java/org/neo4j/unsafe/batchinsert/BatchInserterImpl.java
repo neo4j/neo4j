@@ -65,6 +65,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;
@@ -76,6 +77,8 @@ import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.index.StoreScan;
+import org.neo4j.kernel.impl.api.index.sampling.BoundedIndexSampler;
+import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSizeSampler;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.core.Token;
@@ -391,8 +394,12 @@ public class BatchInserterImpl implements BatchInserter
             propertyKeyIds[i] = propertyKeyId;
 
             IndexDescriptor descriptor = new IndexDescriptor( labelId, propertyKeyId );
+            boolean isConstraint = rule.isConstraintIndex();
+            ValueSampler sampler =  isConstraint
+                    ? new UniqueIndexSizeSampler()
+                    : new BoundedIndexSampler( config.get( GraphDatabaseSettings.max_unique_elements_per_sampling ) );
             populators[i] = schemaIndexProviders.apply( rule.getProviderDescriptor() ).getPopulator(
-                    rule.getId(), descriptor, new IndexConfiguration( rule.isConstraintIndex() ) );
+                    rule.getId(), descriptor, new IndexConfiguration( isConstraint ), sampler );
             populators[i].create();
         }
 

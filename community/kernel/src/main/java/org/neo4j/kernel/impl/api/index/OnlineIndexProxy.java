@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import static org.neo4j.helpers.FutureAdapter.VOID;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Future;
@@ -32,14 +34,11 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 
-import static org.neo4j.helpers.FutureAdapter.VOID;
-
 public class OnlineIndexProxy implements IndexProxy
 {
     private final IndexDescriptor descriptor;
     final IndexAccessor accessor;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
-    private IndexSizeVisitor indexSizeVisitor;
     private IndexCountsRemover indexCountsRemover;
 
     public OnlineIndexProxy( IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
@@ -48,7 +47,6 @@ public class OnlineIndexProxy implements IndexProxy
         this.descriptor = descriptor;
         this.providerDescriptor = providerDescriptor;
         this.accessor = accessor;
-        this.indexSizeVisitor = IndexStoreView.IndexCountVisitors.newIndexSizeVisitor( view, descriptor );
         this.indexCountsRemover = IndexCountsRemover.Factory.create( view, descriptor );
     }
 
@@ -60,7 +58,7 @@ public class OnlineIndexProxy implements IndexProxy
     @Override
     public IndexUpdater newUpdater( final IndexUpdateMode mode, long transactionId )
     {
-        return new CountingIndexUpdater( transactionId, accessor.newUpdater( mode ), indexSizeVisitor );
+        return accessor.newUpdater( mode );
     }
 
     @Override

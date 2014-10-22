@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.index;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Resource;
-import org.neo4j.register.Register.DoubleLongRegister;
 
 /**
  * Reader for an {@link IndexAccessor}.
@@ -49,9 +48,8 @@ public interface IndexReader extends Resource
         }
 
         @Override
-        public void sampleIndex( ValueSampler sampler, DoubleLongRegister samplingResult )
+        public void sampleIndex( ValueSampler sampler )
         {
-            sampler.result( samplingResult );
         }
 
         @Override
@@ -68,7 +66,7 @@ public interface IndexReader extends Resource
     /**
      * Sample this index (on the current thread)
      * @param sampler to use for reporting values
-     * @param samplingResult register holding unique values found and actual number of sampled entries (in that order)
+     *
      */
-    public void sampleIndex( ValueSampler sampler, DoubleLongRegister samplingResult );
+    public void sampleIndex( ValueSampler sampler );
 }

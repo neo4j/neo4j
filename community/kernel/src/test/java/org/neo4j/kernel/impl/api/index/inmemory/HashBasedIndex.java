@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.index.inmemory;
 
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,9 +31,6 @@ import java.util.Set;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.index.ValueSampler;
-import org.neo4j.register.Register;
-
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
 
 class HashBasedIndex extends InMemoryIndexImplementation
 {
@@ -57,7 +56,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
-    void doAdd( Object propertyValue, long nodeId, boolean applyIdempotently )
+    boolean doAdd( Object propertyValue, long nodeId, boolean applyIdempotently )
     {
         Set<Long> nodes = data.get( propertyValue );
         if ( nodes == null )
@@ -65,7 +64,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
             data.put( propertyValue, nodes = new HashSet<>() );
         }
         // In this implementation we don't care about idempotency.
-        nodes.add( nodeId );
+        return nodes.add( nodeId );
     }
 
     @Override
@@ -137,8 +136,25 @@ class HashBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
-    public void sampleIndex( ValueSampler sampler, Register.DoubleLongRegister samplingResult )
+    public void sampleIndex( final ValueSampler sampler )
     {
-        samplingResult.write( data.size(), ids().size() );
+        try
+        {
+            iterateAll( new IndexEntryIterator()
+            {
+                @Override
+                public void visitEntry( Object value, Set<Long> nodeIds ) throws Exception
+                {
+                    for ( int i = nodeIds.size(); i > 0 ; i-- )
+                    {
+                        sampler.include( value.toString() );
+                    }
+                }
+            });
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 }
