@@ -20,10 +20,10 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.helpers.collection.MultiSet;
-import org.neo4j.kernel.api.index.PopulatingValueSampler;
+import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.register.Register;
 
-public class SampleVisitor implements PopulatingValueSampler
+public class SampleVisitor implements ValueSampler
 {
     private MultiSet<Object> values;
     private int sampledSteps = 0;
@@ -55,7 +55,7 @@ public class SampleVisitor implements PopulatingValueSampler
     }
 
     @Override
-    public void result( Register.DoubleLongRegister register )
+    public long result( Register.DoubleLongRegister register )
     {
         if ( !values.isEmpty() )
         {
@@ -65,6 +65,8 @@ public class SampleVisitor implements PopulatingValueSampler
         long uniqueValues = sampledSteps != 0 ? accumulatedUniqueValues / sampledSteps : 0;
         long sampledSize = sampledSteps != 0 ? accumulatedSampledSize / sampledSteps : 0;
         register.write( uniqueValues, sampledSize );
+
+        return accumulatedSampledSize;
     }
 
     private void nextStep()

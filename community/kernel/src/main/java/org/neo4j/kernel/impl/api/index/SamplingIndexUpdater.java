@@ -24,14 +24,14 @@ import java.io.IOException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.api.index.PopulatingValueSampler;
+import org.neo4j.kernel.api.index.ValueSampler;
 
 public class SamplingIndexUpdater implements IndexUpdater
 {
     private final IndexUpdater delegate;
-    private final PopulatingValueSampler sampler;
+    private final ValueSampler sampler;
 
-    public SamplingIndexUpdater( IndexUpdater delegate, PopulatingValueSampler sampler )
+    public SamplingIndexUpdater( IndexUpdater delegate, ValueSampler sampler )
     {
         this.delegate = delegate;
         this.sampler = sampler;

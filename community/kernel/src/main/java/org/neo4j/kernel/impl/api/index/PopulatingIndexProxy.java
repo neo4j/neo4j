@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
+import static org.neo4j.kernel.impl.util.JobScheduler.Group.indexPopulation;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Future;
@@ -35,15 +38,11 @@ import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.api.index.PopulatingValueSampler;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.logging.Logging;
-
-import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
-import static org.neo4j.kernel.impl.util.JobScheduler.Group.indexPopulation;
 
 
 public class PopulatingIndexProxy implements IndexProxy
@@ -61,16 +60,17 @@ public class PopulatingIndexProxy implements IndexProxy
                                  FlippableIndexProxy flipper,
                                  IndexStoreView storeView,
                                  IndexSizeVisitor sizeVisitor,
-                                 PopulatingValueSampler populatingSampler,
+                                 ValueSampler populatingSampler,
                                  UpdateableSchemaState updateableSchemaState,
                                  Logging logging,
                                  String indexUserDescription )
     {
-        this.scheduler  = scheduler;
+        this.scheduler = scheduler;
         this.descriptor = descriptor;
         this.providerDescriptor = providerDescriptor;
-        this.job  = new IndexPopulationJob( descriptor, providerDescriptor,
-                indexUserDescription, failureDelegateFactory, writer, flipper, storeView, sizeVisitor, populatingSampler,
+        this.job = new IndexPopulationJob( descriptor, providerDescriptor,
+                indexUserDescription, failureDelegateFactory, writer, flipper, storeView, sizeVisitor,
+                populatingSampler,
                 updateableSchemaState, logging );
     }
 
@@ -83,7 +83,7 @@ public class PopulatingIndexProxy implements IndexProxy
     @Override
     public IndexUpdater newUpdater( final IndexUpdateMode mode, long transactionId )
     {
-        switch( mode )
+        switch ( mode )
         {
             case ONLINE:
                 return new PopulatingIndexUpdater()

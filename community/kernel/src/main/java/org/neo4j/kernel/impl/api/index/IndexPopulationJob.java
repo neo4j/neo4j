@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api.index;
 
 import static java.lang.String.format;
-import static java.lang.String.valueOf;
 import static java.lang.Thread.currentThread;
 import static org.neo4j.helpers.FutureAdapter.latchGuardedValue;
 import static org.neo4j.helpers.ValueGetter.NO_VALUE;
@@ -42,8 +41,8 @@ import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.api.index.PopulatingValueSampler;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
@@ -65,7 +64,7 @@ public class IndexPopulationJob implements Runnable
     private final FlippableIndexProxy flipper;
     private final IndexStoreView storeView;
     private final IndexSizeVisitor sizeVisitor;
-    private final PopulatingValueSampler populatingSampler;
+    private final ValueSampler populatingSampler;
     private final UpdateableSchemaState updateableSchemaState;
     private final String indexUserDescription;
     private final FailedIndexProxyFactory failureDelegate;
@@ -83,7 +82,7 @@ public class IndexPopulationJob implements Runnable
                               IndexPopulator populator, FlippableIndexProxy flipper,
                               IndexStoreView storeView,
                               IndexSizeVisitor sizeVisitor,
-                              PopulatingValueSampler populatingSampler,
+                              ValueSampler populatingSampler,
                               UpdateableSchemaState updateableSchemaState,
                               Logging logging)
     {
@@ -136,7 +135,7 @@ public class IndexPopulationJob implements Runnable
                         storeView.replaceIndexSize( MAX_TX_ID, descriptor, sizeVisitor.indexSize() );
 
                         DoubleLongRegister result = Registers.newDoubleLongRegister();
-                        populatingSampler.result( result );
+                        long indexSize = populatingSampler.result( result );
                         storeView.replaceIndexSample( MAX_TX_ID, descriptor, result.readFirst(), result.readSecond() );
 
                         storeView.flushIndexCounts();
@@ -212,8 +211,8 @@ public class IndexPopulationJob implements Runnable
         }
     }
 
-    private void indexAllNodes( final IndexSizeVisitor sizeVisitor, final PopulatingValueSampler populatingSampler )
-            throws IndexPopulationFailedKernelException
+    private void indexAllNodes( final IndexSizeVisitor sizeVisitor, final ValueSampler populatingSampler )
+    throws IndexPopulationFailedKernelException
     {
         storeScan = storeView.visitNodesWithPropertyAndLabel( descriptor,
                 new Visitor<NodePropertyUpdate, IndexPopulationFailedKernelException>()
@@ -253,8 +252,8 @@ public class IndexPopulationJob implements Runnable
 
     private void populateFromQueueIfAvailable( final long currentlyIndexedNodeId,
                                                IndexSizeVisitor sizeVisitor,
-                                               PopulatingValueSampler populatingSampler )
-            throws IndexEntryConflictException, IOException
+                                               ValueSampler populatingSampler )
+    throws IndexEntryConflictException, IOException
     {
         if ( !queue.isEmpty() )
         {
@@ -275,8 +274,8 @@ public class IndexPopulationJob implements Runnable
     }
 
     private IndexUpdater createCountingIndexUpdater( IndexSizeVisitor countVisitor,
-                                                             PopulatingValueSampler populatingSampler )
-            throws IOException
+                                                     ValueSampler populatingSampler )
+    throws IOException
     {
         final IndexUpdater countingIndexUpdater =
                 new CountingIndexUpdater( MAX_TX_ID, populator.newPopulatingUpdater( storeView ), countVisitor );
