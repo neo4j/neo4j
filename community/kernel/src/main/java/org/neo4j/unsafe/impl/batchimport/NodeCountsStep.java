@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
@@ -34,14 +35,17 @@ public class NodeCountsStep extends NodeStoreProcessorStep
     private final long[] labelCounts;
     private final NodeLabelsCache cache;
     private final CountsTracker countsTracker;
+    private final int anyLabel;
 
     public NodeCountsStep( StageControl control, int batchSize, NodeStore nodeStore, NodeLabelsCache cache,
             int highLabelId, CountsTracker countsTracker )
     {
         super( control, "NODE COUNTS", batchSize, nodeStore );
         this.cache = cache;
+        this.anyLabel = highLabelId;
         this.countsTracker = countsTracker;
-        this.labelCounts = new long[highLabelId];
+        // Instantiate with high id + 1 since we need that extra slot for the ANY count
+        this.labelCounts = new long[highLabelId+1];
     }
 
     @Override
@@ -56,6 +60,7 @@ public class NodeCountsStep extends NodeStoreProcessorStep
             }
             cache.put( node.getId(), labels );
         }
+        labelCounts[anyLabel]++;
 
         // No need to update the store, we're just reading things here
         return false;
@@ -66,7 +71,7 @@ public class NodeCountsStep extends NodeStoreProcessorStep
     {
         for ( int i = 0; i < labelCounts.length; i++ )
         {
-            countsTracker.updateCountsForNode( i, labelCounts[i] );
+            countsTracker.updateCountsForNode( i == anyLabel ? ReadOperations.ANY_LABEL : i, labelCounts[i] );
         }
     }
 }

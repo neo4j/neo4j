@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -45,10 +46,12 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.util.AutoCreatingHashMap;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
@@ -69,6 +72,8 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
+import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.nested;
+import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.values;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
 import static org.neo4j.unsafe.impl.batchimport.input.Inputs.csv;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
@@ -103,248 +108,49 @@ public class CsvInputBatchImportIT
         }
     }
 
-    private void verifyImportedData( List<InputNode> nodeData, List<InputRelationship> relationshipData )
+    // ======================================================
+    // Below is code for generating import data
+    // ======================================================
+
+    private List<InputNode> randomNodeData()
     {
-        // Build up expected data for the verification below
-        Map<String/*id*/, InputNode> expectedNodes = new HashMap<>();
-        Map<String,String[]> expectedNodeNames = new HashMap<>();
-        Map<String/*start node name*/, Map<String/*end node name*/, Map<String, AtomicInteger>>>
-            expectedRelationships = new HashMap<>();
-        Map<String, AtomicLong> expectedNodeCounts = new HashMap<>();
-        Map<String, Map<String, Map<String, AtomicLong>>> expectedRelationshipCounts = new HashMap<>();
-        buildUpExpectedData( nodeData, relationshipData, expectedNodes, expectedNodeNames, expectedRelationships,
-                expectedNodeCounts, expectedRelationshipCounts );
-
-        // Do the verification
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );
-        try ( Transaction tx = db.beginTx() )
+        List<InputNode> nodes = new ArrayList<>();
+        for ( int i = 0; i < 300; i++ )
         {
-            // Verify nodes
-            Map<String, AtomicLong> nodeCounts = new HashMap<>();
-            for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
-            {
-                String name = (String) node.getProperty( "name" );
-                String[] labels = expectedNodeNames.remove( name );
-                assertArrayEquals( labels, names( node.getLabels() ) );
-            }
-            assertEquals( 0, expectedNodeNames.size() );
-
-            // Verify relationships
-            Map<String, Map<String, Map<String, AtomicLong>>> relationshipCounts = new HashMap<>();
-            for ( Relationship relationship : GlobalGraphOperations.at( db ).getAllRelationships() )
-            {
-                String startNodeName = (String) relationship.getStartNode().getProperty( "name" );
-                Map<String, Map<String, AtomicInteger>> inner = expectedRelationships.get( startNodeName );
-                String endNodeName = (String) relationship.getEndNode().getProperty( "name" );
-                Map<String, AtomicInteger> innerInner = inner.get( endNodeName );
-                String type = relationship.getType().name();
-                AtomicInteger count = innerInner.get( type );
-                int countAfterwards = count.decrementAndGet();
-                assertThat( countAfterwards, greaterThanOrEqualTo( 0 ) );
-                if ( countAfterwards == 0 )
-                {
-                    innerInner.remove( type );
-                    if ( innerInner.isEmpty() )
-                    {
-                        inner.remove( endNodeName );
-                        if ( inner.isEmpty() )
-                        {
-                            expectedRelationships.remove( startNodeName );
-                        }
-                    }
-                }
-            }
-            assertEquals( 0, expectedRelationships.size() );
-
-            // Verify counts, TODO how to get counts store other than this way?
-            NeoStore neoStore = ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency(
-                    NeoStoreProvider.class ).evaluate();
-            Map<String, Integer> labelTranslationTable = translationTable( neoStore.getLabelTokenStore() );
-            for ( Pair<Integer,Long> count : allNodeCounts( labelTranslationTable, expectedNodeCounts ) )
-            {
-                assertEquals( "Label count mismatch for label " + count.first(),
-                        count.other().longValue(),
-                        neoStore.getCounts().countsForNode( count.first().intValue() ) );
-            }
-
-            Map<String, Integer> relationshipTypeTranslationTable =
-                    translationTable( neoStore.getRelationshipTypeTokenStore() );
-            for ( Pair<RelationshipCount,Long> count : allRelationshipCounts( labelTranslationTable,
-                    relationshipTypeTranslationTable, expectedRelationshipCounts ) )
-            {
-                RelationshipCount key = count.first();
-                assertEquals( "Label count mismatch for label " + key,
-                        count.other().longValue(),
-                        neoStore.getCounts().countsForRelationship( key.startLabel, key.type, key.endLabel ) );
-            }
-
-            tx.success();
+            Object[] properties = new Object[] { "name", "Node " + i };
+            String id = UUID.randomUUID().toString();
+            nodes.add( new InputNode( id, properties, null,
+                    randomLabels( random ), null ) );
         }
-        finally
-        {
-            db.shutdown();
-        }
+        return nodes;
     }
 
-    private static class RelationshipCount
+    private String[] randomLabels( Random random )
     {
-        private final int startLabel;
-        private final int type;
-        private final int endLabel;
-
-        RelationshipCount( int startLabel, int type, int endLabel )
+        String[] labels = new String[random.nextInt( 3 )];
+        for ( int i = 0; i < labels.length; i++ )
         {
-            this.startLabel = startLabel;
-            this.type = type;
-            this.endLabel = endLabel;
+            labels[i] = "Label" + random.nextInt( 4 );
         }
-
-        @Override
-        public String toString()
-        {
-            return format( "[start:%d, type:%d, end:%d]", startLabel, type, endLabel );
-        }
+        return labels;
     }
 
-    private Iterable<Pair<RelationshipCount,Long>> allRelationshipCounts(
-            Map<String, Integer> labelTranslationTable,
-            Map<String, Integer> relationshipTypeTranslationTable,
-            Map<String, Map<String, Map<String, AtomicLong>>> counts )
+    private Default smallBatchSizeConfig()
     {
-        Collection<Pair<RelationshipCount,Long>> result = new ArrayList<>();
-        for ( Map.Entry<String, Map<String, Map<String, AtomicLong>>> startLabel : counts.entrySet() )
+        return new Configuration.Default()
         {
-            for ( Map.Entry<String, Map<String, AtomicLong>> type : startLabel.getValue().entrySet() )
+            @Override
+            public int batchSize()
             {
-                for ( Map.Entry<String, AtomicLong> endLabel : type.getValue().entrySet() )
-                {
-                    RelationshipCount key = new RelationshipCount(
-                            labelTranslationTable.get( startLabel.getKey() ),
-                            relationshipTypeTranslationTable.get( type.getKey() ),
-                            labelTranslationTable.get( endLabel.getKey() ) );
-                    result.add( Pair.of( key, endLabel.getValue().longValue() ) );
-                }
-            }
-        }
-        return result;
-    }
-
-    private Iterable<Pair<Integer,Long>> allNodeCounts( Map<String, Integer> labelTranslationTable,
-            Map<String, AtomicLong> counts )
-    {
-        Collection<Pair<Integer,Long>> result = new ArrayList<>();
-        for ( Map.Entry<String, AtomicLong> count : counts.entrySet() )
-        {
-            result.add( Pair.of( labelTranslationTable.get( count.getKey() ), count.getValue().get() ) );
-        }
-        return result;
-    }
-
-    private Map<String, Integer> translationTable( TokenStore<?> tokenStore )
-    {
-        Map<String, Integer> translationTable = new HashMap<>();
-        for ( Token token : tokenStore.getTokens( Integer.MAX_VALUE ) )
-        {
-            translationTable.put( token.name(), token.id() );
-        }
-        return translationTable;
-    }
-
-    private String[] names( Iterable<Label> labels )
-    {
-        List<String> names = new ArrayList<>();
-        for ( Label label : labels )
-        {
-            names.add( label.name() );
-        }
-        return names.toArray( new String[names.size()] );
-    }
-
-    private void buildUpExpectedData(
-            List<InputNode> nodeData,
-            List<InputRelationship> relationshipData,
-            Map<String, InputNode> expectedNodes,
-            Map<String, String[]> expectedNodeNames,
-            Map<String, Map<String, Map<String, AtomicInteger>>> expectedRelationships,
-            Map<String, AtomicLong> nodeCounts,
-            Map<String, Map<String, Map<String, AtomicLong>>> relationshipCounts )
-    {
-        for ( InputNode node : nodeData )
-        {
-            expectedNodes.put( (String) node.id(), node );
-            expectedNodeNames.put( nameOf( node ), node.labels() );
-            countNodeLabels( nodeCounts, node.labels() );
-        }
-        for ( InputRelationship relationship : relationshipData )
-        {
-            // Expected relationship counts per node, type and direction
-            InputNode startNode = expectedNodes.get( relationship.startNode() );
-            InputNode endNode = expectedNodes.get( relationship.endNode() );
-            {
-                String startNodeName = nameOf( startNode );
-                Map<String, Map<String, AtomicInteger>> inner = expectedRelationships.get( startNodeName );
-                if ( inner == null )
-                {
-                    expectedRelationships.put( startNodeName, inner = new HashMap<>() );
-                }
-                String endNodeName = nameOf( endNode );
-                Map<String, AtomicInteger> innerInner = inner.get( endNodeName );
-                if ( innerInner == null )
-                {
-                    inner.put( endNodeName, innerInner = new HashMap<>() );
-                }
-                AtomicInteger count = innerInner.get( relationship.type() );
-                if ( count == null )
-                {
-                    innerInner.put( relationship.type(), count = new AtomicInteger() );
-                }
-                count.incrementAndGet();
+                return 100;
             }
 
-            // Expected counts per start/end node label ids
-            for ( String startNodeLabelName : startNode.labels() )
+            @Override
+            public int denseNodeThreshold()
             {
-                Map<String, Map<String, AtomicLong>> levelOne = relationshipCounts.get( startNodeLabelName );
-                if ( levelOne == null )
-                {
-                    relationshipCounts.put( startNodeLabelName, levelOne = new HashMap<>() );
-                }
-
-                Map<String, AtomicLong> levelTwo = levelOne.get( relationship.type() );
-                if ( levelTwo == null )
-                {
-                    levelOne.put( relationship.type(), levelTwo = new HashMap<>() );
-                }
-
-                for ( String endNodeLabelName : endNode.labels() )
-                {
-                    AtomicLong count = levelTwo.get( endNodeLabelName );
-                    if ( count == null )
-                    {
-                        levelTwo.put( endNodeLabelName, count = new AtomicLong() );
-                    }
-                    count.incrementAndGet();
-                }
+                return 5;
             }
-        }
-    }
-
-    private void countNodeLabels( Map<String, AtomicLong> nodeCounts, String[] labels )
-    {
-        for ( String labelName : labels )
-        {
-            AtomicLong count = nodeCounts.get( labelName );
-            if ( count == null )
-            {
-                nodeCounts.put( labelName, count = new AtomicLong() );
-            }
-            count.incrementAndGet();
-        }
-    }
-
-    private String nameOf( InputNode node )
-    {
-        return (String) node.properties()[1];
+        };
     }
 
     private File relationshipDataAsFile( List<InputRelationship> relationshipData ) throws IOException
@@ -415,45 +221,236 @@ public class CsvInputBatchImportIT
         return relationships;
     }
 
-    private List<InputNode> randomNodeData()
-    {
-        List<InputNode> nodes = new ArrayList<>();
-        for ( int i = 0; i < 300; i++ )
-        {
-            Object[] properties = new Object[] { "name", "Node " + i };
-            String id = UUID.randomUUID().toString();
-            nodes.add( new InputNode( id, properties, null,
-                    randomLabels( random ), null ) );
-        }
-        return nodes;
-    }
+    // ======================================================
+    // Below is code for verifying the imported data
+    // ======================================================
 
-    private String[] randomLabels( Random random )
+    private void verifyImportedData( List<InputNode> nodeData, List<InputRelationship> relationshipData )
     {
-        String[] labels = new String[random.nextInt( 3 )];
-        for ( int i = 0; i < labels.length; i++ )
-        {
-            labels[i] = "Label" + random.nextInt( 4 );
-        }
-        return labels;
-    }
+        // Build up expected data for the verification below
+        Map<String/*id*/, InputNode> expectedNodes = new HashMap<>();
+        Map<String,String[]> expectedNodeNames = new HashMap<>();
+        Map<String/*start node name*/, Map<String/*end node name*/, Map<String, AtomicInteger>>> expectedRelationships =
+                new AutoCreatingHashMap<>( nested( String.class, nested( String.class, values( AtomicInteger.class ) ) ) );
+        Map<String, AtomicLong> expectedNodeCounts = new AutoCreatingHashMap<>( values( AtomicLong.class ) );
+        Map<String, Map<String, Map<String, AtomicLong>>> expectedRelationshipCounts =
+                new AutoCreatingHashMap<>( nested( String.class, nested( String.class, values( AtomicLong.class ) ) ) );
+        buildUpExpectedData( nodeData, relationshipData, expectedNodes, expectedNodeNames, expectedRelationships,
+                expectedNodeCounts, expectedRelationshipCounts );
 
-    private Default smallBatchSizeConfig()
-    {
-        return new Configuration.Default()
+        // Do the verification
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );
+        try ( Transaction tx = db.beginTx() )
         {
-            @Override
-            public int batchSize()
+            // Verify nodes
+            for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
             {
-                return 100;
+                String name = (String) node.getProperty( "name" );
+                String[] labels = expectedNodeNames.remove( name );
+                assertArrayEquals( labels, names( node.getLabels() ) );
+            }
+            assertEquals( 0, expectedNodeNames.size() );
+
+            // Verify relationships
+            for ( Relationship relationship : GlobalGraphOperations.at( db ).getAllRelationships() )
+            {
+                String startNodeName = (String) relationship.getStartNode().getProperty( "name" );
+                Map<String, Map<String, AtomicInteger>> inner = expectedRelationships.get( startNodeName );
+                String endNodeName = (String) relationship.getEndNode().getProperty( "name" );
+                Map<String, AtomicInteger> innerInner = inner.get( endNodeName );
+                String type = relationship.getType().name();
+                int countAfterwards = innerInner.get( type ).decrementAndGet();
+                assertThat( countAfterwards, greaterThanOrEqualTo( 0 ) );
+                if ( countAfterwards == 0 )
+                {
+                    innerInner.remove( type );
+                    if ( innerInner.isEmpty() )
+                    {
+                        inner.remove( endNodeName );
+                        if ( inner.isEmpty() )
+                        {
+                            expectedRelationships.remove( startNodeName );
+                        }
+                    }
+                }
+            }
+            assertEquals( 0, expectedRelationships.size() );
+
+            // Verify counts, TODO how to get counts store other than this way?
+            NeoStore neoStore = ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency(
+                    NeoStoreProvider.class ).evaluate();
+            Function<String, Integer> labelTranslationTable =
+                    translationTable( neoStore.getLabelTokenStore(), ReadOperations.ANY_LABEL );
+            for ( Pair<Integer,Long> count : allNodeCounts( labelTranslationTable, expectedNodeCounts ) )
+            {
+                assertEquals( "Label count mismatch for label " + count.first(),
+                        count.other().longValue(),
+                        neoStore.getCounts().countsForNode( count.first().intValue() ) );
             }
 
-            @Override
-            public int denseNodeThreshold()
+            Function<String, Integer> relationshipTypeTranslationTable =
+                    translationTable( neoStore.getRelationshipTypeTokenStore(), ReadOperations.ANY_RELATIONSHIP_TYPE );
+            for ( Pair<RelationshipCountKey,Long> count : allRelationshipCounts( labelTranslationTable,
+                    relationshipTypeTranslationTable, expectedRelationshipCounts ) )
             {
-                return 5;
+                RelationshipCountKey key = count.first();
+                assertEquals( "Label count mismatch for label " + key,
+                        count.other().longValue(),
+                        neoStore.getCounts().countsForRelationship( key.startLabel, key.type, key.endLabel ) );
+            }
+
+            tx.success();
+        }
+        finally
+        {
+            db.shutdown();
+        }
+    }
+
+    private static class RelationshipCountKey
+    {
+        private final int startLabel;
+        private final int type;
+        private final int endLabel;
+
+        RelationshipCountKey( int startLabel, int type, int endLabel )
+        {
+            this.startLabel = startLabel;
+            this.type = type;
+            this.endLabel = endLabel;
+        }
+
+        @Override
+        public String toString()
+        {
+            return format( "[start:%d, type:%d, end:%d]", startLabel, type, endLabel );
+        }
+    }
+
+    private Iterable<Pair<RelationshipCountKey,Long>> allRelationshipCounts(
+            Function<String, Integer> labelTranslationTable,
+            Function<String, Integer> relationshipTypeTranslationTable,
+            Map<String, Map<String, Map<String, AtomicLong>>> counts )
+    {
+        Collection<Pair<RelationshipCountKey,Long>> result = new ArrayList<>();
+        for ( Map.Entry<String, Map<String, Map<String, AtomicLong>>> startLabel : counts.entrySet() )
+        {
+            for ( Map.Entry<String, Map<String, AtomicLong>> type : startLabel.getValue().entrySet() )
+            {
+                for ( Map.Entry<String, AtomicLong> endLabel : type.getValue().entrySet() )
+                {
+                    RelationshipCountKey key = new RelationshipCountKey(
+                            labelTranslationTable.apply( startLabel.getKey() ),
+                            relationshipTypeTranslationTable.apply( type.getKey() ),
+                            labelTranslationTable.apply( endLabel.getKey() ) );
+                    result.add( Pair.of( key, endLabel.getValue().longValue() ) );
+                }
+            }
+        }
+        return result;
+    }
+
+    private Iterable<Pair<Integer,Long>> allNodeCounts( Function<String, Integer> labelTranslationTable,
+            Map<String, AtomicLong> counts )
+    {
+        Collection<Pair<Integer,Long>> result = new ArrayList<>();
+        for ( Map.Entry<String, AtomicLong> count : counts.entrySet() )
+        {
+            result.add( Pair.of( labelTranslationTable.apply( count.getKey() ), count.getValue().get() ) );
+        }
+        counts.put( null, new AtomicLong( counts.size() ) );
+        return result;
+    }
+
+    private Function<String, Integer> translationTable( TokenStore<?> tokenStore, final int anyValue )
+    {
+        final Map<String, Integer> translationTable = new HashMap<>();
+        for ( Token token : tokenStore.getTokens( Integer.MAX_VALUE ) )
+        {
+            translationTable.put( token.name(), token.id() );
+        }
+        return new Function<String, Integer>()
+        {
+            @Override
+            public Integer apply( String from )
+            {
+                return from == null ? anyValue : translationTable.get( from );
             }
         };
+    }
+
+    private String[] names( Iterable<Label> labels )
+    {
+        List<String> names = new ArrayList<>();
+        for ( Label label : labels )
+        {
+            names.add( label.name() );
+        }
+        return names.toArray( new String[names.size()] );
+    }
+
+    private void buildUpExpectedData(
+            List<InputNode> nodeData,
+            List<InputRelationship> relationshipData,
+            Map<String, InputNode> expectedNodes,
+            Map<String, String[]> expectedNodeNames,
+            Map<String, Map<String, Map<String, AtomicInteger>>> expectedRelationships,
+            Map<String, AtomicLong> nodeCounts,
+            Map<String, Map<String, Map<String, AtomicLong>>> relationshipCounts )
+    {
+        for ( InputNode node : nodeData )
+        {
+            expectedNodes.put( (String) node.id(), node );
+            expectedNodeNames.put( nameOf( node ), node.labels() );
+            countNodeLabels( nodeCounts, node.labels() );
+        }
+        for ( InputRelationship relationship : relationshipData )
+        {
+            // Expected relationship counts per node, type and direction
+            InputNode startNode = expectedNodes.get( relationship.startNode() );
+            InputNode endNode = expectedNodes.get( relationship.endNode() );
+            {
+                expectedRelationships.get( nameOf( startNode ) )
+                                     .get( nameOf( endNode ) )
+                                     .get( relationship.type() )
+                                     .incrementAndGet();
+            }
+
+            // Expected counts per start/end node label ids
+            // Let's do what CountsState#addRelationship does, roughly
+            relationshipCounts.get( null ).get( null ).get( null ).incrementAndGet();
+            relationshipCounts.get( null ).get( relationship.type() ).get( null ).incrementAndGet();
+            for ( String startNodeLabelName : startNode.labels() )
+            {
+                Map<String, Map<String, AtomicLong>> startLabelCounts = relationshipCounts.get( startNodeLabelName );
+                startLabelCounts.get( null ).get( null ).incrementAndGet();
+                Map<String, AtomicLong> typeCounts = startLabelCounts.get( relationship.type() );
+                typeCounts.get( null ).incrementAndGet();
+                for ( String endNodeLabelName : endNode.labels() )
+                {
+                    startLabelCounts.get( null ).get( endNodeLabelName ).incrementAndGet();
+                    typeCounts.get( endNodeLabelName ).incrementAndGet();
+                }
+            }
+            for ( String endNodeLabelName : endNode.labels() )
+            {
+                relationshipCounts.get( null ).get( null ).get( endNodeLabelName ).incrementAndGet();
+                relationshipCounts.get( null ).get( relationship.type() ).get( endNodeLabelName ).incrementAndGet();
+            }
+        }
+    }
+
+    private void countNodeLabels( Map<String, AtomicLong> nodeCounts, String[] labels )
+    {
+        for ( String labelName : labels )
+        {
+            nodeCounts.get( labelName ).incrementAndGet();
+        }
+    }
+
+    private String nameOf( InputNode node )
+    {
+        return (String) node.properties()[1];
     }
 
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();

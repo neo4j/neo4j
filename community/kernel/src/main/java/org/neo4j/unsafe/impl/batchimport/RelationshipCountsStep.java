@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -35,6 +36,8 @@ public class RelationshipCountsStep extends RelationshipStoreProcessorStep
     private final long[][][] counts;
     private int[] startScratch = new int[20], endScratch = new int[20]; // and grows on demand
     private final CountsTracker countsTracker;
+    private final int anyLabel;
+    private final int anyRelationshipType;
 
     protected RelationshipCountsStep( StageControl control, int batchSize, RelationshipStore relationshipStore,
             NodeLabelsCache nodeLabelCache, int highLabelId, int highRelationshipTypeId, CountsTracker countsTracker )
@@ -42,7 +45,11 @@ public class RelationshipCountsStep extends RelationshipStoreProcessorStep
         super( control, "RELATIONSHIP COUNTS", batchSize, relationshipStore );
         this.nodeLabelCache = nodeLabelCache;
         this.countsTracker = countsTracker;
-        this.counts = new long[highLabelId][highRelationshipTypeId][highLabelId];
+
+        // Instantiate with high id + 1 since we need that extra slot for the ANY counts
+        this.counts = new long[highLabelId+1][highRelationshipTypeId+1][highLabelId+1];
+        this.anyLabel = highLabelId;
+        this.anyRelationshipType = highRelationshipTypeId;
     }
 
     @Override
@@ -52,6 +59,10 @@ public class RelationshipCountsStep extends RelationshipStoreProcessorStep
         long endNode = record.getSecondNode();
         int type = record.getType();
 
+        // Below is logic duplication of CountsState#addRelationship
+
+        counts[anyLabel][anyRelationshipType][anyLabel]++;
+        counts[anyLabel][type][anyLabel]++;
         startScratch = nodeLabelCache.get( startNode, startScratch );
         for ( int startNodeLabelId : startScratch )
         {
@@ -60,6 +71,8 @@ public class RelationshipCountsStep extends RelationshipStoreProcessorStep
                 break;
             }
 
+            counts[startNodeLabelId][anyRelationshipType][anyLabel]++;
+            counts[startNodeLabelId][type][anyLabel]++;
             endScratch = nodeLabelCache.get( endNode, endScratch );
             for ( int endNodeLabelId : endScratch )
             {
@@ -68,9 +81,20 @@ public class RelationshipCountsStep extends RelationshipStoreProcessorStep
                     break;
                 }
 
+                counts[startNodeLabelId][anyRelationshipType][endNodeLabelId]++;
                 counts[startNodeLabelId][type][endNodeLabelId]++;
             }
+        }
+        endScratch = nodeLabelCache.get( endNode, endScratch );
+        for ( int endNodeLabelId : endScratch )
+        {
+            if ( endNodeLabelId == -1 )
+            {   // We reached the end of it
+                break;
+            }
 
+            counts[anyLabel][anyRelationshipType][endNodeLabelId]++;
+            counts[anyLabel][type][endNodeLabelId]++;
         }
 
         // No need to update the store, we're just reading things here
@@ -83,13 +107,16 @@ public class RelationshipCountsStep extends RelationshipStoreProcessorStep
         for ( int startNodeLabelId = 0; startNodeLabelId < counts.length; startNodeLabelId++ )
         {
             long[][] types = counts[startNodeLabelId];
-            for ( int type = 0; type < types.length; type++ )
+            for ( int typeId = 0; typeId < types.length; typeId++ )
             {
-                long[] endNodeLabelIds = types[type];
+                long[] endNodeLabelIds = types[typeId];
                 for ( int endNodeLabelId = 0; endNodeLabelId < endNodeLabelIds.length; endNodeLabelId++ )
                 {
+                    int startLabel = startNodeLabelId == anyLabel ? ReadOperations.ANY_LABEL : startNodeLabelId;
+                    int type = typeId == anyRelationshipType ? ReadOperations.ANY_RELATIONSHIP_TYPE : typeId;
+                    int endLabel = endNodeLabelId == anyLabel ? ReadOperations.ANY_LABEL : endNodeLabelId;
                     long count = endNodeLabelIds[endNodeLabelId];
-                    countsTracker.updateCountsForRelationship( startNodeLabelId, type, endNodeLabelId, count );
+                    countsTracker.updateCountsForRelationship( startLabel, type, endLabel, count );
                 }
             }
         }
