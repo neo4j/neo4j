@@ -24,7 +24,6 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
 import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
@@ -49,14 +48,13 @@ public class BoundedIndexSamplingJobTest
     public void shouldSampleTheIndexAndStoreTheValueWhenTheIndexIsOnline()
     {
         // given
-        BoundedIndexSamplingJob job = new BoundedIndexSamplingJob( indexProxy, sampleSize, indexStoreView, logging );
+        BoundedIndexSamplingJob job = new BoundedIndexSamplingJob( indexProxy, numOfUniqueElements, indexStoreView, logging );
         when( indexProxy.getState() ).thenReturn( ONLINE );
 
         // when
         job.run();
 
         // then
-        verify( indexStoreView ).indexSize( indexDescriptor );
         verify( indexStoreView ).replaceIndexSample( MAX_TX_ID, indexDescriptor, indexUniqueValues, indexSize );
         verifyNoMoreInteractions( indexStoreView );
     }
@@ -65,14 +63,13 @@ public class BoundedIndexSamplingJobTest
     public void shouldSampleTheIndexButDoNotStoreTheValuesIfTheIndexIsNotOnline()
     {
         // given
-        BoundedIndexSamplingJob job = new BoundedIndexSamplingJob( indexProxy, sampleSize, indexStoreView, logging );
+        BoundedIndexSamplingJob job = new BoundedIndexSamplingJob( indexProxy, numOfUniqueElements, indexStoreView, logging );
         when( indexProxy.getState() ).thenReturn( FAILED );
 
         // when
         job.run();
 
         // then
-        verify( indexStoreView ).indexSize( indexDescriptor );
         verifyNoMoreInteractions( indexStoreView );
     }
 
@@ -84,7 +81,7 @@ public class BoundedIndexSamplingJobTest
 
     private final long indexUniqueValues = 21l;
     private final long indexSize = 23l;
-    private final long sampleSize = 42l;
+    private final int numOfUniqueElements = 42;
 
     @Before
     public void setup() throws IndexNotFoundKernelException

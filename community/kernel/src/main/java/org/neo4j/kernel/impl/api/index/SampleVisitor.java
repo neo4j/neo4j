@@ -23,24 +23,24 @@ import org.neo4j.helpers.collection.MultiSet;
 import org.neo4j.kernel.api.index.PopulatingValueSampler;
 import org.neo4j.register.Register;
 
-class SampleVisitor implements PopulatingValueSampler
+public class SampleVisitor implements PopulatingValueSampler
 {
     private MultiSet<Object> values;
     private int sampledSteps = 0;
     private long accumulatedUniqueValues = 0;
     private long accumulatedSampledSize = 0;
-    private final int batchSize;
+    private final int numOfUniqueElements;
 
-    SampleVisitor( int batchSize )
+    public SampleVisitor( int numOfUniqueElements )
     {
-        this.batchSize = batchSize;
-        this.values = new MultiSet<>( batchSize );
+        this.numOfUniqueElements = numOfUniqueElements;
+        this.values = new MultiSet<>( numOfUniqueElements );
     }
 
     @Override
     public void include( Object value )
     {
-        if ( values.uniqueValueSize() >= batchSize )
+        if ( values.uniqueValueSize() >= numOfUniqueElements )
         {
             nextStep();
         }
