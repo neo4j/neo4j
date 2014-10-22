@@ -23,10 +23,12 @@ import java.util.Arrays;
 
 import org.junit.Test;
 
+import org.neo4j.kernel.impl.store.counts.CountsKey;
+
 import static org.junit.Assert.assertEquals;
 
-import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
-import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
+import static org.neo4j.kernel.impl.store.counts.CountsKey.nodeKey;
+import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipKey;
 
 public class CountsKeyTest
 {

@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
-import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
-import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
-
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -30,8 +26,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.api.CountsAcceptor;
-import org.neo4j.kernel.impl.api.CountsKey;
+import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.locking.LockWrapper;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
@@ -40,44 +35,31 @@ import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 
+import static org.neo4j.kernel.impl.store.counts.CountsKey.indexSampleKey;
+import static org.neo4j.kernel.impl.store.counts.CountsKey.indexSizeKey;
+import static org.neo4j.kernel.impl.store.counts.CountsKey.nodeKey;
+import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipKey;
+
 /**
  * {@link CountsTracker} maintains two files, the {@link #alphaFile} and the {@link #betaFile} that it rotates between.
  * {@link #updateLock} is used to ensure that no updates happen while we rotate from one file to another. Reads are
  * still ok though, they just read whatever the current state is. The state is assigned atomically at the end of
  * rotation.
  */
-public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, CountsAcceptor
+public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, CountsAccessor
 {
     public static final String STORE_DESCRIPTOR = SortedKeyValueStore.class.getSimpleName();
-
-    interface State extends Closeable
-    {
-        long lastTxId();
-
-        boolean hasChanges();
-
-        long getCount( CountsKey key );
-
-        long updateCount( CountsKey key, long delta );
-
-        File storeFile();
-
-        SortedKeyValueStore.Writer<CountsKey, Register.LongRegister> newWriter( File file, long lastCommittedTxId )
-                throws IOException;
-
-        void accept( KeyValueRecordVisitor<CountsKey, Register.LongRegister> visitor );
-    }
 
     public static final String ALPHA = ".alpha", BETA = ".beta";
     private final File alphaFile, betaFile;
     private final ReadWriteLock updateLock = new ReentrantReadWriteLock( /*fair=*/true );
-    private volatile State state;
+    private volatile CountsTrackerState state;
 
     public CountsTracker( FileSystemAbstraction fs, PageCache pageCache, File storeFileBase )
     {
         this.alphaFile = storeFile( storeFileBase, ALPHA );
         this.betaFile = storeFile( storeFileBase, BETA );
-        this.state = new ConcurrentTrackerState( openStore( fs, pageCache, this.alphaFile, this.betaFile ) );
+        this.state = new ConcurrentCountsTrackerState( openStore( fs, pageCache, this.alphaFile, this.betaFile ) );
     }
 
     private static CountsStore openStore( FileSystemAbstraction fs, PageCache pageCache, File alpha, File beta )
@@ -89,8 +71,8 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
             {
                 CountsStore alphaStore = CountsStore.open( fs, pageCache, alpha );
                 CountsStore betaStore = CountsStore.open( fs, pageCache, beta );
-                long alphaTxId = alphaStore.lastTxId(), betaTxId = betaStore.lastTxId();
-                if ( alphaTxId > betaTxId )  // TODO: compare to what the txIdProvider says...
+
+                if ( isAlphaStoreMoreRecent( alphaStore, betaStore ) )
                 {
                     betaStore.close();
                     return alphaStore;
@@ -120,14 +102,30 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
         }
     }
 
+    private static boolean isAlphaStoreMoreRecent( CountsStore alphaStore, CountsStore betaStore )
+    {
+        long alphaTxId = alphaStore.lastTxId(), betaTxId = betaStore.lastTxId();
+        long alphaVersion = alphaStore.minorVersion(), betaVersion = betaStore.minorVersion();
+
+        // TODO: Check with txIdProvider to infer if these numbers make any sense
+
+        if ( alphaTxId == betaTxId )
+        {
+            if ( alphaVersion == betaVersion )
+            {
+                throw new IllegalStateException( "Found two storage files with same last tx id and minor version" );
+            }
+            return alphaVersion > betaVersion;
+        }
+        else
+        {
+            return alphaTxId > betaTxId;
+        }
+    }
+
     public static void createEmptyCountsStore( PageCache pageCache, File file, String version )
     {
         CountsStore.createEmpty( pageCache, storeFile( file, ALPHA ), version );
-    }
-
-    public long countsForNode( int labelId )
-    {
-        return get( nodeKey( labelId ) );
     }
 
     public boolean acceptTx( long txId )
@@ -136,30 +134,114 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     }
 
     @Override
-    public void updateCountsForNode( int labelId, long delta )
+    public long nodeCount( int labelId )
     {
-        update( nodeKey( labelId ), delta );
-    }
-
-    public long countsForRelationship( int startLabelId, int typeId, int endLabelId )
-    {
-        return get( relationshipKey( startLabelId, typeId, endLabelId ) );
+        return state.nodeCount( nodeKey( labelId ) );
     }
 
     @Override
-    public void updateCountsForRelationship( int startLabelId, int typeId, int endLabelId, long delta )
+    public long incrementNodeCount( int labelId, long delta )
     {
-        update( relationshipKey( startLabelId, typeId, endLabelId ), delta );
+        if ( delta == 0 )
+        {
+            return nodeCount( labelId );
+        }
+        else
+        {
+            try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
+            {
+                CountsKey.NodeKey key = nodeKey( labelId );
+                long value = state.incrementNodeCount( key, delta );
+                assert value >= 0 : String.format( "incrementNodeCount(key=%s, delta=%d) -> value=%d", key, delta, value );
+                return value;
+            }
+        }
+    }
+
+    @Override
+    public long relationshipCount( int startLabelId, int typeId, int endLabelId )
+    {
+        return state.relationshipCount( relationshipKey( startLabelId, typeId, endLabelId ) );
+    }
+
+    @Override
+    public long incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta )
+    {
+        if ( delta == 0 )
+        {
+            return relationshipCount( startLabelId, typeId, endLabelId );
+        }
+        {
+            try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
+            {
+                CountsKey.RelationshipKey key = relationshipKey( startLabelId, typeId, endLabelId );
+                long value = state.incrementRelationshipCount( key, delta );
+                assert value >= 0 : String.format( "incrementRelationshipCount(key=%s, delta=%d) -> value=%d", key, delta, value );
+                return value;
+            }
+        }
+    }
+
+    @Override
+    public long indexSize( int labelId, int propertyKeyId )
+    {
+        return state.indexSizeCount( indexSizeKey( labelId, propertyKeyId ) );
+    }
+
+    @Override
+    public long incrementIndexSize( int labelId, int propertyKeyId, long delta )
+    {
+        if ( delta == 0 )
+        {
+            return indexSize( labelId, propertyKeyId );
+        }
+        {
+            try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
+            {
+                CountsKey.IndexSizeKey key = indexSizeKey( labelId, propertyKeyId );
+                long value = state.incrementIndexSize( key, delta );
+                assert value >= 0 : String.format( "incrementIndexSizeCount(key=%s, delta=%d) -> value=%d", key, delta, value );
+                return value;
+            }
+        }
+    }
+
+    @Override
+    public void indexSample( int labelId, int propertyKeyId, Register.DoubleLongRegister target )
+    {
+        state.indexSample( indexSampleKey( labelId, propertyKeyId ), target );
+    }
+
+    @Override
+    public void replaceIndexSize( int labelId, int propertyKeyId, long total )
+    {
+        try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
+        {
+            CountsKey.IndexSizeKey key = indexSizeKey( labelId, propertyKeyId );
+            assert total >= 0 : String.format( "replaceIndexSizeCount(key=%s, total=%d)", key, total );
+            state.replaceIndexSize( key, total );
+        }
+    }
+
+    @Override
+    public void replaceIndexSample( int labelId, int propertyKeyId, long unique, long size )
+    {
+        try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
+        {
+            CountsKey.IndexSampleKey key = indexSampleKey( labelId, propertyKeyId );
+            assert unique >= 0 && size >= 0 && unique <= size : String.format( "replaceIndexSample(key=%s, unique=%d, size=%d)", key, unique, size );
+            state.replaceIndexSample( key, unique, size );
+        }
     }
 
     public void accept( final CountsVisitor visitor )
     {
-        state.accept( new KeyValueRecordVisitor<CountsKey, Register.LongRegister>()
+        state.accept( new KeyValueRecordVisitor<CountsKey, Register.DoubleLongRegister>()
         {
-            private final Register.LongRegister valueRegister = Registers.newLongRegister();
+            private final Register.DoubleLongRegister valueRegister = Registers.newDoubleLongRegister();
 
             @Override
-            public Register.LongRegister valueRegister()
+            public Register.DoubleLongRegister valueRegister()
             {
                 return valueRegister;
             }
@@ -170,23 +252,6 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
                 key.accept( visitor, valueRegister );
             }
         } );
-    }
-
-    private long get( CountsKey key )
-    {
-        return state.getCount( key );
-    }
-
-    private void update( CountsKey key, long delta )
-    {
-        if ( delta != 0 )
-        {
-            try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
-            {
-                long value = state.updateCount( key, delta );
-                assert value >= 0 : String.format( "update(key=%s, delta=%d) -> value=%d", key, delta, value );
-            }
-        }
     }
 
     public void close()
@@ -209,16 +274,16 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     {
         try ( LockWrapper _ = new LockWrapper( updateLock.writeLock() ) )
         {
-            State state = this.state;
+            CountsTrackerState state = this.state;
             if ( state.hasChanges() )
             {
                 // select the next file, and create a writer for it
-                try ( CountsStore.Writer<CountsKey, Register.LongRegister> writer =
+                try ( CountsStore.Writer<CountsKey, Register.DoubleLongRegister> writer =
                               nextWriter( state, lastCommittedTxId ) )
                 {
                     state.accept( writer );
-                    // replace the old store with the
-                    this.state = new ConcurrentTrackerState( writer.openForReading() );
+                    // replaceSecond the old store with the
+                    this.state = new ConcurrentCountsTrackerState( writer.openForReading() );
                 }
                 // close the old store
                 state.close();
@@ -226,7 +291,7 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
         }
     }
 
-    CountsStore.Writer<CountsKey, Register.LongRegister> nextWriter( State state, long lastCommittedTxId )
+    CountsStore.Writer<CountsKey, Register.DoubleLongRegister> nextWriter( CountsTrackerState state, long lastCommittedTxId )
             throws IOException
     {
         if ( alphaFile.equals( state.storeFile() ) )
@@ -237,6 +302,11 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
         {
             return state.newWriter( alphaFile, lastCommittedTxId );
         }
+    }
+
+    File storeFile()
+    {
+        return state.storeFile();
     }
 
     private static File storeFile( File base, String version )

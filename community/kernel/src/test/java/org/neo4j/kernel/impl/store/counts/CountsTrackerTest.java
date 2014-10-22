@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
-import static org.neo4j.kernel.impl.store.CommonAbstractStore.buildTypeDescriptorAndVersion;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Future;
@@ -28,19 +26,27 @@ import java.util.concurrent.Future;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
+
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Function;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.CountsKey;
 import org.neo4j.kernel.impl.store.CountsOracle;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
+import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.ThreadingRule;
+
+import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.kernel.impl.store.CommonAbstractStore.buildTypeDescriptorAndVersion;
+import static org.neo4j.kernel.impl.store.counts.CountsStore.WRITER_FACTORY;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class CountsTrackerTest
 {
@@ -155,6 +161,59 @@ public class CountsTrackerTest
         }
     }
 
+    @Test
+    public void shouldPickStoreFileWithLargerTxId() throws IOException
+    {
+        EphemeralFileSystemAbstraction fs = this.fs.get();
+        File alphaFile = alphaStoreFile();
+        File betaFile = betaStoreFile();
+        PageCache pageCache = pageCache();
+
+        {
+            createStoreFile( fs, pageCache, alphaFile, BASE_TX_ID );
+            createStoreFile( fs, pageCache, betaFile, BASE_TX_ID + 1 );
+
+            CountsTracker tracker = new CountsTracker( fs, pageCache, storeFile() );
+            assertEquals( betaFile, tracker.storeFile() );
+            tracker.close();
+        }
+
+        {
+            createStoreFile( fs, pageCache, alphaFile, BASE_TX_ID + 1 );
+            createStoreFile( fs, pageCache, betaFile, BASE_TX_ID );
+
+            CountsTracker tracker = new CountsTracker( fs, pageCache, storeFile() );
+            assertEquals( alphaFile, tracker.storeFile() );
+            tracker.close();
+        }
+    }
+
+    @Test
+    public void shouldPickStoreFileWithLargerMinorVersion() throws IOException
+    {
+        EphemeralFileSystemAbstraction fs = this.fs.get();
+        File alphaFile = alphaStoreFile();
+        File betaFile = betaStoreFile();
+        PageCache pageCache = pageCache();
+
+        createStoreFile( fs, pageCache, alphaFile, BASE_TX_ID + 1);
+
+        {
+            CountsTracker tracker = new CountsTracker( fs, pageCache, storeFile() );
+            assertEquals( alphaFile, tracker.storeFile() );
+            tracker.incrementNodeCount( 1, 1l );
+            tracker.rotate( BASE_TX_ID + 1 );
+            assertEquals( betaFile, tracker.storeFile() );
+            tracker.close();
+        }
+
+        {
+            CountsTracker tracker = new CountsTracker( fs, pageCache, storeFile() );
+            assertEquals( betaFile, tracker.storeFile() );
+            tracker.close();
+        }
+    }
+
     private static final String VERSION = buildTypeDescriptorAndVersion( CountsTracker.STORE_DESCRIPTOR );
     public final @Rule EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     public final @Rule TestName testName = new TestName();
@@ -173,7 +232,20 @@ public class CountsTrackerTest
         oracle.relationship( n1, 1, n3 );
         oracle.relationship( n1, 1, n2 );
         oracle.relationship( n0, 1, n3 );
+        oracle.indexSize( 1, 2, 50l );
+        oracle.indexSampling( 1, 2, 25l, 50l );
         return oracle;
+    }
+
+
+    private File alphaStoreFile()
+    {
+        return new File( testName.getMethodName() + CountsTracker.ALPHA );
+    }
+
+    private File betaStoreFile()
+    {
+        return new File( testName.getMethodName() + CountsTracker.BETA );
     }
 
     private File storeFile()
@@ -184,6 +256,14 @@ public class CountsTrackerTest
     private PageCache pageCache()
     {
         return pageCache.getPageCache( fs.get(), config );
+    }
+
+    private void createStoreFile( EphemeralFileSystemAbstraction fs, PageCache pageCache, File file, long lastTxId ) throws IOException
+    {
+        SortedKeyValueStoreHeader header = SortedKeyValueStoreHeader.empty( VERSION );
+        CountsStoreWriter writer = WRITER_FACTORY.create( fs, pageCache, header, file, lastTxId );
+        writer.close();
+        writer.openForReading().close();
     }
 
     private static class InstrumentedCountsTracker extends CountsTracker
@@ -198,16 +278,16 @@ public class CountsTrackerTest
         }
 
         @Override
-        CountsStore.Writer<CountsKey, Register.LongRegister> nextWriter( State state, long lastCommittedTxId )
+        CountsStore.Writer<CountsKey, Register.DoubleLongRegister> nextWriter( CountsTrackerState state, long lastCommittedTxId )
                 throws IOException
         {
             final CountsStoreWriter writer = (CountsStoreWriter) super.nextWriter( state, lastCommittedTxId );
-            return new CountsStore.Writer<CountsKey, Register.LongRegister>()
+            return new CountsStore.Writer<CountsKey, Register.DoubleLongRegister>()
             {
-                private final Register.LongRegister valueRegister = Registers.newLongRegister();
+                private final Register.DoubleLongRegister valueRegister = Registers.newDoubleLongRegister();
 
                 @Override
-                public SortedKeyValueStore<CountsKey, Register.LongRegister> openForReading() throws IOException
+                public SortedKeyValueStore<CountsKey, Register.DoubleLongRegister> openForReading() throws IOException
                 {
                     barrier.reached();
                     return writer.openForReading();
@@ -222,12 +302,12 @@ public class CountsTrackerTest
                 @Override
                 public void visit( CountsKey key )
                 {
-                    writer.valueRegister().write( valueRegister.read() );
+                    writer.valueRegister().write( valueRegister.readFirst(), valueRegister.readSecond() );
                     writer.visit( key );
                 }
 
                 @Override
-                public Register.LongRegister valueRegister()
+                public Register.DoubleLongRegister valueRegister()
                 {
                     return valueRegister;
                 }

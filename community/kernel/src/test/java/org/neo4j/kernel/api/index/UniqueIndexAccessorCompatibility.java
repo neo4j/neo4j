@@ -31,6 +31,7 @@ import org.junit.Test;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSizeSampler;
 
 import static java.util.Arrays.asList;
 
@@ -75,7 +76,8 @@ public class UniqueIndexAccessorCompatibility extends IndexProviderCompatibility
     public void before() throws IOException
     {
         IndexConfiguration config = new IndexConfiguration( true );
-        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config );
+        ValueSampler sampler = new UniqueIndexSizeSampler();
+        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, sampler );
         populator.create();
         populator.close( true );
         accessor = indexProvider.getOnlineAccessor( 17, config );

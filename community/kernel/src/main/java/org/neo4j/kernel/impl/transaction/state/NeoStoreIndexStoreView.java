@@ -19,10 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.EMPTY_LONG_ARRAY;
-import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
-import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
-
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -47,27 +44,83 @@ import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.StoreIdIterator;
+import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.register.Register;
+
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.EMPTY_LONG_ARRAY;
+import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
+import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
 public class NeoStoreIndexStoreView implements IndexStoreView
 {
     private final PropertyStore propertyStore;
     private final NodeStore nodeStore;
     private final LockService locks;
+    private final CountsTracker counts;
+    private final TransactionIdStore txIdStore;
 
     public NeoStoreIndexStoreView( LockService locks, NeoStore neoStore )
     {
-        this( locks, neoStore.getNodeStore(), neoStore.getPropertyStore() );
+        this( locks, neoStore.getNodeStore(), neoStore.getPropertyStore(), neoStore.getCounts(), neoStore  );
     }
 
-    public NeoStoreIndexStoreView( LockService locks, NodeStore nodeStore, PropertyStore propertyStore )
+    public NeoStoreIndexStoreView( LockService locks, NodeStore nodeStore, PropertyStore propertyStore, CountsTracker counts, TransactionIdStore txIdStore )
     {
         this.locks = locks;
         this.propertyStore = propertyStore;
         this.nodeStore = nodeStore;
+        this.counts = counts;
+        this.txIdStore = txIdStore;
+    }
+
+    @Override
+    public long indexSize( IndexDescriptor descriptor )
+    {
+        return counts.indexSize( descriptor.getLabelId(), descriptor.getPropertyKeyId() );
+    }
+
+    @Override
+    public void replaceIndexSize( long transactionId, IndexDescriptor descriptor, long total )
+    {
+        if ( counts.acceptTx( transactionId ) )
+        {
+            counts.replaceIndexSize( descriptor.getLabelId(), descriptor.getPropertyKeyId(), total );
+        }
+    }
+
+    @Override
+    public void incrementIndexSize( long transactionId, IndexDescriptor descriptor, long delta )
+    {
+        if ( counts.acceptTx( transactionId ) )
+        {
+            counts.incrementIndexSize( descriptor.getLabelId(), descriptor.getPropertyKeyId(), delta );
+        }
+    }
+
+    @Override
+    public void indexSample( IndexDescriptor descriptor, Register.DoubleLongRegister output )
+    {
+        counts.indexSample( descriptor.getLabelId(), descriptor.getPropertyKeyId(), output );
+    }
+
+    @Override
+    public void replaceIndexSample( long transactionId, IndexDescriptor descriptor, long unique, long size )
+    {
+        if ( counts.acceptTx( transactionId ) )
+        {
+            counts.replaceIndexSample( descriptor.getLabelId(), descriptor.getPropertyKeyId(), unique, size );
+        }
+    }
+
+    @Override
+    public void flushIndexCounts() throws IOException
+    {
+        counts.rotate( txIdStore.getLastCommittedTransactionId() );
     }
 
     @Override

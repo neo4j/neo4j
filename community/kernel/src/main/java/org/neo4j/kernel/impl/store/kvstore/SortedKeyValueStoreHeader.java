@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.kvstore;
 
-import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
-import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore.RECORD_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
-
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -30,27 +26,35 @@ import org.neo4j.helpers.UTF8;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
+import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
+import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore.RECORD_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
+
 public final class SortedKeyValueStoreHeader
 {
+    public static final long BASE_MINOR_VERSION = 1l;
+
     public static SortedKeyValueStoreHeader empty( String storeFormatVersion )
     {
         if ( storeFormatVersion == null )
         {
             throw new IllegalArgumentException( "store format version cannot be null" );
         }
-        return new SortedKeyValueStoreHeader( UTF8.encode( storeFormatVersion ), 0, BASE_TX_ID );
+        return new SortedKeyValueStoreHeader( UTF8.encode( storeFormatVersion ), 0, BASE_TX_ID, BASE_MINOR_VERSION );
     }
 
-    private static final int META_HEADER_SIZE = 2/*headerRecords*/ + 2/*versionLen*/ + 4/*dataRecords*/ + 8/*lastTxId*/;
+    private static final int META_HEADER_SIZE = 2/*headerRecords*/ + 2/*versionLen*/ + 4/*dataRecords*/ + 8/*lastTxId*/ + 8/*minorVersion*/;
     private final byte[] storeFormatVersion;
     private final int dataRecords;
     private final long lastTxId;
+    private final long minorVersion;
 
-    private SortedKeyValueStoreHeader( byte[] storeFormatVersion, int dataRecords, long lastTxId )
+    private SortedKeyValueStoreHeader( byte[] storeFormatVersion, int dataRecords, long lastTxId, long minorVersion )
     {
         this.storeFormatVersion = storeFormatVersion;
         this.dataRecords = dataRecords;
         this.lastTxId = lastTxId;
+        this.minorVersion = minorVersion;
     }
 
     @Override
@@ -67,20 +71,10 @@ public final class SortedKeyValueStoreHeader
 
         SortedKeyValueStoreHeader that = (SortedKeyValueStoreHeader) o;
 
-        if ( dataRecords != that.dataRecords )
-        {
-            return false;
-        }
-        if ( lastTxId != that.lastTxId )
-        {
-            return false;
-        }
-        if ( !Arrays.equals( storeFormatVersion, that.storeFormatVersion ) )
-        {
-            return false;
-        }
-
-        return true;
+        return dataRecords == that.dataRecords &&
+                lastTxId == that.lastTxId &&
+                minorVersion == that.minorVersion &&
+                Arrays.equals( storeFormatVersion, that.storeFormatVersion );
     }
 
     @Override
@@ -89,19 +83,20 @@ public final class SortedKeyValueStoreHeader
         int result = Arrays.hashCode( storeFormatVersion );
         result = 31 * result + dataRecords;
         result = 31 * result + (int) (lastTxId ^ (lastTxId >>> 32));
+        result = 31 * result + (int) (minorVersion ^ (minorVersion >>> 32));
         return result;
     }
 
     @Override
     public String toString()
     {
-        return String.format( "%s[storeFormatVersion=%s, dataRecords=%d, lastTxId=%d]",
-                              getClass().getSimpleName(), storeFormatVersion(), dataRecords, lastTxId );
+        return String.format( "%s[storeFormatVersion=%s, dataRecords=%d, lastTxId=%d, minorVersion=%d]",
+                              getClass().getSimpleName(), storeFormatVersion(), dataRecords, lastTxId, minorVersion );
     }
 
-    public SortedKeyValueStoreHeader update( int dataRecords, long lastTxId )
+    public SortedKeyValueStoreHeader update( int dataRecords, long lastTxId, long minorVersion )
     {
-        return new SortedKeyValueStoreHeader( storeFormatVersion, dataRecords, lastTxId );
+        return new SortedKeyValueStoreHeader( storeFormatVersion, dataRecords, lastTxId, minorVersion );
     }
 
     String storeFormatVersion()
@@ -116,14 +111,19 @@ public final class SortedKeyValueStoreHeader
         return headerBytes / RECORD_SIZE;
     }
 
-    int dataRecords()
+    public int dataRecords()
     {
         return dataRecords;
     }
 
-    long lastTxId()
+    public long lastTxId()
     {
         return lastTxId;
+    }
+
+    public long minorVersion()
+    {
+        return minorVersion;
     }
 
     public static SortedKeyValueStoreHeader read( PagedFile pagedFile ) throws IOException
@@ -136,6 +136,7 @@ public final class SortedKeyValueStoreHeader
                 short versionLength;
                 int dataRecords;
                 long lastTxId;
+                long minorVersion;
                 byte[] storeFormatVersion;
                 do
                 {
@@ -144,6 +145,7 @@ public final class SortedKeyValueStoreHeader
                     versionLength = page.getShort();
                     dataRecords = page.getInt();
                     lastTxId = page.getLong();
+                    minorVersion = page.getLong();
                     int versionSpace = headerRecords * RECORD_SIZE - META_HEADER_SIZE;
                     if ( versionLength > versionSpace || versionLength < (versionSpace - RECORD_SIZE) )
                     {
@@ -160,7 +162,7 @@ public final class SortedKeyValueStoreHeader
                         }
                     }
                 } while ( page.shouldRetry() );
-                return new SortedKeyValueStoreHeader( storeFormatVersion, dataRecords, lastTxId );
+                return new SortedKeyValueStoreHeader( storeFormatVersion, dataRecords, lastTxId, minorVersion );
             }
             else
             {
@@ -193,6 +195,7 @@ public final class SortedKeyValueStoreHeader
             page.putShort( (short) storeFormatVersion.length );
             page.putInt( dataRecords );
             page.putLong( lastTxId );
+            page.putLong( minorVersion );
             page.putBytes( storeFormatVersion );
             page.setOffset( RECORD_SIZE * headerRecords() );
         } while ( page.shouldRetry() );

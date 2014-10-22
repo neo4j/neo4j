@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.index.inmemory;
 
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,8 +30,7 @@ import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
+import org.neo4j.kernel.api.index.ValueSampler;
 
 class HashBasedIndex extends InMemoryIndexImplementation
 {
@@ -130,7 +131,30 @@ class HashBasedIndex extends InMemoryIndexImplementation
     @Override
     public int getIndexedCount( long nodeId, Object propertyValue )
     {
-        Set<Long> canditates = data.get( propertyValue );
-        return canditates != null && canditates.contains( nodeId ) ? 1 : 0;
+        Set<Long> candidates = data.get( propertyValue );
+        return candidates != null && candidates.contains( nodeId ) ? 1 : 0;
+    }
+
+    @Override
+    public void sampleIndex( final ValueSampler sampler )
+    {
+        try
+        {
+            iterateAll( new IndexEntryIterator()
+            {
+                @Override
+                public void visitEntry( Object value, Set<Long> nodeIds ) throws Exception
+                {
+                    for ( int i = nodeIds.size(); i > 0 ; i-- )
+                    {
+                        sampler.include( value.toString() );
+                    }
+                }
+            });
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 }

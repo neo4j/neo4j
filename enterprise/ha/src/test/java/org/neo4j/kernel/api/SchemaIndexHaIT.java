@@ -64,6 +64,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -134,12 +135,12 @@ public class SchemaIndexHaIT
 
         // WHEN we shut down the master
         cluster.shutdown( firstMaster );
-        
+
         dbFactory.triggerFinish( aSlave );
         cluster.await( masterAvailable( firstMaster ) );
         // get the new master, which should be the slave we pulled from above
         HighlyAvailableGraphDatabase newMaster = cluster.getMaster();
-        
+
         // THEN
         assertEquals( "Unexpected new master", aSlave, newMaster );
         try ( Transaction tx = newMaster.beginTx() )
@@ -406,7 +407,7 @@ public class SchemaIndexHaIT
             return false;
         }
     }
-    
+
     private static class ControlledIndexPopulator implements IndexPopulator
     {
         private final DoubleLatch latch;
@@ -472,17 +473,17 @@ public class SchemaIndexHaIT
     {
         private final SchemaIndexProvider delegate;
         private final DoubleLatch latch = new DoubleLatch();
-        
+
         public ControlledSchemaIndexProvider(SchemaIndexProvider delegate)
         {
             super( CONTROLLED_PROVIDER_DESCRIPTOR, 100 /*we want it to always win*/ );
             this.delegate = delegate;
         }
-        
+
         @Override
-        public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexConfiguration config )
+        public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexConfiguration config, ValueSampler sampler )
         {
-            return new ControlledIndexPopulator( delegate.getPopulator( indexId, descriptor, config ), latch );
+            return new ControlledIndexPopulator( delegate.getPopulator( indexId, descriptor, config, sampler ), latch );
         }
 
         @Override
@@ -562,7 +563,7 @@ public class SchemaIndexHaIT
             getCurrentState().addKernelExtensions( Arrays.<KernelExtensionFactory<?>>asList( factory ) );
             return super.newHighlyAvailableDatabaseBuilder( path );
         }
-        
+
         void awaitPopulationStarted( GraphDatabaseService db )
         {
             ControlledSchemaIndexProvider provider = (ControlledSchemaIndexProvider) perDbIndexProvider.get( db );

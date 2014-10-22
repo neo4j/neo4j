@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api;
 
-public interface ReadOperations extends TokenRead, DataRead, SchemaRead, SchemaState, Locking, LegacyIndexRead, CountsRead
+public interface ReadOperations extends TokenRead, DataRead, SchemaRead, SchemaState,
+        Locking, LegacyIndexRead, CountsRead
 {
 }

@@ -41,8 +41,8 @@ import static java.lang.String.format;
 import static java.util.Collections.unmodifiableCollection;
 
 import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.kernel.impl.api.CountsKey.label;
-import static org.neo4j.kernel.impl.api.CountsKey.relationshipType;
+import static org.neo4j.kernel.impl.store.counts.CountsKey.label;
+import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipType;
 
 /**
  * Command implementations for all the commands that can be performed on a Neo

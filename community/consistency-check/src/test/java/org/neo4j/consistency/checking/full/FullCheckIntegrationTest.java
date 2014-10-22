@@ -50,9 +50,11 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.kernel.impl.api.index.sampling.BoundedIndexSampler;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.PreAllocatedRecords;
@@ -383,8 +385,10 @@ public class FullCheckIntegrationTest
         {
             IndexRule rule = rules.next();
             IndexDescriptor descriptor = new IndexDescriptor( rule.getLabel(), rule.getPropertyKey() );
+            IndexConfiguration config = new IndexConfiguration( false );
+            ValueSampler sampler = new BoundedIndexSampler( 10_000 );
             IndexPopulator populator =
-                storeAccess.indexes().getPopulator( rule.getId(), descriptor, new IndexConfiguration( false ) );
+                storeAccess.indexes().getPopulator( rule.getId(), descriptor, config, sampler );
             populator.markAsFailed( "Oh noes! I was a shiny index and then I was failed" );
             populator.close( false );
 

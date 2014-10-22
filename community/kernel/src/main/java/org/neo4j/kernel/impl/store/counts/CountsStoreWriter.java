@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
-import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
-import static org.neo4j.kernel.impl.store.counts.CountsRecordSerializer.NODE_KEY;
-import static org.neo4j.kernel.impl.store.counts.CountsRecordSerializer.RELATIONSHIP_KEY;
-
 import java.io.File;
 import java.io.IOException;
 
@@ -30,7 +26,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.kernel.impl.api.CountsKey;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
@@ -38,9 +33,15 @@ import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 
-public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, Register.LongRegister>, CountsVisitor
+import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
+import static org.neo4j.kernel.impl.store.counts.CountsKeyType.ENTITY_NODE;
+import static org.neo4j.kernel.impl.store.counts.CountsKeyType.ENTITY_RELATIONSHIP;
+import static org.neo4j.kernel.impl.store.counts.CountsKeyType.INDEX_SAMPLE;
+import static org.neo4j.kernel.impl.store.counts.CountsKeyType.INDEX_SIZE;
+
+public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, Register.DoubleLongRegister>, CountsVisitor
 {
-    public static class Factory implements SortedKeyValueStore.WriterFactory<CountsKey, Register.LongRegister>
+    public static class Factory implements SortedKeyValueStore.WriterFactory<CountsKey, Register.DoubleLongRegister>
     {
         @Override
         public CountsStoreWriter create( FileSystemAbstraction fs, PageCache pageCache,
@@ -52,18 +53,19 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
         }
     }
 
-    private final Register.LongRegister valueRegister = Registers.newLongRegister();
+    private final Register.DoubleLongRegister valueRegister = Registers.newDoubleLongRegister();
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
-    private final SortedKeyValueStoreHeader header;
+    private final SortedKeyValueStoreHeader oldHeader;
     private final PagedFile pagedFile;
     private final File targetFile;
     private final long txId;
+    private final long minorVersion;
 
     private int totalRecords;
     private PageCursor page;
 
-    CountsStoreWriter( FileSystemAbstraction fs, PageCache pageCache, SortedKeyValueStoreHeader header,
+    CountsStoreWriter( FileSystemAbstraction fs, PageCache pageCache, SortedKeyValueStoreHeader oldHeader,
                        File targetFile, long lastCommittedTxId ) throws IOException
     {
         this.fs = fs;
@@ -74,18 +76,19 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
             throw new IllegalStateException( "page size must a multiple of the record size" );
         }
         this.pagedFile = pageCache.map( targetFile, pageSize );
-        this.header = header;
+        this.oldHeader = oldHeader;
         this.targetFile = targetFile;
         this.txId = lastCommittedTxId;
+        this.minorVersion = txId == oldHeader.lastTxId() ? oldHeader.minorVersion() + 1 : SortedKeyValueStoreHeader.BASE_MINOR_VERSION;
         if ( !(this.page = pagedFile.io( 0, PF_EXCLUSIVE_LOCK )).next() )
         {
             throw new IOException( "Could not acquire page." );
         }
-        page.setOffset( this.header.headerRecords() * SortedKeyValueStore.RECORD_SIZE );
+        page.setOffset( this.oldHeader.headerRecords() * SortedKeyValueStore.RECORD_SIZE );
     }
 
     @Override
-    public Register.LongRegister valueRegister()
+    public Register.DoubleLongRegister valueRegister()
     {
         return valueRegister;
     }
@@ -93,7 +96,7 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
     @Override
     public void visit( CountsKey key )
     {
-        if ( valueRegister.read() != 0 /* only writeToBuffer values that count */ )
+        if ( valueRegister.readSecond() != 0 /* only writeToBuffer values that count */ )
         {
             totalRecords++;
             key.accept( this, valueRegister );
@@ -105,7 +108,7 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
     {
         assert count > 0 :
                 String.format( "visitNodeCount(labelId=%d, count=%d) - count must be positive", labelId, count );
-        write( NODE_KEY, 0, 0, labelId, count );
+        write( ENTITY_NODE, 0, 0, labelId, 0, count );
     }
 
     @Override
@@ -114,35 +117,36 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
         assert count > 0 :
                 String.format( "visitRelationshipCount(startLabelId=%d, typeId=%d, endLabelId=%d, count=%d)" +
                         " - count must be positive", startLabelId, typeId, endLabelId, count );
-        write( RELATIONSHIP_KEY, startLabelId, typeId, endLabelId, count );
+        write( ENTITY_RELATIONSHIP, startLabelId, typeId, endLabelId, 0, count );
     }
 
-    /**
-     * Node Key:
-     * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
-     * [x, , , , , , , , , , , ,x,x,x,x]
-     * _                       _ _ _ _
-     * |                          |
-     * entry                      label
-     * type                        id
-     * <p/>
-     * Relationship Key:
-     * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
-     * [x, ,x,x,x,x, ,x,x,x,x, ,x,x,x,x]
-     * _   _ _ _ _   _ _ _ _   _ _ _ _
-     * |      |         |         |
-     * entry  label      rel      label
-     * type    id        type      id
-     * id
-     * <p/>
-     * Count value:
-     * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
-     * [ , , , , , , , ,x,x,x,x,x,x,x,x]
-     * _ _ _ _ _ _ _ _
-     * |
-     * value
-     */
-    private void write( byte keyType, int startLabelId, int relTypeId, int endLabelId, long count )
+    @Override
+    public void visitIndexSize( int labelId, int propertyKeyId, long count )
+    {
+        assert count > 0 :
+                String.format( "visitIndexSizeCount(labelId=%d, propertyKeyId=%d, count=%d)" +
+                               " - count must be positive", labelId, propertyKeyId, count );
+        write( INDEX_SIZE, 0, propertyKeyId, labelId, 0, count );
+    }
+
+    @Override
+    public void visitIndexSample( int labelId, int propertyKeyId, long unique, long size )
+    {
+        assert unique >= 0 :
+                String.format( "visitIndexSampleCount(labelId=%d, propertyKeyId=%d, unique=%d, size=%d)" +
+                        " - unique must be zero or positive", labelId, propertyKeyId, unique, size );
+        assert size >= 0 :
+                String.format( "visitIndexSampleCount(labelId=%d, propertyKeyId=%d, unique=%d, size=%d)" +
+                        " - size must be zero or positive", labelId, propertyKeyId, unique, size );
+        assert unique <= size :
+                String.format( "visitIndexSampleCount(labelId=%d, propertyKeyId=%d, unique=%d, size=%d)" +
+                        " - unique must be less than or equal to size", labelId, propertyKeyId, unique, size );
+        write( INDEX_SAMPLE, 0, propertyKeyId, labelId, unique, size );
+    }
+
+
+    // See CountsRecordSerializer for format
+    private void write( CountsKeyType keyType, int startLabelId, int relTypeId, int endLabelId, long first, long second )
     {
         try
         {
@@ -156,7 +160,7 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
             {
                 page.setOffset( offset );
 
-                page.putByte( keyType );
+                page.putByte( keyType.code );
                 page.putByte( (byte) 0 );
                 page.putInt( startLabelId );
                 page.putByte( (byte) 0 );
@@ -164,8 +168,8 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
                 page.putByte( (byte) 0 );
                 page.putInt( endLabelId );
 
-                page.putLong( 0 );
-                page.putLong( count );
+                page.putLong( first );
+                page.putLong( second );
             } while ( page.shouldRetry() );
         }
         catch ( IOException e )
@@ -195,6 +199,6 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
 
     private SortedKeyValueStoreHeader newHeader()
     {
-        return header.update( totalRecords, txId );
+        return oldHeader.update( totalRecords, txId, minorVersion );
     }
 }

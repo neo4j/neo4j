@@ -19,23 +19,16 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
-import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
-import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
-
 import java.io.File;
 import java.io.IOException;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.CountsKey;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
@@ -43,6 +36,17 @@ import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
+import static org.neo4j.kernel.impl.store.counts.CountsKey.indexSampleKey;
+import static org.neo4j.kernel.impl.store.counts.CountsKey.indexSizeKey;
+import static org.neo4j.kernel.impl.store.counts.CountsKey.nodeKey;
+import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipKey;
+import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.BASE_MINOR_VERSION;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class CountsStoreTest
 {
@@ -57,14 +61,15 @@ public class CountsStoreTest
             assertEquals( 0, get( counts, nodeKey( 0 ) ) );
             assertEquals( 0, get( counts, relationshipKey( 1, 2, 3 ) ) );
             assertEquals( BASE_TX_ID, counts.lastTxId() );
+            assertEquals( BASE_MINOR_VERSION, counts.minorVersion() );
             assertEquals( 0, counts.totalRecordsStored() );
             assertEquals( alpha, counts.file() );
-            counts.accept( new KeyValueRecordVisitor<CountsKey, Register.LongRegister>()
+            counts.accept( new KeyValueRecordVisitor<CountsKey, Register.DoubleLongRegister>()
             {
-                private final Register.LongRegister valueRegister = Registers.newLongRegister();
+                private final Register.DoubleLongRegister valueRegister = Registers.newDoubleLongRegister();
 
                 @Override
-                public Register.LongRegister valueRegister()
+                public Register.DoubleLongRegister valueRegister()
                 {
                     return valueRegister;
                 }
@@ -79,19 +84,43 @@ public class CountsStoreTest
     }
 
     @Test
+    public void shouldBumpMinorVersion() throws IOException
+    {
+        // when
+        CountsStore.createEmpty( pageCache, alpha, ALL_STORES_VERSION );
+        try ( CountsStore counts = CountsStore.open( fs, pageCache, alpha ) )
+        {
+            // when
+            long initialMinorVersion = counts.minorVersion();
+
+            SortedKeyValueStore.Writer<CountsKey, Register.DoubleLongRegister> writer = counts.newWriter( beta, counts.lastTxId() );
+            writer.close();
+
+            try ( CountsStore updated = (CountsStore) writer.openForReading() )
+            {
+                assertEquals( initialMinorVersion + 1l, updated.minorVersion() );
+            }
+        }
+    }
+
+    @Test
     public void shouldUpdateTheStore() throws IOException
     {
         // given
         CountsStore.createEmpty( pageCache, alpha, ALL_STORES_VERSION );
-        SortedKeyValueStore.Writer<CountsKey, Register.LongRegister> writer;
+        SortedKeyValueStore.Writer<CountsKey, Register.DoubleLongRegister> writer;
         try ( CountsStore counts = CountsStore.open( fs, pageCache, alpha ) )
         {
             // when
             writer = counts.newWriter( beta, lastCommittedTxId );
-            writer.valueRegister().write( 21 );
+            writer.valueRegister().write( 0, 21 );
             writer.visit( nodeKey( 0 ) );
-            writer.valueRegister().write( 32 );
+            writer.valueRegister().write( 0, 32 );
             writer.visit( relationshipKey( 1, 2, 3 )  );
+            writer.valueRegister().write( 0, 84 );
+            writer.visit( indexSizeKey( 4, 5 ) );
+            writer.valueRegister().write( 24, 84 );
+            writer.visit( indexSampleKey( 4, 5 ) );
             writer.close();
         }
 
@@ -101,14 +130,15 @@ public class CountsStoreTest
             assertEquals( 21, get( updated, nodeKey( 0 ) ) );
             assertEquals( 32, get( updated, relationshipKey( 1, 2, 3 ) ) );
             assertEquals( lastCommittedTxId, updated.lastTxId() );
-            assertEquals( 2, updated.totalRecordsStored() );
+            assertEquals( BASE_MINOR_VERSION, updated.minorVersion() );
+            assertEquals( 4, updated.totalRecordsStored() );
             assertEquals( beta, updated.file() );
-            updated.accept( new KeyValueRecordVisitor<CountsKey, Register.LongRegister>()
+            updated.accept( new KeyValueRecordVisitor<CountsKey, Register.DoubleLongRegister>()
             {
-                private final Register.LongRegister valueRegister = Registers.newLongRegister();
+                private final Register.DoubleLongRegister valueRegister = Registers.newDoubleLongRegister();
 
                 @Override
-                public Register.LongRegister valueRegister()
+                public Register.DoubleLongRegister valueRegister()
                 {
                     return valueRegister;
                 }
@@ -132,6 +162,23 @@ public class CountsStoreTest
                             assertEquals( 2, typeId );
                             assertEquals( 3, endLabelId );
                             assertEquals( 32, count );
+                        }
+
+                        @Override
+                        public void visitIndexSize( int labelId, int propertyKeyId, long count )
+                        {
+                            assertEquals( 4, labelId );
+                            assertEquals( 5, propertyKeyId );
+                            assertEquals( 84, count );
+                        }
+
+                        @Override
+                        public void visitIndexSample( int labelId, int propertyKeyId, long unique, long size )
+                        {
+                            assertEquals( 4, labelId );
+                            assertEquals( 5, propertyKeyId );
+                            assertEquals( 24, unique );
+                            assertEquals( 84, size );
                         }
                     }, valueRegister );
                 }
@@ -158,8 +205,8 @@ public class CountsStoreTest
 
     private long get( CountsStore store, CountsKey key )
     {
-        Register.LongRegister value = Registers.newLongRegister();
+        Register.DoubleLongRegister value = Registers.newDoubleLongRegister();
         store.get( key, value );
-        return value.read();
+        return value.readSecond();
     }
 }

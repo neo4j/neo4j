@@ -17,33 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.impl.store.counts;
 
-public interface CountsAcceptor
+public enum CountsKeyType
 {
-    void updateCountsForNode( int labelId, long delta );
+    EMPTY( 0 ), ENTITY_NODE( 2 ), ENTITY_RELATIONSHIP( 3 ), INDEX_SIZE( 4 ), INDEX_SAMPLE( 5 );
 
-    void updateCountsForRelationship( int startLabelId, int typeId, int endLabelId, long delta );
+    public final byte code;
 
-    final class Initializer implements CountsVisitor
+    private CountsKeyType( int code )
     {
-        private final CountsAcceptor target;
+        this.code = (byte) code;
+    }
 
-        public Initializer( CountsAcceptor target )
+    public static CountsKeyType fromCode( byte code )
+    {
+        switch ( code )
         {
-            this.target = target;
-        }
+            case 0: return EMPTY;
+            case 2: return ENTITY_NODE;
+            case 3: return ENTITY_RELATIONSHIP;
+            case 4: return INDEX_SIZE;
+            case 5: return INDEX_SAMPLE;
 
-        @Override
-        public void visitNodeCount( int labelId, long count )
-        {
-            target.updateCountsForNode( labelId, count );
-        }
-
-        @Override
-        public void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count )
-        {
-            target.updateCountsForRelationship( startLabelId, typeId, endLabelId, count );
+            default:
+                throw new IllegalArgumentException( "Invalid counts record type code: " + code );
         }
     }
 }

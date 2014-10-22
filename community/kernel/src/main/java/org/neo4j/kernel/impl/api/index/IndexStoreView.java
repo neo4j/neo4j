@@ -19,11 +19,14 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.io.IOException;
+
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.register.Register.DoubleLongRegister;
 
 /** The indexing services view of the universe. */
 public interface IndexStoreView extends PropertyAccessor
@@ -47,4 +50,38 @@ public interface IndexStoreView extends PropertyAccessor
             Visitor<NodeLabelUpdate, FAILURE> labelUpdateVisitor );
 
     Iterable<NodePropertyUpdate> nodeAsUpdates( long nodeId );
+
+    long indexSize( IndexDescriptor descriptor );
+
+    void replaceIndexSize( long transactionId, IndexDescriptor descriptor, long total );
+
+    void incrementIndexSize( long transactionId, IndexDescriptor descriptor, long delta );
+
+    void indexSample( IndexDescriptor descriptor, DoubleLongRegister output );
+
+    void replaceIndexSample( long transactionId, IndexDescriptor descriptor, long unique, long size );
+
+    void flushIndexCounts() throws IOException;
+
+    static class IndexCountVisitors
+    {
+        public static IndexSizeVisitor newIndexSizeVisitor( final IndexStoreView view,
+                                                            final IndexDescriptor descriptor )
+        {
+            return new IndexSizeVisitor()
+            {
+                @Override
+                public long indexSize()
+                {
+                    return view.indexSize( descriptor );
+                }
+
+                @Override
+                public void incrementIndexSize( long transactionId, long sizeDelta )
+                {
+                    view.incrementIndexSize( transactionId, descriptor, sizeDelta );
+                }
+            };
+        }
+    }
 }

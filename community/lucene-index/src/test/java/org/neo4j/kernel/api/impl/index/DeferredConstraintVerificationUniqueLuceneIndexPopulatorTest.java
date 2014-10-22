@@ -32,6 +32,7 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.util.FailureStorage;
+import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSizeSampler;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
@@ -360,7 +361,7 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
             assertEquals( iterations, conflict.getAddedNodeId() );
         }
     }
-    
+
     @Test
     public void shouldReleaseSearcherProperlyAfterVerifyingDeferredConstraints() throws Exception
     {
@@ -368,7 +369,7 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
          * This test was created due to a problem in closing an index updater after deferred constraints
          * had been verified, where it got stuck in a busy loop in ReferenceManager#acquire.
          */
-        
+
         // GIVEN an index updater that we close
         OtherThreadExecutor<Void> executor = cleanup.add( new OtherThreadExecutor<Void>( "Deferred", null ) );
         executor.execute( new WorkerCommand<Void, Void>()
@@ -392,7 +393,7 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
                 return null;
             }
         } );
-        
+
         // WHEN doing more index updating after that
         // THEN it should be able to complete within a very reasonable time
         executor.execute( new WorkerCommand<Void, Void>()
@@ -432,7 +433,7 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
                 DeferredConstraintVerificationUniqueLuceneIndexPopulator(
                 documentLogic, standard(),
                 new IndexWriterStatus(), directoryFactory, indexDirectory,
-                failureStorage, indexId, descriptor );
+                failureStorage, indexId, descriptor, new UniqueIndexSizeSampler() );
         populator.create();
     }
 }

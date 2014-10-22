@@ -164,20 +164,24 @@ public class LuceneDocumentStructure
         abstract Query encodeQuery( Object value );
     }
 
-    public Document newDocumentRepresentingProperty( long nodeId, Object value )
+    public Document newDocumentRepresentingProperty( long nodeId, Fieldable encodedValue )
     {
         Document document = newDocument( nodeId );
+        document.add( encodedValue );
+        return document;
+    }
 
+    public Fieldable encodeAsFieldable( Object value )
+    {
         for ( ValueEncoding encoding : ValueEncoding.values() )
         {
             if ( encoding.canEncode( value ) )
             {
-                document.add( encoding.encodeField( value ) );
-                break;
+                return encoding.encodeField( value );
             }
         }
 
-        return document;
+        throw new IllegalStateException( "Unable to encode the value " + value );
     }
 
     private static Field field( String fieldIdentifier, String value )

@@ -97,6 +97,7 @@ import org.neo4j.kernel.impl.transaction.state.RelationshipChainLoader;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState.PropertyReceiver;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -218,7 +219,7 @@ public class TestNeoStore
         caches.configure( new NoCacheProvider(), config );
         NodeManager nodeManager = new NodeManager( null, null, new ThreadToStatementContextBridge(), null );
         ds = new NeoStoreDataSource(config, sf, StringLogger.DEV_NULL,
-                null, DevNullLoggingService.DEV_NULL,
+                mock( JobScheduler.class ), DevNullLoggingService.DEV_NULL,
                 new KernelSchemaStateStore(),
                 mock(TokenNameLookup.class),
                 dependencyResolverForNoIndexProvider(),

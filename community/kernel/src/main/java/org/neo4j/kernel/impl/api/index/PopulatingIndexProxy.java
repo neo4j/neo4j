@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
+import static org.neo4j.kernel.impl.util.JobScheduler.Group.indexPopulation;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Future;
@@ -36,12 +39,10 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.logging.Logging;
-
-import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
-import static org.neo4j.kernel.impl.util.JobScheduler.Group.indexPopulation;
 
 
 public class PopulatingIndexProxy implements IndexProxy
@@ -52,19 +53,23 @@ public class PopulatingIndexProxy implements IndexProxy
     private final IndexPopulationJob job;
 
     public PopulatingIndexProxy( JobScheduler scheduler,
-                                 final IndexDescriptor descriptor,
-                                 final SchemaIndexProvider.Descriptor providerDescriptor,
-                                 final FailedIndexProxyFactory failureDelegateFactory,
-                                 final IndexPopulator writer,
+                                 IndexDescriptor descriptor,
+                                 SchemaIndexProvider.Descriptor providerDescriptor,
+                                 FailedIndexProxyFactory failureDelegateFactory,
+                                 IndexPopulator writer,
                                  FlippableIndexProxy flipper,
-                                 IndexStoreView storeView, final String indexUserDescription,
-                                 UpdateableSchemaState updateableSchemaState, Logging logging )
+                                 IndexStoreView storeView,
+                                 ValueSampler populatingSampler,
+                                 UpdateableSchemaState updateableSchemaState,
+                                 Logging logging,
+                                 String indexUserDescription )
     {
-        this.scheduler  = scheduler;
+        this.scheduler = scheduler;
         this.descriptor = descriptor;
         this.providerDescriptor = providerDescriptor;
-        this.job  = new IndexPopulationJob( descriptor, providerDescriptor,
+        this.job = new IndexPopulationJob( descriptor, providerDescriptor,
                 indexUserDescription, failureDelegateFactory, writer, flipper, storeView,
+                populatingSampler,
                 updateableSchemaState, logging );
     }
 
@@ -75,38 +80,41 @@ public class PopulatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public IndexUpdater newUpdater( final IndexUpdateMode mode )
+    public IndexUpdater newUpdater( final IndexUpdateMode mode, long transactionId )
     {
-        return new IndexUpdater()
+        switch ( mode )
         {
-            @Override
-            public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
-            {
-                switch( mode )
+            case ONLINE:
+                return new PopulatingIndexUpdater()
                 {
-                    case ONLINE:
+                    @Override
+                    public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+                    {
                         job.update( update );
-                        break;
+                    }
+                };
 
-                    case RECOVERY:
+            case RECOVERY:
+                return new PopulatingIndexUpdater()
+                {
+                    @Override
+                    public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+                    {
                         throw new UnsupportedOperationException( "Recovered updates shouldn't reach this place" );
+                    }
+                };
 
-                    default:
+
+            default:
+                return new PopulatingIndexUpdater()
+                {
+                    @Override
+                    public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+                    {
                         throw new ThisShouldNotHappenError( "Stefan", "Unsupported IndexUpdateMode" );
-                }
-            }
-
-            @Override
-            public void close() throws IOException, IndexEntryConflictException
-            {
-            }
-
-            @Override
-            public void remove( Iterable<Long> nodeIds )
-            {
-                throw new UnsupportedOperationException( "Should not remove() from populating index." );
-            }
-        };
+                    }
+                };
+        }
     }
 
     @Override
@@ -132,7 +140,7 @@ public class PopulatingIndexProxy implements IndexProxy
     {
         return InternalIndexState.POPULATING;
     }
-    
+
     @Override
     public void force()
     {
@@ -144,7 +152,7 @@ public class PopulatingIndexProxy implements IndexProxy
     {
         return job.cancel();
     }
-    
+
     @Override
     public IndexReader newReader() throws IndexNotFoundKernelException
     {
@@ -186,5 +194,19 @@ public class PopulatingIndexProxy implements IndexProxy
     public String toString()
     {
         return getClass().getSimpleName() + "[job:" + job + "]";
+    }
+
+    private abstract class PopulatingIndexUpdater implements IndexUpdater
+    {
+        @Override
+        public void close() throws IOException, IndexEntryConflictException
+        {
+        }
+
+        @Override
+        public void remove( Iterable<Long> nodeIds )
+        {
+            throw new UnsupportedOperationException( "Should not remove() from populating index." );
+        }
     }
 }

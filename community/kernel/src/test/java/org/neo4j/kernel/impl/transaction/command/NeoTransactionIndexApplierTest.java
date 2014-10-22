@@ -44,6 +44,7 @@ import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -65,12 +66,14 @@ public class NeoTransactionIndexApplierTest
     private final Map<Long, Command.NodeCommand> emptyNodeCommands = Collections.emptyMap();
     private final Map<Long, List<Command.PropertyCommand>> emptyPropCommands = Collections.emptyMap();
 
+    private final long transactionId = 42;
+
     @Test
     public void shouldUpdateIndexesOnNodeCommands() throws IOException
     {
         // given
         final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService, labelScanStore,
-                nodeStore, propertyStore, cacheAccess, propertyLoader, EXTERNAL );
+                nodeStore, propertyStore, cacheAccess, propertyLoader, transactionId, EXTERNAL );
 
         final NodeRecord before = new NodeRecord( 11 );
         final NodeRecord after = new NodeRecord( 12 );
@@ -88,7 +91,7 @@ public class NeoTransactionIndexApplierTest
         final LazyIndexUpdates expectedUpdates = new LazyIndexUpdates(
                 nodeStore, propertyStore, emptyPropCommands, nodeCommands, propertyLoader );
 
-        verify( indexingService, times( 1 ) ).updateIndexes( eq( expectedUpdates ), eq( false ) );
+        verify( indexingService, times( 1 ) ).updateIndexes( eq( expectedUpdates ), eq( transactionId ), eq( false ) );
     }
 
     @Test
@@ -96,7 +99,7 @@ public class NeoTransactionIndexApplierTest
     {
         // given
         final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService, labelScanStore,
-                nodeStore, propertyStore, cacheAccess, propertyLoader, EXTERNAL );
+                nodeStore, propertyStore, cacheAccess, propertyLoader, transactionId, EXTERNAL );
 
         final NodeRecord before = new NodeRecord( 11 );
         before.setLabelField( 17, Collections.<DynamicRecord>emptySet() );
@@ -123,7 +126,7 @@ public class NeoTransactionIndexApplierTest
         final LazyIndexUpdates expectedUpdates = new LazyIndexUpdates(
                 nodeStore, propertyStore, emptyPropCommands, nodeCommands, propertyLoader );
 
-        verify( indexingService, times( 1 ) ).updateIndexes( eq( expectedUpdates ), eq( false ) );
+        verify( indexingService, times( 1 ) ).updateIndexes( eq( expectedUpdates ), eq( transactionId ), eq( false ) );
     }
 
     @Test
@@ -131,7 +134,7 @@ public class NeoTransactionIndexApplierTest
     {
         // given
         final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService, labelScanStore,
-                nodeStore, propertyStore, cacheAccess, propertyLoader, EXTERNAL );
+                nodeStore, propertyStore, cacheAccess, propertyLoader, transactionId, EXTERNAL );
 
         final PropertyRecord before = new PropertyRecord( 11 );
         final PropertyRecord after = new PropertyRecord( 12 );
@@ -152,7 +155,7 @@ public class NeoTransactionIndexApplierTest
         final LazyIndexUpdates expectedUpdates = new LazyIndexUpdates(
                 nodeStore, propertyStore, propCommands, emptyNodeCommands, propertyLoader );
 
-        verify( indexingService, times( 1 ) ).updateIndexes( eq( expectedUpdates ), eq( false ) );
+        verify( indexingService, times( 1 ) ).updateIndexes( eq( expectedUpdates ), eq( transactionId ), eq( false ) );
     }
 
     @Test
@@ -160,7 +163,7 @@ public class NeoTransactionIndexApplierTest
     {
         // given
         final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService, labelScanStore,
-                nodeStore, propertyStore, cacheAccess, propertyLoader, EXTERNAL );
+                nodeStore, propertyStore, cacheAccess, propertyLoader, transactionId, EXTERNAL );
 
         final PropertyRecord before = new PropertyRecord( 11 );
         final PropertyRecord after = new PropertyRecord( 12 );
@@ -172,6 +175,6 @@ public class NeoTransactionIndexApplierTest
 
         // then
         assertTrue( result );
-        verify( indexingService, never() ).updateIndexes( Matchers.<LazyIndexUpdates>any(), anyBoolean() );
+        verify( indexingService, never() ).updateIndexes( Matchers.<LazyIndexUpdates>any(), anyLong(), anyBoolean() );
     }
 }

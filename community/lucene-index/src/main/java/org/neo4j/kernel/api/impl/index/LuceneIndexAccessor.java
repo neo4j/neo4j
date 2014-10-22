@@ -19,9 +19,13 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import static org.neo4j.kernel.api.impl.index.DirectorySupport.deleteDirectoryContents;
+
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SearcherFactory;
@@ -29,7 +33,6 @@ import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.direct.BoundedIterable;
@@ -39,8 +42,6 @@ import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-
-import static org.neo4j.kernel.api.impl.index.DirectorySupport.deleteDirectoryContents;
 
 abstract class LuceneIndexAccessor implements IndexAccessor
 {
@@ -109,7 +110,21 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     @Override
     public IndexReader newReader()
     {
-        return new LuceneIndexAccessorReader( searcherManager, documentStructure );
+        final IndexSearcher searcher = searcherManager.acquire();
+        final Closeable closeable = new Closeable()
+        {
+            @Override
+            public void close() throws IOException
+            {
+                searcherManager.release( searcher );
+            }
+        };
+        return makeNewReader( searcher, closeable );
+    }
+
+    protected IndexReader makeNewReader( IndexSearcher searcher, Closeable closeable )
+    {
+        return new LuceneIndexAccessorReader( searcher, documentStructure, closeable );
     }
 
     @Override
@@ -132,8 +147,9 @@ abstract class LuceneIndexAccessor implements IndexAccessor
             TopDocs hits = searcher.search( new TermQuery( documentStructure.newQueryForChangeOrRemove( nodeId ) ), 1 );
             if ( hits.totalHits > 0 )
             {
+                Fieldable encodedValue = documentStructure.encodeAsFieldable( value );
                 writer.updateDocument( documentStructure.newQueryForChangeOrRemove( nodeId ),
-                        documentStructure.newDocumentRepresentingProperty( nodeId, value ) );
+                        documentStructure.newDocumentRepresentingProperty( nodeId, encodedValue ) );
             }
             else
             {
@@ -148,13 +164,15 @@ abstract class LuceneIndexAccessor implements IndexAccessor
 
     protected void add( long nodeId, Object value ) throws IOException
     {
-        writer.addDocument( documentStructure.newDocumentRepresentingProperty( nodeId, value ) );
+        Fieldable encodedValue = documentStructure.encodeAsFieldable( value );
+        writer.addDocument( documentStructure.newDocumentRepresentingProperty( nodeId, encodedValue ) );
     }
 
-    protected void change( long nodeId, Object valueAfter ) throws IOException
+    protected void change( long nodeId, Object value ) throws IOException
     {
+        Fieldable encodedValue = documentStructure.encodeAsFieldable( value );
         writer.updateDocument( documentStructure.newQueryForChangeOrRemove( nodeId ),
-                documentStructure.newDocumentRepresentingProperty( nodeId, valueAfter ) );
+                documentStructure.newDocumentRepresentingProperty( nodeId, encodedValue ) );
     }
 
     protected void remove( long nodeId ) throws IOException

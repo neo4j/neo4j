@@ -391,7 +391,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
                 persistenceCache );
         try
         {
-            indexingService = new IndexingService( scheduler, providerMap, new NeoStoreIndexStoreView(
+            indexingService = new IndexingService( config, scheduler, providerMap, new NeoStoreIndexStoreView(
                     lockService, neoStore ), tokenNameLookup, updateableSchemaState, indexRuleLoader(), logging,
                     indexingServiceMonitor );
             final IntegrityValidator integrityValidator = new IntegrityValidator( neoStore, indexingService );
@@ -754,8 +754,8 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
         {
             GuardingStatementOperations guardingOperations = new GuardingStatementOperations(
                     parts.entityWriteOperations(), parts.entityReadOperations(), guard );
-            parts = parts.override( null, null, guardingOperations, guardingOperations, null, null, null, null, null,
-                                    null, null );
+            parts = parts.override( null, null, guardingOperations, guardingOperations, null, null, null, null,
+                                    null, null, null );
         }
 
         return parts;

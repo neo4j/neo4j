@@ -46,7 +46,7 @@ import static org.neo4j.kernel.extension.KernelExtensionUtil.servicesClassPathEn
  * <h3>Populating the index</h3>
  *
  * When an index rule is added, the {@link IndexingService} is notified. It will, in turn, ask
- * your {@link SchemaIndexProvider} for a {@link #getPopulator(long, IndexDescriptor, IndexConfiguration) batch index writer}.
+ * your {@link SchemaIndexProvider} for a {@link #getPopulator(long, IndexDescriptor, IndexConfiguration, ValueSampler) batch index writer}.
  *
  * A background index job is triggered, and all existing data that applies to the new rule, as well as new data
  * from the "outside", will be inserted using the writer. You are guaranteed that usage of this writer,
@@ -109,7 +109,8 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter
         }
 
         @Override
-        public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexConfiguration config )
+        public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexConfiguration config,
+                                            ValueSampler sampler )
         {
             return singlePopulator;
         }
@@ -158,7 +159,8 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter
     /**
      * Used for initially populating a created index, using batch insertion.
      */
-    public abstract IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexConfiguration config );
+    public abstract IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexConfiguration config,
+                                                 ValueSampler sampler );
 
     /**
      * Used for updating an index once initial population has completed.

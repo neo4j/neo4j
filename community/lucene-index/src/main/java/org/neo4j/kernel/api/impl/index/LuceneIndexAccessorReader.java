@@ -19,31 +19,59 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import java.io.Closeable;
 import java.io.IOException;
 
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.TermQuery;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.index.impl.lucene.Hits;
 import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.api.index.ValueSampler;
+
+import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KEY;
 
 class LuceneIndexAccessorReader implements IndexReader
 {
+
     private final IndexSearcher searcher;
     private final LuceneDocumentStructure documentLogic;
-    private final SearcherManager searcherManager;
+    private final Closeable onClose;
 
-    LuceneIndexAccessorReader( SearcherManager searcherManager, LuceneDocumentStructure documentLogic )
+    LuceneIndexAccessorReader( IndexSearcher searcher, LuceneDocumentStructure documentLogic, Closeable onClose )
     {
-        this.searcherManager = searcherManager;
-        this.searcher = searcherManager.acquire();
+        this.searcher = searcher;
         this.documentLogic = documentLogic;
+        this.onClose = onClose;
     }
+
+    @Override
+    public void sampleIndex( final ValueSampler sampler )
+    {
+        try ( TermEnum terms = searcher.getIndexReader().terms() )
+        {
+            while ( terms.next() )
+            {
+                Term term = terms.term();
+                if ( !NODE_ID_KEY.equals( term.field() ))
+                {
+                    String value = term.text();
+                    sampler.include( value );
+                }
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
 
     @Override
     public PrimitiveLongIterator lookup( Object value )
@@ -84,11 +112,12 @@ class LuceneIndexAccessorReader implements IndexReader
     {
         try
         {
-            searcherManager.release( searcher );
+            onClose.close();
         }
         catch ( IOException e )
         {
             throw new RuntimeException( e );
         }
     }
+
 }

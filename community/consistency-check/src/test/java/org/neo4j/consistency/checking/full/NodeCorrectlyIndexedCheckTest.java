@@ -39,6 +39,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
+import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -235,6 +236,12 @@ public class NodeCorrectlyIndexedCheckTest
                         }
                     }
                     return count;
+                }
+
+                @Override
+                public void sampleIndex( ValueSampler sampler )
+                {
+                    throw new UnsupportedOperationException();
                 }
 
                 @Override

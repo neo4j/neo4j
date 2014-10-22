@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.transaction.state.LabelChangeSummary;
 import org.neo4j.kernel.impl.transaction.state.PropertyRecordChange;
 
 public class PropertyPhysicalToLogicalConverter
@@ -74,7 +75,12 @@ public class PropertyPhysicalToLogicalConverter
                 // ADD/REMOVE
                 if ( afterBlock != null )
                 {
-                    update = NodePropertyUpdate.add( nodeId, key, valueOf( afterBlock ), labelsAfter );
+                    final LabelChangeSummary summary = new LabelChangeSummary( labelsBefore, labelsAfter );
+                    if ( summary.hasUnchangedLabels() )
+                    {
+                        update = NodePropertyUpdate.add( nodeId, key, valueOf( afterBlock ),
+                                summary.getUnchangedLabels() );
+                    }
                 }
                 else if ( beforeBlock != null )
                 {

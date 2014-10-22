@@ -21,10 +21,12 @@ package org.neo4j.kernel.impl.store;
 
 import java.util.List;
 
-import org.neo4j.kernel.impl.api.CountsAcceptor;
-import org.neo4j.kernel.impl.api.CountsState;
+import org.neo4j.kernel.impl.api.CountsAccessor;
+import org.neo4j.kernel.impl.api.CountsRecordState;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.register.Register;
+import org.neo4j.register.Registers;
 
 import static org.junit.Assert.assertEquals;
 
@@ -40,7 +42,7 @@ public class CountsOracle
         }
     }
 
-    private final CountsState state = new CountsState();
+    private final CountsRecordState state = new CountsRecordState();
 
     public Node node( long... labels )
     {
@@ -53,9 +55,19 @@ public class CountsOracle
         state.addRelationship( start.labels, type, end.labels );
     }
 
-    public void update( CountsAcceptor target )
+    public void indexSize( int labelId, int propertyKeyId, long size )
     {
-        state.accept( new CountsAcceptor.Initializer( target ) );
+        state.replaceIndexSize( labelId, propertyKeyId, size );
+    }
+
+    public void indexSampling( int labelId, int propertyKeyId, long unique, long size )
+    {
+        state.replaceIndexSample( labelId, propertyKeyId, unique, size );
+    }
+
+    public void update( CountsAccessor target )
+    {
+        state.accept( new CountsAccessor.Initializer( target ) );
     }
 
     public void update( CountsOracle target )
@@ -65,7 +77,7 @@ public class CountsOracle
 
     public void verify( final CountsTracker tracker )
     {
-        List<CountsState.Difference> differences = state.verify( new CountsVisitor.Visitable()
+        List<CountsRecordState.Difference> differences = state.verify( new CountsVisitor.Visitable()
         {
             @Override
             public void accept( final CountsVisitor verifier )
@@ -76,7 +88,7 @@ public class CountsOracle
                     public void visitNodeCount( int labelId, long count )
                     {
                         assertEquals( "Should be able to read visited state.",
-                                      tracker.countsForNode( labelId ), count );
+                                      tracker.nodeCount( labelId ), count );
                         verifier.visitNodeCount( labelId, count );
                     }
 
@@ -84,8 +96,26 @@ public class CountsOracle
                     public void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count )
                     {
                         assertEquals( "Should be able to read visited state.",
-                                      tracker.countsForRelationship( startLabelId, typeId, endLabelId ), count );
+                                      tracker.relationshipCount( startLabelId, typeId, endLabelId ), count );
                         verifier.visitRelationshipCount( startLabelId, typeId, endLabelId, count );
+                    }
+
+                    @Override
+                    public void visitIndexSize( int labelId, int propertyKeyId, long count )
+                    {
+                        assertEquals( "Should be able to read visited state.",
+                                tracker.indexSize( labelId, propertyKeyId ), count );
+                        verifier.visitIndexSize( labelId, propertyKeyId, count );
+                    }
+
+                    @Override
+                    public void visitIndexSample( int labelId, int propertyKeyId, long unique, long size )
+                    {
+                        Register.DoubleLongRegister output = Registers.newDoubleLongRegister();
+                        tracker.indexSample( labelId, propertyKeyId, output );
+                        assertEquals( "Should be able to read visited state.", output.readFirst(), unique );
+                        assertEquals( "Should be able to read visited state.", output.readSecond(), size );
+                        verifier.visitIndexSample( labelId, propertyKeyId, unique, size );
                     }
                 } );
             }
@@ -94,7 +124,7 @@ public class CountsOracle
         {
             StringBuilder errors = new StringBuilder()
                     .append( "Counts differ in " ).append( differences.size() ).append( " places..." );
-            for ( CountsState.Difference difference : differences )
+            for ( CountsRecordState.Difference difference : differences )
             {
                 errors.append( "\n\t" ).append( difference );
             }

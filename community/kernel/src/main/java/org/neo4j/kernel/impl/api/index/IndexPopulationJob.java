@@ -19,6 +19,14 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import static java.lang.String.format;
+import static java.lang.Thread.currentThread;
+import static org.neo4j.helpers.FutureAdapter.latchGuardedValue;
+import static org.neo4j.helpers.ValueGetter.NO_VALUE;
+import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.MAX_TX_ID;
+import static org.neo4j.register.Register.DoubleLongRegister;
+
 import java.io.IOException;
 import java.util.Queue;
 import java.util.concurrent.Callable;
@@ -34,48 +42,46 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
-
-import static java.lang.String.format;
-import static java.lang.Thread.currentThread;
-
-import static org.neo4j.helpers.FutureAdapter.latchGuardedValue;
-import static org.neo4j.helpers.ValueGetter.NO_VALUE;
-import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
+import org.neo4j.register.Registers;
 
 /**
  * Represents one job of initially populating an index over existing data in the database.
  * Scans the store directly.
- *
- * @author Mattias Persson
  */
 public class IndexPopulationJob implements Runnable
 {
-    private final IndexStoreView storeView;
-    private final String indexUserDescription;
-
     // NOTE: unbounded queue expected here
     private final Queue<NodePropertyUpdate> queue = new ConcurrentLinkedQueue<>();
-
     private final IndexDescriptor descriptor;
-    private final FailedIndexProxyFactory failureDelegate;
+
+    private final SchemaIndexProvider.Descriptor providerDescriptor;
+
     private final IndexPopulator populator;
     private final FlippableIndexProxy flipper;
+    private final IndexStoreView storeView;
+    private final ValueSampler populatingSampler;
     private final UpdateableSchemaState updateableSchemaState;
+    private final String indexUserDescription;
+    private final FailedIndexProxyFactory failureDelegate;
     private final StringLogger log;
+    private final IndexCountsRemover indexCountsRemover;
     private final CountDownLatch doneSignal = new CountDownLatch( 1 );
 
     private volatile StoreScan<IndexPopulationFailedKernelException> storeScan;
     private volatile boolean cancelled;
-    private final SchemaIndexProvider.Descriptor providerDescriptor;
 
-    public IndexPopulationJob(IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
+    public IndexPopulationJob(IndexDescriptor descriptor,
+                              SchemaIndexProvider.Descriptor providerDescriptor,
                               String indexUserDescription,
                               FailedIndexProxyFactory failureDelegateFactory,
                               IndexPopulator populator, FlippableIndexProxy flipper,
-                              IndexStoreView storeView, UpdateableSchemaState updateableSchemaState,
+                              IndexStoreView storeView,
+                              ValueSampler populatingSampler,
+                              UpdateableSchemaState updateableSchemaState,
                               Logging logging)
     {
         this.descriptor = descriptor;
@@ -83,10 +89,12 @@ public class IndexPopulationJob implements Runnable
         this.populator = populator;
         this.flipper = flipper;
         this.storeView = storeView;
+        this.populatingSampler = populatingSampler;
         this.updateableSchemaState = updateableSchemaState;
         this.indexUserDescription = indexUserDescription;
         this.failureDelegate = failureDelegateFactory;
         this.log = logging.getMessagesLog( getClass() );
+        this.indexCountsRemover = IndexCountsRemover.Factory.create( storeView, descriptor );
     }
 
     @Override
@@ -96,6 +104,7 @@ public class IndexPopulationJob implements Runnable
         currentThread().setName( format( "Index populator on %s [runs on: %s]", indexUserDescription, oldThreadName ) );
         boolean success = false;
         Throwable failureCause = null;
+
         try
         {
             try
@@ -103,10 +112,13 @@ public class IndexPopulationJob implements Runnable
                 log.info( format("Index population started: [%s]", indexUserDescription) );
                 log.flush();
                 populator.create();
+                resetIndexCounts();
 
                 indexAllNodes();
+                verifyDeferredConstraints();
                 if ( cancelled )
                 {
+                    resetIndexCounts();
                     // We remain in POPULATING state
                     return;
                 }
@@ -117,6 +129,13 @@ public class IndexPopulationJob implements Runnable
                     public Void call() throws Exception
                     {
                         populateFromQueueIfAvailable( Long.MAX_VALUE );
+
+                        DoubleLongRegister result = Registers.newDoubleLongRegister();
+                        long indexSize = populatingSampler.result( result );
+                        storeView.replaceIndexSize( MAX_TX_ID, descriptor, indexSize );
+                        storeView.replaceIndexSample( MAX_TX_ID, descriptor, result.readFirst(), result.readSecond() );
+
+                        storeView.flushIndexCounts();
                         populator.close( true );
                         updateableSchemaState.clear();
                         return null;
@@ -159,7 +178,7 @@ public class IndexPopulationJob implements Runnable
                 // place is that we would otherwise introduce a race condition where updates could come
                 // in to the old context, if something failed in the job we send to the flipper.
                 flipper.flipTo( new FailedIndexProxy( descriptor, providerDescriptor, indexUserDescription,
-                                                      populator, failure( t ) ) );
+                                                      populator, failure( t ), indexCountsRemover ) );
             }
             finally
             {
@@ -191,25 +210,29 @@ public class IndexPopulationJob implements Runnable
 
     private void indexAllNodes() throws IndexPopulationFailedKernelException
     {
-        storeScan = storeView.visitNodesWithPropertyAndLabel( descriptor, new Visitor<NodePropertyUpdate,
-                IndexPopulationFailedKernelException>()
-        {
-            @Override
-            public boolean visit( NodePropertyUpdate update ) throws IndexPopulationFailedKernelException
-            {
-                try
+        storeScan = storeView.visitNodesWithPropertyAndLabel( descriptor,
+                new Visitor<NodePropertyUpdate, IndexPopulationFailedKernelException>()
                 {
-                    populator.add( update.getNodeId(), update.getValueAfter() );
-                    populateFromQueueIfAvailable( update.getNodeId() );
-                }
-                catch ( IndexEntryConflictException | IOException conflict )
-                {
-                    throw new IndexPopulationFailedKernelException( descriptor, indexUserDescription, conflict );
-                }
-                return false;
-            }
-        });
+                    @Override
+                    public boolean visit( NodePropertyUpdate update ) throws IndexPopulationFailedKernelException
+                    {
+                        try
+                        {
+                            populator.add( update.getNodeId(), update.getValueAfter() );
+                            populateFromQueueIfAvailable( update.getNodeId() );
+                        }
+                        catch ( IndexEntryConflictException | IOException conflict )
+                        {
+                            throw new IndexPopulationFailedKernelException( descriptor, indexUserDescription, conflict );
+                        }
+                        return false;
+                    }
+                } );
         storeScan.run();
+    }
+
+    private void verifyDeferredConstraints() throws IndexPopulationFailedKernelException
+    {
         try
         {
             populator.verifyDeferredConstraints( storeView );
@@ -220,20 +243,23 @@ public class IndexPopulationJob implements Runnable
         }
     }
 
-    private void populateFromQueueIfAvailable( final long highestIndexedNodeId )
-            throws IndexEntryConflictException, IOException
+    private void populateFromQueueIfAvailable( final long currentlyIndexedNodeId )
+        throws IndexEntryConflictException, IOException
     {
         if ( !queue.isEmpty() )
         {
             try ( IndexUpdater updater = populator.newPopulatingUpdater( storeView ) )
             {
-                for ( NodePropertyUpdate update : queue )
+                do
                 {
-                    if ( update.getNodeId() <= highestIndexedNodeId )
+                    // no need to check for null as nobody else is emptying this queue
+                    NodePropertyUpdate update = queue.poll();
+                    // TODO: We see updates twice here from IndexStatisticsTest
+                    if ( update.getNodeId() <= currentlyIndexedNodeId )
                     {
                         updater.process( update );
                     }
-                }
+                } while ( !queue.isEmpty() );
             }
         }
     }
@@ -248,6 +274,12 @@ public class IndexPopulationJob implements Runnable
         }
 
         return latchGuardedValue( NO_VALUE, doneSignal, "Index population job cancel" );
+    }
+
+    private void resetIndexCounts()
+    {
+        storeView.replaceIndexSize( MAX_TX_ID, descriptor, 0 );
+        storeView.replaceIndexSample( MAX_TX_ID, descriptor, 0, 0 );
     }
 
     /**
@@ -269,4 +301,5 @@ public class IndexPopulationJob implements Runnable
     {
         doneSignal.await();
     }
+
 }

@@ -19,26 +19,29 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.util.NumericUtils;
-import org.junit.Test;
-
 import static junit.framework.TestCase.assertEquals;
-
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KEY;
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.ValueEncoding.Array;
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.ValueEncoding.Bool;
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.ValueEncoding.Number;
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.ValueEncoding.String;
 
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.util.NumericUtils;
+import org.junit.Test;
+
 public class LuceneDocumentStructureTest
 {
+    private final LuceneDocumentStructure documentStructure = new LuceneDocumentStructure();
+
     @Test
     public void shouldBuildDocumentRepresentingStringProperty() throws Exception
     {
         // given
-        Document document = new LuceneDocumentStructure().newDocumentRepresentingProperty( 123, "hello" );
+        Fieldable fieldable = documentStructure.encodeAsFieldable( "hello" );
+        Document document = documentStructure.newDocumentRepresentingProperty( 123, fieldable );
 
         // then
         assertEquals("123", document.get( NODE_ID_KEY ));
@@ -49,7 +52,8 @@ public class LuceneDocumentStructureTest
     public void shouldBuildDocumentRepresentingBoolProperty() throws Exception
     {
         // given
-        Document document = new LuceneDocumentStructure().newDocumentRepresentingProperty( 123, true );
+        Fieldable fieldable = documentStructure.encodeAsFieldable( true );
+        Document document = documentStructure.newDocumentRepresentingProperty( 123, fieldable );
 
         // then
         assertEquals("123", document.get( NODE_ID_KEY ));
@@ -60,7 +64,8 @@ public class LuceneDocumentStructureTest
     public void shouldBuildDocumentRepresentingNumberProperty() throws Exception
     {
         // given
-        Document document = new LuceneDocumentStructure().newDocumentRepresentingProperty( 123, 12 );
+        Fieldable fieldable = documentStructure.encodeAsFieldable( 12 );
+        Document document = documentStructure.newDocumentRepresentingProperty( 123, fieldable );
 
         // then
         assertEquals("123", document.get( NODE_ID_KEY ));
@@ -71,7 +76,8 @@ public class LuceneDocumentStructureTest
     public void shouldBuildDocumentRepresentingArrayProperty() throws Exception
     {
         // given
-        Document document = new LuceneDocumentStructure().newDocumentRepresentingProperty( 123, new Integer[] { 1,2,3 } );
+        Fieldable fieldable = documentStructure.encodeAsFieldable( new Integer[]{1, 2, 3} );
+        Document document = documentStructure.newDocumentRepresentingProperty( 123, fieldable );
 
         // then
         assertEquals("123", document.get( NODE_ID_KEY ));
@@ -82,7 +88,7 @@ public class LuceneDocumentStructureTest
     public void shouldBuildQueryRepresentingBoolProperty() throws Exception
     {
         // given
-        TermQuery query = (TermQuery) new LuceneDocumentStructure().newQuery( true );
+        TermQuery query = (TermQuery) documentStructure.newQuery( true );
 
         // then
         assertEquals( "true", query.getTerm().text() );
@@ -92,7 +98,7 @@ public class LuceneDocumentStructureTest
     public void shouldBuildQueryRepresentingStringProperty() throws Exception
     {
         // given
-        TermQuery query = (TermQuery) new LuceneDocumentStructure().newQuery( "Characters" );
+        TermQuery query = (TermQuery) documentStructure.newQuery( "Characters" );
 
         // then
         assertEquals( "Characters", query.getTerm().text() );
@@ -103,7 +109,7 @@ public class LuceneDocumentStructureTest
     public void shouldBuildQueryRepresentingNumberProperty() throws Exception
     {
         // given
-        TermQuery query = (TermQuery) new LuceneDocumentStructure().newQuery( 12 );
+        TermQuery query = (TermQuery) documentStructure.newQuery( 12 );
 
         // then
         assertEquals(  NumericUtils.doubleToPrefixCoded( 12.0 ), query.getTerm().text() );
@@ -113,7 +119,7 @@ public class LuceneDocumentStructureTest
     public void shouldBuildQueryRepresentingArrayProperty() throws Exception
     {
         // given
-        TermQuery query = (TermQuery) new LuceneDocumentStructure().newQuery( new Integer[] { 1,2,3 } );
+        TermQuery query = (TermQuery) documentStructure.newQuery( new Integer[]{1, 2, 3} );
 
         // then
         assertEquals( "D1.0|2.0|3.0|", query.getTerm().text() );

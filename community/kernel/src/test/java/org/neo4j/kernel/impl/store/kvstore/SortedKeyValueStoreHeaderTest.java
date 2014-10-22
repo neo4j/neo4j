@@ -19,22 +19,24 @@
  */
 package org.neo4j.kernel.impl.store.kvstore;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
-
 import java.io.File;
 import java.io.IOException;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
+
+import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class SortedKeyValueStoreHeaderTest
 {
@@ -58,10 +60,11 @@ public class SortedKeyValueStoreHeaderTest
         SortedKeyValueStoreHeader header = SortedKeyValueStoreHeader.empty( ALL_STORES_VERSION );
 
         // when
-        SortedKeyValueStoreHeader newHeader = header.update( 42, 24 );
+        SortedKeyValueStoreHeader newHeader = header.update( 42, 24, 12 );
 
         // then
         assertEquals( 24, newHeader.lastTxId() );
+        assertEquals( 12, newHeader.minorVersion() );
         assertEquals( 42, newHeader.dataRecords() );
         assertEquals( 1, newHeader.headerRecords() );
         assertEquals( ALL_STORES_VERSION, newHeader.storeFormatVersion() );
@@ -71,7 +74,7 @@ public class SortedKeyValueStoreHeaderTest
     public void shouldWriteHeaderInPageFile() throws IOException
     {
         // given
-        SortedKeyValueStoreHeader header = SortedKeyValueStoreHeader.empty( ALL_STORES_VERSION ).update( 42, 24 );
+        SortedKeyValueStoreHeader header = SortedKeyValueStoreHeader.empty( ALL_STORES_VERSION ).update( 42, 24, 12 );
 
         // when
         try

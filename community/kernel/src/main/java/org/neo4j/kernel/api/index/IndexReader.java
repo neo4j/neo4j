@@ -40,10 +40,16 @@ public interface IndexReader extends Resource
             return PrimitiveLongCollections.emptyIterator();
         }
 
+        // Used for checking index correctness
         @Override
         public int getIndexedCount( long nodeId, Object propertyValue )
         {
             return 0;
+        }
+
+        @Override
+        public void sampleIndex( ValueSampler sampler )
+        {
         }
 
         @Override
@@ -53,8 +59,14 @@ public interface IndexReader extends Resource
     };
 
     /**
-     * Verifies that the given nodeId is indexed with the given property value, and returns true if that's
-     * the case. Returns false otherwise.
+     * Number of nodes indexed by the given property
      */
     int getIndexedCount( long nodeId, Object propertyValue );
+
+    /**
+     * Sample this index (on the current thread)
+     * @param sampler to use for reporting values
+     *
+     */
+    public void sampleIndex( ValueSampler sampler );
 }

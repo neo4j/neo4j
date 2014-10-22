@@ -25,16 +25,15 @@ import java.io.IOException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.kernel.impl.api.CountsKey;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader;
 import org.neo4j.register.Register;
 
-public class CountsStore extends SortedKeyValueStore<CountsKey, Register.LongRegister>
+public class CountsStore extends SortedKeyValueStore<CountsKey, Register.DoubleLongRegister>
 {
-    private static final CountsRecordSerializer RECORD_SERIALIZER = new CountsRecordSerializer();
-    private static final CountsStoreWriter.Factory WRITER_FACTORY = new CountsStoreWriter.Factory();
+    static final CountsRecordSerializer RECORD_SERIALIZER = CountsRecordSerializer.INSTANCE;
+    static final CountsStoreWriter.Factory WRITER_FACTORY = new CountsStoreWriter.Factory();
 
     public CountsStore( FileSystemAbstraction fs, PageCache pageCache, File file, PagedFile pages,
                         SortedKeyValueStoreHeader header )

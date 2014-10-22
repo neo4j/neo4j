@@ -21,6 +21,7 @@ package org.neo4j.graphdb;
 
 import java.util.Map;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -50,7 +51,7 @@ public class IndexingAcceptanceTest
      * label/property, do an update that changes the long value into a value that requires two property blocks.
      * This is interesting because the transaction logic compares before/after views per property record and
      * not per node as a whole.
-     * 
+     *
      * In this case this change will be converted into one "add" and one "remove" property updates instead of
      * a single "change" property update. At the very basic level it's nice to test for this corner-case so
      * that the externally observed behavior is correct, even if this test doesn't assert anything about
@@ -99,7 +100,7 @@ public class IndexingAcceptanceTest
         assertThat( findNodesByLabelAndProperty( LABEL1, "key", bigValue, beansAPI ), containsOnly( myNode ) );
         assertThat( findNodesByLabelAndProperty( LABEL1, "key", smallValue, beansAPI ), isEmpty() );
     }
-    
+
     @Test
     public void shouldUseDynamicPropertiesToIndexANodeWhenAddedAlongsideExistingPropertiesInASeparateTransaction() throws Exception
     {
@@ -413,7 +414,7 @@ public class IndexingAcceptanceTest
     }
 
     public static final String LONG_STRING = "a long string that has to be stored in dynamic records";
-    
+
     public @Rule
     ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
 

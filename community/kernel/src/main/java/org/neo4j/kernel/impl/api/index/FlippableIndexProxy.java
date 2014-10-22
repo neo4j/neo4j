@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexProxyAlreadyClosedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -40,7 +41,6 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 
 public class FlippableIndexProxy implements IndexProxy
 {
@@ -74,14 +74,14 @@ public class FlippableIndexProxy implements IndexProxy
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode )
+    public IndexUpdater newUpdater( IndexUpdateMode mode, long transactionId )
     {
         // Making use of reentrant locks to ensure that the delegate's constructor is called under lock protection
         // while still retaining the lock until a call to close on the returned IndexUpdater
         lock.readLock().lock();
         try
         {
-            return new LockingIndexUpdater( delegate.newUpdater( mode ) );
+            return new LockingIndexUpdater( delegate.newUpdater( mode, transactionId ) );
         }
         finally
         {
@@ -258,7 +258,7 @@ public class FlippableIndexProxy implements IndexProxy
             lock.readLock().unlock();
         }
     }
-    
+
     public void setFlipTarget( IndexProxyFactory flipTarget )
     {
         lock.writeLock().lock();

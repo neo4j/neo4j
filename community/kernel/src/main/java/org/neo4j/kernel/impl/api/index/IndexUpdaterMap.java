@@ -48,12 +48,14 @@ public class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
     private final IndexUpdateMode indexUpdateMode;
     private final IndexMap indexMap;
     private final Map<IndexDescriptor, IndexUpdater> updaterMap;
+    private final long transactionId;
 
-    public IndexUpdaterMap( IndexUpdateMode indexUpdateMode, IndexMap indexMap )
+    public IndexUpdaterMap( IndexMap indexMap, IndexUpdateMode indexUpdateMode, long transactionId )
     {
         this.indexUpdateMode = indexUpdateMode;
         this.indexMap = indexMap;
         this.updaterMap = new HashMap<>();
+        this.transactionId = transactionId;
     }
 
     public IndexUpdater getUpdater( IndexDescriptor descriptor )
@@ -64,7 +66,7 @@ public class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
             IndexProxy indexProxy = indexMap.getIndexProxy( descriptor );
             if ( null != indexProxy )
             {
-                updater = indexProxy.newUpdater( indexUpdateMode );
+                updater = indexProxy.newUpdater( indexUpdateMode, transactionId );
                 updaterMap.put( descriptor, updater );
             }
         }

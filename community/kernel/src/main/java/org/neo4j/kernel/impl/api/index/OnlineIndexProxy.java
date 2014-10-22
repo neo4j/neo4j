@@ -39,30 +39,34 @@ public class OnlineIndexProxy implements IndexProxy
     private final IndexDescriptor descriptor;
     final IndexAccessor accessor;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
+    private IndexSizeVisitor indexSizeVisitor;
+    private IndexCountsRemover indexCountsRemover;
 
     public OnlineIndexProxy( IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
-                             IndexAccessor accessor )
+                             IndexAccessor accessor, IndexStoreView view )
     {
         this.descriptor = descriptor;
         this.providerDescriptor = providerDescriptor;
         this.accessor = accessor;
+        this.indexSizeVisitor = IndexStoreView.IndexCountVisitors.newIndexSizeVisitor( view, descriptor );
+        this.indexCountsRemover = IndexCountsRemover.Factory.create( view, descriptor );
     }
-    
+
     @Override
     public void start()
     {
     }
 
     @Override
-    public IndexUpdater newUpdater( final IndexUpdateMode mode )
+    public IndexUpdater newUpdater( final IndexUpdateMode mode, long transactionId )
     {
-        return accessor.newUpdater( mode );
+        return new CountingIndexUpdater( transactionId, accessor.newUpdater( mode ), indexSizeVisitor );
     }
-
 
     @Override
     public Future<Void> drop() throws IOException
     {
+        indexCountsRemover.remove();
         accessor.drop();
         return VOID;
     }
@@ -84,7 +88,7 @@ public class OnlineIndexProxy implements IndexProxy
     {
         return InternalIndexState.ONLINE;
     }
-    
+
     @Override
     public void force() throws IOException
     {
@@ -97,7 +101,7 @@ public class OnlineIndexProxy implements IndexProxy
         accessor.close();
         return VOID;
     }
-    
+
     @Override
     public IndexReader newReader()
     {
@@ -121,7 +125,7 @@ public class OnlineIndexProxy implements IndexProxy
     {
         // ok, it's online so it's valid
     }
-    
+
     @Override
     public IndexPopulationFailure getPopulationFailure() throws IllegalStateException
     {

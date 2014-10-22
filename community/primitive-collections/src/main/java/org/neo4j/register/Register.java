@@ -24,6 +24,29 @@ package org.neo4j.register;
  */
 public interface Register
 {
+    interface DoubleLongRegister extends DoubleLong.In, DoubleLong.Out {}
+    interface DoubleLong
+    {
+        interface In
+        {
+            long readFirst();
+            long readSecond();
+
+            void copyTo( DoubleLongRegister target );
+        }
+
+        interface Out
+        {
+            void write( long first, long second );
+
+            void writeFirst( long value );
+            void writeSecond( long value );
+
+            long incrementFirst( long delta );
+            long incrementSecond( long delta );
+        }
+    }
+
     interface LongRegister extends Long.In, Long.Out {}
     interface Long
     {
