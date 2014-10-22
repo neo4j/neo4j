@@ -23,7 +23,11 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
+import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.MAX_TX_ID;
 import static org.neo4j.register.Register.DoubleLongRegister;
 
@@ -41,6 +45,37 @@ import org.neo4j.kernel.logging.DevNullLoggingService;
 
 public class BoundedIndexSamplingJobTest
 {
+    @Test
+    public void shouldSampleTheIndexAndStoreTheValueWhenTheIndexIsOnline()
+    {
+        // given
+        BoundedIndexSamplingJob job = new BoundedIndexSamplingJob( indexProxy, sampleSize, indexStoreView, logging );
+        when( indexProxy.getState() ).thenReturn( ONLINE );
+
+        // when
+        job.run();
+
+        // then
+        verify( indexStoreView ).indexSize( indexDescriptor );
+        verify( indexStoreView ).replaceIndexSample( MAX_TX_ID, indexDescriptor, indexUniqueValues, indexSize );
+        verifyNoMoreInteractions( indexStoreView );
+    }
+
+    @Test
+    public void shouldSampleTheIndexButDoNotStoreTheValuesIfTheIndexIsNotOnline()
+    {
+        // given
+        BoundedIndexSamplingJob job = new BoundedIndexSamplingJob( indexProxy, sampleSize, indexStoreView, logging );
+        when( indexProxy.getState() ).thenReturn( FAILED );
+
+        // when
+        job.run();
+
+        // then
+        verify( indexStoreView ).indexSize( indexDescriptor );
+        verifyNoMoreInteractions( indexStoreView );
+    }
+
     private final DevNullLoggingService logging = new DevNullLoggingService();
     private final IndexProxy indexProxy = mock( IndexProxy.class );
     private final IndexStoreView indexStoreView = mock( IndexStoreView.class );
@@ -49,6 +84,7 @@ public class BoundedIndexSamplingJobTest
 
     private final long indexUniqueValues = 21l;
     private final long indexSize = 23l;
+    private final long sampleSize = 42l;
 
     @Before
     public void setup() throws IndexNotFoundKernelException
@@ -58,19 +94,6 @@ public class BoundedIndexSamplingJobTest
         doAnswer( answerWith( indexUniqueValues, indexSize ) ).when( indexReader )
                 .sampleIndex( any( ValueSampler.class ), any( DoubleLongRegister.class ) );
 
-    }
-
-    @Test
-    public void shouldSampleTheIndex()
-    {
-        // given
-        final BoundedIndexSamplingJob job = new BoundedIndexSamplingJob( indexProxy, 42, indexStoreView, logging );
-
-        // when
-        job.run();
-
-        // then
-        verify( indexStoreView ).replaceIndexSample( MAX_TX_ID, indexDescriptor, indexUniqueValues, indexSize );
     }
 
     private Answer<Void> answerWith( final long indexUniqueValues, final long indexSize )
