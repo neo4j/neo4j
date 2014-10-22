@@ -165,8 +165,9 @@ public class ReadAheadLogChannel implements ReadableVersionableLogChannel
     }
 
     @Override
-    public void getCurrentPosition( LogPositionMarker positionMarker ) throws IOException
+    public LogPositionMarker getCurrentPosition( LogPositionMarker positionMarker ) throws IOException
     {
         positionMarker.mark( channel.getVersion(), channel.position()-aheadBuffer.remaining() );
+        return positionMarker;
     }
 }

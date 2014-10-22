@@ -22,6 +22,7 @@ package org.neo4j.kernel.ha;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.com.ComException;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.TransactionObligationResponse;
@@ -126,15 +127,18 @@ public class UpdatePuller implements Runnable, Lifecycle
     private final LastUpdateTime lastUpdateTime;
     private final PauseListener listener;
     private final HighAvailabilityMemberStateMachine memberStateMachine;
+    private final InstanceId instanceId;
     private Thread me;
 
     UpdatePuller( HighAvailabilityMemberStateMachine memberStateMachine,
-            RequestContextFactory requestContextFactory, Master master, LastUpdateTime lastUpdateTime, Logging logging )
+            RequestContextFactory requestContextFactory, Master master, LastUpdateTime lastUpdateTime,
+            Logging logging, InstanceId instanceId )
     {
         this.memberStateMachine = memberStateMachine;
         this.requestContextFactory = requestContextFactory;
         this.master = master;
         this.lastUpdateTime = lastUpdateTime;
+        this.instanceId = instanceId;
         this.logger = logging.getMessagesLog( getClass() );
         this.cappedLogger = new CappedOperation<Pair<String, ? extends Exception>>(
                 CappedOperation.count( 10 ) )
@@ -173,7 +177,7 @@ public class UpdatePuller implements Runnable, Lifecycle
     {
         // TODO Don't do this. This is just to satisfy LockSupport park/unpark
         // And we cannot have this class extend Thread since there's a naming clash with Lifecycle for stop()
-        me = new Thread( this );
+        me = new Thread( this, "UpdatePuller@" + instanceId );
         me.start();
     }
 

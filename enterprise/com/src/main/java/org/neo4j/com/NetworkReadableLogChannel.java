@@ -128,9 +128,10 @@ public class NetworkReadableLogChannel implements ReadableLogChannel
     }
 
     @Override
-    public void getCurrentPosition( LogPositionMarker positionMarker ) throws IOException
+    public LogPositionMarker getCurrentPosition( LogPositionMarker positionMarker ) throws IOException
     {
         positionMarker.unspecified();
+        return positionMarker;
     }
 
     @Override

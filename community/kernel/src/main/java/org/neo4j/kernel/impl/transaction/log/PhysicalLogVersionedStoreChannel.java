@@ -181,12 +181,6 @@ public class PhysicalLogVersionedStoreChannel implements LogVersionedStoreChanne
     }
 
     @Override
-    public void getCurrentPosition( LogPositionMarker positionMarker ) throws IOException
-    {
-        positionMarker.mark( version, position() );
-    }
-
-    @Override
     public boolean equals( Object o )
     {
         if ( this == o )

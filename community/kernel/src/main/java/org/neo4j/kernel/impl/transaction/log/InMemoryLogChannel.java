@@ -171,10 +171,11 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     }
 
     @Override
-    public void getCurrentPosition( LogPositionMarker positionMarker )
+    public LogPositionMarker getCurrentPosition( LogPositionMarker positionMarker )
     {
         // Hmm, this would be for the writer.
         positionMarker.mark( 0, asWriter.position() );
+        return positionMarker;
     }
 
     public int positionWriter( int position )

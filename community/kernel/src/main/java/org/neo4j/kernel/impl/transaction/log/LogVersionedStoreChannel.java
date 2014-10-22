@@ -21,6 +21,6 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import org.neo4j.io.fs.StoreChannel;
 
-public interface LogVersionedStoreChannel extends StoreChannel, PositionAwareChannel, VersionableLog
+public interface LogVersionedStoreChannel extends StoreChannel, VersionableLog
 {
 }
