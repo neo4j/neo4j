@@ -19,21 +19,19 @@
  */
 package org.neo4j.server.modules;
 
-import org.apache.commons.configuration.Configuration;
-
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.statistic.StatisticCollector;
 import org.neo4j.server.statistic.StatisticFilter;
+import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.server.web.WebServer;
-
-import static org.neo4j.server.configuration.Configurator.WEBSERVER_ENABLE_STATISTICS_COLLECTION;
 
 public class StatisticModule implements ServerModule
 {
     private final StatisticFilter filter;
 	private final WebServer webServer;
-    private final Configuration config;
+    private final Config config;
 
-    public StatisticModule(WebServer webServer, StatisticCollector requestStatistics, Configuration config)
+    public StatisticModule(WebServer webServer, StatisticCollector requestStatistics, Config config)
     {
     	this.webServer = webServer;
         this.config = config;
@@ -60,6 +58,6 @@ public class StatisticModule implements ServerModule
 
     private boolean isStatisticsEnabled()
     {
-        return config.getBoolean(WEBSERVER_ENABLE_STATISTICS_COLLECTION, false);
+        return config.get( ServerInternalSettings.webserver_statistics_collection_enabled );
     }
 }

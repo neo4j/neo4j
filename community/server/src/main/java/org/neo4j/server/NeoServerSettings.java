@@ -24,16 +24,12 @@ import java.io.File;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.kernel.configuration.Title;
+import org.neo4j.server.web.ServerInternalSettings;
 
 import static org.neo4j.helpers.Settings.PATH;
 import static org.neo4j.helpers.Settings.STRING;
+import static org.neo4j.helpers.Settings.NO_DEFAULT;
 import static org.neo4j.helpers.Settings.setting;
-import static org.neo4j.server.configuration.Configurator.DATABASE_LOCATION_PROPERTY_KEY;
-import static org.neo4j.server.configuration.Configurator.DB_MODE_KEY;
-import static org.neo4j.server.configuration.Configurator.DB_TUNING_PROPERTY_FILE_KEY;
-import static org.neo4j.server.configuration.Configurator.DEFAULT_CONFIG_DIR;
-import static org.neo4j.server.configuration.Configurator.DEFAULT_DATABASE_LOCATION_PROPERTY_KEY;
-import static org.neo4j.server.configuration.Configurator.NEO_SERVER_CONFIG_FILE_KEY;
 
 @Description("Settings for the Neo4j Server")
 public class NeoServerSettings
@@ -46,23 +42,29 @@ public class NeoServerSettings
     @Title("Legacy database mode")
     @Description("Defines the operation mode of the 'db' database - single or HA. This is not the recommended way of " +
             "controlling this anymore. Instead, specify a provider (single or ha) when creating databases.")
-    public static final Setting<String> legacy_db_mode = setting( DB_MODE_KEY, STRING, "SINGLE");
+    public static final Setting<String> legacy_db_mode = setting( "org.neo4j.server.database.mode", STRING, "SINGLE" );
 
-    public static final Setting<File> server_config_file = setting( NEO_SERVER_CONFIG_FILE_KEY, PATH, "config/neo4j-server.properties" );
+    /**
+     * The path to the server configuration file should not be configurable as it is used before {@link Configuration configuration} is created.
+     * The user should rely on the default location of the server configuration file.
+     */
+    @Deprecated
+    public static final Setting<File> server_config_file = setting( ServerInternalSettings.SERVER_CONFIG_FILE_KEY, PATH, ServerInternalSettings.SERVER_CONFIG_FILE );
 
+    /**
+     *  This is a duplicated setting of GraphDatabase.store_dir. The {@link GraphDatabaseSettings#store_dir} is the real one which is in use by db now.
+     *  Changing this value might not change the db location.
+     */
     @Deprecated
     @Title( "Legacy database location" )
     @Description( "Defines the location of the 'db' database. This is not the recommended way of controlling this " +
                   "anymore. Instead, specify a location, or rely on the default, when creating databases." )
-    public static final Setting<File> legacy_db_location = setting( DATABASE_LOCATION_PROPERTY_KEY, PATH, DEFAULT_DATABASE_LOCATION_PROPERTY_KEY );
-
+    public static final Setting<File> legacy_db_location = setting( "org.neo4j.server.database.location", PATH, "data/graph.db" );
 
     @Deprecated
     @Title( "Legacy database configuration" )
     @Description( "Location of the 'db' database configuration file. This is not the recommended way of controlling " +
                   "this anymore. Instead, specify configuration for this database via the hosting API." )
-    public static final Setting<File> legacy_db_config = setting( DB_TUNING_PROPERTY_FILE_KEY, PATH,
-            new File( new File( System.getProperty( NEO_SERVER_CONFIG_FILE_KEY, DEFAULT_CONFIG_DIR ) ).getParentFile(),
-                      "neo4j.properties" ).getAbsolutePath());
-
+    public static final Setting<File> legacy_db_config = setting( "org.neo4j.server.db.tuning.properties",
+            PATH, File.separator + "etc" + File.separator + "neo" + File.separator + ServerInternalSettings.DB_TUNING_CONFIG_FILE_NAME );
 }

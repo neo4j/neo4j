@@ -22,10 +22,11 @@ package org.neo4j.server.modules;
 import java.util.Collection;
 import java.util.HashSet;
 
-import org.apache.commons.configuration.Configuration;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.NeoServer;
+import org.neo4j.server.configuration.ConfigWrappingConfiguration;
 import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.plugins.PluginLifecycle;
 import org.neo4j.server.plugins.SPIPluginLifecycle;
@@ -47,7 +48,7 @@ public class ExtensionInitializer
     public Collection<Injectable<?>> initializePackages( Iterable<String> packageNames )
     {
         GraphDatabaseAPI graphDatabaseService = neoServer.getDatabase().getGraph();
-        Configuration configuration = neoServer.getConfiguration();
+        Config configuration = neoServer.getConfig();
 
         Collection<Injectable<?>> injectables = new HashSet<Injectable<?>>();
         for ( PluginLifecycle lifecycle : lifecycles )
@@ -61,7 +62,7 @@ public class ExtensionInitializer
                 }
                 else
                 {
-                    injectables.addAll( lifecycle.start( graphDatabaseService, configuration ) );
+                    injectables.addAll( lifecycle.start( graphDatabaseService, new ConfigWrappingConfiguration( configuration ) ) );
                 }
             }
         }

@@ -117,6 +117,20 @@ public class Config implements DiagnosticsProvider
     }
 
     /**
+     * Use {@link ServerConfigurator#setProperty()} instead.
+     */
+    @Deprecated
+    public Config setProperty( String key, Object value )
+    {
+        // This method here is for supporting legacy server configurator api.
+        // None should call this except external users,
+        // as "ideally" properties should not be changed once they are loaded.
+        this.params.put( key, value.toString() );
+        this.applyChanges( params );
+        return this;
+    }
+
+    /**
      * Replace the current set of configuration parameters with another one.
      */
     public synchronized void applyChanges( Map<String, String> newConfiguration )

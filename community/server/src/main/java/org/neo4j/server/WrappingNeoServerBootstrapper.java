@@ -21,8 +21,10 @@ package org.neo4j.server;
 
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerConfigurator;
+import org.neo4j.server.configuration.ConfigurationBuilder.ConfiguratorWrappingConfigurationBuilder;
 
 /**
  * A bootstrapper for the Neo4j Server that takes an already instantiated
@@ -36,7 +38,7 @@ import org.neo4j.server.configuration.ServerConfigurator;
 public class WrappingNeoServerBootstrapper extends Bootstrapper
 {
     private final GraphDatabaseAPI db;
-    private final Configurator configurator;
+    private final ConfigurationBuilder configurator;
 
     /**
      * Create an instance with default settings.
@@ -49,6 +51,15 @@ public class WrappingNeoServerBootstrapper extends Bootstrapper
     }
 
     /**
+     * Should use the new constructor with {@link ConfigurationBuilder}
+     */
+    @Deprecated
+    public WrappingNeoServerBootstrapper( GraphDatabaseAPI db, Configurator configurator )
+    {
+        this( db, new ConfiguratorWrappingConfigurationBuilder( configurator ) );
+    }
+
+    /**
      * Create an instance with custom documentation.
      * {@link org.neo4j.server.configuration.ServerConfigurator} is written to fit well here, see its'
      * documentation.
@@ -56,7 +67,7 @@ public class WrappingNeoServerBootstrapper extends Bootstrapper
      * @param db
      * @param configurator
      */
-    public WrappingNeoServerBootstrapper( GraphDatabaseAPI db, Configurator configurator )
+    public WrappingNeoServerBootstrapper( GraphDatabaseAPI db, ConfigurationBuilder configurator )
     {
         this.db = db;
         this.configurator = configurator;
@@ -64,6 +75,12 @@ public class WrappingNeoServerBootstrapper extends Bootstrapper
 
     @Override
     protected Configurator createConfigurator( ConsoleLogger log )
+    {
+        return new ConfigurationBuilder.ConfigurationBuilderWrappingConfigurator( createConfigurationBuilder( log ) ) ;
+    }
+
+    @Override
+    protected ConfigurationBuilder createConfigurationBuilder( ConsoleLogger log )
     {
         return configurator;
     }

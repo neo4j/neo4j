@@ -26,21 +26,23 @@ import java.util.Map;
 
 import org.apache.commons.configuration.Configuration;
 
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.recovery.StoreRecoverer;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.server.NeoServerSettings;
 import org.neo4j.server.configuration.Configurator;
 
 public class PerformRecoveryIfNecessary implements PreflightTask
 {
     private final String failureMessage = "Unable to recover database";
-    private final Configuration config;
+    private final Config config;
     private final PrintStream out;
     private final Map<String, String> dbConfig;
     private final ConsoleLogger log;
     private final Logging logging;
 
-    public PerformRecoveryIfNecessary( Configuration serverConfig, Map<String, String> dbConfig, PrintStream out,
+    public PerformRecoveryIfNecessary( Config serverConfig, Map<String, String> dbConfig, PrintStream out,
             Logging logging )
     {
         this.config = serverConfig;
@@ -55,7 +57,8 @@ public class PerformRecoveryIfNecessary implements PreflightTask
     {
         try
         {
-            File dbLocation = new File( config.getString( Configurator.DATABASE_LOCATION_PROPERTY_KEY ) );
+            File dbLocation = config.get( NeoServerSettings.legacy_db_location );
+
             if ( dbLocation.exists() )
             {
                 StoreRecoverer recoverer = new StoreRecoverer();

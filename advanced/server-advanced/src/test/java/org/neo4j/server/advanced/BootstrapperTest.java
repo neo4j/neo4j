@@ -20,19 +20,20 @@
 package org.neo4j.server.advanced;
 
 import java.io.File;
+import java.util.Map;
 
-import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
 
 import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.server.advanced.helpers.AdvancedServerBuilder;
 import org.neo4j.server.advanced.jmx.ServerManagement;
-import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
-import org.neo4j.server.configuration.validation.Validator;
+import org.neo4j.server.configuration.Configurator;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertNotNull;
@@ -44,7 +45,7 @@ public class BootstrapperTest
     {
         TargetDirectory target = TargetDirectory.forTest( getClass() );
         String dbDir1 = target.cleanDirectory( "db1" ).getAbsolutePath();
-        Configurator config = new PropertyFileConfigurator( Validator.NO_VALIDATION,
+        ConfigurationBuilder config = new PropertyFileConfigurator(
                 AdvancedServerBuilder
                         .server()
                         .usingDatabaseDir( dbDir1 )
@@ -56,7 +57,7 @@ public class BootstrapperTest
         File irrelevant = target.file( "irrelevant" );
         irrelevant.createNewFile();
 
-        config.configuration().setProperty( "org.neo4j.server.properties", irrelevant.getAbsolutePath());
+        setProperty( config.configuration(), "org.neo4j.server.properties", irrelevant.getAbsolutePath() );
 
         AdvancedNeoServer server = new AdvancedNeoServer( config, GraphDatabaseDependencies.newDependencies().logging(new SingleLoggingService( StringLogger.SYSTEM )));
 
@@ -67,11 +68,17 @@ public class BootstrapperTest
         // Change the database location
         String dbDir2 = target.cleanDirectory( "db2" ).getAbsolutePath();
 
-        Configuration conf = config.configuration();
-        conf.setProperty( Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDir2 );
+        Config conf = config.configuration();
+        setProperty( conf, Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDir2 );
 
         ServerManagement bean = new ServerManagement( server );
         bean.restartServer();
 
+    }
+
+    private void setProperty( Config config, String key, String value ) {
+        Map<String, String> params = config.getParams();
+        params.put( key, value );
+        config.applyChanges( params );
     }
 }

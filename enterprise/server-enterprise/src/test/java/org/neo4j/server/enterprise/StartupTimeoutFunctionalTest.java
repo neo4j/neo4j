@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Properties;
 
 import org.junit.After;
@@ -31,8 +32,10 @@ import org.junit.Test;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.server.ServerStartupException;
+import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.modules.ServerModule;
@@ -60,8 +63,8 @@ public class StartupTimeoutFunctionalTest
     @Test
     public void shouldTimeoutIfStartupTakesLongerThanTimeout() throws IOException
     {
-        Configurator configurator = buildProperties();
-        configurator.configuration().setProperty( Configurator.STARTUP_TIMEOUT, 1 );
+        ConfigurationBuilder configurator = buildProperties();
+        setProperty( configurator.configuration(), Configurator.STARTUP_TIMEOUT, "1s" );
         server = createSlowServer( configurator );
 
         try
@@ -78,8 +81,8 @@ public class StartupTimeoutFunctionalTest
     @Test
     public void shouldNotFailIfStartupTakesLessTimeThanTimeout() throws IOException
     {
-        Configurator configurator = buildProperties();
-        configurator.configuration().setProperty( Configurator.STARTUP_TIMEOUT, 20 );
+        ConfigurationBuilder configurator = buildProperties();
+        setProperty( configurator.configuration(), Configurator.STARTUP_TIMEOUT, "20s" );
         server = new EnterpriseNeoServer( configurator, GraphDatabaseDependencies.newDependencies().logging(DevNullLoggingService.DEV_NULL ))
         {
             @Override
@@ -95,14 +98,14 @@ public class StartupTimeoutFunctionalTest
     @Test
     public void shouldNotTimeOutIfTimeoutDisabled() throws IOException
     {
-        Configurator configurator = buildProperties();
-        configurator.configuration().setProperty( Configurator.STARTUP_TIMEOUT, 0 );
+        ConfigurationBuilder configurator = buildProperties();
+        setProperty( configurator.configuration(), Configurator.STARTUP_TIMEOUT, "0" );
         server = createSlowServer( configurator );
 
         server.start();
     }
 
-    private EnterpriseNeoServer createSlowServer( Configurator configurator )
+    private EnterpriseNeoServer createSlowServer( ConfigurationBuilder configurator )
     {
         return new EnterpriseNeoServer( configurator, GraphDatabaseDependencies.newDependencies().logging(DevNullLoggingService.DEV_NULL ))
         {
@@ -134,7 +137,7 @@ public class StartupTimeoutFunctionalTest
         };
     }
 
-    private Configurator buildProperties() throws IOException
+    private ConfigurationBuilder buildProperties() throws IOException
     {
         //noinspection ResultOfMethodCallIgnored
         new File( target.directory(), "conf" ).mkdir();
@@ -154,5 +157,12 @@ public class StartupTimeoutFunctionalTest
         serverProperties.store( new FileWriter( serverPropertiesFilename ), null );
 
         return new PropertyFileConfigurator( new File( serverPropertiesFilename ) );
+    }
+    
+    private void setProperty( Config config, String key, String value )
+    {
+        Map<String, String> params = config.getParams();
+        params.put( key, value );
+        config.applyChanges( params );
     }
 }

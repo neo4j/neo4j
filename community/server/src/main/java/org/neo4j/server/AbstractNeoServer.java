@@ -50,8 +50,11 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.server.configuration.ConfigurationProvider;
+import org.neo4j.server.configuration.ConfigWrappingConfiguration;
+import org.neo4j.server.configuration.ConfigurationBuilder;
+import org.neo4j.server.configuration.ConfigurationBuilder.ConfiguratorWrappingConfigurationBuilder;
 import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.CypherExecutorProvider;
 import org.neo4j.server.database.Database;
@@ -83,6 +86,7 @@ import org.neo4j.server.security.KeyStoreFactory;
 import org.neo4j.server.security.KeyStoreInformation;
 import org.neo4j.server.security.SslCertificateFactory;
 import org.neo4j.server.statistic.StatisticCollector;
+import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.server.web.WebServerProvider;
@@ -91,17 +95,10 @@ import org.neo4j.shell.ShellSettings;
 import static java.lang.Math.round;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.impl.util.JobScheduler.Group.serverTransactionTimeout;
-import static org.neo4j.server.configuration.Configurator.DATABASE_LOCATION_PROPERTY_KEY;
-import static org.neo4j.server.configuration.Configurator.DEFAULT_DATABASE_LOCATION_PROPERTY_KEY;
-import static org.neo4j.server.configuration.Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED;
-import static org.neo4j.server.configuration.Configurator.DEFAULT_TRANSACTION_TIMEOUT;
-import static org.neo4j.server.configuration.Configurator.SCRIPT_SANDBOXING_ENABLED_KEY;
-import static org.neo4j.server.configuration.Configurator.TRANSACTION_TIMEOUT;
 import static org.neo4j.server.database.InjectableProvider.providerForSingleton;
 
 /**
@@ -122,7 +119,7 @@ public abstract class AbstractNeoServer implements NeoServer
     protected final InternalAbstractGraphDatabase.Dependencies dependencies;
     protected Database database;
     protected CypherExecutor cypherExecutor;
-    protected Configurator configurator;
+    protected ConfigurationBuilder configurator;
     protected WebServer webServer;
     protected final StatisticCollector statisticsCollector = new StatisticCollector();
 
@@ -148,7 +145,16 @@ public abstract class AbstractNeoServer implements NeoServer
 
     protected abstract WebServer createWebServer();
 
-    public AbstractNeoServer( Configurator configurator, Database.Factory dbFactory, InternalAbstractGraphDatabase.Dependencies dependencies)
+    /**
+     * Should use the new constructor with {@link ConfigurationBuilder}
+     */
+    @Deprecated
+    public AbstractNeoServer( Configurator configurator, Database.Factory dbFactory, InternalAbstractGraphDatabase.Dependencies dependencies )
+    {
+        this( new ConfiguratorWrappingConfigurationBuilder( configurator ), dbFactory, dependencies );
+    }
+
+    public AbstractNeoServer( ConfigurationBuilder configurator, Database.Factory dbFactory, InternalAbstractGraphDatabase.Dependencies dependencies )
     {
         this.configurator = configurator;
         this.dependencies = dependencies;
@@ -200,7 +206,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
                 // TODO: RrdDb is not needed once we remove the old webadmin
                 rrdDbScheduler = new RoundRobinJobScheduler( dependencies.logging() );
-                rrdDbWrapper = new RrdFactory( configurator.configuration(), dependencies.logging())
+                rrdDbWrapper = new RrdFactory( configurator.configuration(), dependencies.logging() )
                         .createRrdDbAndSampler( database, rrdDbScheduler );
 
                 transactionFacade = createTransactionalActions();
@@ -210,8 +216,6 @@ public abstract class AbstractNeoServer implements NeoServer
                 configureWebServer();
 
                 cypherExecutor.start();
-
-                diagnosticsManager.register( Configurator.DIAGNOSTICS, configurator );
 
                 startModules();
 
@@ -243,8 +247,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
                 throw new ServerStartupException(
                         "Startup took longer than " + interruptStartupTimer.getTimeoutMillis() + "ms, " +
-                                "and was stopped. You can disable this behavior by setting '" + Configurator
-                                .STARTUP_TIMEOUT + "' to 0.",
+                                "and was stopped. You can disable this behavior by setting '" + ServerInternalSettings.startup_timeout.name() + "' to 0.",
                         1 );
             }
 
@@ -256,7 +259,7 @@ public abstract class AbstractNeoServer implements NeoServer
     {
         Map<String, String> result = new HashMap<>( configurator.getDatabaseTuningProperties() );
         result.put( GraphDatabaseSettings.store_dir.name(), configurator.configuration()
-                .getString( DATABASE_LOCATION_PROPERTY_KEY, DEFAULT_DATABASE_LOCATION_PROPERTY_KEY ) );
+                .get( NeoServerSettings.legacy_db_location ).getAbsolutePath() );
 
         putIfAbsent( result, ShellSettings.remote_shell_enabled.name(), Settings.TRUE );
 
@@ -280,9 +283,7 @@ public abstract class AbstractNeoServer implements NeoServer
     {
         return new DatabaseActions(
                 new LeaseManager( SYSTEM_CLOCK ),
-                configurator.configuration().getBoolean(
-                        SCRIPT_SANDBOXING_ENABLED_KEY,
-                        DEFAULT_SCRIPT_SANDBOXING_ENABLED ), database.getGraph() );
+                configurator.configuration().get( ServerInternalSettings.script_sandboxing_enabled ), database.getGraph() );
     }
 
     private TransactionFacade createTransactionalActions()
@@ -321,19 +322,18 @@ public abstract class AbstractNeoServer implements NeoServer
      */
     private long getTransactionTimeoutMillis()
     {
-        final int timeout = configurator.configuration().getInt( TRANSACTION_TIMEOUT, DEFAULT_TRANSACTION_TIMEOUT );
-        return Math.max( SECONDS.toMillis( timeout ), MINIMUM_TIMEOUT + ROUNDING_SECOND);
+        final long timeout = configurator.configuration().get( ServerSettings.transaction_timeout );
+        return Math.max( timeout, MINIMUM_TIMEOUT + ROUNDING_SECOND );
     }
 
     protected InterruptThreadTimer createInterruptStartupTimer()
     {
-        long startupTimeout = SECONDS.toMillis(
-                getConfiguration().getInt( Configurator.STARTUP_TIMEOUT, Configurator.DEFAULT_STARTUP_TIMEOUT ) );
+        long startupTimeout = configurator.configuration().get( ServerInternalSettings.startup_timeout );
         InterruptThreadTimer stopStartupTimer;
         if ( startupTimeout > 0 )
         {
-            log.log( "Setting startup timeout to: " + startupTimeout + "ms based on " + getConfiguration().getInt(
-                    Configurator.STARTUP_TIMEOUT, -1 ) );
+            log.log( "Setting startup timeout to: " + startupTimeout + "ms based on "
+                    + configurator.configuration().get( ServerInternalSettings.startup_timeout ) );
             stopStartupTimer = InterruptThreadTimer.createTimer(
                     startupTimeout,
                     Thread.currentThread() );
@@ -390,9 +390,15 @@ public abstract class AbstractNeoServer implements NeoServer
     }
 
     @Override
-    public Configuration getConfiguration()
+    public Config getConfig()
     {
         return configurator.configuration();
+    }
+
+    @Override
+    public Configuration getConfiguration()
+    {
+        return new ConfigWrappingConfiguration( this.configurator.configuration() );
     }
 
     protected Logging getLogging()
@@ -421,8 +427,7 @@ public abstract class AbstractNeoServer implements NeoServer
         webServer.setEnableHttps( sslEnabled );
         webServer.setHttpsPort( sslPort );
 
-        webServer.setWadlEnabled(
-                Boolean.valueOf( String.valueOf( getConfiguration().getProperty( Configurator.WADL_ENABLED ) ) ) );
+        webServer.setWadlEnabled( configurator.configuration().get( ServerInternalSettings.wadl_enabled ) );
         webServer.setDefaultInjectables( createDefaultInjectables() );
 
         if ( sslEnabled )
@@ -435,8 +440,8 @@ public abstract class AbstractNeoServer implements NeoServer
     private int getMaxThreads()
     {
         return configurator.configuration()
-                .containsKey( Configurator.WEBSERVER_MAX_THREADS_PROPERTY_KEY ) ? configurator.configuration()
-                .getInt( Configurator.WEBSERVER_MAX_THREADS_PROPERTY_KEY ) : defaultMaxWebServerThreads();
+                .get( ServerSettings.webserver_max_threads ) != null ? configurator.configuration()
+                .get( ServerSettings.webserver_max_threads ) : defaultMaxWebServerThreads();
     }
 
     private int defaultMaxWebServerThreads()
@@ -475,16 +480,15 @@ public abstract class AbstractNeoServer implements NeoServer
         {
             return;
         }
-        boolean contentLoggingEnabled = configurator.configuration().getBoolean( Configurator.HTTP_CONTENT_LOGGING,
-                Configurator.DEFAULT_HTTP_CONTENT_LOGGING );
+        boolean contentLoggingEnabled = configurator.configuration().get( ServerSettings.http_logging_enabled );
 
-        String logLocation = getConfiguration().getString( Configurator.HTTP_LOG_CONFIG_LOCATION );
-        webServer.setHttpLoggingConfiguration( new File( logLocation ), contentLoggingEnabled );
+        File logFile = configurator.configuration().get( ServerSettings.http_log_config_File );
+        webServer.setHttpLoggingConfiguration( logFile, contentLoggingEnabled );
     }
 
     private void setUpTimeoutFilter()
     {
-        if ( !getConfiguration().containsKey( Configurator.WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY ) )
+        if ( getConfig().get( ServerSettings.webserver_limit_execution_time ) == null )
         {
             return;
         }
@@ -493,12 +497,11 @@ public abstract class AbstractNeoServer implements NeoServer
         if ( guard == null )
         {
             throw new RuntimeException( format("Inconsistent configuration. In order to use %s, you must set %s.",
-                    Configurator.WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY,
+                    ServerSettings.webserver_limit_execution_time.name(),
                     GraphDatabaseSettings.execution_guard_enabled.name()) );
         }
 
-        Filter filter = new GuardingRequestFilter( guard,
-                getConfiguration().getInt( Configurator.WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY ) );
+        Filter filter = new GuardingRequestFilter( guard, getConfig().get( ServerSettings.webserver_limit_execution_time ) );
         webServer.addFilter( filter, "/*" );
     }
 
@@ -509,39 +512,33 @@ public abstract class AbstractNeoServer implements NeoServer
 
     private boolean configLocated()
     {
-        final Object property = getConfiguration().getProperty( Configurator.HTTP_LOG_CONFIG_LOCATION );
-        return property != null && new File( String.valueOf( property ) ).exists();
+        final File logFile = getConfig().get( ServerSettings.http_log_config_File );
+        return logFile != null && logFile.exists();
     }
 
     private boolean loggingEnabled()
     {
-        return "true".equals( String.valueOf( getConfiguration().getProperty( Configurator.HTTP_LOGGING ) ) );
+        return getConfig().get( ServerSettings.http_logging_enabled );
     }
 
     protected int getWebServerPort()
     {
-        return configurator.configuration()
-                .getInt( Configurator.WEBSERVER_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_PORT );
+        return configurator.configuration().get( ServerSettings.webserver_port );
     }
 
     protected boolean getHttpsEnabled()
     {
-        return configurator.configuration()
-                .getBoolean( Configurator.WEBSERVER_HTTPS_ENABLED_PROPERTY_KEY,
-                        Configurator.DEFAULT_WEBSERVER_HTTPS_ENABLED );
+        return configurator.configuration().get( ServerSettings.webserver_https_enabled );
     }
 
     protected int getHttpsPort()
     {
-        return configurator.configuration()
-                .getInt( Configurator.WEBSERVER_HTTPS_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_HTTPS_PORT );
+        return configurator.configuration().get( ServerSettings.webserver_https_port );
     }
 
     protected String getWebServerAddress()
     {
-        return configurator.configuration()
-                .getString( Configurator.WEBSERVER_ADDRESS_PROPERTY_KEY,
-                        Configurator.DEFAULT_WEBSERVER_ADDRESS );
+        return configurator.configuration().get( ServerSettings.webserver_address );
     }
 
     // TODO: This is jetty-specific, move to Jetty9WebServer
@@ -555,17 +552,11 @@ public abstract class AbstractNeoServer implements NeoServer
      */
     protected KeyStoreInformation initHttpsKeyStore()
     {
-        File keystorePath = new File( configurator.configuration().getString(
-                Configurator.WEBSERVER_KEYSTORE_PATH_PROPERTY_KEY,
-                Configurator.DEFAULT_WEBSERVER_KEYSTORE_PATH ) );
+        File keystorePath = configurator.configuration().get( ServerSettings.webserver_keystore_path );
 
-        File privateKeyPath = new File( configurator.configuration().getString(
-                Configurator.WEBSERVER_HTTPS_KEY_PATH_PROPERTY_KEY,
-                Configurator.DEFAULT_WEBSERVER_HTTPS_KEY_PATH ) );
+        File privateKeyPath = configurator.configuration().get( ServerSettings.webserver_https_key_path );
 
-        File certificatePath = new File( configurator.configuration().getString(
-                Configurator.WEBSERVER_HTTPS_CERT_PATH_PROPERTY_KEY,
-                Configurator.DEFAULT_WEBSERVER_HTTPS_CERT_PATH ) );
+        File certificatePath = configurator.configuration().get( ServerSettings.webserver_https_cert_path );
 
         if ( !certificatePath.exists() )
         {
@@ -689,9 +680,15 @@ public abstract class AbstractNeoServer implements NeoServer
     }
 
     @Override
-    public Configurator getConfigurator()
+    public ConfigurationBuilder getConfigurationBuilder()
     {
         return configurator;
+    }
+
+    @Override
+    public Configurator getConfigurator()
+    {
+        return new ConfigurationBuilder.ConfigurationBuilderWrappingConfigurator( getConfigurationBuilder() );
     }
 
     @Override
@@ -717,7 +714,8 @@ public abstract class AbstractNeoServer implements NeoServer
         singletons.add( new DatabaseActions.Provider( databaseActions ) );
         singletons.add( new GraphDatabaseServiceProvider( database ) );
         singletons.add( new NeoServerProvider( this ) );
-        singletons.add( new ConfigurationProvider( getConfiguration() ) );
+        singletons.add( providerForSingleton( new ConfigWrappingConfiguration( getConfig() ), Configuration.class ) );
+        singletons.add( providerForSingleton( getConfig(), Config.class ) );
 
         singletons.add( new RrdDbProvider( rrdDbWrapper ) );
 

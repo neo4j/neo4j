@@ -20,206 +20,65 @@
 package org.neo4j.server.configuration;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.configuration.CompositeConfiguration;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
-import org.apache.commons.configuration.SystemConfiguration;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.server.configuration.validation.Validator;
+import org.neo4j.server.NeoServerSettings;
+import org.neo4j.server.web.ServerInternalSettings;
 
-public class PropertyFileConfigurator extends Configurator.Adapter
+import static java.util.Arrays.asList;
+
+//TODO put the server and db configuration file into one file per database.
+// the configuration for each db could either be passed from the server or created locally if no server (server config) is specified.
+public class PropertyFileConfigurator implements ConfigurationBuilder
 {
-    private static final String NEO4J_PROPERTIES_FILENAME = "neo4j.properties";
-
-    private final CompositeConfiguration serverConfiguration = new CompositeConfiguration();
-    private File propertyFileDirectory;
-
-    private final Validator validator = new Validator();
+    private final Config serverConfig;
     private Map<String, String> databaseTuningProperties = null;
+    private Map<String, String> serverProperties = null;
+
+    public PropertyFileConfigurator()
+    {
+        // rely on the default server configuration file location
+        this( null, ConsoleLogger.DEV_NULL );
+    }
+
+    public PropertyFileConfigurator( ConsoleLogger log )
+    {
+        // rely on the default server configuration file location
+        this( null, log );
+    }
 
     public PropertyFileConfigurator( File propertiesFile )
     {
-        this( Validator.NO_VALIDATION, propertiesFile, ConsoleLogger.DEV_NULL );
+        this( propertiesFile, ConsoleLogger.DEV_NULL );
     }
 
-    public PropertyFileConfigurator( Validator v, File propertiesFile, ConsoleLogger log )
+    public PropertyFileConfigurator( File propertiesFile, ConsoleLogger log )
     {
-        if ( propertiesFile == null )
-        {
-            propertiesFile = new File( System.getProperty( Configurator.NEO_SERVER_CONFIG_FILE_KEY ) );
-        }
+        loadServerProperties( propertiesFile, log );
+        loadDatabaseTuningProperties( propertiesFile, log );
 
-        try
-        {
-            propertyFileDirectory = propertiesFile.getParentFile();
-            loadPropertiesConfig( propertiesFile, log );
-            loadDatabaseTuningProperties( propertiesFile, log );
+        serverConfig = new Config( serverProperties );
+        setServerSettingsClasses( serverConfig );
 
-            normalizeUris();
-            ensureRelativeUris();
+        overrideStoreDirPropertyFromServerToDatabase();
 
-            if ( v != null )
-            {
-                v.validate( this.configuration(), log );
-            }
-        }
-        catch ( ConfigurationException ce )
-        {
-            log.warn( "Invalid configuration", ce );
-        }
+    }
+
+    public static void setServerSettingsClasses( Config config )
+    {
+        config.registerSettingsClasses( asList( ServerSettings.class, NeoServerSettings.class, ServerInternalSettings.class, GraphDatabaseSettings.class ) );
     }
 
     @Override
-    public Configuration configuration()
+    public Config configuration()
     {
-        return serverConfiguration == null ? new SystemConfiguration() : serverConfiguration;
-    }
-
-    private void loadDatabaseTuningProperties( File configFile, ConsoleLogger log ) throws ConfigurationException
-    {
-        String databaseTuningPropertyFileLocation = serverConfiguration.getString( DB_TUNING_PROPERTY_FILE_KEY );
-
-        // Try and find the file automatically
-        if ( databaseTuningPropertyFileLocation == null )
-        {
-            if ( propertyFileDirectoryContainsDBTuningFile() )
-            {
-                databaseTuningPropertyFileLocation = new File( propertyFileDirectory, NEO4J_PROPERTIES_FILENAME ).getAbsolutePath();
-                log.log( "No database tuning file explicitly set, defaulting to [%s]",
-                        databaseTuningPropertyFileLocation );
-            }
-            else
-            {
-                log.log(
-                        "No database tuning properties (org.neo4j.server.db.tuning.properties) found in [%s], using defaults.",
-                        configFile.getPath() );
-            }
-        }
-
-        // Load the file if we found it
-        if( databaseTuningPropertyFileLocation != null )
-        {
-            File databaseTuningPropertyFile = new File( databaseTuningPropertyFileLocation );
-
-            if ( !databaseTuningPropertyFile.exists() )
-            {
-                log.warn( "The specified file for database performance tuning properties [%s] does not exist.",
-                        databaseTuningPropertyFileLocation );
-            }
-            else
-            {
-                try
-                {
-                    databaseTuningProperties = MapUtil.load( databaseTuningPropertyFile );
-                }
-                catch ( IOException e )
-                {
-                    log.warn( "Unable to load database tuning file: " + e.getMessage() );
-                }
-            }
-        }
-
-        // Default to no user-defined config if no config was found
-        if(databaseTuningProperties == null )
-        {
-            databaseTuningProperties = new HashMap<>();
-        }
-
-        // Always override the store dir property
-        databaseTuningProperties.put( GraphDatabaseSettings.store_dir.name(),
-                serverConfiguration.getString( Configurator.DATABASE_LOCATION_PROPERTY_KEY ) );
-    }
-
-    private void loadPropertiesConfig( File configFile, ConsoleLogger log ) throws ConfigurationException
-    {
-        PropertiesConfiguration propertiesConfig = new PropertiesConfiguration( configFile );
-        if ( validator.validate( propertiesConfig, log ) )
-        {
-            serverConfiguration.addConfiguration( propertiesConfig );
-        }
-        else
-        {
-            String failed = String.format( "Error processing [%s], configuration file has failed validation.",
-                    configFile.getAbsolutePath() );
-            log.error( failed );
-            throw new InvalidServerConfigurationException( failed );
-        }
-    }
-
-    private void normalizeUris()
-    {
-        try
-        {
-            for ( String key : new String[] { MANAGEMENT_PATH_PROPERTY_KEY, REST_API_PATH_PROPERTY_KEY } )
-            {
-                if ( configuration().containsKey( key ) )
-                {
-                    URI normalizedUri = new URI( (String) configuration().getProperty( key ) ).normalize();
-                    configuration().clearProperty( key );
-                    configuration().addProperty( key, normalizedUri.toString() );
-                }
-            }
-
-        }
-        catch ( URISyntaxException e )
-        {
-            throw new RuntimeException( e );
-        }
-
-    }
-
-    private void ensureRelativeUris()
-    {
-        try
-        {
-            for ( String key : new String[] { MANAGEMENT_PATH_PROPERTY_KEY, REST_API_PATH_PROPERTY_KEY } )
-            {
-                if ( configuration().containsKey( key ) )
-                {
-                    String path = new URI( (String) configuration().getProperty( key ) ).getPath();
-                    configuration().clearProperty( key );
-                    configuration().addProperty( key, path );
-                }
-            }
-
-        }
-        catch ( URISyntaxException e )
-        {
-            throw new RuntimeException( e );
-        }
-
-    }
-
-    private boolean propertyFileDirectoryContainsDBTuningFile()
-    {
-        File[] neo4jPropertyFiles = propertyFileDirectory.listFiles( new FilenameFilter()
-        {
-
-            @Override
-            public boolean accept( File dir, String name )
-            {
-                return name.toLowerCase()
-                        .equals( NEO4J_PROPERTIES_FILENAME );
-            }
-        } );
-        return neo4jPropertyFiles != null && neo4jPropertyFiles.length == 1;
-    }
-
-    public File getPropertyFileDirectory()
-    {
-        return propertyFileDirectory;
+        return serverConfig == null ? new Config() : serverConfig;
     }
 
     @Override
@@ -228,25 +87,83 @@ public class PropertyFileConfigurator extends Configurator.Adapter
         return databaseTuningProperties == null ? new HashMap<String, String>() : databaseTuningProperties;
     }
 
-    @Override
-    public List<ThirdPartyJaxRsPackage> getThirdpartyJaxRsPackages()
+    private void loadDatabaseTuningProperties( File configFile, ConsoleLogger log )
     {
-        List<ThirdPartyJaxRsPackage> thirdPartyPackages = new ArrayList<ThirdPartyJaxRsPackage>();
-        List<String> packagesAndMountpoints = (List)this.configuration().getList( THIRD_PARTY_PACKAGES_KEY );
 
-        for ( String packageAndMoutpoint : packagesAndMountpoints )
+        String databaseTuningPropertyPath = serverProperties.get( NeoServerSettings.legacy_db_config.name() );
+        if( databaseTuningPropertyPath == null )
         {
-            String[] parts = packageAndMoutpoint.split( "=" );
-            if ( parts.length != 2 )
-            {
-                throw new IllegalArgumentException( "config for " + THIRD_PARTY_PACKAGES_KEY + " is wrong: " +
-                        packageAndMoutpoint );
-            }
-            String pkg = parts[0];
-            String mountPoint = parts[1];
-
-            thirdPartyPackages.add( new ThirdPartyJaxRsPackage( pkg, mountPoint ) );
+            // try to find the db config file
+            databaseTuningPropertyPath = configFile.getParent() + File.separator + ServerInternalSettings.DB_TUNING_CONFIG_FILE_NAME;
+            serverProperties.put( NeoServerSettings.legacy_db_config.name(), databaseTuningPropertyPath );
+            log.warn( String.format( "No database tuning file explicitly set, defaulting to [%s]",
+                    databaseTuningPropertyPath ) );
         }
-        return thirdPartyPackages;
+
+        File databaseTuningPropertyFile = new File( databaseTuningPropertyPath );
+        if ( !databaseTuningPropertyFile.exists() )
+        {
+            log.warn( "The specified file for database performance tuning properties [%s] does not exist.",
+                    databaseTuningPropertyPath );
+        }
+        else
+        {
+            try
+            {
+                databaseTuningProperties = MapUtil.load( databaseTuningPropertyFile );
+            }
+            catch ( IOException e )
+            {
+                log.warn( "Unable to load database tuning file: " + e.getMessage() );
+            }
+        }
+        // Default to no user-defined config if no config was found
+        if ( databaseTuningProperties == null )
+        {
+            databaseTuningProperties = new HashMap<>();
+        }
     }
+
+    private void loadServerProperties( File serverConfigFile, ConsoleLogger log )
+    {
+        if ( serverConfigFile == null )
+        {
+            // load the server config file from the default location.
+            serverConfigFile = new File( System.getProperty( ServerInternalSettings.SERVER_CONFIG_FILE_KEY, ServerInternalSettings.SERVER_CONFIG_FILE ) );
+        }
+
+        if ( !serverConfigFile.exists() )
+        {
+            log.warn( "The specified file for server configuration [%s] does not exist. Using the default non-user-defined server configuration.",
+                    serverConfigFile.getAbsoluteFile() );
+        }
+        else
+        {
+            try
+            {
+                serverProperties = MapUtil.load( serverConfigFile );
+            }
+            catch( IOException e)
+            {
+                log.warn( "Unable to load server configuration file: " + e.getMessage() );
+            }
+        }
+        // Default to no user-defined config if no config was found
+        if( serverProperties == null )
+        {
+            serverProperties = new HashMap<>();
+        }
+    }
+
+    private void overrideStoreDirPropertyFromServerToDatabase()
+    {
+        // Always override the store dir property
+        // use the user defined or rely on the default value
+
+        // TODO Should use the same key if they represent the same thing.
+        // warning: db_location key used by GraphDatabaseSettings and store_dir key used by NeoServerSettings are different.
+        String db_location = serverConfig.get( NeoServerSettings.legacy_db_location ).getAbsolutePath();
+        databaseTuningProperties.put( GraphDatabaseSettings.store_dir.name(), db_location );
+    }
+
 }

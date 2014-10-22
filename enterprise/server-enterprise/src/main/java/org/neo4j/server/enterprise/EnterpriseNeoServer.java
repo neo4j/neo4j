@@ -21,17 +21,17 @@ package org.neo4j.server.enterprise;
 
 import java.util.Map;
 
-import org.apache.commons.configuration.Configuration;
-
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.InterruptThreadTimer;
+import org.neo4j.server.NeoServerSettings;
 import org.neo4j.server.advanced.AdvancedNeoServer;
-import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.LifecycleManagingDatabase.GraphFactory;
 import org.neo4j.server.modules.ServerModule;
@@ -39,6 +39,7 @@ import org.neo4j.server.preflight.EnsurePreparedForHttpLogging;
 import org.neo4j.server.preflight.PerformRecoveryIfNecessary;
 import org.neo4j.server.preflight.PerformUpgradeIfNecessary;
 import org.neo4j.server.preflight.PreFlightTasks;
+import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.server.webadmin.rest.AdvertisableService;
 import org.neo4j.server.webadmin.rest.MasterInfoServerModule;
 import org.neo4j.server.webadmin.rest.MasterInfoService;
@@ -46,7 +47,6 @@ import org.neo4j.server.webadmin.rest.MasterInfoService;
 import static java.util.Arrays.asList;
 
 import static org.neo4j.helpers.collection.Iterables.mix;
-import static org.neo4j.server.configuration.Configurator.DB_MODE_KEY;
 import static org.neo4j.server.database.LifecycleManagingDatabase.EMBEDDED;
 import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
 
@@ -54,59 +54,49 @@ public class EnterpriseNeoServer extends AdvancedNeoServer
 {
     public static final String SINGLE = "SINGLE";
     public static final String HA = "HA";
-
     private static final GraphFactory HA_FACTORY = new GraphFactory()
     {
         @Override
-        public GraphDatabaseAPI newGraphDatabase( String storeDir, Map<String, String> params,
-                Dependencies dependencies )
+        public GraphDatabaseAPI newGraphDatabase( String storeDir, Map<String,String> params, Dependencies dependencies )
         {
             return new HighlyAvailableGraphDatabase( storeDir, params, dependencies );
         }
     };
 
-    public EnterpriseNeoServer( Configurator configurator, Dependencies dependencies )
+    public EnterpriseNeoServer( ConfigurationBuilder configurator, Dependencies dependencies )
     {
         super( configurator, createDbFactory( configurator.configuration() ), dependencies );
     }
 
-    public EnterpriseNeoServer( Configurator configurator, Database.Factory dbFactory, Dependencies dependencies )
+    public EnterpriseNeoServer( ConfigurationBuilder configurator, Database.Factory dbFactory, Dependencies dependencies )
     {
         super( configurator, dbFactory, dependencies );
     }
 
-    protected static Database.Factory createDbFactory( Configuration config )
+    protected static Database.Factory createDbFactory( Config config )
     {
-        String mode = config.getString( DB_MODE_KEY, SINGLE ).toUpperCase();
-        return mode.equals(HA) ?
-            lifecycleManagingDatabase( HA_FACTORY ) :
-            lifecycleManagingDatabase( EMBEDDED );
+        final String mode = config.get( NeoServerSettings.legacy_db_mode ).toUpperCase();
+        return mode.equals( HA ) ? lifecycleManagingDatabase( HA_FACTORY ) : lifecycleManagingDatabase( EMBEDDED );
     }
 
     @Override
     protected PreFlightTasks createPreflightTasks()
     {
-        Logging logging = dependencies.logging();
-        return new PreFlightTasks(
-                logging,
-                // TODO: This check should be done in the bootrapper,
-                // and verification of config should be done by the new
-                // config system.
-                //new EnsureEnterpriseNeo4jPropertiesExist(configurator.configuration()),
-                new EnsurePreparedForHttpLogging(configurator.configuration()),
-                new PerformUpgradeIfNecessary(getConfiguration(),
-                        configurator.getDatabaseTuningProperties(), logging, StoreUpgrader.NO_MONITOR ),
-                new PerformRecoveryIfNecessary(getConfiguration(),
-                        configurator.getDatabaseTuningProperties(), System.out, logging ));
+        final Logging logging = dependencies.logging();
+        return new PreFlightTasks( logging,
+                new EnsurePreparedForHttpLogging( configurator.configuration() ), new PerformUpgradeIfNecessary(
+                        getConfig(), configurator.getDatabaseTuningProperties(), logging,
+                        StoreUpgrader.NO_MONITOR ), new PerformRecoveryIfNecessary( getConfig(),
+                        configurator.getDatabaseTuningProperties(), System.out, logging ) );
     }
 
     @SuppressWarnings( "unchecked" )
     @Override
     protected Iterable<ServerModule> createServerModules()
     {
-        return mix( asList(
-                (ServerModule) new MasterInfoServerModule( webServer, getConfiguration(), dependencies.logging() ) ),
-                super.createServerModules() );
+        return mix(
+                asList( (ServerModule) new MasterInfoServerModule( webServer, getConfig(),
+                        dependencies.logging() ) ), super.createServerModules() );
     }
 
     @Override
@@ -115,24 +105,39 @@ public class EnterpriseNeoServer extends AdvancedNeoServer
         // If we are in HA mode, database startup can take a very long time, so
         // we default to disabling the startup timeout here, unless explicitly overridden
         // by configuration.
-        if(getConfiguration().getString( DB_MODE_KEY, "single" ).equalsIgnoreCase("ha"))
+        if ( getConfig().get( NeoServerSettings.legacy_db_mode ).equalsIgnoreCase( "ha" ) )
         {
-            long startupTimeout = getConfiguration().getInt(Configurator.STARTUP_TIMEOUT, 0) * 1000;
+            final long startupTimeout = getStartTimeoutFromPropertiesOrSetToZeroIfNoKeyFound();
             InterruptThreadTimer stopStartupTimer;
-            if(startupTimeout > 0)
+            if ( startupTimeout > 0 )
             {
-                stopStartupTimer = InterruptThreadTimer.createTimer(
-                        startupTimeout,
-                        Thread.currentThread());
-            } else
+                stopStartupTimer = InterruptThreadTimer.createTimer( startupTimeout, Thread.currentThread() );
+            }
+            else
             {
                 stopStartupTimer = InterruptThreadTimer.createNoOpTimer();
             }
             return stopStartupTimer;
-        } else
+        }
+        else
         {
             return super.createInterruptStartupTimer();
         }
+    }
+
+    private long getStartTimeoutFromPropertiesOrSetToZeroIfNoKeyFound()
+    {
+        long startupTimeout;
+        final Map<String,String> params = getConfig().getParams();
+        if ( params.containsKey( ServerInternalSettings.startup_timeout.name() ) )
+        {
+            startupTimeout = getConfig().get( ServerInternalSettings.startup_timeout );
+        }
+        else
+        {
+            startupTimeout = 0;
+        }
+        return startupTimeout;
     }
 
     @Override

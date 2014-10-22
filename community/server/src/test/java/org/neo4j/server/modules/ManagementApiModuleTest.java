@@ -20,12 +20,13 @@
 package org.neo4j.server.modules;
 
 import java.net.URI;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.PropertiesConfiguration;
 import org.junit.Test;
 
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.Configurator;
@@ -49,11 +50,12 @@ public class ManagementApiModuleTest
         when( neoServer.baseUri() ).thenReturn( new URI( "http://localhost:7575" ) );
         when( neoServer.getWebServer() ).thenReturn( webServer );
 
-        Configuration config = new PropertiesConfiguration();
+        Map<String, String> params = new HashMap();
         String managementPath = "/db/manage";
-        config.addProperty( Configurator.MANAGEMENT_PATH_PROPERTY_KEY, managementPath );
+        params.put( Configurator.MANAGEMENT_PATH_PROPERTY_KEY, managementPath );
+        Config config = new Config( params );
 
-        when( neoServer.getConfiguration() ).thenReturn( config );
+        when( neoServer.getConfig() ).thenReturn( config );
 
         ManagementApiModule module = new ManagementApiModule(webServer, config, DevNullLoggingService.DEV_NULL);
         module.start();

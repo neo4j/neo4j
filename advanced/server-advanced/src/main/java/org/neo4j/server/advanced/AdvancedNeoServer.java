@@ -25,18 +25,18 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.advanced.modules.JMXManagementModule;
-import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.modules.ServerModule;
 
 public class AdvancedNeoServer extends CommunityNeoServer
 {
-    public AdvancedNeoServer( Configurator configurator, Database.Factory dbFactory, InternalAbstractGraphDatabase.Dependencies dependencies)
+    public AdvancedNeoServer( ConfigurationBuilder configurator, Database.Factory dbFactory, InternalAbstractGraphDatabase.Dependencies dependencies)
     {
         super(configurator, dbFactory, dependencies);
     }
 
-	public AdvancedNeoServer( Configurator configurator, InternalAbstractGraphDatabase.Dependencies dependencies)
+	public AdvancedNeoServer( ConfigurationBuilder configurator, InternalAbstractGraphDatabase.Dependencies dependencies)
     {
         super( configurator, dependencies );
     }

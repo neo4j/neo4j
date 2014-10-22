@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.configuration;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -29,94 +28,101 @@ import java.util.Map;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.MapConfiguration;
 
+import org.neo4j.helpers.TimeUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsExtractor;
 import org.neo4j.kernel.info.DiagnosticsPhase;
-import org.neo4j.server.webadmin.console.ShellSessionCreator;
+import org.neo4j.server.NeoServerSettings;
+import org.neo4j.server.web.ServerInternalSettings;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 
+/**
+ * Using the server settings from {@link ServerSettings} with {@link org.Configuration a configuration}.
+ */
+@Deprecated
 public interface Configurator
 {
-    String SECURITY_RULES_KEY = "org.neo4j.server.rest.security_rules";
+    String SECURITY_RULES_KEY = ServerSettings.security_rules.name();
 
-    String DB_TUNING_PROPERTY_FILE_KEY = "org.neo4j.server.db.tuning.properties";
-    String DEFAULT_CONFIG_DIR = File.separator + "etc" + File.separator + "neo";
-    String DATABASE_LOCATION_PROPERTY_KEY = "org.neo4j.server.database.location";
-    String NEO_SERVER_CONFIG_FILE_KEY = "org.neo4j.server.properties";
-    String DB_MODE_KEY = "org.neo4j.server.database.mode";
+    String DB_TUNING_PROPERTY_FILE_KEY = NeoServerSettings.legacy_db_config.name();
+    String DEFAULT_CONFIG_DIR = NeoServerSettings.legacy_db_config.getDefaultValue();
+    String DATABASE_LOCATION_PROPERTY_KEY = NeoServerSettings.legacy_db_location.name();
+    String DEFAULT_DATABASE_LOCATION_PROPERTY_KEY = NeoServerSettings.legacy_db_location.getDefaultValue();
 
-    String DEFAULT_DATABASE_LOCATION_PROPERTY_KEY = "data/graph.db";
+    String NEO_SERVER_CONFIG_FILE_KEY = ServerInternalSettings.SERVER_CONFIG_FILE_KEY;
+    String DB_MODE_KEY = NeoServerSettings.legacy_db_mode.name();
 
-    int DEFAULT_WEBSERVER_PORT = 7474;
-    String WEBSERVER_PORT_PROPERTY_KEY = "org.neo4j.server.webserver.port";
-    String DEFAULT_WEBSERVER_ADDRESS = "localhost";
-    String WEBSERVER_ADDRESS_PROPERTY_KEY = "org.neo4j.server.webserver.address";
-    String WEBSERVER_MAX_THREADS_PROPERTY_KEY = "org.neo4j.server.webserver.maxthreads";
-    String WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY = "org.neo4j.server.webserver.limit.executiontime";
-    String WEBSERVER_ENABLE_STATISTICS_COLLECTION = "org.neo4j.server.webserver.statistics";
+    int DEFAULT_WEBSERVER_PORT = Integer.valueOf( ServerSettings.webserver_port.getDefaultValue() );
+    String WEBSERVER_PORT_PROPERTY_KEY = ServerSettings.webserver_port.name();
+    String DEFAULT_WEBSERVER_ADDRESS = ServerSettings.webserver_address.getDefaultValue();
+    String WEBSERVER_ADDRESS_PROPERTY_KEY = ServerSettings.webserver_address.name();
+    String WEBSERVER_MAX_THREADS_PROPERTY_KEY = ServerSettings.webserver_max_threads.name();
+    String WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY = ServerSettings.webserver_limit_execution_time.name();
+    String WEBSERVER_ENABLE_STATISTICS_COLLECTION = ServerInternalSettings.webserver_statistics_collection_enabled.name();
 
-    String REST_API_PATH_PROPERTY_KEY = "org.neo4j.server.webadmin.data.uri";
     String REST_API_PACKAGE = "org.neo4j.server.rest.web";
-    String DEFAULT_DATA_API_PATH = "/db/data";
+    String REST_API_PATH_PROPERTY_KEY = ServerInternalSettings.rest_api_path.name();
+    String DEFAULT_DATA_API_PATH = ServerInternalSettings.rest_api_path.getDefaultValue();
 
     String DISCOVERY_API_PACKAGE = "org.neo4j.server.rest.discovery";
 
     String MANAGEMENT_API_PACKAGE = "org.neo4j.server.webadmin.rest";
-    String MANAGEMENT_PATH_PROPERTY_KEY = "org.neo4j.server.webadmin.management.uri";
-    String DEFAULT_MANAGEMENT_API_PATH = "/db/manage";
+    String MANAGEMENT_PATH_PROPERTY_KEY = ServerInternalSettings.management_api_path.name();
+    String DEFAULT_MANAGEMENT_API_PATH = ServerInternalSettings.management_api_path.getDefaultValue();
 
-    String BROWSER_PATH = "/browser";
+    String BROWSER_PATH = ServerInternalSettings.browser_path.getDefaultValue();
 
-    String RRDB_LOCATION_PROPERTY_KEY = "org.neo4j.server.webadmin.rrdb.location";
+    String RRDB_LOCATION_PROPERTY_KEY = ServerSettings.rrdb_location.name();
 
-    String MANAGEMENT_CONSOLE_ENGINES = "org.neo4j.server.manage.console_engines";
+    String MANAGEMENT_CONSOLE_ENGINES = ServerSettings.management_console_engines.name();
     List<String> DEFAULT_MANAGEMENT_CONSOLE_ENGINES = new ArrayList<String>(){
         private static final long serialVersionUID = 6621747998288594121L;
     {
-        add(new ShellSessionCreator().name());
+        add( ServerSettings.management_console_engines.getDefaultValue() );
     }};
 
-    String THIRD_PARTY_PACKAGES_KEY = "org.neo4j.server.thirdparty_jaxrs_classes";
+    String THIRD_PARTY_PACKAGES_KEY = ServerSettings.third_party_packages.name();
 
-    String SCRIPT_SANDBOXING_ENABLED_KEY = "org.neo4j.server.script.sandboxing.enabled";
-    Boolean DEFAULT_SCRIPT_SANDBOXING_ENABLED = true;
+    String SCRIPT_SANDBOXING_ENABLED_KEY = ServerInternalSettings.script_sandboxing_enabled.name();
+    Boolean DEFAULT_SCRIPT_SANDBOXING_ENABLED = Boolean.valueOf( ServerInternalSettings.script_sandboxing_enabled.getDefaultValue() );
 
-    String WEBSERVER_HTTPS_ENABLED_PROPERTY_KEY = "org.neo4j.server.webserver.https.enabled";
-    Boolean DEFAULT_WEBSERVER_HTTPS_ENABLED = false;
+    String WEBSERVER_HTTPS_ENABLED_PROPERTY_KEY = ServerSettings.webserver_https_enabled.name();
+    Boolean DEFAULT_WEBSERVER_HTTPS_ENABLED = Boolean.valueOf( ServerSettings.webserver_https_enabled.getDefaultValue() );
 
-    String WEBSERVER_HTTPS_PORT_PROPERTY_KEY = "org.neo4j.server.webserver.https.port";
-    int DEFAULT_WEBSERVER_HTTPS_PORT = 7473;
+    String WEBSERVER_HTTPS_PORT_PROPERTY_KEY = ServerSettings.webserver_https_port.name();
+    int DEFAULT_WEBSERVER_HTTPS_PORT = Integer.valueOf( ServerSettings.webserver_https_port.getDefaultValue() );
 
-    String WEBSERVER_KEYSTORE_PATH_PROPERTY_KEY = "org.neo4j.server.webserver.https.keystore.location";
-    String DEFAULT_WEBSERVER_KEYSTORE_PATH = "neo4j-home/ssl/keystore";
+    String WEBSERVER_KEYSTORE_PATH_PROPERTY_KEY = ServerSettings.webserver_https_key_path.name();
+    String DEFAULT_WEBSERVER_KEYSTORE_PATH = ServerSettings.webserver_https_key_path.getDefaultValue();
 
-    String WEBSERVER_HTTPS_CERT_PATH_PROPERTY_KEY = "org.neo4j.server.webserver.https.cert.location";
-    String DEFAULT_WEBSERVER_HTTPS_CERT_PATH = "neo4j-home/ssl/snakeoil.cert";
+    String WEBSERVER_HTTPS_CERT_PATH_PROPERTY_KEY = ServerSettings.webserver_https_cert_path.name();
+    String DEFAULT_WEBSERVER_HTTPS_CERT_PATH = ServerSettings.webserver_https_cert_path.getDefaultValue();
 
-    String WEBSERVER_HTTPS_KEY_PATH_PROPERTY_KEY = "org.neo4j.server.webserver.https.key.location";
-    String DEFAULT_WEBSERVER_HTTPS_KEY_PATH = "neo4j-home/ssl/snakeoil.key";
+    String WEBSERVER_HTTPS_KEY_PATH_PROPERTY_KEY = ServerSettings.webserver_https_key_path.name();
+    String DEFAULT_WEBSERVER_HTTPS_KEY_PATH = ServerSettings.webserver_https_cert_path.getDefaultValue();
 
-    String HTTP_LOGGING = "org.neo4j.server.http.log.enabled";
-    boolean DEFAULT_HTTP_LOGGING = false;
-    String HTTP_LOG_CONFIG_LOCATION = "org.neo4j.server.http.log.config";
+    String HTTP_LOGGING = ServerSettings.http_logging_enabled.name();
+    boolean DEFAULT_HTTP_LOGGING = Boolean.valueOf( ServerSettings.http_logging_enabled.getDefaultValue() );
+    String HTTP_LOG_CONFIG_LOCATION = ServerSettings.http_log_config_File.name();
 
-    String HTTP_CONTENT_LOGGING = "org.neo4j.server.http.unsafe.content_log.enabled";
-    boolean DEFAULT_HTTP_CONTENT_LOGGING = false;
+    String HTTP_CONTENT_LOGGING = ServerSettings.http_content_logging_enabled.name();
+    boolean DEFAULT_HTTP_CONTENT_LOGGING = Boolean.valueOf( ServerSettings.http_content_logging_enabled.getDefaultValue() );
 
-    String WADL_ENABLED = "unsupported_wadl_generation_enabled";
+    String WADL_ENABLED = ServerInternalSettings.wadl_enabled.name();
 
-    String STARTUP_TIMEOUT = "org.neo4j.server.startup_timeout";
-    int DEFAULT_STARTUP_TIMEOUT = 120;
-
-    String TRANSACTION_TIMEOUT = "org.neo4j.server.transaction.timeout";
-    int DEFAULT_TRANSACTION_TIMEOUT = 60/*seconds*/;
+    String STARTUP_TIMEOUT = ServerInternalSettings.startup_timeout.name();
+    int DEFAULT_STARTUP_TIMEOUT = ( int ) ( TimeUtil.parseTimeMillis.apply( ServerInternalSettings.startup_timeout
+            .getDefaultValue() ) / 1000 );
+    String TRANSACTION_TIMEOUT = ServerSettings.transaction_timeout.name();
+    int DEFAULT_TRANSACTION_TIMEOUT = ( int ) ( TimeUtil.parseTimeMillis.apply( ServerSettings.transaction_timeout
+            .getDefaultValue() ) / 1000 );/*seconds*/;
 
     Configuration configuration();
 
-    Map<String, String> getDatabaseTuningProperties();
+    Map<String,String> getDatabaseTuningProperties();
 
     @Deprecated
     List<ThirdPartyJaxRsPackage> getThirdpartyJaxRsClasses();
@@ -174,7 +180,7 @@ public interface Configurator
         }
 
         @Override
-        public Map<String, String> getDatabaseTuningProperties()
+        public Map<String,String> getDatabaseTuningProperties()
         {
             return emptyMap();
         }
@@ -182,7 +188,7 @@ public interface Configurator
         @Override
         public Configuration configuration()
         {
-            return new MapConfiguration( Collections.<String, String>emptyMap() );
+            return new MapConfiguration( Collections.<String, String> emptyMap() );
         }
     }
 

@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
 
-import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
 import org.mockito.InOrder;
 
@@ -33,12 +32,12 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.Monitor;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.util.TestLogger;
 import org.neo4j.kernel.impl.util.TestLogging;
 import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.configuration.MapBasedConfiguration;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.Unzip;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
@@ -68,7 +67,7 @@ public class TestPerformUpgradeIfNecessary
     @Test
     public void shouldExitImmediatelyIfStoreIsAlreadyAtLatestVersion() throws IOException
     {
-        Configuration serverConfig = buildProperties( false );
+        Config serverConfig = buildProperties( false );
         new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( STORE_DIRECTORY.getPath() ).newGraphDatabase().shutdown();
 
         Monitor monitor = mock( Monitor.class );
@@ -85,7 +84,7 @@ public class TestPerformUpgradeIfNecessary
     @Test
     public void shouldGiveHelpfulMessageIfAutoUpgradeParameterNotSet() throws IOException
     {
-        Configuration serverProperties = buildProperties( false );
+        Config serverProperties = buildProperties( false );
         prepareSampleLegacyDatabase( STORE_DIRECTORY );
 
         Monitor monitor = mock( Monitor.class );
@@ -128,7 +127,7 @@ public class TestPerformUpgradeIfNecessary
     public void shouldUpgradeDatabase() throws IOException
     {
         // Given
-        Configuration serverConfig = buildProperties( true );
+        Config serverConfig = buildProperties( true );
         prepareSampleLegacyDatabase( STORE_DIRECTORY );
 
         Monitor monitor = mock( Monitor.class );
@@ -159,7 +158,7 @@ public class TestPerformUpgradeIfNecessary
         logging.getMessagesLog( ParallelBatchImporter.class ).assertAtLeastOnce( info( "Import completed" ) );
     }
 
-    private Configuration buildProperties(boolean allowStoreUpgrade) throws IOException
+    private Config buildProperties(boolean allowStoreUpgrade) throws IOException
     {
         FileUtils.deleteRecursively( HOME_DIRECTORY );
         assertTrue( CONF_DIRECTORY.mkdirs() );
@@ -172,9 +171,9 @@ public class TestPerformUpgradeIfNecessary
 
         databaseProperties.store( new FileWriter( NEO4J_PROPERTIES.getAbsolutePath() ), null );
 
-        Configuration serverProperties = new MapBasedConfiguration();
-        serverProperties.setProperty( Configurator.DATABASE_LOCATION_PROPERTY_KEY, STORE_DIRECTORY.getPath() );
-        serverProperties.setProperty( Configurator.DB_TUNING_PROPERTY_FILE_KEY, NEO4J_PROPERTIES.getAbsolutePath() );
+        Config serverProperties = new Config ( MapUtil.stringMap( 
+                Configurator.DATABASE_LOCATION_PROPERTY_KEY, STORE_DIRECTORY.getPath(),
+                Configurator.DB_TUNING_PROPERTY_FILE_KEY, NEO4J_PROPERTIES.getAbsolutePath() ) );
 
         return serverProperties;
     }

@@ -19,8 +19,7 @@
  */
 package org.neo4j.server.modules;
 
-import org.apache.commons.configuration.Configuration;
-
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.database.Database;
@@ -31,12 +30,12 @@ public class Neo4jBrowserModule implements ServerModule
     private static final String DEFAULT_NEO4J_BROWSER_PATH = "/browser";
     private static final String DEFAULT_NEO4J_BROWSER_STATIC_WEB_CONTENT_LOCATION = "browser";
 
-	private final Configuration config;
+    private final Config config;
     private final WebServer webServer;
     private final Database database;
     private final ConsoleLogger log;
 
-    public Neo4jBrowserModule(WebServer webServer, Configuration config, Logging logging, Database database)
+    public Neo4jBrowserModule(WebServer webServer, Config config, Logging logging, Database database)
     {
     	this.webServer = webServer;
     	this.config = config;

@@ -19,12 +19,15 @@
  */
 package org.neo4j.server.modules;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.junit.Test;
 
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.web.WebServer;
@@ -44,9 +47,10 @@ public class RESTApiModuleTest
     {
         WebServer webServer = mock( WebServer.class );
 
-        Configuration config = new PropertiesConfiguration();
+        Map<String, String> params = new HashMap();
         String path = "/db/data";
-        config.addProperty( Configurator.REST_API_PATH_PROPERTY_KEY, path );
+        params.put( Configurator.REST_API_PATH_PROPERTY_KEY, path );
+        Config config = new Config( params );
 
         Database db = mock(Database.class);
 

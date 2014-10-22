@@ -22,6 +22,9 @@ package org.neo4j.server;
 import java.net.URI;
 
 import org.apache.commons.configuration.Configuration;
+
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.plugins.PluginManager;
@@ -35,18 +38,30 @@ import org.neo4j.server.webadmin.rest.AdvertisableService;
 @Deprecated
 public interface NeoServer
 {
-	void init();
-	
+    void init();
+
     void start();
 
     void stop();
 
+    Config getConfig();
+
+    /**
+     * Use {@link NeoServer#getConfig()} instead.
+     */
+    @Deprecated
     Configuration getConfiguration();
 
     Database getDatabase();
 
     TransactionRegistry getTransactionRegistry();
 
+    ConfigurationBuilder getConfigurationBuilder();
+
+    /**
+     * Use {@link NeoServer#getConfigurationBuilder()} instead.
+     */
+    @Deprecated
     Configurator getConfigurator();
 
     PluginManager getExtensionManager();

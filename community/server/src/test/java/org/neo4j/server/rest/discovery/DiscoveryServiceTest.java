@@ -36,8 +36,10 @@ import org.apache.commons.configuration.Configuration;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
+import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.test.server.EntityOutputFormat;
 
 public class DiscoveryServiceTest
@@ -45,13 +47,12 @@ public class DiscoveryServiceTest
     @Test
     public void shouldReturnValidJSONWithDataAndManagementUris() throws Exception
     {
-        Configuration mockConfig = mock( Configuration.class );
-        String managementUri = "/management";
+        Config mockConfig = mock( Config.class );
+        URI managementUri = new URI( "/management" );
         when(
-                mockConfig.getString( Configurator.MANAGEMENT_PATH_PROPERTY_KEY,
-                        Configurator.DEFAULT_MANAGEMENT_API_PATH ) ).thenReturn( managementUri );
-        String dataUri = "/data";
-        when( mockConfig.getString( Configurator.REST_API_PATH_PROPERTY_KEY, Configurator.DEFAULT_DATA_API_PATH ) ).thenReturn(
+                mockConfig.get( ServerInternalSettings.management_api_path ) ).thenReturn( managementUri );
+        URI dataUri = new URI( "/data" );
+        when( mockConfig.get( ServerInternalSettings.rest_api_path ) ).thenReturn(
                 dataUri );
 
         String baseUri = "http://www.example.com";
@@ -75,13 +76,12 @@ public class DiscoveryServiceTest
     @Test
     public void shouldReturnConfiguredUrlIfConfigIsAbsolute() throws Exception
     {
-        Configuration mockConfig = mock( Configuration.class );
-        String managementUri = "http://absolutedomain/management";
+        Config mockConfig = mock( Config.class );
+        URI managementUri = new URI( "http://absolutedomain/management" );
         when(
-                mockConfig.getString( Configurator.MANAGEMENT_PATH_PROPERTY_KEY,
-                        Configurator.DEFAULT_MANAGEMENT_API_PATH ) ).thenReturn( managementUri );
-        String dataUri = "http://absolutedomain/management";
-        when( mockConfig.getString( Configurator.REST_API_PATH_PROPERTY_KEY, Configurator.DEFAULT_DATA_API_PATH ) ).thenReturn(
+                mockConfig.get( ServerInternalSettings.management_api_path ) ).thenReturn( managementUri );
+        URI dataUri = new URI( "http://absolutedomain/management" );
+        when( mockConfig.get( ServerInternalSettings.rest_api_path ) ).thenReturn(
                 dataUri );
 
         String baseUri = "http://www.example.com";
@@ -104,7 +104,10 @@ public class DiscoveryServiceTest
     @Test
     public void shouldReturnRedirectToAbsoluteAPIUsingOutputFormat() throws Exception
     {
-        Configuration mockConfig = mock( Configuration.class );
+        Config mockConfig = mock( Config.class );
+        URI browserUri = new URI( "/browser" );
+        when( mockConfig.get( ServerInternalSettings.browser_path ) ).thenReturn(
+                browserUri );
 
         String baseUri = "http://www.example.com:5435";
         DiscoveryService ds = new DiscoveryService( mockConfig, new EntityOutputFormat( new JsonFormat(), new URI(

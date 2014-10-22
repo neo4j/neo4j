@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.web.logging;
 
-import org.apache.commons.configuration.Configuration;
 import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 
@@ -28,10 +27,11 @@ import java.io.IOException;
 import java.util.UUID;
 
 import org.neo4j.kernel.impl.util.Charsets;
+import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.ServerStartupException;
 import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.configuration.MapBasedConfiguration;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.preflight.EnsurePreparedForHttpLogging;
@@ -191,9 +191,9 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
         final File configFile = HTTPLoggingPreparednessRuleTest.createConfigFile(
                 HTTPLoggingPreparednessRuleTest.createLogbackConfigXml( unwritableLogDir ), confDir );
 
-        Configuration config = new MapBasedConfiguration();
-        config.setProperty( Configurator.HTTP_LOGGING, "true" );
-        config.setProperty( Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath() );
+        Config config = new Config( MapUtil.stringMap(
+                Configurator.HTTP_LOGGING, "true",
+                Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath() ) );
 
         NeoServer server = CommunityServerBuilder.server().withDefaultDatabaseTuning()
                 .withPreflightTasks( new EnsurePreparedForHttpLogging( config ) )
@@ -225,6 +225,7 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
     {
         return new Condition()
         {
+            @Override
             public boolean evaluate()
             {
                 return occursIn( query, new File( logDirectory, "http.log" ) );

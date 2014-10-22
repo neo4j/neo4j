@@ -22,8 +22,6 @@ package org.neo4j.server.preflight;
 import java.io.File;
 import java.util.Map;
 
-import org.apache.commons.configuration.Configuration;
-
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
@@ -36,7 +34,7 @@ import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.NeoServerSettings;
 
 import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;
 
@@ -44,12 +42,12 @@ public class PerformUpgradeIfNecessary implements PreflightTask
 {
     private final Logging logging;
     private String failureMessage = "Unable to upgrade database";
-    private final Configuration config;
+    private final Config config;
     private final Map<String, String> dbConfig;
     private final ConsoleLogger log;
     private final Monitor monitor;
 
-    public PerformUpgradeIfNecessary( Configuration serverConfig, Map<String, String> dbConfig,
+    public PerformUpgradeIfNecessary( Config serverConfig, Map<String, String> dbConfig,
             Logging logging, StoreUpgrader.Monitor monitor )
     {
         this.config = serverConfig;
@@ -64,15 +62,13 @@ public class PerformUpgradeIfNecessary implements PreflightTask
     {
         try
         {
-            String dbLocation = new File( config.getString( Configurator.DATABASE_LOCATION_PROPERTY_KEY ) )
-                    .getAbsolutePath();
+            File storeDir = config.get( NeoServerSettings.legacy_db_location );
 
-            if ( new CurrentDatabase(new StoreVersionCheck( new DefaultFileSystemAbstraction() ) ).storeFilesAtCurrentVersion( new File( dbLocation ) ) )
+            if ( new CurrentDatabase(new StoreVersionCheck( new DefaultFileSystemAbstraction() ) ).storeFilesAtCurrentVersion( storeDir ) )
             {
                 return true;
             }
 
-            File storeDir = new File( dbLocation );
             FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
             UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( fileSystem ) );
             if ( !upgradableDatabase.storeFilesUpgradeable( storeDir ) )
@@ -82,7 +78,7 @@ public class PerformUpgradeIfNecessary implements PreflightTask
 
             try
             {
-                new StoreMigrationTool().run( dbLocation,
+                new StoreMigrationTool().run( storeDir.getAbsolutePath(),
                         configForStoreDir( new Config( dbConfig ), storeDir ), logging, monitor );
             }
             catch ( UpgradeNotAllowedByConfigurationException e )

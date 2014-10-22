@@ -19,12 +19,9 @@
  */
 package org.neo4j.server.preflight;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.Properties;
+import java.util.Objects;
 
-import org.apache.commons.configuration.Configuration;
-import org.neo4j.server.configuration.Configurator;
+import org.neo4j.kernel.configuration.Config;
 
 public class EnsureNeo4jPropertiesExist implements PreflightTask
 {
@@ -32,11 +29,11 @@ public class EnsureNeo4jPropertiesExist implements PreflightTask
     private boolean passed = false;
     private boolean ran = false;
     protected String failureMessage = EMPTY_STRING;
-	private Configuration config;
-    
-    public EnsureNeo4jPropertiesExist(Configuration config)
+    private final Config config;
+
+    public EnsureNeo4jPropertiesExist(Config config)
     {
-    	this.config = config;
+        this.config = Objects.requireNonNull( config );
     }
 
     @Override
@@ -44,45 +41,11 @@ public class EnsureNeo4jPropertiesExist implements PreflightTask
     {
         ran = true;
 
-        String configFilename = config.getString( Configurator.NEO_SERVER_CONFIG_FILE_KEY );
-
-        if(configFilename == null)
-        {
-        	failureMessage = String.format( "No server configuration file set, unable to load configuration. Expected system property '%s' to point to config file.", Configurator.NEO_SERVER_CONFIG_FILE_KEY );
-            return false;
-        }
-        
-        Properties configProperties = new Properties();
-        FileInputStream inputStream = null;
-        try
-        {
-            inputStream = new FileInputStream( configFilename );
-            configProperties.load( inputStream );
-        }
-        catch ( IOException e )
-        {
-            failureMessage = String.format( "Failed to load configuration properties from [%s]", configFilename );
-            return false;
-        }
-        finally
-        {
-            if ( inputStream != null )
-            {
-                try
-                {
-                    inputStream.close();
-                }
-                catch ( IOException e )
-                { // Couldn't close it
-                }
-            }
-        }
-
-        passed = validateProperties( configProperties );
+        passed = validateProperties( config );
         return passed;
     }
 
-    protected boolean validateProperties( Properties configProperties )
+    protected boolean validateProperties( Config config )
     {
         // default implementation: all OK
         return true;

@@ -25,10 +25,11 @@ import java.util.List;
 
 import org.junit.Test;
 
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.server.CommunityNeoServer;
-import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.configuration.PropertyFileConfigurator;
+import org.neo4j.server.configuration.ConfigurationBuilder;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.web.WebServer;
@@ -51,16 +52,18 @@ public class ThirdPartyJAXRSModuleTest
         when( neoServer.baseUri() ).thenReturn( new URI( "http://localhost:7575" ) );
         when( neoServer.getWebServer() ).thenReturn( webServer );
         when( neoServer.getDatabase() ).thenReturn( mock(Database.class));
+        
+        ConfigurationBuilder configurator = mock( ConfigurationBuilder.class );
+        when( neoServer.getConfigurationBuilder() ).thenReturn( configurator );
 
-        Configurator configurator = mock( PropertyFileConfigurator.class );
+        Config config = mock( Config.class );
         List<ThirdPartyJaxRsPackage> jaxRsPackages = new ArrayList<ThirdPartyJaxRsPackage>();
         String path = "/third/party/package";
         jaxRsPackages.add( new ThirdPartyJaxRsPackage( "org.example.neo4j", path ) );
-        when( configurator.getThirdpartyJaxRsPackages() ).thenReturn( jaxRsPackages );
-
-        when( neoServer.getConfigurator() ).thenReturn( configurator );
-
-        ThirdPartyJAXRSModule module = new ThirdPartyJAXRSModule(webServer, configurator, DevNullLoggingService.DEV_NULL, neoServer );
+        when( config.get( ServerSettings.third_party_packages ) ).thenReturn( jaxRsPackages );
+        when( neoServer.getConfigurationBuilder().configuration() ).thenReturn( config );
+        
+        ThirdPartyJAXRSModule module = new ThirdPartyJAXRSModule(webServer, config, DevNullLoggingService.DEV_NULL, neoServer );
         module.start();
 
         verify( webServer ).addJAXRSPackages( any( List.class ), anyString(), anyCollection() );

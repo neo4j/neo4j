@@ -20,6 +20,7 @@
 package org.neo4j.helpers;
 
 import java.io.File;
+import java.net.URI;
 import java.util.List;
 
 import org.junit.Test;
@@ -39,6 +40,7 @@ import static org.neo4j.helpers.Settings.DURATION;
 import static org.neo4j.helpers.Settings.INTEGER;
 import static org.neo4j.helpers.Settings.MANDATORY;
 import static org.neo4j.helpers.Settings.NO_DEFAULT;
+import static org.neo4j.helpers.Settings.NORMALIZED_RELATIVE_URI;
 import static org.neo4j.helpers.Settings.PATH;
 import static org.neo4j.helpers.Settings.STRING;
 import static org.neo4j.helpers.Settings.basePath;
@@ -332,5 +334,15 @@ public class SettingsTest
 
         // When && then
         assertThat(memUse.apply( Functions.<String,String>constant( null ) ), greaterThan( 0l ));
+    }
+    
+    @Test
+    public void testNormalizedRelativeURI() throws Exception
+    {
+        // Given
+        Setting<URI> uri = setting( "mySetting", NORMALIZED_RELATIVE_URI, "http://localhost:7474///db///data///" );
+        
+        // When && then
+        assertThat( uri.apply( Functions.<String,String>constant( null ) ).toString(), equalTo( "/db/data" ) );
     }
 }
