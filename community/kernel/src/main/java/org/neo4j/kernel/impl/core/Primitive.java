@@ -43,31 +43,28 @@ public abstract class Primitive implements SizeOfObject
     public abstract long getId();
 
     public Iterator<DefinedProperty> getProperties( CacheLoader<Iterator<DefinedProperty>> loader,
-                                                    CacheUpdateListener updateListener,
-                                                    PropertyChainVerifier chainVerifier )
+                                                    CacheUpdateListener updateListener )
     {
-        return ensurePropertiesLoaded( loader, updateListener, chainVerifier );
+        return ensurePropertiesLoaded( loader, updateListener );
     }
 
     public Property getProperty( CacheLoader<Iterator<DefinedProperty>> loader,
-                                 CacheUpdateListener updateListener, int key,
-                                 PropertyChainVerifier chainVerifier )
+                                 CacheUpdateListener updateListener,
+                                 int key )
     {
-        ensurePropertiesLoaded( loader, updateListener, chainVerifier );
+        ensurePropertiesLoaded( loader, updateListener );
         return getCachedProperty( key );
     }
 
     public PrimitiveLongIterator getPropertyKeys( CacheLoader<Iterator<DefinedProperty>> cacheLoader,
-                                                  CacheUpdateListener updateListener,
-                                                  PropertyChainVerifier chainVerifier )
+                                                  CacheUpdateListener updateListener )
     {
-        ensurePropertiesLoaded( cacheLoader, updateListener, chainVerifier );
+        ensurePropertiesLoaded( cacheLoader, updateListener );
         return getCachedPropertyKeys();
     }
 
     private Iterator<DefinedProperty> ensurePropertiesLoaded( CacheLoader<Iterator<DefinedProperty>> loader,
-                                                              CacheUpdateListener updateListener,
-                                                              PropertyChainVerifier chainVerifier )
+                                                              CacheUpdateListener updateListener )
     {
         if ( !hasLoadedProperties() )
         {
@@ -78,7 +75,7 @@ public abstract class Primitive implements SizeOfObject
                     try
                     {
                         Iterator<DefinedProperty> loadedProperties = loader.load( getId() );
-                        setProperties( loadedProperties, chainVerifier );
+                        setProperties( loadedProperties );
                         updateListener.newSize( this, sizeOfObjectInBytesIncludingOverhead() );
                     }
                     catch ( InvalidRecordException | EntityNotFoundException e )
@@ -103,7 +100,7 @@ public abstract class Primitive implements SizeOfObject
 
     protected abstract void setEmptyProperties();
 
-    protected abstract void setProperties( Iterator<DefinedProperty> properties, PropertyChainVerifier chainVerifier );
+    protected abstract void setProperties( Iterator<DefinedProperty> properties );
 
     protected abstract DefinedProperty getPropertyForIndex( int keyId );
 

@@ -19,20 +19,15 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static java.lang.System.currentTimeMillis;
+
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.PropertyTracker;
-import org.neo4j.kernel.impl.util.CappedOperation;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.Logging;
-
-import static java.lang.System.currentTimeMillis;
 
 public class NodeManager extends LifecycleAdapter implements EntityFactory
 {
@@ -42,23 +37,17 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
 
     private final List<PropertyTracker<Node>> nodePropertyTrackers;
     private final List<PropertyTracker<Relationship>> relationshipPropertyTrackers;
-    private final Logging logging;
     private long epoch;
-    private PropertyChainVerifier propertyChainVerifier;
 
     public NodeManager( NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relationshipLookups,
-                        ThreadToStatementContextBridge threadToTransactionBridge, Logging logging )
+                        ThreadToStatementContextBridge threadToTransactionBridge )
     {
         this.nodeLookup = nodeLookup;
         this.relationshipLookups = relationshipLookups;
         this.threadToTransactionBridge = threadToTransactionBridge;
         this.nodePropertyTrackers = new LinkedList<>();
         this.relationshipPropertyTrackers = new LinkedList<>();
-        this.logging = logging;
-        this.propertyChainVerifier = new NoDuplicatesPropertyChainVerifier();
     }
-
-    private GraphPropertiesImpl graphProperties;
 
     @Override
     public void init()
@@ -69,11 +58,6 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
     public void start() throws Throwable
     {
         epoch = currentTimeMillis();
-        propertyChainVerifier.addObserver( new CappedLoggingDuplicatePropertyObserver(
-                new ConsoleLogger( StringLogger.cappedLogger(
-                        logging.getMessagesLog( NoDuplicatesPropertyChainVerifier.class ),
-                        CappedOperation.<String>time( 2, TimeUnit.HOURS ) ) )
-        ) );
     }
 
     @Override
@@ -121,31 +105,5 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
     public void removeRelationshipPropertyTracker( PropertyTracker<Relationship> relationshipPropertyTracker )
     {
         relationshipPropertyTrackers.remove( relationshipPropertyTracker );
-    }
-
-    public PropertyChainVerifier getPropertyChainVerifier()
-    {
-        return propertyChainVerifier;
-    }
-
-    public static class CappedLoggingDuplicatePropertyObserver implements PropertyChainVerifier.Observer
-    {
-        public static final String DUPLICATE_WARNING_MESSAGE = "WARNING: Duplicate property records have been " +
-                "detected in" +
-                " this database store. For further details and resolution please refer to http://neo4j" +
-                ".com/technote/cr73nh";
-
-        private final ConsoleLogger consoleLogger;
-
-        public CappedLoggingDuplicatePropertyObserver( ConsoleLogger consoleLogger )
-        {
-            this.consoleLogger = consoleLogger;
-        }
-
-        @Override
-        public void inconsistencyFound( Primitive owningPrimitive )
-        {
-            consoleLogger.log( DUPLICATE_WARNING_MESSAGE );
-        }
     }
 }

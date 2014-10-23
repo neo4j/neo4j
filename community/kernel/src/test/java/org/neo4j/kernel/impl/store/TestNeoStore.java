@@ -19,6 +19,16 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
+import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -36,7 +46,6 @@ import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -106,17 +115,6 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
-import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;
 
 public class TestNeoStore
 {
@@ -216,7 +214,7 @@ public class TestNeoStore
         when(locks.newClient()).thenReturn( lockClient );
         DefaultCaches caches = new DefaultCaches( StringLogger.DEV_NULL, new Monitors() );
         caches.configure( new NoCacheProvider(), config );
-        NodeManager nodeManager = new NodeManager( null, null, new ThreadToStatementContextBridge(), null );
+        NodeManager nodeManager = new NodeManager( null, null, new ThreadToStatementContextBridge() );
         ds = new NeoStoreDataSource(config, sf, StringLogger.DEV_NULL,
                 null, DevNullLoggingService.DEV_NULL,
                 new KernelSchemaStateStore(),
