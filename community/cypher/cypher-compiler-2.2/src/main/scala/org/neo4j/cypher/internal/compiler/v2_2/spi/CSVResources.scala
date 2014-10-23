@@ -23,8 +23,12 @@ import java.io._
 import java.net.{CookieHandler, CookieManager, CookiePolicy, URL}
 
 import au.com.bytecode.opencsv.CSVReader
+import org.neo4j.csv.reader._
 import org.neo4j.cypher.internal.compiler.v2_2.{LoadExternalResourceException, TaskCloser}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.ExternalResource
+
+import scala.collection.mutable.ArrayBuffer
+import scala.util.control.Breaks._
 
 object CSVResources {
   val DEFAULT_FIELD_TERMINATOR: Char = ','
@@ -36,20 +40,40 @@ class CSVResources(cleaner: TaskCloser) extends ExternalResource {
     val inputStream = openStream(url)
     val reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"))
     val csvReader = new CSVReader(reader, fieldTerminator.map(_.charAt(0)).getOrElse(CSVResources.DEFAULT_FIELD_TERMINATOR))
+    val terminator: Char = fieldTerminator.map(_.charAt(0)).getOrElse(CSVResources.DEFAULT_FIELD_TERMINATOR)
+    val seeker = QuoteAwareCharSeeker.quoteAware(CharSeekers.charSeeker(reader, true), '"')
+    val extractors = new Extractors(terminator)
 
     cleaner.addTask(_ => {
-      csvReader.close()
+      seeker.close()
     })
 
     new Iterator[Array[String]] {
-      var nextRow: Array[String] = csvReader.readNext()
+      private def readNextRow: Array[String] = {
+        val mark = new Mark
+        val buffer = new ArrayBuffer[String]
+        breakable {
+          while (seeker.seek( mark, Array(terminator.toInt))) {
+          buffer += seeker.extract(mark, extractors.string()).value()
+
+          if (mark.isEndOfLine) break
+        }}
+
+        if (buffer.isEmpty) {
+          null
+        } else {
+          buffer.toArray
+        }
+      }
+
+      var nextRow: Array[String] = readNextRow
 
       def hasNext: Boolean = nextRow != null
 
       def next(): Array[String] = {
         if (!hasNext) Iterator.empty.next()
         val row = nextRow
-        nextRow = csvReader.readNext()
+        nextRow = readNextRow
         row
       }
     }

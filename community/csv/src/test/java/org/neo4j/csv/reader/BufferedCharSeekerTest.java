@@ -307,6 +307,100 @@ public class BufferedCharSeekerTest
         fail( "Test not implemented" );
     }
 
+    @Test
+    public void shouldReadQuotes() throws Exception
+    {
+        // GIVEN
+        CharSeeker seeker = new BufferedCharSeeker( new StringReader(
+                "value one\t\"value two\"\tvalue three" ) );
+        Mark mark = new Mark();
+        // WHEN/THEN
+        assertTrue( seeker.seek( mark, TAB ) );
+        assertEquals( "value one", seeker.extract( mark, extractors.string() ).value() );
+
+        assertTrue( seeker.seek( mark, TAB ) );
+        assertEquals( "value two", seeker.extract( mark, extractors.string() ).value() );
+
+        assertTrue( seeker.seek( mark, TAB ) );
+        assertEquals( "value three", seeker.extract( mark, extractors.string() ).value() );
+    }
+
+    @Test
+    public void shouldReadQuotedValuesWithDelimiterInside() throws Exception
+    {
+        // GIVEN
+        CharSeeker seeker =  new BufferedCharSeeker( new StringReader(
+                "value one\t\"value\ttwo\"\tvalue three" ) );
+        Mark mark = new Mark();
+
+        // WHEN/THEN
+        assertTrue( seeker.seek( mark, TAB ) );
+        assertEquals( "value one", seeker.extract( mark, extractors.string() ).value() );
+
+        assertTrue( seeker.seek( mark, TAB ) );
+        assertEquals( "value\ttwo", seeker.extract( mark, extractors.string() ).value() );
+
+        assertTrue( seeker.seek( mark, TAB ) );
+        assertEquals( "value three", seeker.extract( mark, extractors.string() ).value() );
+    }
+
+    @Test
+    public void shouldReadQuotedValuesWithNewLinesInside() throws Exception
+    {
+        // GIVEN
+        CharSeeker seeker =  new BufferedCharSeeker( new StringReader(
+                "value one\t\"value\ntwo\"\tvalue three" ) );
+        Mark mark = new Mark();
+
+        // WHEN/THEN
+        assertTrue( seeker.seek( mark, TAB ) );
+        assertEquals( "value one", seeker.extract( mark, extractors.string() ).value() );
+
+        assertTrue( seeker.seek( mark, TAB ) );
+        assertEquals( "value\ntwo", seeker.extract( mark, extractors.string() ).value() );
+
+        assertTrue( seeker.seek( mark, TAB ) );
+        assertEquals( "value three", seeker.extract( mark, extractors.string() ).value() );
+    }
+
+    @Test
+    public void shouldHandleDoubleQuotes() throws Exception
+    {
+        // GIVEN
+        CharSeeker seeker = new BufferedCharSeeker( new StringReader(
+                "\"value \"\"one\"\"\"\t\"\"\"value\"\" two\"\t\"va\"\"lue\"\" three\"" ) );
+        Mark mark = new Mark();
+
+        // WHEN/THEN
+        assertTrue( seeker.seek( mark, TAB ) );
+        assertEquals( "value \"one\"", seeker.extract( mark, extractors.string() ).value() );
+
+        assertTrue( seeker.seek( mark, TAB ) );
+        assertEquals( "\"value\" two", seeker.extract( mark, extractors.string() ).value() );
+
+        assertTrue( seeker.seek( mark, TAB ) );
+        assertEquals( "va\"lue\" three", seeker.extract( mark, extractors.string() ).value() );
+    }
+
+    @Test
+    public void shouldHandleSlashEncodedQuotes() throws Exception
+    {
+        // GIVEN
+        CharSeeker seeker = new BufferedCharSeeker( new StringReader(
+                "\"value \\\"one\\\"\"\t\"\\\"value\\\" two\"\t\"va\\\"lue\\\" three\"" ) );
+        Mark mark = new Mark();
+
+        // WHEN/THEN
+        assertTrue( seeker.seek( mark, TAB ) );
+        assertEquals( "value \"one\"", seeker.extract( mark, extractors.string() ).value() );
+
+        assertTrue( seeker.seek( mark, TAB ) );
+        assertEquals( "\"value\" two", seeker.extract( mark, extractors.string() ).value() );
+
+        assertTrue( seeker.seek( mark, TAB ) );
+        assertEquals( "va\"lue\" three", seeker.extract( mark, extractors.string() ).value() );
+    }
+
     private String[][] randomWeirdValues( int cols, int rows, char... except )
     {
         String[][] data = new String[rows][cols];
