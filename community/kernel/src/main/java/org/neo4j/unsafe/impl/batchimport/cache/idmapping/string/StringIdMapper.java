@@ -78,16 +78,12 @@ public class StringIdMapper implements IdMapper
 
     private static IntArray newIntArray( LongArrayFactory cacheFactory )
     {
-        IntArray cache = intArray( cacheFactory.newDynamicLongArray( CACHE_CHUNK_SIZE ) );
-        cache.setAll( -1 );
-        return cache;
+        return intArray( cacheFactory.newDynamicLongArray( CACHE_CHUNK_SIZE ) ).setAll( -1 );
     }
 
     private static LongArray newLongArray( LongArrayFactory cacheFactory )
     {
-        LongArray cache = cacheFactory.newDynamicLongArray( CACHE_CHUNK_SIZE );
-        cache.setAll( -1 );
-        return cache;
+        return cacheFactory.newDynamicLongArray( CACHE_CHUNK_SIZE ).setAll( -1 );
     }
 
     @Override

@@ -90,7 +90,7 @@ public class NodeLabelsCacheTest
     public void shouldEndTargetArrayWithMinusOne() throws Exception
     {
         // GIVEN
-        NodeLabelsCache cache = new NodeLabelsCache( LongArrayFactory.AUTO, CHUNK_SIZE );
+        NodeLabelsCache cache = new NodeLabelsCache( LongArrayFactory.AUTO, 10 );
         cache.put( 10, new long[] { 5, 6, 7, 8 } );
 
         // WHEN
@@ -103,6 +103,20 @@ public class NodeLabelsCacheTest
 
         // THEN
         assertEquals( -1, target[4] );
+    }
+
+    @Test
+    public void shouldReturnEmptyArrayForNodeWithNoLabelsAndNoLabelsWhatsoever() throws Exception
+    {
+        // GIVEN
+        NodeLabelsCache cache = new NodeLabelsCache( LongArrayFactory.AUTO, 0 );
+
+        // WHEN
+        int[] target = new int[3];
+        cache.get( 0, target );
+
+        // THEN
+        assertEquals( -1, target[0] );
     }
 
     private long[] asLongArray( int[] labels )

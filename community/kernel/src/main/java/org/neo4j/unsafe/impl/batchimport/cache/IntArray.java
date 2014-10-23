@@ -61,12 +61,13 @@ public class IntArray implements NumberArray
         longs.set( longIndex, longValue );
     }
 
-    public void setAll( int value )
+    public IntArray setAll( int value )
     {
         long longValue = 0;
         longValue = LONG_BITS.set( longValue, 0, value );
         longValue = LONG_BITS.set( longValue, 1, value );
         longs.setAll( longValue );
+        return this;
     }
 
     @Override

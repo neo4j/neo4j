@@ -34,7 +34,6 @@ public class NodeLabelsCache
     private final LongArray cache;
     private final LongArray spillOver;
     private long spillOverIndex;
-    private final int highLabelId;
     private final int bitsPerLabel;
 
     private final long[] labelScratch;
@@ -49,9 +48,8 @@ public class NodeLabelsCache
 
     public NodeLabelsCache( LongArrayFactory cacheFactory, int highLabelId, int chunkSize )
     {
-        this.cache = cacheFactory.newDynamicLongArray( chunkSize );
-        this.spillOver = cacheFactory.newDynamicLongArray( chunkSize / 5 ); // expect way less of these
-        this.highLabelId = highLabelId;
+        this.cache = cacheFactory.newDynamicLongArray( chunkSize ).setAll( 0 );
+        this.spillOver = cacheFactory.newDynamicLongArray( chunkSize / 5 ).setAll( 0 ); // expect way less of these
         this.bitsPerLabel = Integer.SIZE-numberOfLeadingZeros( highLabelId );
 
         int worstCaseLongsNeeded = ((bitsPerLabel * (highLabelId+1 /*length slot*/)) - 1) / Long.SIZE + 1;
@@ -109,6 +107,12 @@ public class NodeLabelsCache
         // make this field available to our Bits instance, hackish? meh
         fieldBits.clear( false );
         fieldScratch[0] = cache.get( nodeId );
+        if ( fieldScratch[0] == 0 )
+        {   // Nothing here
+            target[0] = -1; // mark the end
+            return target;
+        }
+
         int length = fieldBits.getInt( bitsPerLabel );
         int longsInUse = ((bitsPerLabel * (length+1))-1) / Long.SIZE + 1;
         target = ensureCapacity( target, length );

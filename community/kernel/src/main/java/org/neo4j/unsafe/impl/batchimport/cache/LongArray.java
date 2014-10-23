@@ -29,5 +29,5 @@ public interface LongArray extends NumberArray
 
     void set( long index, long value );
 
-    void setAll( long value );
+    LongArray setAll( long value );
 }

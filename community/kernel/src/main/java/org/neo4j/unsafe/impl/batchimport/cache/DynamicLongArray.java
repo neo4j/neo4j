@@ -112,13 +112,14 @@ public class DynamicLongArray implements LongArray
     }
 
     @Override
-    public void setAll( long value )
+    public LongArray setAll( long value )
     {
         for ( LongArray chunk : chunks )
         {
             chunk.setAll( value );
         }
         setAllValue = value;
+        return this;
     }
 
     @Override
