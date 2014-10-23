@@ -168,22 +168,6 @@ public abstract class TokenHolder<TOKEN extends Token> extends LifecycleAdapter
         return id;
     }
 
-    public TOKEN getTokenByName( String name ) throws TokenNotFoundException
-    {
-        Integer id = nameToId.get( name );
-        if ( id == null )
-        {
-            throw new TokenNotFoundException( name );
-        }
-        return idToToken.get( id );
-    }
-
-    public TOKEN getTokenByNameOrNull( String name )
-    {
-        Integer id = nameToId.get( name );
-        return id != null ? idToToken.get( id ) : null;
-    }
-
     public Iterable<TOKEN> getAllTokens()
     {
         return idToToken.values();

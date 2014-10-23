@@ -24,7 +24,6 @@ import java.util.Iterator;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
@@ -32,7 +31,6 @@ import org.neo4j.kernel.impl.api.store.CacheLoader;
 import org.neo4j.kernel.impl.api.store.CacheUpdateListener;
 import org.neo4j.kernel.impl.cache.SizeOfObject;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
-import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 
 public abstract class Primitive implements SizeOfObject
 {
@@ -98,11 +96,7 @@ public abstract class Primitive implements SizeOfObject
 
     protected abstract boolean hasLoadedProperties();
 
-    protected abstract void setEmptyProperties();
-
     protected abstract void setProperties( Iterator<DefinedProperty> properties );
-
-    protected abstract DefinedProperty getPropertyForIndex( int keyId );
 
     public abstract void commitPropertyMaps(
             PrimitiveIntObjectMap<DefinedProperty> cowPropertyAddMap, Iterator<Integer> removed );
@@ -117,8 +111,4 @@ public abstract class Primitive implements SizeOfObject
     // Force subclasses to implement equals
     @Override
     public abstract boolean equals(Object other);
-
-    protected abstract Iterator<DefinedProperty> loadProperties( PropertyLoader loader );
-
-    abstract PropertyContainer asProxy( NodeManager nm );
 }

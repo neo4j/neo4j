@@ -41,12 +41,6 @@ public class SoftValue<K, V> extends SoftReference<V> implements ReferenceWithKe
         this.key = key;
     }
 
-    public SoftValue( K key, V value )
-    {
-        super( value );
-        this.key = key;
-    }
-
     @Override
     public K key()
     {

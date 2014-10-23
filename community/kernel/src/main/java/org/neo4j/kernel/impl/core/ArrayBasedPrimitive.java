@@ -76,12 +76,6 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSizeOb
         return withObjectOverhead( size );
     }
 
-    @Override
-    protected void setEmptyProperties()
-    {
-        properties = NO_PROPERTIES;
-    }
-
     private DefinedProperty[] toPropertyArray(
             Collection<DefinedProperty> loadedProperties )
     {
@@ -185,14 +179,6 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSizeOb
     protected void setProperties( Iterator<DefinedProperty> properties )
     {
         this.properties = toPropertyArray( asCollection( properties ) );
-    }
-
-    @Override
-    protected DefinedProperty getPropertyForIndex( int keyId )
-    {
-        DefinedProperty[] localProperties = properties;
-        int index = Arrays.binarySearch( localProperties, keyId, PROPERTY_DATA_COMPARATOR_FOR_BINARY_SEARCH );
-        return index < 0 ? null : localProperties[index];
     }
 
     @Override
