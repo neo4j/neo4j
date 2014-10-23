@@ -108,9 +108,8 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     }
 
     @Override
-    public WriteFuture switchBuffer()
+    public void emptyBufferIntoChannelAndClearIt()
     {
-        return WriteFuture.VOID;
     }
 
     @Override

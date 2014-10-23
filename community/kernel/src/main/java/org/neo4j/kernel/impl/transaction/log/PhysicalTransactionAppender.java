@@ -35,7 +35,7 @@ public class PhysicalTransactionAppender extends AbstractPhysicalTransactionAppe
     @Override
     protected void emptyBufferIntoChannel() throws IOException
     {
-        channel.switchBuffer().write();
+        channel.emptyBufferIntoChannelAndClearIt();
     }
 
     @Override

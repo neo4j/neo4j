@@ -22,60 +22,18 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.neo4j.function.Factory;
-import org.neo4j.kernel.impl.util.SimplePool;
-
 import static java.lang.Math.min;
 
 import static org.neo4j.helpers.Format.KB;
 
 public class PhysicalWritableLogChannel implements WritableLogChannel
 {
-    private class Buffer implements WriteFuture
-    {
-        private final ByteBuffer buffer = ByteBuffer.allocate( 512*KB );
-
-        @Override
-        public void write() throws IOException
-        {
-            try
-            {
-                buffer.flip();
-                if ( buffer.hasRemaining() )
-                {
-                    channel.write( buffer );
-                }
-                buffer.clear();
-            }
-            finally
-            {
-                buffers.release( this );
-            }
-        }
-    }
-
     private LogVersionedStoreChannel channel;
-    private final SimplePool<Buffer> buffers = new SimplePool<>( 2, new Factory<Buffer>()
-    {
-        @Override
-        public Buffer newInstance()
-        {
-            return new Buffer();
-        }
-    } );
-    private Buffer currentBuffer;
-    private ByteBuffer currentByteBuffer;
+    private final ByteBuffer buffer = ByteBuffer.allocate( 512*KB );
 
     public PhysicalWritableLogChannel( LogVersionedStoreChannel channel )
     {
         this.channel = channel;
-        acquireNewBuffer();
-    }
-
-    private void acquireNewBuffer()
-    {
-        currentBuffer = buffers.acquire();
-        currentByteBuffer = currentBuffer.buffer;
     }
 
     @Override
@@ -93,18 +51,11 @@ public class PhysicalWritableLogChannel implements WritableLogChannel
      * Assume some kind of external synchronization.
      */
     @Override
-    public WriteFuture switchBuffer()
+    public void emptyBufferIntoChannelAndClearIt() throws IOException
     {
-        try
-        {
-            // Return the current buffer which is also a WriteBuffer (no garbage created)
-            return currentBuffer;
-        }
-        finally
-        {
-            // And as part of returning it, also acquire a new one
-            acquireNewBuffer();
-        }
+        buffer.flip();
+        channel.write( buffer );
+        buffer.clear();
     }
 
     @Override
@@ -155,7 +106,7 @@ public class PhysicalWritableLogChannel implements WritableLogChannel
         int offset = 0;
         while ( offset < length )
         {
-            int chunkSize = min( length, currentByteBuffer.capacity() >> 1 );
+            int chunkSize = min( length, buffer.capacity() >> 1 );
             bufferWithGuaranteedSpace( chunkSize ).put( value, offset, chunkSize );
             offset += chunkSize;
         }
@@ -165,23 +116,23 @@ public class PhysicalWritableLogChannel implements WritableLogChannel
     @Override
     public LogPositionMarker getCurrentPosition( LogPositionMarker positionMarker ) throws IOException
     {
-        positionMarker.mark( channel.getVersion(), channel.position() + currentByteBuffer.position() );
+        positionMarker.mark( channel.getVersion(), channel.position() + buffer.position() );
         return positionMarker;
     }
 
     private ByteBuffer bufferWithGuaranteedSpace( int spaceInBytes ) throws IOException
     {
-        assert spaceInBytes < currentByteBuffer.capacity();
-        if ( currentByteBuffer.remaining() < spaceInBytes )
+        assert spaceInBytes < buffer.capacity();
+        if ( buffer.remaining() < spaceInBytes )
         {
-            switchBuffer().write();
+            emptyBufferIntoChannelAndClearIt();
         }
-        return currentByteBuffer;
+        return buffer;
     }
 
     @Override
     public void close() throws IOException
     {
-        switchBuffer().write();
+        emptyBufferIntoChannelAndClearIt();
     }
 }
