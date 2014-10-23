@@ -36,12 +36,6 @@ div(ng-controller="CypherResultCtrl", fullscreen)
             .status
               include partials/result-status
 
-          .view-result-table.result(ng-show='isActive("text")')
-            pre.ascii-table(ng-bind='ascii')
-          .status-bar(ng-show='isActive("text")')
-            .status
-              include partials/result-status
-
 
           .view-result-error.result(ng-show='frame.hasErrors')
             pre(ng-bind="frame.detailedErrorText")
