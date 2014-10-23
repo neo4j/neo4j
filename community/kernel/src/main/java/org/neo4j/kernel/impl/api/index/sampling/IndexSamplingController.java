@@ -29,7 +29,7 @@ import org.neo4j.kernel.impl.api.index.IndexMap;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 
-public class IndexSamplingController implements Runnable
+public class IndexSamplingController
 {
     private final IndexMapSnapshotProvider indexMapSnapshotProvider;
     private final IndexSamplingJobTracker jobTracker;
@@ -47,25 +47,53 @@ public class IndexSamplingController implements Runnable
         this.jobQueue = new IndexSamplingJobQueue();
     }
 
-    @Override
-    public void run()
+    public void sampleIndexes( IndexSamplingMode mode )
     {
         IndexMap indexMap = indexMapSnapshotProvider.indexMapSnapshot();
-        fillQueue( indexMap );
-        emptyQueue( indexMap );
+        switch ( mode )
+        {
+            case REBUILD_ALL:
+                fillQueue( false, indexMap );
+                break;
+
+            case REBUILD_UPDATED:
+            case TRY_REBUILD_UPDATED:
+                fillQueue( true, indexMap );
+                break;
+
+            default:
+                throw new IllegalArgumentException( "Unsupported sampling mode: " + mode.name() );
+        }
+        if ( mode.scheduleBlocking() )
+        {
+            emptyQueue( indexMap );
+        }
+        else
+        {
+            tryEmptyQueue( indexMap );
+        }
     }
 
-    private void fillQueue( IndexMap indexMap )
+    private void fillQueue( boolean ifUpdated, IndexMap indexMap )
     {
         Iterator<IndexDescriptor> descriptors = indexMap.descriptors();
         while ( descriptors.hasNext() )
         {
             IndexDescriptor descriptor = descriptors.next();
-            jobQueue.sampleIndex( descriptor );
+            if ( !ifUpdated || shouldUpdateIndex( descriptor) )
+            {
+                jobQueue.sampleIndex( descriptor );
+            }
         }
     }
 
-    private void emptyQueue( IndexMap indexMap )
+    private boolean shouldUpdateIndex( IndexDescriptor descriptor )
+    {
+        // TODO
+        return true;
+    }
+
+    private void tryEmptyQueue( IndexMap indexMap )
     {
         if ( emptyLock.tryLock() )
         {
@@ -79,13 +107,7 @@ public class IndexSamplingController implements Runnable
                         return;
                     }
 
-                    IndexProxy proxy = indexMap.getIndexProxy( descriptor );
-                    if ( proxy == null || proxy.getState() != InternalIndexState.ONLINE )
-                    {
-                        continue;
-                    }
-
-                    jobTracker.scheduleSamplingJob( jobFactory.create( proxy ) );
+                    sampleIndex( indexMap, descriptor );
                 }
             }
             finally
@@ -93,5 +115,35 @@ public class IndexSamplingController implements Runnable
                 emptyLock.unlock();
             }
         }
+    }
+
+    private void emptyQueue( IndexMap indexMap )
+    {
+        emptyLock.lock();
+        try
+        {
+            Iterable<IndexDescriptor> descriptors = jobQueue.pollAll();
+
+            for ( IndexDescriptor descriptor : descriptors )
+            {
+                jobTracker.waitUntilCanExecuteMoreSamplingJobs();
+                sampleIndex( indexMap, descriptor );
+            }
+        }
+        finally
+        {
+            emptyLock.unlock();
+        }
+    }
+
+    private void sampleIndex( IndexMap indexMap, IndexDescriptor descriptor )
+    {
+        IndexProxy proxy = indexMap.getIndexProxy( descriptor );
+        if ( proxy == null || proxy.getState() != InternalIndexState.ONLINE )
+        {
+            return;
+        }
+
+        jobTracker.scheduleSamplingJob( jobFactory.create( proxy ) );
     }
 }

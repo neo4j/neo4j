@@ -21,6 +21,9 @@ package org.neo4j.kernel.impl.api.index.sampling;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -30,47 +33,95 @@ public class IndexSamplingJobTracker
     private final JobScheduler jobScheduler;
     private final int jobLimit;
     private final Set<IndexDescriptor> executingJobDescriptors;
+    private final Lock lock = new ReentrantLock( true );
+    private final Condition canSchedule = lock.newCondition();
 
     public IndexSamplingJobTracker( JobScheduler jobScheduler, int jobLimit )
     {
+
         this.jobScheduler = jobScheduler;
         this.jobLimit = jobLimit;
         this.executingJobDescriptors = new HashSet<>();
     }
 
-    public synchronized boolean canExecuteMoreSamplingJobs()
+    public boolean canExecuteMoreSamplingJobs()
     {
-        return executingJobDescriptors.size() < jobLimit;
-    }
-
-    public synchronized void scheduleSamplingJob( final IndexSamplingJob samplingJob )
-    {
-        IndexDescriptor descriptor = samplingJob.descriptor();
-        if ( executingJobDescriptors.contains( descriptor ) )
+        lock.lock();
+        try
         {
-            return;
+            return executingJobDescriptors.size() < jobLimit;
         }
-
-        executingJobDescriptors.add( descriptor );
-        jobScheduler.schedule( JobScheduler.Group.indexSampling, new Runnable()
+        finally
         {
-            @Override
-            public void run()
-            {
-                try
-                {
-                    samplingJob.run();
-                }
-                finally
-                {
-                    samplingJobCompleted( samplingJob );
-                }
-            }
-        } );
+            lock.unlock();
+        }
     }
 
-    private synchronized void samplingJobCompleted( IndexSamplingJob samplingJob )
+    public void scheduleSamplingJob( final IndexSamplingJob samplingJob )
     {
-        executingJobDescriptors.remove( samplingJob.descriptor() );
+        lock.lock();
+        try
+        {
+            IndexDescriptor descriptor = samplingJob.descriptor();
+            if ( executingJobDescriptors.contains( descriptor ) )
+            {
+                return;
+            }
+
+            executingJobDescriptors.add( descriptor );
+            jobScheduler.schedule( JobScheduler.Group.indexSampling, new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    try
+                    {
+                        samplingJob.run();
+                    }
+                    finally
+                    {
+                        samplingJobCompleted( samplingJob );
+                    }
+                }
+            } );
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
+    private void samplingJobCompleted( IndexSamplingJob samplingJob )
+    {
+        lock.lock();
+        try
+        {
+            executingJobDescriptors.remove( samplingJob.descriptor() );
+            canSchedule.signalAll();
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
+    public void waitUntilCanExecuteMoreSamplingJobs()
+    {
+        lock.lock();
+        try
+        {
+            while ( true )
+            {
+                if ( canExecuteMoreSamplingJobs() )
+                {
+                    return;
+                }
+                canSchedule.awaitUninterruptibly();
+            }
+        }
+        finally
+        {
+            lock.unlock();
+        }
     }
 }

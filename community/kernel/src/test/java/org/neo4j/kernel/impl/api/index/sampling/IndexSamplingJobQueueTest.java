@@ -21,10 +21,16 @@ package org.neo4j.kernel.impl.api.index.sampling;
 
 import org.junit.Test;
 
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.neo4j.helpers.collection.Iterables.toArray;
+
+import java.util.Arrays;
 
 public class IndexSamplingJobQueueTest
 {
@@ -62,6 +68,26 @@ public class IndexSamplingJobQueueTest
 
         // then
         assertEquals( descriptor, queue.poll() );
+        assertNull( queue.poll() );
+    }
+
+    @Test
+    public void dequeuesAll()
+    {
+        // given
+        IndexSamplingJobQueue queue = new IndexSamplingJobQueue();
+        IndexDescriptor anotherDescriptor = new IndexDescriptor( 3, 4 );
+        queue.sampleIndex( descriptor );
+        queue.sampleIndex( anotherDescriptor );
+
+        // when
+        Iterable<IndexDescriptor> descriptors = queue.pollAll();
+
+        // then
+        assertArrayEquals(
+                new IndexDescriptor[]{descriptor, anotherDescriptor},
+                toArray( IndexDescriptor.class, descriptors )
+        );
         assertNull( queue.poll() );
     }
 }

@@ -19,14 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import static java.lang.String.format;
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.collection.Iterables.concatResourceIterators;
-import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
-import static org.neo4j.kernel.impl.util.JobScheduler.Group.indexSamplingController;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -61,6 +53,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingJobTracker;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
 import org.neo4j.kernel.impl.api.index.sampling.OnlineIndexSamplingJobFactory;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
@@ -72,6 +65,16 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
+
+import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.collection.Iterables.concatResourceIterators;
+import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
+import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.TRY_REBUILD_UPDATED;
+import static org.neo4j.kernel.impl.util.JobScheduler.Group.indexSamplingController;
 
 /**
  * Manages the indexes that were introduced in 2.0. These indexes depend on the normal neo4j logical log for
@@ -105,6 +108,7 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
     private final UpdateableSchemaState updateableSchemaState;
     private final Set<Long> recoveredNodeIds = new HashSet<>();
     private final Monitor monitor;
+    private final IndexSamplingController samplingController;
 
     enum State
     {
@@ -160,6 +164,7 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
         this.logger = logging.getMessagesLog( getClass() );
         this.updateableSchemaState = updateableSchemaState;
         this.tokenNameLookup = tokenNameLookup;
+        this.samplingController = createIndexSamplingController();
 
         if ( providerMap == null || providerMap.getDefaultProvider() == null )
         {
@@ -280,7 +285,7 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
         indexMapReference.setIndexMap( indexMap );
         state = State.RUNNING;
 
-        scheduler.scheduleRecurring( indexSamplingController, createIndexSamplingController(), 10, SECONDS );
+        scheduler.scheduleRecurring( indexSamplingController, createSamplingRunner(), 10, SECONDS );
     }
 
     @Override
@@ -511,6 +516,11 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
         }
     }
 
+    public void triggerIndexSampling( IndexSamplingMode mode )
+    {
+        samplingController.sampleIndexes( mode );
+    }
+
     private IndexProxy createAndStartPopulatingIndexProxy( final long ruleId,
                                                            final IndexDescriptor descriptor,
                                                            final SchemaIndexProvider.Descriptor providerDescriptor,
@@ -629,6 +639,18 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
                 new OnlineIndexSamplingJobFactory( maxUniqueElementsPerSampling, storeView, logging );
         IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( scheduler, NUMBER_OF_PARALLEL_INDEX_SAMPLING_JOBS );
         return new IndexSamplingController( jobFactory, jobTracker, this );
+    }
+
+    private Runnable createSamplingRunner()
+    {
+        return new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                samplingController.sampleIndexes( TRY_REBUILD_UPDATED );
+            }
+        };
     }
 
     private IndexProxy getOnlineProxyForRule( long indexId ) throws IndexNotFoundKernelException

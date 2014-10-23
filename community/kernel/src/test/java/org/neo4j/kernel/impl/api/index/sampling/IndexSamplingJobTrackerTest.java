@@ -23,6 +23,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
@@ -82,8 +83,9 @@ public class IndexSamplingJobTrackerTest
         JobScheduler jobScheduler = new Neo4jJobScheduler();
         jobScheduler.init();
 
-        IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( jobScheduler, 1 );
+        final IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( jobScheduler, 1 );
         final DoubleLatch latch = new DoubleLatch();
+        final DoubleLatch waitingLatch = new DoubleLatch();
 
         // when
         assertTrue( jobTracker.canExecuteMoreSamplingJobs() );
@@ -111,7 +113,29 @@ public class IndexSamplingJobTrackerTest
 
         assertFalse( jobTracker.canExecuteMoreSamplingJobs() );
 
+        final AtomicBoolean waiting = new AtomicBoolean( false );
+        new Thread( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                waiting.set( true );
+                waitingLatch.start();
+                jobTracker.waitUntilCanExecuteMoreSamplingJobs();
+                waiting.set( false );
+                waitingLatch.finish();
+            }
+        }).start();
+
+        waitingLatch.awaitStart();
+
+        assertTrue( waiting.get() );
+
         latch.finish();
+
+        waitingLatch.awaitFinish();
+
+        assertFalse( waiting.get() );
 
         // eventually we accept new jobs
         while( ! jobTracker.canExecuteMoreSamplingJobs() )

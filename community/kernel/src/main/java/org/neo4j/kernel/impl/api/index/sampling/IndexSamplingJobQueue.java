@@ -19,24 +19,41 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
+import java.util.ArrayDeque;
+import java.util.HashSet;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 import org.neo4j.kernel.api.index.IndexDescriptor;
 
 public class IndexSamplingJobQueue
 {
-    private final Queue<IndexDescriptor> queue = new ConcurrentLinkedDeque<>();
+    private final Queue<IndexDescriptor> queue = new ArrayDeque<>();
 
-    public void sampleIndex( IndexDescriptor descriptor ) {
+    public synchronized void sampleIndex( IndexDescriptor descriptor ) {
         if ( !queue.contains( descriptor ) )
         {
             queue.add( descriptor );
         }
     }
 
-    public IndexDescriptor poll()
+    public synchronized IndexDescriptor poll()
     {
         return queue.poll();
+    }
+
+    public synchronized Iterable<IndexDescriptor> pollAll()
+    {
+        Set<IndexDescriptor> descriptors = new HashSet<>();
+        while ( true )
+        {
+            IndexDescriptor descriptor = queue.poll();
+            if ( descriptor == null )
+            {
+                return descriptors;
+            }
+            descriptors.add( descriptor );
+        }
     }
 }
