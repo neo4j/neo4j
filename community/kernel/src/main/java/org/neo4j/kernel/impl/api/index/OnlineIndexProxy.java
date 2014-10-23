@@ -56,7 +56,7 @@ public class OnlineIndexProxy implements IndexProxy
     }
 
     @Override
-    public IndexUpdater newUpdater( final IndexUpdateMode mode, long transactionId )
+    public IndexUpdater newUpdater( final IndexUpdateMode mode )
     {
         return accessor.newUpdater( mode );
     }

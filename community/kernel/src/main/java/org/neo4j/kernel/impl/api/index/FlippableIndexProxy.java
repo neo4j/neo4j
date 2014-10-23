@@ -74,14 +74,14 @@ public class FlippableIndexProxy implements IndexProxy
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode, long transactionId )
+    public IndexUpdater newUpdater( IndexUpdateMode mode )
     {
         // Making use of reentrant locks to ensure that the delegate's constructor is called under lock protection
         // while still retaining the lock until a call to close on the returned IndexUpdater
         lock.readLock().lock();
         try
         {
-            return new LockingIndexUpdater( delegate.newUpdater( mode, transactionId ) );
+            return new LockingIndexUpdater( delegate.newUpdater( mode ) );
         }
         finally
         {

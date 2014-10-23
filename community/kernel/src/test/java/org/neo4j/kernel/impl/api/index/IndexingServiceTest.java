@@ -130,7 +130,7 @@ public class IndexingServiceTest
 
         verify( populator, timeout( 1000 ) ).close( true );
 
-        try (IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE, 42l ) )
+        try (IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE ) )
         {
             updater.process( add( 10, "foo" ) );
         }
@@ -182,7 +182,7 @@ public class IndexingServiceTest
         assertEquals( InternalIndexState.POPULATING, proxy.getState() );
 
         NodePropertyUpdate value2 = add( 2, "value2" );
-        try (IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE, 42 ) )
+        try (IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE ) )
         {
             updater.process( value2 );
         }
@@ -228,7 +228,7 @@ public class IndexingServiceTest
 
         verify( populator, timeout( 1000 ) ).close( true );
 
-        try (IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE, 42l ) )
+        try (IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE ) )
         {
             updater.process( add( 10, "foo" ) );
         }

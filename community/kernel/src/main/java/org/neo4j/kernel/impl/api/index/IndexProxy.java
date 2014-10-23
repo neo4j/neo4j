@@ -58,7 +58,7 @@ public interface IndexProxy
 {
     void start() throws IOException;
 
-    IndexUpdater newUpdater( IndexUpdateMode mode, long transactionId );
+    IndexUpdater newUpdater( IndexUpdateMode mode );
 
     /**
      * Initiates dropping this index context. The returned {@link Future} can be used to await

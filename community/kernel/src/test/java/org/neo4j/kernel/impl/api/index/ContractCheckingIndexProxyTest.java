@@ -31,8 +31,6 @@ import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.mockIndexPro
 
 public class ContractCheckingIndexProxyTest
 {
-    private final long transactionId = 42l;
-
     @Test( expected = /* THEN */ IllegalStateException.class )
     public void shouldNotCreateIndexTwice() throws IOException
     {
@@ -120,7 +118,7 @@ public class ContractCheckingIndexProxyTest
         IndexProxy outer = newContractCheckingIndexProxy( inner );
 
         // WHEN
-        try (IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE, transactionId ) )
+        try (IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE ) )
         {
             updater.process( null );
         }
@@ -136,7 +134,7 @@ public class ContractCheckingIndexProxyTest
         // WHEN
         outer.start();
         outer.close();
-        try (IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE, transactionId ))
+        try (IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE ))
         {
             updater.process( null );
         }
@@ -247,9 +245,9 @@ public class ContractCheckingIndexProxyTest
         final IndexProxy inner = new IndexProxyAdapter()
         {
             @Override
-            public IndexUpdater newUpdater( IndexUpdateMode mode, long transactionId )
+            public IndexUpdater newUpdater( IndexUpdateMode mode )
             {
-                return super.newUpdater( mode, transactionId );
+                return super.newUpdater( mode );
             }
         };
         final IndexProxy outer = newContractCheckingIndexProxy( inner );
@@ -261,7 +259,7 @@ public class ContractCheckingIndexProxyTest
             @Override
             public void run() throws IOException
             {
-                try (IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE, transactionId ))
+                try (IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE ))
                 {
                     updater.process( null );
                     latch.startAndAwaitFinish();

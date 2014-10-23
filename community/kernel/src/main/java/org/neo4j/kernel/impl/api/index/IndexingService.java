@@ -104,7 +104,7 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
     private final Logging logging;
     private final StringLogger logger;
     private final UpdateableSchemaState updateableSchemaState;
-    private List<RecoveredTx> _recoveredTransactions = null;
+    private final Set<Long> recoveredNodeIds = new HashSet<>();
     private final Monitor monitor;
 
     enum State
@@ -117,7 +117,7 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
 
     public interface Monitor
     {
-        void applyingRecoveredData( List<RecoveredTx> recoveredTransactions );
+        void applyingRecoveredData( Set<Long> recoveredNodeIds );
 
         void appliedRecoveredData( Iterable<NodePropertyUpdate> updates );
     }
@@ -130,7 +130,7 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
         }
 
         @Override
-        public void applyingRecoveredData( List<RecoveredTx> recoveredTransactions )
+        public void applyingRecoveredData( Set<Long> recoveredNodeIds )
         {   // Do nothing
         }
     }
@@ -373,7 +373,7 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
         {
 
             IndexUpdateMode mode = forceIdempotency ? IndexUpdateMode.RECOVERY : IndexUpdateMode.ONLINE;
-            try ( IndexUpdaterMap updaterMap = indexMapReference.createIndexUpdaterMap( mode, transactionId ) )
+            try ( IndexUpdaterMap updaterMap = indexMapReference.createIndexUpdaterMap( mode ) )
             {
                 applyUpdates( updates, updaterMap );
             }
@@ -382,7 +382,7 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
         {
             if( state == State.NOT_STARTED )
             {
-                currentRecoveredTransactions().add( new RecoveredTx( transactionId, updates.changedNodeIds() ) );
+                recoveredNodeIds.addAll( updates.changedNodeIds() );
             }
             else
             {
@@ -397,29 +397,25 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
 
     protected void applyRecoveredUpdates() throws IOException
     {
-        List<RecoveredTx> recoveredTransactions = currentRecoveredTransactions();
-        logger.debug( "Applying recovered updates: " + recoveredTransactions );
-        monitor.applyingRecoveredData( recoveredTransactions );
-        if ( !recoveredTransactions.isEmpty() )
+        logger.debug( "Applying recovered updates: " + recoveredNodeIds );
+        monitor.applyingRecoveredData( recoveredNodeIds );
+        if ( !recoveredNodeIds.isEmpty() )
         {
-            for ( RecoveredTx recoveredTx : recoveredTransactions )
+            try ( IndexUpdaterMap updaterMap = indexMapReference.createIndexUpdaterMap( IndexUpdateMode.RECOVERY ) )
             {
-                try ( IndexUpdaterMap updaterMap = indexMapReference.createIndexUpdaterMap( IndexUpdateMode.RECOVERY, recoveredTx.transactionId ) )
+                for ( IndexUpdater updater : updaterMap )
                 {
-                    for ( IndexUpdater updater : updaterMap )
-                    {
-                        updater.remove( recoveredTx.recoveredNodeIds );
-                    }
-                    for ( long nodeId : recoveredTx.recoveredNodeIds )
-                    {
-                        Iterable<NodePropertyUpdate> updates = storeView.nodeAsUpdates( nodeId );
-                        applyUpdates( updates, updaterMap );
-                        monitor.appliedRecoveredData( updates );
-                    }
+                    updater.remove( recoveredNodeIds );
+                }
+                for ( long nodeId : recoveredNodeIds )
+                {
+                    Iterable<NodePropertyUpdate> updates = storeView.nodeAsUpdates( nodeId );
+                    applyUpdates( updates, updaterMap );
+                    monitor.appliedRecoveredData( updates );
                 }
             }
         }
-        disposeRecoveredTransactions();
+        recoveredNodeIds.clear();
     }
 
     private void applyUpdates( Iterable<NodePropertyUpdate> updates,  IndexUpdaterMap updaterMap )
@@ -800,39 +796,5 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
         }
 
         return concatResourceIterators( snapshots.iterator() );
-    }
-
-    private List<RecoveredTx> currentRecoveredTransactions()
-    {
-        if ( _recoveredTransactions == null )
-        {
-            _recoveredTransactions = new ArrayList<>();
-        }
-        return _recoveredTransactions;
-    }
-
-    private void disposeRecoveredTransactions()
-    {
-        _recoveredTransactions = null;
-    }
-
-    private static class RecoveredTx
-    {
-        public final long transactionId;
-        public final Set<Long> recoveredNodeIds;
-
-        public RecoveredTx( long transactionId, Set<Long> recoveredNodeIds )
-        {
-            this.transactionId = transactionId;
-            this.recoveredNodeIds = recoveredNodeIds;
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format(
-                "RecoveredTx{transactionId=%d, recoveredNodeIds=%s}", transactionId, recoveredNodeIds
-            );
-        }
     }
 }

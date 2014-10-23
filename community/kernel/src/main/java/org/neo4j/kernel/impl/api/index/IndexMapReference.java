@@ -61,8 +61,8 @@ public class IndexMapReference
         return oldIndexMap.getAllIndexProxies();
     }
 
-    public IndexUpdaterMap createIndexUpdaterMap( IndexUpdateMode mode, long transactionId )
+    public IndexUpdaterMap createIndexUpdaterMap( IndexUpdateMode mode )
     {
-        return new IndexUpdaterMap( indexMap, mode, transactionId );
+        return new IndexUpdaterMap( indexMap, mode );
     }
 }

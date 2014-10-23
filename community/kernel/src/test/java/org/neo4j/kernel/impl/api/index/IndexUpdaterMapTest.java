@@ -60,15 +60,15 @@ public class IndexUpdaterMapTest
         indexDescriptor1 = new IndexDescriptor( 2, 3 );
         indexUpdater1 = mock( IndexUpdater.class );
         when( indexProxy1.getDescriptor() ).thenReturn( indexDescriptor1 );
-        when( indexProxy1.newUpdater( any( IndexUpdateMode.class ), anyLong()) ).thenReturn( indexUpdater1 );
+        when( indexProxy1.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( indexUpdater1 );
 
         indexProxy2 = mock( IndexProxy.class );
         indexDescriptor2 = new IndexDescriptor( 5, 6 );
         IndexUpdater indexUpdater2 = mock( IndexUpdater.class );
         when( indexProxy2.getDescriptor() ).thenReturn( indexDescriptor2 );
-        when( indexProxy2.newUpdater( any( IndexUpdateMode.class ), anyLong() ) ).thenReturn( indexUpdater2 );
+        when( indexProxy2.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( indexUpdater2 );
 
-        updaterMap = new IndexUpdaterMap( indexMap, IndexUpdateMode.ONLINE, transactionId );
+        updaterMap = new IndexUpdaterMap( indexMap, IndexUpdateMode.ONLINE );
     }
 
 

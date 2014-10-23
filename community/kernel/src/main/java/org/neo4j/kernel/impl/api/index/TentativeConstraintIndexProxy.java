@@ -50,7 +50,7 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode, long transactionId )
+    public IndexUpdater newUpdater( IndexUpdateMode mode )
     {
         switch( mode )
         {
@@ -85,7 +85,7 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
                 };
 
             case RECOVERY:
-                return super.newUpdater( mode, transactionId );
+                return super.newUpdater( mode );
 
             default:
                 throw new ThisShouldNotHappenError( "Stefan", "Unsupported IndexUpdateMode" );

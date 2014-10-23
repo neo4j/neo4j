@@ -40,7 +40,7 @@ public class IndexProxyAdapter implements IndexProxy
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode, long transactionId )
+    public IndexUpdater newUpdater( IndexUpdateMode mode )
     {
         return SwallowingIndexUpdater.INSTANCE;
     }

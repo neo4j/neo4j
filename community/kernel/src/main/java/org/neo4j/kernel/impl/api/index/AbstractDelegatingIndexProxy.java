@@ -45,9 +45,9 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode, long transactionId )
+    public IndexUpdater newUpdater( IndexUpdateMode mode )
     {
-        return getDelegate().newUpdater( mode, transactionId );
+        return getDelegate().newUpdater( mode );
     }
 
     @Override
