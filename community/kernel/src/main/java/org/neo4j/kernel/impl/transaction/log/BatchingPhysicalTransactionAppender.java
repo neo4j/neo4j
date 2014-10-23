@@ -26,12 +26,10 @@ import org.neo4j.function.Factory;
 import org.neo4j.kernel.impl.util.Counter;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 
-import static org.neo4j.kernel.impl.util.NumberUtil.haveSameSign;
-
 /**
  * Forces transactions in batches, as opposed to per transaction. There's a
- * {@link BatchingForceThread background thread} that does the actual forcing, where the committers merely waits
- * for that background thread to complete its round and increment a ticket they're waiting for.
+ * {@link BatchingForceThread background thread} that does the actual forcing, where the committers merely wait
+ * for that background thread to complete the force they're waiting for.
  */
 public class BatchingPhysicalTransactionAppender extends AbstractPhysicalTransactionAppender
 {
@@ -44,21 +42,33 @@ public class BatchingPhysicalTransactionAppender extends AbstractPhysicalTransac
      */
     public static final WaitStrategy DEFAULT_WAIT_STRATEGY = new WaitStrategy.Park( 10 /*ms*/ );
 
-    /**
-     * Incremented for every call to {@link #append(org.neo4j.kernel.impl.transaction.TransactionRepresentation)}
-     * and used by the appending thread to know when its transaction have been forced to disk.
-     */
-    private final Counter appenderTicket;
+    public static final long LOOK_AHEAD_WAIT_TIME_NANOS = 10_000;
+    public static final long MAX_FORCE_WAIT_TIME_MILLIS = 10;
 
-    /**
-     * Set to the value of {@link #appenderTicket}, what that value was before starting a call to force the channel,
-     * every time the channel has been forced, where calls to force are issued by the
-     * {@link BatchingForceThread}. That thread keeps on going as long as {@link #appenderTicket} is ahead,
-     * pauses a while if fully caught up.
+    /* The force counter counts up twice for each actual force, representing a count up before and after
+     * every force. This means that during an ongoing force the counter will be odd, and then when it completes
+     * it ill become even again.
+     *
+     * If a thread waiting for the force sees an even number, then it must wait for the next even number since there
+     * is no ongoing force. However, if it sees an odd number then there is an ongoing force and it is not sufficient
+     * to wait for this ongoing force to finish, but rather the subsequent one.
+     *
+     * This is realized by waiting for either +2 or +3 of the current force counter.
      */
-    private final Counter forceTicket;
+    private final Counter forceCount;
+
+    /* The wait and pass counters are used to keep track of the ongoing workload.
+     *
+     * The difference (waitCount-passCount) equals the number of appending threads
+     * waiting for a force to occur before they can proceed.
+     */
+    private final Counter waitCount;
+    private final Counter passCount;
+
     private boolean shutDown;
     private final BatchingForceThread forceThread;
+
+    volatile boolean forceThreadIdle = true;
 
     public BatchingPhysicalTransactionAppender( LogFile logFile,
             TransactionMetadataCache transactionMetadataCache, final TransactionIdStore transactionIdStore,
@@ -67,60 +77,90 @@ public class BatchingPhysicalTransactionAppender extends AbstractPhysicalTransac
             WaitStrategy idleBackoffStrategy )
     {
         super( logFile, transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering );
-        appenderTicket = counting.newInstance();
-        forceTicket = counting.newInstance();
+
+        waitCount = counting.newInstance();
+        passCount = counting.newInstance();
+
+        forceCount = counting.newInstance();
+
         forceThread = new BatchingForceThread( new BatchingForceThread.Operation()
         {
+            long lastForceMillis = 0;
+
             /**
              * Called by the forcing thread that forces now and then.
              */
             @Override
             public boolean force() throws IOException
             {
-                long currentAppenderTicket = appenderTicket.get();
-                if ( forceTicket.get() == currentAppenderTicket )
+                if(waitCount.get() == passCount.get())
                 {
-                    return false;
+                    forceThreadIdle = true;
+                    return false; // Nothing to do at the moment.
                 }
 
-                forceChannel();
-                forceTicket.set( currentAppenderTicket );
+                forceThreadIdle = false;
+
+                do
+                {
+                    long lastWaitCount = waitCount.get();
+                    long lookAheadStart = System.nanoTime();
+
+                    /* This is effectively a rate limiter on the single-threaded workload but is necessary
+                     * as a look-ahead time for batching the forcing in a multi-threaded workload.
+                     */
+                    do
+                    {
+                        Thread.yield();
+                    }
+                    while(System.nanoTime() - lookAheadStart < LOOK_AHEAD_WAIT_TIME_NANOS);
+
+                    /* Forcing is expensive and probably blocks all threads using the channel, thus in a multi-threaded
+                     * load against the same channel its usage must be carefully managed. The strategy here is to wait
+                     * until no more waiters trickle in during the look-ahead time or until 10 ms in total passes.
+                     */
+                    if ( lastWaitCount == waitCount.get() || (System.currentTimeMillis() - lastForceMillis) > MAX_FORCE_WAIT_TIME_MILLIS )
+                    {
+                        long fc = forceCount.get();
+
+                        forceCount.set( fc + 1 );
+                        forceChannel();
+                        forceCount.set( fc + 2 );
+
+                        lastForceMillis = System.currentTimeMillis();
+                        break;
+                    }
+                } while ( true );
+
                 return true;
             }
         }, idleBackoffStrategy );
-        forceThread.start();
-    }
 
-    /**
-     * Called by the appender.
-     */
-    @Override
-    protected long getNextTicket()
-    {
-        return appenderTicket.incrementAndGet();
+        forceThread.start();
     }
 
     /**
      * Called by the appender that just appended a transaction to the log.
      */
     @Override
-    protected void forceAfterAppend( long ticket ) throws IOException
+    protected void forceAfterAppend() throws IOException
     {
-        LockSupport.unpark( forceThread );
+        waitCount.incrementAndGet();
 
-        // Stay a while and listen... while:
-        while (  // the forcer hasn't yet caught up with me
-                 (ticket > forceTicket.get() ||
-                 // OR I've wrapped around Long.MAX_VALUE
-                 !haveSameSign( ticket, forceTicket.get() )) &&
+        long forcePass = forceCount.get() + 2;
+        if(forcePass % 2 != 0) forcePass++;
 
-                 // AND this appender hasn't yet been shut down
-                 !shutDown &&
-                 // AND the forcer is of good health
-                 forceThread.checkHealth() )
+        while(forcePass - forceCount.get() > 0 )
         {
-            LockSupport.parkNanos( 100_000 ); // 0,1 ms
+            if ( forceThreadIdle )
+            {
+                LockSupport.unpark( forceThread );
+            }
+
+            Thread.yield();
         }
+
+        passCount.incrementAndGet();
     }
 
     @Override

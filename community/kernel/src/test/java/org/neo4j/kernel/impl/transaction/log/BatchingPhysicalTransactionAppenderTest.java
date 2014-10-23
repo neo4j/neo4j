@@ -19,19 +19,17 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.Future;
 
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.function.Factory;
-import org.neo4j.kernel.impl.util.Counter;
+import static org.neo4j.kernel.impl.util.Counter.ATOMIC_LONG;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 
+import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -40,119 +38,49 @@ import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
 public class BatchingPhysicalTransactionAppenderTest
 {
     @Test
-    public void shouldWaitOnCorrectTicket() throws Exception
+    public void shouldWaitOnForce() throws Exception
     {
         // GIVEN
-        long highestValueBeforeWrappingAround = 3;
         LogFile logFile = mock( LogFile.class );
         when( logFile.getWriter() ).thenReturn( new InMemoryLogChannel() );
         TransactionMetadataCache cache = new TransactionMetadataCache( 10, 10 );
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
-        LimitedCounterFactory counters = new LimitedCounterFactory( highestValueBeforeWrappingAround, 0 );
         ControlledIdler forceThreadControl = new ControlledIdler();
         BatchingPhysicalTransactionAppender appender = new BatchingPhysicalTransactionAppender( logFile, cache,
-                transactionIdStore, BYPASS, counters, forceThreadControl );
-        Counter appendCounter = counters.createdCounters.get( 0 );
+                transactionIdStore, BYPASS, ATOMIC_LONG, forceThreadControl );
         OtherThreadExecutor<Void> t2 = cleanup.add( new OtherThreadExecutor<Void>( "T2", null ) );
 
         // WHEN setting the counter to its highest value before wrapping around
-        assertForceAfterAppendAwaitsCorrectForceTicket( t2, appender, forceThreadControl, appendCounter );
-    }
-
-    @Test
-    public void shouldHandleTicketsWrappingAround() throws Exception
-    {
-        // GIVEN
-        long highestValueBeforeWrappingAround = 3;
-        LogFile logFile = mock( LogFile.class );
-        when( logFile.getWriter() ).thenReturn( new InMemoryLogChannel() );
-        TransactionMetadataCache cache = new TransactionMetadataCache( 10, 10 );
-        TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
-        LimitedCounterFactory counters = new LimitedCounterFactory(
-                highestValueBeforeWrappingAround, highestValueBeforeWrappingAround );
-        ControlledIdler forceThreadControl = new ControlledIdler();
-        BatchingPhysicalTransactionAppender appender = new BatchingPhysicalTransactionAppender( logFile, cache,
-                transactionIdStore, BYPASS, counters, forceThreadControl );
-        Counter appendCounter = counters.createdCounters.get( 0 );
-        OtherThreadExecutor<Void> t2 = cleanup.add( new OtherThreadExecutor<Void>( "T2", null ) );
-
-        // and even WHEN wrapping around ticket the force must be awaited correctly
-        assertForceAfterAppendAwaitsCorrectForceTicket( t2, appender, forceThreadControl, appendCounter );
+        assertForceAfterAppendAwaitsCorrectForceTicket( t2, appender, forceThreadControl );
     }
 
     private void assertForceAfterAppendAwaitsCorrectForceTicket( OtherThreadExecutor<Void> t2,
-            BatchingPhysicalTransactionAppender appender, ControlledIdler forceThreadControl, Counter appendCounter ) throws Exception
+            BatchingPhysicalTransactionAppender appender, ControlledIdler forceThreadControl ) throws Exception
     {
         forceThreadControl.awaitIdle();
-        long ticket = appendCounter.incrementAndGet();
+
         // THEN forcing as part of append (forceAfterAppend) should await that ticket
-        Future<Object> forceFuture = t2.executeDontWait( forceAfterAppend( appender, ticket ) );
+        Future<Object> forceFuture = t2.executeDontWait( forceAfterAppend( appender ) );
+        Thread.sleep( 1 );
+        assertFalse( forceFuture.isDone() );
+
         forceThreadControl.letLoose();
         forceFuture.get();
     }
 
     public final @Rule CleanupRule cleanup = new CleanupRule();
 
-    private WorkerCommand<Void, Object> forceAfterAppend( final BatchingPhysicalTransactionAppender appender,
-            final long ticket )
+    private WorkerCommand<Void, Object> forceAfterAppend( final BatchingPhysicalTransactionAppender appender )
     {
         return new WorkerCommand<Void, Object>()
         {
             @Override
             public Object doWork( Void state ) throws Exception
             {
-                appender.forceAfterAppend( ticket );
+                appender.forceAfterAppend( );
                 return null;
             }
         };
-    }
-
-    private static class LimitedCounterFactory implements Factory<Counter>
-    {
-        private final List<Counter> createdCounters = new ArrayList<>();
-        private final long highestValue;
-        private final long initialValue;
-
-        public LimitedCounterFactory( long highestValue, long initialValue )
-        {
-            this.highestValue = highestValue;
-            this.initialValue = initialValue;
-        }
-
-        @Override
-        public Counter newInstance()
-        {
-            Counter counter = new Counter()
-            {
-                private long value = initialValue;
-
-                @Override
-                public void set( long value )
-                {
-                    assert value <= highestValue && value >= (-highestValue-1);
-                    this.value = value;
-                }
-
-                @Override
-                public long incrementAndGet()
-                {
-                    value++;
-                    if ( value > highestValue )
-                    {
-                        value = -highestValue-1;
-                    }
-                    return value;
-                }
-
-                @Override
-                public long get()
-                {
-                    return value;
-                }
-            };
-            createdCounters.add( counter );
-            return counter;
-        }
     }
 
     public class ControlledIdler implements WaitStrategy

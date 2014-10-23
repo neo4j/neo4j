@@ -87,7 +87,6 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
     public long append( TransactionRepresentation transaction ) throws IOException
     {
         long transactionId = -1;
-        long ticket;
         boolean hasLegacyIndexChanges, rotated;
         // Synchronized with logFile to get absolute control over concurrent rotations happening
         synchronized ( logFile )
@@ -97,10 +96,9 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
             rotated = logFile.checkRotation();
             transactionId = transactionIdStore.nextCommittingTransactionId();
             hasLegacyIndexChanges = append0( transaction, transactionId );
-            ticket = getNextTicket();
         }
 
-        forceAfterAppend( ticket );
+        forceAfterAppend( );
         pruneIfRotated( rotated );
         coordinateMultipleThreadsApplyingLegacyIndexChanges( hasLegacyIndexChanges, transactionId );
         return transactionId;
@@ -133,13 +131,10 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
     {
         forceChannel();
     }
-
-    protected abstract long getNextTicket();
-
     /**
      * Called as part of append.
      */
-    protected abstract void forceAfterAppend( long ticket ) throws IOException;
+    protected abstract void forceAfterAppend( ) throws IOException;
 
     protected final void forceChannel() throws IOException
     {

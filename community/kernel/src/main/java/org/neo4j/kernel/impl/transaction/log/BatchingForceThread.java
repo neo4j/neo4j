@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
+import java.util.concurrent.locks.LockSupport;
 
 import static org.neo4j.kernel.impl.util.DebugUtil.trackTest;
 
