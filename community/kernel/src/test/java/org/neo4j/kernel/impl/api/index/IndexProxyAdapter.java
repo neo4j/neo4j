@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -106,6 +107,12 @@ public class IndexProxyAdapter implements IndexProxy
     public ResourceIterator<File> snapshotFiles()
     {
         return emptyIterator();
+    }
+
+    @Override
+    public IndexConfiguration config()
+    {
+        return null;
     }
 
     @Override

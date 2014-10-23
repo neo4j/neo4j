@@ -26,6 +26,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import java.io.IOException;
 
 import org.junit.Test;
+import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -33,6 +34,7 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 public class FailedIndexProxyTest
 {
     private final IndexDescriptor descriptor = new IndexDescriptor( 1, 2 );
+    private final IndexConfiguration config = new IndexConfiguration( false );
     private final SchemaIndexProvider.Descriptor providerDescriptor = mock( SchemaIndexProvider.Descriptor.class );
     private final String userDescription = "description";
     private final IndexPopulator indexPopulator = mock( IndexPopulator.class );
@@ -43,8 +45,8 @@ public class FailedIndexProxyTest
     public void shouldRemoveIndexCountsWhenTheIndexItselfIsDropped() throws IOException
     {
         // given
-        FailedIndexProxy index = new FailedIndexProxy( descriptor, providerDescriptor, userDescription, indexPopulator,
-                indexPopulationFailure, indexCountsRemover );
+        FailedIndexProxy index = new FailedIndexProxy( descriptor, config, providerDescriptor, userDescription,
+                indexPopulator, indexPopulationFailure, indexCountsRemover );
 
         // when
         index.drop();

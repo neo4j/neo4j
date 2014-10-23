@@ -33,6 +33,7 @@ import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.ValueSampler;
@@ -85,6 +86,7 @@ public class OnlineIndexSamplingJobTest
     public void setup() throws IndexNotFoundKernelException
     {
         when( indexProxy.getDescriptor() ).thenReturn( indexDescriptor );
+        when( indexProxy.config() ).thenReturn( new IndexConfiguration( false ) );
         when( indexProxy.newReader() ).thenReturn( indexReader );
         doAnswer( answerWith( indexUniqueValues, indexSize ) ).when( indexReader )
                 .sampleIndex( any( ValueSampler.class ) );

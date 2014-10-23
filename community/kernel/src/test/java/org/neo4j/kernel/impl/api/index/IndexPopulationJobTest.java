@@ -64,6 +64,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -98,7 +99,7 @@ public class IndexPopulationJobTest
         // GIVEN
         String value = "Taylor";
         long nodeId = createNode( map( name, value ), FIRST );
-        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, new FlippableIndexProxy() );
+        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, new FlippableIndexProxy(), false );
 
         // WHEN
         job.run();
@@ -119,7 +120,7 @@ public class IndexPopulationJobTest
         String value = "Taylor";
         createNode( map( name, value ), FIRST );
         stateHolder.apply( MapUtil.stringMap( "key", "original_value" ) );
-        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, new FlippableIndexProxy() );
+        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, new FlippableIndexProxy(), false );
 
         // WHEN
         job.run();
@@ -138,7 +139,7 @@ public class IndexPopulationJobTest
         createNode( map( name, value ), SECOND );
         createNode( map( age, 31 ), FIRST );
         long node4 = createNode( map( age, 35, name, value ), FIRST );
-        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, new FlippableIndexProxy() );
+        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, new FlippableIndexProxy(), false );
 
         // WHEN
         job.run();
@@ -166,7 +167,7 @@ public class IndexPopulationJobTest
         int propertyKeyId = getPropertyKeyForName( name );
         NodeChangingWriter populator = new NodeChangingWriter( changeNode, propertyKeyId, value1, changedValue,
                 labelId );
-        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, new FlippableIndexProxy() );
+        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, new FlippableIndexProxy(), false );
         populator.setJob( job );
 
         // WHEN
@@ -191,7 +192,7 @@ public class IndexPopulationJobTest
         long node3 = createNode( map( name, value3 ), FIRST );
         int propertyKeyId = getPropertyKeyForName( name );
         NodeDeletingWriter populator = new NodeDeletingWriter( node2, propertyKeyId, value2, labelId );
-        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, new FlippableIndexProxy() );
+        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, new FlippableIndexProxy(), false );
         populator.setJob( job );
 
         // WHEN
@@ -214,7 +215,7 @@ public class IndexPopulationJobTest
         FlippableIndexProxy index = new FlippableIndexProxy();
 
         createNode( map( name, "Taylor" ), FIRST );
-        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, failingPopulator, index );
+        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, failingPopulator, index, false );
 
         // WHEN
         job.run();
@@ -236,7 +237,7 @@ public class IndexPopulationJobTest
                 Matchers.<Visitor<NodePropertyUpdate, RuntimeException>>any() ) ).thenReturn( storeScan );
 
         final IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, storeView,
-                StringLogger.DEV_NULL );
+                StringLogger.DEV_NULL, false );
 
         OtherThreadExecutor<Void> populationJobRunner = cleanup.add( new OtherThreadExecutor<Void>(
                 "Population job test runner", null ) );
@@ -276,7 +277,7 @@ public class IndexPopulationJobTest
         TestLogger logger = new TestLogger();
         FlippableIndexProxy index = mock( FlippableIndexProxy.class );
 
-        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, indexStoreView, logger );
+        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, indexStoreView, logger, false );
 
         // When
         job.run();
@@ -296,7 +297,7 @@ public class IndexPopulationJobTest
         TestLogger logger = new TestLogger();
         FlippableIndexProxy index = mock( FlippableIndexProxy.class );
 
-        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, indexStoreView, logger );
+        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, indexStoreView, logger, false );
 
         IllegalStateException failure = new IllegalStateException( "not successful" );
         doThrow( failure ).when( populator ).create();
@@ -315,7 +316,7 @@ public class IndexPopulationJobTest
         FailedIndexProxyFactory failureDelegateFactory = mock( FailedIndexProxyFactory.class );
         IndexPopulationJob job =
                 newIndexPopulationJob( FIRST, name, failureDelegateFactory, populator,
-                        new FlippableIndexProxy(), indexStoreView, new TestLogger() );
+                        new FlippableIndexProxy(), indexStoreView, new TestLogger(), false );
 
 
         IllegalStateException failure = new IllegalStateException( "not successful" );
@@ -341,7 +342,7 @@ public class IndexPopulationJobTest
         TestLogger logger = new TestLogger();
         FlippableIndexProxy index = mock( FlippableIndexProxy.class );
 
-        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, indexStoreView, logger );
+        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, indexStoreView, logger, false );
 
         String failureMessage = "not successful";
         IllegalStateException failure = new IllegalStateException( failureMessage );
@@ -366,7 +367,7 @@ public class IndexPopulationJobTest
         createNode( map( name, "irrelephant" ), FIRST );
         TestLogger logger = new TestLogger();
         FlippableIndexProxy index = new FlippableIndexProxy( mock( IndexProxy.class ) );
-        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, indexStoreView, logger );
+        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, indexStoreView, logger, true );
 
         IndexEntryConflictException failure = new PreexistingIndexEntryConflictException( "duplicate value", 0, 1 );
         doThrow( failure ).when( populator ).verifyDeferredConstraints( indexStoreView );
@@ -583,26 +584,27 @@ public class IndexPopulationJobTest
     }
 
     private IndexPopulationJob newIndexPopulationJob( Label label, String propertyKey, IndexPopulator populator,
-                                                      FlippableIndexProxy flipper )
+                                                      FlippableIndexProxy flipper, boolean constraint )
     {
         return newIndexPopulationJob( label, propertyKey, populator, flipper, indexStoreView,
-                StringLogger.DEV_NULL );
+                StringLogger.DEV_NULL, constraint );
     }
 
     private IndexPopulationJob newIndexPopulationJob( Label label, String propertyKey,
                                                       IndexPopulator populator,
                                                       FlippableIndexProxy flipper, IndexStoreView storeView,
-                                                      StringLogger logger )
+                                                      StringLogger logger,
+                                                      boolean constraint )
     {
         return newIndexPopulationJob( label, propertyKey,
-                mock( FailedIndexProxyFactory.class ), populator, flipper, storeView, logger );
+                mock( FailedIndexProxyFactory.class ), populator, flipper, storeView, logger, constraint );
     }
 
     private IndexPopulationJob newIndexPopulationJob( Label label, String propertyKey,
                                                       FailedIndexProxyFactory failureDelegateFactory,
                                                       IndexPopulator populator,
                                                       FlippableIndexProxy flipper, IndexStoreView storeView,
-                                                      StringLogger logger )
+                                                      StringLogger logger, boolean constraint )
     {
         IndexDescriptor descriptor;
         try ( Transaction tx = db.beginTx() )
@@ -615,7 +617,7 @@ public class IndexPopulationJobTest
 
         flipper.setFlipTarget( mock( IndexProxyFactory.class ) );
         return new IndexPopulationJob(
-                descriptor, PROVIDER_DESCRIPTOR,
+                descriptor, new IndexConfiguration( constraint ), PROVIDER_DESCRIPTOR,
                 format( ":%s(%s)", label.name(), propertyKey ),
                 failureDelegateFactory,
                 populator, flipper, storeView, new NonUniqueIndexSampler( 10_000 ),

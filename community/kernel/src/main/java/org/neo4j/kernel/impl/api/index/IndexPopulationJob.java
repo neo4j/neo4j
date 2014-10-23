@@ -35,6 +35,7 @@ import java.util.concurrent.Future;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
+import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -57,6 +58,7 @@ public class IndexPopulationJob implements Runnable
     private final Queue<NodePropertyUpdate> queue = new ConcurrentLinkedQueue<>();
     private final IndexDescriptor descriptor;
 
+    private final IndexConfiguration config;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
 
     private final IndexPopulator populator;
@@ -74,16 +76,19 @@ public class IndexPopulationJob implements Runnable
     private volatile boolean cancelled;
 
     public IndexPopulationJob(IndexDescriptor descriptor,
+                              IndexConfiguration config,
                               SchemaIndexProvider.Descriptor providerDescriptor,
                               String indexUserDescription,
                               FailedIndexProxyFactory failureDelegateFactory,
-                              IndexPopulator populator, FlippableIndexProxy flipper,
+                              IndexPopulator populator,
+                              FlippableIndexProxy flipper,
                               IndexStoreView storeView,
                               ValueSampler populatingSampler,
                               UpdateableSchemaState updateableSchemaState,
                               Logging logging)
     {
         this.descriptor = descriptor;
+        this.config = config;
         this.providerDescriptor = providerDescriptor;
         this.populator = populator;
         this.flipper = flipper;
@@ -175,7 +180,7 @@ public class IndexPopulationJob implements Runnable
                 // The reason for having the flipper transition to the failed index context in the first
                 // place is that we would otherwise introduce a race condition where updates could come
                 // in to the old context, if something failed in the job we send to the flipper.
-                flipper.flipTo( new FailedIndexProxy( descriptor, providerDescriptor, indexUserDescription,
+                flipper.flipTo( new FailedIndexProxy( descriptor, config, providerDescriptor, indexUserDescription,
                                                       populator, failure( t ), indexCountsRemover ) );
             }
             finally

@@ -65,8 +65,9 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
         {
             try ( IndexReader reader = indexProxy.newReader() )
             {
-                // TODO unique vs non-unique
-                ValueSampler sampler = new NonUniqueIndexSampler( numOfUniqueElements );
+                ValueSampler sampler = indexProxy.config().isUnique()
+                        ? new UniqueIndexSampler()
+                        : new NonUniqueIndexSampler( numOfUniqueElements );
                 reader.sampleIndex( sampler );
 
                 Register.DoubleLongRegister sample = Registers.newDoubleLongRegister();

@@ -28,6 +28,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
+import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -126,5 +127,11 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     public ResourceIterator<File> snapshotFiles() throws IOException
     {
         return getDelegate().snapshotFiles();
+    }
+
+    @Override
+    public IndexConfiguration config()
+    {
+        return getDelegate().config();
     }
 }

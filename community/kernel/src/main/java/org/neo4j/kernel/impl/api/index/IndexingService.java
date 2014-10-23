@@ -33,7 +33,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
@@ -202,7 +201,8 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
                     break;
                 case POPULATING:
                     // The database was shut down during population, or a crash has occurred, or some other sad thing.
-                    indexProxy = createAndStartRecoveringIndexProxy( descriptor, providerDescriptor );
+
+                    indexProxy = createAndStartRecoveringIndexProxy( descriptor, providerDescriptor, constraint );
                     break;
                 case FAILED:
                     IndexPopulationFailure failure = failure( provider.getPopulationFailure( indexId ) );
@@ -347,7 +347,7 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
         }
         else
         {
-            index = createAndStartRecoveringIndexProxy( descriptor, providerDescriptor );
+            index = createAndStartRecoveringIndexProxy( descriptor, providerDescriptor, constraint );
         }
 
         indexMap.putIndexProxy( rule.getId(), index );
@@ -520,12 +520,13 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
 
         // TODO: This is here because there is a circular dependency from PopulatingIndexProxy to FlippableIndexProxy
         final String indexUserDescription = indexUserDescription( descriptor, providerDescriptor );
-        IndexConfiguration config = new IndexConfiguration( constraint );
+        final IndexConfiguration config = new IndexConfiguration( constraint );
         ValueSampler sampler = valueSampler( constraint );
         IndexPopulator populator = getPopulatorFromProvider( providerDescriptor, ruleId, descriptor, config, sampler );
 
         FailedIndexProxyFactory failureDelegateFactory = new FailedPopulatingIndexProxyFactory(
             descriptor,
+            config,
             providerDescriptor,
             populator,
             indexUserDescription,
@@ -533,9 +534,8 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
         );
 
         PopulatingIndexProxy populatingIndex =
-            new PopulatingIndexProxy( scheduler, descriptor, providerDescriptor,
-                    failureDelegateFactory, populator, flipper, storeView, sampler,
-                    updateableSchemaState, logging, indexUserDescription );
+            new PopulatingIndexProxy( scheduler, descriptor, config, failureDelegateFactory, populator, flipper,
+                    storeView, sampler, updateableSchemaState, logging, indexUserDescription, providerDescriptor );
         flipper.flipTo( populatingIndex );
 
         // Prepare for flipping to online mode
@@ -547,9 +547,9 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
                 try
                 {
                     OnlineIndexProxy onlineProxy = new OnlineIndexProxy(
-                            descriptor, providerDescriptor,
-                            getOnlineAccessorFromProvider( providerDescriptor, ruleId,
-                                                           new IndexConfiguration( constraint ) ), storeView );
+                            descriptor, config, getOnlineAccessorFromProvider( providerDescriptor, ruleId,
+                                    config ), storeView, providerDescriptor
+                    );
                     if ( constraint )
                     {
                         return new TentativeConstraintIndexProxy( flipper, onlineProxy );
@@ -577,9 +577,9 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
         // TODO Hook in version verification/migration calls to the SchemaIndexProvider here
         try
         {
-            IndexAccessor onlineAccessor = getOnlineAccessorFromProvider( providerDescriptor, ruleId,
-                                                                          new IndexConfiguration( unique ) );
-            IndexProxy result = new OnlineIndexProxy( descriptor, providerDescriptor, onlineAccessor, storeView );
+            IndexConfiguration config = new IndexConfiguration( unique );
+            IndexAccessor onlineAccessor = getOnlineAccessorFromProvider( providerDescriptor, ruleId, config );
+            IndexProxy result = new OnlineIndexProxy( descriptor, config, onlineAccessor, storeView, providerDescriptor );
             result = contractCheckedProxy( result, true );
             return result;
         }
@@ -602,6 +602,7 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
         String indexUserDescription = indexUserDescription(descriptor, providerDescriptor);
         IndexProxy result = new FailedIndexProxy(
             descriptor,
+            config,
             providerDescriptor,
             indexUserDescription,
             indexPopulator,
@@ -613,9 +614,11 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
     }
 
     private IndexProxy createAndStartRecoveringIndexProxy( IndexDescriptor descriptor,
-                                                           SchemaIndexProvider.Descriptor providerDescriptor )
+                                                           SchemaIndexProvider.Descriptor providerDescriptor,
+                                                           boolean constraint )
     {
-        IndexProxy result = new RecoveringIndexProxy( descriptor, providerDescriptor );
+        IndexConfiguration configuration = new IndexConfiguration( constraint );
+        IndexProxy result = new RecoveringIndexProxy( descriptor, providerDescriptor, configuration );
         result = contractCheckedProxy( result, true );
         return result;
     }

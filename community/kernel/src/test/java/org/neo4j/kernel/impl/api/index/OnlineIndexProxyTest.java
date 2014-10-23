@@ -27,28 +27,30 @@ import java.io.IOException;
 
 import org.junit.Test;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 
 public class OnlineIndexProxyTest
 {
     private final IndexDescriptor descriptor = new IndexDescriptor( 1, 2 );
+    private final IndexConfiguration config = new IndexConfiguration( false );
     private final SchemaIndexProvider.Descriptor providerDescriptor = mock( SchemaIndexProvider.Descriptor.class );
-    private final IndexAccessor indexAccessor = mock( IndexAccessor.class );
+    private final IndexAccessor accessor = mock( IndexAccessor.class );
     private final IndexStoreView storeView = mock( IndexStoreView.class );
 
     @Test
     public void shouldRemoveIndexCountsWhenTheIndexItselfIsDropped() throws IOException
     {
         // given
-        OnlineIndexProxy index = new OnlineIndexProxy( descriptor, providerDescriptor, indexAccessor, storeView );
+        OnlineIndexProxy index = new OnlineIndexProxy( descriptor, config, accessor, storeView, providerDescriptor );
 
         // when
         index.drop();
 
         // then
-        verify( indexAccessor ).drop();
+        verify( accessor ).drop();
         verify( storeView ).setIndexCounts( descriptor, 0l, 0l, 0l );
-        verifyNoMoreInteractions( indexAccessor, storeView );
+        verifyNoMoreInteractions( accessor, storeView );
     }
 }

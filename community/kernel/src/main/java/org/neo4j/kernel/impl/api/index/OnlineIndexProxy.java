@@ -28,6 +28,7 @@ import java.util.concurrent.Future;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -39,14 +40,16 @@ public class OnlineIndexProxy implements IndexProxy
     private final IndexDescriptor descriptor;
     final IndexAccessor accessor;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
-    private IndexCountsRemover indexCountsRemover;
+    private final IndexConfiguration configuration;
+    private final IndexCountsRemover indexCountsRemover;
 
-    public OnlineIndexProxy( IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
-                             IndexAccessor accessor, IndexStoreView view )
+    public OnlineIndexProxy( IndexDescriptor descriptor, IndexConfiguration configuration, IndexAccessor accessor,
+                             IndexStoreView view, SchemaIndexProvider.Descriptor providerDescriptor )
     {
         this.descriptor = descriptor;
         this.providerDescriptor = providerDescriptor;
         this.accessor = accessor;
+        this.configuration = configuration;
         this.indexCountsRemover = IndexCountsRemover.Factory.create( view, descriptor );
     }
 
@@ -134,6 +137,12 @@ public class OnlineIndexProxy implements IndexProxy
     public ResourceIterator<File> snapshotFiles() throws IOException
     {
         return accessor.snapshotFiles();
+    }
+
+    @Override
+    public IndexConfiguration config()
+    {
+        return configuration;
     }
 
     @Override

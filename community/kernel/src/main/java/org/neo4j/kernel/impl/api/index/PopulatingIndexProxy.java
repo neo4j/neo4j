@@ -31,6 +31,7 @@ import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
+import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -51,10 +52,11 @@ public class PopulatingIndexProxy implements IndexProxy
     private final IndexDescriptor descriptor;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
     private final IndexPopulationJob job;
+    private final IndexConfiguration configuration;
 
     public PopulatingIndexProxy( JobScheduler scheduler,
                                  IndexDescriptor descriptor,
-                                 SchemaIndexProvider.Descriptor providerDescriptor,
+                                 IndexConfiguration configuration,
                                  FailedIndexProxyFactory failureDelegateFactory,
                                  IndexPopulator writer,
                                  FlippableIndexProxy flipper,
@@ -62,15 +64,16 @@ public class PopulatingIndexProxy implements IndexProxy
                                  ValueSampler populatingSampler,
                                  UpdateableSchemaState updateableSchemaState,
                                  Logging logging,
-                                 String indexUserDescription )
+                                 String indexUserDescription,
+                                 SchemaIndexProvider.Descriptor providerDescriptor )
     {
         this.scheduler = scheduler;
         this.descriptor = descriptor;
+        this.configuration = configuration;
         this.providerDescriptor = providerDescriptor;
-        this.job = new IndexPopulationJob( descriptor, providerDescriptor,
+        this.job = new IndexPopulationJob( descriptor, configuration, providerDescriptor,
                 indexUserDescription, failureDelegateFactory, writer, flipper, storeView,
-                populatingSampler,
-                updateableSchemaState, logging );
+                populatingSampler, updateableSchemaState, logging );
     }
 
     @Override
@@ -188,6 +191,12 @@ public class PopulatingIndexProxy implements IndexProxy
     public IndexPopulationFailure getPopulationFailure() throws IllegalStateException
     {
         throw new IllegalStateException( this + " is POPULATING" );
+    }
+
+    @Override
+    public IndexConfiguration config()
+    {
+        return configuration;
     }
 
     @Override
