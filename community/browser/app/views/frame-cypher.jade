@@ -6,12 +6,12 @@ div(ng-controller="CypherResultCtrl", fullscreen)
         .btn-group.toggle-buttons
           button.btn(ng-class='{active: isActive("graph")}', ng-click='setActive("graph")') 
             img.frame-left-menu-icon(src="images/icon-neo4j.png")
+            span.mini-menu-item-text Graph
           br
           button.btn(ng-class='{active: isActive("table")}', ng-click='setActive("table")') 
             i.fa.fa-table
-    .right-inner-frame
-      .menu-indicator(onclick="$(this).parent('.right-inner-frame').toggleClass('show-menu')")
-        span.fa.fa-bars
+            span.mini-menu-item-text Table
+    .right-inner-frame.no-indicator(ng-class='{"no-left-menu": frame.type != "cypher" || availableModes.length < 2}')
       .inner
         .view-result(ng-class='{error: frame.hasErrors}')
           .view-result-graph.result(ng-show='isActive("graph")', ng-controller="InspectorCtrl")

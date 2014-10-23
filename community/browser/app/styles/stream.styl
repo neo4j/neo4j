@@ -52,6 +52,12 @@
           .btn-group.toggle-buttons
             margin: 0
             width: (frame-left-menu-width - frame-left-menu-hanging-lid-width)
+            .mini-menu-item-text
+              display: block
+              font-size: 10px
+              line-height: 10px
+              margin-top: 0
+              padding: 0
 
           button
             font-size: 12px
@@ -60,7 +66,8 @@
             border-radius: 0
             padding: 0 8px
             border-bottom: 1px solid #5d6370
-            height: middlebar-height 
+            padding-bottom: 3px
+            height: (middlebar-height + 5)
             color: RGBA(216, 221, 226, 1)
             line-height: 22px
             position: relative
@@ -71,8 +78,11 @@
               color: white
             &.active
               background: RGBA(48, 51, 58, 1)
+              color: white
             i, span
-              font-size: 17px
+              font-size: 22px
+              line-height: 22px
+              vertical-align: bottom
             .frame-left-menu-icon
               width: 22px
               height: auto
@@ -81,34 +91,11 @@
         margin: 0 0px 0px 25px
         display: block
         z-index: 13
-        transition: all .5s ease
         position: relative
-
-        &.show-menu
-          margin: 0 0px 0px frame-left-menu-width
-          .menu-indicator
-            left: (-1*frame-left-menu-hanging-lid-width)
-        .menu-indicator
-          height: 100%
-          background-color: RGBA(255, 255, 255, 1)
-          width: 25px
-          position: absolute
-          left: -25px
-          top: 0
-          display: block
-          transition: all .5s ease
-          cursor: pointer
-          &:hover
-            span
-              color: black
-          span
-            position:absolute
-            top:50%
-            height: 14px
-            margin: -7px auto
-            text-align: center
-            width: 100%
-            color: RGBA(155, 157, 162, 1)
+        &.no-indicator
+          margin: 0 0px 0px (frame-left-menu-width - frame-left-menu-hanging-lid-width)
+        &.no-left-menu
+          margin: 0
 
     .inner
       position: relative
@@ -138,11 +125,6 @@
         .center-tbl-left-col
           width: 175px
           display: inline-block
-
-        //a[class*="fa-"]
-        //  color: color-default-text
-        //  &:hover
-        //    color: color-link
 
         .view-result-graph
           background-color: #F9FBFD
