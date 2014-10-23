@@ -537,11 +537,16 @@ public class MuninnPageCache implements RunnablePageCache
         if ( freelistHead instanceof FreePageWaiter )
         {
             FreePageWaiter waiters = (FreePageWaiter) freelistHead;
-            while ( waiters != null )
-            {
-                waiters.unparkInterrupt();
-                waiters = waiters.next;
-            }
+            interruptAllWaiters( waiters );
+        }
+    }
+
+    private void interruptAllWaiters( FreePageWaiter waiters )
+    {
+        while ( waiters != null )
+        {
+            waiters.unparkInterrupt();
+            waiters = waiters.next;
         }
     }
 
@@ -591,6 +596,7 @@ public class MuninnPageCache implements RunnablePageCache
             {
                 // The page cache has been shut down.
                 currentThread.interrupt();
+                interruptAllWaiters( waiters );
                 return 0;
             }
 
@@ -696,11 +702,7 @@ public class MuninnPageCache implements RunnablePageCache
         // must also take care of those waiters as the last thing we do before
         // the eviction thread finally terminates. And we must prevent new
         // waiters from queueing up.
-        while ( waiters != null )
-        {
-            waiters.unparkInterrupt();
-            waiters = waiters.next;
-        }
+        interruptAllWaiters( waiters );
 
         return clockArm;
     }
