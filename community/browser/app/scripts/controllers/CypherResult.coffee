@@ -31,6 +31,7 @@ angular.module('neo4jApp.controllers')
       $scope.availableModes = []
       $scope.availableModes.push('table') if resp.table.size
       $scope.availableModes.push('graph') if resp.table.nodes.length
+      $scope.availableModes.push('plan') if resp.table._response.plan
 
       # Initialise tab state from user selected if any
       $scope.tab = $rootScope.stickyTab
@@ -49,6 +50,9 @@ angular.module('neo4jApp.controllers')
 
     $scope.isActive = (tab) -> 
       tab is $scope.tab
+
+    $scope.isAvailable = (tab) ->
+      tab in $scope.availableModes
 
     $scope.resultStatistics = (frame) ->
       if frame?.response

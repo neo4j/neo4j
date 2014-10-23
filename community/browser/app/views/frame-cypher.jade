@@ -11,6 +11,10 @@ div(ng-controller="CypherResultCtrl", fullscreen)
           button.btn(ng-class='{active: isActive("table")}', ng-click='setActive("table")') 
             i.fa.fa-table
             span.mini-menu-item-text Table
+          br
+          button.btn(ng-show='isAvailable("plan")', ng-class='{active: isActive("plan")}', ng-click='setActive("plan")')
+            i.fa.fa-code-fork
+            span.mini-menu-item-text Plan
     .right-inner-frame.no-indicator(ng-class='{"no-left-menu": frame.type != "cypher" || availableModes.length < 2}')
       .inner
         .view-result(ng-class='{error: frame.hasErrors}')
@@ -36,6 +40,11 @@ div(ng-controller="CypherResultCtrl", fullscreen)
             .status
               include partials/result-status
 
+          .view-result-table.result(ng-show='isActive("plan")')
+            neo-table(table-data='frame.response.table')
+          .status-bar(ng-show='isActive("plan")')
+            .status
+              include partials/result-status
 
           .view-result-error.result(ng-show='frame.hasErrors')
             pre(ng-bind="frame.detailedErrorText")
