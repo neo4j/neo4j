@@ -36,8 +36,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.kernel.api.index.ValueSampler;
-import org.neo4j.kernel.impl.api.index.sampling.BoundedIndexSampler;
-import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSizeSampler;
+import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 
@@ -142,7 +141,7 @@ public class LuceneIndexAccessorReaderTest
 
     private long sampleAccessor( LuceneIndexAccessorReader accessor, DoubleLongRegister output )
     {
-        ValueSampler sampler = new BoundedIndexSampler( 10_000 );
+        ValueSampler sampler = new NonUniqueIndexSampler( 10_000 );
         accessor.sampleIndex( sampler );
         return sampler.result( output );
     }

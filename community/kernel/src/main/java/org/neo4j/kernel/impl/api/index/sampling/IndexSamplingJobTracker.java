@@ -19,31 +19,39 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.HashSet;
+import java.util.Set;
 
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.util.JobScheduler;
 
 public class IndexSamplingJobTracker
 {
     private final JobScheduler jobScheduler;
     private final int jobLimit;
-    private final AtomicInteger executingJobs;
+    private final Set<IndexDescriptor> executingJobDescriptors;
 
     public IndexSamplingJobTracker( JobScheduler jobScheduler, int jobLimit )
     {
         this.jobScheduler = jobScheduler;
         this.jobLimit = jobLimit;
-        this.executingJobs = new AtomicInteger( jobLimit );
+        this.executingJobDescriptors = new HashSet<>();
     }
 
-    public boolean canExecuteMoreSamplingJobs()
+    public synchronized boolean canExecuteMoreSamplingJobs()
     {
-        return executingJobs.get() <= jobLimit;
+        return executingJobDescriptors.size() < jobLimit;
     }
 
-    public void scheduleSamplingJob( final Runnable runnable )
+    public synchronized void scheduleSamplingJob( final IndexSamplingJob samplingJob )
     {
-        executingJobs.incrementAndGet();
+        IndexDescriptor descriptor = samplingJob.descriptor();
+        if ( executingJobDescriptors.contains( descriptor ) )
+        {
+            return;
+        }
+
+        executingJobDescriptors.add( descriptor );
         jobScheduler.schedule( JobScheduler.Group.indexSampling, new Runnable()
         {
             @Override
@@ -51,13 +59,18 @@ public class IndexSamplingJobTracker
             {
                 try
                 {
-                    runnable.run();
+                    samplingJob.run();
                 }
                 finally
                 {
-                    executingJobs.decrementAndGet();
+                    samplingJobCompleted( samplingJob );
                 }
             }
         } );
+    }
+
+    private synchronized void samplingJobCompleted( IndexSamplingJob samplingJob )
+    {
+        executingJobDescriptors.remove( samplingJob.descriptor() );
     }
 }

@@ -23,10 +23,9 @@ import static org.junit.Assert.assertEquals;
 import static org.neo4j.register.Register.DoubleLongRegister;
 
 import org.junit.Test;
-import org.neo4j.kernel.impl.api.index.sampling.BoundedIndexSampler;
 import org.neo4j.register.Registers;
 
-public class BoundedIndexSamplerTest
+public class NonUniqueIndexSamplerTest
 {
     private final String value = "aaa";
 
@@ -34,7 +33,7 @@ public class BoundedIndexSamplerTest
     public void shouldSampleNothing()
     {
         // given
-        BoundedIndexSampler sampler = new BoundedIndexSampler( 10 );
+        NonUniqueIndexSampler sampler = new NonUniqueIndexSampler( 10 );
 
         // when
         // nothing has been sampled
@@ -47,7 +46,7 @@ public class BoundedIndexSamplerTest
     public void shouldSampleASingleValue()
     {
         // given
-        BoundedIndexSampler sampler = new BoundedIndexSampler( 10 );
+        NonUniqueIndexSampler sampler = new NonUniqueIndexSampler( 10 );
 
         // when
         sampler.include( value );
@@ -61,7 +60,7 @@ public class BoundedIndexSamplerTest
     public void shouldSampleDuplicateValues()
     {
         // given
-        BoundedIndexSampler sampler = new BoundedIndexSampler( 10 );
+        NonUniqueIndexSampler sampler = new NonUniqueIndexSampler( 10 );
 
         // when
         sampler.include( value );
@@ -76,7 +75,7 @@ public class BoundedIndexSamplerTest
     public void shouldDivideTheSamplingInStepsNotBiggerThanBatchSize()
     {
         // given
-        BoundedIndexSampler sampler = new BoundedIndexSampler( 1 );
+        NonUniqueIndexSampler sampler = new NonUniqueIndexSampler( 1 );
 
         // when
         sampler.include( value );
@@ -91,7 +90,7 @@ public class BoundedIndexSamplerTest
     public void shouldExcludeValuesFromTheCurrentSampling()
     {
         // given
-        BoundedIndexSampler sampler = new BoundedIndexSampler( 10 );
+        NonUniqueIndexSampler sampler = new NonUniqueIndexSampler( 10 );
         sampler.include( value );
         sampler.include( value );
         sampler.include( "bbb" );
@@ -107,7 +106,7 @@ public class BoundedIndexSamplerTest
     public void shouldDoNothingWhenExcludingAValueInAnEmptySample()
     {
         // given
-        BoundedIndexSampler sampler = new BoundedIndexSampler( 10 );
+        NonUniqueIndexSampler sampler = new NonUniqueIndexSampler( 10 );
 
         // when
         sampler.exclude( value );
@@ -117,7 +116,7 @@ public class BoundedIndexSamplerTest
         assertSampledValues( sampler, 1, 1, 1 );
     }
 
-    private void assertSampledValues( BoundedIndexSampler sampler, long expectedIndexSize, long expectedUniqueValues, long expectedSampledSize )
+    private void assertSampledValues( NonUniqueIndexSampler sampler, long expectedIndexSize, long expectedUniqueValues, long expectedSampledSize )
     {
         final DoubleLongRegister register = Registers.newDoubleLongRegister();
         long indexSize = sampler.result( register );

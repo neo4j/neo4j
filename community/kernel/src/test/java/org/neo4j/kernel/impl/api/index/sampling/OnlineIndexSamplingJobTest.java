@@ -40,13 +40,13 @@ import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 
-public class BoundedIndexSamplingJobTest
+public class OnlineIndexSamplingJobTest
 {
     @Test
     public void shouldSampleTheIndexAndStoreTheValueWhenTheIndexIsOnline()
     {
         // given
-        BoundedIndexSamplingJob job = new BoundedIndexSamplingJob( indexProxy, numOfUniqueElements, indexStoreView, logging );
+        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( indexProxy, numOfUniqueElements, indexStoreView, logging );
         when( indexProxy.getState() ).thenReturn( ONLINE );
 
         // when
@@ -61,7 +61,7 @@ public class BoundedIndexSamplingJobTest
     public void shouldSampleTheIndexButDoNotStoreTheValuesIfTheIndexIsNotOnline()
     {
         // given
-        BoundedIndexSamplingJob job = new BoundedIndexSamplingJob( indexProxy, numOfUniqueElements, indexStoreView, logging );
+        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( indexProxy, numOfUniqueElements, indexStoreView, logging );
         when( indexProxy.getState() ).thenReturn( FAILED );
 
         // when

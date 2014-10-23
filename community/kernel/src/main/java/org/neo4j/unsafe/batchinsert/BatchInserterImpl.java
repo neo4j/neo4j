@@ -19,6 +19,15 @@
  */
 package org.neo4j.unsafe.batchinsert;
 
+import static java.lang.Boolean.parseBoolean;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
+import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -77,8 +86,8 @@ import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.index.StoreScan;
-import org.neo4j.kernel.impl.api.index.sampling.BoundedIndexSampler;
-import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSizeSampler;
+import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
+import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.core.Token;
@@ -133,16 +142,6 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import static java.lang.Boolean.parseBoolean;
-
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
-import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
 public class BatchInserterImpl implements BatchInserter
 {
@@ -396,8 +395,8 @@ public class BatchInserterImpl implements BatchInserter
             IndexDescriptor descriptor = new IndexDescriptor( labelId, propertyKeyId );
             boolean isConstraint = rule.isConstraintIndex();
             ValueSampler sampler =  isConstraint
-                    ? new UniqueIndexSizeSampler()
-                    : new BoundedIndexSampler( config.get( GraphDatabaseSettings.max_unique_elements_per_sampling ) );
+                    ? new UniqueIndexSampler()
+                    : new NonUniqueIndexSampler( config.get( GraphDatabaseSettings.max_unique_elements_per_sampling ) );
             populators[i] = schemaIndexProviders.apply( rule.getProviderDescriptor() ).getPopulator(
                     rule.getId(), descriptor, new IndexConfiguration( isConstraint ), sampler );
             populators[i].create();

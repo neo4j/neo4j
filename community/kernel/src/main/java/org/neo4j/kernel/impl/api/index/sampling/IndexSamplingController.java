@@ -20,6 +20,8 @@
 package org.neo4j.kernel.impl.api.index.sampling;
 
 import java.util.Iterator;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
@@ -33,6 +35,7 @@ public class IndexSamplingController implements Runnable
     private final IndexSamplingJobTracker jobTracker;
     private final IndexSamplingJobQueue jobQueue;
     private final IndexSamplingJobFactory jobFactory;
+    private final Lock emptyLock =  new ReentrantLock( true );
 
     public IndexSamplingController( IndexSamplingJobFactory jobFactory,
                                     IndexSamplingJobTracker jobTracker,
@@ -64,21 +67,31 @@ public class IndexSamplingController implements Runnable
 
     private void emptyQueue( IndexMap indexMap )
     {
-        while ( jobTracker.canExecuteMoreSamplingJobs() )
+        if ( emptyLock.tryLock() )
         {
-            IndexDescriptor descriptor = jobQueue.poll();
-            if ( descriptor == null )
+            try
             {
-                return;
-            }
+                while ( jobTracker.canExecuteMoreSamplingJobs() )
+                {
+                    IndexDescriptor descriptor = jobQueue.poll();
+                    if ( descriptor == null )
+                    {
+                        return;
+                    }
 
-            IndexProxy proxy = indexMap.getIndexProxy( descriptor );
-            if ( proxy == null || proxy.getState() != InternalIndexState.ONLINE )
+                    IndexProxy proxy = indexMap.getIndexProxy( descriptor );
+                    if ( proxy == null || proxy.getState() != InternalIndexState.ONLINE )
+                    {
+                        continue;
+                    }
+
+                    jobTracker.scheduleSamplingJob( jobFactory.create( proxy ) );
+                }
+            }
+            finally
             {
-                continue;
+                emptyLock.unlock();
             }
-
-            jobTracker.scheduleSamplingJob( jobFactory.create( proxy ) );
         }
     }
 }

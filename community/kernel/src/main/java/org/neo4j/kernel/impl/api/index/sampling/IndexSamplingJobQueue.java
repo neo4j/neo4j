@@ -29,7 +29,7 @@ public class IndexSamplingJobQueue
     private final Queue<IndexDescriptor> queue = new ConcurrentLinkedDeque<>();
 
     public void sampleIndex( IndexDescriptor descriptor ) {
-        if (! queue.contains( descriptor ))
+        if ( !queue.contains( descriptor ) )
         {
             queue.add( descriptor );
         }

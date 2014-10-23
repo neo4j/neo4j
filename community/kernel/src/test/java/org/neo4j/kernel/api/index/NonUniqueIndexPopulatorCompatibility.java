@@ -19,20 +19,18 @@
  */
 package org.neo4j.kernel.api.index;
 
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
+
 import org.junit.Ignore;
 import org.junit.Test;
-
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.api.index.sampling.BoundedIndexSampler;
-
-import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
+import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " SchemaIndexProvider implementations. Each index provider that is to be tested by this suite" +
@@ -51,7 +49,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     {
         // when
         IndexConfiguration config = new IndexConfiguration( false );
-        ValueSampler sampler = new BoundedIndexSampler( 10_000 );
+        ValueSampler sampler = new NonUniqueIndexSampler( 10_000 );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, sampler );
         populator.create();
         populator.add( 1, "value1" );
@@ -73,7 +71,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     {
         // GIVEN
         IndexConfiguration config = new IndexConfiguration( false );
-        ValueSampler sampler = new BoundedIndexSampler( 10_000 );
+        ValueSampler sampler = new NonUniqueIndexSampler( 10_000 );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, sampler );
         String failure = "The contrived failure";
 
@@ -89,7 +87,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     {
         // GIVEN
         IndexConfiguration config = new IndexConfiguration( false );
-        ValueSampler sampler = new BoundedIndexSampler( 10_000 );
+        ValueSampler sampler = new NonUniqueIndexSampler( 10_000 );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, sampler );
         String failure = "The contrived failure";
 
@@ -105,7 +103,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     {
         // GIVEN
         IndexConfiguration config = new IndexConfiguration( false );
-        ValueSampler sampler = new BoundedIndexSampler( 10_000 );
+        ValueSampler sampler = new NonUniqueIndexSampler( 10_000 );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, sampler );
         populator.close( false );
 
@@ -120,7 +118,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     {
         // GIVEN
         IndexConfiguration config = new IndexConfiguration( false );
-        ValueSampler sampler = new BoundedIndexSampler( 10_000 );
+        ValueSampler sampler = new NonUniqueIndexSampler( 10_000 );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, sampler );
         populator.create();
         long nodeId = 1;

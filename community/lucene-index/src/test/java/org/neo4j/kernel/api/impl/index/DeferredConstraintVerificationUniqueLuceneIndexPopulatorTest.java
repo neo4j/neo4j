@@ -19,37 +19,34 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.api.impl.index.AllNodesCollector.getAllNodes;
+import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
+import static org.neo4j.kernel.api.properties.Property.intProperty;
+import static org.neo4j.kernel.api.properties.Property.longProperty;
+import static org.neo4j.kernel.api.properties.Property.stringProperty;
+
 import java.io.File;
 import java.util.Collections;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.util.FailureStorage;
-import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSizeSampler;
+import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
-
-import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import static org.neo4j.kernel.api.impl.index.AllNodesCollector.getAllNodes;
-import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
-import static org.neo4j.kernel.api.properties.Property.intProperty;
-import static org.neo4j.kernel.api.properties.Property.longProperty;
-import static org.neo4j.kernel.api.properties.Property.stringProperty;
 
 public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
 {
@@ -433,7 +430,7 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
                 DeferredConstraintVerificationUniqueLuceneIndexPopulator(
                 documentLogic, standard(),
                 new IndexWriterStatus(), directoryFactory, indexDirectory,
-                failureStorage, indexId, descriptor, new UniqueIndexSizeSampler() );
+                failureStorage, indexId, descriptor, new UniqueIndexSampler() );
         populator.create();
     }
 }

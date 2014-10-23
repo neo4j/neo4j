@@ -19,29 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
-import org.neo4j.kernel.api.index.ValueSampler;
-import org.neo4j.register.Register;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 
-public class UniqueIndexSizeSampler implements ValueSampler
+public interface IndexSamplingJob extends Runnable
 {
-    long count = 0;
-
-    @Override
-    public void include( String value )
-    {
-        count++;
-    }
-
-    @Override
-    public void exclude( String value )
-    {
-        count--;
-    }
-
-    @Override
-    public long result( Register.DoubleLongRegister register )
-    {
-        register.write( count, count );
-        return count;
-    }
+    IndexDescriptor descriptor();
 }

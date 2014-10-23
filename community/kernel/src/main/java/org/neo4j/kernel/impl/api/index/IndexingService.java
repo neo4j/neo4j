@@ -19,6 +19,14 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.collection.Iterables.concatResourceIterators;
+import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
+import static org.neo4j.kernel.impl.util.JobScheduler.Group.indexSamplingController;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -52,11 +60,11 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
 import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
-import org.neo4j.kernel.impl.api.index.sampling.BoundedIndexSampler;
-import org.neo4j.kernel.impl.api.index.sampling.BoundedIndexSamplingJobFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingJobTracker;
-import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSizeSampler;
+import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
+import org.neo4j.kernel.impl.api.index.sampling.OnlineIndexSamplingJobFactory;
+import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -65,15 +73,6 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
-
-import static java.lang.String.format;
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.collection.Iterables.concatResourceIterators;
-import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
-import static org.neo4j.kernel.impl.util.JobScheduler.Group.indexSamplingController;
 
 /**
  * Manages the indexes that were introduced in 2.0. These indexes depend on the normal neo4j logical log for
@@ -627,8 +626,8 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
 
     private IndexSamplingController createIndexSamplingController()
     {
-        BoundedIndexSamplingJobFactory jobFactory =
-                new BoundedIndexSamplingJobFactory( maxUniqueElementsPerSampling, storeView, logging );
+        OnlineIndexSamplingJobFactory jobFactory =
+                new OnlineIndexSamplingJobFactory( maxUniqueElementsPerSampling, storeView, logging );
         IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( scheduler, NUMBER_OF_PARALLEL_INDEX_SAMPLING_JOBS );
         return new IndexSamplingController( jobFactory, jobTracker, this );
     }
@@ -667,8 +666,8 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
     private ValueSampler valueSampler( boolean unique )
     {
         return unique
-                ? new UniqueIndexSizeSampler()
-                : new BoundedIndexSampler( maxUniqueElementsPerSampling );
+                ? new UniqueIndexSampler()
+                : new NonUniqueIndexSampler( maxUniqueElementsPerSampling );
     }
 
     private IndexAccessor getOnlineAccessorFromProvider( SchemaIndexProvider.Descriptor providerDescriptor,

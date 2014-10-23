@@ -23,7 +23,7 @@ import org.neo4j.helpers.collection.MultiSet;
 import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.register.Register;
 
-public class BoundedIndexSampler implements ValueSampler
+public class NonUniqueIndexSampler implements ValueSampler
 {
     private MultiSet<String> values;
     private int sampledSteps = 0;
@@ -31,7 +31,7 @@ public class BoundedIndexSampler implements ValueSampler
     private long accumulatedSampledSize = 0;
     private final int numOfUniqueElements;
 
-    public BoundedIndexSampler( int numOfUniqueElements )
+    public NonUniqueIndexSampler( int numOfUniqueElements )
     {
         this.numOfUniqueElements = numOfUniqueElements;
         this.values = new MultiSet<>( numOfUniqueElements );

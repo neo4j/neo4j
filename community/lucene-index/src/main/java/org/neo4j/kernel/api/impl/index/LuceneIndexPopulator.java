@@ -25,11 +25,8 @@ import java.io.IOException;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
-
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.kernel.api.index.util.FailureStorage;
-import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSizeSampler;
 
 public abstract class LuceneIndexPopulator implements IndexPopulator
 {

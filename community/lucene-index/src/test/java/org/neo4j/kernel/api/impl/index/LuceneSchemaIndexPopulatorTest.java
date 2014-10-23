@@ -19,6 +19,14 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import static java.lang.Long.parseLong;
+import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
@@ -32,7 +40,6 @@ import org.apache.lucene.store.RAMDirectory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
@@ -44,17 +51,7 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
-import org.neo4j.kernel.impl.api.index.sampling.BoundedIndexSampler;
-
-import static java.lang.Long.parseLong;
-import static java.util.Arrays.asList;
-
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
 
 public class LuceneSchemaIndexPopulatorTest
 {
@@ -247,7 +244,7 @@ public class LuceneSchemaIndexPopulatorTest
         indexDescriptor = new IndexDescriptor( 42, propertyKeyId );
         indexStoreView = mock( IndexStoreView.class );
         IndexConfiguration config = new IndexConfiguration( false );
-        ValueSampler sampler = new BoundedIndexSampler( 10_000 );
+        ValueSampler sampler = new NonUniqueIndexSampler( 10_000 );
         index = provider.getPopulator( indexId, indexDescriptor, config, sampler );
         index.create();
     }

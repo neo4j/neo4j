@@ -19,26 +19,29 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
-import org.neo4j.kernel.impl.api.index.IndexProxy;
-import org.neo4j.kernel.impl.api.index.IndexStoreView;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.api.index.ValueSampler;
+import org.neo4j.register.Register;
 
-public class BoundedIndexSamplingJobFactory implements IndexSamplingJobFactory
+public class UniqueIndexSampler implements ValueSampler
 {
-    private final int numOfUniqueElements;
-    private final IndexStoreView storeView;
-    private final Logging logging;
+    long count = 0;
 
-    public BoundedIndexSamplingJobFactory( int numOfUniqueElements, IndexStoreView storeView, Logging logging )
+    @Override
+    public void include( String value )
     {
-        this.numOfUniqueElements = numOfUniqueElements;
-        this.storeView = storeView;
-        this.logging = logging;
+        count++;
     }
 
     @Override
-    public Runnable create( IndexProxy indexProxy )
+    public void exclude( String value )
     {
-        return new BoundedIndexSamplingJob( indexProxy, numOfUniqueElements, storeView, logging );
+        count--;
+    }
+
+    @Override
+    public long result( Register.DoubleLongRegister register )
+    {
+        register.write( count, count );
+        return count;
     }
 }

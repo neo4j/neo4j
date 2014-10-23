@@ -20,8 +20,25 @@
 package org.neo4j.kernel.impl.api.index.sampling;
 
 import org.neo4j.kernel.impl.api.index.IndexProxy;
+import org.neo4j.kernel.impl.api.index.IndexStoreView;
+import org.neo4j.kernel.logging.Logging;
 
-public interface IndexSamplingJobFactory
+public class OnlineIndexSamplingJobFactory implements IndexSamplingJobFactory
 {
-    IndexSamplingJob create( IndexProxy indexProxy );
+    private final int numOfUniqueElements;
+    private final IndexStoreView storeView;
+    private final Logging logging;
+
+    public OnlineIndexSamplingJobFactory( int numOfUniqueElements, IndexStoreView storeView, Logging logging )
+    {
+        this.numOfUniqueElements = numOfUniqueElements;
+        this.storeView = storeView;
+        this.logging = logging;
+    }
+
+    @Override
+    public IndexSamplingJob create( IndexProxy indexProxy )
+    {
+        return new OnlineIndexSamplingJob( indexProxy, numOfUniqueElements, storeView, logging );
+    }
 }

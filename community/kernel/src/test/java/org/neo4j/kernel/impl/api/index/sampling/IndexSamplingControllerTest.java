@@ -19,20 +19,23 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
 import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexMap;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
+import org.neo4j.test.DoubleLatch;
 
 public class IndexSamplingControllerTest
 {
@@ -41,9 +44,10 @@ public class IndexSamplingControllerTest
     private final IndexMapSnapshotProvider snapshotProvider = mock( IndexMapSnapshotProvider.class );
     private final IndexMap indexMap = new IndexMap();
     private final IndexProxy indexProxy = mock( IndexProxy.class );
+    private final IndexDescriptor descriptor = new IndexDescriptor( 3, 4 );
 
     {
-        when( indexProxy.getDescriptor() ).thenReturn( new IndexDescriptor( 3, 4 ) );
+        when( indexProxy.getDescriptor() ).thenReturn( descriptor );
         when( snapshotProvider.indexMapSnapshot() ).thenReturn( indexMap );
         indexMap.putIndexProxy( 2, indexProxy );
     }
@@ -60,14 +64,14 @@ public class IndexSamplingControllerTest
         controller.run();
 
         // then
-        Runnable runnable = verify( jobFactory ).create( indexProxy );
-        verify( tracker ).scheduleSamplingJob( runnable );
+        IndexSamplingJob job = verify( jobFactory ).create( indexProxy );
+        verify( tracker ).scheduleSamplingJob( job );
         verify( tracker, times( 2 ) ).canExecuteMoreSamplingJobs();
         verifyNoMoreInteractions( jobFactory, tracker );
     }
 
     @Test
-    public void shouldNotStartAJobIfTheIndexIsNotOnline()
+    public void shouldNotStartAJobIfTheIndexIsNotOnline() throws InterruptedException
     {
         // given
         IndexSamplingController controller = new IndexSamplingController( jobFactory, tracker, snapshotProvider );
@@ -96,5 +100,65 @@ public class IndexSamplingControllerTest
         // then
         verify( tracker, times( 1 ) ).canExecuteMoreSamplingJobs();
         verifyNoMoreInteractions( jobFactory, tracker );
+    }
+
+    @Test
+    public void shouldNotEmptyQueueConcurrently()
+    {
+        // given
+        final AtomicInteger totalCount = new AtomicInteger( 0 );
+        final AtomicInteger concurrentCount = new AtomicInteger( 0 );
+        final DoubleLatch jobLatch = new DoubleLatch();
+        final DoubleLatch testLatch = new DoubleLatch();
+
+        IndexSamplingJobFactory jobFactory = new IndexSamplingJobFactory()
+        {
+            @Override
+            public IndexSamplingJob create( IndexProxy indexProxy )
+            {
+                if ( ! concurrentCount.compareAndSet( 0, 1 ) )
+                {
+                    throw new IllegalStateException( "count !== 0 on create" );
+                }
+                totalCount.incrementAndGet();
+                jobLatch.awaitStart();
+                testLatch.start();
+                jobLatch.awaitFinish();
+                concurrentCount.decrementAndGet();
+                testLatch.finish();
+                return null;
+            }
+        };
+
+        final IndexSamplingController controller = new IndexSamplingController( jobFactory, tracker, snapshotProvider );
+        when( tracker.canExecuteMoreSamplingJobs() ).thenReturn( true );
+        when( indexProxy.getState() ).thenReturn( ONLINE );
+
+        // when running once
+        new Thread( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                controller.run();
+            }
+        } ).start();
+
+        jobLatch.start();
+        testLatch.awaitStart();
+
+        // then blocking on first job
+        assertEquals( 1, concurrentCount.get() );
+
+        // when running a second time
+        controller.run();
+
+        // then no concurrent job execution
+        jobLatch.finish();
+        testLatch.awaitFinish();
+
+        // and finally exactly one job has run to completion
+        assertEquals( 0, concurrentCount.get() );
+        assertEquals( 1, totalCount.get() );
     }
 }

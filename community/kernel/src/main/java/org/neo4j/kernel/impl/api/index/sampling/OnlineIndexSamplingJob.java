@@ -32,7 +32,7 @@ import org.neo4j.kernel.logging.Logging;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 
-class BoundedIndexSamplingJob implements Runnable
+class OnlineIndexSamplingJob implements IndexSamplingJob
 {
     private final IndexDescriptor indexDescriptor;
     private final IndexProxy indexProxy;
@@ -40,16 +40,22 @@ class BoundedIndexSamplingJob implements Runnable
     private final IndexStoreView storeView;
     private final StringLogger logger;
 
-    public BoundedIndexSamplingJob( IndexProxy indexProxy,
-                                    int numOfUniqueElements,
-                                    IndexStoreView storeView,
-                                    Logging logging )
+    public OnlineIndexSamplingJob( IndexProxy indexProxy,
+                                   int numOfUniqueElements,
+                                   IndexStoreView storeView,
+                                   Logging logging )
     {
         this.indexDescriptor = indexProxy.getDescriptor();
         this.indexProxy = indexProxy;
         this.numOfUniqueElements = numOfUniqueElements;
         this.storeView = storeView;
-        this.logger = logging.getMessagesLog( BoundedIndexSamplingJob.class );
+        this.logger = logging.getMessagesLog( OnlineIndexSamplingJob.class );
+    }
+
+    @Override
+    public IndexDescriptor descriptor()
+    {
+        return indexDescriptor;
     }
 
     @Override
@@ -59,9 +65,11 @@ class BoundedIndexSamplingJob implements Runnable
         {
             try ( IndexReader reader = indexProxy.newReader() )
             {
-                Register.DoubleLongRegister sample = Registers.newDoubleLongRegister();
-                ValueSampler sampler = new BoundedIndexSampler( numOfUniqueElements );
+                // TODO unique vs non-unique
+                ValueSampler sampler = new NonUniqueIndexSampler( numOfUniqueElements );
                 reader.sampleIndex( sampler );
+
+                Register.DoubleLongRegister sample = Registers.newDoubleLongRegister();
                 final long indexSize = sampler.result( sample );
 
                 // check again if the index is online before saving the counts in the store
