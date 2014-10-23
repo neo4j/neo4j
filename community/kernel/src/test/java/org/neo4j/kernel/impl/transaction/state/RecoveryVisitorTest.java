@@ -25,6 +25,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
 
+import org.mockito.Matchers;
+import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -48,6 +50,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.RECOVERY;
 
 public class RecoveryVisitorTest
@@ -95,5 +99,53 @@ public class RecoveryVisitorTest
         visitor.close();
 
         verify( store, times( 1 ) ).setLastCommittedAndClosedTransactionId( commitEntry.getTxId() );
+    }
+
+    @Test
+    public void shouldNotApplyTransactionsThatAreKnownToBeClosed() throws IOException
+    {
+        // Given
+           //
+        long lastAppliedTxId = 43l;
+        Monitor monitor = mock( RecoveryVisitor.Monitor.class );
+        final RecoveryVisitor visitor = new RecoveryVisitor( store, storeApplier, recoveredCount,
+                monitor );
+
+        LogEntryCommit commitEntry1 = new OnePhaseCommit( lastAppliedTxId - 1, 0 );
+        LogEntryCommit commitEntry2 = new OnePhaseCommit( lastAppliedTxId, 0 );
+        LogEntryCommit commitEntry3 = new OnePhaseCommit( lastAppliedTxId + 1, 0 );
+
+        final TransactionRepresentation representation1 =
+                new PhysicalTransactionRepresentation( Collections.<Command>emptySet() );
+        final TransactionRepresentation representation2 =
+                new PhysicalTransactionRepresentation( Collections.<Command>emptySet() );
+        final TransactionRepresentation representation3 =
+                new PhysicalTransactionRepresentation( Collections.<Command>emptySet() );
+
+
+        final CommittedTransactionRepresentation transaction1 =
+                new CommittedTransactionRepresentation( startEntry, representation1, commitEntry1 );
+        final CommittedTransactionRepresentation transaction2 =
+                new CommittedTransactionRepresentation( startEntry, representation2, commitEntry2 );
+        final CommittedTransactionRepresentation transaction3 =
+                new CommittedTransactionRepresentation( startEntry, representation3, commitEntry3 );
+
+        when( store.getLastClosedTransactionId() ).thenReturn( lastAppliedTxId );
+
+        boolean applicationResult;
+
+        applicationResult = visitor.visit( transaction1 );
+        assertTrue( applicationResult );
+        verifyZeroInteractions( storeApplier );
+        applicationResult = visitor.visit( transaction2 );
+        assertTrue( applicationResult );
+        verifyZeroInteractions( storeApplier );
+        applicationResult = visitor.visit( transaction3 );
+        assertTrue( applicationResult );
+        verify( storeApplier, times( 1 ) ).apply( Matchers.<TransactionRepresentation>any(), Matchers.<LockGroup>any(), anyLong(), Matchers.<TransactionApplicationMode>any() );
+
+        visitor.close();
+
+        verify( store, times( 1 ) ).setLastCommittedAndClosedTransactionId( commitEntry3.getTxId() );
     }
 }
