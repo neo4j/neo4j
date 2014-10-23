@@ -139,18 +139,11 @@ public class BatchingPhysicalTransactionAppender extends AbstractPhysicalTransac
     {
         // Empty buffer into channel. We want to synchronize with appenders somehow so that they
         // don't append while we're doing that. The natural way is to synchronize on logFile,
-        // which all other code around transaction appending does. It's just that we want to hold
-        // that lock as short period as possible, well, duh. But, yeah, everything to make appenders
-        // run with as little interruption as possible is a big win.
-        WriteFuture emptier;
+        // which all other code around transaction appending does.
         synchronized ( logFile )
         {
-            emptier = channel.switchBuffer();
+            channel.emptyBufferIntoChannelAndClearIt();
         }
-        // That is why we have two buffers and switch between them under that lock only,
-        // and write the buffer outside, a buffer that only we hold right here and now so we can
-        // write it in peace.
-        emptier.write();
 
         // Now force the channel
         forceChannel();
