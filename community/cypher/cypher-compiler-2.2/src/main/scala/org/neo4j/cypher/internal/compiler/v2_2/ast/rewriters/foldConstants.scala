@@ -28,7 +28,7 @@ case object foldConstants extends Rewriter {
   try {
     bottomUp(instance).apply(that)
   } catch {
-    case e:ArithmeticException => throw new cypher.ArithmeticException(e.getMessage, e)
+    case e: java.lang.ArithmeticException => throw new ArithmeticException(e.getMessage, e)
   }
   private val instance: Rewriter = Rewriter.lift {
     case e@Add(lhs: SignedIntegerLiteral, rhs: SignedIntegerLiteral) =>

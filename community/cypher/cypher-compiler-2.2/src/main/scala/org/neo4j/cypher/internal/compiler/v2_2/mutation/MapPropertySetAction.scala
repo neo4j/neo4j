@@ -20,15 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v2_2.mutation
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
-import pipes.QueryState
-import symbols._
-import org.neo4j.cypher.CypherTypeException
-import org.neo4j.cypher.internal.compiler.v2_2.spi.{QueryContext, Operations}
-import org.neo4j.graphdb.{Node, Relationship, PropertyContainer}
-import collection.Map
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.{IsMap, MapSupport}
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_2.spi.{Operations, QueryContext}
+import org.neo4j.cypher.internal.compiler.v2_2.symbols._
+import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
+
+import scala.collection.Map
 
 case class MapPropertySetAction(element: Expression, mapExpression: Expression, removeOtherProps:Boolean)
   extends UpdateAction with GraphElementPropertyFunctions with MapSupport {

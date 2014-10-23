@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_2.commands.expressions
 import org.neo4j.cypher.internal.compiler.v2_2._
 import pipes.QueryState
 import symbols._
-import org.neo4j.cypher.{InvalidArgumentException, CypherTypeException}
 import java.lang.Math
 
 abstract class MathFunction(arg: Expression) extends Expression with NumericHelper {

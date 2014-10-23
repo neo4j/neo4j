@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_2
 
 import org.neo4j.cypher.internal.helpers._
-import org.neo4j.cypher.{CypherException, NodeStillHasRelationshipsException}
 import org.neo4j.graphdb.TransactionFailureException
 import org.neo4j.kernel.api.exceptions.Status
 

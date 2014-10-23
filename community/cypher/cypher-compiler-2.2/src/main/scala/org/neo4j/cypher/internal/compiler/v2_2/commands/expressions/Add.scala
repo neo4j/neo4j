@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_2.commands.expressions
 import org.neo4j.cypher.internal.compiler.v2_2._
 import pipes.QueryState
 import symbols._
-import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.helpers.{TypeSafeMathSupport, IsCollection}
 
 case class Add(a: Expression, b: Expression) extends Expression with TypeSafeMathSupport {

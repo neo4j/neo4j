@@ -79,7 +79,10 @@ class CypherCompiler(graph: GraphDatabaseService,
 
     val planType: PlanType = calculatePlanType(queryWithOption.options)
 
-    if (planType == Explained && cypherVersion != CypherVersion.v2_2) {
+    if (planType == Explained &&
+      cypherVersion != CypherVersion.v2_2 &&
+      cypherVersion != CypherVersion.v2_2_cost &&
+      cypherVersion != CypherVersion.v2_2_rule) {
       throw new InvalidArgumentException("EXPLAIN not supported in versions older than Neo4j v2.2")
     }
 

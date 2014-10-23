@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.symbols
 
-import org.neo4j.cypher.{CypherException, CypherTypeException, SyntaxException}
+import org.neo4j.cypher.internal.compiler.v2_2.{CypherException, SyntaxException, CypherTypeException}
 
 import scala.collection.Map
 
@@ -51,7 +51,7 @@ case class SymbolTable(identifiers: Map[String, CypherType] = Map.empty) {
     evaluateType(name, expectedType)
     true
   } catch {
-    case _:CypherException => false
+    case _: CypherException => false
   }
 }
 

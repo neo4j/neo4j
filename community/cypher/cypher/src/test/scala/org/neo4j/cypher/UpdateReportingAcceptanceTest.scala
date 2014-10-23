@@ -17,34 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal
+package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.PlanType.cantMixProfileAndExplain
-import org.neo4j.cypher.internal.compiler.v2_2.InvalidSemanticsException
+class UpdateReportingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+  test("creating a node gets reported as such") {
+    val output = execute("create (:A)").dumpToString()
 
-object PlanType {
-  def cantMixProfileAndExplain: Nothing =  throw new InvalidSemanticsException("Can't mix PROFILE and EXPLAIN")
-}
-
-sealed trait PlanType {
-  def combineWith(other: PlanType): PlanType
-}
-
-case object Normal extends PlanType {
-  def combineWith(other: PlanType) = other
-}
-
-case object Explained extends PlanType {
-  def combineWith(other: PlanType) = other match {
-    case Profiled => cantMixProfileAndExplain
-    case _ => this
+    output should include ("Nodes created: 1")
+    output should include ("Labels added: 1")
   }
 }
-
-case object Profiled extends PlanType {
-  def combineWith(other: PlanType) = other match {
-    case Explained => cantMixProfileAndExplain
-    case _ => this
-  }
-}
-

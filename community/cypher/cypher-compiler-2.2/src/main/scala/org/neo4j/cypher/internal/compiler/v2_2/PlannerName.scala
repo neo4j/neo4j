@@ -19,9 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
-import commands.SchemaIndex
+sealed trait PlannerName
 
-object IndexHintException {
-  def apply(hint: SchemaIndex, message: String) =
-    new org.neo4j.cypher.IndexHintException(hint.identifier, hint.label, hint.property, message)
-}
+case object Legacy extends PlannerName
+case object Ronja extends PlannerName

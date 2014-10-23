@@ -21,11 +21,10 @@ package org.neo4j.cypher.internal.compiler.v2_2.mutation
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.commands.{VarLengthRelatedTo, SingleNode, RelatedTo}
-import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_2.{InvalidSemanticsException, ExecutionContext}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryStateHelper
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Literal
-import org.neo4j.cypher.InvalidSemanticsException
 import org.neo4j.helpers.ThisShouldNotHappenError
 
 class MergePatternActionNullPropertyHandlingTest extends CypherFunSuite {

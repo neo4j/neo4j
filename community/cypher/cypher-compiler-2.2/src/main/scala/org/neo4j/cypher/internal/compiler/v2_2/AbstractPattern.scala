@@ -24,7 +24,6 @@ import commands.expressions.{Expression, Identifier}
 import commands.values.KeyToken
 import mutation.GraphElementPropertyFunctions
 import symbols._
-import org.neo4j.cypher.SyntaxException
 import org.neo4j.graphdb.Direction
 import collection.Map
 

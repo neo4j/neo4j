@@ -20,10 +20,10 @@
 
 package org.neo4j.cypher.internal.compiler.v2_2.spi
 
+import org.neo4j.cypher.internal.compiler.v2_2.InternalQueryStatistics
 import org.neo4j.graphdb._
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.index.IndexDescriptor
-import org.neo4j.cypher.QueryStatistics
 
 /*
  * Developer note: This is an attempt at an internal graph database API, which defines a clean cut between
@@ -88,7 +88,7 @@ trait QueryContext extends TokenContext {
 
   def dropUniqueConstraint(labelId: Int, propertyKeyId: Int)
 
-  def getOptStatistics: Option[QueryStatistics] = None
+  def getOptStatistics: Option[InternalQueryStatistics] = None
 
   def hasLocalFileAccess: Boolean = false
 

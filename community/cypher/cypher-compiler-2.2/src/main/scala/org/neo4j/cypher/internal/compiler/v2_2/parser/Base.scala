@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_2.parser
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.SyntaxException
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.parboiled.Context
 import org.parboiled.errors.{InvalidInputError, ParseError}

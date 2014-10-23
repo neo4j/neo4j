@@ -24,7 +24,6 @@ import commands.{SingleNode, Pattern, PathExtractor, ShortestPath}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import pipes.QueryState
 import symbols._
-import org.neo4j.cypher.SyntaxException
 import org.neo4j.graphalgo.GraphAlgoFactory
 import org.neo4j.graphdb.{Path, DynamicRelationshipType, Node, Expander}
 import org.neo4j.kernel.Traversal

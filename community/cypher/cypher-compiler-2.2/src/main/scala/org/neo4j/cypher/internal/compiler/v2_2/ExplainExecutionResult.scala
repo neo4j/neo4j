@@ -24,17 +24,16 @@ import java.util
 import java.util.Collections
 
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
-import org.neo4j.cypher.QueryStatistics
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription
 import org.neo4j.graphdb.ResourceIterator
 
-case class ExplainExecutionResult(columns: List[String], executionPlanDescription: PlanDescription)
+case class ExplainExecutionResult(columns: List[String], executionPlanDescription: InternalPlanDescription)
   extends InternalExecutionResult {
   def javaIterator: ResourceIterator[util.Map[String, Any]] = new EmptyResourceIterator
   def columnAs[T](column: String) = Iterator.empty
   def javaColumns: util.List[String] = Collections.emptyList()
 
-  def queryStatistics() = QueryStatistics()
+  def queryStatistics() = InternalQueryStatistics()
 
   def dumpToString(writer: PrintWriter) {
     writer.print(dumpToString)

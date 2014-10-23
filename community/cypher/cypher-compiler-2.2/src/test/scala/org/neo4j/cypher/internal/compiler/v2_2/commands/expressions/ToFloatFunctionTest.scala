@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.commands.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_2.{ParameterWrongTypeException, ExecutionContext}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryStateHelper
-import org.neo4j.cypher.ParameterWrongTypeException
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 
 class ToFloatFunctionTest extends CypherFunSuite {

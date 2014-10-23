@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_2.profiler
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.pipes._
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.Arguments.{DbHits, Rows}
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{Argument, PlanDescription}
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows}
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{Argument, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 
@@ -98,7 +98,7 @@ class ProfilerTest extends CypherFunSuite {
     assertRecorded(decoratedResult, "rhs", expectedRows = 10*20, expectedDbHits = 10*30)
   }
 
-  private def assertRecorded(result: PlanDescription, name: String, expectedRows: Int, expectedDbHits: Int) {
+  private def assertRecorded(result: InternalPlanDescription, name: String, expectedRows: Int, expectedDbHits: Int) {
     val pipeArgs: Seq[Argument] = result.find(name).flatMap(_.arguments)
 
     pipeArgs.foreach {
@@ -118,7 +118,7 @@ class ProfilerTest extends CypherFunSuite {
 
 case class ProfilerPipe(source: Pipe, name: String, rows: Int, dbAccess: Int)
                   (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
-  def planDescription: PlanDescription = source.planDescription.andThen(this, name)
+  def planDescription: InternalPlanDescription = source.planDescription.andThen(this, name)
 
   protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.size

@@ -19,13 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.helpers
 
-import collection.{Iterator, Map}
 import java.util.{Map => JavaMap}
-import collection.JavaConverters._
-import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
-import org.neo4j.helpers.ThisShouldNotHappenError
+
+import org.neo4j.cypher.internal.compiler.v2_2.EntityNotFoundException
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{Operations, QueryContext}
-import org.neo4j.cypher.EntityNotFoundException
+import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
+import org.neo4j.helpers.ThisShouldNotHappenError
+
+import scala.collection.JavaConverters._
+import scala.collection.{Iterator, Map}
 
 object IsMap extends MapSupport {
   def unapply(x: Any): Option[(QueryContext) => Map[String, Any]] = if (isMap(x)) {

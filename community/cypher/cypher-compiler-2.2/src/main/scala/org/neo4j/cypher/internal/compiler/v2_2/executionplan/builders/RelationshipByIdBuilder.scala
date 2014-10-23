@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.commands.{RelationshipById, Start
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.builders.GetGraphElements.getElements
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.{EntityProducer, PipeMonitor, QueryState, RelationshipStartPipe}
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.Arguments
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
 import org.neo4j.graphdb.Relationship
 

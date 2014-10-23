@@ -20,14 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
-import pipes.QueryState
-import symbols._
-import org.neo4j.cypher.{CypherTypeException, EntityNotFoundException}
-import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.graphdb.NotFoundException
+import org.neo4j.cypher.internal.compiler.v2_2.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.IsMap
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_2.symbols._
+import org.neo4j.graphdb.NotFoundException
+import org.neo4j.helpers.ThisShouldNotHappenError
 
 case class Property(mapExpr: Expression, propertyKey: KeyToken)
   extends Expression with Product with Serializable

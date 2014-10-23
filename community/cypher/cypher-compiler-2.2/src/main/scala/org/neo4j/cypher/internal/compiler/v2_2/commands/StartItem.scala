@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.mutation._
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.Argument
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.Arguments
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 
 trait NodeStartItemIdentifiers extends StartItem {

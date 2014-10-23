@@ -24,7 +24,7 @@ import commands.{AllIdentifiers, Pattern, Query}
 import commands.expressions.Identifier
 import executionplan.{ExecutionPlanInProgress, Phase, PartiallySolvedQuery, PlanBuilder}
 import mutation._
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription
 import pipes._
 import spi.PlanContext
 import symbols._
@@ -52,7 +52,7 @@ case class MergePatternBuilder(matching: Phase) extends PlanBuilder with Collect
 
     def solveMatchQuery(symbols: SymbolTable, patternAction: MergePatternAction)(implicit pipeMonitor: PipeMonitor): ExecutionPlanInProgress = {
       val pipe = new NullPipe(symbols) {
-        override def planDescription: PlanDescription = plan.pipe.planDescription
+        override def planDescription: InternalPlanDescription = plan.pipe.planDescription
       }
       val matchQuery = createMatchQueryFor(patternAction.patterns)
       var planInProgress = plan.copy(query = matchQuery, pipe = pipe)

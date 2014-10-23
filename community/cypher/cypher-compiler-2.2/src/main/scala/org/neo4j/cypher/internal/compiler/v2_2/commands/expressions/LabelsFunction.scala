@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import pipes.QueryState
 import symbols._
-import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
 import org.neo4j.graphdb.Node
 

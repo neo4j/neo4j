@@ -24,7 +24,6 @@ import values.KeyToken
 import values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.mutation.{MergePatternAction, UpdateAction, PropertySetAction, MergeNodeAction}
-import org.neo4j.cypher.PatternException
 
 case class MergeAst(patterns: Seq[AbstractPattern],
                     onActions: Seq[OnAction],

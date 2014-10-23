@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.spi
 
-import java.net.{CookieHandler, CookieManager, CookiePolicy, URL}
 import java.io._
+import java.net.{CookieHandler, CookieManager, CookiePolicy, URL}
+
 import au.com.bytecode.opencsv.CSVReader
-import org.neo4j.cypher.internal.compiler.v2_2.TaskCloser
-import org.neo4j.cypher.LoadExternalResourceException
+import org.neo4j.cypher.internal.compiler.v2_2.{LoadExternalResourceException, TaskCloser}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.ExternalResource
 
 object CSVResources {

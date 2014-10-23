@@ -25,7 +25,6 @@ import commands.{expressions => commandexpressions, values => commandvalues}
 import commands.expressions.{Expression => CommandExpression}
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.SyntaxException
 
 object PatternConverters {
 

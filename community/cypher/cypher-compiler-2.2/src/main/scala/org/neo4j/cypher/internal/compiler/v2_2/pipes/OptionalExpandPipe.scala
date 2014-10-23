@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
-import org.neo4j.cypher.InternalException
-import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_2.{InternalException, ExecutionContext}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.Predicate
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.Arguments.IntroducedIdentifier
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.IntroducedIdentifier
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.graphdb.{Direction, Node}
 

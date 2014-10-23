@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.executionplan.builders
 
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.neo4j.cypher.IndexHintException
+import org.neo4j.cypher.internal.compiler.v2_2.IndexHintException
 import org.neo4j.cypher.internal.compiler.v2_2.commands._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.values.TokenType.PropertyKey

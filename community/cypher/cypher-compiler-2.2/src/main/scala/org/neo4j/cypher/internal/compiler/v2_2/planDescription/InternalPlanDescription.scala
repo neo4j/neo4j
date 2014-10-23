@@ -19,58 +19,35 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planDescription
 
-import org.neo4j.cypher.internal.compiler.v2_2.pipes.{EntityByIdRhs => PipeEntityByIdRhs, RonjaPipe, Pipe}
-import org.neo4j.cypher
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.PlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v2_2.commands
-import org.neo4j.cypher.javacompat.{PlanDescription => JPlanDescription, ProfilerStatistics}
-import java.util
-import org.neo4j.cypher.InternalException
-import collection.JavaConverters._
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.{Pipe, RonjaPipe, EntityByIdRhs => PipeEntityByIdRhs}
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments._
 
 /**
  * Abstract description of an execution plan
  */
-sealed trait PlanDescription extends cypher.PlanDescription {
+sealed trait InternalPlanDescription {
   self =>
 
   def arguments: Seq[Argument]
-  def cd(name: String): PlanDescription = children.find(name).head
+  def cd(name: String): InternalPlanDescription = children.find(name).head
   def pipe: Pipe
+  def name: String
   def children: Children
-  def map(f: PlanDescription => PlanDescription): PlanDescription
-  def find(name: String): Seq[PlanDescription]
-  def addArgument(arg: Argument): PlanDescription
+  def map(f: InternalPlanDescription => InternalPlanDescription): InternalPlanDescription
+  def find(name: String): Seq[InternalPlanDescription]
+  def addArgument(arg: Argument): InternalPlanDescription
   def andThen(pipe: Pipe, name: String, arguments: Argument*) = PlanDescriptionImpl(pipe, name, SingleChild(this), arguments)
-  def toSeq: Seq[PlanDescription]
+  def toSeq: Seq[InternalPlanDescription]
 
   def totalDbHits: Option[Long] = {
     val allMaybeDbHits: Seq[Option[Long]] = toSeq.map {
-      case plan: PlanDescription => plan.arguments.collectFirst { case DbHits(x) => x}
+      case plan: InternalPlanDescription => plan.arguments.collectFirst { case DbHits(x) => x}
     }
 
     allMaybeDbHits.reduce[Option[Long]] {
       case (a: Option[Long], b: Option[Long]) => for (aVal <- a; bVal <- b) yield aVal + bVal
     }
-  }
-
-  lazy val asJava: JPlanDescription = new JPlanDescription {
-
-    def getChildren: util.List[JPlanDescription] = children.toSeq.toList.map(_.asJava).asJava
-    def getArguments: util.Map[String, AnyRef] = arguments.map(arg =>
-      arg.name -> PlanDescriptionArgumentSerializer.serialize(arg).asInstanceOf[AnyRef]
-    ).toMap.asJava
-
-    def hasProfilerStatistics: Boolean = arguments.exists(_.isInstanceOf[DbHits])
-
-    def getName: String = name
-
-    def getProfilerStatistics: ProfilerStatistics = new ProfilerStatistics {
-      def getDbHits: Long = arguments.collectFirst { case DbHits(count) => count }.getOrElse(throw new InternalException("Don't have profiler stats"))
-      def getRows: Long = arguments.collectFirst { case Rows(count) => count }.getOrElse(throw new InternalException("Don't have profiler stats"))
-    }
-
-    override def toString = self.toString
   }
 }
 
@@ -78,7 +55,7 @@ sealed abstract class Argument extends Product {
   def name = productPrefix
 }
 
-object PlanDescription {
+object InternalPlanDescription {
   object Arguments {
     case class Rows(value: Long) extends Argument
     case class DbHits(value: Long) extends Argument
@@ -93,6 +70,9 @@ object PlanDescription {
     case class KeyExpressions(expressions: Seq[commands.expressions.Expression]) extends Argument
     case class EntityByIdRhs(value: PipeEntityByIdRhs) extends Argument
     case class EstimatedRows(value: Long) extends Argument
+    case class Version(value: String) extends Argument {
+      override def name = "version"
+    }
   }
 }
 
@@ -100,41 +80,41 @@ sealed trait Children {
   def isEmpty = children.isEmpty
   def tail = children.tail
   def head = children.head
-  protected def children: Seq[PlanDescription]
-  def find(name: String): Seq[PlanDescription] = children.flatMap(_.find(name))
-  def map(f: PlanDescription => PlanDescription): Children
-  def foreach(f:PlanDescription=>Unit) {
+  protected def children: Seq[InternalPlanDescription]
+  def find(name: String): Seq[InternalPlanDescription] = children.flatMap(_.find(name))
+  def map(f: InternalPlanDescription => InternalPlanDescription): Children
+  def foreach(f:InternalPlanDescription=>Unit) {
     children.foreach(f)
   }
-  def toSeq:Seq[PlanDescription]
+  def toSeq:Seq[InternalPlanDescription]
 }
 
 case object NoChildren extends Children {
   protected def children = Seq.empty
-  def map(f: PlanDescription => PlanDescription) = NoChildren
+  def map(f: InternalPlanDescription => InternalPlanDescription) = NoChildren
 
-  def toSeq: Seq[PlanDescription] = Seq.empty
+  def toSeq: Seq[InternalPlanDescription] = Seq.empty
 }
 
-final case class SingleChild(child: PlanDescription) extends Children {
+final case class SingleChild(child: InternalPlanDescription) extends Children {
   protected def children = Seq(child)
-  def map(f: PlanDescription => PlanDescription) = SingleChild(child.map(f))
+  def map(f: InternalPlanDescription => InternalPlanDescription) = SingleChild(child.map(f))
 
-  def toSeq: Seq[PlanDescription] = child.toSeq
+  def toSeq: Seq[InternalPlanDescription] = child.toSeq
 }
 
-final case class TwoChildren(lhs: PlanDescription, rhs: PlanDescription) extends Children {
+final case class TwoChildren(lhs: InternalPlanDescription, rhs: InternalPlanDescription) extends Children {
   protected def children = Seq(lhs, rhs)
 
-  def toSeq: Seq[PlanDescription] = lhs.toSeq ++ rhs.toSeq
+  def toSeq: Seq[InternalPlanDescription] = lhs.toSeq ++ rhs.toSeq
 
-  def map(f: PlanDescription => PlanDescription) = TwoChildren(lhs = lhs.map(f), rhs = rhs.map(f))
+  def map(f: InternalPlanDescription => InternalPlanDescription) = TwoChildren(lhs = lhs.map(f), rhs = rhs.map(f))
 }
 
 final case class PlanDescriptionImpl(pipe: Pipe,
                                      name: String,
                                      children: Children,
-                                     _arguments: Seq[Argument]) extends PlanDescription {
+                                     _arguments: Seq[Argument]) extends InternalPlanDescription {
 
   self =>
 
@@ -143,7 +123,7 @@ final case class PlanDescriptionImpl(pipe: Pipe,
     case _            => None
   })
 
-  def find(name: String): Seq[PlanDescription] =
+  def find(name: String): Seq[InternalPlanDescription] =
     children.find(name) ++ (if (this.name == name)
       Some(this)
     else {
@@ -152,11 +132,11 @@ final case class PlanDescriptionImpl(pipe: Pipe,
 
 
 
-  def addArgument(argument: Argument): PlanDescription = copy(_arguments = _arguments :+ argument)
+  def addArgument(argument: Argument): InternalPlanDescription = copy(_arguments = _arguments :+ argument)
 
-  def map(f: PlanDescription => PlanDescription): PlanDescription = f(copy(children = children.map(f)))
+  def map(f: InternalPlanDescription => InternalPlanDescription): InternalPlanDescription = f(copy(children = children.map(f)))
 
-  def toSeq: Seq[PlanDescription] = this +: children.toSeq
+  def toSeq: Seq[InternalPlanDescription] = this +: children.toSeq
 
   override def toString = {
     val treeString = renderAsTree(this)
@@ -165,12 +145,12 @@ final case class PlanDescriptionImpl(pipe: Pipe,
     "%s%n%n%s%n%s".format(treeString, details, summary)
   }
 
-  override def render( builder: StringBuilder, separator: String, levelSuffix: String ): Unit = ???
+  def render( builder: StringBuilder, separator: String, levelSuffix: String ) { ??? }
 
-  override def render( builder: StringBuilder ): Unit = ???
+  def render( builder: StringBuilder ) { ??? }
 }
 
-final case class ArgumentPlanDescription(pipe: Pipe, arguments: Seq[Argument] = Seq.empty) extends PlanDescription {
+final case class ArgumentPlanDescription(pipe: Pipe, arguments: Seq[Argument] = Seq.empty) extends InternalPlanDescription {
   override def andThen(pipe: Pipe, name: String, arguments: Argument*) = new PlanDescriptionImpl(pipe, name, NoChildren, arguments)
 
   def children = NoChildren
@@ -183,9 +163,9 @@ final case class ArgumentPlanDescription(pipe: Pipe, arguments: Seq[Argument] = 
 
   def render(builder: StringBuilder, separator: String, levelSuffix: String) {}
 
-  def addArgument(arg: Argument): PlanDescription = copy(arguments = arguments :+ arg)
+  def addArgument(arg: Argument): InternalPlanDescription = copy(arguments = arguments :+ arg)
 
-  def map(f: (PlanDescription) => PlanDescription): PlanDescription = f(this)
+  def map(f: (InternalPlanDescription) => InternalPlanDescription): InternalPlanDescription = f(this)
 
-  def toSeq: Seq[PlanDescription] = Seq(this)
+  def toSeq: Seq[InternalPlanDescription] = Seq(this)
 }

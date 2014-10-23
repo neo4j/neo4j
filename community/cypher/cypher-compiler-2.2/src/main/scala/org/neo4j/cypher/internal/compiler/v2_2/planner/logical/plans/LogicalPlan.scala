@@ -21,9 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
 import java.lang.reflect.Method
 
-import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
-import org.neo4j.cypher.internal.compiler.v2_2.Rewritable
+import org.neo4j.cypher.internal.compiler.v2_2.{InternalException, Rewritable}
 import org.neo4j.cypher.internal.compiler.v2_2.Rewritable._
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery

@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.executionplan.builders
 
+import org.neo4j.cypher.internal.compiler.v2_2.CypherTypeException
 import org.neo4j.graphdb.PropertyContainer
-import org.neo4j.cypher.{CypherTypeException, ParameterWrongTypeException}
 import collection.JavaConverters._
 
 object GetGraphElements {

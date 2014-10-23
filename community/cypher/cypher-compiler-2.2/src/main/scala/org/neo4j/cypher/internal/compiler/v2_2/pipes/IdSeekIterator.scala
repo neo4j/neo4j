@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
-import org.neo4j.cypher.EntityNotFoundException
-import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_2.{EntityNotFoundException, ExecutionContext}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.NumericHelper
 import org.neo4j.cypher.internal.compiler.v2_2.spi.Operations
 import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}

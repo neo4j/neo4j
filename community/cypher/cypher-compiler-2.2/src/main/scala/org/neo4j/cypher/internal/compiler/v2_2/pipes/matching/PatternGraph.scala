@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.pipes.matching
 
-import collection.mutable.{Set => MutableSet}
-import org.neo4j.cypher.PatternException
+import org.neo4j.cypher.internal.compiler.v2_2.PatternException
 import org.neo4j.cypher.internal.compiler.v2_2.commands.Pattern
 
 case class PatternGraph(patternNodes: Map[String, PatternNode],

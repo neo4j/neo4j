@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import pipes.aggregation._
 import pipes.QueryState
 import symbols._
-import org.neo4j.cypher.SyntaxException
 import org.neo4j.helpers.ThisShouldNotHappenError
 
 abstract class AggregationExpression extends Expression {

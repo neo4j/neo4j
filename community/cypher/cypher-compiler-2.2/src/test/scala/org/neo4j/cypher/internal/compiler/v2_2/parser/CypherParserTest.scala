@@ -19,24 +19,23 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.parser
 
-import org.neo4j.cypher.internal.compiler.v2_2._
-import commands._
-import commands.expressions._
-import commands.values.{UnresolvedLabel, TokenType, KeyToken}
-import commands.values.TokenType.PropertyKey
-import helpers.LabelSupport
-import mutation._
-import org.neo4j.cypher.SyntaxException
-import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.StatementConverters
-import org.neo4j.graphdb.Direction
 import org.hamcrest.CoreMatchers.equalTo
 import org.junit.Assert._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import StatementConverters._
+import org.neo4j.cypher.internal.compiler.v2_2._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.StatementConverters
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.StatementConverters._
+import org.neo4j.cypher.internal.compiler.v2_2.commands._
+import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions._
+import org.neo4j.cypher.internal.compiler.v2_2.commands.values.TokenType.PropertyKey
+import org.neo4j.cypher.internal.compiler.v2_2.commands.values.{KeyToken, TokenType, UnresolvedLabel}
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.LabelSupport
+import org.neo4j.cypher.internal.compiler.v2_2.mutation._
+import org.neo4j.graphdb.Direction
 
 class CypherParserTest extends CypherFunSuite {
 
-  import ParserFixture._
+  import org.neo4j.cypher.internal.compiler.v2_2.parser.ParserFixture._
 
   test("shouldParseEasiestPossibleQuery") {
     expectQuery(

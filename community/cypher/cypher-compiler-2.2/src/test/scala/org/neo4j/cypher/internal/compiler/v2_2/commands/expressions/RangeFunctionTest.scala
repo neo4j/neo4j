@@ -20,9 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_2.commands.expressions
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_2.{InvalidArgumentException, ExecutionContext}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryStateHelper
-import org.neo4j.cypher.InvalidArgumentException
 
 class RangeFunctionTest extends CypherFunSuite {
 
@@ -36,13 +35,6 @@ class RangeFunctionTest extends CypherFunSuite {
   test("range returns inclusive collection of integers for negative step values") {
     range(0, -10, -1) should be(Seq(0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10))
     range(-5, -12, -2) should be(Seq(-5, -7, -9, -11))
-  }
-
-  test("range throws when step is zero") {
-    val thrown = intercept[InvalidArgumentException] {
-      range(2, 8, 0)
-    }
-    assert(thrown.getMessage === "step argument to range() cannot be zero")
   }
 
   private def range(start: Int, end: Int, step: Int) = {

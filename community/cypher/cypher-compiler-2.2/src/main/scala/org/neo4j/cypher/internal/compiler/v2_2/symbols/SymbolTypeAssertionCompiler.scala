@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.symbols
 
-import org.neo4j.cypher.CypherTypeException
-import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_2.{CypherTypeException, ExecutionContext}
 import org.neo4j.graphdb.{Relationship, Node}
 
 import scala.annotation.tailrec
