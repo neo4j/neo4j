@@ -21,12 +21,13 @@ package org.neo4j.cypher.docgen
 
 import org.junit.Test
 import org.junit.Assert._
+import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.visualization.graphviz.GraphStyle
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
-class RemoveTest extends DocumentingTestBase {
+class RemoveTest extends DocumentingTestBase with QueryStatisticsTestSupport {
 
-  override protected def getGraphvizStyle: GraphStyle = 
+  override protected def getGraphvizStyle: GraphStyle =
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
 
   override def graphDescription = List(
@@ -35,9 +36,9 @@ class RemoveTest extends DocumentingTestBase {
   )
 
   override val properties = Map(
-    "Andres" -> Map("age" -> 36l),
+    "Andres" -> Map("age" -> 36l, "nationality" -> "Swedish"),
     "Tobias" -> Map("age" -> 25l),
-    "Peter" -> Map("age" -> 34l)
+    "Peter" -> Map("age" -> 34l, "nationality" -> "Swedish")
   )
 
   def section = "Remove"
@@ -70,5 +71,33 @@ class RemoveTest extends DocumentingTestBase {
       optionalResultExplanation = "",
       assertions = (p) => assert(getLabelsFromNode(p).isEmpty)
     )
+  }
+
+  @Test def remove_label_on_a_node_using_expression() {
+    testQuery(
+      title = "Remove a label from a node using an expression",
+      text = "You can also remove a label using an expression with +REMOVE+ and +LABEL+.",
+      queryText = "match (n) remove n LABEL n.nationality return n.name, labels(n)",
+      optionalResultExplanation = "",
+      assertions = (p) => assertStats(p, labelsRemoved = 2))
+  }
+
+  @Test def remove_label_on_a_node_using_parameters() {
+    prepareAndTestQuery(
+      title = "Remove a label from a node using parameters",
+      text = "You can remove a label using an expression with +REMOVE+ and +LABEL+.",
+      prepare = setParameters(Map("label" -> "Swedish")),
+      queryText = "match (n) remove n LABEL {label} return n.name, labels(n)",
+      optionalResultExplanation = "",
+      assertion = (p) => assertStats(p, labelsRemoved = 3))
+  }
+
+  @Test def remove_multiple_labels_on_a_node_using_expression() {
+    testQuery(
+      title = "Remove multiple labels from a node using an expression",
+      text = "To remove multiple labels you can also use an expression together with +SET+ and +LABELS+.",
+      queryText = "match (n {name: 'Peter'}) remove n LABELS ['German', n.nationality] return n.name, labels(n)",
+      optionalResultExplanation = "",
+      assertions = (p) => assertStats(p, labelsRemoved = 2))
   }
 }

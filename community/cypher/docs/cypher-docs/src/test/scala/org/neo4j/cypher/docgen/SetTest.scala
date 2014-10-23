@@ -36,8 +36,8 @@ class SetTest extends DocumentingTestBase with QueryStatisticsTestSupport {
     "Emil KNOWS Peter")
 
   override val properties = Map(
-    "Andres" -> Map("age" -> 36l, "hungry" -> true),
-    "Peter" -> Map("age" -> 34l))
+    "Andres" -> Map("age" -> 36l, "hungry" -> true, "role" -> "Developer"),
+    "Peter" -> Map("age" -> 34l, "role" -> "JoAT"))
 
   def section = "Set"
 
@@ -99,7 +99,7 @@ Use a parameter to give the value of a property.
       prepare = setParameters(Map("surname" -> "Taylor")),
       queryText = "match (n {name: 'Andres'}) set n.surname = {surname} return n",
       optionalResultExplanation = "The Andres node has got an surname added.",
-      assertion = (p) => assertStats(p, nodesCreated = 0, propertiesSet = 1))
+      assertion = (p) => assertStats(p, propertiesSet = 1))
   }
 
   @Test def set_all_properties_using_a_parameter() {
@@ -111,7 +111,7 @@ This will replace all existing properties on the node with the new set provided 
       prepare = setParameters(Map("props" -> Map("name" -> "Andres", "position" -> "Developer"))),
       queryText = "match (n {name: 'Andres'}) set n = {props} return n",
       optionalResultExplanation = "The Andres node has had all it's properties replaced by the properties in the +props+ parameter.",
-      assertion = (p) => assertStats(p, nodesCreated = 0, propertiesSet = 4))
+      assertion = (p) => assertStats(p, propertiesSet = 5))
   }
 
   @Test def set_multiple_properties_in_one_set_clause() {
@@ -120,25 +120,52 @@ This will replace all existing properties on the node with the new set provided 
       text = "If you want to set multiple properties in one go, simply separate them with a comma.",
       queryText = "match (n {name: 'Andres'}) set n.position = 'Developer', n.surname = 'Taylor'",
       optionalResultExplanation = "",
-      assertions = (p) => assertStats(p, nodesCreated = 0, propertiesSet = 2))
+      assertions = (p) => assertStats(p, propertiesSet = 2))
   }
 
   @Test def set_single_label_on_a_node() {
     testQuery(
       title = "Set a label on a node",
       text = "To set a label on a node, use +SET+.",
-      queryText = "match (n {name: 'Stefan'}) set n :German return n",
-      optionalResultExplanation = "The newly labeled node is returned by the query.",
-      assertions = (p) => assert(getLabelsFromNode(p) === List("German")))
+      queryText = "match (n {name: 'Stefan'}) set n :German return n.name, labels(n)",
+      optionalResultExplanation = "",
+      assertions = (p) => assertStats(p, labelsAdded = 1))
   }
 
   @Test def set_multiple_labels_on_a_node() {
     testQuery(
       title = "Set multiple labels on a node",
       text = "To set multiple labels on a node, use +SET+ and separate the different labels using +:+.",
-      queryText = "match (n {name: 'Emil'}) set n :Swedish:Bossman return n",
-      optionalResultExplanation = "The newly labeled node is returned by the query.",
-      assertions = (p) => assert(getLabelsFromNode(p) === List("Swedish", "Bossman")))
+      queryText = "match (n {name: 'Emil'}) set n :Swedish:Bossman return n.name, labels(n)",
+      optionalResultExplanation = "",
+      assertions = (p) => assertStats(p, labelsAdded = 2))
   }
 
+  @Test def set_label_on_a_node_using_expression() {
+    testQuery(
+      title = "Set a label on a node using an expression",
+      text = "You can also set a label from an expression by using +SET+ and +LABEL+.",
+      queryText = "match (n) set n LABEL n.role return n.name, labels(n)",
+      optionalResultExplanation = "",
+      assertions = (p) => assertStats(p, labelsAdded = 2))
+  }
+
+  @Test def set_label_on_a_node_using_parameters() {
+    prepareAndTestQuery(
+      title = "Set a label on a node using parameters",
+      text = "You can set a label from an expression by using +SET+ and +LABEL+.",
+      prepare = setParameters(Map("label" -> "Person")),
+      queryText = "match (n) set n LABEL {label} return n.name, labels(n)",
+      optionalResultExplanation = "",
+      assertion = (p) => assertStats(p, labelsAdded = 4))
+  }
+
+  @Test def set_multiple_labels_on_a_node_using_expression() {
+    testQuery(
+      title = "Set multiple labels on a node using an expression",
+      text = "To set multiple labels you can also use an expression together with +SET+ and +LABELS+.",
+      queryText = "match (n {name: 'Andres'}) set n LABELS ['Person', n.role] return n.name, labels(n)",
+      optionalResultExplanation = "",
+      assertions = (p) => assertStats(p, labelsAdded = 2))
+  }
 }

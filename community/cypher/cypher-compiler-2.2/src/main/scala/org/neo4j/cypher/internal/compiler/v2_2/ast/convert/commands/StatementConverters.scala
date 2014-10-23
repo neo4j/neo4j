@@ -271,6 +271,8 @@ object StatementConverters {
             mutation.PropertySetAction(setItem.property.asCommandProperty, setItem.expression.asCommandExpression)
           case setItem: ast.SetLabelItem =>
             commands.LabelAction(setItem.expression.asCommandExpression, commands.LabelSetOp, setItem.labels.map(l => commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label)))
+          case setItem: ast.SetLabelsExpressionItem =>
+            commands.LabelExpressionAction(setItem.expression.asCommandExpression, commands.LabelSetOp, setItem.labelsExpression.asCommandExpression)
           case setItem: ast.SetExactPropertiesFromMapItem =>
             mutation.MapPropertySetAction(commandexpressions.Identifier(setItem.identifier.name), setItem.expression.asCommandExpression, true)
           case setItem: ast.SetIncludingPropertiesFromMapItem =>
@@ -282,6 +284,8 @@ object StatementConverters {
         c.items.map {
           case remItem: ast.RemoveLabelItem =>
             commands.LabelAction(remItem.expression.asCommandExpression, commands.LabelRemoveOp, remItem.labels.map(l => commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label)))
+          case removeItem: ast.RemoveLabelsExpressionItem =>
+            commands.LabelExpressionAction(removeItem.expression.asCommandExpression, commands.LabelRemoveOp, removeItem.labelsExpression.asCommandExpression)
           case remItem: ast.RemovePropertyItem =>
             mutation.DeletePropertyAction(remItem.property.map.asCommandExpression, commandvalues.KeyToken.Unresolved(remItem.property.propertyKey.name, commandvalues.TokenType.PropertyKey))
         }

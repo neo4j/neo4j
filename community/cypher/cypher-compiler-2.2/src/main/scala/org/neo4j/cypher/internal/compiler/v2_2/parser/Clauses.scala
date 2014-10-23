@@ -124,11 +124,15 @@ trait Clauses extends Parser
       PropertyExpression ~~ group(operator("=") ~~ Expression) ~~>> (ast.SetPropertyItem(_, _))
     | Identifier ~~ group(operator("=") ~~ Expression) ~~>> (ast.SetExactPropertiesFromMapItem(_, _))
     | Identifier ~~ group(operator("+=") ~~ Expression) ~~>> (ast.SetIncludingPropertiesFromMapItem(_, _))
+    | Identifier ~~ keyword("LABEL") ~~ Expression ~~>> (ast.SetLabelsExpressionItem(_, _, multiple = false))
+    | Identifier ~~ keyword("LABELS") ~~ Expression ~~>> (ast.SetLabelsExpressionItem(_, _, multiple = true))
     | group(Identifier ~~ NodeLabels) ~~>> (ast.SetLabelItem(_, _))
   )
 
   private def RemoveItem: Rule1[ast.RemoveItem] = rule (
-      group(Identifier ~~ NodeLabels) ~~>> (ast.RemoveLabelItem(_, _))
+      Identifier ~~ keyword("LABEL") ~~ Expression ~~>> (ast.RemoveLabelsExpressionItem(_, _, multiple = false))
+    | Identifier ~~ keyword("LABELS") ~~ Expression ~~>> (ast.RemoveLabelsExpressionItem(_, _, multiple = true))
+    | group(Identifier ~~ NodeLabels) ~~>> (ast.RemoveLabelItem(_, _))
     | PropertyExpression ~~> ast.RemovePropertyItem
   )
 

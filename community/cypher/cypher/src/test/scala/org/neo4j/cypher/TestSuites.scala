@@ -73,4 +73,21 @@ abstract class ExecutionEngineFunSuite
       )
     }
   }
+
+  case class haveOnlyLabels(expectedLabels: String*) extends Matcher[Node] {
+    def apply(left: Node): MatchResult = {
+
+      val labels = graph.inTx {
+        left.getLabels.asScala.map(_.name()).toSet
+      }
+
+      val result = expectedLabels.toSet == labels
+
+      MatchResult(
+        result,
+        s"Expected node to have labels $expectedLabels, but it was ${labels.mkString}",
+        s"Expected node to not have labels $expectedLabels, but it did."
+      )
+    }
+  }
 }
