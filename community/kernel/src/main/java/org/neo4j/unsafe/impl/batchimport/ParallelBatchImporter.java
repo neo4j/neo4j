@@ -21,6 +21,7 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import java.io.IOException;
 
+import org.neo4j.function.Function;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.IterableWrapper;
@@ -48,11 +49,11 @@ import org.neo4j.unsafe.impl.batchimport.staging.StageExecution;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStore;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.WriterFactory;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
-import org.neo4j.unsafe.impl.batchimport.store.io.IoQueue;
 
 import static java.lang.System.currentTimeMillis;
 
-import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.SYNCHRONOUS;
+import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
+import static org.neo4j.unsafe.impl.batchimport.WriterFactories.parallel;
 
 /**
  * {@link BatchImporter} which tries to exercise as much of the available resources to gain performance.
@@ -75,26 +76,32 @@ public class ParallelBatchImporter implements BatchImporter
     private final StringLogger logger;
     private final Monitors monitors;
     private final WriterFactory writerFactory;
+    private final AdditionalInitialIds highTokenIds;
 
-    ParallelBatchImporter( String storeDir, FileSystemAbstraction fileSystem, Configuration config,
-            Logging logging, ExecutionMonitor executionMonitor, WriterFactory writerFactory )
+    /**
+     * Advanced usage of the parallel batch importer, for special and very specific cases. Please use
+     * a constructor with fewer arguments instead.
+     */
+    public ParallelBatchImporter( String storeDir, FileSystemAbstraction fileSystem, Configuration config,
+            Logging logging, ExecutionMonitor executionMonitor, Function<Configuration,WriterFactory> writerFactory,
+            AdditionalInitialIds highTokenIds )
     {
         this.storeDir = storeDir;
         this.fileSystem = fileSystem;
         this.config = config;
         this.logging = logging;
+        this.highTokenIds = highTokenIds;
         this.logger = logging.getMessagesLog( getClass() );
         this.executionMonitor = executionMonitor;
         this.monitors = new Monitors();
         this.writeMonitor = new IoMonitor();
-        this.writerFactory = writerFactory;
+        this.writerFactory = writerFactory.apply( config );
     }
 
     public ParallelBatchImporter( String storeDir, FileSystemAbstraction fileSystem,
                                   Configuration config, Logging logging, ExecutionMonitor executionMonitor )
     {
-        this( storeDir, fileSystem, config, logging, executionMonitor,
-                new IoQueue( config.numberOfIoThreads(), SYNCHRONOUS ) );
+        this( storeDir, fileSystem, config, logging, executionMonitor, parallel(), EMPTY );
     }
 
     @Override
@@ -104,7 +111,7 @@ public class ParallelBatchImporter implements BatchImporter
 
         long startTime = currentTimeMillis();
         try ( BatchingNeoStore neoStore = new BatchingNeoStore( fileSystem, storeDir, config,
-                writeMonitor, logging, monitors, writerFactory ) )
+                writeMonitor, logging, monitors, writerFactory, highTokenIds ) )
         {
             // Some temporary caches and indexes in the import
             final IdMapping idMapping = input.idMapping();
@@ -132,7 +139,7 @@ public class ParallelBatchImporter implements BatchImporter
             }
             else
             {   // The id mapper of choice doesn't need any preparation, so we can go ahead and execute
-                // the node and calc dende node stages in parallel.
+                // the node and calc dense node stages in parallel.
                 executeStages( nodeStage, calculateDenseNodesStage );
             }
 

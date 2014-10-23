@@ -43,6 +43,7 @@ import org.neo4j.collection.pool.Pool;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.ConsistencyCheckService.Result;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.function.Function;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -77,7 +78,9 @@ import static java.lang.System.currentTimeMillis;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import static org.neo4j.function.Functions.constant;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.SYNCHRONOUS;
 
 @RunWith(Parameterized.class)
@@ -101,7 +104,7 @@ public class ParallelBatchImporterTest
             return 30;
         }
     };
-    private final WriterFactory writerFactory;
+    private final Function<Configuration,WriterFactory> writerFactory;
     private final InputIdGenerator idGenerator;
     private final IdMapping idMapping;
 
@@ -124,7 +127,7 @@ public class ParallelBatchImporterTest
 
     public ParallelBatchImporterTest( WriterFactory writerFactory, InputIdGenerator idGenerator, IdMapping idMapping )
     {
-        this.writerFactory = writerFactory;
+        this.writerFactory = constant( writerFactory );
         this.idGenerator = idGenerator;
         this.idMapping = idMapping;
     }
@@ -135,7 +138,7 @@ public class ParallelBatchImporterTest
         // GIVEN
         final BatchImporter inserter = new ParallelBatchImporter( directory.absolutePath(),
                 new DefaultFileSystemAbstraction(), config, new DevNullLoggingService(),
-                new SilentExecutionMonitor(), writerFactory );
+                new SilentExecutionMonitor(), writerFactory, EMPTY );
 
         boolean successful = false;
         int relationshipCount = NODE_COUNT * 3;

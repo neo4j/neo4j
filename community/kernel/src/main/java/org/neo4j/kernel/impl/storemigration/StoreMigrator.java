@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -46,6 +47,7 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreUtil;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -64,6 +66,7 @@ import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
@@ -79,9 +82,11 @@ import static org.neo4j.helpers.collection.Iterables.iterable;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
+import static org.neo4j.kernel.impl.store.NeoStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.store.StoreFactory.buildTypeDescriptorAndVersion;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
+import static org.neo4j.unsafe.impl.batchimport.WriterFactories.parallel;
 
 /**
  * Migrates a neo4j kernel database from one version to the next.
@@ -175,10 +180,9 @@ public class StoreMigrator implements StoreMigrationParticipant
         else
         {
             // migrate stores
-            migrateWithBatchImporter( storeDir, migrationDir );
+            migrateWithBatchImporter( storeDir, migrationDir, lastTxId );
 
-            // create counters from scratch
-            rebuildCountsFromScratch( migrationDir, migrationDir, lastTxId );
+            // don't create counters from scratch, since the batch importer just did
         }
 
         // migrate logs
@@ -215,7 +219,7 @@ public class StoreMigrator implements StoreMigrationParticipant
         }
     }
 
-    private void migrateWithBatchImporter( File storeDir, File migrationDir )
+    private void migrateWithBatchImporter( File storeDir, File migrationDir, long lastTxId )
             throws IOException
     {
         LegacyStore legacyStore;
@@ -231,18 +235,10 @@ public class StoreMigrator implements StoreMigrationParticipant
                 throw new IllegalStateException( "Unknown version to upgrade from: " + versionToUpgradeFrom );
         }
 
-        ExecutionMonitor executionMonitor = new CoarseBoundedProgressExecutionMonitor(
-                legacyStore.getNodeStoreReader().getMaxId(), legacyStore.getRelStoreReader().getMaxId() )
-        {
-            @Override
-            protected void percent( int percent )
-            {
-                progressMonitor.percentComplete( percent );
-            }
-        };
         BatchImporter importer = new ParallelBatchImporter( migrationDir.getAbsolutePath(), fileSystem,
                 new Configuration.OverrideFromConfig( config ), logging,
-                executionMonitor );
+                migrationBatchImporterMonitor( legacyStore, progressMonitor ),
+                parallel(), readHighTokenIds( storeDir, lastTxId ) );
         Iterable<InputNode> nodes = legacyNodesAsInput( legacyStore );
         Iterable<InputRelationship> relationships = legacyRelationshipsAsInput( legacyStore );
         importer.doImport( Inputs.input( nodes, relationships, IdMappings.actual() ) );
@@ -267,6 +263,69 @@ public class StoreMigrator implements StoreMigrationParticipant
         }
         // Close
         legacyStore.close();
+    }
+
+    private AdditionalInitialIds readHighTokenIds( File storeDir, final long lastTxId ) throws IOException
+    {
+        final int propertyKeyTokenHighId =
+                readHighIdFromIdFileIfExists( storeDir, StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME );
+        final int labelTokenHighId =
+                readHighIdFromIdFileIfExists( storeDir, StoreFactory.LABEL_TOKEN_STORE_NAME );
+        final int relationshipTypeTokenHighId =
+                readHighIdFromIdFileIfExists( storeDir, StoreFactory.RELATIONSHIP_TYPE_TOKEN_STORE_NAME );
+        return new AdditionalInitialIds()
+        {
+            @Override
+            public int highRelationshipTypeTokenId()
+            {
+                return relationshipTypeTokenHighId;
+            }
+
+            @Override
+            public int highPropertyKeyTokenId()
+            {
+                return propertyKeyTokenHighId;
+            }
+
+            @Override
+            public int highLabelTokenId()
+            {
+                return labelTokenHighId;
+            }
+
+            @Override
+            public long lastCommittedTransactionId()
+            {
+                return lastTxId;
+            }
+        };
+    }
+
+    private int readHighIdFromIdFileIfExists( File storeDir, String storeName ) throws IOException
+    {
+        String file = StoreFileType.ID.augment( new File( storeDir, DEFAULT_NAME + storeName ).getPath() );
+        try
+        {
+            return (int) IdGeneratorImpl.readHighId( fileSystem, new File( file ) );
+        }
+        catch ( FileNotFoundException e )
+        {
+            return 0;
+        }
+    }
+
+    private ExecutionMonitor migrationBatchImporterMonitor( LegacyStore legacyStore,
+            MigrationProgressMonitor progressMonitor2 )
+    {
+        return new CoarseBoundedProgressExecutionMonitor(
+                legacyStore.getNodeStoreReader().getMaxId(), legacyStore.getRelStoreReader().getMaxId() )
+        {
+            @Override
+            protected void percent( int percent )
+            {
+                progressMonitor.percentComplete( percent );
+            }
+        };
     }
 
     private StoreFactory storeFactory( PageCache pageCache, File migrationDir )
