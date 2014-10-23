@@ -64,7 +64,7 @@ public class LogFiles
         File[] logFiles = fs.listFiles( fromDirectory, FILENAME_FILTER );
         for ( File logFile : logFiles )
         {
-            StoreFile.moveFile( fs, logFile.getName(), fromDirectory, toDirectory, false, false );
+            FileOperation.MOVE.perform( fs, logFile.getName(), fromDirectory, toDirectory );
         }
     }
 }

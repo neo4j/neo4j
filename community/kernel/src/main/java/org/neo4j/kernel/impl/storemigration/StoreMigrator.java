@@ -80,6 +80,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.store.StoreFactory.buildTypeDescriptorAndVersion;
+import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 /**
@@ -467,7 +468,7 @@ public class StoreMigrator implements StoreMigrationParticipant
         StoreFile.deleteIdFile( fileSystem, migrationDir, idFilesToDelete );
 
         // Move the migrated ones into the store directory
-        StoreFile.move( fileSystem, migrationDir, storeDir, filesToMove,
+        StoreFile.fileOperation( MOVE, fileSystem, migrationDir, storeDir, filesToMove,
                 true, // allow to skip non existent source files
                 true, // allow to overwrite target files
                 StoreFileType.values() );
