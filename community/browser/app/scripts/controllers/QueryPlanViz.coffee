@@ -37,9 +37,12 @@ angular.module('neo4jApp.controllers')
             links.push
               source: child
               target: operator
-              value: operator.Rows
+              value: Math.max(1, operator.Rows)
 
         explore queryPlan.root
+
+        for link in links
+          console.log link, link.value
 
         margin = {top: 1, right: 1, bottom: 300, left: 1}
         width = 800 - margin.left - margin.right
@@ -59,7 +62,7 @@ angular.module('neo4jApp.controllers')
         .size([width, height])
         .nodes(operators)
         .links(links)
-        .layout(32)
+        .layout(64)
 
         path = (d) ->
           dy = Math.max(1, d.dy)
@@ -109,7 +112,7 @@ angular.module('neo4jApp.controllers')
         .attr('transform', (d) -> "translate(#{d.y},#{d.x})")
 
         operatorElement.append('rect')
-        .attr('width', (d) -> d.dy)
+        .attr('width', (d) -> Math.max(1, d.dy))
         .attr('height', sankey.nodeWidth())
         .style('fill', (d) -> d.color = color(d.operatorType))
         .style('stroke', (d) -> d3.rgb(d.color).darker(2))
