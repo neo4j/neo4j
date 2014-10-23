@@ -35,20 +35,21 @@ public class CharSeekers
      * Instantiates a {@link BufferedCharSeeker} with optional {@link ThreadAheadReadable read-ahead} capability.
      *
      * @param reader the {@link Readable} which is the source of data, f.ex. a {@link FileReader}.
+     * @param bufferSize buffer size of the seeker and, if enabled, the read-ahead thread.
      * @param readAhead whether or not to start a {@link ThreadAheadReadable read-ahead thread}
      * which strives towards always keeping one buffer worth of data read and available from I/O when it's
      * time for the {@link BufferedCharSeeker} to read more data.
      * @return a {@link CharSeeker} with optional {@link ThreadAheadReadable read-ahead} capability.
      */
-    public static CharSeeker charSeeker( Readable reader, boolean readAhead ) throws FileNotFoundException
+    public static CharSeeker charSeeker( Readable reader, int bufferSize, boolean readAhead )
     {
         if ( readAhead )
         {   // Thread that always has one buffer read ahead
-            reader = threadAhead( reader, DEFAULT_BUFFER_SIZE );
+            reader = threadAhead( reader, bufferSize );
         }
 
         // Give the reader to the char seeker
-        return new BufferedCharSeeker( reader, DEFAULT_BUFFER_SIZE );
+        return new BufferedCharSeeker( reader, bufferSize );
     }
 
     /**
@@ -60,6 +61,6 @@ public class CharSeekers
      */
     public static CharSeeker charSeeker( File file ) throws FileNotFoundException
     {
-        return charSeeker( new FileReader( file ), true );
+        return charSeeker( new FileReader( file ), DEFAULT_BUFFER_SIZE, true );
     }
 }
