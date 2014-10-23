@@ -431,19 +431,24 @@ public class FileUtils
 
     public static void readTextFile( File file, LineListener listener ) throws IOException
     {
-        BufferedReader reader = new BufferedReader( new FileReader( file ) );
-        try
+        try(BufferedReader reader = new BufferedReader( new FileReader( file ) );)
         {
-            String line = null;
+            String line;
             while ( (line = reader.readLine()) != null )
             {
                 listener.line( line );
             }
         }
-        finally
+    }
+
+    public static String readTextFile( File file, Charset charset ) throws IOException
+    {
+        StringBuilder out = new StringBuilder();
+        for ( String s : Files.readAllLines( file.toPath(), charset ) )
         {
-            reader.close();
+            out.append( s ).append( "\n" );
         }
+        return out.toString();
     }
 
     private static void deleteFileWithRetries( Path file, int tries ) throws IOException
