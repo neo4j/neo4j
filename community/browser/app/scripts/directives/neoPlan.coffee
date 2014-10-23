@@ -18,19 +18,15 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-'use strict'
-
-angular.module('neo4jApp.controllers')
-  .controller('QueryPlanViz', [
-    '$element'
-    ($element) ->
-
-      @render = (queryPlan) ->
-        console.log 'query plan!', queryPlan
-        svg = d3.select($element[0])
-        svg.append('rect')
-        .attr('width', 200)
-        .attr('height', 200)
-
-      return @
+'use strict';
+angular.module('neo4jApp.directives')
+  .directive('neoPlan', [
+    ()->
+      require: 'ngController'
+      restrict: 'A'
+      link: (scope, elm, attr, ngCtrl) ->
+        unbind = scope.$watch attr.queryPlan, (plan) ->
+          return unless plan
+          ngCtrl.render(plan)
+          unbind()
   ])

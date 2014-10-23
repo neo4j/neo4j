@@ -40,9 +40,11 @@ div(ng-controller="CypherResultCtrl", fullscreen)
             .status
               include partials/result-status
 
-          .view-result-table.result(ng-show='isActive("plan")')
+          .view-result-plan.result(ng-show='isActive("plan")')
             .query-plan-contents
-              svg(ng-controller='QueryPlanViz')
+              svg(neo-plan
+                query-plan='frame.response.table._response.plan'
+                ng-controller='QueryPlanViz')
           .status-bar(ng-show='isActive("plan")')
             .status
               include partials/result-status
