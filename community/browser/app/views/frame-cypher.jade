@@ -42,7 +42,9 @@ div(ng-controller="CypherResultCtrl", fullscreen)
 
           .view-result-plan.result(ng-show='isActive("plan")')
             .query-plan-contents
-              svg(neo-plan
+              svg.query-plan(neo-plan
+                width=400
+                height=400
                 query-plan='frame.response.table._response.plan'
                 ng-controller='QueryPlanViz')
           .status-bar(ng-show='isActive("plan")')
