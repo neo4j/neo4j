@@ -23,9 +23,9 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 
-import org.neo4j.kernel.impl.util.FileUtils;
-import org.neo4j.server.AbstractNeoServer;
 import org.neo4j.harness.ServerControls;
+import org.neo4j.io.fs.FileUtils;
+import org.neo4j.server.AbstractNeoServer;
 
 public class InProcessServerControls implements ServerControls
 {

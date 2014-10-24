@@ -26,12 +26,14 @@ import java.util.Map;
 import java.util.Random;
 
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.harness.ServerControls;
+import org.neo4j.harness.TestServerBuilder;
+import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.logging.ClassicLoggingService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.CommunityNeoServer;
-import org.neo4j.harness.ServerControls;
-import org.neo4j.harness.TestServerBuilder;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -43,8 +45,8 @@ public class InProcessServerBuilder implements TestServerBuilder
 {
     private File serverFolder;
     private Logging logging;
-    private Extensions extensions = new Extensions();
-    private Fixtures fixtures = new Fixtures();
+    private final Extensions extensions = new Extensions();
+    private final Fixtures fixtures = new Fixtures();
 
     /**
      * Config options for both database and server.
@@ -60,8 +62,9 @@ public class InProcessServerBuilder implements TestServerBuilder
     @Override
     public ServerControls newServer()
     {
+        Dependencies dependencies = GraphDatabaseDependencies.newDependencies().logging( logging );
         InProcessServerControls controls = new InProcessServerControls( serverFolder,
-                new CommunityNeoServer( new MapConfigurator( config, extensions.toList() ), logging ) );
+                new CommunityNeoServer( new MapConfigurator( config, extensions.toList() ), dependencies ) );
         controls.start();
         try
         {
