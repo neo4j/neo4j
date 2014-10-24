@@ -27,8 +27,17 @@ import org.apache.commons.configuration.AbstractConfiguration;
 
 public class MapBasedConfiguration extends AbstractConfiguration
 {
+    private Map<String, Object> config;
 
-    private Map<String, Object> config = new HashMap<String, Object>();
+    public MapBasedConfiguration()
+    {
+        this(new HashMap<String, Object>());
+    }
+
+    public MapBasedConfiguration( Map<String, Object> config )
+    {
+        this.config = config;
+    }
 
     @Override
     public boolean isEmpty()
@@ -51,8 +60,7 @@ public class MapBasedConfiguration extends AbstractConfiguration
     @Override
     public Iterator<String> getKeys()
     {
-        return config.keySet()
-                .iterator();
+        return config.keySet().iterator();
     }
 
     @Override

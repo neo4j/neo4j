@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Node;
@@ -44,7 +44,8 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
     private final List<PropertyTracker<Relationship>> relationshipPropertyTrackers;
     private final Logging logging;
     private long epoch;
-    private PropertyChainVerifier propertyChainVerifier;
+    private final PropertyChainVerifier propertyChainVerifier;
+    private GraphPropertiesImpl graphProperties;
 
     public NodeManager( NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relationshipLookups,
                         ThreadToStatementContextBridge threadToTransactionBridge, Logging logging )
@@ -52,13 +53,15 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
         this.nodeLookup = nodeLookup;
         this.relationshipLookups = relationshipLookups;
         this.threadToTransactionBridge = threadToTransactionBridge;
-        this.nodePropertyTrackers = new LinkedList<>();
-        this.relationshipPropertyTrackers = new LinkedList<>();
+
+        // Trackers may be added and removed at runtime, e.g. via the REST interface in server,
+        // so we use the thread-safe CopyOnWriteArrayList.
+        this.nodePropertyTrackers = new CopyOnWriteArrayList<>();
+        this.relationshipPropertyTrackers = new CopyOnWriteArrayList<>();
+
         this.logging = logging;
         this.propertyChainVerifier = new NoDuplicatesPropertyChainVerifier();
     }
-
-    private GraphPropertiesImpl graphProperties;
 
     @Override
     public void init()
@@ -88,6 +91,7 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
         return new RelationshipProxy( id, relationshipLookups, threadToTransactionBridge );
     }
 
+    @Override
     public GraphPropertiesImpl newGraphProperties()
     {
         return new GraphPropertiesImpl( epoch, threadToTransactionBridge );
