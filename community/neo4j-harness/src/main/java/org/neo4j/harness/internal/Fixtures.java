@@ -30,13 +30,15 @@ import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
 
+import org.codehaus.jackson.JsonNode;
+
+import org.neo4j.io.fs.FileUtils;
+import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.domain.JsonParseException;
+
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientRequest;
 import com.sun.jersey.api.client.ClientResponse;
-import org.codehaus.jackson.JsonNode;
-import org.neo4j.kernel.impl.util.FileUtils;
-import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.domain.JsonParseException;
 
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;

@@ -23,7 +23,8 @@ import java.io.File;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.kernel.impl.util.FileUtils;
+
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.Mute;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.server.HTTP;
@@ -31,6 +32,7 @@ import org.neo4j.test.server.HTTP;
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+
 import static org.neo4j.harness.TestServerBuilders.newInProcessBuilder;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
