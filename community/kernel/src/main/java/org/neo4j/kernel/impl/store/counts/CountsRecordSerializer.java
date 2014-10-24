@@ -25,10 +25,10 @@ import java.nio.ByteBuffer;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordSerializer;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
-import org.neo4j.register.Register;
+import org.neo4j.register.Register.DoubleLongRegister;
 
+import static org.neo4j.kernel.impl.store.counts.CountsKey.indexCountsKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.indexSampleKey;
-import static org.neo4j.kernel.impl.store.counts.CountsKey.indexSizeKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.nodeKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipKey;
 
@@ -65,9 +65,9 @@ import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipKey;
  * Count value:
  *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
  * [ , , , , , , , ,x,x,x,x,x,x,x,x]
- *                  _ _ _ _ _ _ _ _
- *                  |
- *                  value
+ *  _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+ *  |               |
+ *  updates         size
  * <p/>
  *
  * Sample value:
@@ -78,16 +78,19 @@ import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipKey;
  *  unique          size
  * <p/>
  */
-public final class CountsRecordSerializer implements KeyValueRecordSerializer<CountsKey, Register.DoubleLongRegister>
+public final class CountsRecordSerializer implements KeyValueRecordSerializer<CountsKey, DoubleLongRegister>
 {
     public static final CountsRecordSerializer INSTANCE = new CountsRecordSerializer();
+
+    public static final long DEFAULT_FIRST_VALUE = 0l;
+    public static final long DEFAULT_SECOND_VALUE = 0l;
 
     private CountsRecordSerializer()
     {
     }
 
     @Override
-    public boolean visitRecord(ByteBuffer buffer, KeyValueRecordVisitor<CountsKey, Register.DoubleLongRegister> visitor)
+    public boolean visitRecord(ByteBuffer buffer, KeyValueRecordVisitor<CountsKey, DoubleLongRegister> visitor)
     {
         // read type
         byte type = buffer.get();
@@ -128,10 +131,9 @@ public final class CountsRecordSerializer implements KeyValueRecordSerializer<Co
                 key = relationshipKey( one /* start label id */, two /* rel type id */, three /* end label id */ );
                 break;
 
-            case INDEX_SIZE:
+            case INDEX_COUNTS:
                 assert one == 0;
-                assert first == 0;
-                key = indexSizeKey( three /* label id */, two /* pk id */ );
+                key = indexCountsKey( three /* label id */, two /* pk id */ );
                 break;
 
             case INDEX_SAMPLE:
@@ -147,7 +149,7 @@ public final class CountsRecordSerializer implements KeyValueRecordSerializer<Co
     }
 
     @Override
-    public CountsKey readRecord( PageCursor cursor, int offset, Register.DoubleLongRegister value ) throws IOException
+    public CountsKey readRecord( PageCursor cursor, int offset, DoubleLongRegister value ) throws IOException
     {
         byte type;
         int one, two, three;
@@ -191,9 +193,9 @@ public final class CountsRecordSerializer implements KeyValueRecordSerializer<Co
                 key = relationshipKey( one /* start label id */, two /* rel type id */, three /* end label id */ );
                 break;
 
-            case INDEX_SIZE:
+            case INDEX_COUNTS:
                 assert one == 0;
-                key = indexSizeKey( three /* label id */, two /* pk id */ );
+                key = indexCountsKey( three /* label id */, two /* pk id */ );
                 break;
 
             case INDEX_SAMPLE:
@@ -209,8 +211,8 @@ public final class CountsRecordSerializer implements KeyValueRecordSerializer<Co
     }
 
     @Override
-    public void writeDefaultValue( Register.DoubleLongRegister valueRegister )
+    public void writeDefaultValue( DoubleLongRegister valueRegister )
     {
-        valueRegister.write( 0l, 0l );
+        valueRegister.write( DEFAULT_FIRST_VALUE, DEFAULT_SECOND_VALUE );
     }
 }

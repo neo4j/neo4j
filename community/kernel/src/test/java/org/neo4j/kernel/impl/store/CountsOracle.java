@@ -101,11 +101,13 @@ public class CountsOracle
                     }
 
                     @Override
-                    public void visitIndexSize( int labelId, int propertyKeyId, long count )
+                    public void visitIndexCounts( int labelId, int propertyKeyId, long updates, long size )
                     {
                         assertEquals( "Should be able to read visited state.",
-                                tracker.indexSize( labelId, propertyKeyId ), count );
-                        verifier.visitIndexSize( labelId, propertyKeyId, count );
+                                tracker.indexSize( labelId, propertyKeyId ), size );
+                        assertEquals( "Should be able to read visited state.",
+                                tracker.indexUpdates( labelId, propertyKeyId ), updates );
+                        verifier.visitIndexCounts( labelId, propertyKeyId, updates, size );
                     }
 
                     @Override

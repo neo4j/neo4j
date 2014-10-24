@@ -29,6 +29,8 @@ public interface CountsAccessor
 
     long indexSize( int labelId, int propertyKeyId );
 
+    long indexUpdates( int labelId, int propertyKeyId );
+
     void indexSample( int labelId, int propertyKeyId, Register.DoubleLongRegister target );
 
     long incrementNodeCount( int labelId, long delta );
@@ -36,6 +38,10 @@ public interface CountsAccessor
     long incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta );
 
     void replaceIndexSize( int labelId, int propertyKeyId, long total );
+
+    long incrementIndexUpdates( int labelId, int propertyKeyId, long total );
+
+    void replaceIndexUpdates( int labelId, int propertyKeyId, long total );
 
     void replaceIndexSample( int labelId, int propertyKeyId, long unique, long size );
 
@@ -61,9 +67,13 @@ public interface CountsAccessor
         }
 
         @Override
-        public void visitIndexSize( int labelId, int propertyKeyId, long count )
+        public void visitIndexCounts( int labelId, int propertyKeyId, long updates, long size )
         {
-            target.replaceIndexSize( labelId, propertyKeyId, count );
+            if ( size != -1l )
+            {
+                target.replaceIndexSize( labelId, propertyKeyId, size );
+            }
+            target.incrementIndexUpdates( labelId, propertyKeyId, updates );
         }
 
         @Override

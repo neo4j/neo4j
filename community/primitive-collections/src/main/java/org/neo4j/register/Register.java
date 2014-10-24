@@ -32,7 +32,7 @@ public interface Register
             long readFirst();
             long readSecond();
 
-            void copyTo( DoubleLongRegister target );
+            void copyTo( Out target );
         }
 
         interface Out

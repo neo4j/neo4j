@@ -23,8 +23,8 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.store.counts.CountsKey.IndexCountsKey;
 import org.neo4j.kernel.impl.store.counts.CountsKey.IndexSampleKey;
-import org.neo4j.kernel.impl.store.counts.CountsKey.IndexSizeKey;
 import org.neo4j.kernel.impl.store.counts.CountsKey.NodeKey;
 import org.neo4j.kernel.impl.store.counts.CountsKey.RelationshipKey;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
@@ -41,7 +41,9 @@ interface CountsTrackerState extends Closeable
 
     long relationshipCount( RelationshipKey relationshipKey );
 
-    long indexSizeCount( IndexSizeKey indexSizeKey );
+    long indexSize( IndexCountsKey indexCountsKey );
+
+    long indexUpdates( IndexCountsKey indexCountsKey );
 
     void indexSample( IndexSampleKey indexSampleKey, DoubleLongRegister target );
 
@@ -49,7 +51,11 @@ interface CountsTrackerState extends Closeable
 
     long incrementRelationshipCount( RelationshipKey relationshipKey, long delta );
 
-    void replaceIndexSize( IndexSizeKey indexSizeKey, long total );
+    void replaceIndexSize( IndexCountsKey indexCountsKey, long total );
+
+    long incrementIndexUpdates( IndexCountsKey indexCountsKey, long delta );
+
+    void replaceIndexUpdates( IndexCountsKey indexCountsKey, long total );
 
     void replaceIndexSample( IndexSampleKey indexSampleKey, long unique, long size );
 

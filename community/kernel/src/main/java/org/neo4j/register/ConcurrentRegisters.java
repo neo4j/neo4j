@@ -25,6 +25,11 @@ public class ConcurrentRegisters
 {
     public static class OptimisticRead
     {
+        public static Register.DoubleLongRegister newDoubleLongRegister()
+        {
+            return newDoubleLongRegister( -1l, -1l );
+        }
+
         public static Register.DoubleLongRegister newDoubleLongRegister( final long initialFirst,
                                                                          final long initialSecond )
         {
@@ -76,7 +81,7 @@ public class ConcurrentRegisters
                 }
 
                 @Override
-                public void copyTo( Register.DoubleLongRegister target )
+                public void copyTo( Register.DoubleLong.Out target )
                 {
                     long stamp = lock.tryOptimisticRead();
                     long firstCopy = this.first;

@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.kernel.impl.store.counts.CountsKey;
-import org.neo4j.kernel.impl.store.counts.CountsRecordSerializer;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.state.RecordState;
 import org.neo4j.register.Register;
@@ -36,10 +35,12 @@ import static java.util.Objects.requireNonNull;
 
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
+import static org.neo4j.kernel.impl.store.counts.CountsKey.indexCountsKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.indexSampleKey;
-import static org.neo4j.kernel.impl.store.counts.CountsKey.indexSizeKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.nodeKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipKey;
+import static org.neo4j.kernel.impl.store.counts.CountsRecordSerializer.DEFAULT_FIRST_VALUE;
+import static org.neo4j.kernel.impl.store.counts.CountsRecordSerializer.DEFAULT_SECOND_VALUE;
 
 public class CountsRecordState implements CountsVisitor.Visitable, CountsAccessor, RecordState
 {
@@ -48,49 +49,67 @@ public class CountsRecordState implements CountsVisitor.Visitable, CountsAccesso
     @Override
     public long nodeCount( int labelId )
     {
-        return count( nodeKey( labelId ) ).readSecond();
+        return counts( nodeKey( labelId ) ).readSecond();
     }
 
     @Override
     public long incrementNodeCount( int labelId, long delta )
     {
-        return count( nodeKey( labelId ) ).incrementSecond( delta );
+        return counts( nodeKey( labelId ) ).incrementSecond( delta );
     }
 
     @Override
     public long relationshipCount( int startLabelId, int typeId, int endLabelId )
     {
-        return count( relationshipKey( startLabelId, typeId, endLabelId ) ).readSecond();
+        return counts( relationshipKey( startLabelId, typeId, endLabelId ) ).readSecond();
     }
 
     @Override
     public void indexSample( int labelId, int propertyKeyId, Register.DoubleLongRegister target )
     {
-        count( indexSampleKey( labelId, propertyKeyId ) ).copyTo( target );
+        counts( indexSampleKey( labelId, propertyKeyId ) ).copyTo( target );
     }
 
     @Override
     public long incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta )
     {
-        return count( relationshipKey( startLabelId, typeId, endLabelId ) ).incrementSecond( delta );
+        return counts( relationshipKey( startLabelId, typeId, endLabelId ) ).incrementSecond( delta );
     }
 
     @Override
     public long indexSize( int labelId, int propertyKeyId )
     {
-        return count( indexSizeKey( labelId, propertyKeyId ) ).readSecond();
+        return counts( indexCountsKey( labelId, propertyKeyId ) ).readSecond();
+    }
+
+    @Override
+    public long indexUpdates( int labelId, int propertyKeyId )
+    {
+        return counts( indexCountsKey( labelId, propertyKeyId ) ).readFirst();
     }
 
     @Override
     public void replaceIndexSize( int labelId, int propertyKeyId, long total )
     {
-        count( indexSizeKey( labelId, propertyKeyId ) ).writeSecond( total );
+        counts( indexCountsKey( labelId, propertyKeyId ) ).writeSecond( total );
+    }
+
+    @Override
+    public long incrementIndexUpdates( int labelId, int propertyKeyId, long delta )
+    {
+        return counts( indexCountsKey( labelId, propertyKeyId ) ).incrementFirst( delta );
+    }
+
+    @Override
+    public void replaceIndexUpdates( int labelId, int propertyKeyId, long total )
+    {
+        counts( indexCountsKey( labelId, propertyKeyId ) ).writeFirst( total );
     }
 
     @Override
     public void replaceIndexSample( int labelId, int propertyKeyId, long unique, long size )
     {
-        count( indexSampleKey( labelId, propertyKeyId ) ).write( unique, size );
+        counts( indexSampleKey( labelId, propertyKeyId ) ).write( unique, size );
     }
 
     @Override
@@ -239,13 +258,12 @@ public class CountsRecordState implements CountsVisitor.Visitable, CountsAccesso
         }
     }
 
-    private Register.DoubleLongRegister count( CountsKey key )
+    private Register.DoubleLongRegister counts( CountsKey key )
     {
         Register.DoubleLongRegister count = counts.get( key );
         if ( count == null )
         {
-            count = Registers.newDoubleLongRegister();
-            CountsRecordSerializer.INSTANCE.writeDefaultValue( count );
+            count = Registers.newDoubleLongRegister( DEFAULT_FIRST_VALUE, DEFAULT_SECOND_VALUE );
             counts.put( key, count );
         }
         return count;
@@ -291,11 +309,10 @@ public class CountsRecordState implements CountsVisitor.Visitable, CountsAccesso
         {
             verify( relationshipKey( startLabelId, typeId, endLabelId ), 0, count );
         }
-
         @Override
-        public void visitIndexSize( int labelId, int propertyKey, long count )
+        public void visitIndexCounts( int labelId, int propertyKeyId, long updates, long size )
         {
-            verify( indexSizeKey( labelId, propertyKey ), 0, count );
+            verify( indexCountsKey( labelId, propertyKeyId ), updates, size );
         }
 
         @Override

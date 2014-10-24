@@ -41,8 +41,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
+import static org.neo4j.kernel.impl.store.counts.CountsKey.indexCountsKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.indexSampleKey;
-import static org.neo4j.kernel.impl.store.counts.CountsKey.indexSizeKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.nodeKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipKey;
 import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.BASE_MINOR_VERSION;
@@ -117,8 +117,8 @@ public class CountsStoreTest
             writer.visit( nodeKey( 0 ) );
             writer.valueRegister().write( 0, 32 );
             writer.visit( relationshipKey( 1, 2, 3 )  );
-            writer.valueRegister().write( 0, 84 );
-            writer.visit( indexSizeKey( 4, 5 ) );
+            writer.valueRegister().write( 9, 11 );
+            writer.visit( indexCountsKey( 4, 5 ) );
             writer.valueRegister().write( 24, 84 );
             writer.visit( indexSampleKey( 4, 5 ) );
             writer.close();
@@ -165,11 +165,12 @@ public class CountsStoreTest
                         }
 
                         @Override
-                        public void visitIndexSize( int labelId, int propertyKeyId, long count )
+                        public void visitIndexCounts( int labelId, int propertyKeyId, long updates, long size )
                         {
                             assertEquals( 4, labelId );
                             assertEquals( 5, propertyKeyId );
-                            assertEquals( 84, count );
+                            assertEquals( 9, updates );
+                            assertEquals( 11, size );
                         }
 
                         @Override

@@ -42,7 +42,7 @@ public class Registers
             }
 
             @Override
-            public void copyTo( Register.DoubleLongRegister target )
+            public void copyTo( Register.DoubleLong.Out target )
             {
                 target.write( first, second );
             }

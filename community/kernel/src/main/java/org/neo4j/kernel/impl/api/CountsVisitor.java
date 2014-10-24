@@ -30,7 +30,7 @@ public interface CountsVisitor
 
     void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count );
 
-    void visitIndexSize( int labelId, int propertyKeyId, long count );
+    void visitIndexCounts( int labelId, int propertyKeyId, long updates, long size );
 
     void visitIndexSample( int labelId, int propertyKeyId, long unique, long size );
 
@@ -49,7 +49,7 @@ public interface CountsVisitor
         }
 
         @Override
-        public void visitIndexSize( int labelId, int propertyKeyId, long count )
+        public void visitIndexCounts( int labelId, int propertyKeyId, long updates, long size )
         {
             // override in subclasses
         }

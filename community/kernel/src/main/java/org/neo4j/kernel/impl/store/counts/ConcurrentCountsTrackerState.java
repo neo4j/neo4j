@@ -29,14 +29,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.kernel.impl.store.counts.CountsKey.IndexCountsKey;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
 import org.neo4j.register.ConcurrentRegisters;
+import org.neo4j.register.Register.DoubleLong;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 
 import static org.neo4j.kernel.impl.store.counts.CountsKey.IndexSampleKey;
-import static org.neo4j.kernel.impl.store.counts.CountsKey.IndexSizeKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.NodeKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.RelationshipKey;
 
@@ -88,33 +89,51 @@ class ConcurrentCountsTrackerState implements CountsTrackerState
     }
 
     @Override
-    public void indexSample( IndexSampleKey indexSampleKey, DoubleLongRegister target )
-    {
-        readSample( indexSampleKey, target );
-    }
-
-    @Override
     public long incrementRelationshipCount( RelationshipKey relationshipKey, long delta )
     {
         return incrementCount( relationshipKey, delta );
     }
 
     @Override
-    public long indexSizeCount( IndexSizeKey indexSizeKey )
+    public long indexSize( IndexCountsKey indexCountsKey )
     {
-        return readCount( indexSizeKey );
+        return readRegister( indexCountsKey ).readSecond();
     }
 
     @Override
-    public void replaceIndexSize( IndexSizeKey indexSizeKey, long total )
+    public void replaceIndexSize( IndexCountsKey indexCountsKey, long total )
     {
-        replaceCount( indexSizeKey, total );
+        writeRegister( indexCountsKey ).writeSecond( total );
+    }
+
+    @Override
+    public long indexUpdates( IndexCountsKey indexCountsKey )
+    {
+        return readRegister( indexCountsKey ).readFirst();
+    }
+
+    @Override
+    public long incrementIndexUpdates( IndexCountsKey indexCountsKey, long delta )
+    {
+        return writeRegister( indexCountsKey ).incrementFirst( delta );
+    }
+
+    @Override
+    public void replaceIndexUpdates( IndexCountsKey indexCountsKey, long total )
+    {
+        writeRegister( indexCountsKey ).writeFirst( total );
+    }
+
+    @Override
+    public void indexSample( IndexSampleKey indexSampleKey, DoubleLongRegister target )
+    {
+        readIntoRegister( indexSampleKey, target );
     }
 
     @Override
     public void replaceIndexSample( IndexSampleKey indexSampleKey, long unique, long size )
     {
-        replaceSample( indexSampleKey, unique, size );
+        writeRegister( indexSampleKey ).write( unique, size );
     }
 
     private long readCount( CountsKey key )
@@ -152,21 +171,18 @@ class ConcurrentCountsTrackerState implements CountsTrackerState
         return count.addAndGet( delta );
     }
 
-    private void replaceCount( CountsKey key, long total )
+    private DoubleLong.In readRegister( CountsKey key )
     {
-        AtomicLong count = counts.get( key );
-        if ( count == null )
+        DoubleLongRegister sample = samples.get( key );
+        if ( sample == null )
         {
-            count = new AtomicLong( total );
-            counts.put( key, count );
+            sample = Registers.newDoubleLongRegister();
+            store.get( key, sample );
         }
-        else
-        {
-            count.set( total );
-        }
+        return sample;
     }
 
-    private void readSample( CountsKey key, DoubleLongRegister target )
+    private void readIntoRegister( CountsKey key, DoubleLongRegister target )
     {
         DoubleLongRegister sample = samples.get( key );
         if ( sample == null )
@@ -179,18 +195,16 @@ class ConcurrentCountsTrackerState implements CountsTrackerState
         }
     }
 
-    private void replaceSample( CountsKey key, long first, long second )
+    private DoubleLong.Out writeRegister( CountsKey key )
     {
         DoubleLongRegister sample = samples.get( key );
         if ( sample == null )
         {
-            sample = ConcurrentRegisters.OptimisticRead.newDoubleLongRegister( first, second );
+            sample = ConcurrentRegisters.OptimisticRead.newDoubleLongRegister();
+            store.get( key, sample );
             samples.put( key, sample );
         }
-        else
-        {
-            sample.write( first, second );
-        }
+        return sample;
     }
 
     @Override

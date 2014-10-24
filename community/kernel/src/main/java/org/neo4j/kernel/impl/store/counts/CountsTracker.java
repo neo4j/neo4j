@@ -30,13 +30,14 @@ import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.locking.LockWrapper;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.store.counts.CountsKey.IndexCountsKey;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 
+import static org.neo4j.kernel.impl.store.counts.CountsKey.indexCountsKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.indexSampleKey;
-import static org.neo4j.kernel.impl.store.counts.CountsKey.indexSizeKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.nodeKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipKey;
 
@@ -185,7 +186,13 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     @Override
     public long indexSize( int labelId, int propertyKeyId )
     {
-        return state.indexSizeCount( indexSizeKey( labelId, propertyKeyId ) );
+        return state.indexSize( indexCountsKey( labelId, propertyKeyId ) );
+    }
+
+    @Override
+    public long indexUpdates( int labelId, int propertyKeyId )
+    {
+        return state.indexUpdates( indexCountsKey( labelId, propertyKeyId ) );
     }
 
     @Override
@@ -199,9 +206,31 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     {
         try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
         {
-            CountsKey.IndexSizeKey key = indexSizeKey( labelId, propertyKeyId );
-            assert total >= 0 : String.format( "replaceIndexSizeCount(key=%s, total=%d)", key, total );
+            IndexCountsKey key = indexCountsKey( labelId, propertyKeyId );
+            assert total >= 0 : String.format( "replaceIndexSize(key=%s, total=%d)", key, total );
             state.replaceIndexSize( key, total );
+        }
+    }
+
+    @Override
+    public long incrementIndexUpdates( int labelId, int propertyKeyId, long delta )
+    {
+        try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
+        {
+            IndexCountsKey key = indexCountsKey( labelId, propertyKeyId );
+            assert delta >= 0 : String.format( "incrementIndexUpdates(key=%s, delta=%d)", key, delta );
+            return state.incrementIndexUpdates( key, delta );
+        }
+    }
+
+    @Override
+    public void replaceIndexUpdates( int labelId, int propertyKeyId, long total )
+    {
+        try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
+        {
+            IndexCountsKey key = indexCountsKey( labelId, propertyKeyId );
+            assert total >= 0 : String.format( "replaceIndexUpdates(key=%s, total=%d)", key, total );
+            state.replaceIndexUpdates( key, total );
         }
     }
 

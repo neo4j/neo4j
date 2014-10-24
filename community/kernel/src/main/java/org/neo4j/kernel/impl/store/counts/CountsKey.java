@@ -26,8 +26,8 @@ import org.neo4j.register.Registers;
 
 import static org.neo4j.kernel.impl.store.counts.CountsKeyType.ENTITY_NODE;
 import static org.neo4j.kernel.impl.store.counts.CountsKeyType.ENTITY_RELATIONSHIP;
+import static org.neo4j.kernel.impl.store.counts.CountsKeyType.INDEX_COUNTS;
 import static org.neo4j.kernel.impl.store.counts.CountsKeyType.INDEX_SAMPLE;
-import static org.neo4j.kernel.impl.store.counts.CountsKeyType.INDEX_SIZE;
 
 public abstract class CountsKey implements Comparable<CountsKey>
 {
@@ -41,9 +41,9 @@ public abstract class CountsKey implements Comparable<CountsKey>
         return new RelationshipKey( startLabelId, typeId, endLabelId );
     }
 
-    public static IndexSizeKey indexSizeKey( int labelId, int propertyKeyId )
+    public static IndexCountsKey indexCountsKey( int labelId, int propertyKeyId )
     {
-        return new IndexSizeKey( labelId, propertyKeyId );
+        return new IndexCountsKey( labelId, propertyKeyId );
     }
 
     public static IndexSampleKey indexSampleKey( int labelId, int propertyKeyId )
@@ -303,25 +303,25 @@ public abstract class CountsKey implements Comparable<CountsKey>
         return id == ReadOperations.ANY_RELATIONSHIP_TYPE ? "" : ("[:type=" + id + "]");
     }
 
-    public final static class IndexSizeKey extends IndexKey
+    public final static class IndexCountsKey extends IndexKey
     {
-        public IndexSizeKey( int labelId, int propertyKeyId )
+        public IndexCountsKey( int labelId, int propertyKeyId )
         {
-            super( labelId, propertyKeyId, INDEX_SIZE );
+            super( labelId, propertyKeyId, INDEX_COUNTS );
         }
 
         @Override
         public void accept( CountsVisitor visitor, DoubleLongRegister count )
         {
-            visitor.visitIndexSize( labelId(), propertyKeyId(), count.readSecond() );
+            visitor.visitIndexCounts( labelId(), propertyKeyId(), count.readFirst(), count.readSecond() );
         }
 
         @Override
         public int compareTo( CountsKey other )
         {
-            if ( other instanceof IndexSizeKey )
+            if ( other instanceof IndexCountsKey )
             {
-                IndexSizeKey that = (IndexSizeKey) other;
+                IndexCountsKey that = (IndexCountsKey) other;
                 int cmp = this.labelId() - that.labelId();
                 if ( cmp == 0 )
                 {

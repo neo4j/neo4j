@@ -36,8 +36,8 @@ import org.neo4j.register.Registers;
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.kernel.impl.store.counts.CountsKeyType.ENTITY_NODE;
 import static org.neo4j.kernel.impl.store.counts.CountsKeyType.ENTITY_RELATIONSHIP;
+import static org.neo4j.kernel.impl.store.counts.CountsKeyType.INDEX_COUNTS;
 import static org.neo4j.kernel.impl.store.counts.CountsKeyType.INDEX_SAMPLE;
-import static org.neo4j.kernel.impl.store.counts.CountsKeyType.INDEX_SIZE;
 
 public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, Register.DoubleLongRegister>, CountsVisitor
 {
@@ -121,12 +121,15 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
     }
 
     @Override
-    public void visitIndexSize( int labelId, int propertyKeyId, long count )
+    public void visitIndexCounts( int labelId, int propertyKeyId, long updates, long size )
     {
-        assert count > 0 :
-                String.format( "visitIndexSizeCount(labelId=%d, propertyKeyId=%d, count=%d)" +
-                               " - count must be positive", labelId, propertyKeyId, count );
-        write( INDEX_SIZE, 0, propertyKeyId, labelId, 0, count );
+        assert updates >= 0 :
+                String.format( "visitIndexSizeCount(labelId=%d, propertyKeyId=%d, updates=%d, size=%d)" +
+                        " - updates must be positive or zero", labelId, propertyKeyId, updates, size );
+        assert size >= 0 :
+                String.format( "visitIndexSizeCount(labelId=%d, propertyKeyId=%d, updates=%d, size=%d)" +
+                               " - size must be positive or zero", labelId, propertyKeyId, updates, size );
+        write( INDEX_COUNTS, 0, propertyKeyId, labelId, updates, size );
     }
 
     @Override
