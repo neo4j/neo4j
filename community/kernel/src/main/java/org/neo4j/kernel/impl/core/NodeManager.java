@@ -27,10 +27,10 @@ import static org.neo4j.kernel.impl.locking.ResourceTypes.legacyIndexResourceId;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -162,8 +162,8 @@ public class NodeManager implements Lifecycle, EntityFactory
         this.nodeCache = new AutoLoadingCache<>( nodeCache, nodeLoader );
         this.relCache = new AutoLoadingCache<>( relCache, relLoader );
         this.xaDsm = xaDsm;
-        nodePropertyTrackers = new LinkedList<>();
-        relationshipPropertyTrackers = new LinkedList<>();
+        nodePropertyTrackers = new CopyOnWriteArrayList<>(); // Trackers may be added and removed at runtime, e.g. via the REST interface in server, so we use the thread-safe CopyOnWriteArrayList.
+        relationshipPropertyTrackers = new CopyOnWriteArrayList<>();
         this.relationshipLoader = new RelationshipLoader( persistenceManager, relCache );
         this.graphProperties = instantiateGraphProperties();
 
