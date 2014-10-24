@@ -2487,7 +2487,7 @@ class CypherParserTest extends CypherFunSuite {
       matches(SingleNode("n")).
       tail(Query.
            start().
-           updates(LabelExpressionAction(Identifier("n"), LabelSetOp, Collection(Literal("Foo")))).
+           updates(LabelExpressionAction(Identifier("n"), LabelSetOp, Literal("Foo"))).
            returns()).
       returns(AllIdentifiers())
     )
@@ -2513,7 +2513,7 @@ class CypherParserTest extends CypherFunSuite {
       matches(SingleNode("n")).
       tail(Query.
            start().
-           updates(LabelExpressionAction(Identifier("n"), LabelRemoveOp, Collection(Literal("Foo")))).
+           updates(LabelExpressionAction(Identifier("n"), LabelRemoveOp, Literal("Foo"))).
            returns()).
       returns(AllIdentifiers())
     )
