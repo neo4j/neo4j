@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.api.index.inmemory;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.util.Arrays;
+import java.util.Collection;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.ResourceIterator;
@@ -252,7 +252,7 @@ class InMemoryIndex
         }
 
         @Override
-        public void remove( Iterable<Long> nodeIds )
+        public void remove( Collection<Long> nodeIds )
         {
             for ( Long nodeId : nodeIds )
             {

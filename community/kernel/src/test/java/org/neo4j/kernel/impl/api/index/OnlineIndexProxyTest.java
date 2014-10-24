@@ -19,17 +19,18 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-
 import java.io.IOException;
 
 import org.junit.Test;
+
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 public class OnlineIndexProxyTest
 {
@@ -50,7 +51,7 @@ public class OnlineIndexProxyTest
 
         // then
         verify( accessor ).drop();
-        verify( storeView ).setIndexCounts( descriptor, 0l, 0l, 0l );
+        verify( storeView ).replaceIndexCounts( descriptor, 0l, 0l, 0l );
         verifyNoMoreInteractions( accessor, storeView );
     }
 }

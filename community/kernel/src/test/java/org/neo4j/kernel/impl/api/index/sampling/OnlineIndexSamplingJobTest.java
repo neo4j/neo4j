@@ -19,19 +19,11 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
-import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -40,6 +32,16 @@ import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.logging.DevNullLoggingService;
+
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+
+import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
+import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
 
 public class OnlineIndexSamplingJobTest
 {
@@ -54,7 +56,7 @@ public class OnlineIndexSamplingJobTest
         job.run();
 
         // then
-        verify( indexStoreView ).setIndexCounts( indexDescriptor, indexUniqueValues, indexSize, indexSize );
+        verify( indexStoreView ).replaceIndexCounts( indexDescriptor, indexUniqueValues, indexSize, indexSize );
         verifyNoMoreInteractions( indexStoreView );
     }
 

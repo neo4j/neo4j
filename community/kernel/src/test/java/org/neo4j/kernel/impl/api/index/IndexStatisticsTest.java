@@ -19,17 +19,13 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.register.Register.DoubleLongRegister;
-
 import java.util.ArrayList;
 import java.util.Collection;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -46,6 +42,12 @@ import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.register.Registers;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.EmbeddedDatabaseRule;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.register.Register.DoubleLongRegister;
 
 public class IndexStatisticsTest
 {
@@ -357,6 +359,17 @@ public class IndexStatisticsTest
         }
     }
 
+    private long indexUpdates( IndexDescriptor descriptor ) throws KernelException
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            Statement statement = bridge.instance();
+            long indexSize = statement.readOperations().indexUpdates( descriptor );
+            tx.success();
+            return indexSize;
+        }
+    }
+
     private double indexSelectivity( IndexDescriptor descriptor ) throws KernelException
     {
         try ( Transaction tx = db.beginTx() )
@@ -444,6 +457,24 @@ public class IndexStatisticsTest
         }
         throw new IllegalStateException( "Index did not become ONLINE within reasonable time" );
     }
+
+    @Test
+    public void shouldProvideIndexUpdates() throws KernelException
+    {
+        // given
+        createSomePersons();
+        IndexDescriptor index = awaitOnline( createIndex( "Person", "name" ) );
+
+        // when
+        createSomePersons();
+
+        // then does not see changes to the index size
+        assertEquals( 4l, indexSize( index ) );
+
+        // but tracks number of unaccounted updates instead
+        assertEquals( 4l, indexUpdates( index ) );
+    }
+
 
     private void assertDoubleLongEquals( long expectedUniqueValue, long expectedSampledSize,
                                          DoubleLongRegister register )

@@ -58,6 +58,9 @@ interface SchemaRead
     /** Get the number of index entries. */
     long indexSize( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
+    /** Get the number of index updates seen since the last sampling. */
+    long indexUpdates( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+
     /** Returns the failure description of a failed index. */
     String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 

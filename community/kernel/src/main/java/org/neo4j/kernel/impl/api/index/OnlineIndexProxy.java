@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import static org.neo4j.helpers.FutureAdapter.VOID;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Future;
@@ -35,22 +33,26 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 
+import static org.neo4j.helpers.FutureAdapter.VOID;
+
 public class OnlineIndexProxy implements IndexProxy
 {
     private final IndexDescriptor descriptor;
     final IndexAccessor accessor;
+    private final IndexStoreView storeView;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
     private final IndexConfiguration configuration;
     private final IndexCountsRemover indexCountsRemover;
 
     public OnlineIndexProxy( IndexDescriptor descriptor, IndexConfiguration configuration, IndexAccessor accessor,
-                             IndexStoreView view, SchemaIndexProvider.Descriptor providerDescriptor )
+                             IndexStoreView storeView, SchemaIndexProvider.Descriptor providerDescriptor )
     {
         this.descriptor = descriptor;
+        this.storeView = storeView;
         this.providerDescriptor = providerDescriptor;
         this.accessor = accessor;
         this.configuration = configuration;
-        this.indexCountsRemover = IndexCountsRemover.Factory.create( view, descriptor );
+        this.indexCountsRemover = IndexCountsRemover.Factory.create( storeView, descriptor );
     }
 
     @Override
@@ -61,7 +63,12 @@ public class OnlineIndexProxy implements IndexProxy
     @Override
     public IndexUpdater newUpdater( final IndexUpdateMode mode )
     {
-        return accessor.newUpdater( mode );
+        return updateCountingUpdater( accessor.newUpdater( mode ) );
+    }
+
+    private IndexUpdater updateCountingUpdater( final IndexUpdater indexUpdater )
+    {
+        return new UpdateCountingIndexUpdater( storeView, descriptor, indexUpdater );
     }
 
     @Override
@@ -150,4 +157,5 @@ public class OnlineIndexProxy implements IndexProxy
     {
         return getClass().getSimpleName() + "[accessor:" + accessor + ", descriptor:" + descriptor + "]";
     }
+
 }

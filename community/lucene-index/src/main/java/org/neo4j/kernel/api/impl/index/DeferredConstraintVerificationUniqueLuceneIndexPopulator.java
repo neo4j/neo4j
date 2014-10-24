@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.index;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
@@ -210,7 +211,7 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
             }
 
             @Override
-            public void remove( Iterable<Long> nodeIds )
+            public void remove( Collection<Long> nodeIds )
             {
                 throw new UnsupportedOperationException( "should not remove() from populating index" );
             }

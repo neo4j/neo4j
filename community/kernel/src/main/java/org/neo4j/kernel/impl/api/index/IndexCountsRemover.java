@@ -37,7 +37,7 @@ public interface IndexCountsRemover
                 @Override
                 public void remove()
                 {
-                    storeView.setIndexCounts( descriptor, 0, 0, 0 );
+                    storeView.replaceIndexCounts( descriptor, 0, 0, 0 );
                 }
             };
         }

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -235,7 +236,7 @@ public class IndexCRUDIT
                 }
 
                 @Override
-                public void remove( Iterable<Long> nodeIds ) throws IOException
+                public void remove( Collection<Long> nodeIds ) throws IOException
                 {
                     throw new UnsupportedOperationException( "not expected" );
                 }

@@ -22,8 +22,10 @@ package org.neo4j.kernel.api.impl.index;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 
 import org.apache.lucene.search.IndexSearcher;
+
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -110,7 +112,7 @@ class UniqueLuceneIndexAccessor extends LuceneIndexAccessor
         }
 
         @Override
-        public void remove( Iterable<Long> nodeIds ) throws IOException
+        public void remove( Collection<Long> nodeIds ) throws IOException
         {
             delegate.remove( nodeIds );
         }

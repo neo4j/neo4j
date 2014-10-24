@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.cache.MonitorGc;
 import static org.neo4j.helpers.Settings.ANY;
 import static org.neo4j.helpers.Settings.BOOLEAN;
 import static org.neo4j.helpers.Settings.BYTES;
+import static org.neo4j.helpers.Settings.DirectMemoryUsage.directMemoryUsage;
 import static org.neo4j.helpers.Settings.FALSE;
 import static org.neo4j.helpers.Settings.INTEGER;
 import static org.neo4j.helpers.Settings.NO_DEFAULT;
@@ -52,7 +53,6 @@ import static org.neo4j.helpers.Settings.min;
 import static org.neo4j.helpers.Settings.options;
 import static org.neo4j.helpers.Settings.port;
 import static org.neo4j.helpers.Settings.setting;
-import static org.neo4j.helpers.Settings.DirectMemoryUsage.directMemoryUsage;
 
 /**
  * Settings for Neo4j. Use this with {@link GraphDatabaseBuilder}.
@@ -150,7 +150,6 @@ public abstract class GraphDatabaseSettings
     @Description("Controls how much memory is used by index selectivity sampling by limiting how many unique values may be tracked by sampling before aggregating them into a global selectivity value for the index")
     // default: 5 000 000 -> around 50MB memory consumption per sampling
     public static final Setting<Integer> max_unique_elements_per_sampling = setting("max_unique_elements_per_sampling", INTEGER, "5000000", min(10_000) );
-
 
     // Lucene settings
     @Description( "The maximum number of open Lucene index searchers." )

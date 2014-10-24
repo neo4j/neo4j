@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.EMPTY_LONG_ARRAY;
-import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
-import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -56,6 +52,10 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.register.Register;
 
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.EMPTY_LONG_ARRAY;
+import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
+import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
+
 public class NeoStoreIndexStoreView implements IndexStoreView
 {
     private final PropertyStore propertyStore;
@@ -85,12 +85,26 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     }
 
     @Override
-    public void setIndexCounts( IndexDescriptor descriptor,
-                                long uniqueElements, long maxUniqueElements, long indexSize )
+    public long indexUpdates( IndexDescriptor descriptor )
     {
-        counts.replaceIndexSize( descriptor.getLabelId(), descriptor.getPropertyKeyId(), indexSize );
-        counts.replaceIndexSample( descriptor.getLabelId(), descriptor.getPropertyKeyId(),
-                uniqueElements, maxUniqueElements );
+        return counts.indexUpdates( descriptor.getLabelId(), descriptor.getPropertyKeyId() );
+    }
+
+    @Override
+    public void replaceIndexCounts( IndexDescriptor descriptor,
+                                    long uniqueElements, long maxUniqueElements, long indexSize )
+    {
+        int labelId = descriptor.getLabelId();
+        int propertyKeyId = descriptor.getPropertyKeyId();
+        counts.replaceIndexSample( labelId, propertyKeyId, uniqueElements, maxUniqueElements );
+        counts.replaceIndexSize( labelId, propertyKeyId, indexSize );
+        counts.replaceIndexUpdates( labelId, propertyKeyId, 0l );
+    }
+
+    @Override
+    public void incrementIndexUpdates( IndexDescriptor descriptor, long updatesDelta )
+    {
+        counts.incrementIndexUpdates( descriptor.getLabelId(), descriptor.getPropertyKeyId(), updatesDelta );
     }
 
     @Override

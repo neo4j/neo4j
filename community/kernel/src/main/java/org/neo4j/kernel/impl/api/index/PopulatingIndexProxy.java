@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
-import static org.neo4j.kernel.impl.util.JobScheduler.Group.indexPopulation;
-
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.ResourceIterator;
@@ -44,6 +42,9 @@ import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.logging.Logging;
+
+import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
+import static org.neo4j.kernel.impl.util.JobScheduler.Group.indexPopulation;
 
 
 public class PopulatingIndexProxy implements IndexProxy
@@ -213,7 +214,7 @@ public class PopulatingIndexProxy implements IndexProxy
         }
 
         @Override
-        public void remove( Iterable<Long> nodeIds )
+        public void remove( Collection<Long> nodeIds )
         {
             throw new UnsupportedOperationException( "Should not remove() from populating index." );
         }

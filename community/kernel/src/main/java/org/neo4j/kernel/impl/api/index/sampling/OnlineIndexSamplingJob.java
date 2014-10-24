@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
-import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
-
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -31,6 +29,8 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
+
+import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
 
 class OnlineIndexSamplingJob implements IndexSamplingJob
 {
@@ -76,7 +76,8 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
                 // check again if the index is online before saving the counts in the store
                 if ( indexProxy.getState() == ONLINE )
                 {
-                    storeView.setIndexCounts( indexDescriptor, sample.readFirst(), sample.readSecond(), indexSize );
+                    storeView.replaceIndexCounts( indexDescriptor, sample.readFirst(), sample.readSecond(),
+                            indexSize );
                 }
             }
         }

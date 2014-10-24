@@ -19,30 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import static java.lang.String.format;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.RETURNS_MOCKS;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.MapUtil.genericMap;
-import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
-import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.impl.util.TestLogger.LogCall.error;
-import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
-import static org.neo4j.register.Register.DoubleLongRegister;
-
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -55,6 +33,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Matchers;
+
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -90,6 +69,31 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static java.lang.String.format;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.MapUtil.genericMap;
+import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
+import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.impl.util.TestLogger.LogCall.error;
+import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
+import static org.neo4j.register.Register.DoubleLongRegister;
 
 public class IndexPopulationJobTest
 {
@@ -458,7 +462,7 @@ public class IndexPopulationJobTest
                 }
 
                 @Override
-                public void remove( Iterable<Long> nodeIds )
+                public void remove( Collection<Long> nodeIds )
                 {
                     throw new UnsupportedOperationException( "not expected" );
                 }
@@ -532,7 +536,7 @@ public class IndexPopulationJobTest
                 }
 
                 @Override
-                public void remove( Iterable<Long> nodeIds )
+                public void remove( Collection<Long> nodeIds )
                 {
                     throw new UnsupportedOperationException( "not expected" );
                 }

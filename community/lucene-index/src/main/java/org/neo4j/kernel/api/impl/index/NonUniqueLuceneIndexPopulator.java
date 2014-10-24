@@ -22,9 +22,11 @@ package org.neo4j.kernel.api.impl.index;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import org.apache.lucene.document.Fieldable;
+
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -108,7 +110,7 @@ class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
             }
 
             @Override
-            public void remove( Iterable<Long> nodeIds ) throws IOException
+            public void remove( Collection<Long> nodeIds ) throws IOException
             {
                 throw new UnsupportedOperationException( "Should not remove() from populating index." );
             }

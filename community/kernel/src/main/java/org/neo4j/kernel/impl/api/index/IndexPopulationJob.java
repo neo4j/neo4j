@@ -19,13 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import static java.lang.String.format;
-import static java.lang.Thread.currentThread;
-import static org.neo4j.helpers.FutureAdapter.latchGuardedValue;
-import static org.neo4j.helpers.ValueGetter.NO_VALUE;
-import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
-import static org.neo4j.register.Register.DoubleLongRegister;
-
 import java.io.IOException;
 import java.util.Queue;
 import java.util.concurrent.Callable;
@@ -47,6 +40,14 @@ import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.register.Registers;
+
+import static java.lang.String.format;
+import static java.lang.Thread.currentThread;
+
+import static org.neo4j.helpers.FutureAdapter.latchGuardedValue;
+import static org.neo4j.helpers.ValueGetter.NO_VALUE;
+import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
+import static org.neo4j.register.Register.DoubleLongRegister;
 
 /**
  * Represents one job of initially populating an index over existing data in the database.
@@ -116,13 +117,13 @@ public class IndexPopulationJob implements Runnable
                 log.info( format("Index population started: [%s]", indexUserDescription) );
                 log.flush();
                 populator.create();
-                storeView.setIndexCounts( descriptor, 0, 0, 0 );
+                storeView.replaceIndexCounts( descriptor, 0, 0, 0 );
 
                 indexAllNodes();
                 verifyDeferredConstraints();
                 if ( cancelled )
                 {
-                    storeView.setIndexCounts( descriptor, 0, 0, 0 );
+                    storeView.replaceIndexCounts( descriptor, 0, 0, 0 );
                     // We remain in POPULATING state
                     return;
                 }
@@ -136,7 +137,8 @@ public class IndexPopulationJob implements Runnable
 
                         DoubleLongRegister result = Registers.newDoubleLongRegister();
                         long indexSize = populatingSampler.result( result );
-                        storeView.setIndexCounts( descriptor, result.readFirst(), result.readSecond(), indexSize );
+                        storeView.replaceIndexCounts( descriptor, result.readFirst(), result.readSecond(),
+                                indexSize );
 
                         storeView.flushIndexCounts();
                         populator.close( true );

@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.index;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -146,7 +147,7 @@ class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
             }
 
             @Override
-            public void remove( Iterable<Long> nodeIds )
+            public void remove( Collection<Long> nodeIds )
             {
                 throw new UnsupportedOperationException( "should not remove() from populating index" );
             }

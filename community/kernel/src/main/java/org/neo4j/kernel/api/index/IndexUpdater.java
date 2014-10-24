@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.index;
 
 import java.io.IOException;
+import java.util.Collection;
 
 public interface IndexUpdater extends AutoCloseable
 {
@@ -28,5 +29,5 @@ public interface IndexUpdater extends AutoCloseable
     @Override
     void close() throws IOException, IndexEntryConflictException;
 
-    void remove( Iterable<Long> nodeIds ) throws IOException;
+    void remove( Collection<Long> nodeIds ) throws IOException;
 }

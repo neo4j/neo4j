@@ -53,9 +53,13 @@ public interface IndexStoreView extends PropertyAccessor
 
     long indexSize( IndexDescriptor descriptor );
 
+    long indexUpdates( IndexDescriptor descriptor );
+
     void indexSample( IndexDescriptor descriptor, DoubleLongRegister output );
 
-    void setIndexCounts( IndexDescriptor descriptor, long uniqueElements, long maxUniqueElements, long indexSize );
+    void replaceIndexCounts( IndexDescriptor descriptor, long uniqueElements, long maxUniqueElements, long indexSize );
+
+    void incrementIndexUpdates( IndexDescriptor descriptor, long updatesDelta );
 
     void flushIndexCounts() throws IOException;
 }

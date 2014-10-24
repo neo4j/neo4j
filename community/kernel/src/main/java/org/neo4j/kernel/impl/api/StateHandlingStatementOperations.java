@@ -943,6 +943,14 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
+    public long indexUpdates( KernelStatement statement, IndexDescriptor descriptor )
+            throws IndexNotFoundKernelException
+
+    {
+        return storeLayer.indexUpdates( descriptor );
+    }
+
+    @Override
     public PrimitiveLongIterator nodeGetRelationships( KernelStatement state, long nodeId, Direction direction,
                                                        int[] relTypes ) throws EntityNotFoundException
     {

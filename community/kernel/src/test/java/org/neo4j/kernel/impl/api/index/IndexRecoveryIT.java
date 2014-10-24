@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -367,7 +368,7 @@ public class IndexRecoveryIT
                 }
 
                 @Override
-                public void remove( Iterable<Long> nodeIds ) throws IOException
+                public void remove( Collection<Long> nodeIds ) throws IOException
                 {
                     for ( Long nodeId : nodeIds )
                     {

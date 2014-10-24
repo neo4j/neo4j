@@ -301,6 +301,12 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
         return storeView.indexSize( indexProxy.getDescriptor() );
     }
 
+    public long indexUpdates( long indexId ) throws IndexNotFoundKernelException
+    {
+        final IndexProxy indexProxy = getOnlineProxyForRule( indexId );
+        return storeView.indexUpdates( indexProxy.getDescriptor() );
+    }
+
     public double indexUniqueValuesPercentage( long indexId ) throws IndexNotFoundKernelException
     {
         final IndexProxy indexProxy = getOnlineProxyForRule( indexId );
