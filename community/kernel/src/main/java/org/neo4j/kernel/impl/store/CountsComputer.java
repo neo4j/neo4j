@@ -25,8 +25,6 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
 
-import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
-
 public class CountsComputer
 {
     public static CountsState computeCounts( GraphDatabaseAPI api )
@@ -81,6 +79,6 @@ public class CountsComputer
 
     private long[] labels( NodeRecord node )
     {
-        return parseLabelsField( node ).get( nodes );
+        return NodeLabelsField.get( node, nodes );
     }
 }

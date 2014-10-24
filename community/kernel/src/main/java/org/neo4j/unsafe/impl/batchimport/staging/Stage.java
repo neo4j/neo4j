@@ -78,5 +78,6 @@ public class Stage
         {
             step.close();
         }
+        pipeline.clear();
     }
 }

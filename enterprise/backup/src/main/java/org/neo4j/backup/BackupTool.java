@@ -27,8 +27,6 @@ import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
-import ch.qos.logback.classic.LoggerContext;
-
 import org.neo4j.backup.BackupService.BackupOutcome;
 import org.neo4j.com.ComException;
 import org.neo4j.consistency.ConsistencyCheckSettings;
@@ -52,9 +50,12 @@ import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.SystemOutLogging;
 import org.neo4j.kernel.monitoring.Monitors;
 
-import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
+import ch.qos.logback.classic.LoggerContext;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
+
+import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
 
 public class BackupTool
 {
@@ -67,7 +68,7 @@ public class BackupTool
 
     private static final String VERIFY = "verify";
     private static final String CONFIG = "config";
-    
+
     private static final String TIMEOUT = "timeout";
     public static final String DEFAULT_SCHEME = "single";
     static final String MISMATCHED_STORE_ID = "You tried to perform a backup from database %s, " +
@@ -147,9 +148,9 @@ public class BackupTool
         String to = args.get( TO ).trim();
         boolean verify = args.getBoolean( VERIFY, true, true );
         Config tuningConfiguration = readTuningConfiguration( TO, args );
-        
+
         long timeout = args.getDuration(TIMEOUT, BackupClient.BIG_READ_TIMEOUT);
-        
+
         URI backupURI = resolveBackupUri( from, args, tuningConfiguration );
 
         HostnamePort hostnamePort = newHostnamePort( backupURI );
@@ -176,7 +177,7 @@ public class BackupTool
                 host += "]";
             }
         }
-        
+
         long timeout = args.getDuration(TIMEOUT, BackupClient.BIG_READ_TIMEOUT);
 
         URI backupURI = newURI( DEFAULT_SCHEME + "://" + host + ":" + port ); // a bit of validation
@@ -186,7 +187,7 @@ public class BackupTool
         return executeBackup( hostnamePort, to, verify, tuningConfiguration, timeout );
     }
 
-    private BackupOutcome executeBackup( HostnamePort hostnamePort, String to, boolean verify, 
+    private BackupOutcome executeBackup( HostnamePort hostnamePort, String to, boolean verify,
                                 Config tuningConfiguration, long timeout ) throws ToolFailureException
     {
         try
@@ -221,7 +222,7 @@ public class BackupTool
         }
     }
 
-    private BackupOutcome doBackup( HostnamePort hostnamePort, String to, boolean checkConsistency, 
+    private BackupOutcome doBackup( HostnamePort hostnamePort, String to, boolean checkConsistency,
                            Config config, long timeout ) throws ToolFailureException
     {
         try
@@ -229,8 +230,8 @@ public class BackupTool
             String host = hostnamePort.getHost();
             int port = hostnamePort.getPort();
 
-            BackupOutcome outcome = 
-                    backupService.doIncrementalBackupOrFallbackToFull( host, port, to, 
+            BackupOutcome outcome =
+                    backupService.doIncrementalBackupOrFallbackToFull( host, port, to,
                             checkConsistency, config, timeout );
             systemOut.println( "Done" );
             return outcome;
@@ -376,7 +377,8 @@ public class BackupTool
         {
             throw new IOException( "Trouble making target backup directory " + backupDir.getAbsolutePath() );
         }
-        StoreFile.move( fs, toDir, backupDir, StoreFile.currentStoreFiles(), false, false, StoreFileType.values() );
+        StoreFile.fileOperation( MOVE, fs, toDir, backupDir, StoreFile.currentStoreFiles(),
+                false, false, StoreFileType.values() );
         LogFiles.move( fs, toDir, backupDir );
     }
 

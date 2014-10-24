@@ -17,17 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.cache;
+package org.neo4j.unsafe.impl.batchimport;
+
+import org.neo4j.function.Function;
+import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.WriterFactory;
+import org.neo4j.unsafe.impl.batchimport.store.io.IoQueue;
+
+import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.SYNCHRONOUS;
 
 /**
- * Abstraction of a {@code long[]} so that different implementations can be plugged in, for example
- * off-heap, dynamically growing, or other implementations.
+ * Common ways to create {@link WriterFactory} instances.
  */
-public interface LongArray extends NumberArray
+public class WriterFactories
 {
-    long get( long index );
-
-    void set( long index, long value );
-
-    LongArray setAll( long value );
+    public static Function<Configuration,WriterFactory> parallel()
+    {
+        return new Function<Configuration, WriterFactory>()
+        {
+            @Override
+            public WriterFactory apply( Configuration configuration )
+            {
+                return new IoQueue( configuration.numberOfIoThreads(), SYNCHRONOUS );
+            }
+        };
+    }
 }

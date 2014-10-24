@@ -27,6 +27,7 @@ import org.junit.Test;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.test.EphemeralFileSystemRule;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 public class IdGeneratorImplTest
@@ -47,6 +48,20 @@ public class IdGeneratorImplTest
         catch ( UnderlyingStorageException e )
         {   // OK
         }
+    }
+
+    @Test
+    public void shouldReadHighIdUsingStaticMethod() throws Exception
+    {
+        // GIVEN
+        long highId = 12345L;
+        IdGeneratorImpl.createGenerator( fsr.get(), file, highId );
+
+        // WHEN
+        long readHighId = IdGeneratorImpl.readHighId( fsr.get(), file );
+
+        // THEN
+        assertEquals( highId, readHighId );
     }
 
     public final @Rule EphemeralFileSystemRule fsr = new EphemeralFileSystemRule();

@@ -217,58 +217,40 @@ public enum StoreFile
     }
 
     /**
-     * Moves a database's store files from one directory
-     * to another. Since it just renames files (the standard way of moving with
-     * JDK6) from and to must be on the same disk partition.
+     * Performs a file operation on a database's store files from one directory
+     * to another. Remember that in the case of {@link FileOperation#MOVE moving files}, the way that's done is to
+     * just rename files (the standard way of moving with JDK6) from and to must be on the same disk partition.
      *
-     * @param fromDirectory The directory that hosts the database files.
-     * @param toDirectory   The directory to move the database files to.
-     * @throws IOException If any of the move operations fail for any reason.
+     * @param fromDirectory directory that hosts the database files.
+     * @param toDirectory directory to receive the database files.
+     * @throws IOException if any of the operations fail for any reason.
      */
-    public static void move( FileSystemAbstraction fs, File fromDirectory, File toDirectory,
-                             Iterable<StoreFile> files, boolean allowSkipNonExistentFiles, boolean allowOverwriteTarget,
-                             StoreFileType... types ) throws IOException
+    public static void fileOperation( FileOperation operation, FileSystemAbstraction fs, File fromDirectory,
+            File toDirectory, Iterable<StoreFile> files,
+            boolean allowSkipNonExistentFiles, boolean allowOverwriteTarget,
+            StoreFileType... types ) throws IOException
     {
-        // TODO: change the order that files are moved to handle failure conditions properly
+        // TODO: change the order of files to handle failure conditions properly
         for ( StoreFile storeFile : files )
         {
             for ( StoreFileType type : types )
             {
-                moveFile( fs, storeFile.fileName( type ), fromDirectory, toDirectory,
-                        allowSkipNonExistentFiles, allowOverwriteTarget );
+                String fileName = storeFile.fileName( type );
+                File sourceFile = new File( fromDirectory, fileName );
+                if ( allowSkipNonExistentFiles && !fs.fileExists( sourceFile ) )
+                {   // The source file doesn't exist and we allow skipping, so return
+                    continue;
+                }
+
+                File toFile = new File( toDirectory, fileName );
+                if ( allowOverwriteTarget && fs.fileExists( toFile ) )
+                {   // We allow overwriting the file, so deleted it if it exists.
+                    fs.deleteFile( toFile );
+                }
+
+                operation.perform( fs, fileName, fromDirectory, toDirectory );
             }
         }
-    }
-
-    /**
-     * Moves a file from one directory to another, by a rename op.
-     *
-     * @param fs
-     * @param fileName             The base filename of the file to move, not the complete
-     *                             path
-     * @param fromDirectory        The directory currently containing filename
-     * @param toDirectory          The directory to host filename - must be in the same
-     *                             disk partition as filename
-     * @param allowOverwriteTarget
-     * @throws IOException
-     */
-    public static void moveFile( FileSystemAbstraction fs, String fileName, File fromDirectory,
-                                 File toDirectory, boolean allowSkipNonExistentFiles,
-                                 boolean allowOverwriteTarget ) throws IOException
-    {
-        File sourceFile = new File( fromDirectory, fileName );
-        if ( allowSkipNonExistentFiles && !fs.fileExists( sourceFile ) )
-        {   // The source file doesn't exist and we allow skipping, so return
-            return;
-        }
-
-        File toFile = new File( toDirectory, fileName );
-        if ( allowOverwriteTarget && fs.fileExists( toFile ) )
-        {
-            fs.deleteFile( toFile );
-        }
-
-        fs.moveToDirectory( sourceFile, toDirectory );
     }
 
     public static void ensureStoreVersion( FileSystemAbstraction fs,

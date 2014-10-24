@@ -82,18 +82,24 @@ public interface LongArrayFactory
         {
             long bytesRequired = length * 8;
 
-            // Try to fit it in heap
-            long freeHeap = calculator.availableHeapMemory() - margin;
-            if ( bytesRequired < Integer.MAX_VALUE && bytesRequired < freeHeap )
-            {
-                return HEAP.newLongArray( length );
-            }
-
-            // Otherwise if there's room outside heap
+            // Try to fit it outside heap
             long freeOffHeap = calculator.availableOffHeapMemory() - margin;
             if ( bytesRequired < freeOffHeap )
             {
                 return OFF_HEAP.newLongArray( length );
+            }
+
+            // Otherwise, try to fit it in heap
+            long freeHeap = calculator.availableHeapMemory() - margin;
+            if ( bytesRequired < Integer.MAX_VALUE && bytesRequired < freeHeap )
+            {
+                try
+                {
+                    return HEAP.newLongArray( length );
+                }
+                catch ( OutOfMemoryError e )
+                {   // It seems there wasn't room after all...
+                }
             }
 
             // If there's room for it, off-heap and on-heap collectively, then allocate a dynamic

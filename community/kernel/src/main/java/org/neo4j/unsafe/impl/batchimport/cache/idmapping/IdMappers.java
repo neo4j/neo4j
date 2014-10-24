@@ -30,40 +30,42 @@ import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
  */
 public class IdMappers
 {
+    private static class ActualIdMapper implements IdMapper
+    {
+        @Override
+        public void put( Object inputId, long actualId )
+        {   // No need to remember anything
+        }
+
+        @Override
+        public boolean needsPreparation()
+        {
+            return false;
+        }
+
+        @Override
+        public void prepare( Iterable<Object> nodeData )
+        {   // No need to prepare anything
+        }
+
+        @Override
+        public long get( Object inputId )
+        {
+            return ((Long)inputId).longValue();
+        }
+
+        @Override
+        public void visitMemoryStats( MemoryStatsVisitor visitor )
+        {   // No memory usage
+        }
+    }
+
     /**
      * An {@link IdMapper} that doesn't touch the input ids, but just asserts that node ids arrive in ascending order.
      */
     public static IdMapper actual()
     {
-        return new IdMapper()
-        {
-            @Override
-            public void put( Object inputId, long actualId )
-            {   // No need to remember anything
-            }
-
-            @Override
-            public boolean needsPreparation()
-            {
-                return false;
-            }
-
-            @Override
-            public void prepare( Iterable<Object> nodeData )
-            {   // No need to prepare anything
-            }
-
-            @Override
-            public long get( Object inputId )
-            {
-                return ((Long)inputId).longValue();
-            }
-
-            @Override
-            public void visitMemoryStats( MemoryStatsVisitor visitor )
-            {   // No memory usage
-            }
-        };
+        return new ActualIdMapper();
     }
 
     /**

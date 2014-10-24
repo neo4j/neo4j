@@ -52,7 +52,6 @@ import org.neo4j.test.PageCacheRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -278,10 +277,10 @@ public class NodeLabelsFieldTest
         DynamicRecord dynamicRecord = node.getDynamicLabelRecords().iterator().next();
 
         // WHEN
-        Long dynRecordId = NodeLabelsField.fieldDynamicLabelRecordId( node.getLabelField() );
+        long dynRecordId = NodeLabelsField.firstDynamicLabelRecordId( node.getLabelField() );
 
         // THEN
-        assertEquals( (Long) dynamicRecord.getLongId(), dynRecordId );
+        assertEquals( dynamicRecord.getLongId(), dynRecordId );
     }
 
     @Test
@@ -291,10 +290,10 @@ public class NodeLabelsFieldTest
         NodeRecord node = nodeRecordWithInlinedLabels( 23l );
 
         // WHEN
-        Long dynRecordId = NodeLabelsField.fieldDynamicLabelRecordId( node.getLabelField() );
+        boolean isDynamicReference = NodeLabelsField.fieldPointsToDynamicRecordOfLabels( node.getLabelField() );
 
         // THEN
-        assertNull( dynRecordId );
+        assertFalse( isDynamicReference );
     }
 
     @Test

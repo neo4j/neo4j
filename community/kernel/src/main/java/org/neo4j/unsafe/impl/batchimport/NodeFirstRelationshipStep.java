@@ -25,7 +25,6 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink.GroupVisitor;
-import org.neo4j.unsafe.impl.batchimport.staging.LonelyProcessingStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 /**
@@ -36,9 +35,8 @@ import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
  * This step also creates {@link RelationshipGroupRecord group records} for the dense nodes as it encounters
  * dense nodes, where it gets all relationship group information from {@link NodeRelationshipLink}.
  */
-public class NodeFirstRelationshipStep extends LonelyProcessingStep implements GroupVisitor
+public class NodeFirstRelationshipStep extends NodeStoreProcessorStep implements GroupVisitor
 {
-    private final NodeStore nodeStore;
     private final RelationshipGroupStore relGroupStore;
     private final NodeRelationshipLink nodeRelationshipLink;
 
@@ -48,35 +46,27 @@ public class NodeFirstRelationshipStep extends LonelyProcessingStep implements G
                                       NodeStore nodeStore, RelationshipGroupStore relGroupStore,
                                       NodeRelationshipLink nodeRelationshipLink )
     {
-        super( control, "LINKER", batchSize );
-        this.nodeStore = nodeStore;
+        super( control, "LINKER", batchSize, nodeStore );
         this.relGroupStore = relGroupStore;
         this.nodeRelationshipLink = nodeRelationshipLink;
     }
 
     @Override
-    protected void process()
+    protected boolean process( NodeRecord node )
     {
-        long highId = nodeStore.getHighestPossibleIdInUse();
-        NodeRecord heavilyReusedRecord = new NodeRecord( -1 );
-        for ( long nodeId = highId; nodeId >= 0; nodeId-- )
+        long nodeId = node.getId();
+        long firstRel = nodeRelationshipLink.getFirstRel( nodeId, this );
+        if ( firstRel == -1 )
         {
-            long firstRel = nodeRelationshipLink.getFirstRel( nodeId, this );
-            if ( firstRel == -1 )
-            {
-                continue;
-            }
-
-            NodeRecord record = nodeStore.getRecord( nodeId, heavilyReusedRecord );
-            record.setNextRel( firstRel );
-            if ( nodeRelationshipLink.isDense( nodeId ) )
-            {
-                record.setDense( true );
-            }
-            nodeStore.updateRecord( record );
-            itemProcessed();
+            return false;
         }
-        nodeStore.flush();
+
+        node.setNextRel( firstRel );
+        if ( nodeRelationshipLink.isDense( nodeId ) )
+        {
+            node.setDense( true );
+        }
+        return true;
     }
 
     @Override

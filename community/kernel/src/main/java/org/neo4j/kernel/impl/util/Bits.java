@@ -41,7 +41,7 @@ public final class Bits implements Cloneable
     private final int numberOfBytes;
     private int writePosition;
     private int readPosition;
-    
+
     /*
      * Calculate all the right overflow masks
      */
@@ -57,7 +57,7 @@ public final class Bits implements Cloneable
             mask |= 0x1L;
         }
     }
-    
+
     public static Bits bits( int numberOfBytes )
     {
         int requiredLongs = requiredLongs(numberOfBytes);
@@ -72,20 +72,23 @@ public final class Bits implements Cloneable
     {
         return new Bits( longs, longs.length<<3 ); // *8
     }
-    
+
     public static Bits bitsFromBytes( byte[] bytes )
     {
         return bitsFromBytes( bytes, 0 );
     }
-    
+
     public static Bits bitsFromBytes( byte[] bytes, int startIndex )
     {
         final int count = bytes.length;
         Bits bits = bits( count - startIndex );
-        for ( int i = startIndex; i < count; i++ ) bits.put( bytes[i] );
+        for ( int i = startIndex; i < count; i++ )
+        {
+            bits.put( bytes[i] );
+        }
         return bits;
     }
-    
+
     private Bits( long[] longs, int numberOfBytes )
     {
         this.longs = longs;
@@ -108,7 +111,7 @@ public final class Bits implements Cloneable
         }
         return mask;
     }
-    
+
     /**
      * A mask which has the {@code steps} least significant bits set to 1, all others 0.
      * It's used to carry bits over between carriers (longs) when shifting right.
@@ -119,7 +122,7 @@ public final class Bits implements Cloneable
     {
         return RIGHT_OVERFLOW_MASKS[steps-1];
     }
-    
+
     /**
      * Returns the underlying long values that has got all the bits applied.
      * The first item in the array has got the most significant bits.
@@ -130,7 +133,7 @@ public final class Bits implements Cloneable
     {
         return longs;
     }
-    
+
     public byte[] asBytes()
     {
         int readPositionBefore = readPosition;
@@ -162,77 +165,98 @@ public final class Bits implements Cloneable
         for ( int longIndex = longs.length-1; longIndex >= 0; longIndex-- )
         {
             long value = longs[longIndex];
-            if ( builder.length() > 0 ) builder.append( "\n" );
+            if ( builder.length() > 0 )
+            {
+                builder.append( "\n" );
+            }
             builder.append( longIndex );
             builder.append( ':' );
             numberToString( builder, value, 8 );
-            if ( longIndex == 0 ) builder.append( " <-- START" );
+            if ( longIndex == 0 )
+            {
+                builder.append( " <-- START" );
+            }
         }
         return builder.toString();
     }
-    
+
     public static StringBuilder numberToString( StringBuilder builder, long value, int numberOfBytes )
     {
         builder.append( "[" );
         for ( int i = 8*numberOfBytes-1; i >= 0; i-- )
         {
-            if ( i > 0 && i % 8 == 0 ) builder.append( "," );
+            if ( i > 0 && i % 8 == 0 )
+            {
+                builder.append( "," );
+            }
             boolean isSet = (value & (1L << i)) != 0;
             builder.append( isSet ? "1" : "0" );
         }
         builder.append( "]" );
         return builder;
     }
-    
+
     public static String numbersToBitString( byte[] values )
     {
         StringBuilder builder = new StringBuilder();
-        for ( byte value : values ) numberToString( builder, value, 1 );
+        for ( byte value : values )
+        {
+            numberToString( builder, value, 1 );
+        }
         return builder.toString();
     }
-    
+
     public static String numbersToBitString( short[] values )
     {
         StringBuilder builder = new StringBuilder();
-        for ( short value : values ) numberToString( builder, value, 2 );
+        for ( short value : values )
+        {
+            numberToString( builder, value, 2 );
+        }
         return builder.toString();
     }
-    
+
     public static String numbersToBitString( int[] values )
     {
         StringBuilder builder = new StringBuilder();
-        for ( int value : values ) numberToString( builder, value, 4 );
+        for ( int value : values )
+        {
+            numberToString( builder, value, 4 );
+        }
         return builder.toString();
     }
-    
+
     public static String numbersToBitString( long[] values )
     {
         StringBuilder builder = new StringBuilder();
-        for ( long value : values ) numberToString( builder, value, 8 );
+        for ( long value : values )
+        {
+            numberToString( builder, value, 8 );
+        }
         return builder.toString();
     }
-    
+
     @Override
     public Bits clone()
     {
         return new Bits( Arrays.copyOf( longs, longs.length ), numberOfBytes );
     }
-    
+
     public Bits put( byte value )
     {
         return put( value, Byte.SIZE );
     }
-    
+
     public Bits put( byte value, int steps )
     {
         return put( (long)value, steps );
     }
-    
+
     public Bits put( short value )
     {
         return put( value, Short.SIZE );
     }
-    
+
     public Bits put( short value, int steps )
     {
         return put( (long)value, steps );
@@ -242,7 +266,7 @@ public final class Bits implements Cloneable
     {
         return put( value, Integer.SIZE );
     }
-    
+
     public Bits put( int value, int steps )
     {
         return put( (long)value, steps );
@@ -252,43 +276,43 @@ public final class Bits implements Cloneable
     {
         return put( value, Long.SIZE );
     }
-    
+
     public Bits put( long value, int steps )
     {
         int lowLongIndex = writePosition >> 6; // /64
         int lowBitInLong = writePosition%64;
         int lowBitsAvailable = 64-lowBitInLong;
         long lowValueMask = rightOverflowMask( Math.min( lowBitsAvailable, steps ) );
-        longs[lowLongIndex] |= ((((long)value)&lowValueMask) << lowBitInLong);
+        longs[lowLongIndex] |= (((value)&lowValueMask) << lowBitInLong);
         if ( steps > lowBitsAvailable )
         {   // High bits
             long highValueMask = rightOverflowMask( steps-lowBitsAvailable );
-            longs[lowLongIndex+1] |= (((long)value) >>> lowBitsAvailable)&highValueMask;
+            longs[lowLongIndex+1] |= ((value) >>> lowBitsAvailable)&highValueMask;
         }
         writePosition += steps;
         return this;
     }
-    
+
     public boolean available()
     {
         return readPosition < writePosition;
     }
-    
+
     public byte getByte()
     {
         return getByte( Byte.SIZE );
     }
-    
+
     public byte getByte( int steps )
     {
         return (byte) getLong( steps );
     }
-    
+
     public short getShort()
     {
         return getShort( Short.SIZE );
     }
-    
+
     public short getShort( int steps )
     {
         return (short) getLong( steps );
@@ -298,7 +322,7 @@ public final class Bits implements Cloneable
     {
         return getInt( Integer.SIZE );
     }
-    
+
     public int getInt( int steps )
     {
         return (int) getLong( steps );
@@ -308,12 +332,12 @@ public final class Bits implements Cloneable
     {
         return getInt( Integer.SIZE ) & 0xFFFFFFFFL;
     }
-    
+
     public long getLong()
     {
         return getLong( Long.SIZE );
     }
-    
+
     public long getLong( int steps )
     {
         int lowLongIndex = readPosition >> 6; // 64
@@ -357,5 +381,26 @@ public final class Bits implements Cloneable
             result |= flag;
         }
         return result;
+    }
+
+    /**
+     * Clear the position and data.
+     */
+    public void clear( boolean zeroBits )
+    {
+        if ( zeroBits )
+        {
+            // TODO optimize so that only the touched longs gets cleared
+            Arrays.fill( longs, 0L );
+        }
+        readPosition = writePosition = 0;
+    }
+
+    /**
+     * Given the write position, how many longs are in use.
+     */
+    public int longsInUse()
+    {
+        return ((writePosition-1) / Long.SIZE) + 1;
     }
 }

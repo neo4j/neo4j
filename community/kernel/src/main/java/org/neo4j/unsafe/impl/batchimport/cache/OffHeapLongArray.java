@@ -77,7 +77,7 @@ public class OffHeapLongArray implements LongArray
     }
 
     @Override
-    public void setAll( long value )
+    public LongArray setAll( long value )
     {
         if ( isByteUniform( value ) )
         {
@@ -90,6 +90,7 @@ public class OffHeapLongArray implements LongArray
                 unsafe.putLong( adr, value );
             }
         }
+        return this;
     }
 
     private boolean isByteUniform( long value )
