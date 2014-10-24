@@ -56,7 +56,7 @@ class LoadCSVTest extends DocumentingTestBase with QueryStatisticsTestSupport {
   )
 
   private val artistsWithEscapeChar = new CsvFile("artists-with-escaped-char.csv").withContentsF(
-    Seq("1", """"The \"Symbol\""""", "1992")
+    Seq("1", "The \"\"Symbol\"\"", "1992")
   )
 
   filePaths = Map(
@@ -172,7 +172,7 @@ include::csv-files/artists-with-escaped-char.csv[]
       optionalResultExplanation = """
 Note that strings are wrapped in quotes in the output here.
 You can see that when comparing to the length of the string in this case!""",
-      assertions = (p) => assertEquals(List(Map("name" -> """"The "Symbol""""", "year" -> 1992, "length" -> 14)), p.toList)
+      assertions = (p) => assertEquals(List(Map("name" -> """The "Symbol"""", "year" -> 1992, "length" -> 12)), p.toList)
     )
   }
 }

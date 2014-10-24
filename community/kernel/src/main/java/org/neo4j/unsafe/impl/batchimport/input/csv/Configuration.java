@@ -19,6 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
+import org.neo4j.csv.reader.BufferedCharSeeker;
+
 /**
  * Configuration for {@link CsvInput}.
  */
@@ -45,7 +47,7 @@ public interface Configuration
         @Override
         public char quotationCharacter()
         {
-            return '"';
+            return BufferedCharSeeker.DEFAULT_QUOTE_CHAR;
         }
     }
 
