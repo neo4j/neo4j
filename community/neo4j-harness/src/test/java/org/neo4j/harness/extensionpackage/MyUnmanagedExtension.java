@@ -17,19 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.harness.extensionpackage;
 
-import java.io.IOException;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.core.Response;
 
-public interface WriteFuture
+@Path("/myExtension")
+public class MyUnmanagedExtension
 {
-    void write() throws IOException;
-
-    public static final WriteFuture VOID = new WriteFuture()
+    @GET
+    public Response doSomething()
     {
-        @Override
-        public void write() throws IOException
-        {   // Do nothing
-        }
-    };
+        return Response.status(234).build();
+    }
 }

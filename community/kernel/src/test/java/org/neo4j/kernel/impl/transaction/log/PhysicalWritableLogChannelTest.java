@@ -61,7 +61,7 @@ public class PhysicalWritableLogChannelTest
         channel.putShort( shortValue );
         channel.putInt( intValue );
         channel.putLong( longValue );
-        channel.switchBuffer().write();
+        channel.emptyBufferIntoChannelAndClearIt();
         channel.force();
 
         // "Rotate" and continue

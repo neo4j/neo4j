@@ -44,11 +44,11 @@ public abstract class BatchingTokenRepository<T extends TokenRecord>
     private final TokenStore<T> store;
     private int highId;
 
-    public BatchingTokenRepository( TokenStore<T> store )
+    public BatchingTokenRepository( TokenStore<T> store, int highId )
     {
         this.store = store;
         // TODO read the store into the repository?
-        this.highId = (int) store.getHighId();
+        this.highId = highId;
     }
 
     public int getOrCreateId( String name )
@@ -68,6 +68,21 @@ public abstract class BatchingTokenRepository<T extends TokenRecord>
             }
         }
         return id;
+    }
+
+    public long[] getOrCreateIds( String[] labels )
+    {
+        long[] result = new long[labels.length];
+        for ( int i = 0; i < labels.length; i++ )
+        {
+            result[i] = getOrCreateId( labels[i] );
+        }
+        return result;
+    }
+
+    public int getHighId()
+    {
+        return highId;
     }
 
     protected abstract T createRecord( int key );
@@ -115,9 +130,9 @@ public abstract class BatchingTokenRepository<T extends TokenRecord>
 
     public static class BatchingPropertyKeyTokenRepository extends BatchingTokenRepository<PropertyKeyTokenRecord>
     {
-        public BatchingPropertyKeyTokenRepository( TokenStore<PropertyKeyTokenRecord> store )
+        public BatchingPropertyKeyTokenRepository( TokenStore<PropertyKeyTokenRecord> store, int highId )
         {
-            super( store );
+            super( store, highId );
         }
 
         @Override
@@ -129,9 +144,9 @@ public abstract class BatchingTokenRepository<T extends TokenRecord>
 
     public static class BatchingLabelTokenRepository extends BatchingTokenRepository<LabelTokenRecord>
     {
-        public BatchingLabelTokenRepository( TokenStore<LabelTokenRecord> store )
+        public BatchingLabelTokenRepository( TokenStore<LabelTokenRecord> store, int highId )
         {
-            super( store );
+            super( store, highId );
         }
 
         @Override
@@ -143,9 +158,9 @@ public abstract class BatchingTokenRepository<T extends TokenRecord>
 
     public static class BatchingRelationshipTypeTokenRepository extends BatchingTokenRepository<RelationshipTypeTokenRecord>
     {
-        public BatchingRelationshipTypeTokenRepository( TokenStore<RelationshipTypeTokenRecord> store )
+        public BatchingRelationshipTypeTokenRepository( TokenStore<RelationshipTypeTokenRecord> store, int highId )
         {
-            super( store );
+            super( store, highId );
         }
 
         @Override

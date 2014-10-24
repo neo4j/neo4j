@@ -108,9 +108,8 @@ public final class NodeEncoderStep extends ExecutorServiceStep<List<InputNode>>
             }
             else
             {
-                long[] labels = Utils.labelNamesToIds( labelHolder, batchNode.labels() );
-                new InlineNodeLabels( nodeRecord.getLabelField(), nodeRecord ).put(
-                        labels, null, nodeStore.getDynamicLabelStore() );
+                long[] labels = labelHolder.getOrCreateIds( batchNode.labels() );
+                InlineNodeLabels.put( nodeRecord, labels, null, nodeStore.getDynamicLabelStore() );
             }
         }
         return new RecordBatch<>( nodeRecords, propertyRecords.records() );

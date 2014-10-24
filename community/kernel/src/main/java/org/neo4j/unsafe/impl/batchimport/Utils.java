@@ -31,16 +31,6 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository;
  */
 public class Utils
 {
-    public static long[] labelNamesToIds( BatchingTokenRepository<?> labelHolder, String[] labels )
-    {
-        long[] result = new long[labels.length];
-        for ( int i = 0; i < labels.length; i++ )
-        {
-            result[i] = labelHolder.getOrCreateId( labels[i] );
-        }
-        return result;
-    }
-
     public static Iterator<PropertyBlock> propertyKeysAndValues( final Object[] properties,
             final BatchingTokenRepository<?> propertyKeyHolder, final PropertyCreator creator )
     {

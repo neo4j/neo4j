@@ -19,15 +19,16 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+
 import static java.lang.System.currentTimeMillis;
 
-import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.PropertyTracker;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class NodeManager extends LifecycleAdapter implements EntityFactory
 {
@@ -45,8 +46,11 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
         this.nodeLookup = nodeLookup;
         this.relationshipLookups = relationshipLookups;
         this.threadToTransactionBridge = threadToTransactionBridge;
-        this.nodePropertyTrackers = new LinkedList<>();
-        this.relationshipPropertyTrackers = new LinkedList<>();
+        // Trackers may be added and removed at runtime, e.g. via the REST interface in server,
+        // so we use the thread-safe CopyOnWriteArrayList.
+        this.nodePropertyTrackers = new CopyOnWriteArrayList<>();
+        this.relationshipPropertyTrackers = new CopyOnWriteArrayList<>();
+
     }
 
     @Override
@@ -72,6 +76,7 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
         return new RelationshipProxy( id, relationshipLookups, threadToTransactionBridge );
     }
 
+    @Override
     public GraphPropertiesImpl newGraphProperties()
     {
         return new GraphPropertiesImpl( epoch, threadToTransactionBridge );

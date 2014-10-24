@@ -463,8 +463,7 @@ public class IdGeneratorImpl implements IdGenerator
         try
         {
             fileChannel = fs.open( fileName, "rw" );
-            ByteBuffer buffer = ByteBuffer.allocate( HEADER_SIZE );
-            readHeader( buffer );
+            ByteBuffer buffer = readHeader();
             markAsSticky( buffer );
 
             fileChannel.position( HEADER_SIZE );
@@ -487,24 +486,47 @@ public class IdGeneratorImpl implements IdGenerator
         fileChannel.write( buffer );
     }
 
-    private void readHeader( ByteBuffer buffer ) throws IOException
+    private ByteBuffer readHeader() throws IOException
     {
-        readPosition = fileChannel.read( buffer );
-        if ( readPosition != HEADER_SIZE )
+        try
+        {
+            ByteBuffer buffer = readHighIdFromHeader( fileChannel, fileName );
+            readPosition = HEADER_SIZE;
+            this.highId.set( buffer.getLong() );
+            return buffer;
+        }
+        catch ( InvalidIdGeneratorException e )
         {
             fileChannel.close();
+            throw e;
+        }
+    }
+
+    private static ByteBuffer readHighIdFromHeader( StoreChannel channel, File fileName ) throws IOException
+    {
+        ByteBuffer buffer = ByteBuffer.allocate( HEADER_SIZE );
+        int read = channel.read( buffer );
+        if ( read != HEADER_SIZE )
+        {
             throw new InvalidIdGeneratorException(
-                "Unable to read header, bytes read: " + readPosition );
+                "Unable to read header, bytes read: " + read );
         }
         buffer.flip();
         byte storageStatus = buffer.get();
         if ( storageStatus != CLEAN_GENERATOR )
         {
-            fileChannel.close();
             throw new InvalidIdGeneratorException( "Sticky generator[ " +
                 fileName + "] delete this id file and build a new one" );
         }
-        this.highId.set( buffer.getLong() );
+        return buffer;
+    }
+
+    public static long readHighId( FileSystemAbstraction fileSystem, File file ) throws IOException
+    {
+        try ( StoreChannel channel = fileSystem.open( file, "r" ) )
+        {
+            return readHighIdFromHeader( channel, file ).getLong();
+        }
     }
 
     private void readIdBatch()

@@ -266,6 +266,7 @@ public class BatchingPageCache implements PageCache
         private final int pageSize;
         private boolean pinned;
         private long highestKnownPageId;
+        private boolean changed;
 
         BatchingPageCursor( StoreChannel channel, Writer writer, final int pageSize ) throws IOException
         {
@@ -300,6 +301,7 @@ public class BatchingPageCache implements PageCache
         public void putByte( byte value )
         {
             currentBuffer.put( value );
+            changed = true;
         }
 
         @Override
@@ -324,6 +326,7 @@ public class BatchingPageCache implements PageCache
         public void putLong( long value )
         {
             currentBuffer.putLong( value );
+            changed = true;
         }
 
         @Override
@@ -348,6 +351,7 @@ public class BatchingPageCache implements PageCache
         public void putInt( int value )
         {
             currentBuffer.putInt( value );
+            changed = true;
         }
 
         @Override
@@ -378,6 +382,7 @@ public class BatchingPageCache implements PageCache
         public void putBytes( byte[] data )
         {
             currentBuffer.put( data );
+            changed = true;
         }
 
         @Override
@@ -396,6 +401,7 @@ public class BatchingPageCache implements PageCache
         public void putShort( short value )
         {
             currentBuffer.putShort( value );
+            changed = true;
         }
 
         @Override
@@ -500,8 +506,12 @@ public class BatchingPageCache implements PageCache
                 return;
             }
 
-            writer.write( prepared( currentBuffer ), currentPageId * pageSize, bufferPool );
-            currentBuffer = bufferPool.acquire();
+            if ( changed )
+            {
+                writer.write( prepared( currentBuffer ), currentPageId * pageSize, bufferPool );
+                currentBuffer = bufferPool.acquire();
+                changed = false;
+            }
             currentPageId = -1;
         }
 

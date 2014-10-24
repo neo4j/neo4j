@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 
-import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -208,7 +207,7 @@ public class TargetDirectory
     public File directoryForDescription( Description description )
     {
         String test = description.getMethodName();
-        String dir = DigestUtils.md5Hex( test );
+        String dir = Digests.md5Hex( test );
         register( test, dir );
         return cleanDirectory( dir );
     }

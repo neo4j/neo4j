@@ -25,11 +25,9 @@ import java.io.IOException;
 public interface WritableLogChannel extends PositionAwareChannel, Closeable
 {
     /**
-     * Returns a {@link WriteFuture} which may write any pending changes into the underlying channel.
-     * Under the hood the buffer is switched to another buffer which lets other threads able to
-     * continue writing to this log channel.
-     */
-    WriteFuture switchBuffer();
+    * Writes any changes not present in the channel yet and clears the buffer.
+    */
+    void emptyBufferIntoChannelAndClearIt() throws IOException;
 
     /**
      * Forces the data that has already been written to the underlying channel, down to disk.

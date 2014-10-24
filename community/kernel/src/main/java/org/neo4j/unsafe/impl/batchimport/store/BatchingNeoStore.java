@@ -31,10 +31,12 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
+import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.WriterFactory;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingLabelTokenRepository;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
@@ -68,7 +70,7 @@ public class BatchingNeoStore implements AutoCloseable
 
     public BatchingNeoStore( FileSystemAbstraction fileSystem, String storeDir,
                              Configuration config, Monitor writeMonitor, Logging logging,
-                             Monitors monitors, WriterFactory writerFactory )
+                             Monitors monitors, WriterFactory writerFactory, AdditionalInitialIds highTokenIds )
     {
         this.fileSystem = fileSystem;
         this.monitors = monitors;
@@ -83,10 +85,13 @@ public class BatchingNeoStore implements AutoCloseable
                 writerFactory, writeMonitor, APPEND_ONLY );
         this.neoStore = newNeoStore( pageCacheFactory );
         flushNeoStoreAndAwaitEverythingWritten();
-        this.propertyKeyRepository = new BatchingPropertyKeyTokenRepository( neoStore.getPropertyKeyTokenStore() );
-        this.labelRepository = new BatchingLabelTokenRepository( neoStore.getLabelTokenStore() );
-        this.relationshipTypeRepository =
-                new BatchingRelationshipTypeTokenRepository( neoStore.getRelationshipTypeTokenStore() );
+        neoStore.setLastCommittedAndClosedTransactionId( highTokenIds.lastCommittedTransactionId() );
+        this.propertyKeyRepository = new BatchingPropertyKeyTokenRepository(
+                neoStore.getPropertyKeyTokenStore(), highTokenIds.highPropertyKeyTokenId() );
+        this.labelRepository = new BatchingLabelTokenRepository(
+                neoStore.getLabelTokenStore(), highTokenIds.highLabelTokenId() );
+        this.relationshipTypeRepository = new BatchingRelationshipTypeTokenRepository(
+                neoStore.getRelationshipTypeTokenStore(), highTokenIds.highRelationshipTypeTokenId() );
     }
 
     private NeoStore newNeoStore( PageCache pageCache )
@@ -129,6 +134,11 @@ public class BatchingNeoStore implements AutoCloseable
     public RelationshipGroupStore getRelationshipGroupStore()
     {
         return neoStore.getRelationshipGroupStore();
+    }
+
+    public CountsTracker getCountsStore()
+    {
+        return neoStore.getCounts();
     }
 
     public void switchToUpdateMode()

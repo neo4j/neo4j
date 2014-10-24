@@ -21,85 +21,67 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
-import org.neo4j.unsafe.impl.batchimport.staging.LonelyProcessingStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 /**
  * Links the {@code previous} fields in {@link RelationshipRecord relationship records}. This is done after
  * a forward pass where the {@code next} fields are linked.
  */
-public class RelationshipLinkbackStep extends LonelyProcessingStep
+public class RelationshipLinkbackStep extends RelationshipStoreProcessorStep
 {
-    private final RelationshipStore relStore;
     private final NodeRelationshipLink nodeRelationshipLink;
 
     public RelationshipLinkbackStep( StageControl control, int batchSize,
             RelationshipStore relStore, NodeRelationshipLink nodeRelationshipLink )
     {
-        super( control, "LINKER", batchSize );
-        this.relStore = relStore;
+        super( control, "LINKER", batchSize, relStore );
         this.nodeRelationshipLink = nodeRelationshipLink;
     }
 
     @Override
-    protected void process()
+    protected boolean process( RelationshipRecord record )
     {
-        long highId = relStore.getHighestPossibleIdInUse();
-        RelationshipRecord heavilyReusedRecord = new RelationshipRecord( -1 );
-        for ( long i = highId; i >= 0; i-- )
+        boolean isLoop = record.getFirstNode() == record.getSecondNode();
+        if ( isLoop )
         {
-            RelationshipRecord record = relStore.getRecord( i, heavilyReusedRecord, RecordLoad.CHECK );
-            if ( record == null )
-            {
-                // It's OK
-                continue;
+            long prevRel = nodeRelationshipLink.getAndPutRelationship( record.getFirstNode(),
+                    record.getType(), Direction.BOTH, record.getId(), false );
+            if ( prevRel == -1 )
+            {   // First one
+                record.setFirstInFirstChain( true );
+                record.setFirstInSecondChain( true );
+                prevRel = nodeRelationshipLink.getCount( record.getFirstNode(),
+                        record.getType(), Direction.BOTH );
             }
-
-            boolean isLoop = record.getFirstNode() == record.getSecondNode();
-            if ( isLoop )
-            {
-                long prevRel = nodeRelationshipLink.getAndPutRelationship( record.getFirstNode(),
-                        record.getType(), Direction.BOTH, record.getId(), false );
-                if ( prevRel == -1 )
-                {   // First one
-                    record.setFirstInFirstChain( true );
-                    record.setFirstInSecondChain( true );
-                    prevRel = nodeRelationshipLink.getCount( record.getFirstNode(),
-                            record.getType(), Direction.BOTH );
-                }
-                record.setFirstPrevRel( prevRel );
-                record.setSecondPrevRel( prevRel );
-            }
-            else
-            {
-                // Start node
-                long firstPrevRel = nodeRelationshipLink.getAndPutRelationship( record.getFirstNode(),
-                        record.getType(), Direction.OUTGOING, record.getId(), false );
-                if ( firstPrevRel == -1 )
-                {   // First one
-                    record.setFirstInFirstChain( true );
-                    firstPrevRel = nodeRelationshipLink.getCount( record.getFirstNode(),
-                            record.getType(), Direction.OUTGOING );
-                }
-                record.setFirstPrevRel( firstPrevRel );
-
-                // End node
-                long secondPrevRel = nodeRelationshipLink.getAndPutRelationship( record.getSecondNode(),
-                        record.getType(), Direction.INCOMING, record.getId(), false );
-                if ( secondPrevRel == -1 )
-                {   // First one
-                    record.setFirstInSecondChain( true );
-                    secondPrevRel = nodeRelationshipLink.getCount( record.getSecondNode(),
-                            record.getType(), Direction.INCOMING );
-                }
-                record.setSecondPrevRel( secondPrevRel );
-            }
-            itemProcessed();
-            relStore.updateRecord( record );
+            record.setFirstPrevRel( prevRel );
+            record.setSecondPrevRel( prevRel );
         }
-        relStore.flush();
+        else
+        {
+            // Start node
+            long firstPrevRel = nodeRelationshipLink.getAndPutRelationship( record.getFirstNode(),
+                    record.getType(), Direction.OUTGOING, record.getId(), false );
+            if ( firstPrevRel == -1 )
+            {   // First one
+                record.setFirstInFirstChain( true );
+                firstPrevRel = nodeRelationshipLink.getCount( record.getFirstNode(),
+                        record.getType(), Direction.OUTGOING );
+            }
+            record.setFirstPrevRel( firstPrevRel );
+
+            // End node
+            long secondPrevRel = nodeRelationshipLink.getAndPutRelationship( record.getSecondNode(),
+                    record.getType(), Direction.INCOMING, record.getId(), false );
+            if ( secondPrevRel == -1 )
+            {   // First one
+                record.setFirstInSecondChain( true );
+                secondPrevRel = nodeRelationshipLink.getCount( record.getSecondNode(),
+                        record.getType(), Direction.INCOMING );
+            }
+            record.setSecondPrevRel( secondPrevRel );
+        }
+        return true;
     }
 }

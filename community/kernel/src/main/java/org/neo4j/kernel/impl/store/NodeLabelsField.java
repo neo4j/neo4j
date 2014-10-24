@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.store;
 
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
-
 /**
  * Logic for parsing and constructing {@link NodeRecord#getLabelField()} and dynamic label
  * records in {@link NodeRecord#getDynamicLabelRecords()} from label ids.
@@ -43,24 +42,26 @@ public class NodeLabelsField
     public static NodeLabels parseLabelsField( NodeRecord node )
     {
         long labelField = node.getLabelField();
-        if ( fieldPointsToDynamicRecordOfLabels( labelField ) )
-        {
-            return new DynamicNodeLabels( labelField, node );
-        }
-        else
-        {
-            return new InlineNodeLabels( labelField, node );
-        }
+        return fieldPointsToDynamicRecordOfLabels( labelField )
+                ? new DynamicNodeLabels( labelField, node )
+                : new InlineNodeLabels( labelField, node );
     }
 
-    public static long parseLabelsBody( long labelsField )
+    public static long[] get( NodeRecord node, NodeStore nodeStore )
     {
-        return labelsField & 0xFFFFFFFFFL;
+        return fieldPointsToDynamicRecordOfLabels( node.getLabelField() )
+                ? DynamicNodeLabels.get( node, nodeStore )
+                : InlineNodeLabels.get( node );
     }
 
     public static boolean fieldPointsToDynamicRecordOfLabels( long labelField )
     {
         return (labelField & 0x8000000000L) != 0;
+    }
+
+    public static long parseLabelsBody( long labelField )
+    {
+        return labelField & 0xFFFFFFFFFL;
     }
 
     /**
@@ -69,15 +70,9 @@ public class NodeLabelsField
      * @param labelField label field value from a node record
      * @return the id of the dynamic record this label field points to or null if it is an inline label field
      */
-    public static Long fieldDynamicLabelRecordId( long labelField )
+    public static long firstDynamicLabelRecordId( long labelField )
     {
-        if ( fieldPointsToDynamicRecordOfLabels( labelField ) )
-        {
-            return parseLabelsBody( labelField );
-        }
-        else
-        {
-            return null;
-        }
+        assert fieldPointsToDynamicRecordOfLabels( labelField );
+        return parseLabelsBody( labelField );
     }
 }

@@ -76,12 +76,13 @@ public class HeapLongArray implements LongArray
     }
 
     @Override
-    public void setAll( long value )
+    public LongArray setAll( long value )
     {
         for ( long[] shard : shards )
         {
             Arrays.fill( shard, value );
         }
+        return this;
     }
 
     @Override

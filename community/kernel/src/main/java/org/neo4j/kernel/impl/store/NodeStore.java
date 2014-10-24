@@ -172,7 +172,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
         return record;
     }
 
-    private NodeRecord loadRecord( long id, NodeRecord record )
+    public NodeRecord loadRecord( long id, NodeRecord record )
     {
         long pageId = pageIdForRecord( id );
         int offset = offsetForId( id );
