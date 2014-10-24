@@ -19,16 +19,16 @@
  */
 package org.neo4j.io.pagecache.stresstests;
 
+import org.junit.Test;
+
+import org.neo4j.io.pagecache.CountingPageCacheMonitor;
+import org.neo4j.io.pagecache.stress.PageCacheStressTest;
+
 import static java.lang.Integer.parseInt;
 import static java.lang.System.getProperty;
 import static java.lang.System.getenv;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.neo4j.io.pagecache.stress.Conditions.timePeriod;
-
-import org.junit.Test;
-import org.neo4j.io.pagecache.PageCacheMonitor;
-import org.neo4j.io.pagecache.stress.PageCacheStressTest;
-import org.neo4j.io.pagecache.stress.SimpleMonitor;
 
 /**
  * Notice the class name: this is _not_ going to be run as part of the main build.
@@ -57,7 +57,7 @@ public class PageCacheStressTesting
 
         String workingDirectory = fromEnvironmentOrDefault( "PAGE_CACHE_STRESS_WORKING_DIRECTORY", getProperty( "java.io.tmpdir" ) );
 
-        PageCacheMonitor monitor = new SimpleMonitor();
+        CountingPageCacheMonitor monitor = new CountingPageCacheMonitor();
 
         PageCacheStressTest runner = new PageCacheStressTest.Builder()
                 .with( timePeriod( durationInMinutes, MINUTES ) )
@@ -72,7 +72,13 @@ public class PageCacheStressTesting
 
         runner.run();
 
-        System.out.println(monitor);
+        long faults = monitor.countFaults();
+        long evictions = monitor.countEvictions();
+        long pins = monitor.countPins();
+        long unpins = monitor.countUnpins();
+        long flushes = monitor.countFlushes();
+        System.out.printf( " - page faults: %d%n - evictions: %d%n - pins: %d%n - unpins: %d%n - flushes: %d%n",
+                faults, evictions, pins, unpins, flushes );
     }
 
     private static String fromEnvironmentOrDefault( String environmentVariableName, String defaultValue )

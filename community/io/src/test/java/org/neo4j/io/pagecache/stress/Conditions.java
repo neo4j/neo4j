@@ -19,20 +19,23 @@
  */
 package org.neo4j.io.pagecache.stress;
 
-import static java.lang.System.currentTimeMillis;
-
 import java.util.concurrent.TimeUnit;
+
+import org.neo4j.io.pagecache.CountingPageCacheMonitor;
+
+import static java.lang.System.currentTimeMillis;
 
 public class Conditions
 {
-    public static Condition numberOfEvictions( final SimpleMonitor simpleMonitor, final long desiredNumberOfEvictions )
+    public static Condition numberOfEvictions( final CountingPageCacheMonitor monitor,
+                                               final long desiredNumberOfEvictions )
     {
         return new Condition()
         {
             @Override
             public boolean fulfilled()
             {
-                return simpleMonitor.getNumberOfEvictions() > desiredNumberOfEvictions;
+                return monitor.countEvictions() > desiredNumberOfEvictions;
             }
         };
     }
