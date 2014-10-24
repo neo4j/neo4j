@@ -25,6 +25,7 @@ import org.neo4j.function.Function;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -98,10 +99,10 @@ public class ParallelBatchImporter implements BatchImporter
         this.writerFactory = writerFactory.apply( config );
     }
 
-    public ParallelBatchImporter( String storeDir, FileSystemAbstraction fileSystem,
-                                  Configuration config, Logging logging, ExecutionMonitor executionMonitor )
+    public ParallelBatchImporter( String storeDir, Configuration config, Logging logging,
+            ExecutionMonitor executionMonitor )
     {
-        this( storeDir, fileSystem, config, logging, executionMonitor, parallel(), EMPTY );
+        this( storeDir, new DefaultFileSystemAbstraction(), config, logging, executionMonitor, parallel(), EMPTY );
     }
 
     @Override

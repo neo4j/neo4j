@@ -114,8 +114,9 @@ public class Args
         String value = this.map.get( key );
         return value != null ? Double.parseDouble( value ) : defaultValue;
     }
-    
-    public long getDuration(String key, long defaultValueInMillis) {
+
+    public long getDuration( String key, long defaultValueInMillis)
+    {
         String value = this.map.get( key );
         return value != null ? TimeUtil.parseTimeMillis.apply(value) : defaultValueInMillis;
     }
@@ -136,16 +137,22 @@ public class Args
         }
         return this.map.containsKey( key ) ? defaultValueIfNoValue : defaultValueIfNotFound;
     }
-    
+
     public <T extends Enum<T>> T getEnum( Class<T> enumClass, String key, T defaultValue )
     {
         String raw = this.map.get( key );
         if ( raw == null )
+        {
             return defaultValue;
-        
+        }
+
         for ( T candidate : enumClass.getEnumConstants() )
+        {
             if ( candidate.name().equals( raw ) )
+            {
                 return candidate;
+            }
+        }
         throw new IllegalArgumentException( "No enum instance '" + raw + "' in " + enumClass.getName() );
     }
 
@@ -163,7 +170,7 @@ public class Args
     {
         return new ArrayList<>( this.orphans );
     }
-    
+
     public String[] asArgs()
     {
         List<String> list = new ArrayList<>();
@@ -182,13 +189,15 @@ public class Args
         }
         return list.toArray( new String[list.size()] );
     }
-    
+
     @Override
     public String toString()
     {
         StringBuilder builder = new StringBuilder();
         for ( String arg : asArgs() )
+        {
             builder.append( builder.length() > 0 ? " " : "" ).append( arg );
+        }
         return builder.toString();
     }
 

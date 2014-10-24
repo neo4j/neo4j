@@ -84,7 +84,7 @@ public class CsvInputBatchImportIT
     public void shouldImportDataComingFromCsvFiles() throws Exception
     {
         // GIVEN
-        BatchImporter importer = new ParallelBatchImporter( directory.absolutePath(), fs,
+        BatchImporter importer = new ParallelBatchImporter( directory.absolutePath(),
                 smallBatchSizeConfig(), new DevNullLoggingService(), invisible() );
         List<InputNode> nodeData = randomNodeData();
         List<InputRelationship> relationshipData = randomRelationshipData( nodeData );
