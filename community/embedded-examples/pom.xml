@@ -8,7 +8,7 @@
   </parent>
   <groupId>org.neo4j.examples</groupId>
   <artifactId>neo4j-examples</artifactId>
-  <name>Neo4j Examples</name>
+  <name>Neo4j - Examples</name>
   <version>2.2-SNAPSHOT</version>
 
   <description>Neo4j Embedded Examples</description>

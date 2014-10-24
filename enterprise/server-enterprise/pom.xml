@@ -12,7 +12,7 @@
   <artifactId>neo4j-server-enterprise</artifactId>
   <version>2.2-SNAPSHOT</version>
 
-  <name>Neo4j Enterprise Server</name>
+  <name>Neo4j - Enterprise Server</name>
   <description>Standalone Neo4j server application.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 

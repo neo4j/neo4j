@@ -10,7 +10,7 @@
   <artifactId>licensecheck-config</artifactId>
   <version>2.2-SNAPSHOT</version>
 
-  <name>Licensing configuration</name>
+  <name>Neo4j - Licensing configuration</name>
   <description>Licensing configuration for the Neo4j project.</description>
   <packaging>jar</packaging>
   <url>http://components.neo4j.org/${project.artifactId}</url>

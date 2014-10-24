@@ -12,7 +12,7 @@
   <groupId>org.neo4j.app</groupId>
   <artifactId>neo4j-browser</artifactId>
   <version>2.2-SNAPSHOT</version>
-  <name>Neo4j Browser</name>
+  <name>Neo4j - Browser</name>
   <description>Graph database client.</description>
 
   <properties>

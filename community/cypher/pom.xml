@@ -13,7 +13,7 @@
   <artifactId>cypher-parent</artifactId>
   <version>2.2-SNAPSHOT</version>
   <packaging>pom</packaging>
-  <name>Neo4j Community Cypher Build</name>
+  <name>Neo4j - Community Cypher Build</name>
   <description>Project that builds the Neo4j Cypher modules as part of the Community distribution.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 

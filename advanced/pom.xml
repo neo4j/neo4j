@@ -12,7 +12,7 @@
   <artifactId>advanced-build</artifactId>
   <version>2.2-SNAPSHOT</version>
 
-  <name>Neo4j Advanced Build</name>
+  <name>Neo4j - Advanced Build</name>
   <packaging>pom</packaging>
   <description>Project that builds the Neo4j Advanced distribution.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>

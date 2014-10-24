@@ -10,7 +10,7 @@
   <groupId>org.neo4j.doc</groupId>
   <artifactId>neo4j-graphgist</artifactId>
   <version>2.2-SNAPSHOT</version>
-  <name>Neo4j GraphGist</name>
+  <name>Neo4j - GraphGist</name>
   <description>Cypher tutorial documentation tool.</description>
 
   <properties>

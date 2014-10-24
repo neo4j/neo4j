@@ -12,10 +12,9 @@
   <groupId>org.neo4j.test</groupId>
   <artifactId>neo4j-harness</artifactId>
 
-
   <packaging>jar</packaging>
 
-  <name>Neo4j Test Harness</name>
+  <name>Neo4j - Test Harness</name>
   <description>Components for writing integration tests with Neo4j.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
