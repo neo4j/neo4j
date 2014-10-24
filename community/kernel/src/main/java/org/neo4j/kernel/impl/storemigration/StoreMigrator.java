@@ -76,6 +76,7 @@ import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.Inputs;
 import org.neo4j.unsafe.impl.batchimport.staging.CoarseBoundedProgressExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
+import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStore;
 
 import static org.neo4j.helpers.UTF8.encode;
 import static org.neo4j.helpers.collection.Iterables.iterable;
@@ -84,6 +85,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.store.NeoStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.store.StoreFactory.buildTypeDescriptorAndVersion;
+import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 import static org.neo4j.unsafe.impl.batchimport.WriterFactories.parallel;
@@ -222,6 +224,8 @@ public class StoreMigrator implements StoreMigrationParticipant
     private void migrateWithBatchImporter( File storeDir, File migrationDir, long lastTxId )
             throws IOException
     {
+        prepareBatchImportMigration( storeDir, migrationDir );
+
         LegacyStore legacyStore;
         switch ( versionToUpgradeFrom )
         {
@@ -263,6 +267,23 @@ public class StoreMigrator implements StoreMigrationParticipant
         }
         // Close
         legacyStore.close();
+    }
+
+    private void prepareBatchImportMigration( File storeDir, File migrationDir ) throws IOException
+    {
+        // We use the batch importer for migrating the data, and we use it in a special way where we only
+        // rewrite the stores that have actually changed format. We know that to be node and relationship
+        // stores. Although since the batch importer also populates the counts store, all labels need to
+        // be read, i.e. both inlined and those existing in dynamic records. That's why we need to copy
+        // that dynamic record store over before doing the "batch import".
+        //   Copying this file just as-is assumes that the format hasn't change. If that happens we're in
+        // a different situation, where we first need to migrate this file.
+        BatchingNeoStore.createStore( fileSystem, migrationDir.getPath() );
+        Iterable<StoreFile> storeFiles = iterable( StoreFile.NODE_LABEL_STORE );
+        StoreFile.fileOperation( COPY, fileSystem, storeDir, migrationDir, storeFiles,
+                true, // OK if it's not there (1.9)
+                false, StoreFileType.values() );
+        StoreFile.ensureStoreVersion( fileSystem, migrationDir, storeFiles );
     }
 
     private AdditionalInitialIds readHighTokenIds( File storeDir, final long lastTxId ) throws IOException
