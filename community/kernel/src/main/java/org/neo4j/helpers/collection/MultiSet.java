@@ -32,56 +32,73 @@ public class MultiSet<T>
         inner = new HashMap<>();
     }
 
-    public MultiSet( int batchSize )
+    public MultiSet( int initialCapacity )
     {
-        inner = new HashMap<>( batchSize );
-    }
-
-    public int add( T value )
-    {
-        size++;
-        Integer count = inner.get( value );
-        int newCount = count == null ? 1 : count + 1;
-        inner.put( value, newCount );
-        return newCount;
-    }
-
-    public int remove( T value )
-    {
-        Integer count = inner.get( value );
-        if ( count == null )
-        {
-            return 0;
-        }
-
-        size--;
-        int newCount = count - 1;
-        if ( newCount <= 0 )
-        {
-            inner.remove( value );
-        }
-        else
-        {
-            inner.put( value, newCount );
-        }
-        return newCount;
+        inner = new HashMap<>( initialCapacity );
     }
 
     public boolean contains( T value )
     {
-        Integer count = inner.get( value );
-        return count != null && count > 0;
+        return inner.containsKey( value );
     }
 
     public int count( T value )
     {
-        Integer count = inner.get( value );
-        return count == null ? 0 : count;
+        return unbox( inner.get( value ) );
+    }
+
+    public int add( T value )
+    {
+        return increment( value, +1 );
+    }
+
+    public int remove( T value )
+    {
+       return increment( value, -1 );
+    }
+
+    public int replace( T value, int newCount )
+    {
+        if ( newCount <= 0 )
+        {
+            int previous = unbox( inner.remove( value ) );
+            size -= previous;
+            return previous;
+        }
+        else
+        {
+            int previous = unbox( inner.put( value, newCount ) );
+            size += newCount - previous;
+            return previous;
+        }
+    }
+
+    public int increment( T value, int amount )
+    {
+        int previous = count( value );
+        if ( amount == 0 )
+        {
+            return previous;
+        }
+
+        int newCount = previous + amount;
+        if ( newCount <= 0 )
+        {
+            inner.remove( value );
+            size -= previous;
+            return 0;
+        }
+        else
+        {
+            inner.put( value, newCount );
+            size += amount;
+            return newCount;
+        }
     }
 
     public boolean isEmpty()
     {
-        return size == 0;
+        return inner.isEmpty();
     }
 
     public int size()
@@ -89,7 +106,7 @@ public class MultiSet<T>
         return size;
     }
 
-    public int uniqueValueSize()
+    public int uniqueSize()
     {
         return inner.size();
     }
@@ -113,5 +130,10 @@ public class MultiSet<T>
     public int hashCode()
     {
         return inner.hashCode();
+    }
+
+    private int unbox( Integer value )
+    {
+        return value == null ? 0 : value;
     }
 }

@@ -31,66 +31,56 @@ import org.neo4j.kernel.impl.api.index.IndexProxy;
 
 public class IndexSamplingController
 {
-    private final IndexMapSnapshotProvider indexMapSnapshotProvider;
-    private final IndexSamplingJobTracker jobTracker;
-    private final IndexSamplingJobQueue jobQueue;
+    private final IndexSamplingConfig config;
     private final IndexSamplingJobFactory jobFactory;
-    private final Lock emptyLock =  new ReentrantLock( true );
+    private final IndexSamplingJobTracker jobTracker;
+    private final IndexMapSnapshotProvider indexMapSnapshotProvider;
+    private final IndexSamplingJobQueue jobQueue;
+    private final Lock emptyLock;
 
-    public IndexSamplingController( IndexSamplingJobFactory jobFactory,
+    public IndexSamplingController( IndexSamplingConfig config,
+                                    IndexSamplingJobFactory jobFactory,
+                                    IndexSamplingJobQueue jobQueue,
                                     IndexSamplingJobTracker jobTracker,
                                     IndexMapSnapshotProvider indexMapSnapshotProvider )
     {
+        this.config = config;
         this.jobFactory = jobFactory;
         this.indexMapSnapshotProvider = indexMapSnapshotProvider;
+        this.jobQueue = jobQueue;
         this.jobTracker = jobTracker;
-        this.jobQueue = new IndexSamplingJobQueue();
+        this.emptyLock =  new ReentrantLock( true );
+    }
+
+    public IndexSamplingConfig config()
+    {
+        return config;
     }
 
     public void sampleIndexes( IndexSamplingMode mode )
     {
         IndexMap indexMap = indexMapSnapshotProvider.indexMapSnapshot();
-        switch ( mode )
-        {
-            case REBUILD_ALL:
-                fillQueue( false, indexMap );
-                break;
+        fillQueue( mode, indexMap );
 
-            case REBUILD_UPDATED:
-            case TRY_REBUILD_UPDATED:
-                fillQueue( true, indexMap );
-                break;
-
-            default:
-                throw new IllegalArgumentException( "Unsupported sampling mode: " + mode.name() );
-        }
-        if ( mode.scheduleBlocking() )
+        if ( mode.blockUntilAllScheduled )
         {
+            // Wait until last sampling job has been started
             emptyQueue( indexMap );
         }
         else
         {
+            // Try to schedule as many sampling jobs as possible
             tryEmptyQueue( indexMap );
         }
     }
 
-    private void fillQueue( boolean ifUpdated, IndexMap indexMap )
+    private void fillQueue( IndexSamplingMode mode, IndexMap indexMap )
     {
         Iterator<IndexDescriptor> descriptors = indexMap.descriptors();
         while ( descriptors.hasNext() )
         {
-            IndexDescriptor descriptor = descriptors.next();
-            if ( !ifUpdated || shouldUpdateIndex( descriptor) )
-            {
-                jobQueue.sampleIndex( descriptor );
-            }
+            jobQueue.sampleIndex( mode, descriptors.next() );
         }
-    }
-
-    private boolean shouldUpdateIndex( IndexDescriptor descriptor )
-    {
-        // TODO
-        return true;
     }
 
     private void tryEmptyQueue( IndexMap indexMap )
@@ -144,6 +134,6 @@ public class IndexSamplingController
             return;
         }
 
-        jobTracker.scheduleSamplingJob( jobFactory.create( proxy ) );
+        jobTracker.scheduleSamplingJob( jobFactory.create( config, proxy ) );
     }
 }

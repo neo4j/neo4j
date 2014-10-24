@@ -19,28 +19,34 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
+
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.test.DoubleLatch;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 public class IndexSamplingJobTrackerTest
 {
+    private final IndexSamplingConfig config = mock( IndexSamplingConfig.class );
+
     @Test
     public void shouldNotRunASampleJobWhichIsAlreadyRunning() throws Throwable
     {
         // given
+        when( config.jobLimit() ).thenReturn( 2 );
         JobScheduler jobScheduler = new Neo4jJobScheduler();
         jobScheduler.init();
-        IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( jobScheduler, 2 );
+        IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( config, jobScheduler );
         final DoubleLatch latch = new DoubleLatch();
 
         // when
@@ -80,10 +86,11 @@ public class IndexSamplingJobTrackerTest
     public void shouldNotAcceptMoreJobsThanAllowed() throws Throwable
     {
         // given
+        when( config.jobLimit() ).thenReturn( 1 );
         JobScheduler jobScheduler = new Neo4jJobScheduler();
         jobScheduler.init();
 
-        final IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( jobScheduler, 1 );
+        final IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( config, jobScheduler );
         final DoubleLatch latch = new DoubleLatch();
         final DoubleLatch waitingLatch = new DoubleLatch();
 

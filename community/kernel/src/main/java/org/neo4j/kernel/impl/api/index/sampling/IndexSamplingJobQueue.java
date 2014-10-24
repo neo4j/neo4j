@@ -23,19 +23,45 @@ import java.util.ArrayDeque;
 import java.util.HashSet;
 import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.ConcurrentLinkedDeque;
 
+import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 
 public class IndexSamplingJobQueue
 {
-    private final Queue<IndexDescriptor> queue = new ArrayDeque<>();
+    private final Predicate<? super IndexDescriptor> updatePredicate;
+    private final Queue<IndexDescriptor> queue;
 
-    public synchronized void sampleIndex( IndexDescriptor descriptor ) {
-        if ( !queue.contains( descriptor ) )
+    public IndexSamplingJobQueue( Predicate<? super IndexDescriptor> updatePredicate )
+    {
+        this.updatePredicate = updatePredicate;
+        this.queue = new ArrayDeque<>();
+    }
+
+    public synchronized void sampleIndex( IndexSamplingMode mode, IndexDescriptor descriptor ) {
+        if ( shouldSample( mode, descriptor ) )
         {
             queue.add( descriptor );
         }
+    }
+
+    private boolean shouldSample( IndexSamplingMode mode, IndexDescriptor descriptor )
+    {
+
+        // Add index if not in queue
+        if ( queue.contains( descriptor ) )
+        {
+            return false;
+        }
+
+        // and either adding all
+        if ( ! mode.sampleOnlyIfUpdated )
+        {
+            return true;
+        }
+
+        // or otherwise only if seen enough updates (as determined by updatePredicate)
+        return updatePredicate.accept( descriptor );
     }
 
     public synchronized IndexDescriptor poll()

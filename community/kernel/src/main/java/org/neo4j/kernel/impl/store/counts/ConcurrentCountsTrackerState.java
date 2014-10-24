@@ -202,7 +202,8 @@ class ConcurrentCountsTrackerState implements CountsTrackerState
         {
             sample = ConcurrentRegisters.OptimisticRead.newDoubleLongRegister();
             store.get( key, sample );
-            samples.put( key, sample );
+            DoubleLongRegister previous = samples.putIfAbsent( key, sample );
+            return previous == null ? sample : previous;
         }
         return sample;
     }

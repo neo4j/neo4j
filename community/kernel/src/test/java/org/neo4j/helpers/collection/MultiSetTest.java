@@ -19,10 +19,11 @@
  */
 package org.neo4j.helpers.collection;
 
-import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
-
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class MultiSetTest
 {
@@ -38,7 +39,7 @@ public class MultiSetTest
         // then
         assertTrue( emptyMultiSet.isEmpty() );
         assertEquals( 0, emptyMultiSet.size() );
-        assertEquals( 0, emptyMultiSet.uniqueValueSize() );
+        assertEquals( 0, emptyMultiSet.uniqueSize() );
         assertFalse( emptyMultiSet.contains( aValue ) );
         assertEquals( 0, emptyMultiSet.count( aValue ) );
     }
@@ -57,7 +58,7 @@ public class MultiSetTest
         assertEquals( 1, count );
         assertFalse( multiSet.isEmpty() );
         assertEquals( 1, multiSet.size() );
-        assertEquals( 1, multiSet.uniqueValueSize() );
+        assertEquals( 1, multiSet.uniqueSize() );
         assertTrue( multiSet.contains( value ) );
         assertEquals( 1, multiSet.count( value ) );
     }
@@ -77,7 +78,7 @@ public class MultiSetTest
         assertEquals( 0, count );
         assertTrue( multiSet.isEmpty() );
         assertEquals( 0, multiSet.size() );
-        assertEquals( 0, multiSet.uniqueValueSize() );
+        assertEquals( 0, multiSet.uniqueSize() );
         assertFalse( multiSet.contains( value ) );
         assertEquals( 0, multiSet.count( value ) );
     }
@@ -97,7 +98,7 @@ public class MultiSetTest
         assertEquals( 2, count );
         assertFalse( multiSet.isEmpty() );
         assertEquals( 2, multiSet.size() );
-        assertEquals( 1, multiSet.uniqueValueSize() );
+        assertEquals( 1, multiSet.uniqueSize() );
         assertTrue( multiSet.contains( value ) );
         assertEquals( 2, multiSet.count( value ) );
     }
@@ -118,7 +119,7 @@ public class MultiSetTest
         assertEquals( 1, count );
         assertFalse( multiSet.isEmpty() );
         assertEquals( 1, multiSet.size() );
-        assertEquals( 1, multiSet.uniqueValueSize() );
+        assertEquals( 1, multiSet.uniqueSize() );
         assertTrue( multiSet.contains( value ) );
         assertEquals( 1, multiSet.count( value ) );
     }
@@ -139,7 +140,7 @@ public class MultiSetTest
         // then
         assertTrue( multiSet.isEmpty() );
         assertEquals( 0, multiSet.size() );
-        assertEquals( 0, multiSet.uniqueValueSize() );
+        assertEquals( 0, multiSet.uniqueSize() );
         assertFalse( multiSet.contains( value ) );
         assertEquals( 0, multiSet.count( value ) );
     }

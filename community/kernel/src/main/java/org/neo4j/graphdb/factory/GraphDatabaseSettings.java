@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.cache.MonitorGc;
 import static org.neo4j.helpers.Settings.ANY;
 import static org.neo4j.helpers.Settings.BOOLEAN;
 import static org.neo4j.helpers.Settings.BYTES;
+import static org.neo4j.helpers.Settings.BYTES_AS_INT;
 import static org.neo4j.helpers.Settings.DirectMemoryUsage.directMemoryUsage;
 import static org.neo4j.helpers.Settings.FALSE;
 import static org.neo4j.helpers.Settings.INTEGER;
@@ -147,9 +148,17 @@ public abstract class GraphDatabaseSettings
     public static final Setting<String> relationship_keys_indexable = setting("relationship_keys_indexable", STRING, NO_DEFAULT, illegalValueMessage( "must be a comma-separated list of keys to be indexed", matches( ANY ) ) );
 
     // Index sampling
-    @Description("Controls how much memory is used by index selectivity sampling by limiting how many unique values may be tracked by sampling before aggregating them into a global selectivity value for the index")
-    // default: 5 000 000 -> around 50MB memory consumption per sampling
-    public static final Setting<Integer> max_unique_elements_per_sampling = setting("max_unique_elements_per_sampling", INTEGER, "5000000", min(10_000) );
+    @Description("Enable or disable background index sampling")
+    public static final Setting<Boolean> index_background_sampling_enabled =
+            setting("index_background_sampling_enabled", BOOLEAN, TRUE );
+
+    @Description("Size of buffer used by index sampling")
+    public static final Setting<Integer> index_sampling_buffer_size =
+            setting("index_sampling_buffer_size", BYTES_AS_INT, "64m", min( /* 1m */ 1048576 ) );
+
+    @Description("Percentage of index updates of total index size required before sampling of a given index is triggered")
+    public static final Setting<Integer> index_sampling_update_percentage =
+            setting("index_sampling_update_percentage", INTEGER, "5", min( 0 ) );
 
     // Lucene settings
     @Description( "The maximum number of open Lucene index searchers." )

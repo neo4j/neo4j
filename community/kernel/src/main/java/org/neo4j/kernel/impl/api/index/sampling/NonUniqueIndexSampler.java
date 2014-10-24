@@ -25,33 +25,51 @@ import org.neo4j.register.Register;
 
 public class NonUniqueIndexSampler implements ValueSampler
 {
-    private MultiSet<String> values;
+    private final int bufferSizeLimit;
+    private final MultiSet<String> values;
+
     private int sampledSteps = 0;
+
+    // kept as longs to side step overflow issues
+
     private long accumulatedUniqueValues = 0;
     private long accumulatedSampledSize = 0;
-    private final int numOfUniqueElements;
+    private long ignoredRows = 0;
+    private long bufferSize = 0;
 
-    public NonUniqueIndexSampler( int numOfUniqueElements )
+    public NonUniqueIndexSampler( int bufferSizeLimit )
     {
-        this.numOfUniqueElements = numOfUniqueElements;
-        this.values = new MultiSet<>( numOfUniqueElements );
+        this.bufferSizeLimit = bufferSizeLimit;
+        this.values = new MultiSet<>();
+    }
+
+    @Override
+    public void ignore( int numRows )
+    {
+        ignoredRows += numRows;
     }
 
     @Override
     public void include( String value )
     {
-        if ( values.uniqueValueSize() >= numOfUniqueElements )
+        if ( bufferSize >= bufferSizeLimit )
         {
             nextStep();
         }
 
-        values.add( value );
+        if ( values.add( value ) == 1 )
+        {
+            bufferSize += value.length();
+        }
     }
 
     @Override
     public void exclude( String value )
     {
-        values.remove( value );
+        if ( values.remove( value ) == 0 )
+        {
+            bufferSize -= value.length();
+        }
     }
 
     @Override
@@ -66,16 +84,16 @@ public class NonUniqueIndexSampler implements ValueSampler
         long sampledSize = sampledSteps != 0 ? accumulatedSampledSize / sampledSteps : 0;
         register.write( uniqueValues, sampledSize );
 
-        return accumulatedSampledSize;
+        return accumulatedSampledSize + ignoredRows;
     }
 
     private void nextStep()
     {
-        accumulatedUniqueValues += values.uniqueValueSize();
+        accumulatedUniqueValues += values.uniqueSize();
         accumulatedSampledSize += values.size();
+        bufferSize = 0;
 
         sampledSteps++;
         values.clear();
     }
-
 }

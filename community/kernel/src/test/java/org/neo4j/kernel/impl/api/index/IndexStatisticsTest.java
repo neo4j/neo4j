@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.util.ArrayList;
-import java.util.Collection;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.Collection;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -46,7 +46,6 @@ import org.neo4j.test.EmbeddedDatabaseRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.register.Register.DoubleLongRegister;
 
 public class IndexStatisticsTest
@@ -62,6 +61,7 @@ public class IndexStatisticsTest
 
         // then
         assertEquals( 4l, indexSize( index ) );
+        assertEquals( 0l, indexUpdates( index ) );
         assertEquals( 0.75d, indexSelectivity( index ), TOLERANCE );
     }
 
@@ -76,6 +76,8 @@ public class IndexStatisticsTest
 
         // then
         assertEquals( 0l, indexSize( index ) );
+        assertEquals( 4l, indexUpdates( index ) );
+        assertEquals( 1.0d, indexSelectivity( index ), TOLERANCE );
     }
 
     @Test
@@ -91,6 +93,8 @@ public class IndexStatisticsTest
 
         // then
         assertEquals( 4l, indexSize( index ) );
+        assertEquals( 4l, indexUpdates( index ) );
+
         // selectivity after population without the newly created nodes
         assertEquals( 0.75d, indexSelectivity( index ), TOLERANCE );
     }
@@ -147,6 +151,7 @@ public class IndexStatisticsTest
         assertCorrectIndexSize( created, indexSize( index ) );
         double expectedSelectivity = UNIQUE_NAMES / ( (double) created);
         assertCorrectIndexSelectivity( expectedSelectivity, indexSelectivity( index ) );
+        assertEquals( 0l, indexUpdates( index ) );
     }
 
     @Test
@@ -188,6 +193,7 @@ public class IndexStatisticsTest
 
         double expectedSelectivity = UNIQUE_NAMES / ( (double) seenWhilePopulating );
         assertCorrectIndexSelectivity( expectedSelectivity, indexSelectivity( index ) );
+        assertCorrectIndexUpdates( createdAfter - updatesSeenWhilePopulating, indexUpdates( index ) );
     }
 
     @Test
@@ -206,6 +212,8 @@ public class IndexStatisticsTest
         IndexDescriptor index = createIndex( "Person", "name" );
         int createdAfter = 0;
         int updatesSeenWhilePopulating = -1;
+        int deleted = 0;
+        int deletionsSeenWhilePopulating = -1;
         while ( createdAfter < 10000 )
         {
             createdAfter += createNamedPeople( nodes );
@@ -214,9 +222,11 @@ public class IndexStatisticsTest
                 long nodeId = nodes.get( nodes.size() / 2 );
                 deleteNode( nodeId );
                 createdAfter--;
+                deleted++;
 
                 if ( updatesSeenWhilePopulating < 0 && isIndexOnline( index ) )
                 {
+                    deletionsSeenWhilePopulating = deleted;
                     updatesSeenWhilePopulating = createdAfter;
                 }
             }
@@ -235,6 +245,8 @@ public class IndexStatisticsTest
 
         double expectedSelectivity = UNIQUE_NAMES / ( (double) seenWhilePopulating );
         assertCorrectIndexSelectivity( expectedSelectivity, indexSelectivity( index ) );
+        assertCorrectIndexUpdates( deleted - deletionsSeenWhilePopulating + createdAfter - updatesSeenWhilePopulating,
+                indexUpdates( index ) );
     }
 
     @Test
@@ -281,6 +293,7 @@ public class IndexStatisticsTest
 
         double expectedSelectivity = UNIQUE_NAMES / ( (double) seenWhilePopulating );
         assertCorrectIndexSelectivity( expectedSelectivity, indexSelectivity( index ) );
+        assertCorrectIndexUpdates( createdAfter - updatesSeenWhilePopulating, indexUpdates( index ) );
     }
 
     private void deleteNode( long nodeId ) throws KernelException
@@ -493,10 +506,20 @@ public class IndexStatisticsTest
         assertTrue( message, Math.abs( expected - actual ) <= tolerance );
     }
 
+    private static void assertCorrectIndexUpdates( long expected, long actual )
+    {
+        int tolerance = 400;
+        String message = String.format(
+                "Expected number of index updates to not differ by more than %d (expected: %d actual: %d)",
+                tolerance, expected, actual
+        );
+        assertTrue( message, Math.abs( expected - actual ) <= tolerance );
+    }
+
     private static void assertCorrectIndexSelectivity( double expected, double actual )
     {
         String message = String.format(
-            "Expected number of entries to not differ by more than 10 (expected: %f actual: %f with tollerance: %f)",
+            "Expected number of entries to not differ by more than 10 (expected: %f actual: %f with tolerance: %f)",
             expected, actual, TOLERANCE
         );
         assertEquals( message, expected, actual, TOLERANCE );

@@ -27,15 +27,17 @@ import org.neo4j.kernel.api.index.ValueSampler;
 
 class LuceneUniqueIndexAccessorReader extends LuceneIndexAccessorReader
 {
+    private final IndexSearcher searcher;
+
     LuceneUniqueIndexAccessorReader( IndexSearcher searcher, LuceneDocumentStructure documentLogic, Closeable onClose )
     {
         super( searcher, documentLogic, onClose );
+        this.searcher = searcher;
     }
 
     @Override
     public void sampleIndex( ValueSampler sampler )
     {
-        // TODO: make it smarter: we simply need to know how many entries are in the index
-        super.sampleIndex( sampler );
+        sampler.ignore( searcher.getIndexReader().numDocs() );
     }
 }

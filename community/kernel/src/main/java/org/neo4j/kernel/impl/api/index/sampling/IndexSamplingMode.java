@@ -21,12 +21,16 @@ package org.neo4j.kernel.impl.api.index.sampling;
 
 public enum IndexSamplingMode
 {
-    REBUILD_ALL,
-    REBUILD_UPDATED,
-    TRY_REBUILD_UPDATED;
+    TRIGGER_REBUILD_ALL( false, true ),
+    TRIGGER_REBUILD_UPDATED( true, true ),
+    BACKGROUND_REBUILD_UPDATED( true, false );
 
-    boolean scheduleBlocking()
+    public final boolean sampleOnlyIfUpdated;
+    public final boolean blockUntilAllScheduled;
+
+    IndexSamplingMode( boolean sampleOnlyIfUpdated, boolean blockUntilAllScheduled )
     {
-        return this == REBUILD_ALL || this == REBUILD_UPDATED;
+        this.sampleOnlyIfUpdated = sampleOnlyIfUpdated;
+        this.blockUntilAllScheduled = blockUntilAllScheduled;
     }
 }

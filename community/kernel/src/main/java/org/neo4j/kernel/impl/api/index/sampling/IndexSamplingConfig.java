@@ -19,35 +19,39 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
-import org.neo4j.kernel.api.index.ValueSampler;
-import org.neo4j.register.Register;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.configuration.Config;
 
-public class UniqueIndexSampler implements ValueSampler
+public class IndexSamplingConfig
 {
-    long count = 0;
+    private final int bufferSize;
+    private final double updateRatio;
+    private final boolean backgroundSampling;
 
-    @Override
-    public void ignore( int numRows )
+    public IndexSamplingConfig( Config config )
     {
-        count += numRows;
+        this.bufferSize = config.get( GraphDatabaseSettings.index_sampling_buffer_size );
+        this.updateRatio = ((double) config.get( GraphDatabaseSettings.index_sampling_update_percentage )) / 100.0d;
+        this.backgroundSampling = config.get( GraphDatabaseSettings.index_background_sampling_enabled );
     }
 
-    @Override
-    public void include( String value )
+    public int bufferSize()
     {
-        count++;
+        return bufferSize;
     }
 
-    @Override
-    public void exclude( String value )
+    public double updateRatio()
     {
-        count--;
+        return updateRatio;
     }
 
-    @Override
-    public long result( Register.DoubleLongRegister register )
+    public int jobLimit()
     {
-        register.write( count, count );
-        return count;
+        return 1;
+    }
+
+    public boolean backgroundSampling()
+    {
+        return backgroundSampling;
     }
 }

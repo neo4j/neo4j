@@ -36,18 +36,18 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
 {
     private final IndexDescriptor indexDescriptor;
     private final IndexProxy indexProxy;
-    private final int numOfUniqueElements;
+    private final int bufferSize;
     private final IndexStoreView storeView;
     private final StringLogger logger;
 
-    public OnlineIndexSamplingJob( IndexProxy indexProxy,
-                                   int numOfUniqueElements,
+    public OnlineIndexSamplingJob( IndexSamplingConfig config,
+                                   IndexProxy indexProxy,
                                    IndexStoreView storeView,
                                    Logging logging )
     {
         this.indexDescriptor = indexProxy.getDescriptor();
         this.indexProxy = indexProxy;
-        this.numOfUniqueElements = numOfUniqueElements;
+        this.bufferSize = config.bufferSize();
         this.storeView = storeView;
         this.logger = logging.getMessagesLog( OnlineIndexSamplingJob.class );
     }
@@ -67,7 +67,7 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
             {
                 ValueSampler sampler = indexProxy.config().isUnique()
                         ? new UniqueIndexSampler()
-                        : new NonUniqueIndexSampler( numOfUniqueElements );
+                        : new NonUniqueIndexSampler( bufferSize );
                 reader.sampleIndex( sampler );
 
                 Register.DoubleLongRegister sample = Registers.newDoubleLongRegister();

@@ -23,6 +23,8 @@ import org.neo4j.register.Register;
 
 public interface ValueSampler
 {
+    void ignore( int numRows );
+
     void include( String value );
     void exclude( String value );
 

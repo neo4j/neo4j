@@ -30,9 +30,9 @@ import java.util.Set;
 import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.BiConsumer;
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -51,7 +51,9 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
 import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingJobQueue;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingJobTracker;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
@@ -73,7 +75,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.Iterables.concatResourceIterators;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
-import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.TRY_REBUILD_UPDATED;
+import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.BACKGROUND_REBUILD_UPDATED;
 import static org.neo4j.kernel.impl.util.JobScheduler.Group.indexSamplingController;
 
 /**
@@ -93,9 +95,6 @@ import static org.neo4j.kernel.impl.util.JobScheduler.Group.indexSamplingControl
  */
 public class IndexingService extends LifecycleAdapter implements IndexMapSnapshotProvider
 {
-    private static final int NUMBER_OF_PARALLEL_INDEX_SAMPLING_JOBS = 1;
-    private final int maxUniqueElementsPerSampling;
-
     private final IndexMapReference indexMapReference = new IndexMapReference();
 
     private final JobScheduler scheduler;
@@ -108,6 +107,7 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
     private final UpdateableSchemaState updateableSchemaState;
     private final Set<Long> recoveredNodeIds = new HashSet<>();
     private final Monitor monitor;
+    private final IndexSamplingConfig samplingConfig;
     private final IndexSamplingController samplingController;
 
     enum State
@@ -154,7 +154,6 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
                             Iterable<IndexRule> indexRules,
                             Logging logging, Monitor monitor )
     {
-        this.maxUniqueElementsPerSampling = config.get( GraphDatabaseSettings.max_unique_elements_per_sampling );
         this.scheduler = scheduler;
         this.providerMap = providerMap;
         this.storeView = storeView;
@@ -164,7 +163,8 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
         this.logger = logging.getMessagesLog( getClass() );
         this.updateableSchemaState = updateableSchemaState;
         this.tokenNameLookup = tokenNameLookup;
-        this.samplingController = createIndexSamplingController();
+        this.samplingConfig = new IndexSamplingConfig( config );
+        this.samplingController = createIndexSamplingController( samplingConfig );
 
         if ( providerMap == null || providerMap.getDefaultProvider() == null )
         {
@@ -285,7 +285,10 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
         indexMapReference.setIndexMap( indexMap );
         state = State.RUNNING;
 
-        scheduler.scheduleRecurring( indexSamplingController, createSamplingRunner(), 10, SECONDS );
+        if ( samplingConfig.backgroundSampling() )
+        {
+            scheduler.scheduleRecurring( indexSamplingController, createSamplingRunner(), 10, SECONDS );
+        }
     }
 
     @Override
@@ -639,12 +642,29 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
         return result;
     }
 
-    private IndexSamplingController createIndexSamplingController()
+    private IndexSamplingController createIndexSamplingController( IndexSamplingConfig samplingConfig )
     {
-        OnlineIndexSamplingJobFactory jobFactory =
-                new OnlineIndexSamplingJobFactory( maxUniqueElementsPerSampling, storeView, logging );
-        IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( scheduler, NUMBER_OF_PARALLEL_INDEX_SAMPLING_JOBS );
-        return new IndexSamplingController( jobFactory, jobTracker, this );
+        OnlineIndexSamplingJobFactory jobFactory = new OnlineIndexSamplingJobFactory( storeView, logging );
+        IndexSamplingJobQueue jobQueue = new IndexSamplingJobQueue( createSamplingUpdatePredicate() );
+        IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( samplingConfig, scheduler );
+        return new IndexSamplingController( samplingConfig, jobFactory, jobQueue, jobTracker, this );
+    }
+
+    private Predicate<IndexDescriptor> createSamplingUpdatePredicate()
+    {
+        return new Predicate<IndexDescriptor>()
+        {
+            @Override
+            public boolean accept( IndexDescriptor descriptor )
+            {
+                long updates = storeView.indexUpdates( descriptor );
+
+                long size = storeView.indexSize( descriptor );
+                long threshold = Math.round( samplingConfig.updateRatio() * size );
+
+                return updates > threshold;
+            }
+        };
     }
 
     private Runnable createSamplingRunner()
@@ -654,7 +674,7 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
             @Override
             public void run()
             {
-                samplingController.sampleIndexes( TRY_REBUILD_UPDATED );
+                samplingController.sampleIndexes( BACKGROUND_REBUILD_UPDATED );
             }
         };
     }
@@ -694,7 +714,7 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
     {
         return unique
                 ? new UniqueIndexSampler()
-                : new NonUniqueIndexSampler( maxUniqueElementsPerSampling );
+                : new NonUniqueIndexSampler( samplingController.config().bufferSize() );
     }
 
     private IndexAccessor getOnlineAccessorFromProvider( SchemaIndexProvider.Descriptor providerDescriptor,

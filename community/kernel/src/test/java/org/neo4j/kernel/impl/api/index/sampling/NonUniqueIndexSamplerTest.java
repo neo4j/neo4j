@@ -19,11 +19,13 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.register.Register.DoubleLongRegister;
-
 import org.junit.Test;
+
 import org.neo4j.register.Registers;
+
+import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.register.Register.DoubleLongRegister;
 
 public class NonUniqueIndexSamplerTest
 {
@@ -115,6 +117,21 @@ public class NonUniqueIndexSamplerTest
         // then
         assertSampledValues( sampler, 1, 1, 1 );
     }
+
+    @Test
+    public void shouldTrackIgnoresRowsWithoutAffectingSamplingOutcome()
+    {
+        // given
+        NonUniqueIndexSampler sampler = new NonUniqueIndexSampler( 10 );
+
+        // when
+        sampler.include( value );
+        sampler.ignore( 19 );
+
+        // then
+        assertSampledValues( sampler, 20, 1, 1 );
+    }
+
 
     private void assertSampledValues( NonUniqueIndexSampler sampler, long expectedIndexSize, long expectedUniqueValues, long expectedSampledSize )
     {

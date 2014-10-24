@@ -25,7 +25,6 @@ import java.net.URL;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.slf4j.Logger;
 import org.slf4j.Marker;
 
@@ -37,6 +36,7 @@ import org.neo4j.kernel.configuration.RestartOnChange;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.monitoring.Monitors;
 
 /**
  * Logging service that uses Logback as backend.
@@ -89,7 +89,7 @@ public class LogbackService
                         loggerContext.putProperty( "host", config.getParams().get( "ha.server_id" ) );
 
                     loggerContext.putProperty( "neo_store", storeDir.getPath() );
-                    loggerContext.putProperty( "history", config.get(GraphDatabaseSettings.max_unique_elements_per_sampling ).toString() );
+                    loggerContext.putProperty( "history", config.get(GraphDatabaseSettings.log_history_size ).toString() );
                     loggerContext.putProperty( "remote_logging_enabled", config.get( GraphDatabaseSettings
                             .remote_logging_enabled ).toString() );
                     loggerContext.putProperty( "remote_logging_host", config.get( GraphDatabaseSettings

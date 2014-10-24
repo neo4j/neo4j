@@ -19,15 +19,6 @@
  */
 package org.neo4j.unsafe.batchinsert;
 
-import static java.lang.Boolean.parseBoolean;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
-import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -142,6 +133,16 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static java.lang.Boolean.parseBoolean;
+
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
+import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
 public class BatchInserterImpl implements BatchInserter
 {
@@ -396,7 +397,7 @@ public class BatchInserterImpl implements BatchInserter
             boolean isConstraint = rule.isConstraintIndex();
             ValueSampler sampler =  isConstraint
                     ? new UniqueIndexSampler()
-                    : new NonUniqueIndexSampler( config.get( GraphDatabaseSettings.max_unique_elements_per_sampling ) );
+                    : new NonUniqueIndexSampler( config.get( GraphDatabaseSettings.index_sampling_buffer_size ) );
             populators[i] = schemaIndexProviders.apply( rule.getProviderDescriptor() ).getPopulator(
                     rule.getId(), descriptor, new IndexConfiguration( isConstraint ), sampler );
             populators[i].create();

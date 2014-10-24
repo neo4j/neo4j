@@ -29,6 +29,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.index.lucene.unsafe.batchinsert.LuceneBatchInserterIndexProvider;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
@@ -53,9 +54,10 @@ public class BatchInsertionIT
     public void shouldIndexNodesWithMultipleLabels() throws Exception
     {
         // Given
-        BatchInserter inserter = BatchInserters.inserter( testDir.directory().getAbsolutePath() );
+        String path = testDir.directory().getAbsolutePath();
+        BatchInserter inserter = BatchInserters.inserter( path );
 
-        inserter.createNode( map("name", "Bob"), label( "User" ), label("Admin"));
+        inserter.createNode( map( "name", "Bob" ), label( "User" ), label( "Admin" ) );
 
         inserter.createDeferredSchemaIndex( label( "User" ) ).on( "name" ).create();
         inserter.createDeferredSchemaIndex( label( "Admin" ) ).on( "name" ).create();
@@ -64,8 +66,8 @@ public class BatchInsertionIT
         inserter.shutdown();
 
         // Then
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase(testDir.directory().getAbsolutePath());
-        try(Transaction tx = db.beginTx())
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( path );
+        try ( Transaction tx = db.beginTx() )
         {
             assertThat( count( db.findNodes( label( "User" ), "name", "Bob" ) ), equalTo(1) );
             assertThat( count( db.findNodes( label( "Admin" ), "name", "Bob" ) ), equalTo(1) );
@@ -155,7 +157,7 @@ public class BatchInsertionIT
             db.shutdown();
         }
     }
-    
+
     @Ignore
     @Test
     public void testInsertionSpeed()

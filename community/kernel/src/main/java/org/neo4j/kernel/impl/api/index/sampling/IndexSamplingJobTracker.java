@@ -36,11 +36,11 @@ public class IndexSamplingJobTracker
     private final Lock lock = new ReentrantLock( true );
     private final Condition canSchedule = lock.newCondition();
 
-    public IndexSamplingJobTracker( JobScheduler jobScheduler, int jobLimit )
+    public IndexSamplingJobTracker( IndexSamplingConfig config, JobScheduler jobScheduler )
     {
 
         this.jobScheduler = jobScheduler;
-        this.jobLimit = jobLimit;
+        this.jobLimit = config.jobLimit();
         this.executingJobDescriptors = new HashSet<>();
     }
 
@@ -110,12 +110,8 @@ public class IndexSamplingJobTracker
         lock.lock();
         try
         {
-            while ( true )
+            while ( ! canExecuteMoreSamplingJobs() )
             {
-                if ( canExecuteMoreSamplingJobs() )
-                {
-                    return;
-                }
                 canSchedule.awaitUninterruptibly();
             }
         }

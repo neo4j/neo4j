@@ -69,10 +69,7 @@ public interface CountsAccessor
         @Override
         public void visitIndexCounts( int labelId, int propertyKeyId, long updates, long size )
         {
-            if ( size != -1l )
-            {
-                target.replaceIndexSize( labelId, propertyKeyId, size );
-            }
+            target.replaceIndexSize( labelId, propertyKeyId, size );
             target.incrementIndexUpdates( labelId, propertyKeyId, updates );
         }
 
