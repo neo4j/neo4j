@@ -57,14 +57,17 @@ public class RecoveryVisitor implements Visitor<CommittedTransactionRepresentati
     public boolean visit( CommittedTransactionRepresentation transaction ) throws IOException
     {
         long txId = transaction.getCommitEntry().getTxId();
-        try ( LockGroup locks = new LockGroup() )
+        if ( store.getLastClosedTransactionId() < txId )
         {
-            storeApplier.apply( transaction.getTransactionRepresentation(), locks, txId,
-                    TransactionApplicationMode.RECOVERY );
+            try ( LockGroup locks = new LockGroup() )
+            {
+                storeApplier.apply( transaction.getTransactionRepresentation(), locks, txId,
+                        TransactionApplicationMode.RECOVERY );
+            }
+            recoveredCount.incrementAndGet();
+            lastTransactionIdApplied = txId;
+            monitor.transactionRecovered( txId );
         }
-        recoveredCount.incrementAndGet();
-        lastTransactionIdApplied = txId;
-        monitor.transactionRecovered( txId );
         return true;
     }
 
