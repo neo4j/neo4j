@@ -106,12 +106,6 @@ class ConcurrentCountsTrackerState implements CountsTrackerState
     }
 
     @Override
-    public long incrementIndexSize( IndexSizeKey indexSizeKey, long delta )
-    {
-        return incrementCount( indexSizeKey, delta );
-    }
-
-    @Override
     public void replaceIndexSize( IndexSizeKey indexSizeKey, long total )
     {
         replaceCount( indexSizeKey, total );

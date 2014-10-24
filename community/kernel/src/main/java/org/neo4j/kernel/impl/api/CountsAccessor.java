@@ -35,8 +35,6 @@ public interface CountsAccessor
 
     long incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta );
 
-    long incrementIndexSize( int labelId, int propertyKeyId, long delta );
-
     void replaceIndexSize( int labelId, int propertyKeyId, long total );
 
     void replaceIndexSample( int labelId, int propertyKeyId, long unique, long size );
@@ -65,7 +63,7 @@ public interface CountsAccessor
         @Override
         public void visitIndexSize( int labelId, int propertyKeyId, long count )
         {
-            target.incrementIndexSize( labelId, propertyKeyId, count );
+            target.replaceIndexSize( labelId, propertyKeyId, count );
         }
 
         @Override

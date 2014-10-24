@@ -82,12 +82,6 @@ public class CountsRecordState implements CountsVisitor.Visitable, CountsAccesso
     }
 
     @Override
-    public long incrementIndexSize( int labelId, int propertyKeyId, long delta )
-    {
-        return count( indexSizeKey( labelId, propertyKeyId ) ).incrementSecond( delta );
-    }
-
-    @Override
     public void replaceIndexSize( int labelId, int propertyKeyId, long total )
     {
         count( indexSizeKey( labelId, propertyKeyId ) ).writeSecond( total );

@@ -49,8 +49,6 @@ interface CountsTrackerState extends Closeable
 
     long incrementRelationshipCount( RelationshipKey relationshipKey, long delta );
 
-    long incrementIndexSize( IndexSizeKey indexSizeKey, long delta );
-
     void replaceIndexSize( IndexSizeKey indexSizeKey, long total );
 
     void replaceIndexSample( IndexSampleKey indexSampleKey, long unique, long size );

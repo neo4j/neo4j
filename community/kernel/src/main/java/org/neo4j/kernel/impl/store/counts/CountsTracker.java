@@ -189,24 +189,6 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     }
 
     @Override
-    public long incrementIndexSize( int labelId, int propertyKeyId, long delta )
-    {
-        if ( delta == 0 )
-        {
-            return indexSize( labelId, propertyKeyId );
-        }
-        {
-            try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
-            {
-                CountsKey.IndexSizeKey key = indexSizeKey( labelId, propertyKeyId );
-                long value = state.incrementIndexSize( key, delta );
-                assert value >= 0 : String.format( "incrementIndexSizeCount(key=%s, delta=%d) -> value=%d", key, delta, value );
-                return value;
-            }
-        }
-    }
-
-    @Override
     public void indexSample( int labelId, int propertyKeyId, Register.DoubleLongRegister target )
     {
         state.indexSample( indexSampleKey( labelId, propertyKeyId ), target );
