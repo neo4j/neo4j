@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.function.Factory;
@@ -70,6 +71,23 @@ public class BatchingPhysicalTransactionAppender extends AbstractPhysicalTransac
 
     volatile boolean forceThreadIdle = true;
 
+    class ThreadLink
+    {
+        AtomicReference<ThreadLink> next = new AtomicReference<>();
+        Thread t = Thread.currentThread();
+    }
+
+    ThreadLink head = new ThreadLink();
+
+    ThreadLocal<ThreadLink> me = new ThreadLocal<ThreadLink>()
+    {
+        @Override
+        protected ThreadLink initialValue()
+        {
+            return new ThreadLink();
+        }
+    };
+
     public BatchingPhysicalTransactionAppender( LogFile logFile,
             TransactionMetadataCache transactionMetadataCache, final TransactionIdStore transactionIdStore,
             IdOrderingQueue legacyIndexTransactionOrdering,
@@ -113,7 +131,7 @@ public class BatchingPhysicalTransactionAppender extends AbstractPhysicalTransac
                     {
                         Thread.yield();
                     }
-                    while(System.nanoTime() - lookAheadStart < LOOK_AHEAD_WAIT_TIME_NANOS);
+                    while(System.nanoTime() - lookAheadStart < LOOK_AHEAD_WAIT_TIME_NANOS); // TODO: Investigate if nanoTime() is even functional. Try RDTSC.
 
                     /* Forcing is expensive and probably blocks all threads using the channel, thus in a multi-threaded
                      * load against the same channel its usage must be carefully managed. The strategy here is to wait
@@ -131,6 +149,24 @@ public class BatchingPhysicalTransactionAppender extends AbstractPhysicalTransac
                         break;
                     }
                 } while ( true );
+
+                ThreadLink linkedOut;
+                ThreadLink next;
+
+                do
+                {
+                    linkedOut = head.next.get();
+                } while ( !head.next.compareAndSet( linkedOut, null ) );
+
+                while ( linkedOut != null )
+                {
+                    LockSupport.unpark( linkedOut.t );
+
+                    next = linkedOut.next.get();
+                    linkedOut.next.set( null );
+
+                    linkedOut = next;
+                }
 
                 return true;
             }
@@ -150,14 +186,41 @@ public class BatchingPhysicalTransactionAppender extends AbstractPhysicalTransac
         long forcePass = forceCount.get() + 2;
         if(forcePass % 2 != 0) forcePass++;
 
+        ThreadLink tl = me.get();
+
         while(forcePass - forceCount.get() > 0 )
         {
+            /* We are not allowed to use parking again until the force thread
+             * has released this ThreadLink by setting next to null. */
+            boolean useParking = (tl.next.get() == null);
+
+            if ( useParking )
+            {
+                ThreadLink nextExpected;
+
+                do
+                {
+                    nextExpected = head.next.get();
+                    tl.next.set( nextExpected );
+                } while ( !head.next.compareAndSet( nextExpected, tl ) );
+            }
+
             if ( forceThreadIdle )
             {
                 LockSupport.unpark( forceThread );
             }
 
-            Thread.yield();
+            if ( useParking )
+            {
+                /* There is a race between appending this thread to the ThreadLink, the un-parking by the
+                 * force thread, and the parking below. A timeout is thus strictly required, even though
+                 * it is unlikely to occur. */
+                LockSupport.parkNanos( 1_000_000 );
+            }
+            else
+            {
+                Thread.yield();
+            }
         }
 
         passCount.incrementAndGet();
