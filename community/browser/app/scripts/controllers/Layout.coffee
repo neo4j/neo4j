@@ -31,7 +31,9 @@ angular.module('neo4jApp.controllers')
     'Frame'
     'GraphStyle'
     'Utils'
-    ($scope, $timeout, $dialog, Editor, Frame, GraphStyle, Utils) ->
+    'AuthService'
+    'Settings'
+    ($scope, $timeout, $dialog, Editor, Frame, GraphStyle, Utils, AuthService, Settings) ->
 
       _codeMirror = null
       dialog = null
@@ -41,6 +43,11 @@ angular.module('neo4jApp.controllers')
         backdropFade: yes
         dialogFade: yes
         keyboard: yes
+
+      $scope.Auth = AuthService
+      
+      $scope.$on 'auth:password_change_requested', ->
+        Frame.create({input:":server change-password"})
 
       $scope.showDoc = () ->
         Frame.create(input: ':play')

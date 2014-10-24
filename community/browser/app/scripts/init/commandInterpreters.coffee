@@ -227,6 +227,38 @@ angular.module('neo4jApp')
           q.promise
       ]
 
+    FrameProvider.interpreters.push
+      type: 'auth'
+      templateUrl: 'views/frame-auth.html'
+      matches: (input) ->
+        pattern = new RegExp("^#{cmdchar}server connect")
+        input.match(pattern)
+      exec: ['AuthService', (AuthService) ->
+        (input, q) -> q.resolve()
+      ]
+
+    FrameProvider.interpreters.push
+      type: 'auth'
+      templateUrl: 'views/frame-change-password.html'
+      matches:  (input) ->
+        pattern = new RegExp("^#{cmdchar}server change-password")
+        input.match(pattern)
+      exec: ['AuthService', (AuthService) ->
+        (input, q) -> q.resolve()
+      ]
+
+    FrameProvider.interpreters.push
+      type: 'auth'
+      templateUrl: 'views/frame-auth.html'
+      matches:  (input) ->
+        pattern = new RegExp("^#{cmdchar}server disconnect")
+        input.match(pattern)
+      exec: ['Settings', 'AuthService', (Settings, AuthService) ->
+        (input, q) -> 
+          AuthService.forget()
+          q.resolve()
+      ]
+
     # Profile a cypher command
     # FrameProvider.interpreters.push
     #   type: 'cypher'

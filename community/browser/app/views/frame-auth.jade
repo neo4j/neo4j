@@ -1,0 +1,45 @@
+div(ng-controller="AuthCtrl", fullscreen)
+  .outer
+    include partials/frame-common-actions
+    .inner
+      .view-result
+        article.guide
+          .container
+            .row(ng-hide="authenticated")
+              .span6
+                h3 Welcome to Neo4j!
+                p Before we start, please provide your username and password.
+                br
+                
+              .span6
+                .form
+                  p
+                    | Username
+                    br
+                    input(type='text', ng-model="username", style="margin: 0")
+                    span.error(ng-show="current_empty_error")
+                      br
+                      | You have to enter a username
+                  p
+                    | Password
+                    br
+                    input(type='password', ng-model="password", style="margin: 0")
+                    span.error(ng-show="empty_error")
+                      br
+                      | You have to enter a password.
+                  p
+                    button.btn(ng-click="authenticate()", style="margin: 0") Connect
+                    span.error(ng-show="invalid_auth_error")
+                      br
+                      | Invalid username and/or password
+            .row(ng-show="authenticated")
+              .span6
+                h3 Authenticated
+                p You now have a working connection with Neo4j.
+                br
+                
+      .status-bar(ng-class='{error: frame.hasErrors, loading: frame.isLoading}')
+        div
+          div
+            div
+              .fa.fa-ok

@@ -7,7 +7,6 @@ html(class="no-js", lang="en", ng-app="neo4jApp", ng-controller="MainCtrl")
       | Neo4j
     meta(name="description", content="Neo4j Browser")
     meta(name="author", content="Neo Technology")
-    //- meta(name="viewport", content="width=device-width, initial-scale=1.0")
 
     //build:css styles/main.css
     //- link(rel='stylesheet', href='components/bootstrap/css/bootstrap.css')
@@ -18,7 +17,7 @@ html(class="no-js", lang="en", ng-app="neo4jApp", ng-controller="MainCtrl")
     link(rel="stylesheet", href="styles/main.css")
     //endbuild
 
-  body(ng-class="{'connection-error': offline, 'show-drawer': isDrawerShown, 'modal-shown': isPopupShown, 'maximize-editor': editor.maximized}", ng-controller="LayoutCtrl", keydown="globalKey($event)")
+  body(ng-class="{'connection-error': offline, 'authorization-error': unauthorized, 'show-drawer': isDrawerShown, 'modal-shown': isPopupShown, 'maximize-editor': editor.maximized}", ng-controller="LayoutCtrl", keydown="globalKey($event)")
 
 
     //if lt IE 9
@@ -79,6 +78,7 @@ html(class="no-js", lang="en", ng-app="neo4jApp", ng-controller="MainCtrl")
     script(src='components/UUID.js/src/uuid.js')
     script(src='components/modernizr/modernizr.js')
     script(src='components/jquery.easing/js/jquery.easing.js')
+    script(src='components/angular-base64/angular-base64.js')
     //endbuild
 
     //build:js(.tmp) scripts/scripts.js
@@ -154,4 +154,8 @@ html(class="no-js", lang="en", ng-app="neo4jApp", ng-controller="MainCtrl")
     script(src='scripts/directives/scrollTopWhen.js')
     script(src='scripts/directives/FrameStream.js')
     script(src='scripts/services/RssFeedService.js')
+    script(src='scripts/services/Auth.js')
+    script(src='scripts/services/AuthData.js')
+    script(src='scripts/controllers/Auth.js')
+    script(src='scripts/controllers/ChangePassword.js')
     //endbuild
