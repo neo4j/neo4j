@@ -29,19 +29,25 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import org.neo4j.com.ComException;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.test.AbstractClusterTest;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadRule;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 
 /**
@@ -70,7 +76,7 @@ public class UniqueConstraintStressIT extends AbstractClusterTest
     /** Property key to constrain for the current iteration of the test. */
     private volatile String property;
 
-    private AtomicInteger roundNo = new AtomicInteger(0);
+    private final AtomicInteger roundNo = new AtomicInteger(0);
 
     @Test
     public void shouldNotAllowUniquenessViolationsUnderStress() throws Exception
@@ -81,6 +87,7 @@ public class UniqueConstraintStressIT extends AbstractClusterTest
 
         // Because this is a brute-force test, we run for a user-specified time, and consider ourselves successful if no failure is found.
         long end = System.currentTimeMillis() + runtime;
+        int successfulAttempts = 0;
         while ( end > System.currentTimeMillis() )
         {
             // Each round of this loop:
@@ -97,7 +104,17 @@ public class UniqueConstraintStressIT extends AbstractClusterTest
                 cluster.sync();
 
                 // Create the initial data
-                slaveWork.execute( performInsert( slave ) ).get();
+                try
+                {
+                    slaveWork.execute( performInsert( slave ) ).get();
+                }
+                catch ( ExecutionException e )
+                {
+                    if ( Exceptions.contains( e, "could not connect", ComException.class ) )
+                    {   // We're in a weird cluster state. The slave should be able to succeed if trying again
+                        continue;
+                    }
+                }
             }
 
             stress :
@@ -110,8 +127,11 @@ public class UniqueConstraintStressIT extends AbstractClusterTest
 
                 // And then ensure all is well
                 assertConstraintsNotViolated( constraintCreation, constraintViolation, master );
+                successfulAttempts++;
             }
         }
+
+        assertThat( successfulAttempts, greaterThan( 0 ) );
     }
 
     private void assertConstraintsNotViolated( Future<Object> constraintCreation, Future<Object> constraintViolation,
