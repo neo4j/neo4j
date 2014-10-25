@@ -21,9 +21,9 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import org.junit.Test;
 
+import org.neo4j.io.pagecache.CountingPageCacheMonitor;
 import org.neo4j.io.pagecache.stress.Condition;
 import org.neo4j.io.pagecache.stress.PageCacheStressTest;
-import org.neo4j.io.pagecache.stress.SimpleMonitor;
 
 import static org.neo4j.io.pagecache.stress.Conditions.numberOfEvictions;
 
@@ -45,11 +45,11 @@ public class MuninnPageCacheStressIT
     @Test
     public void shouldHandleTheStressOfOneMillionEvictions() throws Exception
     {
-        SimpleMonitor simpleMonitor = new SimpleMonitor();
-        Condition condition = numberOfEvictions( simpleMonitor, 1_000_000 );
+        CountingPageCacheMonitor monitor = new CountingPageCacheMonitor();
+        Condition condition = numberOfEvictions( monitor, 1_000_000 );
 
         PageCacheStressTest runner = new PageCacheStressTest.Builder()
-                .with( simpleMonitor )
+                .with( monitor )
                 .with( condition )
                 .build();
 
