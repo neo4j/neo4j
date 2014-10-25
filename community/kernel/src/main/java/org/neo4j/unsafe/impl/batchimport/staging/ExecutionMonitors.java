@@ -19,23 +19,38 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 /**
- * Waits until an execution is completed, but doesn't print anything.
+ * Common {@link ExecutionMonitor} implementations.
  */
-public class SilentExecutionMonitor extends PollingExecutionMonitor
+public class ExecutionMonitors
 {
-    public SilentExecutionMonitor()
+    private ExecutionMonitors()
     {
-        super( 100 );
+        throw new AssertionError( "No instances allowed" );
     }
 
-    @Override
-    public void done( long totalTimeMillis )
-    {   // We're done
+    public static ExecutionMonitor defaultVisible()
+    {
+        return new SpectrumExecutionMonitor( 2, SECONDS, System.out, 80 );
     }
 
-    @Override
-    protected void poll( StageExecution[] executions )
-    {   // We're still going...
+    private static final ExecutionMonitor INVISIBLE = new PollingExecutionMonitor( 1, SECONDS )
+    {
+        @Override
+        public void done( long totalTimeMillis )
+        {   // Nothing to do here
+        }
+
+        @Override
+        protected void poll( StageExecution[] executions )
+        {   // Nothing to do here
+        }
+    };
+
+    public static ExecutionMonitor invisible()
+    {
+        return INVISIBLE;
     }
 }

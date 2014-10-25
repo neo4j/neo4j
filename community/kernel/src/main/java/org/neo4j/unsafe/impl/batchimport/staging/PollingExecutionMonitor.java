@@ -19,6 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
 
 import static java.lang.Math.max;
@@ -36,11 +38,16 @@ import static org.neo4j.unsafe.impl.batchimport.stats.Keys.upstream_idle_time;
  */
 public abstract class PollingExecutionMonitor implements ExecutionMonitor
 {
-    private final long interval;
+    private final long intervalMillis;
 
-    public PollingExecutionMonitor( long interval )
+    public PollingExecutionMonitor( long intervalMillis )
     {
-        this.interval = interval;
+        this( intervalMillis, TimeUnit.MILLISECONDS );
+    }
+
+    public PollingExecutionMonitor( long interval, TimeUnit unit )
+    {
+        this.intervalMillis = unit.toMillis( interval );
     }
 
     @Override
@@ -81,7 +88,7 @@ public abstract class PollingExecutionMonitor implements ExecutionMonitor
 
     private void finishAwareSleep( StageExecution[] executions )
     {
-        long endTime = currentTimeMillis()+interval;
+        long endTime = currentTimeMillis()+intervalMillis;
         while ( currentTimeMillis() < endTime )
         {
             if ( !anyStillExecuting( executions ) )

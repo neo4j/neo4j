@@ -70,7 +70,7 @@ public class GenericStatsProvider implements StatsProvider
         for ( Pair<Key,Stat> stat : stats )
         {
             builder.append( builder.length() > 0 ? ", " : "" )
-                    .append( format( "%s: %s", stat.first().shortName(), stat.other().asString() ) );
+                    .append( format( "%s: %s", stat.first().shortName(), stat.other() ) );
         }
         return builder.toString();
     }

@@ -26,8 +26,21 @@ public class Stats
 {
     public static abstract class LongBasedStat implements Stat
     {
+        private final DetailLevel detailLevel;
+
+        public LongBasedStat( DetailLevel detailLevel )
+        {
+            this.detailLevel = detailLevel;
+        }
+
         @Override
-        public String asString()
+        public DetailLevel detailLevel()
+        {
+            return detailLevel;
+        }
+
+        @Override
+        public String toString()
         {
             return String.valueOf( asLong() );
         }
@@ -35,7 +48,12 @@ public class Stats
 
     public static Stat longStat( final long stat )
     {
-        return new LongBasedStat()
+        return longStat( stat, DetailLevel.BASIC );
+    }
+
+    public static Stat longStat( final long stat, DetailLevel detailLevel )
+    {
+        return new LongBasedStat( detailLevel )
         {
             @Override
             public long asLong()

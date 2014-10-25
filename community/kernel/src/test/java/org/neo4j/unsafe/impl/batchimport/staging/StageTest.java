@@ -62,7 +62,7 @@ public class StageTest
 
         // WHEN
         StageExecution execution = stage.execute();
-        new SilentExecutionMonitor().monitor( execution );
+        ExecutionMonitors.invisible().monitor( execution );
 
         // THEN
         for ( StepStats stats : execution.stats() )

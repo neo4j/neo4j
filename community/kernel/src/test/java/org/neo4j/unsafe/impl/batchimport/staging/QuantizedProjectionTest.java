@@ -17,14 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.stats;
+package org.neo4j.unsafe.impl.batchimport.staging;
 
-/**
- * Statistic about a particular thing.
- */
-public interface Stat
+import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+public class QuantizedProjectionTest
 {
-    DetailLevel detailLevel();
+    @Test
+    public void shouldProjectSteps() throws Exception
+    {
+        // GIVEN
+        QuantizedProjection projection = new QuantizedProjection( 9, 7 );
 
-    long asLong();
+        // WHEN/THEN
+        assertTrue( projection.next( 3 ) );
+        assertEquals( 2, projection.step() );
+
+        assertTrue( projection.next( 3 ) );
+        assertEquals( 3, projection.step() );
+
+        assertTrue( projection.next( 3 ) );
+        assertEquals( 2, projection.step() );
+
+        assertFalse( projection.next( 1 ) );
+    }
 }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
+import java.util.Collection;
+
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
@@ -34,12 +36,12 @@ public class StageExecution implements StageControl
 {
     private final String stageName;
     private final Configuration config;
-    private final Iterable<Step<?>> pipeline;
+    private final Collection<Step<?>> pipeline;
     private final StringLogger logger;
     private volatile Throwable panicCause;
     private long startTime;
 
-    public StageExecution( Logging logging, String stageName, Configuration config, Iterable<Step<?>> pipeline )
+    public StageExecution( Logging logging, String stageName, Configuration config, Collection<Step<?>> pipeline )
     {
         this.stageName = stageName;
         this.config = config;
@@ -94,6 +96,11 @@ public class StageExecution implements StageControl
                 return step.stats();
             }
         };
+    }
+
+    public int size()
+    {
+        return pipeline.size();
     }
 
     @Override

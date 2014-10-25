@@ -20,11 +20,11 @@
 package org.neo4j.unsafe.impl.batchimport.stats;
 
 /**
- * Statistic about a particular thing.
+ * The higher the ordinal, the more detail.
  */
-public interface Stat
+public enum DetailLevel
 {
-    DetailLevel detailLevel();
-
-    long asLong();
+    NO,
+    IMPORTANT,
+    BASIC;
 }

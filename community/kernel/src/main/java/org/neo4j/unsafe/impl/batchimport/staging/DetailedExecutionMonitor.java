@@ -21,6 +21,7 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 
 import java.io.PrintStream;
 
+import org.neo4j.unsafe.impl.batchimport.stats.DetailLevel;
 import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
 
 import static java.lang.String.format;
@@ -38,12 +39,12 @@ public class DetailedExecutionMonitor extends PollingExecutionMonitor
 
     public DetailedExecutionMonitor( PrintStream out )
     {
-        this( out, SECONDS.toMillis( 2 ) );
+        this( out, SECONDS.toMillis( 5 ) );
     }
 
-    public DetailedExecutionMonitor( PrintStream out, long interval )
+    public DetailedExecutionMonitor( PrintStream out, long intervalSeconds )
     {
-        super( interval );
+        super( intervalSeconds, SECONDS );
         this.out = out;
     }
 
@@ -90,7 +91,7 @@ public class DetailedExecutionMonitor extends PollingExecutionMonitor
         for ( StepStats stats : execution.stats() )
         {
             builder.append( i > 0 ? format( "%n  " ) : (first ? "--" : " -") )
-                   .append( stats.toString() )
+                   .append( stats.toString( DetailLevel.BASIC ) )
                    .append( i == bottleNeckIndex ? "  <== BOTTLE NECK" : "" );
             i++;
         }

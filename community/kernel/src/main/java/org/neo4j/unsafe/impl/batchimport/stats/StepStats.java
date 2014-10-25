@@ -39,11 +39,6 @@ public class StepStats implements StatsProvider
         this.providers = new ArrayList<>( providers );
     }
 
-    public String name()
-    {
-        return name;
-    }
-
     public boolean stillWorking()
     {
         return stillWorking;
@@ -98,22 +93,31 @@ public class StepStats implements StatsProvider
                 return stat;
             }
         }
-        throw new IllegalArgumentException( "No such stat '" + key + "'" );
+        return null;
     }
 
     @Override
     public String toString()
     {
-        StringBuilder builder = new StringBuilder( name + ":" );
-        if ( !stillWorking )
+        return toString( DetailLevel.IMPORTANT );
+    }
+
+    public String toString( DetailLevel detailLevel )
+    {
+        StringBuilder builder = new StringBuilder();
+        if ( !stillWorking && detailLevel == DetailLevel.BASIC )
         {
             builder.append( " DONE" );
         }
 
         for ( Key key : keys() )
         {
-            builder.append( " " + key.shortName() + ":" + stat( key ).asString() );
+            Stat stat = stat( key );
+            if ( detailLevel.ordinal() >= stat.detailLevel().ordinal() )
+            {
+                builder.append( " " + key.shortName() + ":" + stat );
+            }
         }
-        return builder.toString();
+        return name + (builder.length() > 0 ? ":" + builder : "");
     }
 }
