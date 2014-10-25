@@ -22,24 +22,20 @@ package org.neo4j.unsafe.impl.batchimport;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.transaction.state.PropertyCreator;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
-import org.neo4j.unsafe.impl.batchimport.store.BatchingPropertyRecordAccess;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository;
 
 import static org.neo4j.graphdb.Direction.INCOMING;
-import static org.neo4j.unsafe.impl.batchimport.Utils.propertyKeysAndValues;
 
 /**
- * Creates batches of relationship records with their properties, and with the "next" relationship
+ * Creates batches of relationship records, with the "next" relationship
  * pointers set to the next relationships (previously created) in their respective chains. The previous
  * relationship ids are kept in {@link NodeRelationshipLink node cache}, which is a point of scalability issues,
  * although mitigated using multi-pass techniques.
@@ -47,32 +43,27 @@ import static org.neo4j.unsafe.impl.batchimport.Utils.propertyKeysAndValues;
 public class RelationshipEncoderStep extends ExecutorServiceStep<List<InputRelationship>>
 {
     private final IdMapper idMapper;
-    private final BatchingTokenRepository<?> propertyKeyRepository;
     private final BatchingTokenRepository<?> relationshipTypeRepository;
     private final RelationshipStore relationshipStore;
-    private final PropertyCreator propertyCreator;
     private final NodeRelationshipLink nodeRelationshipLink;
 
-    public RelationshipEncoderStep( StageControl control, String name,
+    public RelationshipEncoderStep( StageControl control,
             int workAheadSize, int numberOfExecutors,
-            IdMapper idMapper, BatchingTokenRepository<?> propertyKeyRepository,
+            IdMapper idMapper,
             BatchingTokenRepository<?> relationshipTypeRepository,
-            RelationshipStore relationshipStore, PropertyStore propertyStore,
+            RelationshipStore relationshipStore,
             NodeRelationshipLink nodeRelationshipLink )
     {
-        super( control, name, workAheadSize, numberOfExecutors );
+        super( control, "RELATIONSHIP", workAheadSize, numberOfExecutors );
         this.idMapper = idMapper;
-        this.propertyKeyRepository = propertyKeyRepository;
         this.relationshipTypeRepository = relationshipTypeRepository;
         this.relationshipStore = relationshipStore;
-        this.propertyCreator = new PropertyCreator( propertyStore, null );
         this.nodeRelationshipLink = nodeRelationshipLink;
     }
 
     @Override
     protected Object process( long ticket, List<InputRelationship> batch )
     {
-        BatchingPropertyRecordAccess propertyRecords = new BatchingPropertyRecordAccess();
         List<RelationshipRecord> relationshipRecords = new ArrayList<>( batch.size() );
         for ( InputRelationship batchRelationship : batch )
         {
@@ -106,20 +97,7 @@ public class RelationshipEncoderStep extends ExecutorServiceStep<List<InputRelat
             relationshipRecord.setFirstPrevRel( Record.NO_NEXT_RELATIONSHIP.intValue() );
             relationshipRecord.setSecondPrevRel( Record.NO_NEXT_RELATIONSHIP.intValue() );
             relationshipRecords.add( relationshipRecord );
-
-            // Properties
-            long nextProp;
-            if ( batchRelationship.hasFirstPropertyId() )
-            {
-                nextProp = batchRelationship.firstPropertyId();
-            }
-            else
-            {
-                nextProp = propertyCreator.createPropertyChain( relationshipRecord, propertyKeysAndValues(
-                        batchRelationship.properties(), propertyKeyRepository, propertyCreator ), propertyRecords );
-            }
-            relationshipRecord.setNextProp( nextProp );
         }
-        return new RecordBatch<>( relationshipRecords, propertyRecords.records() );
+        return new RecordBatch<>( relationshipRecords, batch );
     }
 }

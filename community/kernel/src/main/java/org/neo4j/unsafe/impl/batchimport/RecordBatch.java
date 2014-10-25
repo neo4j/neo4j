@@ -23,26 +23,38 @@ import java.util.List;
 
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 
 /**
  * Batch of created records, i.e. entity records with their property records and friends.
  *
  * @param <ENTITY> the type of entities in this batch.
  */
-public class RecordBatch<ENTITY extends PrimitiveRecord>
+public class RecordBatch<ENTITY extends PrimitiveRecord,INPUT extends InputEntity>
 {
     private final List<ENTITY> entityRecords;
-    private final Iterable<PropertyRecord> propertyRecords;
+    private final List<INPUT> inputEntities;
+    private Iterable<PropertyRecord> propertyRecords;
 
-    public RecordBatch( List<ENTITY> entityRecords, Iterable<PropertyRecord> propertyRecords )
+    public RecordBatch( List<ENTITY> entityRecords, List<INPUT> inputEntities )
     {
         this.entityRecords = entityRecords;
-        this.propertyRecords = propertyRecords;
+        this.inputEntities = inputEntities;
     }
 
     public List<ENTITY> getEntityRecords()
     {
         return entityRecords;
+    }
+
+    public List<INPUT> getInputEntities()
+    {
+        return inputEntities;
+    }
+
+    public void setPropertyRecords( Iterable<PropertyRecord> propertyRecords )
+    {
+        this.propertyRecords = propertyRecords;
     }
 
     public Iterable<PropertyRecord> getPropertyRecords()

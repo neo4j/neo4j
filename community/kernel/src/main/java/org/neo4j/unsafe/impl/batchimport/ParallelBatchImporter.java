@@ -247,9 +247,10 @@ public class ParallelBatchImporter implements BatchImporter
                     return object.id();
                 }
             };
-            add( new NodeEncoderStep( control(), "ENCODER", config.workAheadSize(), 1, idMapper, idGenerator,
-                    neoStore.getPropertyKeyRepository(), neoStore.getLabelRepository(),
-                    nodeStore, propertyStore, allIds ) );
+            add( new NodeEncoderStep( control(), config.workAheadSize(), 1, idMapper, idGenerator,
+                    neoStore.getLabelRepository(), nodeStore, allIds ) );
+            add( new PropertyEncoderStep<>( control(), config.workAheadSize(), 1,
+                    neoStore.getPropertyKeyRepository(), propertyStore ) );
             add( new EntityStoreUpdaterStep<>( control(), "WRITER", nodeStore, propertyStore, writeMonitor ) );
         }
     }
@@ -277,9 +278,10 @@ public class ParallelBatchImporter implements BatchImporter
 
             RelationshipStore relationshipStore = neoStore.getRelationshipStore();
             PropertyStore propertyStore = neoStore.getPropertyStore();
-            add( new RelationshipEncoderStep( control(), "ENCODER", config.workAheadSize(), 1, idMapper,
-                    neoStore.getPropertyKeyRepository(), neoStore.getRelationshipTypeRepository(),
-                    relationshipStore, propertyStore, nodeRelationshipLink ) );
+            add( new RelationshipEncoderStep( control(), config.workAheadSize(), 1, idMapper,
+                    neoStore.getRelationshipTypeRepository(), relationshipStore, nodeRelationshipLink ) );
+            add( new PropertyEncoderStep<>( control(), config.workAheadSize(), 1,
+                    neoStore.getPropertyKeyRepository(), propertyStore ) );
             add( new EntityStoreUpdaterStep<>( control(), "WRITER", relationshipStore, propertyStore, writeMonitor ) );
         }
     }

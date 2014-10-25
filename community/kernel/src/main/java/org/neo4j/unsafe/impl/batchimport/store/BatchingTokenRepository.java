@@ -21,14 +21,18 @@ package org.neo4j.unsafe.impl.batchimport.store;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
+import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
+import org.neo4j.kernel.impl.transaction.state.PropertyCreator;
 import org.neo4j.kernel.impl.transaction.state.TokenCreator;
 
 import static java.lang.Math.max;
@@ -165,6 +169,28 @@ public abstract class BatchingTokenRepository<T extends TokenRecord>
         protected PropertyKeyTokenRecord createRecord( int key )
         {
             return new PropertyKeyTokenRecord( key );
+        }
+
+        public Iterator<PropertyBlock> propertyKeysAndValues( final Object[] properties,
+                final PropertyCreator creator )
+        {
+            return new PrefetchingIterator<PropertyBlock>()
+            {
+                private int cursor;
+
+                @Override
+                protected PropertyBlock fetchNextOrNull()
+                {
+                    if ( cursor >= properties.length )
+                    {
+                        return null;
+                    }
+
+                    int key = getOrCreateId( (String)properties[cursor++] );
+                    Object value = properties[cursor++];
+                    return creator.encodeValue( new PropertyBlock(), key, value );
+                }
+            };
         }
     }
 

@@ -25,81 +25,55 @@ import java.util.List;
 
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.transaction.state.PropertyCreator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
-import org.neo4j.unsafe.impl.batchimport.store.BatchingPropertyRecordAccess;
-import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository;
+import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingLabelTokenRepository;
 
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
-import static org.neo4j.unsafe.impl.batchimport.Utils.propertyKeysAndValues;
 
 /**
- * Creates {@link NodeRecord nodes} with properties and labels from input. Emits {@link RecordBatch batches}
- * downstream.
+ * Creates {@link NodeRecord nodes} with labels from input. Emits {@link RecordBatch batches} downstream.
  */
 public final class NodeEncoderStep extends ExecutorServiceStep<List<InputNode>>
 {
     private final IdMapper idMapper;
     private final IdGenerator idGenerator;
     private final NodeStore nodeStore;
-    private final BatchingTokenRepository<?> propertyKeyHolder;
-    private final BatchingTokenRepository<?> labelHolder;
-    private final PropertyCreator propertyCreator;
+    private final BatchingLabelTokenRepository labelHolder;
     private final Iterable<Object> allIds;
 
-    public NodeEncoderStep( StageControl control, String name, int workAheadSize, int numberOfExecutors,
-            IdMapper idMapper, IdGenerator idGenerator, BatchingTokenRepository<?> propertyKeyHolder,
-            BatchingTokenRepository<?> labelHolder,
-            NodeStore nodeStore, PropertyStore propertyStore,
+    public NodeEncoderStep( StageControl control, int workAheadSize, int numberOfExecutors,
+            IdMapper idMapper, IdGenerator idGenerator,
+            BatchingLabelTokenRepository labelHolder,
+            NodeStore nodeStore,
             Iterable<Object> allIds )
     {
-        super( control, name, workAheadSize, numberOfExecutors );
+        super( control, "NDOE", workAheadSize, numberOfExecutors );
         this.idMapper = idMapper;
         this.idGenerator = idGenerator;
         this.nodeStore = nodeStore;
-        this.propertyKeyHolder = propertyKeyHolder;
         this.labelHolder = labelHolder;
         this.allIds = allIds;
-        this.propertyCreator = new PropertyCreator( propertyStore, null );
     }
 
     @Override
     protected Object process( long ticket, List<InputNode> batch )
     {
-        BatchingPropertyRecordAccess propertyRecords = new BatchingPropertyRecordAccess();
         List<NodeRecord> nodeRecords = new ArrayList<>( batch.size() );
         for ( InputNode batchNode : batch )
         {
-            // TODO Should we have this piece of logic (below) that creates a node with its properties and labels
-            // in a service as well, that the old BatchInserter as well as perhaps NeoStoreTransaction could use?
-            // Node itself
             long nodeId = idGenerator.generate( batchNode.id() );
             idMapper.put( batchNode.id(), nodeId );
             NodeRecord nodeRecord = new NodeRecord( nodeId, false,
                     NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() );
             nodeRecord.setInUse( true );
             nodeRecords.add( nodeRecord );
-
-            // Properties
-            long nextProp;
-            if ( batchNode.hasFirstPropertyId() )
-            {
-                nextProp = batchNode.firstPropertyId();
-            }
-            else
-            {
-                nextProp = propertyCreator.createPropertyChain( nodeRecord, propertyKeysAndValues(
-                        batchNode.properties(), propertyKeyHolder, propertyCreator ), propertyRecords );
-            }
-            nodeRecord.setNextProp( nextProp );
 
             // Labels
             if ( batchNode.hasLabelField() )
@@ -112,7 +86,7 @@ public final class NodeEncoderStep extends ExecutorServiceStep<List<InputNode>>
                 InlineNodeLabels.put( nodeRecord, labels, null, nodeStore.getDynamicLabelStore() );
             }
         }
-        return new RecordBatch<>( nodeRecords, propertyRecords.records() );
+        return new RecordBatch<>( nodeRecords, batch );
     }
 
     @Override

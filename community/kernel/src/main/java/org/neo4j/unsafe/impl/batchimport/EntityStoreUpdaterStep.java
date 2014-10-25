@@ -25,6 +25,7 @@ import org.neo4j.kernel.impl.store.AbstractRecordStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
@@ -35,7 +36,8 @@ import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
  *
  * @param <T> type of entities.
  */
-public class EntityStoreUpdaterStep<T extends PrimitiveRecord> extends ExecutorServiceStep<RecordBatch<T>>
+public class EntityStoreUpdaterStep<T extends PrimitiveRecord,I extends InputEntity>
+        extends ExecutorServiceStep<RecordBatch<T,I>>
 {
     private final AbstractRecordStore<T> entityStore;
     private final PropertyStore propertyStore;
@@ -52,7 +54,7 @@ public class EntityStoreUpdaterStep<T extends PrimitiveRecord> extends ExecutorS
     }
 
     @Override
-    protected Object process( long ticket, RecordBatch<T> batch )
+    protected Object process( long ticket, RecordBatch<T,I> batch )
     {
         for ( T entityRecord : batch.getEntityRecords() )
         {
