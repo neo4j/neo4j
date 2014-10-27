@@ -19,46 +19,45 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import java.util.List;
-
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
-import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 
 /**
- * Batch of created records, i.e. entity records with their property records and friends.
- *
- * @param <ENTITY> the type of entities in this batch.
+ * Partly built entity, such as a node or relationship, which moves through processing pipelines during
+ * {@link ParallelBatchImporter batch import}.
  */
-public class RecordBatch<ENTITY extends PrimitiveRecord,INPUT extends InputEntity>
+public class BatchEntity<RECORD extends PrimitiveRecord,INPUT extends InputEntity>
 {
-    private final List<ENTITY> entityRecords;
-    private final List<INPUT> inputEntities;
-    private Iterable<PropertyRecord> propertyRecords;
+    private static final PropertyBlock[] NO_PROPERTY_BLOCKS = new PropertyBlock[0];
 
-    public RecordBatch( List<ENTITY> entityRecords, List<INPUT> inputEntities )
+    private final RECORD record;
+    private final INPUT input;
+    private PropertyBlock[] propertyBlocks = NO_PROPERTY_BLOCKS;
+
+    public BatchEntity( RECORD record, INPUT input )
     {
-        this.entityRecords = entityRecords;
-        this.inputEntities = inputEntities;
+        this.record = record;
+        this.input = input;
     }
 
-    public List<ENTITY> getEntityRecords()
+    public RECORD record()
     {
-        return entityRecords;
+        return record;
     }
 
-    public List<INPUT> getInputEntities()
+    public INPUT input()
     {
-        return inputEntities;
+        return input;
     }
 
-    public void setPropertyRecords( Iterable<PropertyRecord> propertyRecords )
+    public void setPropertyBlocks( PropertyBlock[] propertyBlocks )
     {
-        this.propertyRecords = propertyRecords;
+        this.propertyBlocks = propertyBlocks;
     }
 
-    public Iterable<PropertyRecord> getPropertyRecords()
+    public PropertyBlock[] getPropertyBlocks()
     {
-        return propertyRecords;
+        return propertyBlocks;
     }
 }

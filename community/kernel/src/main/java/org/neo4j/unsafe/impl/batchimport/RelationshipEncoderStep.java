@@ -64,7 +64,7 @@ public class RelationshipEncoderStep extends ExecutorServiceStep<List<InputRelat
     @Override
     protected Object process( long ticket, List<InputRelationship> batch )
     {
-        List<RelationshipRecord> relationshipRecords = new ArrayList<>( batch.size() );
+        List<BatchEntity<RelationshipRecord,InputRelationship>> entities = new ArrayList<>( batch.size() );
         for ( InputRelationship batchRelationship : batch )
         {
             long relationshipId = batchRelationship.id();
@@ -96,8 +96,8 @@ public class RelationshipEncoderStep extends ExecutorServiceStep<List<InputRelat
             relationshipRecord.setFirstInSecondChain( false );
             relationshipRecord.setFirstPrevRel( Record.NO_NEXT_RELATIONSHIP.intValue() );
             relationshipRecord.setSecondPrevRel( Record.NO_NEXT_RELATIONSHIP.intValue() );
-            relationshipRecords.add( relationshipRecord );
+            entities.add( new BatchEntity<>( relationshipRecord, batchRelationship ) );
         }
-        return new RecordBatch<>( relationshipRecords, batch );
+        return entities;
     }
 }

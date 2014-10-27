@@ -38,7 +38,7 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 
 /**
- * Creates {@link NodeRecord nodes} with labels from input. Emits {@link RecordBatch batches} downstream.
+ * Creates {@link NodeRecord nodes} with labels from input.
  */
 public final class NodeEncoderStep extends ExecutorServiceStep<List<InputNode>>
 {
@@ -65,7 +65,7 @@ public final class NodeEncoderStep extends ExecutorServiceStep<List<InputNode>>
     @Override
     protected Object process( long ticket, List<InputNode> batch )
     {
-        List<NodeRecord> nodeRecords = new ArrayList<>( batch.size() );
+        List<BatchEntity<NodeRecord,InputNode>> entities = new ArrayList<>( batch.size() );
         for ( InputNode batchNode : batch )
         {
             long nodeId = idGenerator.generate( batchNode.id() );
@@ -73,7 +73,7 @@ public final class NodeEncoderStep extends ExecutorServiceStep<List<InputNode>>
             NodeRecord nodeRecord = new NodeRecord( nodeId, false,
                     NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() );
             nodeRecord.setInUse( true );
-            nodeRecords.add( nodeRecord );
+            entities.add( new BatchEntity<>( nodeRecord, batchNode ) );
 
             // Labels
             if ( batchNode.hasLabelField() )
@@ -86,7 +86,7 @@ public final class NodeEncoderStep extends ExecutorServiceStep<List<InputNode>>
                 InlineNodeLabels.put( nodeRecord, labels, null, nodeStore.getDynamicLabelStore() );
             }
         }
-        return new RecordBatch<>( nodeRecords, batch );
+        return entities;
     }
 
     @Override

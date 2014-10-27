@@ -576,8 +576,12 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
 
     private static void setSingleBlockValue( PropertyBlock block, int keyId, PropertyType type, long longValue )
     {
-        block.setSingleBlock( keyId | (((long) type.intValue()) << 24)
-                | (longValue << 28) );
+        block.setSingleBlock( singleBlockLongValue( keyId, type, longValue ) );
+    }
+
+    public static long singleBlockLongValue( int keyId, PropertyType type, long longValue )
+    {
+        return keyId | (((long) type.intValue()) << 24) | (longValue << 28);
     }
 
     public static byte[] encodeString( String string )

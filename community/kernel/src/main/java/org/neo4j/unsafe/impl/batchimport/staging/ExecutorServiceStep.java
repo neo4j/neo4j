@@ -37,6 +37,7 @@ public abstract class ExecutorServiceStep<T> extends AbstractStep<T>
 {
     private final ExecutorService executor;
     private final int workAheadSize;
+    private final int numberOfExecutors;
     private final PrimitiveLongPredicate catchUp = new PrimitiveLongPredicate()
     {
         @Override
@@ -54,6 +55,7 @@ public abstract class ExecutorServiceStep<T> extends AbstractStep<T>
     {
         super( control, name );
         this.workAheadSize = workAheadSize;
+        this.numberOfExecutors = numberOfExecutors;
         NamedThreadFactory threadFactory = new NamedThreadFactory( name );
         this.executor = numberOfExecutors == 1 ?
                 newSingleThreadExecutor( threadFactory ) :
@@ -127,5 +129,11 @@ public abstract class ExecutorServiceStep<T> extends AbstractStep<T>
     {
         super.close();
         executor.shutdown();
+    }
+
+    @Override
+    protected int numberOfParallelProcessors()
+    {
+        return numberOfExecutors;
     }
 }

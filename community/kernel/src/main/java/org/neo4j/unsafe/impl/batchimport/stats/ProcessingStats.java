@@ -31,7 +31,7 @@ import static org.neo4j.unsafe.impl.batchimport.stats.Stats.longStat;
 public class ProcessingStats extends GenericStatsProvider
 {
     public ProcessingStats( long receivedBatches, long doneBatches, long totalProcessingTime, long upstreamIdleTime,
-            long downstreamIdleTime )
+            long downstreamIdleTime, final int numberOfProcessors )
     {
         add( Keys.received_batches, longStat( receivedBatches ) );
         add( Keys.done_batches, longStat( doneBatches ) );
@@ -44,7 +44,7 @@ public class ProcessingStats extends GenericStatsProvider
             public long asLong()
             {
                 long batches = stat( Keys.done_batches ).asLong();
-                return batches == 0 ? 0 : stat( Keys.total_processing_time ).asLong() / batches;
+                return batches == 0 ? 0 : stat( Keys.total_processing_time ).asLong() / batches / numberOfProcessors;
             }
         } );
     }
