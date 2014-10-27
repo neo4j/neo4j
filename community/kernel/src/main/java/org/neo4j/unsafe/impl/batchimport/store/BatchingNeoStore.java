@@ -20,6 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport.store;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -35,8 +36,9 @@ import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
+import org.neo4j.unsafe.impl.batchimport.Configuration;
+import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.WriterFactory;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingLabelTokenRepository;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
@@ -85,6 +87,11 @@ public class BatchingNeoStore implements AutoCloseable
                 writerFactory, writeMonitor, APPEND_ONLY );
         this.neoStore = newNeoStore( pageCacheFactory );
         flushNeoStoreAndAwaitEverythingWritten();
+        if ( alreadyContainsData( neoStore ) )
+        {
+            neoStore.close();
+            throw new IllegalStateException( storeDir + " already contains data, cannot do import here" );
+        }
         neoStore.setLastCommittedAndClosedTransactionId( highTokenIds.lastCommittedTransactionId() );
         this.propertyKeyRepository = new BatchingPropertyKeyTokenRepository(
                 neoStore.getPropertyKeyTokenStore(), highTokenIds.highPropertyKeyTokenId() );
@@ -92,6 +99,27 @@ public class BatchingNeoStore implements AutoCloseable
                 neoStore.getLabelTokenStore(), highTokenIds.highLabelTokenId() );
         this.relationshipTypeRepository = new BatchingRelationshipTypeTokenRepository(
                 neoStore.getRelationshipTypeTokenStore(), highTokenIds.highRelationshipTypeTokenId() );
+    }
+
+    private boolean alreadyContainsData( NeoStore neoStore )
+    {
+        return neoStore.getNodeStore().getHighId() > 0 || neoStore.getRelationshipStore().getHighId() > 0;
+    }
+
+    /**
+     * A way to create the underlying {@link NeoStore} files in the {@link FileSystemAbstraction file system}
+     * before instantiating the real one. This allows some store contents to be populated before an import.
+     * Useful for store migration where the {@link ParallelBatchImporter} is used as migrator and some of
+     * its data need to be communicated by copying a store file.
+     */
+    public static void createStore( FileSystemAbstraction fileSystem, String storeDir ) throws IOException
+    {
+        PageCache pageCache = new BatchingPageCache( fileSystem, Configuration.DEFAULT.fileChannelBufferSize(),
+                BatchingPageCache.SYNCHRONOUS, Monitor.NO_MONITOR, APPEND_ONLY );
+        StoreFactory storeFactory = new StoreFactory(
+                fileSystem, new File( storeDir ), pageCache, StringLogger.DEV_NULL, new Monitors() );
+        storeFactory.createNeoStore().close();
+        pageCache.close();
     }
 
     private NeoStore newNeoStore( PageCache pageCache )

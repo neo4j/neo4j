@@ -56,7 +56,7 @@ public class Legacy20NodeStoreReaderTest
                 nodeCount++;
             }
         }
-        assertEquals( 501, nodeCount );
+        assertEquals( 502, nodeCount );
         nodeStoreReader.close();
     }
 }
