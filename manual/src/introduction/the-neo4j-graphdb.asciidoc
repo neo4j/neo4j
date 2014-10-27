@@ -234,6 +234,10 @@ Neo4j is a schema-optional graph database. You can use Neo4j without any schema.
 order to gain performance or modeling benefits. This allows a way of working where the schema does not get in your way
 until you are at a stage where you want to reap the benefits of having one.
 
+[NOTE]
+Schema commands can only be applied on the master machine in a Neo4j cluster (see <<ha>>).
+If you apply them on a slave you will receive a `Neo.ClientError.Transaction.InvalidType` error code. (see <<status-codes>>)
+
 [[graphdb-neo4j-schema-indexes]]
 === Indexes ===
 
