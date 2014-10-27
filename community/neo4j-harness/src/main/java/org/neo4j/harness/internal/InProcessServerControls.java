@@ -24,18 +24,22 @@ import java.io.IOException;
 import java.net.URI;
 
 import org.neo4j.harness.ServerControls;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.server.AbstractNeoServer;
 
 public class InProcessServerControls implements ServerControls
 {
     private final File serverFolder;
     private final AbstractNeoServer server;
+    private final Lifecycle additionalLifeToManage;
 
-    public InProcessServerControls( File serverFolder, AbstractNeoServer server )
+    public InProcessServerControls( File serverFolder, AbstractNeoServer server, Lifecycle additionalLifeToManage )
     {
         this.serverFolder = serverFolder;
         this.server = server;
+        this.additionalLifeToManage = additionalLifeToManage;
     }
 
     @Override
@@ -61,6 +65,14 @@ public class InProcessServerControls implements ServerControls
         server.stop();
         try
         {
+            additionalLifeToManage.shutdown();
+        }
+        catch ( Throwable e )
+        {
+            throw Exceptions.launderedException( e );
+        }
+        try
+        {
             if( looksLikeMd5Hash( serverFolder.getName() ) )
             {
                 FileUtils.deleteRecursively( serverFolder );
@@ -68,7 +80,7 @@ public class InProcessServerControls implements ServerControls
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( "Failed to clean up test server directory." );
+            throw new RuntimeException( "Failed to clean up test server directory.", e );
         }
     }
 

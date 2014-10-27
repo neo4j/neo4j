@@ -34,18 +34,20 @@ import javax.net.ssl.X509TrustManager;
 import org.codehaus.jackson.JsonNode;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.Mute;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
 import org.neo4j.test.server.HTTP;
 
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
+
 import static org.neo4j.harness.TestServerBuilders.newInProcessBuilder;
 
 public class InProcessBuilderTest
@@ -83,6 +85,9 @@ public class InProcessBuilderTest
         // When
         try(ServerControls server = newInProcessBuilder( testDir.directory() )
                 .withConfig( Configurator.WEBSERVER_HTTPS_ENABLED_PROPERTY_KEY, "true")
+                .withConfig( Configurator.WEBSERVER_HTTPS_CERT_PATH_PROPERTY_KEY, testDir.file( "cert" ).getAbsolutePath() )
+                .withConfig( Configurator.WEBSERVER_KEYSTORE_PATH_PROPERTY_KEY, testDir.file( "keystore" ).getAbsolutePath() )
+                .withConfig( Configurator.WEBSERVER_HTTPS_KEY_PATH_PROPERTY_KEY, testDir.file( "key" ).getAbsolutePath() )
                 .withConfig( GraphDatabaseSettings.cache_type, "none" )
                 .newServer())
         {
@@ -156,16 +161,19 @@ public class InProcessBuilderTest
     {
         TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager()
         {
+            @Override
             public void checkClientTrusted( X509Certificate[] arg0, String arg1 )
                     throws CertificateException
             {
             }
 
+            @Override
             public void checkServerTrusted( X509Certificate[] arg0, String arg1 )
                     throws CertificateException
             {
             }
 
+            @Override
             public X509Certificate[] getAcceptedIssuers()
             {
                 return null;
@@ -177,6 +185,4 @@ public class InProcessBuilderTest
         sc.init( null, trustAllCerts, new SecureRandom() );
         HttpsURLConnection.setDefaultSSLSocketFactory( sc.getSocketFactory() );
     }
-
-
 }

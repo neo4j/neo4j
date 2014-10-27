@@ -64,7 +64,7 @@ public class InProcessServerBuilder implements TestServerBuilder
     {
         Dependencies dependencies = GraphDatabaseDependencies.newDependencies().logging( logging );
         InProcessServerControls controls = new InProcessServerControls( serverFolder,
-                new CommunityNeoServer( new MapConfigurator( config, extensions.toList() ), dependencies ) );
+                new CommunityNeoServer( new MapConfigurator( config, extensions.toList() ), dependencies ), logging );
         controls.start();
         try
         {
