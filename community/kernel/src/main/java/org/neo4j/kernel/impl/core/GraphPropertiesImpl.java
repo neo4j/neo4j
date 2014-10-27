@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static java.util.Arrays.sort;
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.kernel.api.properties.Property.property;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -47,12 +51,6 @@ import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
-import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
-
-import static java.util.Arrays.sort;
-
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.kernel.api.properties.Property.property;
 
 /**
  * A {@link PropertyContainer} (just like {@link Node} and {@link Relationship},
@@ -90,14 +88,6 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
     protected boolean hasLoadedProperties()
     {
         return properties != null;
-    }
-
-    @Override
-    protected Iterator<DefinedProperty> loadProperties( PropertyLoader loader )
-    {
-        IteratingPropertyReceiver receiver = new IteratingPropertyReceiver();
-        loader.graphLoadProperties( receiver );
-        return receiver;
     }
 
     @Override
@@ -251,12 +241,6 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
     }
 
     @Override
-    protected void setEmptyProperties()
-    {
-        properties = new HashMap<>();
-    }
-
-    @Override
     protected Iterator<DefinedProperty> getCachedProperties()
     {
         return properties.values().iterator();
@@ -276,16 +260,8 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
     }
 
     @Override
-    protected DefinedProperty getPropertyForIndex( int keyId )
-    {
-        DefinedProperty property = properties.get( keyId );
-        return property != null ? property : null;
-    }
-
-    @Override
     protected void setProperties(
-            Iterator<DefinedProperty> loadedProperties,
-            PropertyChainVerifier chainVerifier )
+            Iterator<DefinedProperty> loadedProperties )
     {
         if ( loadedProperties != null && loadedProperties.hasNext() )
         {
@@ -293,7 +269,6 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
             DefinedProperty[] propertiesArray = propertiesCollection.toArray(
                     new DefinedProperty[ propertiesCollection.size() ]);
             sort( propertiesArray, ArrayBasedPrimitive.PROPERTY_DATA_COMPARATOR_FOR_SORTING );
-            chainVerifier.verifySortedPropertyChain( propertiesArray, this );
 
             Map<Integer, DefinedProperty> newProperties = new HashMap<>();
             for ( DefinedProperty property : propertiesArray )
@@ -306,12 +281,6 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
         {
             properties = new HashMap<>();
         }
-    }
-
-    @Override
-    PropertyContainer asProxy( NodeManager nm )
-    {
-        return this;
     }
 
     @Override

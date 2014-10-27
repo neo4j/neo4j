@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.index;
 
+import static java.lang.String.format;
+
 import java.io.IOException;
 import java.util.Map;
 
@@ -27,8 +29,6 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.CommandRecordVisitor;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandType;
-
-import static java.lang.String.format;
 
 /**
  * Created from {@link IndexDefineCommand} or read from a logical log.
@@ -140,11 +140,6 @@ public abstract class IndexCommand extends Command
             valueType = VALUE_TYPE_STRING;
         }
         return valueType;
-    }
-
-    public boolean isConsideredNormalWriteCommand()
-    {
-        return true;
     }
 
     public static class AddNodeCommand extends IndexCommand
@@ -274,12 +269,6 @@ public abstract class IndexCommand extends Command
         }
 
         @Override
-        public boolean isConsideredNormalWriteCommand()
-        {
-            return false;
-        }
-
-        @Override
         public boolean handle( NeoCommandHandler visitor ) throws IOException
         {
             return visitor.visitIndexDeleteCommand( this );
@@ -305,12 +294,6 @@ public abstract class IndexCommand extends Command
         public Map<String, String> getConfig()
         {
             return config;
-        }
-
-        @Override
-        public boolean isConsideredNormalWriteCommand()
-        {
-            return false;
         }
 
         @Override

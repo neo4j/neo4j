@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.core;
 
 import static java.lang.System.arraycopy;
 import static java.util.Arrays.binarySearch;
-
 import static org.neo4j.kernel.impl.cache.SizeOfs.REFERENCE_SIZE;
 import static org.neo4j.kernel.impl.cache.SizeOfs.sizeOfArray;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverheadIncludingReferences;
@@ -43,17 +42,14 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.store.CacheLoader;
 import org.neo4j.kernel.impl.api.store.CacheUpdateListener;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
-import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
@@ -87,14 +83,6 @@ public class NodeImpl extends ArrayBasedPrimitive
     public NodeImpl( long id )
     {
         this.id = id;
-    }
-
-    @Override
-    protected Iterator<DefinedProperty> loadProperties( PropertyLoader loader )
-    {
-        IteratingPropertyReceiver receiver = new IteratingPropertyReceiver();
-        loader.nodeLoadProperties( id, receiver );
-        return receiver;
     }
 
     @Override
@@ -602,12 +590,6 @@ public class NodeImpl extends ArrayBasedPrimitive
     RelIdArray[] getRelationshipIds()
     {
         return relationships;
-    }
-
-    @Override
-    PropertyContainer asProxy( NodeManager nm )
-    {
-        return nm.newNodeProxyById( getId() );
     }
 
     public int[] getLabels( CacheLoader<int[]> loader ) throws EntityNotFoundException

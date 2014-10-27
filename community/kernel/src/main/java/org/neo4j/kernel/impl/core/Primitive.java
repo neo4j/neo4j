@@ -24,7 +24,6 @@ import java.util.Iterator;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
@@ -32,7 +31,6 @@ import org.neo4j.kernel.impl.api.store.CacheLoader;
 import org.neo4j.kernel.impl.api.store.CacheUpdateListener;
 import org.neo4j.kernel.impl.cache.SizeOfObject;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
-import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 
 public abstract class Primitive implements SizeOfObject
 {
@@ -43,31 +41,28 @@ public abstract class Primitive implements SizeOfObject
     public abstract long getId();
 
     public Iterator<DefinedProperty> getProperties( CacheLoader<Iterator<DefinedProperty>> loader,
-                                                    CacheUpdateListener updateListener,
-                                                    PropertyChainVerifier chainVerifier )
+                                                    CacheUpdateListener updateListener )
     {
-        return ensurePropertiesLoaded( loader, updateListener, chainVerifier );
+        return ensurePropertiesLoaded( loader, updateListener );
     }
 
     public Property getProperty( CacheLoader<Iterator<DefinedProperty>> loader,
-                                 CacheUpdateListener updateListener, int key,
-                                 PropertyChainVerifier chainVerifier )
+                                 CacheUpdateListener updateListener,
+                                 int key )
     {
-        ensurePropertiesLoaded( loader, updateListener, chainVerifier );
+        ensurePropertiesLoaded( loader, updateListener );
         return getCachedProperty( key );
     }
 
     public PrimitiveLongIterator getPropertyKeys( CacheLoader<Iterator<DefinedProperty>> cacheLoader,
-                                                  CacheUpdateListener updateListener,
-                                                  PropertyChainVerifier chainVerifier )
+                                                  CacheUpdateListener updateListener )
     {
-        ensurePropertiesLoaded( cacheLoader, updateListener, chainVerifier );
+        ensurePropertiesLoaded( cacheLoader, updateListener );
         return getCachedPropertyKeys();
     }
 
     private Iterator<DefinedProperty> ensurePropertiesLoaded( CacheLoader<Iterator<DefinedProperty>> loader,
-                                                              CacheUpdateListener updateListener,
-                                                              PropertyChainVerifier chainVerifier )
+                                                              CacheUpdateListener updateListener )
     {
         if ( !hasLoadedProperties() )
         {
@@ -78,7 +73,7 @@ public abstract class Primitive implements SizeOfObject
                     try
                     {
                         Iterator<DefinedProperty> loadedProperties = loader.load( getId() );
-                        setProperties( loadedProperties, chainVerifier );
+                        setProperties( loadedProperties );
                         updateListener.newSize( this, sizeOfObjectInBytesIncludingOverhead() );
                     }
                     catch ( InvalidRecordException | EntityNotFoundException e )
@@ -101,11 +96,7 @@ public abstract class Primitive implements SizeOfObject
 
     protected abstract boolean hasLoadedProperties();
 
-    protected abstract void setEmptyProperties();
-
-    protected abstract void setProperties( Iterator<DefinedProperty> properties, PropertyChainVerifier chainVerifier );
-
-    protected abstract DefinedProperty getPropertyForIndex( int keyId );
+    protected abstract void setProperties( Iterator<DefinedProperty> properties );
 
     public abstract void commitPropertyMaps(
             PrimitiveIntObjectMap<DefinedProperty> cowPropertyAddMap, Iterator<Integer> removed );
@@ -120,8 +111,4 @@ public abstract class Primitive implements SizeOfObject
     // Force subclasses to implement equals
     @Override
     public abstract boolean equals(Object other);
-
-    protected abstract Iterator<DefinedProperty> loadProperties( PropertyLoader loader );
-
-    abstract PropertyContainer asProxy( NodeManager nm );
 }

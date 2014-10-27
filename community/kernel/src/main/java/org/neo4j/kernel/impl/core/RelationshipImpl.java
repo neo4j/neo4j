@@ -19,12 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.util.Iterator;
-
-import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 
 public class RelationshipImpl extends ArrayBasedPrimitive
 {
@@ -70,14 +65,6 @@ public class RelationshipImpl extends ArrayBasedPrimitive
     }
 
     @Override
-    protected Iterator<DefinedProperty> loadProperties( PropertyLoader loader )
-    {
-        IteratingPropertyReceiver receiver = new IteratingPropertyReceiver();
-        loader.relLoadProperties( getId(), receiver );
-        return receiver;
-    }
-
-    @Override
     public long getId()
     {
         return idAndMore&0xFFFFFFFFFFL;
@@ -103,12 +90,6 @@ public class RelationshipImpl extends ArrayBasedPrimitive
     {
         return "RelationshipImpl #" + this.getId() + " of type " + getTypeId()
             + " between Node[" + getStartNodeId() + "] and Node[" + getEndNodeId() + "]";
-    }
-
-    @Override
-    PropertyContainer asProxy( NodeManager nm )
-    {
-        return nm.newRelationshipProxyById( getId() );
     }
 
     @Override

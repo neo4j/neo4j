@@ -19,6 +19,12 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.iterator;
+import static org.neo4j.kernel.impl.cache.SizeOfs.REFERENCE_SIZE;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverheadIncludingReferences;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
@@ -31,12 +37,6 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.cache.EntityWithSizeObject;
-
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.iterator;
-import static org.neo4j.kernel.impl.cache.SizeOfs.REFERENCE_SIZE;
-import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverheadIncludingReferences;
-import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
 
 /**
  * A {@link Primitive} which uses a {@link DefinedProperty}[] for caching properties.
@@ -76,15 +76,8 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSizeOb
         return withObjectOverhead( size );
     }
 
-    @Override
-    protected void setEmptyProperties()
-    {
-        properties = NO_PROPERTIES;
-    }
-
     private DefinedProperty[] toPropertyArray(
-            Collection<DefinedProperty> loadedProperties,
-            PropertyChainVerifier chainVerifier )
+            Collection<DefinedProperty> loadedProperties )
     {
         if ( loadedProperties == null || loadedProperties.size() == 0 )
         {
@@ -98,7 +91,6 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSizeOb
             result[i++] = property;
         }
         sort( result );
-        chainVerifier.verifySortedPropertyChain( result, this );
         return result;
     }
 
@@ -184,17 +176,9 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSizeOb
     protected abstract Property noProperty( int key );
 
     @Override
-    protected void setProperties( Iterator<DefinedProperty> properties, PropertyChainVerifier chainVerifier )
+    protected void setProperties( Iterator<DefinedProperty> properties )
     {
-        this.properties = toPropertyArray( asCollection( properties ), chainVerifier );
-    }
-
-    @Override
-    protected DefinedProperty getPropertyForIndex( int keyId )
-    {
-        DefinedProperty[] localProperties = properties;
-        int index = Arrays.binarySearch( localProperties, keyId, PROPERTY_DATA_COMPARATOR_FOR_BINARY_SEARCH );
-        return index < 0 ? null : localProperties[index];
+        this.properties = toPropertyArray( asCollection( properties ) );
     }
 
     @Override
