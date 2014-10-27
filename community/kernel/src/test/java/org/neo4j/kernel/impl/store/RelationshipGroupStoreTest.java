@@ -19,16 +19,17 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Test;
+
 import java.io.File;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -37,11 +38,11 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -54,16 +55,16 @@ import org.neo4j.test.TargetDirectory;
 
 import static java.lang.Integer.parseInt;
 import static java.util.Arrays.asList;
-
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-
+import static org.junit.Assert.assertThat;
 import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;
 
 public class RelationshipGroupStoreTest
 {
     @ClassRule
-    public static PageCacheRule pageCacheRule = new PageCacheRule();
+    public static PageCacheRule pageCacheRule = new PageCacheRule( false );
     private File directory;
     private int defaultThreshold;
     private FileSystemAbstraction fs;
@@ -73,11 +74,7 @@ public class RelationshipGroupStoreTest
     public void before() throws Exception
     {
         directory = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
-//<<<<<<< HEAD:community/kernel/src/test/java/org/neo4j/kernel/impl/nioneo/store/RelationshipGroupStoreTest.java
-//=======
-//        neostoreFileName = new File( directory, "neostore" ).getAbsolutePath();
         fs = new DefaultFileSystemAbstraction();
-//>>>>>>> master:community/kernel/src/test/java/org/neo4j/kernel/impl/nioneo/store/TestRelationshipGroupStore.java
         defaultThreshold = parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() );
     }
 
@@ -119,14 +116,6 @@ public class RelationshipGroupStoreTest
             assertEquals( 1, node.getDegree( MyRelTypes.TEST2 ) );
             tx.success();
         }
-
-/*
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertEquals( NodeImpl.class, db.getDependencyResolver().resolveDependency( NodeManager.class ).newNodeProxyById( node.getId() ).getClass() );
-            tx.success();
-        }
-*/
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -171,6 +160,11 @@ public class RelationshipGroupStoreTest
 
     private StoreFactory factory( Integer customThreshold )
     {
+        return factory( customThreshold, pageCacheRule.getPageCache( fs, new Config() ) );
+    }
+
+    private StoreFactory factory( Integer customThreshold, PageCache pageCache )
+    {
         Map<String, String> customConfig = new HashMap<>();
         if ( customThreshold != null )
         {
@@ -181,11 +175,10 @@ public class RelationshipGroupStoreTest
         return new StoreFactory(
                 config,
                 new DefaultIdGeneratorFactory(),
-                pageCacheRule.getPageCache( fs, config ),
+                pageCache,
                 fs,
                 StringLogger.DEV_NULL,
                 monitors );
-//>>>>>>> master:community/kernel/src/test/java/org/neo4j/kernel/impl/nioneo/store/TestRelationshipGroupStore.java
     }
 
     private Config config( Map<String, String> customConfig )
@@ -317,6 +310,26 @@ public class RelationshipGroupStoreTest
         assertEquals( -1, otherGroupRecord.getNext() );
 
         // TODO Delete all relationships of one type and see to that the correct group is deleted.
+    }
+
+    @Test
+    public void checkingIfRecordIsInUseMustHappenAfterConsistentRead()
+    {
+        AtomicBoolean nextReadIsInconsistent = new AtomicBoolean( false );
+        PageCache pageCache = pageCacheRule.getPageCache( fs, new Config() );
+        pageCache = pageCacheRule.withInconsistentReads( pageCache, nextReadIsInconsistent );
+        StoreFactory factory = factory( null, pageCache );
+
+        try ( NeoStore neoStore = factory.newNeoStore( true ) )
+        {
+            RelationshipGroupStore relationshipGroupStore = neoStore.getRelationshipGroupStore();
+            RelationshipGroupRecord record = new RelationshipGroupRecord( 1, 2, 3, 4, 5, 6, true );
+            relationshipGroupStore.updateRecord( record );
+            nextReadIsInconsistent.set( true );
+            // Now the following should not throw any RecordNotInUse exceptions
+            RelationshipGroupRecord readBack = relationshipGroupStore.getRecord( 1 );
+            assertThat( readBack.toString(), equalTo( record.toString() ) );
+        }
     }
 
     private void assertRelationshipChain( RelationshipStore relationshipStore, Node node, long firstId, long... chainedIds )

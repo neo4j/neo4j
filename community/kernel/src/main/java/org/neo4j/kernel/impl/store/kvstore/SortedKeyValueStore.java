@@ -116,19 +116,13 @@ public abstract class SortedKeyValueStore<K extends Comparable<K>, VR> implement
         recordSerializer.writeDefaultValue( value );
     }
 
-    private int compareKeyAndReadValue( PageCursor cursor, K target, int record, VR count )
-            throws IOException
+    private int compareKeyAndReadValue( PageCursor cursor, K target, int record, VR count ) throws IOException
     {
         int pageId = (record * RECORD_SIZE) / pages.pageSize();
         int offset = (record * RECORD_SIZE) % pages.pageSize();
         if ( pageId == cursor.getCurrentPageId() || cursor.next( pageId ) )
         {
-            K key;
-            do
-            {
-                cursor.setOffset( offset );
-                key = recordSerializer.readRecord( cursor, count );
-            } while ( cursor.shouldRetry() );
+            K key = recordSerializer.readRecord( cursor, offset, count );
             return target.compareTo( key );
         }
         else

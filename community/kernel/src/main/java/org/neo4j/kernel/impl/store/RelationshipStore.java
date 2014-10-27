@@ -111,15 +111,6 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
     @Override
     public RelationshipRecord forceGetRecord( long id )
     {
-        try
-        {
-            assertIdExists( id );
-        }
-        catch ( InvalidRecordException e )
-        {
-            return new RelationshipRecord( id, -1, -1, -1 );
-        }
-
         RelationshipRecord record = new RelationshipRecord( -1 );
 
         if ( fillRecord( id, record, RecordLoad.FORCE ) )
@@ -146,15 +137,6 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
 
     public RelationshipRecord getLightRel( long id )
     {
-        try
-        {
-            assertIdExists( id );
-        }
-        catch ( InvalidRecordException e )
-        {
-            return null;
-        }
-
         RelationshipRecord record = new RelationshipRecord( id );
 
         if( fillRecord( id, record, RecordLoad.CHECK ) )
@@ -171,31 +153,27 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
     {
         try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_LOCK ) )
         {
+            boolean success = false;
             if ( cursor.next() )
             {
-                boolean success;
                 do
                 {
-                    success = readRecord( id, cursor, loadMode, target );
+                    success = readRecord( id, cursor, target );
                 } while ( cursor.shouldRetry() );
-                return success;
             }
-            else if ( loadMode == RecordLoad.NORMAL )
+
+            if ( !success )
             {
-                throw new InvalidRecordException( "RelationshipRecord[" + id + "] not in use" );
+                if ( loadMode == RecordLoad.NORMAL )
+                {
+                    throw new InvalidRecordException( "RelationshipRecord[" + id + "] not in use" );
+                }
+                else if ( loadMode == RecordLoad.CHECK )
+                {
+                    return false;
+                }
             }
-            else if ( loadMode == RecordLoad.CHECK )
-            {
-                return false;
-            }
-            else // force
-            {
-                target.setId( id );
-                target.setType( -1 );
-                target.setFirstNode( -1 );
-                target.setSecondNode( -1 );
-                return true;
-            }
+            return true;
         }
         catch ( IOException e )
         {
@@ -323,7 +301,7 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
     }
 
     private boolean readRecord( long id, PageCursor cursor,
-        RecordLoad load, RelationshipRecord record )
+        RelationshipRecord record )
     {
         cursor.setOffset( offsetForId( id ) );
 
@@ -333,16 +311,6 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
         long inUseByte = cursor.getByte();
 
         boolean inUse = (inUseByte & 0x1) == Record.IN_USE.intValue();
-        if ( !inUse )
-        {
-            switch ( load )
-            {
-            case NORMAL:
-                throw new InvalidRecordException( "RelationshipRecord[" + id + "] not in use" );
-            case CHECK:
-                return false;
-            }
-        }
 
         long firstNode = cursor.getUnsignedInt();
         long firstNodeMod = (inUseByte & 0xEL) << 31;
@@ -390,27 +358,11 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
         record.setFirstInSecondChain( (extraByte & 0x2) != 0 );
 
         record.setNextProp( longFromIntAndMod( nextProp, nextPropMod ) );
-        return true;
+        return inUse;
     }
 
     public boolean fillChainRecord( long id, RelationshipRecord record )
     {
-        try
-        {
-            assertIdExists( id );
-        }
-        catch ( InvalidRecordException e )
-        {
-            return false;
-        }
-
-        if ( fillRecord( id, record, RecordLoad.NORMAL ) )
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        return fillRecord( id, record, RecordLoad.CHECK );
     }
 }

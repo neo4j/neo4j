@@ -52,8 +52,9 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
 
     }
 
-    private DynamicStringStore nameStore;
     public static final int NAME_STORE_BLOCK_SIZE = 30;
+
+    private DynamicStringStore nameStore;
 
     public TokenStore(
             File fileName,
@@ -152,7 +153,8 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
 
     public T getRecord( int id )
     {
-        T record;
+        T record = newRecord( id );
+        byte inUseByte = Record.NOT_IN_USE.byteValue();
 
         try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_LOCK ) )
         {
@@ -160,13 +162,17 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
             {
                 do
                 {
-                    record = getRecord( id, cursor, false );
+                    inUseByte = getRecord( id, record, cursor );
                 } while ( cursor.shouldRetry() );
+
             }
-            else
+
+            if ( inUseByte != Record.IN_USE.byteValue() )
             {
                 throw new InvalidRecordException( getClass().getSimpleName() + " Record[" + id + "] not in use" );
             }
+
+            checkInUseByteValidity( id, inUseByte );
         }
         catch ( IOException e )
         {
@@ -190,11 +196,15 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
         {
             if ( cursor.next() )
             {
-                T record;
+                T record = newRecord( (int) id );
+                byte inUseByte;
                 do
                 {
-                    record = getRecord( (int) id, cursor, true );
+                    inUseByte = getRecord( (int) id, record, cursor );
                 } while ( cursor.shouldRetry() );
+
+                checkInUseByteValidity( id, inUseByte );
+
                 record.setIsLight( true );
                 return record;
             }
@@ -206,6 +216,14 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
         catch ( IOException e )
         {
             return newRecord( (int) id );
+        }
+    }
+
+    private void checkInUseByteValidity( long id, byte inUseByte )
+    {
+        if ( inUseByte != Record.IN_USE.byteValue() && inUseByte != Record.NOT_IN_USE.byteValue() )
+        {
+            throw new InvalidRecordException( getClass().getSimpleName() + " Record[" + id + "] unknown in use flag[" + inUseByte + "]" );
         }
     }
 
@@ -262,24 +280,18 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
 
     protected abstract T newRecord( int id );
 
-    protected T getRecord( int id, PageCursor cursor, boolean force )
+    protected byte getRecord( int id, T record, PageCursor cursor )
     {
         cursor.setOffset( offsetForId( id ) );
         byte inUseByte = cursor.getByte();
         boolean inUse = (inUseByte == Record.IN_USE.byteValue());
-        if ( !inUse && !force )
-        {
-            throw new InvalidRecordException( getClass().getSimpleName() + " Record[" + id + "] not in use" );
-        }
-        if ( inUseByte != Record.IN_USE.byteValue() && inUseByte != Record.NOT_IN_USE.byteValue() )
-        {
-            throw new InvalidRecordException( getClass().getSimpleName() + " Record[" + id + "] unknown in use flag[" + inUse + "]" );
-        }
 
-        T record = newRecord( id );
         record.setInUse( inUse );
-        readRecord( record, cursor );
-        return record;
+        if ( inUse )
+        {
+            readRecord( record, cursor );
+        }
+        return inUseByte;
     }
 
     protected void readRecord( T record, PageCursor cursor )
