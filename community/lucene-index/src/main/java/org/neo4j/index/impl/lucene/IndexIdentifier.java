@@ -62,6 +62,6 @@ class IndexIdentifier
     @Override
     public String toString()
     {
-        return "Index[" + indexName + "," + entityType.name() + "]";
+        return "Index[" + indexName + "," + entityType.nameToLowerCase() + "]";
     }
 }

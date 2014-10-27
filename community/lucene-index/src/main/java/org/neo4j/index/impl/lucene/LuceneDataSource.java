@@ -290,7 +290,7 @@ public class LuceneDataSource implements Lifecycle
     static File getFileDirectory( File storeDir, IndexEntityType type )
     {
         File path = new File( storeDir, "lucene" );
-        String extra = type.name();
+        String extra = type.nameToLowerCase();
         return new File( path, extra );
     }
 

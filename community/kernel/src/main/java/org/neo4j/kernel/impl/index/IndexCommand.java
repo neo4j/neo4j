@@ -257,7 +257,7 @@ public abstract class IndexCommand extends Command
         public String toString()
         {
             return format( "Remove%s[index:%d, id:%d, key:%d, value:%s]",
-                    IndexEntityType.byId( entityType ).name(), indexNameId, entityId, keyId, value );
+                    IndexEntityType.byId( entityType ).nameToLowerCase(), indexNameId, entityId, keyId, value );
         }
     }
 
@@ -277,7 +277,7 @@ public abstract class IndexCommand extends Command
         @Override
         public String toString()
         {
-            return "Delete[index:" + indexNameId + ", type:" + IndexEntityType.byId( entityType ).name() + "]";
+            return "Delete[index:" + indexNameId + ", type:" + IndexEntityType.byId( entityType ).nameToLowerCase() + "]";
         }
     }
 
@@ -318,7 +318,7 @@ public abstract class IndexCommand extends Command
         public String toString()
         {
             return format( "Create%sIndex[index:%d, config:%s]",
-                    IndexEntityType.byId( entityType ).name(), indexNameId, config );
+                    IndexEntityType.byId( entityType ).nameToLowerCase(), indexNameId, config );
         }
     }
 
