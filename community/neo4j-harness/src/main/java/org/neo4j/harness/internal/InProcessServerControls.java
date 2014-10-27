@@ -23,19 +23,23 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 
-import org.neo4j.kernel.impl.util.FileUtils;
-import org.neo4j.server.AbstractNeoServer;
 import org.neo4j.harness.ServerControls;
+import org.neo4j.helpers.Exceptions;
+import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.server.AbstractNeoServer;
 
 public class InProcessServerControls implements ServerControls
 {
     private final File serverFolder;
     private final AbstractNeoServer server;
+    private final Lifecycle additionalLifeToManage;
 
-    public InProcessServerControls( File serverFolder, AbstractNeoServer server )
+    public InProcessServerControls( File serverFolder, AbstractNeoServer server, Lifecycle additionalLifeToManage )
     {
         this.serverFolder = serverFolder;
         this.server = server;
+        this.additionalLifeToManage = additionalLifeToManage;
     }
 
     @Override
@@ -59,6 +63,14 @@ public class InProcessServerControls implements ServerControls
     public void close()
     {
         server.stop();
+        try
+        {
+            additionalLifeToManage.shutdown();
+        }
+        catch ( Throwable e )
+        {
+            throw Exceptions.launderedException( e );
+        }
         try
         {
             if( looksLikeMd5Hash( serverFolder.getName() ) )

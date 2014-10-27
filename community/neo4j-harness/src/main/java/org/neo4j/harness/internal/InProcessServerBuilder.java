@@ -61,7 +61,7 @@ public class InProcessServerBuilder implements TestServerBuilder
     public ServerControls newServer()
     {
         InProcessServerControls controls = new InProcessServerControls( serverFolder,
-                new CommunityNeoServer( new MapConfigurator( config, extensions.toList() ), logging ) );
+                new CommunityNeoServer( new MapConfigurator( config, extensions.toList() ), logging ), logging );
         controls.start();
         try
         {
