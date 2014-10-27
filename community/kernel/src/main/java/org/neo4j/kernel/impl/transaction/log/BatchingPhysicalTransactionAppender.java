@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.function.Factory;
@@ -49,6 +50,22 @@ public class BatchingPhysicalTransactionAppender extends AbstractPhysicalTransac
      * and used by the appending thread to know when its transaction have been forced to disk.
      */
     private final Counter appenderTicket;
+
+    static class ThreadLink
+    {
+        volatile ThreadLink next;
+        Thread thread;
+
+        public ThreadLink( Thread thread )
+        {
+            this.next = null;
+            this.thread = thread;
+        }
+
+        static final ThreadLink END = new ThreadLink( null );
+    }
+
+    AtomicReference<ThreadLink> threadLinkHead = new AtomicReference<>( ThreadLink.END );
 
     /**
      * Set to the value of {@link #appenderTicket}, what that value was before starting a call to force the channel,
@@ -88,6 +105,21 @@ public class BatchingPhysicalTransactionAppender extends AbstractPhysicalTransac
                 // Mark that we've forced at least the ticket we saw when waking up previously.
                 // It's on the pessimistic, but better safe than sorry.
                 forceTicket.set( currentAppenderTicket );
+
+                ThreadLink linkedOut = threadLinkHead.getAndSet( ThreadLink.END );
+
+                while ( linkedOut != ThreadLink.END )
+                {
+                    LockSupport.unpark( linkedOut.thread );
+
+                    while ( linkedOut.next == null )
+                    {
+                        ; // spin, waiting for appender thread to finish updating the chain
+                    }
+
+                    linkedOut = linkedOut.next;
+                }
+
                 return true;
             }
         }, idleBackoffStrategy );
@@ -117,7 +149,8 @@ public class BatchingPhysicalTransactionAppender extends AbstractPhysicalTransac
     @Override
     protected void forceAfterAppend( long ticket ) throws IOException
     {
-        LockSupport.unpark( forceThread );
+        ThreadLink threadLink = new ThreadLink( Thread.currentThread() );
+        threadLink.next = threadLinkHead.getAndSet( threadLink );
 
         // Stay a while and listen... while:
         while (  // the forcer hasn't yet caught up with me
@@ -130,6 +163,7 @@ public class BatchingPhysicalTransactionAppender extends AbstractPhysicalTransac
                  // AND the forcer is of good health
                  forceThread.checkHealth() )
         {
+            LockSupport.unpark( forceThread );
             LockSupport.parkNanos( 100_000 ); // 0,1 ms
         }
     }
