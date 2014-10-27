@@ -359,7 +359,7 @@ public class CacheLayer implements StoreReadLayer
     public InternalIndexState indexGetState( IndexDescriptor descriptor )
             throws IndexNotFoundKernelException
     {
-        return indexingService.getProxyForRule( schemaCache.indexId( descriptor ) ).getState();
+        return indexingService.getIndexProxy( schemaCache.indexId( descriptor ) ).getState();
     }
 
     @Override

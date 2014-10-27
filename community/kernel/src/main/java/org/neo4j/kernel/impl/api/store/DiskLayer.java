@@ -432,7 +432,7 @@ public class DiskLayer implements StoreReadLayer
     public InternalIndexState indexGetState( IndexDescriptor descriptor )
             throws IndexNotFoundKernelException
     {
-        return indexService.getProxyForRule( indexId( descriptor ) ).getState();
+        return indexService.getIndexProxy( indexId( descriptor ) ).getState();
     }
 
     @Override
@@ -456,7 +456,7 @@ public class DiskLayer implements StoreReadLayer
     @Override
     public String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        return indexService.getProxyForRule( indexId( descriptor ) ).getPopulationFailure().asString();
+        return indexService.getIndexProxy( indexId( descriptor ) ).getPopulationFailure().asString();
     }
 
     private long indexId( IndexDescriptor descriptor )

@@ -65,6 +65,7 @@ import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.store.CacheLayer;
@@ -383,9 +384,10 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
                 persistenceCache );
         try
         {
-            indexingService = new IndexingService( config, scheduler, providerMap, new NeoStoreIndexStoreView(
-                    lockService, neoStore ), tokenNameLookup, updateableSchemaState, indexRuleLoader(), logging,
-                    indexingServiceMonitor );
+            indexingService = IndexingService.create(
+                    new IndexSamplingConfig( config ), scheduler, providerMap,
+                    new NeoStoreIndexStoreView( lockService, neoStore ), tokenNameLookup, updateableSchemaState,
+                    indexRuleLoader(), logging, indexingServiceMonitor );
             final IntegrityValidator integrityValidator = new IntegrityValidator( neoStore, indexingService );
             labelScanStore = dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
                     LabelScanStoreProvider.HIGHEST_PRIORITIZED ).getLabelScanStore();

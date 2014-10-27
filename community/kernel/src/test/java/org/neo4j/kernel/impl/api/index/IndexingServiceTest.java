@@ -48,6 +48,7 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
@@ -126,7 +127,7 @@ public class IndexingServiceTest
 
         // when
         indexingService.createIndex( indexRule( 0, labelId, propertyKeyId, PROVIDER_DESCRIPTOR ) );
-        IndexProxy proxy = indexingService.getProxyForRule( 0 );
+        IndexProxy proxy = indexingService.getIndexProxy( (long) 0 );
 
         verify( populator, timeout( 1000 ) ).close( true );
 
@@ -178,7 +179,7 @@ public class IndexingServiceTest
 
         // when
         indexingService.createIndex( indexRule( 0, labelId, propertyKeyId, PROVIDER_DESCRIPTOR ) );
-        IndexProxy proxy = indexingService.getProxyForRule( 0 );
+        IndexProxy proxy = indexingService.getIndexProxy( (long) 0 );
         assertEquals( InternalIndexState.POPULATING, proxy.getState() );
 
         NodePropertyUpdate value2 = add( 2, "value2" );
@@ -206,7 +207,7 @@ public class IndexingServiceTest
         order.verify( updater ).close();
         order.verify( populator ).verifyDeferredConstraints( storeView );
         order.verify( populator ).close( true );
-        verifyNoMoreInteractions(updater);
+        verifyNoMoreInteractions( updater );
         verifyNoMoreInteractions( populator );
 
         verifyZeroInteractions( accessor );
@@ -224,7 +225,7 @@ public class IndexingServiceTest
 
         // when
         indexingService.createIndex( constraintIndexRule( 0, labelId, propertyKeyId, PROVIDER_DESCRIPTOR, null ) );
-        IndexProxy proxy = indexingService.getProxyForRule( 0 );
+        IndexProxy proxy = indexingService.getIndexProxy( (long) 0 );
 
         verify( populator, timeout( 1000 ) ).close( true );
 
@@ -253,7 +254,7 @@ public class IndexingServiceTest
 
         // when
         indexingService.createIndex( constraintIndexRule( 0, labelId, propertyKeyId, PROVIDER_DESCRIPTOR, null ) );
-        IndexProxy proxy = indexingService.getProxyForRule( 0 );
+        IndexProxy proxy = indexingService.getIndexProxy( (long) 0 );
 
         indexingService.activateIndex( 0 );
 
@@ -278,7 +279,7 @@ public class IndexingServiceTest
         IndexRule populatingIndex = indexRule( 2, 1, 2, PROVIDER_DESCRIPTOR );
         IndexRule failedIndex     = indexRule( 3, 2, 2, PROVIDER_DESCRIPTOR );
 
-        IndexingService indexingService = life.add( new IndexingService( new Config(), mock( JobScheduler.class ), providerMap, mock( IndexStoreView.class ), mockLookup, mock( UpdateableSchemaState.class ), asList( onlineIndex, populatingIndex, failedIndex ), mockLogging( logger ), IndexingService.NO_MONITOR ) );
+        IndexingService indexingService = life.add( IndexingService.create( new IndexSamplingConfig( new Config() ), mock( JobScheduler.class ), providerMap, mock( IndexStoreView.class ), mockLookup, mock( UpdateableSchemaState.class ), asList( onlineIndex, populatingIndex, failedIndex ), mockLogging( logger ), IndexingService.NO_MONITOR ) );
 
 
         when( provider.getInitialState( onlineIndex.getId() ) ).thenReturn( ONLINE );
@@ -315,7 +316,7 @@ public class IndexingServiceTest
         IndexRule populatingIndex = indexRule( 2, 1, 2, PROVIDER_DESCRIPTOR );
         IndexRule failedIndex     = indexRule( 3, 2, 2, PROVIDER_DESCRIPTOR );
 
-        IndexingService indexingService = new IndexingService( new Config(), mock( JobScheduler.class ), providerMap, mock( IndexStoreView.class ), mockLookup, mock( UpdateableSchemaState.class ), asList( onlineIndex, populatingIndex, failedIndex ), mockLogging( logger ), IndexingService.NO_MONITOR );
+        IndexingService indexingService = IndexingService.create( new IndexSamplingConfig( new Config() ), mock( JobScheduler.class ), providerMap, mock( IndexStoreView.class ), mockLookup, mock( UpdateableSchemaState.class ), asList( onlineIndex, populatingIndex, failedIndex ), mockLogging( logger ), IndexingService.NO_MONITOR );
 
         when( provider.getInitialState( onlineIndex.getId() ) ).thenReturn( ONLINE );
         when( provider.getInitialState( populatingIndex.getId() ) ).thenReturn( InternalIndexState.POPULATING );
@@ -492,7 +493,7 @@ public class IndexingServiceTest
         when( indexProvider.snapshotMetaFiles() ).thenReturn( IteratorUtil.<File>emptyIterator() );
         when( indexProvider.storeMigrationParticipant() ).thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
 
-        return life.add( new IndexingService( new Config(), life.add( new Neo4jJobScheduler() ), new DefaultSchemaIndexProviderMap( indexProvider ), storeView, mock( TokenNameLookup.class ), schemaState, loop( iterator( rules ) ), mockLogging( logger ), IndexingService.NO_MONITOR ) );
+        return life.add( IndexingService.create( new IndexSamplingConfig( new Config() ), life.add( new Neo4jJobScheduler() ), new DefaultSchemaIndexProviderMap( indexProvider ), storeView, mock( TokenNameLookup.class ), schemaState, loop( iterator( rules ) ), mockLogging( logger ), IndexingService.NO_MONITOR ) );
     }
 
     private DataUpdates withData( NodePropertyUpdate... updates )

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+
 public class IndexMapReference
 {
     private volatile IndexMap indexMap = new IndexMap();
@@ -28,9 +30,27 @@ public class IndexMapReference
         return indexMap.clone();
     }
 
-    public IndexProxy getIndexProxy( long indexId )
+    public IndexProxy getIndexProxy( long indexId ) throws IndexNotFoundKernelException
     {
-        return indexMap.getIndexProxy( indexId );
+        IndexProxy proxy = indexMap.getIndexProxy( indexId );
+        if ( proxy == null )
+        {
+            throw new IndexNotFoundKernelException( "No index for index id " + indexId + " exists." );
+        }
+        return proxy;
+    }
+
+    public IndexProxy getOnlineIndexProxy( long indexId ) throws IndexNotFoundKernelException
+    {
+        IndexProxy proxy = getIndexProxy( indexId );
+        switch ( proxy.getState() )
+        {
+            case ONLINE:
+                return proxy;
+
+            default:
+                throw new IndexNotFoundKernelException( "Expected index with id " + indexId + " to be online.");
+        }
     }
 
     public Iterable<IndexProxy> getAllIndexProxies()
