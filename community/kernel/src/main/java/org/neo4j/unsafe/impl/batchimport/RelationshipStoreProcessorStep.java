@@ -47,10 +47,10 @@ public abstract class RelationshipStoreProcessorStep extends LonelyProcessingSte
         RelationshipRecord heavilyReusedRecord = new RelationshipRecord( -1 );
         for ( long i = highId; i >= 0; i-- )
         {
-            RelationshipRecord record = relationshipStore.getRecord( i, heavilyReusedRecord, RecordLoad.CHECK );
-            if ( record != null && process( record ) )
+            if ( relationshipStore.fillRecord( i, heavilyReusedRecord, RecordLoad.CHECK )
+                    && process( heavilyReusedRecord ) )
             {
-                relationshipStore.updateRecord( record );
+                relationshipStore.updateRecord( heavilyReusedRecord );
             }
             itemProcessed();
         }

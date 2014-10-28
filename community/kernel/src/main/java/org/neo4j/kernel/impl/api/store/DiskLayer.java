@@ -726,7 +726,7 @@ public class DiskLayer implements StoreReadLayer
             private final RelationshipStore store = neoStore.getRelationshipStore();
             private long highId = store.getHighestPossibleIdInUse();
             private long currentId;
-            private final RelationshipRecord reusableNodeRecord = new RelationshipRecord( -1 ); // reused
+            private final RelationshipRecord reusableRecord = new RelationshipRecord( -1 ); // reused
 
             @Override
             protected boolean fetchNext()
@@ -739,10 +739,9 @@ public class DiskLayer implements StoreReadLayer
                         {
                             try
                             {
-                                RelationshipRecord record = store.getRecord( currentId, reusableNodeRecord, CHECK );
-                                if ( record != null && record.inUse() )
+                                if ( store.fillRecord( currentId, reusableRecord, CHECK ) && reusableRecord.inUse() )
                                 {
-                                    return next( record.getId() );
+                                    return next( reusableRecord.getId() );
                                 }
                             }
                             catch ( InvalidRecordException e )

@@ -77,10 +77,17 @@ public class RelationshipChainLoader
         result.put( DirectionWrapper.INCOMING, in );
         RelationshipLoadingPosition loadPosition = originalPosition.clone();
         long position = loadPosition.position( direction, types );
+        RelationshipRecord relRecord = null;
+        boolean allocateNewRecord = true;
         for ( int i = 0; i < relationshipGrabSize && position != Record.NO_NEXT_RELATIONSHIP.intValue(); i++ )
         {
-            RelationshipRecord relRecord = relationshipStore.getChainRecord( position );
-            if ( relRecord == null )
+            if ( allocateNewRecord )
+            {
+                relRecord = new RelationshipRecord( -1 );
+                allocateNewRecord = false;
+            }
+
+            if ( !relationshipStore.fillChainRecord( position, relRecord ) )
             {
                 // return what we got so far
                 return Pair.of( result, loadPosition );
@@ -99,14 +106,17 @@ public class RelationshipChainLoader
                         result.put( DirectionWrapper.BOTH, loop );
                     }
                     loop.add( relRecord );
+                    allocateNewRecord = true;
                 }
                 else if ( firstNode == nodeId )
                 {
                     out.add( relRecord );
+                    allocateNewRecord = true;
                 }
                 else if ( secondNode == nodeId )
                 {
                     in.add( relRecord );
+                    allocateNewRecord = true;
                 }
             }
             else

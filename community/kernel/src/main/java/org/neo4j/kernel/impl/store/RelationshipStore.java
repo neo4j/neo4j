@@ -96,7 +96,16 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
     @Override
     public RelationshipRecord getRecord( long id )
     {
-        return getRecord( id, new RelationshipRecord( id ), RecordLoad.NORMAL );
+        RelationshipRecord record = new RelationshipRecord( id );
+
+        if ( fillRecord( id, record, RecordLoad.NORMAL ) )
+        {
+            return record;
+        }
+        else
+        {
+            return null;
+        }
     }
 
     @Override
@@ -110,7 +119,17 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
         {
             return new RelationshipRecord( id, -1, -1, -1 );
         }
-        return getRecord( id, new RelationshipRecord( id ), RecordLoad.FORCE );
+
+        RelationshipRecord record = new RelationshipRecord( -1 );
+
+        if ( fillRecord( id, record, RecordLoad.FORCE ) )
+        {
+            return record;
+        }
+        else
+        {
+            return null;
+        }
     }
 
     @Override
@@ -136,21 +155,30 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
             return null;
         }
 
-        return getRecord( id, new RelationshipRecord( id ), RecordLoad.CHECK );
+        RelationshipRecord record = new RelationshipRecord( id );
+
+        if( fillRecord( id, record, RecordLoad.CHECK ) )
+        {
+            return record;
+        }
+        else
+        {
+            return null;
+        }
     }
 
-    public RelationshipRecord getRecord( long id, RelationshipRecord target, RecordLoad loadMode )
+    public boolean fillRecord( long id, RelationshipRecord target, RecordLoad loadMode )
     {
         try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_LOCK ) )
         {
             if ( cursor.next() )
             {
-                RelationshipRecord record;
+                boolean success;
                 do
                 {
-                    record = getRecord( id, cursor, loadMode, target );
+                    success = readRecord( id, cursor, loadMode, target );
                 } while ( cursor.shouldRetry() );
-                return record;
+                return success;
             }
             else if ( loadMode == RecordLoad.NORMAL )
             {
@@ -158,11 +186,15 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
             }
             else if ( loadMode == RecordLoad.CHECK )
             {
-                return null;
+                return false;
             }
             else // force
             {
-                return new RelationshipRecord( id, -1, -1, -1 );
+                target.setId( id );
+                target.setType( -1 );
+                target.setFirstNode( -1 );
+                target.setSecondNode( -1 );
+                return true;
             }
         }
         catch ( IOException e )
@@ -290,7 +322,7 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
         }
     }
 
-    private RelationshipRecord getRecord( long id, PageCursor cursor,
+    private boolean readRecord( long id, PageCursor cursor,
         RecordLoad load, RelationshipRecord record )
     {
         cursor.setOffset( offsetForId( id ) );
@@ -308,7 +340,7 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
             case NORMAL:
                 throw new InvalidRecordException( "RelationshipRecord[" + id + "] not in use" );
             case CHECK:
-                return null;
+                return false;
             }
         }
 
@@ -358,10 +390,10 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
         record.setFirstInSecondChain( (extraByte & 0x2) != 0 );
 
         record.setNextProp( longFromIntAndMod( nextProp, nextPropMod ) );
-        return record;
+        return true;
     }
 
-    public RelationshipRecord getChainRecord( long id )
+    public boolean fillChainRecord( long id, RelationshipRecord record )
     {
         try
         {
@@ -369,9 +401,16 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
         }
         catch ( InvalidRecordException e )
         {
-            return null;
+            return false;
         }
 
-        return getRecord( id, new RelationshipRecord( id ), RecordLoad.NORMAL );
+        if ( fillRecord( id, record, RecordLoad.NORMAL ) )
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 }

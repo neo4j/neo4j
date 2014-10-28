@@ -142,7 +142,7 @@ public class TransactionDataBuilder
 //    {
 //        try
 //        {
-//            writer.add( command.getRecord() );
+//            writer.add( command.fillRecord() );
 //        }
 //        catch ( IOException e )
 //        {
