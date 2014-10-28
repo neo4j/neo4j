@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.junit.Test;
+
 import java.io.IOException;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.junit.Test;
 
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.locking.LockGroup;
@@ -35,11 +35,10 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
-import org.neo4j.kernel.impl.transaction.state.RecoveryVisitor;
 import org.neo4j.kernel.impl.transaction.state.RecoveryVisitor.Monitor;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
@@ -47,7 +46,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.RECOVERY;
 
 public class RecoveryVisitorTest
@@ -86,7 +84,7 @@ public class RecoveryVisitorTest
 
         final boolean result = visitor.visit( transaction );
 
-        assertTrue( result );
+        assertFalse( result );
         verify( storeApplier, times( 1 ) ).apply( eq( representation ), any( LockGroup.class ),
                 eq( commitEntry.getTxId() ), eq( RECOVERY ) );
         assertEquals( 1l, recoveredCount.get() );

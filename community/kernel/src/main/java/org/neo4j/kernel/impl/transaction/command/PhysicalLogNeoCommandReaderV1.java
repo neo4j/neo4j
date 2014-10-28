@@ -175,11 +175,35 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
             throw new IOException( "Unknown command type[" + commandType + "] near " + position.newPosition() );
         }
         }
-        if ( command != null && !command.handle( reader ) )
+        if ( command != null && command.handle( reader ) )
         {
             return null;
         }
         return command;
+    }
+
+    private static final class IndexCommandHeader
+    {
+        byte valueType;
+        byte entityType;
+        boolean entityIdNeedsLong;
+        byte indexNameId;
+        boolean startNodeNeedsLong;
+        boolean endNodeNeedsLong;
+        byte keyId;
+
+        IndexCommandHeader set( byte valueType, byte entityType, boolean entityIdNeedsLong,
+                                byte indexNameId, boolean startNodeNeedsLong, boolean endNodeNeedsLong, byte keyId )
+        {
+            this.valueType = valueType;
+            this.entityType = entityType;
+            this.entityIdNeedsLong = entityIdNeedsLong;
+            this.indexNameId = indexNameId;
+            this.startNodeNeedsLong = startNodeNeedsLong;
+            this.endNodeNeedsLong = endNodeNeedsLong;
+            this.keyId = keyId;
+            return this;
+        }
     }
 
     private class PhysicalNeoCommandReader implements NeoCommandHandler
@@ -191,19 +215,19 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
             NodeRecord before = readNodeRecord( id );
             if ( before == null )
             {
-                return false;
+                return true;
             }
             NodeRecord after = readNodeRecord( id );
             if ( after == null )
             {
-                return false;
+                return true;
             }
             if ( !before.inUse() && after.inUse() )
             {
                 after.setCreated();
             }
             command.init( before, after );
-            return true;
+            return false;
         }
 
         @Override
@@ -244,7 +268,7 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
                 record.setCreated();
             }
             command.init( record );
-            return true;
+            return false;
         }
 
         @Override
@@ -256,16 +280,16 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
             PropertyRecord before = readPropertyRecord( id );
             if ( before == null )
             {
-                return false;
+                return true;
             }
             // AFTER
             PropertyRecord after = readPropertyRecord( id );
             if ( after == null )
             {
-                return false;
+                return true;
             }
             command.init( before, after );
-            return true;
+            return false;
         }
 
         @Override
@@ -287,7 +311,7 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
             record.setFirstLoop( channel.getLong() );
             record.setOwningNode( channel.getLong() );
             command.init( record );
-            return true;
+            return false;
         }
 
         @Override
@@ -315,12 +339,12 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
                 DynamicRecord dr = readDynamicRecord();
                 if ( dr == null )
                 {
-                    return false;
+                    return true;
                 }
                 record.addNameRecord( dr );
             }
             command.init( record );
-            return true;
+            return false;
         }
 
         @Override
@@ -347,12 +371,12 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
                 DynamicRecord dr = readDynamicRecord();
                 if ( dr == null )
                 {
-                    return false;
+                    return true;
                 }
                 record.addNameRecord( dr );
             }
             command.init( record );
-            return true;
+            return false;
         }
 
         @Override
@@ -376,10 +400,10 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
             record.setNameId( channel.getInt() );
             if ( readDynamicRecords( record, PROPERTY_INDEX_DYNAMIC_RECORD_ADDER ) == -1 )
             {
-                return false;
+                return true;
             }
             command.init( record );
-            return true;
+            return false;
         }
 
         @Override
@@ -398,9 +422,9 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
                 }
             }
             SchemaRule rule = first( recordsAfter ).inUse() ? readSchemaRule( recordsAfter )
-                    : readSchemaRule( recordsBefore );
+                                                            : readSchemaRule( recordsBefore );
             command.init( recordsBefore, recordsAfter, rule );
-            return true;
+            return false;
         }
 
         @Override
@@ -410,7 +434,7 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
             NeoStoreRecord record = new NeoStoreRecord();
             record.setNextProp( nextProp );
             command.init( record );
-            return true;
+            return false;
         }
 
         private NodeRecord readNodeRecord( long id ) throws IOException
@@ -460,11 +484,15 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
                 record.setStartRecord( (inUseFlag & Record.FIRST_IN_CHAIN.byteValue()) != 0 );
                 int nrOfBytes = channel.getInt();
                 assert nrOfBytes >= 0 && nrOfBytes < ((1 << 24) - 1) : nrOfBytes
-                        + " is not valid for a number of bytes field of a dynamic record";
+                                                                       +
+                                                                       " is not valid for a number of bytes field of " +
+                                                                       "a dynamic record";
                 long nextBlock = channel.getLong();
                 assert (nextBlock >= 0 && nextBlock <= (1l << 36 - 1))
-                        || (nextBlock == Record.NO_NEXT_BLOCK.intValue()) : nextBlock
-                        + " is not valid for a next record field of a dynamic record";
+                       || (nextBlock == Record.NO_NEXT_BLOCK.intValue()) : nextBlock
+                                                                           +
+                                                                           " is not valid for a next record field of " +
+                                                                           "a dynamic record";
                 record.setNextBlock( nextBlock );
                 byte data[] = new byte[nrOfBytes];
                 channel.get( data, nrOfBytes );
@@ -552,7 +580,7 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
             if ( (inUse && !record.inUse()) || (!inUse && record.inUse()) )
             {
                 throw new IllegalStateException( "Weird, inUse was read in as " + inUse + " but the record is "
-                        + record );
+                                                 + record );
             }
             return record;
         }
@@ -565,9 +593,12 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
             // Read in blocks
             long[] blocks = readLongs( blockSize / 8 );
             assert blocks.length == blockSize / 8 : blocks.length
-                    + " longs were read in while i asked for what corresponds to " + blockSize;
-            assert PropertyType.getPropertyType( blocks[0], false ).calculateNumberOfBlocksUsed( blocks[0] ) == blocks.length : blocks.length
-                    + " is not a valid number of blocks for type " + PropertyType.getPropertyType( blocks[0], false );
+                                                    + " longs were read in while i asked for what corresponds to " +
+                                                    blockSize;
+            assert PropertyType.getPropertyType( blocks[0], false ).calculateNumberOfBlocksUsed( blocks[0] ) ==
+                   blocks.length : blocks.length
+                                   + " is not a valid number of blocks for type " +
+                                   PropertyType.getPropertyType( blocks[0], false );
             /*
              *  Ok, now we may be ready to return, if there are no DynamicRecords. So
              *  we start building the Object
@@ -597,7 +628,8 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
         private SchemaRule readSchemaRule( Collection<DynamicRecord> recordsBefore )
         {
             // TODO: Why was this assertion here?
-            //            assert first(recordsBefore).inUse() : "Asked to deserialize schema records that were not in use.";
+            //            assert first(recordsBefore).inUse() : "Asked to deserialize schema records that were not in
+            // use.";
             SchemaRule rule;
             ByteBuffer deserialized = AbstractDynamicStore.concatData( recordsBefore, new byte[100] );
             try
@@ -618,7 +650,7 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
             Number entityId = header.entityIdNeedsLong ? channel.getLong() : channel.getInt();
             Object value = readIndexValue( header.valueType );
             command.init( header.indexNameId, entityId.longValue(), header.keyId, value );
-            return true;
+            return false;
         }
 
         @Override
@@ -631,7 +663,7 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
             Number endNode = header.endNodeNeedsLong ? channel.getLong() : channel.getInt();
             command.init( header.indexNameId, entityId.longValue(), header.keyId, value,
                     startNode.longValue(), endNode.longValue() );
-            return true;
+            return false;
         }
 
         @Override
@@ -641,7 +673,7 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
             Number entityId = header.entityIdNeedsLong ? channel.getLong() : channel.getInt();
             Object value = readIndexValue( header.valueType );
             command.init( header.indexNameId, header.entityType, entityId.longValue(), header.keyId, value );
-            return true;
+            return false;
         }
 
         @Override
@@ -649,26 +681,26 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
         {
             IndexCommandHeader header = readIndexCommandHeader();
             deleteCommand.init( header.indexNameId, header.entityType );
-            return true;
+            return false;
         }
 
         @Override
         public boolean visitIndexCreateCommand( CreateCommand createCommand ) throws IOException
         {
             IndexCommandHeader header = readIndexCommandHeader();
-            Map<String, String> config = read2bMap( channel );
+            Map<String,String> config = read2bMap( channel );
             createCommand.init( header.indexNameId, header.entityType, config );
-            return true;
+            return false;
         }
 
         @Override
         public boolean visitIndexDefineCommand( IndexDefineCommand indexDefineCommand ) throws IOException
         {
             readIndexCommandHeader();
-            Map<String, Byte> indexNames = readMap( channel );
-            Map<String, Byte> keys = readMap( channel );
+            Map<String,Byte> indexNames = readMap( channel );
+            Map<String,Byte> keys = readMap( channel );
             indexDefineCommand.init( indexNames, keys );
-            return true;
+            return false;
         }
 
         @Override
@@ -679,13 +711,13 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
             int endLabelId = channel.getInt();
             long delta = channel.getLong();
             command.init( startLabelId, typeId, endLabelId, delta );
-            return true;
+            return false;
         }
 
-        private Map<String, Byte> readMap( ReadableLogChannel channel ) throws IOException
+        private Map<String,Byte> readMap( ReadableLogChannel channel ) throws IOException
         {
             byte size = channel.get();
-            Map<String, Byte> result = new HashMap<>();
+            Map<String,Byte> result = new HashMap<>();
             for ( int i = 0; i < size; i++ )
             {
                 String key = read2bLengthAndString( channel );
@@ -751,30 +783,6 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
         @Override
         public void close()
         {   // Nothing to close
-        }
-    }
-
-    private static final class IndexCommandHeader
-    {
-        byte valueType;
-        byte entityType;
-        boolean entityIdNeedsLong;
-        byte indexNameId;
-        boolean startNodeNeedsLong;
-        boolean endNodeNeedsLong;
-        byte keyId;
-
-        IndexCommandHeader set( byte valueType, byte entityType, boolean entityIdNeedsLong,
-                byte indexNameId, boolean startNodeNeedsLong, boolean endNodeNeedsLong, byte keyId )
-        {
-            this.valueType = valueType;
-            this.entityType = entityType;
-            this.entityIdNeedsLong = entityIdNeedsLong;
-            this.indexNameId = indexNameId;
-            this.startNodeNeedsLong = startNodeNeedsLong;
-            this.endNodeNeedsLong = endNodeNeedsLong;
-            this.keyId = keyId;
-            return this;
         }
     }
 }

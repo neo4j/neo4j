@@ -26,13 +26,13 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 
-public class LogFileRecoverer implements Visitor<ReadableVersionableLogChannel, IOException>
+public class LogFileRecoverer implements Visitor<ReadableVersionableLogChannel,IOException>
 {
     private final LogEntryReader<ReadableVersionableLogChannel> logEntryReader;
-    private final Visitor<CommittedTransactionRepresentation, IOException> visitor;
+    private final Visitor<CommittedTransactionRepresentation,IOException> visitor;
 
     public LogFileRecoverer( LogEntryReader<ReadableVersionableLogChannel> logEntryReader,
-                             Visitor<CommittedTransactionRepresentation, IOException> visitor )
+                             Visitor<CommittedTransactionRepresentation,IOException> visitor )
     {
         this.logEntryReader = logEntryReader;
         this.visitor = visitor;
@@ -45,7 +45,7 @@ public class LogFileRecoverer implements Visitor<ReadableVersionableLogChannel, 
         // I dislike this exception to the rule though.
         PhysicalTransactionCursor<ReadableVersionableLogChannel> physicalTransactionCursor =
                 new PhysicalTransactionCursor<>( channel, logEntryReader );
-        while (physicalTransactionCursor.next() && visitor.visit( physicalTransactionCursor.get() ) )
+        while ( physicalTransactionCursor.next() && !visitor.visit( physicalTransactionCursor.get() ) )
         {
             ;
         }

@@ -41,71 +41,18 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 /**
  * Receives and unpacks {@link Response responses}.
  * Transaction obligations are handled by {@link TransactionObligationFulfiller} and
- * {@link TransactionStream transaction streams} are {@link TransactionRepresentationStoreApplier applied to the store},
+ * {@link TransactionStream transaction streams} are {@link TransactionRepresentationStoreApplier applied to the
+ * store},
  * in batches.
- *
+ * <p/>
  * It is assumed that any {@link TransactionStreamResponse response carrying transaction data} comes from the one
  * and same thread.
  */
 public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, Lifecycle
 {
     private static final int DEFAULT_BATCH_SIZE = 100;
-
-    private class BatchingResponseHandler implements Response.Handler,
-            Visitor<CommittedTransactionRepresentation, IOException>
-    {
-        private final TxHandler txHandler;
-
-        private BatchingResponseHandler( TxHandler txHandler )
-        {
-            this.txHandler = txHandler;
-        }
-
-        @Override
-        public void obligation( long txId ) throws IOException
-        {
-            if ( txId == TransactionIdStore.BASE_TX_ID )
-            {   // Means "empty" response
-                return;
-            }
-
-            try
-            {
-                obligationFulfiller.fulfill( txId );
-            }
-            catch ( InterruptedException e )
-            {
-                throw new IOException( e );
-            }
-        }
-
-        @Override
-        public Visitor<CommittedTransactionRepresentation, IOException> transactions()
-        {
-            return this;
-        }
-
-        @Override
-        public boolean visit( CommittedTransactionRepresentation transaction ) throws IOException
-        {
-            if ( transactionQueue.queue( transaction, txHandler ) )
-            {
-                applyQueuedTransactions();
-            }
-            return true;
-        }
-    }
-
     private final DependencyResolver resolver;
-
-    private TransactionAppender appender;
-    private TransactionRepresentationStoreApplier storeApplier;
-    private TransactionIdStore transactionIdStore;
-    private TransactionObligationFulfiller obligationFulfiller;
-    private LogFile logFile;
     private final TransactionQueue transactionQueue;
-    private volatile boolean stopped = false;
-
     // Visits all queued transactions, committing them
     private final TransactionVisitor batchAppender = new TransactionVisitor()
     {
@@ -115,7 +62,6 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
             appender.append( transaction.getTransactionRepresentation(), transaction.getCommitEntry().getTxId() );
         }
     };
-
     // Visits all queued, and recently appended, transactions, applying them to the store
     private final TransactionVisitor batchCommitterAndApplier = new TransactionVisitor()
     {
@@ -139,7 +85,12 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
             }
         }
     };
-
+    private TransactionAppender appender;
+    private TransactionRepresentationStoreApplier storeApplier;
+    private TransactionIdStore transactionIdStore;
+    private TransactionObligationFulfiller obligationFulfiller;
+    private LogFile logFile;
+    private volatile boolean stopped = false;
     private KernelHealth kernelHealth;
 
     public TransactionCommittingResponseUnpacker( DependencyResolver resolver )
@@ -151,6 +102,25 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
     {
         this.resolver = resolver;
         this.transactionQueue = new TransactionQueue( maxBatchSize );
+    }
+
+    private static TransactionObligationFulfiller resolveTransactionObligationFulfiller( DependencyResolver resolver )
+    {
+        try
+        {
+            return resolver.resolveDependency( TransactionObligationFulfiller.class );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            return new TransactionObligationFulfiller()
+            {
+                @Override
+                public void fulfill( long toTxId )
+                {
+                    throw new UnsupportedOperationException( "Should not be called" );
+                }
+            };
+        }
     }
 
     @Override
@@ -229,25 +199,6 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
         this.stopped = false;
     }
 
-    private static TransactionObligationFulfiller resolveTransactionObligationFulfiller( DependencyResolver resolver )
-    {
-        try
-        {
-            return resolver.resolveDependency( TransactionObligationFulfiller.class );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            return new TransactionObligationFulfiller()
-            {
-                @Override
-                public void fulfill( long toTxId )
-                {
-                    throw new UnsupportedOperationException( "Should not be called" );
-                }
-            };
-        }
-    }
-
     @Override
     public void stop() throws Throwable
     {
@@ -257,5 +208,50 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
     @Override
     public void shutdown() throws Throwable
     {   // Nothing to shut down
+    }
+
+    private class BatchingResponseHandler implements Response.Handler,
+            Visitor<CommittedTransactionRepresentation,IOException>
+    {
+        private final TxHandler txHandler;
+
+        private BatchingResponseHandler( TxHandler txHandler )
+        {
+            this.txHandler = txHandler;
+        }
+
+        @Override
+        public void obligation( long txId ) throws IOException
+        {
+            if ( txId == TransactionIdStore.BASE_TX_ID )
+            {   // Means "empty" response
+                return;
+            }
+
+            try
+            {
+                obligationFulfiller.fulfill( txId );
+            }
+            catch ( InterruptedException e )
+            {
+                throw new IOException( e );
+            }
+        }
+
+        @Override
+        public Visitor<CommittedTransactionRepresentation,IOException> transactions()
+        {
+            return this;
+        }
+
+        @Override
+        public boolean visit( CommittedTransactionRepresentation transaction ) throws IOException
+        {
+            if ( transactionQueue.queue( transaction, txHandler ) )
+            {
+                applyQueuedTransactions();
+            }
+            return false;
+        }
     }
 }

@@ -56,7 +56,7 @@ public class HighIdTransactionApplier implements NeoCommandHandler
 {
     private final NeoCommandHandler delegate;
     private final NeoStore neoStore;
-    private final Map<CommonAbstractStore, HighId> highIds = new HashMap<>();
+    private final Map<CommonAbstractStore,HighId> highIds = new HashMap<>();
 
     public HighIdTransactionApplier( NeoCommandHandler delegate, NeoStore neoStore )
     {
@@ -146,7 +146,7 @@ public class HighIdTransactionApplier implements NeoCommandHandler
     public boolean visitNeoStoreCommand( NeoStoreCommand command ) throws IOException
     {
         delegate.visitNeoStoreCommand( command );
-        return true;
+        return false;
     }
 
     @Override
@@ -197,7 +197,7 @@ public class HighIdTransactionApplier implements NeoCommandHandler
         delegate.apply();
         // Notifies the stores about the recovered ids and will bump those high ids atomically if
         // they surpass the current high ids
-        for ( Map.Entry<CommonAbstractStore, HighId> highId : highIds.entrySet() )
+        for ( Map.Entry<CommonAbstractStore,HighId> highId : highIds.entrySet() )
         {
             highId.getKey().setHighestPossibleIdInUse( highId.getValue().id );
         }
@@ -236,7 +236,7 @@ public class HighIdTransactionApplier implements NeoCommandHandler
     }
 
     private <RECORD extends TokenRecord> void trackToken( TokenStore<RECORD> tokenStore,
-            TokenCommand<RECORD> tokenCommand )
+                                                          TokenCommand<RECORD> tokenCommand )
     {
         track( tokenStore, tokenCommand );
         track( tokenStore.getNameStore(), tokenCommand.getRecord().getNameRecords() );

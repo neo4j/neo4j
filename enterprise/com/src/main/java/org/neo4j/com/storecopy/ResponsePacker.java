@@ -44,7 +44,7 @@ public class ResponsePacker
     private final TransactionIdStore transactionIdStore;
 
     public ResponsePacker( LogicalTransactionStore transactionStore, TransactionIdStore transactionIdStore,
-            Provider<StoreId> storeId )
+                           Provider<StoreId> storeId )
     {
         this.transactionStore = transactionStore;
         this.transactionIdStore = transactionIdStore;
@@ -58,7 +58,7 @@ public class ResponsePacker
         TransactionStream transactions = new TransactionStream()
         {
             @Override
-            public void accept( Visitor<CommittedTransactionRepresentation, IOException> visitor ) throws IOException
+            public void accept( Visitor<CommittedTransactionRepresentation,IOException> visitor ) throws IOException
             {
                 // Check so that it's even worth thinking about extracting any transactions at all
                 if ( toStartFrom > BASE_TX_ID && toStartFrom <= toEndAt )
@@ -77,7 +77,7 @@ public class ResponsePacker
     }
 
     public <T> Response<T> packTransactionObligationResponse( RequestContext context, T response,
-            long obligationTxId )
+                                                              long obligationTxId )
     {
         return new TransactionObligationResponse<>( response, storeId.instance(), obligationTxId,
                 ResourceReleaser.NO_OP );
@@ -89,10 +89,10 @@ public class ResponsePacker
                 ResourceReleaser.NO_OP );
     }
 
-    protected Visitor<CommittedTransactionRepresentation, IOException> filterVisitor(
-            final Visitor<CommittedTransactionRepresentation, IOException> delegate, final long txToEndAt )
+    protected Visitor<CommittedTransactionRepresentation,IOException> filterVisitor(
+            final Visitor<CommittedTransactionRepresentation,IOException> delegate, final long txToEndAt )
     {
-        return new Visitor<CommittedTransactionRepresentation, IOException>()
+        return new Visitor<CommittedTransactionRepresentation,IOException>()
         {
             @Override
             public boolean visit( CommittedTransactionRepresentation element ) throws IOException
@@ -107,14 +107,15 @@ public class ResponsePacker
     }
 
     protected void extractTransactions( long startingAtTransactionId,
-            Visitor<CommittedTransactionRepresentation,IOException> visitor ) throws IOException
+                                        Visitor<CommittedTransactionRepresentation,IOException> visitor )
+            throws IOException
     {
         try ( IOCursor<CommittedTransactionRepresentation> cursor = transactionStore
                 .getTransactions( startingAtTransactionId ) )
         {
-            while ( cursor.next() && visitor.visit( cursor.get() ) )
+            while ( cursor.next() && !visitor.visit( cursor.get() ) )
             {
-                // Just keep on going
+                ;
             }
         }
     }

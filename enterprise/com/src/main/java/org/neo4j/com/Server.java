@@ -19,19 +19,6 @@
  */
 package org.neo4j.com;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.net.InetSocketAddress;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -50,6 +37,19 @@ import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.net.InetSocketAddress;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Exceptions;
@@ -66,12 +66,11 @@ import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.Executors.newScheduledThreadPool;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
-
 import static org.neo4j.com.DechunkingChannelBuffer.assertSameProtocolVersion;
 import static org.neo4j.com.Protocol.addLengthFieldPipes;
 import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
-import static org.neo4j.helpers.NamedThreadFactory.named;
 import static org.neo4j.helpers.NamedThreadFactory.daemon;
+import static org.neo4j.helpers.NamedThreadFactory.named;
 
 /**
  * Receives requests from {@link Client clients}. Delegates actual work to an instance
@@ -91,8 +90,6 @@ import static org.neo4j.helpers.NamedThreadFactory.daemon;
  */
 public abstract class Server<T, R> extends SimpleChannelHandler implements ChannelPipelineFactory, Lifecycle
 {
-    private static final String INADDR_ANY = "0.0.0.0";
-
     public interface Configuration
     {
         long getOldChannelThreshold();
@@ -104,47 +101,41 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         HostnamePort getServerAddress();
     }
 
-    static final byte INTERNAL_PROTOCOL_VERSION = 2;
-
     // It's ok if there are more transactions, since these worker threads doesn't
     // do any actual work themselves, but spawn off other worker threads doing the
     // actual work. So this is more like a core Netty I/O pool worker size.
     public final static int DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS = 200;
-
-    private ServerBootstrap bootstrap;
+    static final byte INTERNAL_PROTOCOL_VERSION = 2;
+    private static final String INADDR_ANY = "0.0.0.0";
     private final T requestTarget;
-    private ChannelGroup channelGroup;
-    private final Map<Channel, Pair<RequestContext, AtomicLong /*time last heard of*/>> connectedSlaveChannels =
+    private final Map<Channel,Pair<RequestContext,AtomicLong /*time last heard of*/>> connectedSlaveChannels =
             new ConcurrentHashMap<>();
-    private ExecutorService targetCallExecutor;
     private final StringLogger msgLog;
-    private final Map<Channel, PartialRequest> partialRequests = new ConcurrentHashMap<>();
+    private final Map<Channel,PartialRequest> partialRequests = new ConcurrentHashMap<>();
     private final Configuration config;
     private final int frameLength;
-    private volatile boolean shuttingDown;
-
     private final ByteCounterMonitor byteCounterMonitor;
     private final RequestMonitor requestMonitor;
-    private InetSocketAddress socketAddress;
-
     private final Clock clock;
-
+    private final byte applicationProtocolVersion;
+    private final TxChecksumVerifier txVerifier;
+    private ServerBootstrap bootstrap;
+    private ChannelGroup channelGroup;
+    private ExecutorService targetCallExecutor;
+    private volatile boolean shuttingDown;
+    private InetSocketAddress socketAddress;
     // Executor for channels that we know should be finished, but can't due to being
     // active at the moment.
     private ExecutorService unfinishedTransactionExecutor;
-
     // This is because there's a bug in Netty causing some channelClosed/channelDisconnected
     // events to not be sent. This is merely a safety net to catch the remained of the closed
     // channels that netty doesn't tell us about.
     private ScheduledExecutorService silentChannelExecutor;
-
-    private final byte applicationProtocolVersion;
     private long oldChannelThresholdMillis;
-    private final TxChecksumVerifier txVerifier;
     private int chunkSize;
 
     public Server( T requestTarget, Configuration config, Logging logging, int frameLength,
-            ProtocolVersion protocolVersion, TxChecksumVerifier txVerifier, Clock clock, ByteCounterMonitor
+                   ProtocolVersion protocolVersion, TxChecksumVerifier txVerifier, Clock clock, ByteCounterMonitor
             byteCounterMonitor, RequestMonitor requestMonitor )
     {
         this.requestTarget = requestTarget;
@@ -156,6 +147,15 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         this.clock = clock;
         this.byteCounterMonitor = byteCounterMonitor;
         this.requestMonitor = requestMonitor;
+    }
+
+    private static void writeStoreId( StoreId storeId, ChannelBuffer targetBuffer )
+    {
+        targetBuffer.writeLong( storeId.getCreationTime() );
+        targetBuffer.writeLong( storeId.getRandomId() );
+        targetBuffer.writeLong( storeId.getStoreVersion() );
+        targetBuffer.writeLong( storeId.getUpgradeTime() );
+        targetBuffer.writeLong( storeId.getUpgradeId() );
     }
 
     @Override
@@ -193,7 +193,8 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
 
         for ( int port = ports[0]; port <= ports[1]; port++ )
         {
-            if ( config.getServerAddress().getHost() == null || config.getServerAddress().getHost().equals( INADDR_ANY ))
+            if ( config.getServerAddress().getHost() == null ||
+                 config.getServerAddress().getHost().equals( INADDR_ANY ) )
             {
                 socketAddress = new InetSocketAddress( port );
             }
@@ -266,10 +267,10 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
             @Override
             public void run()
             {
-                Map<Channel, Boolean/*starting to get old?*/> channels = new HashMap<>();
+                Map<Channel,Boolean/*starting to get old?*/> channels = new HashMap<>();
                 synchronized ( connectedSlaveChannels )
                 {
-                    for ( Map.Entry<Channel, Pair<RequestContext, AtomicLong>> channel : connectedSlaveChannels
+                    for ( Map.Entry<Channel,Pair<RequestContext,AtomicLong>> channel : connectedSlaveChannels
                             .entrySet() )
                     {   // Has this channel been silent for a while?
                         long age = System.currentTimeMillis() - channel.getValue().other().get();
@@ -284,10 +285,10 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
                         }
                     }
                 }
-                for ( Map.Entry<Channel, Boolean> channel : channels.entrySet() )
+                for ( Map.Entry<Channel,Boolean> channel : channels.entrySet() )
                 {
                     if ( channel.getValue() || !channel.getKey().isOpen() || !channel.getKey().isConnected() ||
-                            !channel.getKey().isBound() )
+                         !channel.getKey().isBound() )
                     {
                         tryToFinishOffChannel( channel.getKey() );
                     }
@@ -308,12 +309,11 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     public ChannelPipeline getPipeline() throws Exception
     {
         ChannelPipeline pipeline = Channels.pipeline();
-        pipeline.addLast( "monitor", new MonitorChannelHandler(byteCounterMonitor) );
+        pipeline.addLast( "monitor", new MonitorChannelHandler( byteCounterMonitor ) );
         addLengthFieldPipes( pipeline, frameLength );
         pipeline.addLast( "serverHandler", this );
         return pipeline;
     }
-
 
     @Override
     public void channelOpen( ChannelHandlerContext ctx, ChannelStateEvent e ) throws Exception
@@ -355,7 +355,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
          * but it is more sanitary and leaves less exceptions in the logs
          * Each time a write completes, simply update the corresponding channel's timestamp.
          */
-        Pair<RequestContext, AtomicLong> slave = connectedSlaveChannels.get( ctx.getChannel() );
+        Pair<RequestContext,AtomicLong> slave = connectedSlaveChannels.get( ctx.getChannel() );
         if ( slave != null )
         {
             slave.other().set( clock.currentTimeMillis() );
@@ -397,7 +397,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
 
     protected void tryToFinishOffChannel( Channel channel )
     {
-        Pair<RequestContext, AtomicLong> slave;
+        Pair<RequestContext,AtomicLong> slave;
         slave = unmapSlave( channel );
         if ( slave == null )
         {
@@ -543,10 +543,111 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
                 {
                     writeFailureResponse( e, newChunkingBuffer( channel ) );
                 }
-            });
+            } );
             return null;
         }
         return (byte) (header[0] & 0x1);
+    }
+
+    protected void writeFailureResponse( Throwable exception, ChunkingChannelBuffer buffer )
+    {
+        try
+        {
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            ObjectOutputStream out = new ObjectOutputStream( bytes );
+            out.writeObject( exception );
+            out.close();
+            buffer.writeBytes( bytes.toByteArray() );
+            buffer.done();
+        }
+        catch ( IOException e )
+        {
+            msgLog.logMessage( "Couldn't send cause of error to client", exception );
+        }
+    }
+
+    protected void responseWritten( RequestType<T> type, Channel channel, RequestContext context )
+    {
+    }
+
+    protected RequestContext readContext( ChannelBuffer buffer )
+    {
+        long sessionId = buffer.readLong();
+        int machineId = buffer.readInt();
+        int eventIdentifier = buffer.readInt();
+        long neoTx = buffer.readLong();
+        int masterId = buffer.readInt();
+        long checksum = buffer.readLong();
+
+        RequestContext readRequestContext = new RequestContext( sessionId, machineId, eventIdentifier, neoTx, masterId,
+                checksum );
+        // Only perform checksum checks on the neo data source. If there's none in the request
+        // then don't perform any such check.
+        if ( neoTx > 0 )
+        {
+            txVerifier.assertMatch( neoTx, masterId, checksum );
+        }
+        return readRequestContext;
+    }
+
+    protected abstract RequestType<T> getRequestContext( byte id );
+
+    protected ChannelBuffer mapSlave( Channel channel, RequestContext slave )
+    {
+        synchronized ( connectedSlaveChannels )
+        {
+            // Checking for machineId -1 excludes the "empty" slave contexts
+            // which some communication points pass in as context.
+            if ( slave != null && slave.machineId() != RequestContext.EMPTY.machineId() )
+            {
+                Pair<RequestContext,AtomicLong> previous = connectedSlaveChannels.get( channel );
+                if ( previous != null )
+                {
+                    previous.other().set( System.currentTimeMillis() );
+                }
+                else
+                {
+                    connectedSlaveChannels.put( channel,
+                            Pair.of( slave, new AtomicLong( System.currentTimeMillis() ) ) );
+                }
+            }
+        }
+        return ChannelBuffers.dynamicBuffer();
+    }
+
+    protected Pair<RequestContext,AtomicLong> unmapSlave( Channel channel )
+    {
+        synchronized ( connectedSlaveChannels )
+        {
+            return connectedSlaveChannels.remove( channel );
+        }
+    }
+
+    protected T getRequestTarget()
+    {
+        return requestTarget;
+    }
+
+    protected abstract void finishOffChannel( Channel channel, RequestContext context );
+
+    public Map<Channel,RequestContext> getConnectedSlaveChannels()
+    {
+        Map<Channel,RequestContext> result = new HashMap<>();
+        synchronized ( connectedSlaveChannels )
+        {
+            for ( Map.Entry<Channel,Pair<RequestContext,AtomicLong>> entry : connectedSlaveChannels.entrySet() )
+            {
+                result.put( entry.getKey(), entry.getValue().first() );
+            }
+        }
+        return result;
+    }
+
+    private ChunkingChannelBuffer newChunkingBuffer( Channel channel )
+    {
+        return new ChunkingChannelBuffer( ChannelBuffers.dynamicBuffer(),
+                channel,
+                chunkSize, getInternalProtocolVersion(), applicationProtocolVersion );
     }
 
     private class TargetCaller implements Response.Handler, Runnable
@@ -558,7 +659,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         private final ChannelBuffer bufferToReadFrom;
 
         TargetCaller( RequestType<T> type, Channel channel, RequestContext context,
-                ChunkingChannelBuffer targetBuffer, ChannelBuffer bufferToReadFrom )
+                      ChunkingChannelBuffer targetBuffer, ChannelBuffer bufferToReadFrom )
         {
             this.type = type;
             this.channel = channel;
@@ -568,10 +669,10 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         }
 
         @Override
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         public void run()
         {
-            Map<String, String> requestContext = new HashMap<>();
+            Map<String,String> requestContext = new HashMap<>();
             requestContext.put( "type", type.toString() );
             requestContext.put( "remoteClient", channel.getRemoteAddress().toString() );
             requestContext.put( "slaveContext", context.toString() );
@@ -614,121 +715,11 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         }
 
         @Override
-        public Visitor<CommittedTransactionRepresentation, IOException> transactions()
+        public Visitor<CommittedTransactionRepresentation,IOException> transactions()
         {
             targetBuffer.writeByte( 1 );
             return new CommittedTransactionSerializer( targetBuffer );
         }
-    }
-
-    protected void writeFailureResponse( Throwable exception, ChunkingChannelBuffer buffer )
-    {
-        try
-        {
-            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-            ObjectOutputStream out = new ObjectOutputStream( bytes );
-            out.writeObject( exception );
-            out.close();
-            buffer.writeBytes( bytes.toByteArray() );
-            buffer.done();
-        }
-        catch ( IOException e )
-        {
-            msgLog.logMessage( "Couldn't send cause of error to client", exception );
-        }
-    }
-
-    protected void responseWritten( RequestType<T> type, Channel channel, RequestContext context )
-    {
-    }
-
-    private static void writeStoreId( StoreId storeId, ChannelBuffer targetBuffer )
-    {
-        targetBuffer.writeLong( storeId.getCreationTime() );
-        targetBuffer.writeLong( storeId.getRandomId() );
-        targetBuffer.writeLong( storeId.getStoreVersion() );
-        targetBuffer.writeLong( storeId.getUpgradeTime() );
-        targetBuffer.writeLong( storeId.getUpgradeId() );
-    }
-
-    protected RequestContext readContext( ChannelBuffer buffer )
-    {
-        long sessionId = buffer.readLong();
-        int machineId = buffer.readInt();
-        int eventIdentifier = buffer.readInt();
-        long neoTx = buffer.readLong();
-        int masterId = buffer.readInt();
-        long checksum = buffer.readLong();
-
-        RequestContext readRequestContext = new RequestContext( sessionId, machineId, eventIdentifier, neoTx, masterId,
-                checksum );
-        // Only perform checksum checks on the neo data source. If there's none in the request
-        // then don't perform any such check.
-        if ( neoTx > 0 )
-        {
-            txVerifier.assertMatch( neoTx, masterId, checksum );
-        }
-        return readRequestContext;
-    }
-
-    protected abstract RequestType<T> getRequestContext( byte id );
-
-    protected ChannelBuffer mapSlave( Channel channel, RequestContext slave )
-    {
-        synchronized ( connectedSlaveChannels )
-        {
-            // Checking for machineId -1 excludes the "empty" slave contexts
-            // which some communication points pass in as context.
-            if ( slave != null && slave.machineId() != RequestContext.EMPTY.machineId() )
-            {
-                Pair<RequestContext, AtomicLong> previous = connectedSlaveChannels.get( channel );
-                if ( previous != null )
-                {
-                    previous.other().set( System.currentTimeMillis() );
-                }
-                else
-                {
-                    connectedSlaveChannels.put( channel,
-                            Pair.of( slave, new AtomicLong( System.currentTimeMillis() ) ) );
-                }
-            }
-        }
-        return ChannelBuffers.dynamicBuffer();
-    }
-
-    protected Pair<RequestContext, AtomicLong> unmapSlave( Channel channel )
-    {
-        synchronized ( connectedSlaveChannels )
-        {
-            return connectedSlaveChannels.remove( channel );
-        }
-    }
-
-    protected T getRequestTarget()
-    {
-        return requestTarget;
-    }
-
-    protected abstract void finishOffChannel( Channel channel, RequestContext context );
-
-    public Map<Channel, RequestContext> getConnectedSlaveChannels()
-    {
-        Map<Channel, RequestContext> result = new HashMap<>();
-        synchronized ( connectedSlaveChannels )
-        {
-            for ( Map.Entry<Channel, Pair<RequestContext, AtomicLong>> entry : connectedSlaveChannels.entrySet() )
-            {
-                result.put( entry.getKey(), entry.getValue().first() );
-            }
-        }
-        return result;
-    }
-
-    private ChunkingChannelBuffer newChunkingBuffer( Channel channel )
-    {
-        return new ChunkingChannelBuffer( ChannelBuffers.dynamicBuffer(),
-                channel,
-                chunkSize, getInternalProtocolVersion(), applicationProtocolVersion );
     }
 
     private class PartialRequest

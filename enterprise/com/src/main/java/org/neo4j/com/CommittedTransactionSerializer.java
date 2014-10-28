@@ -19,9 +19,9 @@
  */
 package org.neo4j.com;
 
-import java.io.IOException;
-
 import org.jboss.netty.buffer.ChannelBuffer;
+
+import java.io.IOException;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -31,10 +31,11 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterv1;
 
 /**
- * Serialized {@link CommittedTransactionRepresentation transactions} to raw bytes on the {@link ChannelBuffer network}.
+ * Serialized {@link CommittedTransactionRepresentation transactions} to raw bytes on the {@link ChannelBuffer
+ * network}.
  * One serializer can be instantiated per response and is able to serialize one or many transactions.
  */
-public class CommittedTransactionSerializer implements Visitor<CommittedTransactionRepresentation, IOException>
+public class CommittedTransactionSerializer implements Visitor<CommittedTransactionRepresentation,IOException>
 {
     private final NetworkWritableLogChannel channel;
     private final LogEntryWriterv1 writer;
@@ -55,6 +56,6 @@ public class CommittedTransactionSerializer implements Visitor<CommittedTransact
         writer.serialize( tx.getTransactionRepresentation() );
         LogEntryCommit commitEntry = tx.getCommitEntry();
         writer.writeCommitEntry( commitEntry.getTxId(), commitEntry.getTimeWritten() );
-        return true;
+        return false;
     }
 }

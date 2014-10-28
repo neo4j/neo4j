@@ -37,7 +37,7 @@ import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
  * Visits commands targeted towards the {@link NeoStore} and update corresponding stores.
  * What happens in here is what will happen in a "internal" transaction, i.e. a transaction that has been
  * forged in this database, with transaction state, a KernelTransaction and all that and is now committing.
- *
+ * <p/>
  * For other modes of application, like recovery or external there are other, added functionality, decorated
  * outside this applier.
  */
@@ -51,7 +51,7 @@ public class NeoStoreTransactionApplier extends NeoCommandHandler.Adapter
     private final long transactionId;
 
     public NeoStoreTransactionApplier( NeoStore store, CacheAccessBackDoor cacheAccess,
-            LockService lockService, LockGroup lockGroup, long transactionId )
+                                       LockService lockService, LockGroup lockGroup, long transactionId )
     {
         this.neoStore = store;
         this.cacheAccess = cacheAccess;
@@ -78,7 +78,7 @@ public class NeoStoreTransactionApplier extends NeoCommandHandler.Adapter
         {
             cacheAccess.removeNodeFromCache( command.getKey() );
         }
-        return true;
+        return false;
     }
 
     @Override
@@ -102,7 +102,7 @@ public class NeoStoreTransactionApplier extends NeoCommandHandler.Adapter
             cacheAccess.patchDeletedRelationshipNodes( command.getKey(), record.getFirstNode(),
                     record.getFirstNextRel(), record.getSecondNode(), record.getSecondNextRel() );
         }
-        return true;
+        return false;
     }
 
     @Override
@@ -118,35 +118,35 @@ public class NeoStoreTransactionApplier extends NeoCommandHandler.Adapter
         // track the dynamic value record high ids
         // update store
         neoStore.getPropertyStore().updateRecord( command.getAfter() );
-        return true;
+        return false;
     }
 
     @Override
     public boolean visitRelationshipGroupCommand( Command.RelationshipGroupCommand command ) throws IOException
     {
         neoStore.getRelationshipGroupStore().updateRecord( command.getRecord() );
-        return true;
+        return false;
     }
 
     @Override
     public boolean visitRelationshipTypeTokenCommand( Command.RelationshipTypeTokenCommand command ) throws IOException
     {
         neoStore.getRelationshipTypeTokenStore().updateRecord( command.getRecord() );
-        return true;
+        return false;
     }
 
     @Override
     public boolean visitLabelTokenCommand( Command.LabelTokenCommand command ) throws IOException
     {
         neoStore.getLabelTokenStore().updateRecord( command.getRecord() );
-        return true;
+        return false;
     }
 
     @Override
     public boolean visitPropertyKeyTokenCommand( Command.PropertyKeyTokenCommand command ) throws IOException
     {
         neoStore.getPropertyKeyTokenStore().updateRecord( command.getRecord() );
-        return true;
+        return false;
     }
 
     @Override
@@ -172,33 +172,33 @@ public class NeoStoreTransactionApplier extends NeoCommandHandler.Adapter
         {
             switch ( command.getMode() )
             {
-                case UPDATE:
-                case CREATE:
-                    neoStore.setLatestConstraintIntroducingTx( transactionId );
-                    break;
-                case DELETE:
-                    break;
-                default:
-                    throw new IllegalStateException( command.getMode().name() );
+            case UPDATE:
+            case CREATE:
+                neoStore.setLatestConstraintIntroducingTx( transactionId );
+                break;
+            case DELETE:
+                break;
+            default:
+                throw new IllegalStateException( command.getMode().name() );
             }
         }
 
         switch ( command.getMode() )
         {
-            case DELETE:
-                cacheAccess.removeSchemaRuleFromCache( command.getKey() );
-                break;
-            default:
-                cacheAccess.addSchemaRule( command.getSchemaRule() );
+        case DELETE:
+            cacheAccess.removeSchemaRuleFromCache( command.getKey() );
+            break;
+        default:
+            cacheAccess.addSchemaRule( command.getSchemaRule() );
         }
-        return true;
+        return false;
     }
 
     @Override
     public boolean visitNeoStoreCommand( Command.NeoStoreCommand command ) throws IOException
     {
         neoStore.setGraphNextProp( command.getRecord().getNextProp() );
-        return true;
+        return false;
     }
 
     private boolean nodeHasBeenUpgradedToDense( NodeCommand command )
@@ -207,6 +207,6 @@ public class NeoStoreTransactionApplier extends NeoCommandHandler.Adapter
         final NodeRecord after = command.getAfter();
 
         return before.inUse() && !before.isDense() &&
-                after.inUse() && after.isDense();
+               after.inUse() && after.isDense();
     }
 }

@@ -19,6 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Test;
+import org.mockito.Matchers;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -32,14 +40,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.mockito.Matchers;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -98,7 +98,6 @@ import org.neo4j.test.PageCacheRule;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static java.lang.Integer.parseInt;
-
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -116,7 +115,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -141,6 +139,72 @@ import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 public class NeoStoreTransactionTest
 {
     public static final String LONG_STRING = "string value long enough not to be stored as a short string";
+    private static final long[] none = new long[0];
+    @ClassRule
+    public static PageCacheRule pageCacheRule = new PageCacheRule();
+    @SuppressWarnings( "deprecation" )
+    private final DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
+    private final List<Lock> lockMocks = new ArrayList<>();
+    private EphemeralFileSystemAbstraction fs;
+    private PageCache pageCache;
+    private Config config;
+    private NeoStore neoStore;
+
+    // TODO change property record
+    // TODO remove property record
+    private LockService locks;
+    private CacheAccessBackDoor cacheAccessBackDoor;
+    private IndexingService mockIndexing;
+    private PropertyLoader propertyLoader;
+    private long nextTxId = BASE_TX_ID + 1;
+
+    private static void assertRelationshipGroupDoesNotExist( NeoStoreTransactionContext txCtx, NodeRecord node,
+                                                             int type )
+    {
+        assertNull( txCtx.getRelationshipGroup( node, type ) );
+    }
+
+    private static void assertDenseRelationshipCounts( TransactionRecordState tx, NeoStoreTransactionContext txCtx,
+                                                       long nodeId, int type, int outCount, int inCount )
+    {
+        RelationshipGroupRecord group = txCtx.getRelationshipGroup(
+                txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), type ).forReadingData();
+        assertNotNull( group );
+
+        RelationshipRecord rel;
+        long relId = group.getFirstOut();
+        if ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
+        {
+            rel = txCtx.getRelRecords().getOrLoad( relId, null ).forReadingData();
+            // count is stored in the back pointer of the first relationship in the chain
+            assertEquals( "Stored relationship count for OUTGOING differs", outCount, rel.getFirstPrevRel() );
+            assertEquals( "Manually counted relationships for OUTGOING differs", outCount,
+                    manuallyCountRelationships( txCtx, nodeId, relId ) );
+        }
+
+        relId = group.getFirstIn();
+        if ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
+        {
+            rel = txCtx.getRelRecords().getOrLoad( relId, null ).forReadingData();
+            assertEquals( "Stored relationship count for INCOMING differs", inCount, rel.getSecondPrevRel() );
+            assertEquals( "Manually counted relationships for INCOMING differs", inCount,
+                    manuallyCountRelationships( txCtx, nodeId, relId ) );
+        }
+    }
+
+    private static int manuallyCountRelationships( NeoStoreTransactionContext txCtx, long nodeId,
+                                                   long firstRelId )
+    {
+        int count = 0;
+        long relId = firstRelId;
+        while ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
+        {
+            count++;
+            RelationshipRecord record = txCtx.getRelRecords().getOrLoad( relId, null ).forReadingData();
+            relId = record.getFirstNode() == nodeId ? record.getFirstNextRel() : record.getSecondNextRel();
+        }
+        return count;
+    }
 
     @Test
     public void shouldValidateConstraintIndexAsPartOfPrepare() throws Exception
@@ -254,9 +318,9 @@ public class NeoStoreTransactionTest
 
         // THEN
         // The dynamic label record should be part of what is logged, and it should be set to not in use anymore.
-        final AtomicBoolean nodeCommandsExist = new AtomicBoolean(false);
+        final AtomicBoolean nodeCommandsExist = new AtomicBoolean( false );
 
-        transactionCommands.accept( new NeoCommandHandler.HandlerVisitor(new NeoCommandHandler.Adapter()
+        transactionCommands.accept( new NeoCommandHandler.HandlerVisitor( new NeoCommandHandler.Adapter()
         {
             @Override
             public boolean visitNodeCommand( NodeCommand command ) throws IOException
@@ -265,9 +329,9 @@ public class NeoStoreTransactionTest
                 Collection<DynamicRecord> beforeDynLabels = command.getAfter().getDynamicLabelRecords();
                 assertThat( beforeDynLabels.size(), equalTo( 1 ) );
                 assertThat( beforeDynLabels.iterator().next().inUse(), equalTo( false ) );
-                return true;
+                return false;
             }
-        } ));
+        } ) );
 
         assertTrue( "No node commands found", nodeCommandsExist.get() );
     }
@@ -316,9 +380,9 @@ public class NeoStoreTransactionTest
             commitProcess().commit( transactionCommands, locks );
         }
 
-        final AtomicBoolean nodeCommandsExist = new AtomicBoolean(false);
+        final AtomicBoolean nodeCommandsExist = new AtomicBoolean( false );
 
-        transactionCommands.accept( new NeoCommandHandler.HandlerVisitor(new NeoCommandHandler.Adapter()
+        transactionCommands.accept( new NeoCommandHandler.HandlerVisitor( new NeoCommandHandler.Adapter()
         {
             @Override
             public boolean visitNodeCommand( NodeCommand command ) throws IOException
@@ -330,9 +394,9 @@ public class NeoStoreTransactionTest
                 assertThat( before.getId(), equalTo( after.getId() ) );
                 assertThat( after.inUse(), equalTo( true ) );
 
-                return true;
+                return false;
             }
-        } ));
+        } ) );
 
         assertTrue( "No node commands found", nodeCommandsExist.get() );
     }
@@ -357,7 +421,7 @@ public class NeoStoreTransactionTest
     public void shouldWriteProperBeforeAndAfterPropertyRecordsWhenAddingProperty() throws Exception
     {
         // THEN
-        Visitor<Command, RuntimeException> verifier = new Visitor<Command, RuntimeException>()
+        Visitor<Command,RuntimeException> verifier = new Visitor<Command,RuntimeException>()
         {
             @Override
             public boolean visit( Command element )
@@ -388,9 +452,6 @@ public class NeoStoreTransactionTest
         transactionRepresentationOf( writeTransaction );
     }
 
-    // TODO change property record
-    // TODO remove property record
-
     @Test
     public void shouldConvertAddedPropertyToNodePropertyUpdates() throws Exception
     {
@@ -413,8 +474,8 @@ public class NeoStoreTransactionTest
 
         // THEN
         assertEquals( asSet(
-                add( nodeId, propertyKey1, value1, none ),
-                add( nodeId, propertyKey2, value2, none ) ),
+                        add( nodeId, propertyKey1, value1, none ),
+                        add( nodeId, propertyKey2, value2, none ) ),
 
                 indexingService.updates );
     }
@@ -450,8 +511,8 @@ public class NeoStoreTransactionTest
 
         // THEN
         assertEquals( asSet(
-                change( nodeId, propertyKey1, value1, none, newValue1, none ),
-                change( nodeId, propertyKey2, value2, none, newValue2, none ) ),
+                        change( nodeId, propertyKey1, value1, none, newValue1, none ),
+                        change( nodeId, propertyKey2, value2, none, newValue2, none ) ),
 
                 indexingService.updates );
     }
@@ -486,8 +547,8 @@ public class NeoStoreTransactionTest
 
         // THEN
         assertEquals( asSet(
-                remove( nodeId, propertyKey1, value1, none ),
-                remove( nodeId, propertyKey2, value2, none ) ),
+                        remove( nodeId, propertyKey1, value1, none ),
+                        remove( nodeId, propertyKey2, value2, none ) ),
 
                 indexingService.updates );
     }
@@ -499,7 +560,7 @@ public class NeoStoreTransactionTest
         long nodeId = 0;
         TransactionRecordState writeTransaction = newWriteTransaction().first();
         int propertyKey1 = 1, propertyKey2 = 2, labelId = 3;
-        long[] labelIds = new long[] {labelId};
+        long[] labelIds = new long[]{labelId};
         Object value1 = LONG_STRING, value2 = LONG_STRING.getBytes();
         writeTransaction.nodeCreate( nodeId );
         writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
@@ -522,8 +583,8 @@ public class NeoStoreTransactionTest
 
         // THEN
         assertEquals( asSet(
-                add( nodeId, propertyKey1, value1, labelIds ),
-                add( nodeId, propertyKey2, value2, labelIds ) ),
+                        add( nodeId, propertyKey1, value1, labelIds ),
+                        add( nodeId, propertyKey2, value2, labelIds ) ),
 
                 indexingService.updates );
     }
@@ -558,9 +619,9 @@ public class NeoStoreTransactionTest
 
         // THEN
         assertEquals( asSet(
-                add( nodeId, propertyKey1, value1, new long[] {labelId2} ),
-                add( nodeId, propertyKey2, value2, new long[]{labelId2} ),
-                add( nodeId, propertyKey2, value2, new long[]{labelId1, labelId2} ) ),
+                        add( nodeId, propertyKey1, value1, new long[]{labelId2} ),
+                        add( nodeId, propertyKey2, value2, new long[]{labelId2} ),
+                        add( nodeId, propertyKey2, value2, new long[]{labelId1, labelId2} ) ),
 
                 indexingService.updates );
     }
@@ -572,7 +633,7 @@ public class NeoStoreTransactionTest
         long nodeId = 0;
         TransactionRecordState writeTransaction = newWriteTransaction().first();
         int propertyKey1 = 1, propertyKey2 = 2, labelId = 3;
-        long[] labelIds = new long[] {labelId};
+        long[] labelIds = new long[]{labelId};
         Object value1 = "first", value2 = 4;
         writeTransaction.nodeCreate( nodeId );
         writeTransaction.nodeAddProperty( nodeId, propertyKey1, value1 );
@@ -596,8 +657,8 @@ public class NeoStoreTransactionTest
 
         // THEN
         assertEquals( asSet(
-                remove( nodeId, propertyKey1, value1, labelIds ),
-                remove( nodeId, propertyKey2, value2, labelIds ) ),
+                        remove( nodeId, propertyKey1, value1, labelIds ),
+                        remove( nodeId, propertyKey2, value2, labelIds ) ),
 
                 indexingService.updates );
     }
@@ -634,8 +695,8 @@ public class NeoStoreTransactionTest
 
         // THEN
         assertEquals( asSet(
-                remove( nodeId, propertyKey1, value1, new long[] {labelId1, labelId2} ),
-                remove( nodeId, propertyKey2, value2, new long[] {labelId2} ) ),
+                        remove( nodeId, propertyKey1, value1, new long[]{labelId1, labelId2} ),
+                        remove( nodeId, propertyKey2, value2, new long[]{labelId2} ) ),
 
                 indexingService.updates );
     }
@@ -671,9 +732,9 @@ public class NeoStoreTransactionTest
 
         // THEN
         assertEquals( asSet(
-                add( nodeId, propertyKey2, value2, new long[]{labelId1} ),
-                remove( nodeId, propertyKey1, value1, new long[]{labelId2} ),
-                remove( nodeId, propertyKey2, value2, new long[]{labelId2} ) ),
+                        add( nodeId, propertyKey2, value2, new long[]{labelId1} ),
+                        remove( nodeId, propertyKey1, value1, new long[]{labelId2} ),
+                        remove( nodeId, propertyKey2, value2, new long[]{labelId2} ) ),
 
                 indexingService.updates );
     }
@@ -690,10 +751,12 @@ public class NeoStoreTransactionTest
         tx.createRelationshipTypeToken( "type", relationshipType );
         tx.relCreate( relId, 0, nodeId, nodeId );
         tx.relAddProperty( relId, propertyKeyId,
-                new long[] {1l << 60, 1l << 60, 1l << 60, 1l << 60, 1l << 60, 1l << 60, 1l << 60, 1l << 60, 1l << 60, 1l << 60} );
+                new long[]{1l << 60, 1l << 60, 1l << 60, 1l << 60, 1l << 60, 1l << 60, 1l << 60, 1l << 60, 1l << 60,
+                        1l << 60} );
         tx.createPropertyKeyToken( "key", propertyKeyId );
         tx.nodeAddProperty( nodeId, propertyKeyId,
-                "something long and nasty that requires dynamic records for sure I would think and hope. Ok then åäö%!=" );
+                "something long and nasty that requires dynamic records for sure I would think and hope. Ok then " +
+                "åäö%!=" );
         for ( int i = 0; i < 10; i++ )
         {
             tx.addLabelToNode( 10000 + i, nodeId );
@@ -707,17 +770,20 @@ public class NeoStoreTransactionTest
         commit( recoverer.getAsRecovered(), 3, TransactionApplicationMode.EXTERNAL );
 
         // THEN
-        assertEquals( "NodeStore", nodeId+1, neoStore.getNodeStore().getHighId() );
+        assertEquals( "NodeStore", nodeId + 1, neoStore.getNodeStore().getHighId() );
         assertEquals( "DynamicNodeLabelStore", 2, neoStore.getNodeStore().getDynamicLabelStore().getHighId() );
-        assertEquals( "RelationshipStore", relId+1, neoStore.getRelationshipStore().getHighId() );
-        assertEquals( "RelationshipTypeStore", relationshipType+1, neoStore.getRelationshipTypeTokenStore().getHighId() );
-        assertEquals( "RelationshipType NameStore", 2, neoStore.getRelationshipTypeTokenStore().getNameStore().getHighId() );
+        assertEquals( "RelationshipStore", relId + 1, neoStore.getRelationshipStore().getHighId() );
+        assertEquals( "RelationshipTypeStore", relationshipType + 1,
+                neoStore.getRelationshipTypeTokenStore().getHighId() );
+        assertEquals( "RelationshipType NameStore", 2,
+                neoStore.getRelationshipTypeTokenStore().getNameStore().getHighId() );
         assertEquals( "PropertyStore", 2, neoStore.getPropertyStore().getHighId() );
         assertEquals( "PropertyStore DynamicStringStore", 2, neoStore.getPropertyStore().getStringStore().getHighId() );
         assertEquals( "PropertyStore DynamicArrayStore", 2, neoStore.getPropertyStore().getArrayStore().getHighId() );
-        assertEquals( "PropertyIndexStore", propertyKeyId+1, neoStore.getPropertyKeyTokenStore().getHighId() );
-        assertEquals( "PropertyKeyToken NameStore", 2, neoStore.getPropertyStore().getPropertyKeyTokenStore().getNameStore().getHighId() );
-        assertEquals( "SchemaStore", ruleId+1, neoStore.getSchemaStore().getHighId() );
+        assertEquals( "PropertyIndexStore", propertyKeyId + 1, neoStore.getPropertyKeyTokenStore().getHighId() );
+        assertEquals( "PropertyKeyToken NameStore", 2,
+                neoStore.getPropertyStore().getPropertyKeyTokenStore().getNameStore().getHighId() );
+        assertEquals( "SchemaStore", ruleId + 1, neoStore.getSchemaStore().getHighId() );
     }
 
     @Test
@@ -733,7 +799,7 @@ public class NeoStoreTransactionTest
         tx.createSchemaRule( rule );
         PhysicalTransactionRepresentation transactionCommands = transactionRepresentationOf( tx );
 
-        transactionCommands.accept( new NeoCommandHandler.HandlerVisitor(new NeoCommandHandler.Adapter()
+        transactionCommands.accept( new NeoCommandHandler.HandlerVisitor( new NeoCommandHandler.Adapter()
         {
             @Override
             public boolean visitSchemaRuleCommand( SchemaRuleCommand command ) throws IOException
@@ -742,9 +808,9 @@ public class NeoStoreTransactionTest
                 {
                     assertFalse( record + " should have been heavy", record.isLight() );
                 }
-                return true;
+                return false;
             }
-        } ));
+        } ) );
     }
 
     @Test
@@ -777,7 +843,7 @@ public class NeoStoreTransactionTest
         }
 
         // WHEN
-        Visitor<Command, IOException> verifier = new NeoCommandHandler.HandlerVisitor(new NeoCommandHandler.Adapter()
+        Visitor<Command,IOException> verifier = new NeoCommandHandler.HandlerVisitor( new NeoCommandHandler.Adapter()
         {
             @Override
             public boolean visitPropertyCommand( PropertyCommand command ) throws IOException
@@ -785,7 +851,7 @@ public class NeoStoreTransactionTest
                 // THEN
                 verifyPropertyRecord( command.getBefore() );
                 verifyPropertyRecord( command.getAfter() );
-                return true;
+                return false;
             }
 
             private void verifyPropertyRecord( PropertyRecord record )
@@ -798,8 +864,8 @@ public class NeoStoreTransactionTest
                     }
                 }
             }
-        });
-        tx = newWriteTransaction( mockIndexing).first();
+        } );
+        tx = newWriteTransaction( mockIndexing ).first();
         int index2 = 1;
         tx.nodeAddProperty( nodeId, index2, string( 40 ) ); // will require a block of size 4
         PhysicalTransactionRepresentation representation = transactionRepresentationOf( tx );
@@ -819,7 +885,7 @@ public class NeoStoreTransactionTest
         // GIVEN
         long nodeId = 0;
         int labelId = 5, propertyKeyId = 7;
-        NodePropertyUpdate expectedUpdate = NodePropertyUpdate.add( nodeId, propertyKeyId, "Neo", new long[] {labelId} );
+        NodePropertyUpdate expectedUpdate = NodePropertyUpdate.add( nodeId, propertyKeyId, "Neo", new long[]{labelId} );
 
         // -- an index
         long ruleId = 0;
@@ -883,7 +949,7 @@ public class NeoStoreTransactionTest
             }
             tx.nodeAddProperty( nodes[3], 0, "old" );
             tx.nodeAddProperty( nodes[4], 0, "old" );
-            commitProcess().commit(transactionRepresentationOf( tx ), lockGroup );
+            commitProcess().commit( transactionRepresentationOf( tx ), lockGroup );
             reset( locks ); // reset the lock counts
         }
 
@@ -929,7 +995,7 @@ public class NeoStoreTransactionTest
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
         resetFileSystem();
         instantiateNeoStore( 50 );
-        Pair<TransactionRecordState, NeoStoreTransactionContext> transactionContextPair =
+        Pair<TransactionRecordState,NeoStoreTransactionContext> transactionContextPair =
                 newWriteTransaction();
         TransactionRecordState tx = transactionContextPair.first();
         NeoStoreTransactionContext txCtx = transactionContextPair.other();
@@ -967,7 +1033,7 @@ public class NeoStoreTransactionTest
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
         resetFileSystem();
         instantiateNeoStore( 49 );
-        Pair<TransactionRecordState, NeoStoreTransactionContext> transactionContextPair =
+        Pair<TransactionRecordState,NeoStoreTransactionContext> transactionContextPair =
                 newWriteTransaction();
         TransactionRecordState tx = transactionContextPair.first();
         NeoStoreTransactionContext txCtx = transactionContextPair.other();
@@ -996,7 +1062,7 @@ public class NeoStoreTransactionTest
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
         resetFileSystem();
         instantiateNeoStore( 8 );
-        Pair<TransactionRecordState, NeoStoreTransactionContext> transactionContextPair =
+        Pair<TransactionRecordState,NeoStoreTransactionContext> transactionContextPair =
                 newWriteTransaction();
         TransactionRecordState tx = transactionContextPair.first();
         NeoStoreTransactionContext txCtx = transactionContextPair.other();
@@ -1023,7 +1089,7 @@ public class NeoStoreTransactionTest
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
         resetFileSystem();
         instantiateNeoStore( 13 );
-        Pair<TransactionRecordState, NeoStoreTransactionContext> transactionContextPair =
+        Pair<TransactionRecordState,NeoStoreTransactionContext> transactionContextPair =
                 newWriteTransaction();
         TransactionRecordState tx = transactionContextPair.first();
         NeoStoreTransactionContext txCtx = transactionContextPair.other();
@@ -1045,7 +1111,7 @@ public class NeoStoreTransactionTest
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
         resetFileSystem();
         instantiateNeoStore( 1 );
-        Pair<TransactionRecordState, NeoStoreTransactionContext> transactionAndContextPair =
+        Pair<TransactionRecordState,NeoStoreTransactionContext> transactionAndContextPair =
                 newWriteTransaction();
         TransactionRecordState tx = transactionAndContextPair.first();
         NeoStoreTransactionContext txCtx = transactionAndContextPair.other();
@@ -1076,7 +1142,8 @@ public class NeoStoreTransactionTest
         deleteRelationship( tx, relationshipsCreatedAOutgoing[0] );
 
         // THEN
-        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), typeA );
+        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(),
+                typeA );
         assertDenseRelationshipCounts( tx, txCtx, nodeId, typeB, 1, 1 );
         assertDenseRelationshipCounts( tx, txCtx, nodeId, typeC, 1, 1 );
 
@@ -1084,7 +1151,8 @@ public class NeoStoreTransactionTest
         deleteRelationship( tx, relationshipsCreatedBIncoming[0] );
 
         // THEN
-        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), typeA );
+        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(),
+                typeA );
         assertDenseRelationshipCounts( tx, txCtx, nodeId, typeB, 1, 0 );
         assertDenseRelationshipCounts( tx, txCtx, nodeId, typeC, 1, 1 );
 
@@ -1092,25 +1160,32 @@ public class NeoStoreTransactionTest
         deleteRelationship( tx, relationshipsCreatedBOutgoing[0] );
 
         // THEN
-        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), typeA );
-        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), typeB );
+        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(),
+                typeA );
+        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(),
+                typeB );
         assertDenseRelationshipCounts( tx, txCtx, nodeId, typeC, 1, 1 );
 
         // WHEN
         deleteRelationship( tx, relationshipsCreatedCIncoming[0] );
 
         // THEN
-        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), typeA );
-        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), typeB );
+        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(),
+                typeA );
+        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(),
+                typeB );
         assertDenseRelationshipCounts( tx, txCtx, nodeId, typeC, 1, 0 );
 
         // WHEN
         deleteRelationship( tx, relationshipsCreatedCOutgoing[0] );
 
         // THEN
-        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), typeA );
-        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), typeB );
-        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), typeC );
+        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(),
+                typeA );
+        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(),
+                typeB );
+        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(),
+                typeC );
     }
 
     @Test
@@ -1156,7 +1231,7 @@ public class NeoStoreTransactionTest
         // The dynamic label record in before should be the same id as in after, and should be in use
         final AtomicBoolean foundRelationshipGroupInUse = new AtomicBoolean();
 
-        tx.accept( new NeoCommandHandler.HandlerVisitor(new NeoCommandHandler.Adapter()
+        tx.accept( new NeoCommandHandler.HandlerVisitor( new NeoCommandHandler.Adapter()
         {
             @Override
             public boolean visitRelationshipGroupCommand(
@@ -1173,9 +1248,9 @@ public class NeoStoreTransactionTest
                         fail();
                     }
                 }
-                return true;
+                return false;
             }
-        } ));
+        } ) );
 
         assertTrue( "Did not create relationship group command", foundRelationshipGroupInUse.get() );
     }
@@ -1257,61 +1332,15 @@ public class NeoStoreTransactionTest
         assertEquals( "Not enough relationship group records found in chain for " + node, types.length, cursor );
     }
 
-    private static void assertRelationshipGroupDoesNotExist( NeoStoreTransactionContext txCtx, NodeRecord node, int type )
-    {
-        assertNull( txCtx.getRelationshipGroup( node, type ) );
-    }
-
-    private static void assertDenseRelationshipCounts( TransactionRecordState tx, NeoStoreTransactionContext txCtx,
-                                                       long nodeId, int type, int outCount, int inCount )
-    {
-        RelationshipGroupRecord group = txCtx.getRelationshipGroup(
-                txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), type ).forReadingData();
-        assertNotNull( group );
-
-        RelationshipRecord rel;
-        long relId = group.getFirstOut();
-        if ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
-        {
-            rel = txCtx.getRelRecords().getOrLoad( relId, null ).forReadingData();
-            // count is stored in the back pointer of the first relationship in the chain
-            assertEquals( "Stored relationship count for OUTGOING differs", outCount, rel.getFirstPrevRel() );
-            assertEquals( "Manually counted relationships for OUTGOING differs", outCount,
-                    manuallyCountRelationships( txCtx, nodeId, relId ) );
-        }
-
-        relId = group.getFirstIn();
-        if ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
-        {
-            rel = txCtx.getRelRecords().getOrLoad( relId, null ).forReadingData();
-            assertEquals( "Stored relationship count for INCOMING differs", inCount, rel.getSecondPrevRel() );
-            assertEquals( "Manually counted relationships for INCOMING differs", inCount,
-                    manuallyCountRelationships( txCtx, nodeId, relId ) );
-        }
-    }
-
-    private static int manuallyCountRelationships( NeoStoreTransactionContext txCtx, long nodeId,
-            long firstRelId )
-    {
-        int count = 0;
-        long relId = firstRelId;
-        while ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
-        {
-            count++;
-            RelationshipRecord record = txCtx.getRelRecords().getOrLoad( relId, null ).forReadingData();
-            relId = record.getFirstNode() == nodeId ? record.getFirstNextRel() : record.getSecondNextRel();
-        }
-        return count;
-    }
-
     private long nextId( IdType type )
     {
         return idGeneratorFactory.get( type ).nextId();
     }
 
-    private long[] createRelationships( TransactionRecordState tx, long nodeId, int type, Direction direction, int count )
+    private long[] createRelationships( TransactionRecordState tx, long nodeId, int type, Direction direction,
+                                        int count )
     {
-        long[] result = new long[ count ];
+        long[] result = new long[count];
         for ( int i = 0; i < count; i++ )
         {
             long otherNodeId = nextId( NODE );
@@ -1336,25 +1365,10 @@ public class NeoStoreTransactionTest
         char ch = 'a';
         for ( int i = 0; i < length; i++ )
         {
-            result.append( (char)((ch + (i%10))) );
+            result.append( (char) ((ch + (i % 10))) );
         }
         return result.toString();
     }
-
-    @ClassRule
-    public static PageCacheRule pageCacheRule = new PageCacheRule();
-    private EphemeralFileSystemAbstraction fs;
-    private PageCache pageCache;
-    private Config config;
-    @SuppressWarnings("deprecation")
-    private final DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
-    private NeoStore neoStore;
-    private LockService locks;
-    private CacheAccessBackDoor cacheAccessBackDoor;
-    private final List<Lock> lockMocks = new ArrayList<>();
-
-    private IndexingService mockIndexing;
-    private PropertyLoader propertyLoader;
 
     @Before
     public void before() throws Exception
@@ -1411,21 +1425,21 @@ public class NeoStoreTransactionTest
         mockIndexing = mock( IndexingService.class );
     }
 
-    private TransactionRepresentationCommitProcess commitProcess() throws InterruptedException, ExecutionException, IOException
+    private TransactionRepresentationCommitProcess commitProcess()
+            throws InterruptedException, ExecutionException, IOException
     {
         return commitProcess( mockIndexing );
     }
 
-    private long nextTxId = BASE_TX_ID + 1;
-
-    private TransactionRepresentationCommitProcess commitProcess( IndexingService indexing ) throws InterruptedException, ExecutionException, IOException
+    private TransactionRepresentationCommitProcess commitProcess( IndexingService indexing )
+            throws InterruptedException, ExecutionException, IOException
     {
         TransactionAppender appenderMock = mock( TransactionAppender.class );
-        when( appenderMock.append( Matchers.<TransactionRepresentation>any()) ).thenReturn( nextTxId++ );
-        LogicalTransactionStore txStoreMock = mock ( LogicalTransactionStore.class );
-        when( txStoreMock.getAppender() ).thenReturn(appenderMock);
+        when( appenderMock.append( Matchers.<TransactionRepresentation>any() ) ).thenReturn( nextTxId++ );
+        LogicalTransactionStore txStoreMock = mock( LogicalTransactionStore.class );
+        when( txStoreMock.getAppender() ).thenReturn( appenderMock );
         LabelScanStore labelScanStore = mock( LabelScanStore.class );
-        when (labelScanStore.newWriter()).thenReturn( mock(LabelScanWriter.class) );
+        when( labelScanStore.newWriter() ).thenReturn( mock( LabelScanWriter.class ) );
         TransactionRepresentationStoreApplier applier = new TransactionRepresentationStoreApplier(
                 indexing, labelScanStore, neoStore, cacheAccessBackDoor, locks, null, null, null );
 
@@ -1457,12 +1471,12 @@ public class NeoStoreTransactionTest
         pageCache = pageCacheRule.getPageCache( fs, new Config() );
     }
 
-    private Pair<TransactionRecordState, NeoStoreTransactionContext> newWriteTransaction()
+    private Pair<TransactionRecordState,NeoStoreTransactionContext> newWriteTransaction()
     {
         return newWriteTransaction( mockIndexing );
     }
 
-    private Pair<TransactionRecordState, NeoStoreTransactionContext> newWriteTransaction( IndexingService indexing )
+    private Pair<TransactionRecordState,NeoStoreTransactionContext> newWriteTransaction( IndexingService indexing )
     {
         NeoStoreTransactionContext context =
                 new NeoStoreTransactionContext( mock( NeoStoreTransactionContextSupplier.class ), neoStore );
@@ -1471,6 +1485,39 @@ public class NeoStoreTransactionTest
                 new IntegrityValidator( neoStore, indexing ), context );
 
         return Pair.of( result, context );
+    }
+
+    private void commit( TransactionRepresentation recoveredTx, long txId, TransactionApplicationMode mode )
+            throws Exception
+    {
+        LabelScanStore labelScanStore = mock( LabelScanStore.class );
+        when( labelScanStore.newWriter() ).thenReturn( mock( LabelScanWriter.class ) );
+
+        TransactionRepresentationStoreApplier storeApplier = new TransactionRepresentationStoreApplier(
+                mockIndexing, labelScanStore, neoStore, cacheAccessBackDoor, locks, mock( ProviderLookup.class ),
+                mock( IndexConfigStore.class ), IdOrderingQueue.BYPASS );
+
+        try ( LockGroup locks = new LockGroup() )
+        {
+            storeApplier.apply( recoveredTx, locks, txId, mode );
+        }
+    }
+
+    public static class RecoveryCreatingCopyingNeoCommandHandler implements Visitor<Command,IOException>
+    {
+        private final List<Command> commands = new LinkedList<>();
+
+        @Override
+        public boolean visit( Command element ) throws IOException
+        {
+            commands.add( element );
+            return false;
+        }
+
+        public TransactionRepresentation getAsRecovered()
+        {
+            return new PhysicalTransactionRepresentation( commands );
+        }
     }
 
     private class CapturingIndexingService extends IndexingService
@@ -1485,31 +1532,13 @@ public class NeoStoreTransactionTest
                     null,
                     new KernelSchemaStateStore(), Collections.<IndexRule>emptyList(),
                     new SingleLoggingService( DEV_NULL ), IndexingService.NO_MONITOR
-                );
+            );
         }
 
         @Override
         public void updateIndexes( IndexUpdates updates, boolean forceIdempotency )
         {
             this.updates.addAll( asCollection( updates ) );
-        }
-    }
-
-    private static final long[] none = new long[0];
-
-    private void commit( TransactionRepresentation recoveredTx, long txId, TransactionApplicationMode mode )
-            throws Exception
-    {
-        LabelScanStore labelScanStore = mock( LabelScanStore.class );
-        when (labelScanStore.newWriter()).thenReturn( mock(LabelScanWriter.class) );
-
-        TransactionRepresentationStoreApplier storeApplier = new TransactionRepresentationStoreApplier(
-              mockIndexing, labelScanStore, neoStore, cacheAccessBackDoor, locks, mock( ProviderLookup.class ),
-              mock( IndexConfigStore.class ), IdOrderingQueue.BYPASS );
-
-        try ( LockGroup locks = new LockGroup() )
-        {
-            storeApplier.apply( recoveredTx, locks, txId, mode );
         }
     }
 
@@ -1551,23 +1580,6 @@ public class NeoStoreTransactionTest
             {
                 elements.add( iterator.next() );
             }
-        }
-    }
-
-    public static class RecoveryCreatingCopyingNeoCommandHandler implements Visitor<Command, IOException>
-    {
-        private final List<Command> commands = new LinkedList<>();
-
-        @Override
-        public boolean visit( Command element ) throws IOException
-        {
-            commands.add( element );
-            return true;
-        }
-
-        public TransactionRepresentation getAsRecovered()
-        {
-            return new PhysicalTransactionRepresentation( commands );
         }
     }
 }

@@ -19,14 +19,15 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.hamcrest.Matchers;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -48,11 +49,11 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
@@ -63,86 +64,8 @@ import static org.neo4j.test.EphemeralFileSystemRule.shutdownDb;
  */
 public class TestCrashWithRebuildSlow
 {
-    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-
-    @Test
-    public void crashAndRebuildSlowWithDynamicStringDeletions() throws Exception
-    {
-        String storeDir = new File("dir").getAbsolutePath();
-        final GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
-                .setFileSystem( fs.get() ).newImpermanentDatabase( storeDir );
-        List<Long> deletedNodeIds = produceNonCleanDefraggedStringStore( db );
-        Map<IdType, Long> highIdsBeforeCrash = getHighIds( db );
-        EphemeralFileSystemAbstraction snapshot = fs.snapshot( shutdownDb( db ) );
-
-        // Recover with rebuild_idgenerators_fast=false
-        assertNumberOfFreeIdsEquals( storeDir, snapshot, 0 );
-        GraphDatabaseAPI newDb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( snapshot )
-                .newImpermanentDatabaseBuilder( storeDir )
-                .setConfig( GraphDatabaseSettings.rebuild_idgenerators_fast, Settings.FALSE )
-                .newGraphDatabase();
-        assertEquals( highIdsBeforeCrash, getHighIds( newDb ) );
-
-        try ( Transaction tx = newDb.beginTx() )
-        {
-            // Verify that the data we didn't delete is still around
-            int nameCount = 0;
-            int relCount = 0;
-            for ( Node node : GlobalGraphOperations.at( newDb ).getAllNodes() )
-            {
-                nameCount++;
-                assertThat( node, inTx( newDb, hasProperty( "name" ), true ) );
-                relCount += count( node.getRelationships( Direction.OUTGOING ) );
-            }
-
-            assertEquals( 16, nameCount );
-            assertEquals( 12, relCount );
-
-            // Verify that the ids of the nodes we deleted are reused
-            List<Long> newIds = new ArrayList<>();
-            newIds.add( newDb.createNode().getId() );
-            newIds.add( newDb.createNode().getId() );
-            newIds.add( newDb.createNode().getId() );
-            newIds.add( newDb.createNode().getId() );
-            assertThat( newIds, is( deletedNodeIds ) );
-            tx.success();
-        }
-        finally
-        {
-            newDb.shutdown();
-        }
-    }
-
-    private Map<IdType,Long> getHighIds( GraphDatabaseAPI db )
-    {
-        final Map<IdType,Long> highIds = new HashMap<>();
-        NeoStore neoStore = db.getDependencyResolver().resolveDependency(
-                DataSourceManager.class ).getDataSource().getNeoStore();
-        neoStore.visitStore( new Visitor<CommonAbstractStore, RuntimeException>()
-        {
-            @Override
-            public boolean visit( CommonAbstractStore store ) throws RuntimeException
-            {
-                highIds.put( store.getIdType(), store.getHighId() );
-                return true;
-            }
-        } );
-        return highIds;
-    }
-
-    private void assertNumberOfFreeIdsEquals( String storeDir, FileSystemAbstraction fs, long numberOfFreeIds )
-    {
-        long fileSize = fs.getFileSize( new File( storeDir, "neostore.propertystore.db.strings.id" ) );
-        long fileSizeWithoutHeader = fileSize - 9;
-        long actualFreeIds = fileSizeWithoutHeader / 8;
-
-        assertThat( "Id file should at least have a 9 byte header",
-                fileSize, greaterThanOrEqualTo( 9L ) );
-        assertThat( "File should contain the expected number of free ids",
-                actualFreeIds, is( numberOfFreeIds ) );
-        assertThat( "File size should not contain more bytes than expected",
-                8 * numberOfFreeIds, is( fileSizeWithoutHeader ) );
-    }
+    @Rule
+    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     private static List<Long> produceNonCleanDefraggedStringStore( GraphDatabaseService db )
     {
@@ -154,7 +77,9 @@ public class TestCrashWithRebuildSlow
             for ( int i = 0; i < 20; i++ )
             {
                 Node node = db.createNode();
-                node.setProperty( "name", "a looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooong string" );
+                node.setProperty( "name",
+                        "a looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooong" +
+                        " string" );
                 nodes.add( node );
                 if ( previous != null )
                 {
@@ -193,5 +118,97 @@ public class TestCrashWithRebuildSlow
             rel.delete();
         }
         node.delete();
+    }
+
+    @Test
+    public void crashAndRebuildSlowWithDynamicStringDeletions() throws Exception
+    {
+        String storeDir = new File( "dir" ).getAbsolutePath();
+        final GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
+                .setFileSystem( fs.get() ).newImpermanentDatabase( storeDir );
+        List<Long> deletedNodeIds = produceNonCleanDefraggedStringStore( db );
+        Map<IdType,Long> highIdsBeforeCrash = getHighIds( db );
+
+        long checksumBefore = fs.get().checksum();
+        long checksumBefore2 = fs.get().checksum();
+
+        assertThat( checksumBefore, Matchers.equalTo( checksumBefore2 ) );
+
+        EphemeralFileSystemAbstraction snapshot = fs.snapshot( shutdownDb( db ) );
+
+        assertThat( snapshot.checksum(), equalTo( checksumBefore ) );
+
+        // Recover with rebuild_idgenerators_fast=false
+        assertNumberOfFreeIdsEquals( storeDir, snapshot, 0 );
+        GraphDatabaseAPI newDb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( snapshot )
+                                                                                  .newImpermanentDatabaseBuilder(
+                                                                                          storeDir )
+                                                                                  .setConfig(
+                                                                                          GraphDatabaseSettings
+                                                                                                  .rebuild_idgenerators_fast,
+                                                                                          Settings.FALSE )
+                                                                                  .newGraphDatabase();
+        Map<IdType,Long> highIdsAfterCrash = getHighIds( newDb );
+        assertEquals( highIdsBeforeCrash, highIdsAfterCrash );
+
+        try ( Transaction tx = newDb.beginTx() )
+        {
+            // Verify that the data we didn't delete is still around
+            int nameCount = 0;
+            int relCount = 0;
+            for ( Node node : GlobalGraphOperations.at( newDb ).getAllNodes() )
+            {
+                nameCount++;
+                assertThat( node, inTx( newDb, hasProperty( "name" ), true ) );
+                relCount += count( node.getRelationships( Direction.OUTGOING ) );
+            }
+
+            assertEquals( 16, nameCount );
+            assertEquals( 12, relCount );
+
+            // Verify that the ids of the nodes we deleted are reused
+            List<Long> newIds = new ArrayList<>();
+            newIds.add( newDb.createNode().getId() );
+            newIds.add( newDb.createNode().getId() );
+            newIds.add( newDb.createNode().getId() );
+            newIds.add( newDb.createNode().getId() );
+            assertThat( newIds, is( deletedNodeIds ) );
+            tx.success();
+        }
+        finally
+        {
+            newDb.shutdown();
+        }
+    }
+
+    private Map<IdType,Long> getHighIds( GraphDatabaseAPI db )
+    {
+        final Map<IdType,Long> highIds = new HashMap<>();
+        NeoStore neoStore = db.getDependencyResolver().resolveDependency(
+                DataSourceManager.class ).getDataSource().getNeoStore();
+        neoStore.visitStore( new Visitor<CommonAbstractStore,RuntimeException>()
+        {
+            @Override
+            public boolean visit( CommonAbstractStore store ) throws RuntimeException
+            {
+                highIds.put( store.getIdType(), store.getHighId() );
+                return true;
+            }
+        } );
+        return highIds;
+    }
+
+    private void assertNumberOfFreeIdsEquals( String storeDir, FileSystemAbstraction fs, long numberOfFreeIds )
+    {
+        long fileSize = fs.getFileSize( new File( storeDir, "neostore.propertystore.db.strings.id" ) );
+        long fileSizeWithoutHeader = fileSize - 9;
+        long actualFreeIds = fileSizeWithoutHeader / 8;
+
+        assertThat( "Id file should at least have a 9 byte header",
+                fileSize, greaterThanOrEqualTo( 9L ) );
+        assertThat( "File should contain the expected number of free ids",
+                actualFreeIds, is( numberOfFreeIds ) );
+        assertThat( "File size should not contain more bytes than expected",
+                8 * numberOfFreeIds, is( fileSizeWithoutHeader ) );
     }
 }

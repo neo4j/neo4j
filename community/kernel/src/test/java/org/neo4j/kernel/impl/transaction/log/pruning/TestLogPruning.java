@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -48,7 +48,6 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_log_rotation_threshold;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -57,12 +56,16 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LO
 
 public class TestLogPruning
 {
-    private GraphDatabaseAPI db;
-    private FileSystemAbstraction fs;
-    private PhysicalLogFiles files;
+    private interface Extractor
+    {
+        int extract( File from ) throws IOException;
+    }
 
     // From the last measurement by figureOutSampleTransactionSizeBytes
     private final int transactionLogSize = 358;
+    private GraphDatabaseAPI db;
+    private FileSystemAbstraction fs;
+    private PhysicalLogFiles files;
 
     @After
     public void after() throws Exception
@@ -76,7 +79,7 @@ public class TestLogPruning
     @Test
     public void noPruning() throws Exception
     {
-        newDb( "true", transactionLogSize*2 );
+        newDb( "true", transactionLogSize * 2 );
 
         for ( int i = 0; i < 100; i++ )
         {
@@ -96,7 +99,7 @@ public class TestLogPruning
     {
         // Given
         int size = 1050;
-        int logThreshold = transactionLogSize*3;
+        int logThreshold = transactionLogSize * 3;
         newDb( size + " size", logThreshold );
 
         // When
@@ -130,7 +133,7 @@ public class TestLogPruning
         int transactionsToKeep = 100;
 
         int transactionsPerLog = 3;
-        newDb( transactionsToKeep + " txs", transactionsToKeep*transactionsPerLog );
+        newDb( transactionsToKeep + " txs", transactionsToKeep * transactionsPerLog );
 
         for ( int i = 0; i < 100; i++ )
         {
@@ -139,10 +142,10 @@ public class TestLogPruning
 
         int transactionCount = transactionCount();
         assertTrue( "Transaction count expected to be within " + transactionsToKeep + " <= txs <= " +
-                (transactionsToKeep+transactionsPerLog) + ", but was " + transactionCount,
+                    (transactionsToKeep + transactionsPerLog) + ", but was " + transactionCount,
 
                 transactionCount >= transactionsToKeep &&
-                transactionCount <= (transactionsToKeep+transactionsPerLog) );
+                transactionCount <= (transactionsToKeep + transactionsPerLog) );
     }
 
     private GraphDatabaseAPI newDb( String logPruning, int rotateThreshold )
@@ -151,7 +154,7 @@ public class TestLogPruning
         GraphDatabaseAPI db = new ImpermanentGraphDatabase( stringMap(
                 keep_logical_logs.name(), logPruning,
                 logical_log_rotation_threshold.name(), "" + rotateThreshold
-                ) )
+        ) )
         {
             @Override
             protected FileSystemAbstraction createFileSystemAbstraction()
@@ -160,7 +163,7 @@ public class TestLogPruning
             }
         };
         this.db = db;
-        files = new PhysicalLogFiles( new File(db.getStoreDir()), PhysicalLogFile.DEFAULT_NAME, fs );
+        files = new PhysicalLogFiles( new File( db.getStoreDir() ), PhysicalLogFile.DEFAULT_NAME, fs );
         return db;
     }
 
@@ -178,7 +181,7 @@ public class TestLogPruning
     @Ignore( "Here as a helper to figure out the transaction size of the sample transaction on disk" )
     public void figureOutSampleTransactionSizeBytes()
     {
-        db = newDb( "true", transactionLogSize*2 );
+        db = newDb( "true", transactionLogSize * 2 );
         doTransaction();
         db.shutdown();
         System.out.println( fs.getFileSize( files.getLogFileForVersion( 0 ) ) );
@@ -200,11 +203,6 @@ public class TestLogPruning
             }
         }
         return total;
-    }
-
-    private interface Extractor
-    {
-        int extract( File from ) throws IOException;
     }
 
     private int logCount() throws IOException
@@ -241,13 +239,13 @@ public class TestLogPruning
                 final AtomicInteger counter = new AtomicInteger();
                 LogFileRecoverer reader = new LogFileRecoverer(
                         new LogEntryReaderFactory().versionable(),
-                        new Visitor<CommittedTransactionRepresentation, IOException>()
+                        new Visitor<CommittedTransactionRepresentation,IOException>()
                         {
                             @Override
                             public boolean visit( CommittedTransactionRepresentation element ) throws IOException
                             {
                                 counter.incrementAndGet();
-                                return true;
+                                return false;
                             }
                         } );
                 LogVersionBridge bridge = new LogVersionBridge()

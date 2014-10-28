@@ -37,10 +37,10 @@ import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 public class LuceneCommandApplier extends NeoCommandHandler.Adapter
 {
     private final LuceneDataSource dataSource;
-    private final Map<Byte, CommitContext> nodeContexts = new HashMap<>();
-    private final Map<Byte, CommitContext> relationshipContexts = new HashMap<>();
-    private IndexDefineCommand definitions;
+    private final Map<Byte,CommitContext> nodeContexts = new HashMap<>();
+    private final Map<Byte,CommitContext> relationshipContexts = new HashMap<>();
     private final boolean recovery;
+    private IndexDefineCommand definitions;
 
     public LuceneCommandApplier( LuceneDataSource dataSource, boolean recovery )
     {
@@ -57,7 +57,7 @@ public class LuceneCommandApplier extends NeoCommandHandler.Adapter
         context.ensureWriterInstantiated();
         context.indexType.addToDocument( context.getDocument( command.getEntityId(), true ).document, key, value );
         context.dataSource.invalidateCache( context.identifier, key, value );
-        return true;
+        return false;
     }
 
     @Override
@@ -71,7 +71,7 @@ public class LuceneCommandApplier extends NeoCommandHandler.Adapter
                 command.getStartNode(), command.getEndNode() );
         context.indexType.addToDocument( context.getDocument( entityId, true ).document, key, value );
         context.dataSource.invalidateCache( context.identifier, key, value );
-        return true;
+        return false;
     }
 
     @Override
@@ -87,7 +87,7 @@ public class LuceneCommandApplier extends NeoCommandHandler.Adapter
             context.indexType.removeFromDocument( document.document, key, value );
             context.dataSource.invalidateCache( context.identifier, key, value );
         }
-        return true;
+        return false;
     }
 
     @Override
@@ -96,13 +96,13 @@ public class LuceneCommandApplier extends NeoCommandHandler.Adapter
         CommitContext context = commitContext( command );
         context.documents.clear();
         context.dataSource.deleteIndex( context.identifier, context.recovery );
-        return true;
+        return false;
     }
 
     @Override
     public boolean visitIndexCreateCommand( CreateCommand createCommand ) throws IOException
     {
-        return true;
+        return false;
     }
 
     @Override
@@ -110,7 +110,7 @@ public class LuceneCommandApplier extends NeoCommandHandler.Adapter
     {
         definitions = indexDefineCommand;
         dataSource.getWriteLock();
-        return true;
+        return false;
     }
 
     @Override
@@ -144,13 +144,13 @@ public class LuceneCommandApplier extends NeoCommandHandler.Adapter
 
     private CommitContext commitContext( IndexCommand command )
     {
-        Map<Byte, CommitContext> contextMap = commitContextMap( command.getEntityType() );
+        Map<Byte,CommitContext> contextMap = commitContextMap( command.getEntityType() );
         byte indexNameId = command.getIndexNameId();
         CommitContext context = contextMap.get( indexNameId );
         if ( context == null )
         {
             IndexIdentifier identifier = new IndexIdentifier( IndexEntityType.byId( command.getEntityType() ),
-                     definitions.getIndexName( indexNameId ) );
+                    definitions.getIndexName( indexNameId ) );
 
             // TODO the fact that we look up index type from config here using the index store
             // directly should be avoided. But how can we do it in, say recovery?
@@ -161,7 +161,7 @@ public class LuceneCommandApplier extends NeoCommandHandler.Adapter
         return context;
     }
 
-    private Map<Byte, CommitContext> commitContextMap( byte entityType )
+    private Map<Byte,CommitContext> commitContextMap( byte entityType )
     {
         if ( entityType == IndexEntityType.Node.id() )
         {

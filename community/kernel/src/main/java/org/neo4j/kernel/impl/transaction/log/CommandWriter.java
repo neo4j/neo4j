@@ -59,6 +59,11 @@ public class CommandWriter implements NeoCommandHandler
         this.channel = channel;
     }
 
+    protected static byte needsLong( long value )
+    {
+        return value > Integer.MAX_VALUE ? (byte) 1 : (byte) 0;
+    }
+
     @Override
     public boolean visitNodeCommand( Command.NodeCommand command ) throws IOException
     {
@@ -68,7 +73,7 @@ public class CommandWriter implements NeoCommandHandler
         channel.putLong( after.getId() );
         writeNodeRecord( before );
         writeNodeRecord( after );
-        return true;
+        return false;
     }
 
     @Override
@@ -76,19 +81,19 @@ public class CommandWriter implements NeoCommandHandler
     {
         RelationshipRecord record = command.getRecord();
         byte flags = bitFlags( bitFlag( record.inUse(), Record.IN_USE.byteValue() ),
-                               bitFlag( record.isCreated(), Record.CREATED_IN_TX ) );
+                bitFlag( record.isCreated(), Record.CREATED_IN_TX ) );
         channel.put( NeoCommandType.REL_COMMAND );
         channel.putLong( record.getId() );
         channel.put( flags );
         if ( record.inUse() )
         {
             channel.putLong( record.getFirstNode() ).putLong( record.getSecondNode() ).putInt( record.getType() )
-                    .putLong( record.getFirstPrevRel() ).putLong( record.getFirstNextRel() )
-                    .putLong( record.getSecondPrevRel() ).putLong( record.getSecondNextRel() )
-                    .putLong( record.getNextProp() )
-                    .put( (byte) ((record.isFirstInFirstChain() ? 1 : 0) | (record.isFirstInSecondChain() ? 2 : 0)) );
+                   .putLong( record.getFirstPrevRel() ).putLong( record.getFirstNextRel() )
+                   .putLong( record.getSecondPrevRel() ).putLong( record.getSecondNextRel() )
+                   .putLong( record.getNextProp() )
+                   .put( (byte) ((record.isFirstInFirstChain() ? 1 : 0) | (record.isFirstInSecondChain() ? 2 : 0)) );
         }
-        return true;
+        return false;
     }
 
     private boolean writeNodeRecord( NodeRecord record ) throws IOException
@@ -104,7 +109,7 @@ public class CommandWriter implements NeoCommandHandler
         // Always write dynamic label records because we want to know which ones have been deleted
         // especially if the node has been deleted.
         writeDynamicRecords( record.getDynamicLabelRecords() );
-        return true;
+        return false;
     }
 
     @Override
@@ -117,7 +122,7 @@ public class CommandWriter implements NeoCommandHandler
         writePropertyRecord( command.getBefore() );
         // AFTER
         writePropertyRecord( command.getAfter() );
-        return true;
+        return false;
     }
 
     @Override
@@ -133,7 +138,7 @@ public class CommandWriter implements NeoCommandHandler
         channel.putLong( record.getFirstIn() );
         channel.putLong( record.getFirstLoop() );
         channel.putLong( record.getOwningNode() );
-        return true;
+        return false;
     }
 
     @Override
@@ -145,7 +150,7 @@ public class CommandWriter implements NeoCommandHandler
         channel.put( NeoCommandType.REL_TYPE_COMMAND );
         channel.putInt( record.getId() ).put( inUse ).putInt( record.getNameId() );
         writeDynamicRecords( record.getNameRecords() );
-        return true;
+        return false;
     }
 
     @Override
@@ -157,7 +162,7 @@ public class CommandWriter implements NeoCommandHandler
         channel.put( NeoCommandType.LABEL_KEY_COMMAND );
         channel.putInt( record.getId() ).put( inUse ).putInt( record.getNameId() );
         writeDynamicRecords( record.getNameRecords() );
-        return true;
+        return false;
     }
 
     @Override
@@ -178,7 +183,7 @@ public class CommandWriter implements NeoCommandHandler
         {
             writeDynamicRecords( record.getNameRecords() );
         }
-        return true;
+        return false;
     }
 
     @Override
@@ -191,14 +196,14 @@ public class CommandWriter implements NeoCommandHandler
         writeDynamicRecords( recordsBefore );
         writeDynamicRecords( recordsAfter );
         channel.put( first( recordsAfter ).isCreated() ? (byte) 1 : 0 );
-        return true;
+        return false;
     }
 
     @Override
     public boolean visitNeoStoreCommand( Command.NeoStoreCommand command ) throws IOException
     {
         channel.put( NeoCommandType.NEOSTORE_COMMAND ).putLong( command.getRecord().getNextProp() );
-        return true;
+        return false;
     }
 
     @Override
@@ -206,7 +211,7 @@ public class CommandWriter implements NeoCommandHandler
     {
         channel.put( NeoCommandType.INDEX_ADD_COMMAND );
         writeToFile( command );
-        return true;
+        return false;
     }
 
     @Override
@@ -216,7 +221,7 @@ public class CommandWriter implements NeoCommandHandler
         writeToFile( command );
         putIntOrLong( command.getStartNode() );
         putIntOrLong( command.getEndNode() );
-        return true;
+        return false;
     }
 
     @Override
@@ -224,7 +229,7 @@ public class CommandWriter implements NeoCommandHandler
     {
         channel.put( NeoCommandType.INDEX_REMOVE_COMMAND );
         writeToFile( command );
-        return true;
+        return false;
     }
 
     @Override
@@ -232,7 +237,7 @@ public class CommandWriter implements NeoCommandHandler
     {
         channel.put( NeoCommandType.INDEX_DELETE_COMMAND );
         writeIndexCommandHeader( command );
-        return true;
+        return false;
     }
 
     @Override
@@ -240,13 +245,13 @@ public class CommandWriter implements NeoCommandHandler
     {
         channel.put( NeoCommandType.INDEX_CREATE_COMMAND );
         writeIndexCommandHeader( command );
-        channel.putShort( (short)command.getConfig().size() );
-        for ( Map.Entry<String, String> entry : command.getConfig().entrySet() )
+        channel.putShort( (short) command.getConfig().size() );
+        for ( Map.Entry<String,String> entry : command.getConfig().entrySet() )
         {
             write2bLengthAndString( channel, entry.getKey() );
             write2bLengthAndString( channel, entry.getValue() );
         }
-        return true;
+        return false;
     }
 
     @Override
@@ -257,7 +262,7 @@ public class CommandWriter implements NeoCommandHandler
         writeIndexCommandHeader( zero, zero, zero, zero, zero, zero, zero );
         writeMap( command.getIndexNameIdRange() );
         writeMap( command.getKeyIdRange() );
-        return true;
+        return false;
     }
 
     @Override
@@ -268,13 +273,13 @@ public class CommandWriter implements NeoCommandHandler
                .putInt( command.typeId() )
                .putInt( command.endLabelId() )
                .putLong( command.delta() );
-        return true;
+        return false;
     }
 
-    private void writeMap( Map<String, Byte> map ) throws IOException
+    private void writeMap( Map<String,Byte> map ) throws IOException
     {
-        channel.put( (byte)map.size() );
-        for ( Map.Entry<String, Byte> entry : map.entrySet() )
+        channel.put( (byte) map.size() );
+        for ( Map.Entry<String,Byte> entry : map.entrySet() )
         {
             write2bLengthAndString( channel, entry.getKey() );
             channel.put( entry.getValue() );
@@ -311,19 +316,19 @@ public class CommandWriter implements NeoCommandHandler
             write3bLengthAndString( channel, value.toString() );
             break;
         case IndexCommand.VALUE_TYPE_SHORT:
-            channel.putShort( ((Number)value).shortValue() );
+            channel.putShort( ((Number) value).shortValue() );
             break;
         case IndexCommand.VALUE_TYPE_INT:
-            channel.putInt( ((Number)value).intValue() );
+            channel.putInt( ((Number) value).intValue() );
             break;
         case IndexCommand.VALUE_TYPE_LONG:
-            channel.putLong( ((Number)value).longValue() );
+            channel.putLong( ((Number) value).longValue() );
             break;
         case IndexCommand.VALUE_TYPE_FLOAT:
-            channel.putFloat( ((Number)value).floatValue() );
+            channel.putFloat( ((Number) value).floatValue() );
             break;
         case IndexCommand.VALUE_TYPE_DOUBLE:
-            channel.putDouble( ((Number)value).doubleValue() );
+            channel.putDouble( ((Number) value).doubleValue() );
             break;
         case IndexCommand.VALUE_TYPE_NULL:
             break;
@@ -335,11 +340,13 @@ public class CommandWriter implements NeoCommandHandler
     protected void writeIndexCommandHeader( IndexCommand command ) throws IOException
     {
         writeIndexCommandHeader( command.getValueType(), command.getEntityType(), needsLong( command.getEntityId() ),
-                command.startNodeNeedsLong(), command.endNodeNeedsLong(), command.getIndexNameId(), command.getKeyId() );
+                command.startNodeNeedsLong(), command.endNodeNeedsLong(), command.getIndexNameId(),
+                command.getKeyId() );
     }
 
     protected void writeIndexCommandHeader( byte valueType, byte entityType, byte entityIdNeedsLong,
-            byte startNodeNeedsLong, byte endNodeNeedsLong, byte indexNameId, byte commandKeyId ) throws IOException
+                                            byte startNodeNeedsLong, byte endNodeNeedsLong, byte indexNameId,
+                                            byte commandKeyId ) throws IOException
     {
         channel.put( (byte) ((valueType << 2) | (entityType << 1) | (entityIdNeedsLong)) );
         channel.put( (byte) ((startNodeNeedsLong << 7) | (endNodeNeedsLong << 6) | (indexNameId)) );
@@ -356,11 +363,6 @@ public class CommandWriter implements NeoCommandHandler
         {
             channel.putInt( (int) id );
         }
-    }
-
-    protected static byte needsLong( long value )
-    {
-        return value > Integer.MAX_VALUE ? (byte) 1 : (byte) 0;
     }
 
     void writeDynamicRecords( Collection<DynamicRecord> records ) throws IOException
@@ -383,7 +385,7 @@ public class CommandWriter implements NeoCommandHandler
                 inUse |= Record.FIRST_IN_CHAIN.byteValue();
             }
             channel.putLong( record.getId() ).putInt( record.getType() ).put( inUse ).putInt( record.getLength() )
-                    .putLong( record.getNextBlock() );
+                   .putLong( record.getNextBlock() );
             byte[] data = record.getData();
             assert data != null;
             channel.put( data, data.length );

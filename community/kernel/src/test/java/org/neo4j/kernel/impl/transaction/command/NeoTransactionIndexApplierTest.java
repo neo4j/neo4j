@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.impl.transaction.command;
 
+import org.junit.Test;
+import org.mockito.Matchers;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import org.junit.Test;
-import org.mockito.Matchers;
 
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
@@ -42,7 +42,7 @@ import org.neo4j.kernel.impl.transaction.state.LazyIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -50,7 +50,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.EXTERNAL;
 
 public class NeoTransactionIndexApplierTest
@@ -62,8 +61,8 @@ public class NeoTransactionIndexApplierTest
     private final CacheAccessBackDoor cacheAccess = mock( CacheAccessBackDoor.class );
     private final PropertyLoader propertyLoader = mock( PropertyLoader.class );
 
-    private final Map<Long, Command.NodeCommand> emptyNodeCommands = Collections.emptyMap();
-    private final Map<Long, List<Command.PropertyCommand>> emptyPropCommands = Collections.emptyMap();
+    private final Map<Long,Command.NodeCommand> emptyNodeCommands = Collections.emptyMap();
+    private final Map<Long,List<Command.PropertyCommand>> emptyPropCommands = Collections.emptyMap();
 
     @Test
     public void shouldUpdateIndexesOnNodeCommands() throws IOException
@@ -81,9 +80,9 @@ public class NeoTransactionIndexApplierTest
         applier.apply();
 
         // then
-        assertTrue( result );
+        assertFalse( result );
 
-        final Map<Long, Command.NodeCommand> nodeCommands = Collections.singletonMap( command.getKey(), command );
+        final Map<Long,Command.NodeCommand> nodeCommands = Collections.singletonMap( command.getKey(), command );
 
         final LazyIndexUpdates expectedUpdates = new LazyIndexUpdates(
                 nodeStore, propertyStore, emptyPropCommands, nodeCommands, propertyLoader );
@@ -111,14 +110,14 @@ public class NeoTransactionIndexApplierTest
         applier.apply();
 
         // then
-        assertTrue( result );
+        assertFalse( result );
 
         final NodeLabelUpdate update = NodeLabelUpdate.labelChanges( command.getKey(), new long[]{}, new long[]{} );
         final Collection<NodeLabelUpdate> labelUpdates = Arrays.asList( update );
 
         verify( cacheAccess, times( 1 ) ).applyLabelUpdates( eq( labelUpdates ) );
 
-        final Map<Long, Command.NodeCommand> nodeCommands = Collections.singletonMap( command.getKey(), command );
+        final Map<Long,Command.NodeCommand> nodeCommands = Collections.singletonMap( command.getKey(), command );
 
         final LazyIndexUpdates expectedUpdates = new LazyIndexUpdates(
                 nodeStore, propertyStore, emptyPropCommands, nodeCommands, propertyLoader );
@@ -143,10 +142,10 @@ public class NeoTransactionIndexApplierTest
         applier.apply();
 
         // then
-        assertTrue( result );
+        assertFalse( result );
 
 
-        Map<Long, List<Command.PropertyCommand>> propCommands =
+        Map<Long,List<Command.PropertyCommand>> propCommands =
                 Collections.singletonMap( command.getNodeId(), Arrays.asList( command ) );
 
         final LazyIndexUpdates expectedUpdates = new LazyIndexUpdates(
@@ -171,7 +170,7 @@ public class NeoTransactionIndexApplierTest
         applier.apply();
 
         // then
-        assertTrue( result );
+        assertFalse( result );
         verify( indexingService, never() ).updateIndexes( Matchers.<LazyIndexUpdates>any(), anyBoolean() );
     }
 }
