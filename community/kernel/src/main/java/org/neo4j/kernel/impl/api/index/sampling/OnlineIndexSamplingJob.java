@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
+import org.neo4j.helpers.logging.DurationLogger;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -30,6 +31,7 @@ import org.neo4j.kernel.logging.Logging;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 
+import static java.lang.String.format;
 import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
 
 class OnlineIndexSamplingJob implements IndexSamplingJob
@@ -39,10 +41,12 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
     private final int bufferSize;
     private final IndexStoreView storeView;
     private final StringLogger logger;
+    private final String indexUserDescription;
 
     public OnlineIndexSamplingJob( IndexSamplingConfig config,
                                    IndexProxy indexProxy,
                                    IndexStoreView storeView,
+                                   String indexUserDescription,
                                    Logging logging )
     {
         this.indexDescriptor = indexProxy.getDescriptor();
@@ -50,6 +54,7 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
         this.bufferSize = config.bufferSize();
         this.storeView = storeView;
         this.logger = logging.getMessagesLog( OnlineIndexSamplingJob.class );
+        this.indexUserDescription = indexUserDescription;
     }
 
     @Override
@@ -61,29 +66,44 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
     @Override
     public void run()
     {
-        try
+        try( DurationLogger durationLogger = new DurationLogger( logger, "Sampling index " + indexUserDescription ) )
         {
-            try ( IndexReader reader = indexProxy.newReader() )
+            try
             {
-                ValueSampler sampler = indexProxy.config().isUnique()
-                        ? new UniqueIndexSampler()
-                        : new NonUniqueIndexSampler( bufferSize );
-                reader.sampleIndex( sampler );
-
-                Register.DoubleLongRegister sample = Registers.newDoubleLongRegister();
-                final long indexSize = sampler.result( sample );
-
-                // check again if the index is online before saving the counts in the store
-                if ( indexProxy.getState() == ONLINE )
+                try ( IndexReader reader = indexProxy.newReader() )
                 {
-                    storeView.replaceIndexCounts( indexDescriptor, sample.readFirst(), sample.readSecond(),
-                            indexSize );
+                    ValueSampler sampler = indexProxy.config().isUnique()
+                                           ? new UniqueIndexSampler()
+                                           : new NonUniqueIndexSampler( bufferSize );
+                    reader.sampleIndex( sampler );
+
+                    Register.DoubleLongRegister sample = Registers.newDoubleLongRegister();
+                    final long indexSize = sampler.result( sample );
+
+                    // check again if the index is online before saving the counts in the store
+                    if ( indexProxy.getState() == ONLINE )
+                    {
+                        long unique = sample.readFirst();
+                        long sampleSize = sample.readSecond();
+                        storeView.replaceIndexCounts( indexDescriptor, unique, sampleSize, indexSize );
+                        durationLogger.markAsFinished();
+                        logger.info(
+                            format( "Sampled index %s with %d unique values in sample of avg size %d taken from " +
+                                    "index containing %d entries",
+                                    indexUserDescription, unique, sampleSize, indexSize ) );
+                    }
+                    else
+                    {
+                        durationLogger.markAsAborted( "Index no longer ONLINE" );
+                    }
                 }
             }
-        }
-        catch ( IndexNotFoundKernelException e )
-        {
-            logger.warn( "Attempted to sample missing/already deleted index " + indexDescriptor );
+            catch ( IndexNotFoundKernelException e )
+            {
+                durationLogger.markAsAborted(
+                        "Attempted to sample missing/already deleted index " + indexUserDescription );
+            }
         }
     }
+
 }

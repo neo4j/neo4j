@@ -19,6 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Test;
+import org.mockito.Matchers;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -33,14 +41,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.mockito.Matchers;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -50,6 +50,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -1554,7 +1555,8 @@ public class NeoStoreTransactionTest
         Logging logging = new SingleLoggingService( DEV_NULL );
         IndexingService.Monitor monitor = IndexingService.NO_MONITOR;
         UpdateableSchemaState updateableSchemaState = new KernelSchemaStateStore();
-        IndexSamplingSetup samplingSetup = new IndexSamplingSetup( new IndexSamplingConfig( new Config() ), storeView, null, logging );
+        IndexSamplingSetup samplingSetup = new IndexSamplingSetup( new IndexSamplingConfig( new Config() ),
+                storeView, null, mock( TokenNameLookup.class), logging );
         return new CapturingIndexingService(
                 samplingSetup,
                 new IndexProxySetup( samplingSetup, storeView, providerMap, updateableSchemaState, null, null, logging ),

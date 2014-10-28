@@ -39,7 +39,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
 import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
 
@@ -49,7 +48,7 @@ public class OnlineIndexSamplingJobTest
     public void shouldSampleTheIndexAndStoreTheValueWhenTheIndexIsOnline()
     {
         // given
-        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( config, indexProxy, indexStoreView, logging );
+        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( config, indexProxy, indexStoreView, "Foo", logging );
         when( indexProxy.getState() ).thenReturn( ONLINE );
 
         // when
@@ -64,7 +63,7 @@ public class OnlineIndexSamplingJobTest
     public void shouldSampleTheIndexButDoNotStoreTheValuesIfTheIndexIsNotOnline()
     {
         // given
-        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( config, indexProxy, indexStoreView, logging );
+        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( config, indexProxy, indexStoreView, "Foo", logging );
         when( indexProxy.getState() ).thenReturn( FAILED );
 
         // when

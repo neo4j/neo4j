@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.helpers.Predicate;
+import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -33,7 +34,6 @@ import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.logging.Logging;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.BACKGROUND_REBUILD_UPDATED;
 import static org.neo4j.kernel.impl.util.JobScheduler.Group.indexSamplingController;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
@@ -43,19 +43,23 @@ public class IndexSamplingSetup
     private final IndexSamplingConfig samplingConfig;
     private final IndexStoreView storeView;
     private final JobScheduler scheduler;
+    private final TokenNameLookup tokenNameLookup;
     private final Logging logging;
 
-    public IndexSamplingSetup( IndexSamplingConfig samplingConfig, IndexStoreView storeView, JobScheduler scheduler, Logging logging )
+    public IndexSamplingSetup( IndexSamplingConfig samplingConfig, IndexStoreView storeView,
+                               JobScheduler scheduler, TokenNameLookup tokenNameLookup, Logging logging )
     {
         this.samplingConfig = samplingConfig;
         this.storeView = storeView;
         this.scheduler = scheduler;
+        this.tokenNameLookup = tokenNameLookup;
         this.logging = logging;
     }
 
     public IndexSamplingController createIndexSamplingController( IndexMapSnapshotProvider snapshotProvider )
     {
-        OnlineIndexSamplingJobFactory jobFactory = new OnlineIndexSamplingJobFactory( storeView, logging );
+        OnlineIndexSamplingJobFactory jobFactory =
+                new OnlineIndexSamplingJobFactory( storeView, tokenNameLookup, logging );
         IndexSamplingJobQueue jobQueue = new IndexSamplingJobQueue( createSamplingUpdatePredicate( samplingConfig ) );
         IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( samplingConfig, scheduler );
         return new IndexSamplingController( samplingConfig, jobFactory, jobQueue, jobTracker, snapshotProvider );
