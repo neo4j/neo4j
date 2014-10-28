@@ -148,7 +148,7 @@ terms of the relevant Commercial Agreement.
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-community</artifactId>
+      <artifactId>neo4j</artifactId>
       <version>${neo4j.version}</version>
     </dependency>
     <dependency>

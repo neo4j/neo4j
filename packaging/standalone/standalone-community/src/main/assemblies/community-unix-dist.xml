@@ -102,7 +102,7 @@
       </includes>
       <excludes>
         <exclude>*:pom:*</exclude>
-        <exclude>org.neo4j:neo4j-community:jar</exclude>
+        <exclude>org.neo4j:neo4j:jar</exclude>
       </excludes>
     </dependencySet>
     <dependencySet>

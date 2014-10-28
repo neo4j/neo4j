@@ -117,15 +117,11 @@ neo4j-server::
   It contains the functionality of the http://docs.neo4j.org/chunked/milestone/rest-api.html[REST API]
   and http://docs.neo4j.org/chunked/milestone/tools-webadmin.html[the WebAdmin tool].
 
-neo4j/neo4j-community::
-  The neo4j module and the neo4j-community module are pretty much the same.
-  The overview only shows the dependencies of neo4j-community,
-  but these are the same as those of the neo4j module.
-  Both modules are dependencies of other modules and therefore in use.
-  They both still exist for historical reasons.
-  It is important to note, however, that only the neo4j module contains documentation.
-+
-Both modules are simply a meta-package which allows you to include all its dependencies at once.
+neo4j-community::
+  The neo4j-community module is a historical alias for the neo4j module.
+
+neo4j::
+  This is simply a meta-package which allows you to include all its dependencies at once.
 
 neo4j-shell::
   The shell module provides a simple shell to monitor a Neo4j database.
@@ -147,9 +143,9 @@ neo4j-server-advanced::
   This module contains the extra monitoring features of the advanced version of the Neo4j server.
 
 neo4j-advanced::
-  Just like the neo4j-community module, this is simply a meta package to allow easy inclusion of the 
+  Just like the neo4j module, this is simply a meta package to allow easy inclusion of the 
   other maven modules.
-  This meta package includes modules from the advanced version and also includes neo4j-community.
+  This meta package includes modules from the advanced version and also includes neo4j.
 
 neo4j-management::
   The management module extends the neo4j-jmx module with extra monitoring features.

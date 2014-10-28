@@ -16,7 +16,7 @@ define "neo4j-browser", :layout=>project_layout do
   package :jar
 
 
-  test.with transitive("org.neo4j:neo4j-community:jar:#{NEO4J_VERSION}"),
+  test.with transitive("org.neo4j:neo4j:jar:#{NEO4J_VERSION}"),
     transitive("org.neo4j.app:neo4j-server:jar:#{NEO4J_VERSION}"),
     "org.neo4j.app:neo4j-server:jar:static-web:#{NEO4J_VERSION}"
 end

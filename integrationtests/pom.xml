@@ -27,7 +27,7 @@
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-community</artifactId>
+      <artifactId>neo4j</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>

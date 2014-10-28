@@ -36,7 +36,7 @@ import static org.junit.Assert.assertEquals;
  * problems for the server which relies on those names to yield the correct
  * Neo4j edition (community, advanced, enterprise) to the Web UI and other clients.
  * <p/>
- * Although this test asserts naming against classes in other modules (neo4j-community,
+ * Although this test asserts naming against classes in other modules (neo4j,
  * neo4j-advanced) it lives in neo4j-enterprise because otherwise the CommunityNeoServer
  * and AdvancedNeoServer would not be visible.
  */
