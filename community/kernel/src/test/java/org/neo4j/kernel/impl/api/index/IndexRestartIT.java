@@ -53,7 +53,7 @@ import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
 import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
 
-public class IndexRestartIt
+public class IndexRestartIT
 {
     /* This is somewhat difficult to test since dropping an index while it's populating forces it to be cancelled
      * first (and also awaiting cancellation to complete). So this is a best-effort to have the timing as close
@@ -83,7 +83,7 @@ public class IndexRestartIt
             assertThat( e.getMessage(), CoreMatchers.containsString( myLabel.name() ) );
         }
     }
-    
+
     @Test
     public void shouldHandleRestartOfOnlineIndex() throws Exception
     {
@@ -128,7 +128,7 @@ public class IndexRestartIt
     private TestGraphDatabaseFactory factory;
     private final ControlledPopulationSchemaIndexProvider provider = new ControlledPopulationSchemaIndexProvider();
     private final Label myLabel = label( "MyLabel" );
-    
+
     private void startDb()
     {
         if ( db != null )
