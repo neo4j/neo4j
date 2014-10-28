@@ -257,7 +257,7 @@ public class BatchInserterImpl implements BatchInserter
         }
         msgLog.logMessage( Thread.currentThread() + " Starting BatchInserter(" + this + ")" );
         life.start();
-        neoStore = sf.newNeoStore( true );
+        neoStore = sf.newNeoStore( true, false );
         if ( !neoStore.isStoreOk() )
         {
             throw new IllegalStateException( storeDir + " store is not cleanly shutdown." );

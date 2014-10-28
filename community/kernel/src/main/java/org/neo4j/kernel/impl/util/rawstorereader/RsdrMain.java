@@ -82,7 +82,7 @@ public class RsdrMain
 
         File storepath = new File( args[0] );
         StoreFactory factory = openStore( storepath );
-        NeoStore neoStore = factory.newNeoStore( false );
+        NeoStore neoStore = factory.newNeoStore( false, false );
         interact( neoStore );
     }
 

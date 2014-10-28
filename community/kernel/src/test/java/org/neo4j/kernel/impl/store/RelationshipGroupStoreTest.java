@@ -142,18 +142,18 @@ public class RelationshipGroupStoreTest
     {
         int expectedThreshold = customThreshold != null ? customThreshold : defaultThreshold;
         StoreFactory factory = factory( customThreshold );
-        NeoStore neoStore = factory.newNeoStore( true );
+        NeoStore neoStore = factory.newNeoStore( true, false );
         assertEquals( expectedThreshold, neoStore.getDenseNodeThreshold() );
         neoStore.close();
 
         // Next time we open it it should be the same
-        neoStore = factory.newNeoStore( false );
+        neoStore = factory.newNeoStore( false, false );
         assertEquals( expectedThreshold, neoStore.getDenseNodeThreshold() );
         neoStore.close();
 
         // Even if we open with a different config setting it should just ignore it
         factory = factory( 999999 );
-        neoStore = factory.newNeoStore( false );
+        neoStore = factory.newNeoStore( false, false );
         assertEquals( expectedThreshold, neoStore.getDenseNodeThreshold() );
         neoStore.close();
     }

@@ -163,7 +163,7 @@ public class ConsistencyPerformanceCheck
                 logger,
                 monitors );
 
-        NeoStore neoStore = factory.newNeoStore( true );
+        NeoStore neoStore = factory.newNeoStore( true, false );
 
         SchemaIndexProvider indexes = new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, tuningConfiguration );
         return new DirectStoreAccess( new StoreAccess( neoStore ),

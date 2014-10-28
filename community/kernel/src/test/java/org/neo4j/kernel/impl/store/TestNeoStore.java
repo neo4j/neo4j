@@ -1227,7 +1227,7 @@ public class TestNeoStore
                 StringLogger.DEV_NULL,
                 monitors );
 
-        NeoStore neoStore = sf.newNeoStore( false );
+        NeoStore neoStore = sf.newNeoStore( false, false );
         assertEquals( 12, neoStore.getCurrentLogVersion() );
         neoStore.close();
     }
@@ -1250,7 +1250,7 @@ public class TestNeoStore
                 monitors );
 
         // when
-        NeoStore neoStore = sf.newNeoStore( true );
+        NeoStore neoStore = sf.newNeoStore( true, false );
 
         // then the default is 0
         assertEquals( 0l, neoStore.getLatestConstraintIntroducingTx() );
@@ -1264,7 +1264,7 @@ public class TestNeoStore
         // when
         neoStore.flush();
         neoStore.close();
-        neoStore = sf.newNeoStore( false );
+        neoStore = sf.newNeoStore( false, false );
 
         // then the value should have been stored
         assertEquals( 10l, neoStore.getLatestConstraintIntroducingTx() );
@@ -1279,10 +1279,10 @@ public class TestNeoStore
                 new StoreFactory( fs.get(), new File( "graph.db/neostore" ), pageCache, StringLogger.DEV_NULL,
                         new Monitors() );
 
-        NeoStore neoStore = factory.newNeoStore( true );
+        NeoStore neoStore = factory.newNeoStore( true, false );
         neoStore.close();
 
-        neoStore = factory.newNeoStore( false );
+        neoStore = factory.newNeoStore( false, false );
         long lastCommittedTransactionId = neoStore.getLastCommittedTransactionId();
         neoStore.close();
 
@@ -1296,7 +1296,7 @@ public class TestNeoStore
         File neoStoreDir = new File( "/tmp/graph.db/neostore" ).getAbsoluteFile();
         StoreFactory factory =
                 new StoreFactory( fileSystem, neoStoreDir, pageCache, StringLogger.DEV_NULL, new Monitors() );
-        NeoStore neoStore = factory.newNeoStore( true );
+        NeoStore neoStore = factory.newNeoStore( true, false );
         neoStore.setCreationTime( 3 );
         neoStore.setRandomNumber( 4 );
         neoStore.setCurrentLogVersion( 5 );
@@ -1323,7 +1323,7 @@ public class TestNeoStore
         NeoStore.setOrAddUpgradeIdOnMigration( fileSystem, file, 10 );
         NeoStore.setOrAddUpgradeTimeOnMigration( fileSystem, file, 11 );
 
-        neoStore = factory.newNeoStore( false );
+        neoStore = factory.newNeoStore( false, false );
         assertEquals( 3, neoStore.getCreationTime() );
         assertEquals( 4, neoStore.getRandomNumber() );
         assertEquals( 5, neoStore.getCurrentLogVersion() );

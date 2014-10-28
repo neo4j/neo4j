@@ -103,6 +103,13 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
         }
     }
 
+    public static boolean countsStoreExists( FileSystemAbstraction fs, File storeFileBase )
+    {
+        final File alpha = storeFile( storeFileBase, ALPHA );
+        final File beta = storeFile( storeFileBase, BETA );
+        return fs.fileExists( alpha ) || fs.fileExists( beta );
+    }
+
     private static boolean isAlphaStoreMoreRecent( CountsStore alphaStore, CountsStore betaStore )
     {
         long alphaTxId = alphaStore.lastTxId(), betaTxId = betaStore.lastTxId();

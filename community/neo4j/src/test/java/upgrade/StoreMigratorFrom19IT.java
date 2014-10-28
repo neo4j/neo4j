@@ -104,7 +104,7 @@ public class StoreMigratorFrom19IT
             database.shutdown();
         }
 
-        NeoStore neoStore = cleanup.add( storeFactory.newNeoStore( true ) );
+        NeoStore neoStore = cleanup.add( storeFactory.newNeoStore( true, false ) );
         verifyNeoStore( neoStore );
         neoStore.close();
 
