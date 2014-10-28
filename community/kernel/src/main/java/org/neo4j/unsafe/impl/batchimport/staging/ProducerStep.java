@@ -32,9 +32,9 @@ public abstract class ProducerStep<T> extends AbstractStep<Void>
 {
     private final int batchSize;
 
-    public ProducerStep( StageControl control, String name, int batchSize )
+    public ProducerStep( StageControl control, String name, int batchSize, int movingAverageSize )
     {
-        super( control, name );
+        super( control, name, movingAverageSize );
         this.batchSize = batchSize;
     }
 
@@ -74,7 +74,7 @@ public abstract class ProducerStep<T> extends AbstractStep<Void>
             batch.add( next );
             if ( ++size == batchSize )
             {   // Full batch
-                totalProcessingTime.addAndGet( currentTimeMillis()-startTime );
+                totalProcessingTime.add( currentTimeMillis()-startTime );
 
                 // Increment both received and done batch count
                 sendDownstream( nextTicket(), batch );
@@ -88,7 +88,7 @@ public abstract class ProducerStep<T> extends AbstractStep<Void>
 
         if ( size > 0 )
         {   // Last batch
-            totalProcessingTime.addAndGet( currentTimeMillis()-startTime );
+            totalProcessingTime.add( currentTimeMillis()-startTime );
             sendDownstream( nextTicket(), batch );
         }
     }

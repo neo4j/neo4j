@@ -31,9 +31,9 @@ public abstract class NodeStoreProcessorStep extends LonelyProcessingStep
 {
     protected final NodeStore nodeStore;
 
-    protected NodeStoreProcessorStep( StageControl control, String name, int batchSize, NodeStore nodeStore )
+    protected NodeStoreProcessorStep( StageControl control, String name, Configuration config, NodeStore nodeStore )
     {
-        super( control, name, batchSize );
+        super( control, name, config.batchSize(), config.movingAverageSize() );
         this.nodeStore = nodeStore;
     }
 

@@ -33,10 +33,10 @@ public class RelationshipLinkbackStep extends RelationshipStoreProcessorStep
 {
     private final NodeRelationshipLink nodeRelationshipLink;
 
-    public RelationshipLinkbackStep( StageControl control, int batchSize,
+    public RelationshipLinkbackStep( StageControl control, Configuration config,
             RelationshipStore relStore, NodeRelationshipLink nodeRelationshipLink )
     {
-        super( control, "LINKER", batchSize, relStore );
+        super( control, "LINKER", config, relStore );
         this.nodeRelationshipLink = nodeRelationshipLink;
     }
 

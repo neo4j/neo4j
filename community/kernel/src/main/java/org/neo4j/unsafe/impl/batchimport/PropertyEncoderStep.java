@@ -43,11 +43,11 @@ public class PropertyEncoderStep<ENTITY extends PrimitiveRecord,INPUT extends In
     private final int arrayDataSize;
     private final int stringDataSize;
 
-    protected PropertyEncoderStep( StageControl control, int workAheadSize, int numberOfExecutors,
+    protected PropertyEncoderStep( StageControl control, Configuration config, int numberOfExecutors,
             BatchingPropertyKeyTokenRepository propertyKeyHolder,
             PropertyStore propertyStore )
     {
-        super( control, "PROPERTIES", workAheadSize, numberOfExecutors );
+        super( control, "PROPERTIES", config.workAheadSize(), config.movingAverageSize(), numberOfExecutors );
         this.propertyKeyHolder = propertyKeyHolder;
         this.arrayDataSize = propertyStore.getArrayStore().dataSize();
         this.stringDataSize = propertyStore.getStringStore().dataSize();

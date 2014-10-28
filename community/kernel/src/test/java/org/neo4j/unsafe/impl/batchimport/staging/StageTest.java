@@ -40,7 +40,7 @@ public class StageTest
         int batchSize = 10;
         long batches = 1000;
         final long items = batches*batchSize;
-        stage.add( new ProducerStep<Object>( stage.control(), "Producer", batchSize )
+        stage.add( new ProducerStep<Object>( stage.control(), "Producer", batchSize, 100 )
         {
             private long i = 0;
             private final Object theObject = new Object();
@@ -79,7 +79,7 @@ public class StageTest
         ReceiveOrderAssertingStep( StageControl control, String name, int workAheadSize, int numberOfExecutors,
                 long processingTime )
         {
-            super( control, name, workAheadSize, numberOfExecutors );
+            super( control, name, workAheadSize, 100, numberOfExecutors );
             this.processingTime = processingTime;
         }
 

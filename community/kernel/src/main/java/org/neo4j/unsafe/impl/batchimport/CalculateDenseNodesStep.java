@@ -42,10 +42,10 @@ public class CalculateDenseNodesStep extends ExecutorServiceStep<List<InputRelat
     private final StringLogger logger;
     private final IdMapper idMapper;
 
-    public CalculateDenseNodesStep( StageControl control, int workAheadSize,
+    public CalculateDenseNodesStep( StageControl control, Configuration config,
             NodeRelationshipLink nodeRelationshipLink, IdMapper idMapper, StringLogger logger )
     {
-        super( control, "CALCULATOR", workAheadSize, 1 );
+        super( control, "CALCULATOR", config.workAheadSize(), config.movingAverageSize(), 1 );
         this.nodeRelationshipLink = nodeRelationshipLink;
         this.idMapper = idMapper;
         this.logger = logger;

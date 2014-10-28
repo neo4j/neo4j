@@ -30,9 +30,9 @@ public abstract class LonelyProcessingStep extends AbstractStep<Void>
     private int batch;
     private long lastProcessingTimestamp;
 
-    public LonelyProcessingStep( StageControl control, String name, int batchSize )
+    public LonelyProcessingStep( StageControl control, String name, int batchSize, int movingAverageSize )
     {
-        super( control, name );
+        super( control, name, movingAverageSize );
         this.batchSize = batchSize;
     }
 
@@ -75,7 +75,7 @@ public abstract class LonelyProcessingStep extends AbstractStep<Void>
             doneBatches.incrementAndGet();
             batch = 0;
             long time = currentTimeMillis();
-            totalProcessingTime.addAndGet( time - lastProcessingTimestamp );
+            totalProcessingTime.add( time - lastProcessingTimestamp );
             lastProcessingTimestamp = time;
         }
     }

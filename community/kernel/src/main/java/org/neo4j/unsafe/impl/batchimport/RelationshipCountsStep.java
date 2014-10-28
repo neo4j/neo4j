@@ -41,10 +41,10 @@ public class RelationshipCountsStep extends RelationshipStoreProcessorStep
     private final int anyLabel;
     private final int anyRelationshipType;
 
-    protected RelationshipCountsStep( StageControl control, int batchSize, RelationshipStore relationshipStore,
+    protected RelationshipCountsStep( StageControl control, Configuration config, RelationshipStore relationshipStore,
             NodeLabelsCache nodeLabelCache, int highLabelId, int highRelationshipTypeId, CountsTracker countsTracker )
     {
-        super( control, "RELATIONSHIP COUNTS", batchSize, relationshipStore );
+        super( control, "RELATIONSHIP COUNTS", config, relationshipStore );
         this.nodeLabelCache = nodeLabelCache;
         this.countsTracker = countsTracker;
 

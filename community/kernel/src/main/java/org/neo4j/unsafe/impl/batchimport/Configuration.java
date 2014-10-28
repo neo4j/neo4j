@@ -58,6 +58,13 @@ public interface Configuration
      */
     int numberOfIoThreads();
 
+    /**
+     * For statistics the average processing time is based on total processing time divided by
+     * number of batches processed. A total average is probably not that interesting so this configuration
+     * option specifies how many of the latest processed batches counts in the equation above.
+     */
+    int movingAverageSize();
+
     public static class Default implements Configuration
     {
         private static final int OPTIMAL_FILE_CHANNEL_CHUNK_SIZE = 1024 * 4;
@@ -101,6 +108,12 @@ public interface Configuration
         public int numberOfIoThreads()
         {
             return max( 2, Runtime.getRuntime().availableProcessors()/3 );
+        }
+
+        @Override
+        public int movingAverageSize()
+        {
+            return 100;
         }
     }
 
@@ -150,6 +163,12 @@ public interface Configuration
         public int numberOfIoThreads()
         {
             return defaults.numberOfIoThreads();
+        }
+
+        @Override
+        public int movingAverageSize()
+        {
+            return defaults.movingAverageSize();
         }
     }
 

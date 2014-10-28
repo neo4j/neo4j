@@ -51,9 +51,10 @@ public abstract class ExecutorServiceStep<T> extends AbstractStep<T>
     // Useful for tracking how much time we spend waiting for batches from upstream.
     private final AtomicLong lastBatchEndTime = new AtomicLong();
 
-    protected ExecutorServiceStep( StageControl control, String name, int workAheadSize, int numberOfExecutors )
+    protected ExecutorServiceStep( StageControl control, String name, int workAheadSize, int movingAverageSize,
+            int numberOfExecutors )
     {
-        super( control, name );
+        super( control, name, movingAverageSize );
         this.workAheadSize = workAheadSize;
         this.numberOfExecutors = numberOfExecutors;
         NamedThreadFactory threadFactory = new NamedThreadFactory( name );
@@ -81,7 +82,7 @@ public abstract class ExecutorServiceStep<T> extends AbstractStep<T>
                 try
                 {
                     Object result = process( ticket, batch );
-                    totalProcessingTime.addAndGet( currentTimeMillis()-startTime );
+                    totalProcessingTime.add( currentTimeMillis()-startTime );
 
                     await( rightTicket, ticket );
                     sendDownstream( ticket, result );
