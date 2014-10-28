@@ -105,7 +105,6 @@ class LoadCsvAcceptanceTest
         writer.println("'String, with single quotes'")
         writer.println("\"String, with double quotes\"")
         writer.println(""""String with ""quotes"" in it"""")
-        writer.println("""String with "quotes" in it""")
     }).cypherEscape
 
     val result = execute(s"LOAD CSV FROM '${url}' AS line RETURN line as string").toList
@@ -113,7 +112,6 @@ class LoadCsvAcceptanceTest
       Map("string" -> Seq("String without quotes")),
       Map("string" -> Seq("'String", " with single quotes'")),
       Map("string" -> Seq("String, with double quotes")),
-      Map("string" -> Seq("""String with "quotes" in it""")),
       Map("string" -> Seq("""String with "quotes" in it"""))))
   }
 

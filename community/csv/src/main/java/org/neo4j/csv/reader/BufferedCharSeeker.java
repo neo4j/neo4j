@@ -25,6 +25,8 @@ import java.io.IOException;
 import java.io.Reader;
 import java.nio.CharBuffer;
 
+import static org.neo4j.csv.reader.Mark.END_OF_LINE_CHARACTER;
+
 /**
  * Much like a {@link BufferedReader} for a {@link Reader}.
  */
@@ -32,10 +34,12 @@ public class BufferedCharSeeker implements CharSeeker
 {
     private static final int KB = 1024, MB = KB * KB;
     public static final int DEFAULT_BUFFER_SIZE = 2 * MB;
+    public static final char DEFAULT_QUOTE_CHAR = '"';
 
     private static final char EOL_CHAR = '\n';
     private static final char EOL_CHAR_2 = '\r';
     private static final char EOF_CHAR = (char) -1;
+    private static final char BACK_SLASH = '\\';
 
     private final Readable reader;
     private final char[] buffer;
@@ -46,19 +50,27 @@ public class BufferedCharSeeker implements CharSeeker
     private int seekStartPos;
     private int lineNumber = 1;
     private boolean eof;
+    private final char quoteChar;
 
     public BufferedCharSeeker( Readable reader )
     {
-        this( reader, DEFAULT_BUFFER_SIZE );
+        this( reader, DEFAULT_BUFFER_SIZE, DEFAULT_QUOTE_CHAR );
     }
 
     public BufferedCharSeeker( Readable reader, int bufferSize )
+    {
+        this( reader, bufferSize, DEFAULT_QUOTE_CHAR );
+    }
+
+
+    public BufferedCharSeeker( Readable reader, int bufferSize, char quoteChar )
     {
         this.reader = reader;
         this.buffer = new char[bufferSize];
         this.bufferStartPos = -bufferSize;
         this.charBuffer = CharBuffer.wrap( buffer );
         this.bufferPos = bufferSize;
+        this.quoteChar = quoteChar;
     }
 
     @Override
@@ -73,30 +85,100 @@ public class BufferedCharSeeker implements CharSeeker
         // whole buffer, so max one fill per value is supported.
         seekStartPos = bufferPos; // seekStartPos updated in nextChar if buffer flips over, that's why it's a member
         int ch;
-        while ( (ch = nextChar()) != EOL_CHAR && ch != EOL_CHAR_2 && !eof )
+        int endOffset = 1;
+        int skippedChars = 0;
+        int quoteDepth = 0;
+        while ( !eof )
         {
-            for ( int i = 0; i < untilOneOfChars.length; i++ )
-            {
-                if ( ch == untilOneOfChars[i] )
-                {   // We found a delimiter, set marker and return true
-                    mark.set( lineNumber, seekStartPos, bufferPos - 1, ch );
-                    return true;
+            ch = nextChar( skippedChars );
+            if ( quoteDepth == 0 )
+            {   //In normal mode, i.e. not within quotes
+                if ( ch == quoteChar )
+                {   // We found a quote, skip it and switch modes
+                    quoteDepth++;
+                    seekStartPos++;
+                    continue;
+                }
+                else if ( isNewLine( ch ) )
+                {   // Encountered newline, done for now
+                    break;
+                }
+                else
+                {
+                    for ( int i = 0; i < untilOneOfChars.length; i++ )
+                    {
+                        if ( ch == untilOneOfChars[i] )
+                        {   // We found a delimiter, set marker and return true
+                            mark.set( lineNumber, seekStartPos, bufferPos - endOffset - skippedChars, ch );
+                            return true;
+                        }
+                    }
+                }
+            }
+            else
+            {   // In quoted mode, i.e. within quotes
+                if ( ch == quoteChar )
+                {   // Found a quote within a quote, peek at next char
+                    int nextCh = peekChar();
+
+                    if ( nextCh == quoteChar )
+                    {   // Found a double quote, skip it and we're going down one more quote depth (quote-in-quote)
+                        repositionChar( bufferPos++, ++skippedChars );
+                        quoteDepth = quoteDepth == 1 ? 2 : 1; // toggle between quote and quote-in-quote
+                    }
+                    else
+                    {   // Found an ending quote, skip it and switch mode
+                        endOffset++;
+                        quoteDepth--;
+                    }
+                }
+                else if ( (ch == EOL_CHAR || ch == EOL_CHAR_2) )
+                {   // Found a new line, just keep going
+                    nextChar( skippedChars );
+                }
+                else if ( ch == BACK_SLASH )
+                {   // Legacy concern, support java style quote encoding
+                    int nextCh = peekChar();
+                    if ( nextCh == quoteChar )
+                    {   // Found a slash encoded quote
+                        repositionChar( bufferPos++, ++skippedChars );
+                    }
                 }
             }
         }
 
         int valueLength = bufferPos - seekStartPos - 1;
-        if ( ch == EOF_CHAR && valueLength == 0 && seekStartPos == lineStartPos )
+        if ( eof && valueLength == 0 && seekStartPos == lineStartPos )
         {   // We didn't find any of the characters sought for
             return eof( mark );
         }
 
         // We found the last value of the line or stream
-        int skipped = skipEolChars();
-        mark.set( lineNumber, seekStartPos, bufferPos - 1 - skipped, Mark.END_OF_LINE_CHARACTER );
+        skippedChars += skipEolChars();
+        mark.set( lineNumber, seekStartPos, bufferPos - endOffset - skippedChars, END_OF_LINE_CHARACTER );
         lineNumber++;
         lineStartPos = bufferPos;
         return true;
+    }
+
+    private void repositionChar( int offset, int stepsBack )
+    {
+        // We reposition characters because we might have skipped some along the way, double-quotes and what not.
+        // We want to take an as little hit as possible for that, so we reposition each character as long as
+        // we're still reading the same value. All other values will not have to take any hit of skipped chars
+        // for this particular value.
+        buffer[offset - stepsBack] = buffer[offset];
+    }
+
+    private boolean isNewLine(int ch)
+    {
+        return ch == EOL_CHAR || ch == EOL_CHAR_2;
+    }
+
+    private int peekChar() throws IOException
+    {
+        fillBufferIfWeHaveExhaustedIt();
+        return buffer[bufferPos];
     }
 
     private boolean eof( Mark mark )
@@ -116,9 +198,8 @@ public class BufferedCharSeeker implements CharSeeker
 
     private int skipEolChars() throws IOException
     {
-        int ch;
         int skipped = 0;
-        while ( (ch = nextChar()) == EOL_CHAR || ch == EOL_CHAR_2 )
+        while ( isNewLine( nextChar( 0/*doesn't matter since we ignore the chars anyway*/ ) ) )
         {   // Just loop through, skipping them
             skipped++;
         }
@@ -126,15 +207,19 @@ public class BufferedCharSeeker implements CharSeeker
         return skipped;
     }
 
-    private int nextChar() throws IOException
+    private int nextChar( int skippedChars ) throws IOException
     {
         fillBufferIfWeHaveExhaustedIt();
-        int result = buffer[bufferPos++];
-        if ( result == EOF_CHAR )
+        int ch = buffer[bufferPos++];
+        if ( skippedChars > 0 )
+        {
+            repositionChar( bufferPos - 1, skippedChars );
+        }
+        if ( ch == EOF_CHAR )
         {
             eof = true;
         }
-        return result;
+        return ch;
     }
 
     private void fillBufferIfWeHaveExhaustedIt() throws IOException

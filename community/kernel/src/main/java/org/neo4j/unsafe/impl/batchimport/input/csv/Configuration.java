@@ -19,6 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
+import org.neo4j.csv.reader.BufferedCharSeeker;
+
 /**
  * Configuration for {@link CsvInput}.
  */
@@ -36,12 +38,6 @@ public interface Configuration
     char arrayDelimiter();
 
     /**
-     * Whether or not the data parser is quote aware. If it is then {@link #quotationCharacter()} is
-     * used as the quote character.
-     */
-    boolean quoteAware();
-
-    /**
      * Character to regard as quotes. Quoted values can contain newline characters and even delimiters.
      */
     char quotationCharacter();
@@ -49,15 +45,9 @@ public interface Configuration
     public static abstract class Default implements Configuration
     {
         @Override
-        public boolean quoteAware()
-        {
-            return true;
-        }
-
-        @Override
         public char quotationCharacter()
         {
-            return '"';
+            return BufferedCharSeeker.DEFAULT_QUOTE_CHAR;
         }
     }
 

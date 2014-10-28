@@ -37,7 +37,6 @@ import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.MissingHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
 
-import static org.neo4j.csv.reader.QuoteAwareCharSeeker.quoteAware;
 
 /**
  * Provides common implementations of factories required by f.ex {@link CsvInput}.
@@ -56,14 +55,7 @@ public class DataFactories
             {
                 try
                 {
-                    CharSeeker result = CharSeekers.charSeeker( file );
-
-                    // If we so desire make it quote aware
-                    if ( config.quoteAware() )
-                    {
-                        result = quoteAware( result, config.quotationCharacter() );
-                    }
-                    return result;
+                    return CharSeekers.charSeeker( file, config.quotationCharacter() );
                 }
                 catch ( FileNotFoundException e )
                 {

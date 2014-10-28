@@ -22,34 +22,58 @@ package org.neo4j.cypher.internal.compiler.v2_2.spi
 import java.io._
 import java.net.{CookieHandler, CookieManager, CookiePolicy, URL}
 
-import au.com.bytecode.opencsv.CSVReader
+import org.neo4j.csv.reader.{Extractors, CharSeekers, Mark}
 import org.neo4j.cypher.internal.compiler.v2_2.{LoadExternalResourceException, TaskCloser}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.ExternalResource
 
+import scala.collection.mutable.ArrayBuffer
+import scala.util.control.Breaks._
+
 object CSVResources {
   val DEFAULT_FIELD_TERMINATOR: Char = ','
+  val DEFAULT_BUFFER_SIZE: Int =  2 * 1024 * 1024
+  val DEFAULT_QUOTE_CHAR: Char = '"'
 }
 
 class CSVResources(cleaner: TaskCloser) extends ExternalResource {
 
   def getCsvIterator(url: URL, fieldTerminator: Option[String] = None): Iterator[Array[String]] = {
     val inputStream = openStream(url)
-    val reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"))
-    val csvReader = new CSVReader(reader, fieldTerminator.map(_.charAt(0)).getOrElse(CSVResources.DEFAULT_FIELD_TERMINATOR))
+    val reader = new InputStreamReader(inputStream, "UTF-8")
+    val delimiter: Char = fieldTerminator.map(_.charAt(0)).getOrElse(CSVResources.DEFAULT_FIELD_TERMINATOR)
+    val seeker = CharSeekers.charSeeker(reader, CSVResources.DEFAULT_BUFFER_SIZE, true, CSVResources.DEFAULT_QUOTE_CHAR)
+    val extractors = new Extractors(delimiter)
+    val delimiters = Array(delimiter.toInt)
+    val mark = new Mark
 
     cleaner.addTask(_ => {
-      csvReader.close()
+      seeker.close()
     })
 
     new Iterator[Array[String]] {
-      var nextRow: Array[String] = csvReader.readNext()
+      private def readNextRow: Array[String] = {
+        val buffer = new ArrayBuffer[String]
+        breakable {
+          while (seeker.seek( mark, delimiters)) {
+            buffer += seeker.extract(mark, extractors.string()).value()
+            if (mark.isEndOfLine) break
+        }}
+
+        if (buffer.isEmpty) {
+          null
+        } else {
+          buffer.toArray
+        }
+      }
+
+      var nextRow: Array[String] = readNextRow
 
       def hasNext: Boolean = nextRow != null
 
       def next(): Array[String] = {
         if (!hasNext) Iterator.empty.next()
         val row = nextRow
-        nextRow = csvReader.readNext()
+        nextRow = readNextRow
         row
       }
     }
