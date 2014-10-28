@@ -24,9 +24,11 @@ angular.module('neo4jApp.controllers')
 .controller('QueryPlanViz', [
     '$element'
     ($element) ->
-      @render = (queryPlan) ->
-        console.log 'query plan!', queryPlan
+      operatorHeight = 20
+      operatorPadding = 70
+      margin = 10
 
+      @render = (queryPlan) ->
         operators = []
         links = []
 
@@ -41,28 +43,41 @@ angular.module('neo4jApp.controllers')
 
         explore queryPlan.root
 
-        for link in links
-          console.log link, link.value
+        sankey = d3.sankey()
+        .nodes(operators)
+        .links(links);
 
-        margin = {top: 1, right: 1, bottom: 300, left: 1}
-        width = 800 - margin.left - margin.right
-        height = 800 - margin.top - margin.bottom
+        # do a minimal layout with arbitrary size, just to establish operator dimensions
+        sankey
+        .size([500, 500])
+        .layout(1)
+
+        # group operators into ranks
+        ranks = {}
+        for operator in operators
+          rank = ranks[operator.x]
+          unless rank
+            rank = []
+            ranks[operator.x] = rank
+          rank.push operator
+
+        width = d3.max(d3.values(ranks).map((rank) -> d3.sum(rank.map((operator) -> operator.dy + 70))))
+        rankHeight = 50
+        height = d3.values(ranks).length * rankHeight
+
+        sankey
+        .nodeWidth(operatorHeight)
+        .nodePadding(operatorPadding)
+        .size([height, width])
+        .layout(32)
+
+        svg = d3.select($element[0])
+        .attr('viewBox', [-margin, -margin, width + margin * 2, height + margin * 2].join(' '))
 
         formatNumber = d3.format(",.0f")
         format = (d) ->
           formatNumber(d) + ' rows'
         color = d3.scale.category20()
-
-        svg = d3.select($element[0])
-        .attr('viewBox', [0, 0, height + margin.top + margin.bottom, width].join(' '))
-
-        sankey = d3.sankey()
-        .nodeWidth(20)
-        .nodePadding(70)
-        .size([width, height])
-        .nodes(operators)
-        .links(links)
-        .layout(64)
 
         path = (d) ->
           dy = Math.max(1, d.dy)
