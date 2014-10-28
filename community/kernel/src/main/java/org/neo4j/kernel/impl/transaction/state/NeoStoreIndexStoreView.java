@@ -50,7 +50,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.register.Register;
+import org.neo4j.register.Register.DoubleLongRegister;
 
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.EMPTY_LONG_ARRAY;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
@@ -108,9 +108,9 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     }
 
     @Override
-    public void indexSample( IndexDescriptor descriptor, Register.DoubleLongRegister output )
+    public DoubleLongRegister indexSample( IndexDescriptor descriptor, DoubleLongRegister output )
     {
-        counts.indexSample( descriptor.getLabelId(), descriptor.getPropertyKeyId(), output );
+        return counts.indexSample( descriptor.getLabelId(), descriptor.getPropertyKeyId(), output );
     }
 
     @Override

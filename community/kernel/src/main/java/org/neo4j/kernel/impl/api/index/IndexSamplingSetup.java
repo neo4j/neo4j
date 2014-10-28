@@ -36,6 +36,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.BACKGROUND_REBUILD_UPDATED;
 import static org.neo4j.kernel.impl.util.JobScheduler.Group.indexSamplingController;
+import static org.neo4j.register.Registers.newDoubleLongRegister;
 
 public class IndexSamplingSetup
 {
@@ -96,5 +97,17 @@ public class IndexSamplingSetup
             };
             scheduler.scheduleRecurring( indexSamplingController, samplingRunner, 10, SECONDS );
         }
+    }
+
+    public Predicate<IndexDescriptor> reSamplingPredicate()
+    {
+        return new Predicate<IndexDescriptor>()
+        {
+            @Override
+            public boolean accept( IndexDescriptor descriptor )
+            {
+                return storeView.indexSample( descriptor, newDoubleLongRegister() ).readSecond() == 0;
+            }
+        };
     }
 }

@@ -32,6 +32,7 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.test.DoubleLatch;
 
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 
 import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
@@ -40,7 +41,7 @@ import static org.neo4j.test.DoubleLatch.awaitLatch;
 public class ControlledPopulationSchemaIndexProvider extends SchemaIndexProvider
 {
     private IndexPopulator mockedPopulator = new IndexPopulator.Adapter();
-    private final IndexAccessor mockedWriter = mock( IndexAccessor.class );
+    private final IndexAccessor mockedWriter = mock( IndexAccessor.class, RETURNS_MOCKS );
     private final CountDownLatch writerLatch = new CountDownLatch( 1 );
     private InternalIndexState initialIndexState = POPULATING;
     public final AtomicInteger populatorCallCount = new AtomicInteger();

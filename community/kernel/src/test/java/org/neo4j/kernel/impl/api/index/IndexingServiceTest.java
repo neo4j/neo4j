@@ -59,6 +59,7 @@ import org.neo4j.kernel.impl.util.TestLogger;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.register.Register.DoubleLongRegister;
 
 import static java.util.Arrays.asList;
 
@@ -69,6 +70,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -88,6 +90,7 @@ import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.
 import static org.neo4j.kernel.impl.store.record.IndexRule.constraintIndexRule;
 import static org.neo4j.kernel.impl.store.record.IndexRule.indexRule;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
+import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.test.AwaitAnswer.afterAwaiting;
 
 public class IndexingServiceTest
@@ -111,7 +114,7 @@ public class IndexingServiceTest
         populator = mock( IndexPopulator.class );
         updater = mock( IndexUpdater.class );
         indexProvider = mock( SchemaIndexProvider.class );
-        accessor = mock( IndexAccessor.class );
+        accessor = mock( IndexAccessor.class, RETURNS_MOCKS );
         storeView  = mock( IndexStoreView.class );
     }
 
@@ -316,7 +319,7 @@ public class IndexingServiceTest
         IndexRule populatingIndex = indexRule( 2, 1, 2, PROVIDER_DESCRIPTOR );
         IndexRule failedIndex     = indexRule( 3, 2, 2, PROVIDER_DESCRIPTOR );
 
-        IndexingService indexingService = IndexingService.create( new IndexSamplingConfig( new Config() ), mock( JobScheduler.class ), providerMap, mock( IndexStoreView.class ), mockLookup, mock( UpdateableSchemaState.class ), asList( onlineIndex, populatingIndex, failedIndex ), mockLogging( logger ), IndexingService.NO_MONITOR );
+        IndexingService indexingService = IndexingService.create( new IndexSamplingConfig( new Config() ), mock( JobScheduler.class ), providerMap, storeView, mockLookup, mock( UpdateableSchemaState.class ), asList( onlineIndex, populatingIndex, failedIndex ), mockLogging( logger ), IndexingService.NO_MONITOR );
 
         when( provider.getInitialState( onlineIndex.getId() ) ).thenReturn( ONLINE );
         when( provider.getInitialState( populatingIndex.getId() ) ).thenReturn( InternalIndexState.POPULATING );
@@ -328,6 +331,7 @@ public class IndexingServiceTest
         when(mockLookup.labelGetName( 2 )).thenReturn( "LabelTwo" );
         when(mockLookup.propertyKeyGetName( 1 )).thenReturn( "propertyOne" );
         when(mockLookup.propertyKeyGetName( 2 )).thenReturn( "propertyTwo" );
+        when( storeView.indexSample( any( IndexDescriptor.class ), any( DoubleLongRegister.class ) ) ).thenReturn( newDoubleLongRegister( 32l, 32l ) );
 
         logger.clear();
 
@@ -387,6 +391,7 @@ public class IndexingServiceTest
         when( indexAccessor.snapshotFiles()).thenAnswer( newResourceIterator( theFile ) );
         when( indexProvider.getInitialState( indexId ) ).thenReturn( ONLINE );
         when( indexProvider.getInitialState( indexId2 ) ).thenReturn( ONLINE );
+        when( storeView.indexSample( any( IndexDescriptor.class ), any( DoubleLongRegister.class ) ) ).thenReturn( newDoubleLongRegister( 32l, 32l ) );
 
         life.start();
 
@@ -414,10 +419,10 @@ public class IndexingServiceTest
         File theFile = new File( "Blah" );
 
         doAnswer( waitForLatch( populatorLatch ) ).when( populator ).create();
-        when(indexAccessor.snapshotFiles()).thenAnswer( newResourceIterator( theFile ) );
+        when( indexAccessor.snapshotFiles() ).thenAnswer( newResourceIterator( theFile ) );
         when( indexProvider.getInitialState( indexId ) ).thenReturn( POPULATING );
         when( indexProvider.getInitialState( indexId2 ) ).thenReturn( ONLINE );
-
+        when( storeView.indexSample( any( IndexDescriptor.class ), any( DoubleLongRegister.class ) ) ).thenReturn( newDoubleLongRegister( 32l, 32l ) );
         life.start();
 
         // WHEN

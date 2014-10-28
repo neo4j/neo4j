@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.index.IndexMap;
@@ -74,6 +75,28 @@ public class IndexSamplingController
         }
     }
 
+    public void recoverIndexSamples( Predicate<IndexDescriptor> needsReSampling )
+    {
+        emptyLock.lock();
+        try
+        {
+            IndexMap indexMap = indexMapSnapshotProvider.indexMapSnapshot();
+            Iterator<IndexDescriptor> descriptors = indexMap.descriptors();
+            while ( descriptors.hasNext() )
+            {
+                IndexDescriptor descriptor = descriptors.next();
+                if ( needsReSampling.accept( descriptor ) )
+                {
+                    sampleIndexOnCurrentThread( indexMap, descriptor );
+                }
+            }
+        }
+        finally
+        {
+            emptyLock.unlock();
+        }
+    }
+
     private void fillQueue( IndexSamplingMode mode, IndexMap indexMap )
     {
         Iterator<IndexDescriptor> descriptors = indexMap.descriptors();
@@ -97,7 +120,7 @@ public class IndexSamplingController
                         return;
                     }
 
-                    sampleIndex( indexMap, descriptor );
+                    sampleIndexOnTracker( indexMap, descriptor );
                 }
             }
             finally
@@ -117,7 +140,7 @@ public class IndexSamplingController
             for ( IndexDescriptor descriptor : descriptors )
             {
                 jobTracker.waitUntilCanExecuteMoreSamplingJobs();
-                sampleIndex( indexMap, descriptor );
+                sampleIndexOnTracker( indexMap, descriptor );
             }
         }
         finally
@@ -126,7 +149,7 @@ public class IndexSamplingController
         }
     }
 
-    private void sampleIndex( IndexMap indexMap, IndexDescriptor descriptor )
+    private void sampleIndexOnTracker( IndexMap indexMap, IndexDescriptor descriptor )
     {
         IndexProxy proxy = indexMap.getIndexProxy( descriptor );
         if ( proxy == null || proxy.getState() != InternalIndexState.ONLINE )
@@ -135,5 +158,16 @@ public class IndexSamplingController
         }
 
         jobTracker.scheduleSamplingJob( jobFactory.create( config, proxy ) );
+    }
+
+    private void sampleIndexOnCurrentThread( IndexMap indexMap, IndexDescriptor descriptor )
+    {
+        IndexProxy proxy = indexMap.getIndexProxy( descriptor );
+        if ( proxy == null || proxy.getState() != InternalIndexState.ONLINE )
+        {
+            return;
+        }
+
+        jobFactory.create( config, proxy ).run();
     }
 }

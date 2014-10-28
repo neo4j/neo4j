@@ -55,7 +55,7 @@ public interface IndexStoreView extends PropertyAccessor
 
     long indexUpdates( IndexDescriptor descriptor );
 
-    void indexSample( IndexDescriptor descriptor, DoubleLongRegister output );
+    DoubleLongRegister indexSample( IndexDescriptor descriptor, DoubleLongRegister output );
 
     void replaceIndexCounts( IndexDescriptor descriptor, long uniqueElements, long maxUniqueElements, long indexSize );
 

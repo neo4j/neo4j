@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.register.Register;
+import org.neo4j.register.Register.DoubleLongRegister;
 
 public interface CountsAccessor
 {
@@ -31,7 +31,7 @@ public interface CountsAccessor
 
     long indexUpdates( int labelId, int propertyKeyId );
 
-    void indexSample( int labelId, int propertyKeyId, Register.DoubleLongRegister target );
+    DoubleLongRegister indexSample( int labelId, int propertyKeyId, DoubleLongRegister target );
 
     long incrementNodeCount( int labelId, long delta );
 

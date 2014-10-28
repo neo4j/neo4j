@@ -65,9 +65,10 @@ public class CountsRecordState implements CountsVisitor.Visitable, CountsAccesso
     }
 
     @Override
-    public void indexSample( int labelId, int propertyKeyId, Register.DoubleLongRegister target )
+    public Register.DoubleLongRegister indexSample( int labelId, int propertyKeyId, Register.DoubleLongRegister target )
     {
         counts( indexSampleKey( labelId, propertyKeyId ) ).copyTo( target );
+        return target;
     }
 
     @Override

@@ -45,7 +45,7 @@ public class ImpermanentDatabaseRule extends DatabaseRule
     {
         return new TestGraphDatabaseFactory( logging );
     }
-    
+
     @Override
     protected GraphDatabaseBuilder newBuilder( GraphDatabaseFactory factory )
     {

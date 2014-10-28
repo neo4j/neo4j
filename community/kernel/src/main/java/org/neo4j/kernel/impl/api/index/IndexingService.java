@@ -275,6 +275,8 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
         }
 
         indexMapRef.setIndexMap( indexMap );
+
+        samplingController.recoverIndexSamples( samplingSetup.reSamplingPredicate() );
         samplingSetup.scheduleBackgroundJob( samplingController );
         state = State.RUNNING;
     }

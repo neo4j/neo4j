@@ -76,7 +76,6 @@ public class Registers
             @Override
             public long incrementSecond( long delta )
             {
-
                 second += delta;
                 return second;
             }

@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
 
+import org.neo4j.helpers.Predicates;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexMap;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
@@ -38,6 +39,8 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import static org.neo4j.helpers.Predicates.TRUE;
+import static org.neo4j.helpers.Predicates.not;
+import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
 import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
 import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.BACKGROUND_REBUILD_UPDATED;
@@ -244,6 +247,50 @@ public class IndexSamplingControllerTest
         // and finally exactly one job has run to completion
         assertEquals( 0, concurrentCount.get() );
         assertEquals( 1, totalCount.get() );
+    }
+
+    @Test
+    public void shouldRecoverOnlineIndex()
+    {
+        // given
+        IndexSamplingController controller = newSamplingController();
+        when( indexProxy.getState() ).thenReturn( ONLINE );
+
+        // when
+        controller.recoverIndexSamples( Predicates.<IndexDescriptor>TRUE() );
+
+        // then
+        verify( jobFactory ).create( samplingConfig, indexProxy );
+        verify( job ).run();
+        verifyNoMoreInteractions( jobFactory, job, tracker );
+    }
+
+    @Test
+    public void shouldNotRecoverOfflineIndex()
+    {
+        // given
+        IndexSamplingController controller = newSamplingController();
+        when( indexProxy.getState() ).thenReturn( FAILED );
+
+        // when
+        controller.recoverIndexSamples( Predicates.<IndexDescriptor>TRUE() );
+
+        // then
+        verifyNoMoreInteractions( jobFactory, job, tracker );
+    }
+
+    @Test
+    public void shouldNotRecoverOnlineIndexIfNotNeeded()
+    {
+        // given
+        IndexSamplingController controller = newSamplingController();
+        when( indexProxy.getState() ).thenReturn( ONLINE );
+
+        // when
+        controller.recoverIndexSamples( not( Predicates.<IndexDescriptor>TRUE() ) );
+
+        // then
+        verifyNoMoreInteractions( jobFactory, job, tracker );
     }
 
     private final IndexStoreView storeView = mock( IndexStoreView.class );

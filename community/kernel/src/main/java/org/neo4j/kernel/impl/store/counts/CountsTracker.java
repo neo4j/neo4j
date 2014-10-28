@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.CountsKey.IndexCountsKey;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
-import org.neo4j.register.Register;
+import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 
 import static org.neo4j.kernel.impl.store.counts.CountsKey.indexCountsKey;
@@ -196,9 +196,10 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     }
 
     @Override
-    public void indexSample( int labelId, int propertyKeyId, Register.DoubleLongRegister target )
+    public DoubleLongRegister indexSample( int labelId, int propertyKeyId, DoubleLongRegister target )
     {
         state.indexSample( indexSampleKey( labelId, propertyKeyId ), target );
+        return target;
     }
 
     @Override
@@ -247,12 +248,12 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
 
     public void accept( final CountsVisitor visitor )
     {
-        state.accept( new KeyValueRecordVisitor<CountsKey, Register.DoubleLongRegister>()
+        state.accept( new KeyValueRecordVisitor<CountsKey, DoubleLongRegister>()
         {
-            private final Register.DoubleLongRegister valueRegister = Registers.newDoubleLongRegister();
+            private final DoubleLongRegister valueRegister = Registers.newDoubleLongRegister();
 
             @Override
-            public Register.DoubleLongRegister valueRegister()
+            public DoubleLongRegister valueRegister()
             {
                 return valueRegister;
             }
@@ -289,7 +290,7 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
             if ( state.hasChanges() )
             {
                 // select the next file, and create a writer for it
-                try ( CountsStore.Writer<CountsKey, Register.DoubleLongRegister> writer =
+                try ( CountsStore.Writer<CountsKey, DoubleLongRegister> writer =
                               nextWriter( state, lastCommittedTxId ) )
                 {
                     state.accept( writer );
@@ -302,7 +303,7 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
         }
     }
 
-    CountsStore.Writer<CountsKey, Register.DoubleLongRegister> nextWriter( CountsTrackerState state, long lastCommittedTxId )
+    CountsStore.Writer<CountsKey, DoubleLongRegister> nextWriter( CountsTrackerState state, long lastCommittedTxId )
             throws IOException
     {
         if ( alphaFile.equals( state.storeFile() ) )
