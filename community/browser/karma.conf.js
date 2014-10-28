@@ -41,7 +41,7 @@ module.exports = function(config) {
 
     // list of files / patterns to load in the browser
     files: [
-      'app/components/jquery/jquery.js',
+      'app/components/jquery/dist/jquery.js',
       'app/components/angular/angular.js',
       'app/components/angular-ui-bootstrap/src/modal/modal.js',
       'app/components/angular-ui-bootstrap/src/transition/transition.js',

@@ -11,5 +11,6 @@ describe 'Directive: neoTable', () ->
       rows: -> [['<script>']]
       displayedSize: 1
       columns: -> ['col']
+    console.log element.html()
     scope.$apply()
     expect(element.html()).toContain('&lt;script&gt;')
