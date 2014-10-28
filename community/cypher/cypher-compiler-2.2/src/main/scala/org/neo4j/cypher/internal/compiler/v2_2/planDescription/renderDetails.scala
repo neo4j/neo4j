@@ -29,7 +29,7 @@ object renderDetails extends (InternalPlanDescription => String) {
 
 
   def apply(plan: InternalPlanDescription): String = {
-    val plans: Seq[InternalPlanDescription] = plan.toSeq
+    val plans: Seq[InternalPlanDescription] = plan.flatten
     val names = renderAsTree.createUniqueNames(plan)
 
 

@@ -61,7 +61,7 @@ object renderAsTree extends (InternalPlanDescription => String) {
   }
 
   def createUniqueNames(plan: InternalPlanDescription): Map[InternalPlanDescription, String] =
-    plan.toSeq.groupBy(_.name).flatMap {
+    plan.flatten.groupBy(_.name).flatMap {
       case (name, plans) if plans.size == 1 =>
         Some(plans.head -> name)
 
