@@ -67,4 +67,9 @@ public enum IndexEntityType
         }
         throw new IllegalArgumentException( "Unknown id " + id );
     }
+
+    public String nameToLowerCase()
+    {
+        return this.name().toLowerCase();
+    }
 }
