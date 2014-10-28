@@ -28,7 +28,9 @@ import org.neo4j.cypher.internal.compiler.v2_2.{CypherCacheMonitor, MonitoringCa
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
 import org.neo4j.kernel.impl.util.StringLogger
 import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase, api}
 
@@ -90,18 +92,28 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
       val isTopLevelTx = !txBridge.hasTransaction
       val tx = graph.beginTx()
       val kernelStatement = txBridge.instance()
-      val (plan, extractedParameters) = try {
+
+      val (plan: ExecutionPlan, extractedParameters) = try {
         // fetch plan cache
         val cache: LRUCache[String, (ExecutionPlan, Map[String, Any])] = getOrCreateFromSchemaState(kernelStatement, {
           cacheMonitor.cacheFlushDetected(kernelStatement)
           new LRUCache[String, (ExecutionPlan, Map[String, Any])](getPlanCacheSize)
         })
-        cacheAccessor.getOrElseUpdate(cache)(queryText, {
-          touched = true
-          val parsedQuery: ParsedQuery = parseQuery(queryText)
-          val queryPlan = parsedQuery.plan(kernelStatement)
-          queryPlan
-        })
+
+        Iterator.continually {
+          cacheAccessor.getOrElseUpdate(cache)(queryText, {
+            touched = true
+            val parsedQuery: ParsedQuery = parseQuery(queryText)
+            parsedQuery.plan(kernelStatement)
+          })
+        }.flatMap { case (plan, params) =>
+          if (plan.isStale(graphAPI, kernelStatement)) {
+            cacheAccessor.remove(cache)(queryText)
+            None
+          } else {
+            Some((plan, params))
+          }
+        }.next()
       }
       catch {
         case (t: Throwable) =>
@@ -152,7 +164,8 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
 
   private def getPlanCacheSize: Int =
     optGraphSetting[java.lang.Integer](
-      graph, GraphDatabaseSettings.query_cache_size, ExecutionEngine.DEFAULT_PLAN_CACHE_SIZE
+      graph, GraphDatabaseSettings.query_cache_size,
+      GraphDatabaseSettings.query_cache_size.getDefaultValue.toInt
     )
 
   private def optGraphSetting[V](graph: GraphDatabaseService, setting: Setting[V], defaultValue: V): V = {
@@ -168,6 +181,5 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
 }
 
 object ExecutionEngine {
-  val DEFAULT_PLAN_CACHE_SIZE: Int = 100
   val PLAN_BUILDING_TRIES: Int = 20
 }

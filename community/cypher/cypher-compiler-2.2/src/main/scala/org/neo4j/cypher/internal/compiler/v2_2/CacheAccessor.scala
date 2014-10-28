@@ -19,17 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
-object CacheAccessor {
-  type PlanCache[K, T] = (K, => T) => T
-}
+import org.neo4j.cypher.internal.LRUCache
 
 trait CacheAccessor[K, T] {
-  def getOrElseUpdate(cache: CacheAccessor.PlanCache[K, T])(key: K, f: => T): T
+  def getOrElseUpdate(cache: LRUCache[K, T])(key: K, f: => T): T
+  def remove(cache: LRUCache[K, T])(key: K)
 }
 
 class MonitoringCacheAccessor[K, T](monitor: CypherCacheHitMonitor[K]) extends CacheAccessor[K, T] {
 
-  def getOrElseUpdate(cache: CacheAccessor.PlanCache[K, T])(key: K, f: => T): T = {
+  def getOrElseUpdate(cache: LRUCache[K, T])(key: K, f: => T): T = {
     var updated = false
     val value = cache(key, {
       updated = true
@@ -42,5 +41,10 @@ class MonitoringCacheAccessor[K, T](monitor: CypherCacheHitMonitor[K]) extends C
       monitor.cacheHit(key)
 
     value
+  }
+
+  def remove(cache: LRUCache[K, T])(key: K): Unit = {
+    cache.remove(key)
+    monitor.cacheDiscard(key)
   }
 }

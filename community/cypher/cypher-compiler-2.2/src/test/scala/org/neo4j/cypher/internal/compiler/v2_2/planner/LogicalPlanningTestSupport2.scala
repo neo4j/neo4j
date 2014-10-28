@@ -233,6 +233,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       def getPropertyKeyId(propertyKeyName: String): Int = ???
       def getPropertyKeyName(id: Int): String = ???
       def getLabelId(labelName: String): Int = ???
+      def getLastCommittedTransactionId: Long = 0
     }
 
     def planFor(queryString: String): SemanticPlan = {

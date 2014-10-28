@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.spi.v2_2
 
 import org.neo4j.cypher.MissingIndexException
-import org.neo4j.cypher.internal.compiler.v2_2.spi.{GraphStatistics, PlanContext, QueriedGraphStatistics}
+import org.neo4j.cypher.internal.compiler.v2_2.spi._
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.Statement
@@ -28,6 +28,7 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
 
 class TransactionBoundPlanContext(statement: Statement, val gdb: GraphDatabaseService)
   extends TransactionBoundTokenContext(statement) with PlanContext {
@@ -85,5 +86,11 @@ class TransactionBoundPlanContext(statement: Statement, val gdb: GraphDatabaseSe
     statement.readOperations().schemaStateGetOrCreate(key, javaCreator)
   }
 
-  def statistics: GraphStatistics = new TransactionBoundGraphStatistics(statement)
+  val statistics: GraphStatistics =
+    InstrumentedGraphStatistics(new TransactionBoundGraphStatistics(statement), MutableGraphStatisticsSnapshot())
+
+  def getLastCommittedTransactionId: Long = {
+    val resolver = gdb.asInstanceOf[GraphDatabaseAPI].getDependencyResolver
+    resolver.resolveDependency(classOf[TransactionIdStore]).getLastCommittedTransactionId
+  }
 }

@@ -37,7 +37,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     when(pipe.createResults(any())).thenReturn(Iterator.empty)
     val graph = mock[GraphDatabaseService]
     val context = mock[QueryContext]
-    val builderFactory = DefaultExecutionResultBuilderFactory(PipeInfo(pipe, updating = true, None, PlannerName), List.empty, Normal)
+    val builderFactory = DefaultExecutionResultBuilderFactory(PipeInfo(pipe, updating = true, None, None, PlannerName), List.empty, Normal)
 
     // WHEN
     val builder = builderFactory.create()
@@ -55,7 +55,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     when(pipe.createResults(any())).thenReturn(Iterator.empty)
     val graph = mock[GraphDatabaseService]
     val context = mock[QueryContext]
-    val builderFactory = DefaultExecutionResultBuilderFactory(PipeInfo(pipe, updating = false, None, PlannerName), List.empty, Normal)
+    val builderFactory = DefaultExecutionResultBuilderFactory(PipeInfo(pipe, updating = false, None, None, PlannerName), List.empty, Normal)
 
     // WHEN
     val builder = builderFactory.create()
@@ -73,7 +73,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     when(pipe.createResults(any())).thenReturn(Iterator.empty)
     val graph = mock[GraphDatabaseService]
     val context = mock[QueryContext]
-    val builderFactory = DefaultExecutionResultBuilderFactory(PipeInfo(pipe, updating = false, None, PlannerName), List.empty, Explained)
+    val builderFactory = DefaultExecutionResultBuilderFactory(PipeInfo(pipe, updating = false, None, None, PlannerName), List.empty, Explained)
 
     // WHEN
     val builder = builderFactory.create()

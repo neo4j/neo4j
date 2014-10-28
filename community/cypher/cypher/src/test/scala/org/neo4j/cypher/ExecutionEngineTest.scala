@@ -19,6 +19,10 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.cypher.internal.compiler.v2_2.CypherCacheHitMonitor
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.PipeInfo
+import org.neo4j.cypher.internal.compiler.v2_2.planner.PlanningMonitor
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.graphdb._
 import org.neo4j.kernel.TopLevelTransaction
 import org.neo4j.test.ImpermanentGraphDatabase
@@ -29,6 +33,8 @@ import org.neo4j.graphdb.factory.{GraphDatabaseSettings, GraphDatabaseFactory}
 import java.io.{PrintWriter, File}
 import org.neo4j.cypher.internal.commons.CreateTempFileTestSupport
 import org.neo4j.io.fs.FileUtils
+
+import scala.collection.mutable
 
 class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CreateTempFileTestSupport {
   test("shouldGetRelationshipById") {
@@ -1019,6 +1025,64 @@ order by a.COL1""")
     }
     val result = eengine.execute(s"cypher 2.1 using periodic commit load csv from '$url' as line create x return x")
     result should have size 2
+  }
+
+  override def databaseConfig() = Map(
+    "query_plan_ttl" -> "0"
+  )
+
+  case class PlanningListener(planRequests: mutable.ArrayBuffer[String] = mutable.ArrayBuffer.empty) extends PlanningMonitor {
+    def startedPlanning(q: String): Unit = {
+      planRequests.append(q)
+    }
+
+    def foundPlan(q: String, p: LogicalPlan): Unit = {}
+
+    def successfulPlanning(q: String, p: PipeInfo): Unit = {}
+  }
+
+  test("should discard plans that are considerably unsuitable") {
+    //GIVEN
+    val planningListener = PlanningListener()
+    kernelMonitors.addMonitorListener(planningListener)
+
+    createLabeledNode("Dog")
+    (0 until 50).foreach { _ => createLabeledNode("Person") }
+
+    // WHEN
+    eengine.execute(s"match (n:Person:Dog) return n").toList
+    planningListener.planRequests.toSeq should equal(Seq(
+      s"match (n:Person:Dog) return n"
+    ))
+    (0 until 1000).foreach { _ => createLabeledNode("Dog") }
+    eengine.execute(s"match (n:Person:Dog) return n").toList
+
+    //THEN
+    planningListener.planRequests.toSeq should equal (Seq(
+      s"match (n:Person:Dog) return n",
+      s"match (n:Person:Dog) return n"
+    ))
+  }
+
+  test("should avoid discarding plans that are still somewhat suitable") {
+    //GIVEN
+    val planningListener = PlanningListener()
+    kernelMonitors.addMonitorListener(planningListener)
+
+    createLabeledNode("Dog")
+    (0 until 400).foreach { _ => createLabeledNode("Person") }
+    //WHEN
+    eengine.execute(s"match (n:Person:Dog) return n").toList
+    planningListener.planRequests.toSeq should equal(Seq(
+      s"match (n:Person:Dog) return n"
+    ))
+    (0 until 500).foreach { _ => createLabeledNode("Dog") }
+    eengine.execute(s"match (n:Person:Dog) return n").toList
+
+    //THEN
+    planningListener.planRequests.toSeq should equal(Seq(
+      s"match (n:Person:Dog) return n"
+    ))
   }
 
   private def createReadOnlyEngine(): ExecutionEngine = {

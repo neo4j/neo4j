@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.execution
 
+import java.util.Date
+
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.OtherConverters._
@@ -28,13 +30,13 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{Expression, Identifier, NodeStartItem, RelTypeName}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{AggregationExpression, Expression => CommandExpression}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.{EntityProducerFactory, True, Predicate => CommandPredicate}
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.PipeInfo
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{PlanFingerprint, PipeInfo}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compiler.v2_2.pipes._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{CantHandleQueryException, SemanticTable}
-import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_2.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.helpers.Eagerly
 import org.neo4j.graphdb.Relationship
@@ -235,6 +237,12 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
 
     val topLevelPipe = buildPipe(plan)
 
-    PipeInfo(topLevelPipe, updating, None, Ronja)
+    val fingerprint = planContext.statistics match {
+      case igs: InstrumentedGraphStatistics =>
+        Some(PlanFingerprint(new Date(), planContext.getLastCommittedTransactionId, igs.snapshot.freeze))
+      case _ =>
+        None
+    }
+    PipeInfo(topLevelPipe, updating, None, fingerprint, Ronja)
   }
 }

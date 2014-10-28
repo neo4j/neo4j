@@ -87,7 +87,7 @@ class ProfileRonjaPlanningTest extends ExecutionEngineFunSuite with QueryStatist
       new QueriedGraphStatistics(gdb, queryCtx)
     }
 
-    override def statistics: GraphStatistics = _statistics
+    override val statistics: GraphStatistics = _statistics
   }
 
   private def runQueryWith(query: String, compiler: CypherCompiler, db: GraphDatabaseAPI): (List[Map[String, Any]], InternalExecutionResult) = {
