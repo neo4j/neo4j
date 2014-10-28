@@ -274,7 +274,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     val result = planner("profile " + q, params)
     assert(result.planDescriptionRequested, "result not marked with planDescriptionRequested")
     val planDescription: v2_2.planDescription.InternalPlanDescription = result.executionPlanDescription()
-    planDescription.toSeq.foreach {
+    planDescription.flatten.foreach {
       p =>
         if (!p.arguments.exists(_.isInstanceOf[DbHits])) {
           fail("Found plan that was not profiled with DbHits: " + p.name)
@@ -298,7 +298,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     result.toList
     val description = result.executionPlanDescription()
     if (names.isEmpty)
-      description.toSeq
+      description.flatten
     else {
       names.flatMap {
         name => description.find(name)

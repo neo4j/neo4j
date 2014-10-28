@@ -41,7 +41,7 @@ class ReplanTest extends ExecutionEngineFunSuite {
 
     val oldPlans = {
       val result = profile("MATCH (x:L)-[r:X]->(y:T) WHERE r.prop = 42 RETURN x, y")
-      result.executionPlanDescription().pipe.planDescription.toSeq.map(plan => plan.name -> plan.arguments)
+      result.executionPlanDescription().pipe.planDescription.flatten.map(plan => plan.name -> plan.arguments)
     }
 
     graph.inTx {
@@ -55,7 +55,7 @@ class ReplanTest extends ExecutionEngineFunSuite {
 
     val newPlans = {
       val result = profile("MATCH (x:L)-[r:X]->(y:T) WHERE r.prop = 42 RETURN x, y")
-      result.executionPlanDescription().pipe.planDescription.toSeq.map(plan => plan.name -> plan.arguments)
+      result.executionPlanDescription().pipe.planDescription.flatten.map(plan => plan.name -> plan.arguments)
     }
 
     newPlans should not equal oldPlans

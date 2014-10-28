@@ -38,10 +38,18 @@ sealed trait InternalPlanDescription {
   def find(name: String): Seq[InternalPlanDescription]
   def addArgument(arg: Argument): InternalPlanDescription
   def andThen(pipe: Pipe, name: String, arguments: Argument*) = PlanDescriptionImpl(pipe, name, SingleChild(this), arguments)
-  def toSeq: Seq[InternalPlanDescription]
+
+  def flatten: Seq[InternalPlanDescription] = {
+    def flattenAcc(acc: Seq[InternalPlanDescription], plan: InternalPlanDescription): Seq[InternalPlanDescription] = {
+      plan.children.toSeq.foldLeft(acc :+ plan) {
+        case (acc1, plan1) => flattenAcc(acc1, plan1)
+      }
+    }
+    flattenAcc(Seq.empty, this)
+  }
 
   def totalDbHits: Option[Long] = {
-    val allMaybeDbHits: Seq[Option[Long]] = toSeq.map {
+    val allMaybeDbHits: Seq[Option[Long]] = flatten.map {
       case plan: InternalPlanDescription => plan.arguments.collectFirst { case DbHits(x) => x}
     }
 
@@ -77,37 +85,29 @@ object InternalPlanDescription {
 }
 
 sealed trait Children {
-  def isEmpty = children.isEmpty
-  def tail = children.tail
-  def head = children.head
-  protected def children: Seq[InternalPlanDescription]
-  def find(name: String): Seq[InternalPlanDescription] = children.flatMap(_.find(name))
+  def isEmpty = toSeq.isEmpty
+  def tail = toSeq.tail
+  def head = toSeq.head
+  def toSeq: Seq[InternalPlanDescription]
+  def find(name: String): Seq[InternalPlanDescription] = toSeq.flatMap(_.find(name))
   def map(f: InternalPlanDescription => InternalPlanDescription): Children
-  def foreach(f:InternalPlanDescription=>Unit) {
-    children.foreach(f)
+  def foreach[U](f: InternalPlanDescription => U) {
+    toSeq.foreach(f)
   }
-  def toSeq:Seq[InternalPlanDescription]
 }
 
 case object NoChildren extends Children {
-  protected def children = Seq.empty
+  def toSeq = Seq.empty
   def map(f: InternalPlanDescription => InternalPlanDescription) = NoChildren
-
-  def toSeq: Seq[InternalPlanDescription] = Seq.empty
 }
 
 final case class SingleChild(child: InternalPlanDescription) extends Children {
-  protected def children = Seq(child)
-  def map(f: InternalPlanDescription => InternalPlanDescription) = SingleChild(child.map(f))
-
-  def toSeq: Seq[InternalPlanDescription] = child.toSeq
+  val toSeq = Seq(child)
+  def map(f: InternalPlanDescription => InternalPlanDescription) = SingleChild(child = child.map(f))
 }
 
 final case class TwoChildren(lhs: InternalPlanDescription, rhs: InternalPlanDescription) extends Children {
-  protected def children = Seq(lhs, rhs)
-
-  def toSeq: Seq[InternalPlanDescription] = lhs.toSeq ++ rhs.toSeq
-
+  val toSeq = Seq(lhs, rhs)
   def map(f: InternalPlanDescription => InternalPlanDescription) = TwoChildren(lhs = lhs.map(f), rhs = rhs.map(f))
 }
 
@@ -129,8 +129,6 @@ final case class PlanDescriptionImpl(pipe: Pipe,
     else {
       None
     })
-
-
 
   def addArgument(argument: Argument): InternalPlanDescription = copy(_arguments = _arguments :+ argument)
 
