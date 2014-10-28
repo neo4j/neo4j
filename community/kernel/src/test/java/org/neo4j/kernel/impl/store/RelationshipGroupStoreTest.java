@@ -320,7 +320,7 @@ public class RelationshipGroupStoreTest
         pageCache = pageCacheRule.withInconsistentReads( pageCache, nextReadIsInconsistent );
         StoreFactory factory = factory( null, pageCache );
 
-        try ( NeoStore neoStore = factory.newNeoStore( true ) )
+        try ( NeoStore neoStore = factory.newNeoStore( true, false ) )
         {
             RelationshipGroupStore relationshipGroupStore = neoStore.getRelationshipGroupStore();
             RelationshipGroupRecord record = new RelationshipGroupRecord( 1, 2, 3, 4, 5, 6, true );

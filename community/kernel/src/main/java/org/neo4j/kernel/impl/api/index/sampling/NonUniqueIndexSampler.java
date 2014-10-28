@@ -25,6 +25,8 @@ import org.neo4j.register.Register;
 
 public class NonUniqueIndexSampler implements ValueSampler
 {
+    private static final int INITIAL_SIZE = 1 << 16;
+
     private final int bufferSizeLimit;
     private final MultiSet<String> values;
 
@@ -40,7 +42,7 @@ public class NonUniqueIndexSampler implements ValueSampler
     public NonUniqueIndexSampler( int bufferSizeLimit )
     {
         this.bufferSizeLimit = bufferSizeLimit;
-        this.values = new MultiSet<>();
+        this.values = new MultiSet<>( INITIAL_SIZE );
     }
 
     @Override

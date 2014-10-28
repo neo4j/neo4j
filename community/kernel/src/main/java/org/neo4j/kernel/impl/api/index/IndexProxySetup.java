@@ -67,7 +67,8 @@ public class IndexProxySetup
     public IndexProxy createPopulatingIndexProxy( final long ruleId,
                                                   final IndexDescriptor descriptor,
                                                   final SchemaIndexProvider.Descriptor providerDescriptor,
-                                                  final boolean constraint ) throws IOException
+                                                  final boolean constraint,
+                                                  final IndexingService.Monitor monitor ) throws IOException
     {
         final FlippableIndexProxy flipper = new FlippableIndexProxy();
 
@@ -99,6 +100,7 @@ public class IndexProxySetup
             {
                 try
                 {
+                    monitor.populationCompleteOn( descriptor );
                     OnlineIndexProxy onlineProxy = new OnlineIndexProxy(
                             descriptor, config, onlineAccessorFromProvider( providerDescriptor, ruleId,
                             config ), storeView, providerDescriptor
@@ -111,8 +113,7 @@ public class IndexProxySetup
                 }
                 catch ( IOException e )
                 {
-                    return
-                            createFailedIndexProxy( ruleId, descriptor, providerDescriptor, constraint, failure( e ) );
+                    return createFailedIndexProxy( ruleId, descriptor, providerDescriptor, constraint, failure( e ) );
                 }
             }
         } );

@@ -75,7 +75,7 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
         File storeDir = new File( "stores" );
         StringLogger logger = StringLogger.DEV_NULL;
         StoreFactory factory = new StoreFactory( fs, storeDir, pageCache, logger, new Monitors() );
-        NeoStore neoStore = factory.newNeoStore( true );
+        NeoStore neoStore = factory.newNeoStore( true, false );
         S store = initialiseStore( neoStore );
 
         CommonAbstractStore commonAbstractStore = (CommonAbstractStore) store;

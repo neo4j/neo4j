@@ -104,6 +104,8 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
         void applyingRecoveredData( Set<Long> recoveredNodeIds );
 
         void appliedRecoveredData( Iterable<NodePropertyUpdate> updates );
+
+        void populationCompleteOn( IndexDescriptor descriptor );
     }
 
     public static abstract class MonitorAdapter implements Monitor
@@ -115,6 +117,11 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
 
         @Override
         public void applyingRecoveredData( Set<Long> recoveredNodeIds )
+        {   // Do nothing
+        }
+
+        @Override
+        public void populationCompleteOn( IndexDescriptor descriptor )
         {   // Do nothing
         }
     }
@@ -269,7 +276,8 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
              * be in a state where they didn't finish populating, and despite the fact that we re-create them here,
              * they will get dropped as soon as recovery is completed by the constraint system.
              */
-            IndexProxy proxy = proxySetup.createPopulatingIndexProxy( indexId, indexDescriptor, providerDescriptor, false );
+            IndexProxy proxy = proxySetup.createPopulatingIndexProxy(
+                    indexId, indexDescriptor, providerDescriptor, false, monitor );
             proxy.start();
             indexMap.putIndexProxy( indexId, proxy );
         }
@@ -342,7 +350,8 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
         {
             try
             {
-                index = proxySetup.createPopulatingIndexProxy( ruleId, descriptor, providerDescriptor, constraint );
+                index = proxySetup.createPopulatingIndexProxy(
+                        ruleId, descriptor, providerDescriptor, constraint, monitor );
                 index.start();
             }
             catch ( IOException e )
