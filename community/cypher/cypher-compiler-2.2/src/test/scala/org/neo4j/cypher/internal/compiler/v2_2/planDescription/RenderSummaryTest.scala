@@ -29,35 +29,32 @@ class RenderSummaryTest extends CypherFunSuite {
 
   test("single node is represented nicely") {
     val arguments = Seq(
-      IntroducedIdentifier("n"),
       Rows(42),
       DbHits(33))
 
-    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments)
+    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set())
 
     renderSummary(plan) should equal("Total database accesses: 33")
   }
 
   test("adds together two db hits") {
     val arguments1 = Seq(
-      IntroducedIdentifier("n"),
       Rows(42),
       DbHits(33))
 
     val arguments2 = Seq(
-      IntroducedIdentifier("n"),
       Rows(42),
       DbHits(22))
 
-    val child = PlanDescriptionImpl(pipe, "NAME1", NoChildren, arguments1)
-    val parent = PlanDescriptionImpl(pipe, "NAME2", SingleChild(child), arguments2)
+    val child = PlanDescriptionImpl(pipe, "NAME1", NoChildren, arguments1, Set())
+    val parent = PlanDescriptionImpl(pipe, "NAME2", SingleChild(child), arguments2, Set())
 
     renderSummary(parent) should equal("Total database accesses: 55")  }
 
   test("execution plan without profiler stats uses question marks") {
-    val arguments = Seq(IntroducedIdentifier("n"))
+    val arguments = Seq()
 
-    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments)
+    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set())
 
     renderSummary(plan) should equal("Total database accesses: ?")  }
 }

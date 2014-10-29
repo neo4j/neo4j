@@ -41,7 +41,7 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String, start: String, en
 
   override def planDescription =
     source.planDescription
-          .andThen(this, "ProjectEndpoints", KeyNames(Seq(relName, start, end)))
+          .andThen(this, "ProjectEndpoints", identifiers, KeyNames(Seq(relName, start, end)))
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources

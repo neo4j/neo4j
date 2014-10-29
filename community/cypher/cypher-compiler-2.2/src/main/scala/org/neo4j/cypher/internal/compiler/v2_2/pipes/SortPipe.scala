@@ -36,7 +36,7 @@ case class SortPipe(source: Pipe, orderBy: Seq[SortDescription])
     input.toList.
       sortWith((a, b) => compareBy(a, b, orderBy)(state)).iterator
 
-  def planDescription = source.planDescription.andThen(this, "Sort", KeyNames(orderBy.map(_.id)))
+  def planDescription = source.planDescription.andThen(this, "Sort", identifiers, KeyNames(orderBy.map(_.id)))
 
   override def effects = Effects.NONE
 

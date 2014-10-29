@@ -49,7 +49,7 @@ case class ProjectionNewPipe(source: Pipe, expressions: Map[String, Expression])
 
   override def planDescription =
     source.planDescription
-      .andThen(this, "Projection", KeyNames(expressions.keys.toSeq))
+      .andThen(this, "Projection", identifiers, KeyNames(expressions.keys.toSeq))
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources

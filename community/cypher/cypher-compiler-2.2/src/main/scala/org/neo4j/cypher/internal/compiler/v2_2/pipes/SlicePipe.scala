@@ -65,7 +65,7 @@ case class SlicePipe(source: Pipe, skip: Option[Expression], limit: Option[Expre
     }
     source
       .planDescription
-      .andThen(this, "Slice", skip.map(LegacyExpression).toSeq ++ limit.map(LegacyExpression).toSeq:_*)
+      .andThen(this, "Slice", identifiers, skip.map(LegacyExpression).toSeq ++ limit.map(LegacyExpression).toSeq:_*)
   }
 
   def dup(sources: List[Pipe]): Pipe = {

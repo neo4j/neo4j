@@ -39,7 +39,7 @@ case class LetSemiApplyPipe(source: Pipe, inner: Pipe, letVarName: String, negat
 
   private def name = if (negated) "LetAntiSemiApply" else "LetSemiApply"
 
-  def planDescription = PlanDescriptionImpl(this, name, TwoChildren(source.planDescription, inner.planDescription), Seq.empty)
+  def planDescription = PlanDescriptionImpl(this, name, TwoChildren(source.planDescription, inner.planDescription), Seq.empty, identifiers)
 
   def symbols: SymbolTable = source.symbols.add(letVarName, CTBoolean)
 

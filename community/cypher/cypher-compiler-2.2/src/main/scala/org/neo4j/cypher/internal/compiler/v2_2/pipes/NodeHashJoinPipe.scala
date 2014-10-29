@@ -32,8 +32,6 @@ case class NodeHashJoinPipe(nodeIdentifiers: Set[String], left: Pipe, right: Pip
                            (val estimatedCardinality: Option[Long] = None)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(left, pipeMonitor) with RonjaPipe {
 
-  val identifiers = nodeIdentifiers.toIndexedSeq
-
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
 
     val table = buildProbeTable(input)
@@ -53,7 +51,8 @@ case class NodeHashJoinPipe(nodeIdentifiers: Set[String], left: Pipe, right: Pip
       pipe = this,
       name = "NodeHashJoin",
       children = TwoChildren(left.planDescription, right.planDescription),
-      _arguments = Seq(KeyNames(nodeIdentifiers.toSeq))
+      _arguments = Seq(KeyNames(nodeIdentifiers.toSeq)),
+      identifiers
     )
 
   def symbols: SymbolTable = left.symbols.add(right.symbols.identifiers)
@@ -81,11 +80,13 @@ case class NodeHashJoinPipe(nodeIdentifiers: Set[String], left: Pipe, right: Pip
     table
   }
 
-  private def computeKey(context: ExecutionContext): Option[Vector[Long]] = {
-    val key = new Array[Long](identifiers.length)
+  private val cachedIdentifiers = nodeIdentifiers.toIndexedSeq
 
-    for (idx <- 0 until identifiers.length) {
-      key(idx) = context(identifiers(idx)) match {
+  private def computeKey(context: ExecutionContext): Option[Vector[Long]] = {
+    val key = new Array[Long](cachedIdentifiers.length)
+
+    for (idx <- 0 until cachedIdentifiers.length) {
+      key(idx) = context(cachedIdentifiers(idx)) match {
         case n: Node => n.getId
         case null => return None
         case _ => throw new CypherTypeException("Created a plan that uses non-nodes when expecting a node")
@@ -93,5 +94,4 @@ case class NodeHashJoinPipe(nodeIdentifiers: Set[String], left: Pipe, right: Pip
     }
     Some(key.toVector)
   }
-
 }

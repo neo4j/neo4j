@@ -66,10 +66,6 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
     given("match n return n").planDescripton.getArguments.get("EstimatedRows") should equal("0")
   }
 
-  test("IntroducedIdentifier should be properly formatted") {
-    given("match n return n").planDescripton.getArguments.get("IntroducedIdentifier") should equal("n")
-  }
-
   def given(query: String) = TestQuery(query)
 
   case class TestQuery(query: String,

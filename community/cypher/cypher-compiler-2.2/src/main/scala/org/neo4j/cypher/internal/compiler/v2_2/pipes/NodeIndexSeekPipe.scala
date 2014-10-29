@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.{LabelToken, PropertyKeyToken
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_2.commands.{QueryExpression, indexQuery}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.{Index, IntroducedIdentifier}
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.Index
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.{CTNode, SymbolTable}
 import org.neo4j.graphdb.Node
@@ -57,9 +57,7 @@ case class NodeIndexSeekPipe(ident: String,
 
   def planDescription = {
     val name = if (unique) "NodeUniqueIndexSeek" else "NodeIndexSeek"
-    new PlanDescriptionImpl(this, name, NoChildren, Seq(
-      IntroducedIdentifier(ident), Index(label.name, propertyKey.name))
-    )
+    new PlanDescriptionImpl(this, name, NoChildren, Seq(Index(label.name, propertyKey.name)), identifiers)
   }
 
   def symbols: SymbolTable = new SymbolTable(Map(ident -> CTNode))

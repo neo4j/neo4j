@@ -118,7 +118,7 @@ class ProfilerTest extends CypherFunSuite {
 
 case class ProfilerPipe(source: Pipe, name: String, rows: Int, dbAccess: Int)
                   (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
-  def planDescription: InternalPlanDescription = source.planDescription.andThen(this, name)
+  def planDescription: InternalPlanDescription = source.planDescription.andThen(this, name, Set())
 
   protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.size

@@ -47,7 +47,7 @@ case class TraversalMatchPipe(source: Pipe, matcher: TraversalMatcher, trail: Tr
   def symbols = trail.symbols(source.symbols)
 
   def planDescription =
-    source.planDescription.andThen(this, "TraversalMatcher", KeyNames(trail.pathDescription))
+    source.planDescription.andThen(this, "TraversalMatcher", identifiers, KeyNames(trail.pathDescription))
 
   override def localEffects = Effects.READS_ENTITIES
 

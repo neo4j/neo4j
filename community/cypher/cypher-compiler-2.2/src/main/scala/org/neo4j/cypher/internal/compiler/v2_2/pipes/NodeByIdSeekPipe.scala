@@ -23,11 +23,9 @@ import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.ParameterExpression
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.IntroducedIdentifier
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.{CTNode, SymbolTable}
 import org.neo4j.cypher.internal.helpers.{IsCollection, CollectionSupport}
-import org.neo4j.graphdb.Node
 
 sealed trait EntityByIdRhs {
   def expressions(ctx: ExecutionContext, state: QueryState): Iterable[Any]
@@ -57,7 +55,7 @@ case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: EntityByIdRhs)
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 
-  def planDescription = new PlanDescriptionImpl(this, "NodeByIdSeek", NoChildren, Seq(IntroducedIdentifier(ident)))
+  def planDescription = new PlanDescriptionImpl(this, "NodeByIdSeek", NoChildren, Seq(), identifiers)
 
   def symbols: SymbolTable = new SymbolTable(Map(ident -> CTNode))
 

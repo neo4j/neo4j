@@ -43,7 +43,7 @@ case class OptionalMatchPipe(source: Pipe,
   }
 
   def planDescription: InternalPlanDescription =
-    PlanDescriptionImpl(this, "OptionalMatch", TwoChildren(source.planDescription, matchPipe.planDescription), Seq.empty)
+    PlanDescriptionImpl(this, "OptionalMatch", TwoChildren(source.planDescription, matchPipe.planDescription), Seq.empty, identifiers)
 
   val identifiersBeforeMatch = matchPipe.symbols.identifiers.map(_._1).toSet
   val identifiersAfterMatch = source.symbols.identifiers.map(_._1).toSet

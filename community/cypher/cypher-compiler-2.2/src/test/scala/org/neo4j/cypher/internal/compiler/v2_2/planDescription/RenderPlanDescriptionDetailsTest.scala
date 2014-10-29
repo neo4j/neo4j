@@ -29,11 +29,10 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
 
   test("single node is represented nicely") {
     val arguments = Seq(
-      IntroducedIdentifier("n"),
       Rows(42),
       DbHits(33))
 
-    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments)
+    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n"))
 
     renderDetails(plan) should equal(
       """+----------+---------------+------+--------+-------------+-------+
@@ -46,13 +45,10 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
 
   test("extra identifiers are not a problem") {
     val arguments = Seq(
-      IntroducedIdentifier("a"),
-      IntroducedIdentifier("b"),
-      IntroducedIdentifier("c"),
       Rows(42),
       DbHits(33))
 
-    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments)
+    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("a", "b", "c"))
 
     renderDetails(plan) should equal(
       """+----------+---------------+------+--------+-------------+-------+
@@ -65,16 +61,10 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
 
   test("super many identifiers stretches the column") {
     val arguments = Seq(
-      IntroducedIdentifier("a"),
-      IntroducedIdentifier("b"),
-      IntroducedIdentifier("c"),
-      IntroducedIdentifier("d"),
-      IntroducedIdentifier("e"),
-      IntroducedIdentifier("f"),
       Rows(42),
       DbHits(33))
 
-    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments)
+    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("a", "b", "c", "d", "e", "f"))
 
     renderDetails(plan) should equal(
       """+----------+---------------+------+--------+------------------+-------+
@@ -86,9 +76,9 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
   }
 
   test("execution plan without profiler stats uses question marks") {
-    val arguments = Seq(IntroducedIdentifier("n"))
+    val arguments = Seq()
 
-    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments)
+    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n"))
 
     renderDetails(plan) should equal(
       """+----------+---------------+-------------+-------+
@@ -99,12 +89,12 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
         |""".stripMargin)
   }
 
-  test("two plans with the same name get uniquefied names") {
-    val args1 = Seq(IntroducedIdentifier("a"), Rows(42), DbHits(33))
-    val args2 = Seq(IntroducedIdentifier("b"), Rows(2), DbHits(633), Index("Label", "Prop"))
+  test("two plans with the same name get unique-ified names") {
+    val args1 = Seq(Rows(42), DbHits(33))
+    val args2 = Seq(Rows(2), DbHits(633), Index("Label", "Prop"))
 
-    val plan1 = PlanDescriptionImpl(pipe, "NAME", NoChildren, args1)
-    val plan2 = PlanDescriptionImpl(pipe, "NAME", SingleChild(plan1), args2)
+    val plan1 = PlanDescriptionImpl(pipe, "NAME", NoChildren, args1, Set("a"))
+    val plan2 = PlanDescriptionImpl(pipe, "NAME", SingleChild(plan1), args2, Set("b"))
 
     renderDetails(plan2) should equal(
       """+----------+---------------+------+--------+-------------+--------------+

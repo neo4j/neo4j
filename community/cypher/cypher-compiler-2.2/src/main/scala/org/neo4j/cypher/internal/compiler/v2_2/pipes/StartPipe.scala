@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.IntroducedIdentifier
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 
@@ -44,7 +43,7 @@ sealed abstract class StartPipe[T <: PropertyContainer](source: Pipe,
 
   override def planDescription =
     source.planDescription
-      .andThen(this, s"${createSource.producerType}", createSource.arguments :+ IntroducedIdentifier(name):_*)
+      .andThen(this, s"${createSource.producerType}", identifiers, createSource.arguments: _*)
 }
 
 case class NodeStartPipe(source: Pipe, name: String, createSource: EntityProducer[Node])(val estimatedCardinality: Option[Long] = None)(implicit pipeMonitor: PipeMonitor)

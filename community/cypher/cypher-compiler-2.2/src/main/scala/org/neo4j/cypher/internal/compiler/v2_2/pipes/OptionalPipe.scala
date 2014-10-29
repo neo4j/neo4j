@@ -39,7 +39,8 @@ case class OptionalPipe(nullableIdentifiers: Set[String], source: Pipe)
       this,
       "Optional",
       SingleChild(source.planDescription),
-      Seq.empty
+      Seq.empty,
+      identifiers
     )
 
   def symbols: SymbolTable = source.symbols

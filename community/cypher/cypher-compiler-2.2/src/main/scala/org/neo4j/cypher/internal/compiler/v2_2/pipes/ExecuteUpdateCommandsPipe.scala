@@ -63,7 +63,7 @@ case class ExecuteUpdateCommandsPipe(source: Pipe, commands: Seq[UpdateAction])(
     }
   }
 
-  def planDescription = source.planDescription.andThen(this, "UpdateGraph", commands.flatMap(_.arguments):_*)
+  def planDescription = source.planDescription.andThen(this, "UpdateGraph", identifiers, commands.flatMap(_.arguments):_*)
 
   def symbols = source.symbols.add(commands.flatMap(_.identifiers).toMap)
 

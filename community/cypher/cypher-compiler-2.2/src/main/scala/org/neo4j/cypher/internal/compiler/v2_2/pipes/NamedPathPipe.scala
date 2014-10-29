@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 import org.neo4j.cypher.internal.PathImpl
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.IntroducedIdentifier
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.graphdb.{Path, PropertyContainer}
 
@@ -78,7 +77,7 @@ case class NamedPathPipe(source: Pipe, pathName: String, entities: Seq[AbstractP
   val symbols = source.symbols.add(pathName, CTPath)
 
   override def planDescription =
-    source.planDescription.andThen(this, "ExtractPath",  IntroducedIdentifier(pathName))
+    source.planDescription.andThen(this, "ExtractPath", identifiers)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources

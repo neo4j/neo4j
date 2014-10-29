@@ -47,7 +47,8 @@ case class LetSelectOrSemiApplyPipe(source: Pipe, inner: Pipe, letVarName: Strin
     pipe = this,
     name = name,
     children = TwoChildren(source.planDescription, inner.planDescription),
-    _arguments = Seq(LegacyExpression(predicate)))
+    _arguments = Seq(LegacyExpression(predicate)),
+    identifiers)
 
   def symbols: SymbolTable = source.symbols.add(letVarName, CTBoolean)
 
