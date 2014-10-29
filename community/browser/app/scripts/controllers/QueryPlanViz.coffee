@@ -39,7 +39,8 @@ angular.module('neo4jApp.controllers')
             links.push
               source: child
               target: operator
-              value: Math.max(1, operator.Rows)
+              value: Math.max(1, child.Rows)
+              rows: child.Rows
 
         explore queryPlan.root
 
@@ -76,7 +77,7 @@ angular.module('neo4jApp.controllers')
 
         formatNumber = d3.format(",.0f")
         format = (d) ->
-          formatNumber(d) + ' rows'
+          formatNumber(d) + (if d is 1 then ' row' else ' rows')
         color = d3.scale.category20()
 
         path = (d) ->
@@ -118,7 +119,7 @@ angular.module('neo4jApp.controllers')
           d.source.x + 40)
         .attr('text-anchor', 'middle')
         .text((d) ->
-          format(d.value))
+          format(d.rows))
 
         operatorElement = svg.append('g').selectAll('.operator')
         .data(operators)
