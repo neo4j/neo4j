@@ -21,9 +21,11 @@ package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -32,10 +34,14 @@ import org.neo4j.csv.reader.CharSeekers;
 import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Mark;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.unsafe.impl.batchimport.input.DuplicateHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.MissingHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
+
+import static org.neo4j.csv.reader.BufferedCharSeeker.DEFAULT_BUFFER_SIZE;
+import static org.neo4j.csv.reader.CharSeekers.charSeeker;
 
 
 /**
@@ -65,106 +71,209 @@ public class DataFactories
         };
     }
 
+    public static DataFactory files( final File... files )
+    {
+        return new DataFactory()
+        {
+            @Override
+            public CharSeeker create( Configuration config )
+            {
+                return charSeeker( fileReaders( files ), DEFAULT_BUFFER_SIZE, true, config.quotationCharacter() );
+            }
+        };
+    }
+
+    private static Iterator<Readable> fileReaders( final File[] files )
+    {
+        return new PrefetchingIterator<Readable>()
+        {
+            private int cursor;
+
+            @Override
+            protected Readable fetchNextOrNull()
+            {
+                try
+                {
+                    return cursor < files.length ? new FileReader( files[cursor++] ) : null;
+                }
+                catch ( FileNotFoundException e )
+                {
+                    throw new RuntimeException( "Input file '" + files[cursor-1] + " not found", e );
+                }
+            }
+        };
+    }
+
+    /**
+     * Header parser that will read header information, using the default node header format,
+     * from the top of the data file.
+     */
     public static Header.Factory defaultFormatNodeFileHeader()
     {
-        return new AbstractFileHeaderParser( Type.ID )
-        {
-            @Override
-            protected Header.Entry entry( int index, String name, String typeSpec, Extractors extractors,
-                    Extractor<?> idExtractor )
-            {
-                // For nodes it's simply ID,LABEL,PROPERTY. typeSpec can be either ID,LABEL or a type of property,
-                // like 'int' or 'string_array' or similar, or empty for 'string' property.
-                Type type = null;
-                Extractor<?> extractor = null;
-                if ( name.trim().length() == 0 )
-                {
-                    type = Type.IGNORE;
-                }
-                else if ( typeSpec == null )
-                {
-                    type = Type.PROPERTY;
-                    extractor = extractors.string();
-                }
-                else if ( typeSpec.equalsIgnoreCase( Type.ID.name() ) )
-                {
-                    type = Type.ID;
-                    extractor = idExtractor;
-                }
-                else if ( typeSpec.equalsIgnoreCase( Type.LABEL.name() ) )
-                {
-                    type = Type.LABEL;
-                    extractor = extractors.stringArray();
-                }
-                else
-                {
-                    type = Type.PROPERTY;
-                    extractor = extractors.valueOf( typeSpec );
-                }
-
-                return new Header.Entry( name, type, extractor );
-            }
-        };
+        return new DefaultNodeFileHeaderParser( READ_FROM_DATA_SEEKER );
     }
 
+    /**
+     * Header parser that will read header information, using the default node header format,
+     * from a file of choice.
+     * @param file {@link File} containing header information.
+     */
+    public static Header.Factory defaultFormatNodeFileHeader( File file )
+    {
+        return new DefaultNodeFileHeaderParser( new HeaderFromSeparateFileFactory( file ) );
+    }
+
+    /**
+     * Header parser that will read header information, using the default node header format,
+     * from a {@link Readable} containing that data.
+     * @param reader {@link Readable} containing header data.
+     */
+    public static Header.Factory defaultFormatNodeFileHeader( Readable reader )
+    {
+        return new DefaultNodeFileHeaderParser( new HeaderFromSeparateReaderFactory( reader ) );
+    }
+
+    /**
+     * Header parser that will read header information, using the default relationship header format,
+     * from the top of the data file.
+     */
     public static Header.Factory defaultFormatRelationshipFileHeader()
     {
-        return new AbstractFileHeaderParser( Type.START_NODE, Type.END_NODE, Type.RELATIONSHIP_TYPE )
-        {
-            @Override
-            protected Header.Entry entry( int index, String name, String typeSpec, Extractors extractors,
-                    Extractor<?> idExtractor )
-            {
-                Type type = null;
-                Extractor<?> extractor = null;
-                if ( index == 0 )
-                {
-                    type = Type.START_NODE;
-                    extractor = idExtractor;
-                }
-                else if ( index == 1 )
-                {
-                    type = Type.END_NODE;
-                    extractor = idExtractor;
-                }
-                else if ( index == 2 )
-                {
-                    type = Type.RELATIONSHIP_TYPE;
-                    extractor = extractors.string();
-                }
-                else
-                {   // Property
-                    type = Type.PROPERTY;
-                    extractor = extractors.valueOf( typeSpec );
-                }
-
-                return new Header.Entry( name, type, extractor );
-            }
-        };
+        return new DefaultRelationshipFileHeaderParser( READ_FROM_DATA_SEEKER );
     }
 
-    private static abstract class AbstractFileHeaderParser implements Header.Factory
+    /**
+     * Header parser that will read header information, using the default node header format,
+     * from a file of choice.
+     * @param file {@link File} containing header information.
+     */
+    public static Header.Factory defaultFormatRelationshipFileHeader( File file )
+    {
+        return new DefaultRelationshipFileHeaderParser( new HeaderFromSeparateFileFactory( file ) );
+    }
+
+    /**
+     * Header parser that will read header information, using the default relationship header format,
+     * from a {@link Readable} containing that data.
+     * @param reader {@link Readable} containing header data.
+     */
+    public static Header.Factory defaultFormatRelationshipFileHeader( Readable reader )
+    {
+        return new DefaultRelationshipFileHeaderParser( new HeaderFromSeparateReaderFactory( reader ) );
+    }
+
+    /**
+     * Provides {@link CharSeeker} to read and parse header information from.
+     */
+    private interface HeaderCharSeekerFactory
+    {
+        /**
+         * @param seeker the {@link CharSeeker} for the data file, if that's what we want.
+         * @param config
+         * @return the {@link CharSeeker} to extract header information from.
+         * @throws IOException if {@link CharSeeker} couldn't be provided.
+         */
+        CharSeeker open( CharSeeker seeker, Configuration config ) throws IOException;
+
+        /**
+         * Closes the header {@link CharSeeker}. Only close if {@link #openCharSeeker(CharSeeker)} opens its own.
+         * @param seeker {@link CharSeeker} returned from {@link #openCharSeeker(CharSeeker)}.
+         */
+        void close( CharSeeker seeker );
+    }
+
+    /**
+     * Just uses the provided {@link CharSeeker} containing the data itself.
+     */
+    private static final HeaderCharSeekerFactory READ_FROM_DATA_SEEKER = new HeaderCharSeekerFactory()
+    {
+        @Override
+        public CharSeeker open( CharSeeker seeker, Configuration config )
+        {
+            return seeker;
+        }
+
+        @Override
+        public void close( CharSeeker seeker )
+        {   // Leave it open for data reading later
+        }
+    };
+
+    private static abstract class SeparateHeaderReaderFactory implements HeaderCharSeekerFactory
+    {
+        @Override
+        public void close( CharSeeker seeker )
+        {
+            try
+            {
+                seeker.close();
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( "Unable to close header reader", e );
+            }
+        }
+    }
+
+    private static class HeaderFromSeparateFileFactory extends SeparateHeaderReaderFactory
+    {
+        private final File file;
+
+        HeaderFromSeparateFileFactory( File file )
+        {
+            this.file = file;
+        }
+
+        @Override
+        public CharSeeker open( CharSeeker seeker, Configuration config ) throws IOException
+        {
+            return charSeeker( file, config.quotationCharacter() );
+        }
+    }
+
+    private static class HeaderFromSeparateReaderFactory extends SeparateHeaderReaderFactory
+    {
+        private final Readable readable;
+
+        HeaderFromSeparateReaderFactory( Readable readable )
+        {
+            this.readable = readable;
+        }
+
+        @Override
+        public CharSeeker open( CharSeeker seeker, Configuration config ) throws IOException
+        {
+            return charSeeker( readable, DEFAULT_BUFFER_SIZE, true, config.quotationCharacter() );
+        }
+    }
+
+    private static abstract class AbstractDefaultFileHeaderParser implements Header.Factory
     {
         private final Type[] mandatoryTypes;
+        private final HeaderCharSeekerFactory headerCharSeekerFactory;
 
-        protected AbstractFileHeaderParser( Type... mandatoryTypes )
+        protected AbstractDefaultFileHeaderParser( HeaderCharSeekerFactory headerCharSeekerFactory,
+                Type... mandatoryTypes )
         {
+            this.headerCharSeekerFactory = headerCharSeekerFactory;
             this.mandatoryTypes = mandatoryTypes;
         }
 
         @Override
-        public Header create( CharSeeker seeker, Configuration config, IdType idType )
+        public Header create( CharSeeker dataSeeker, Configuration config, IdType idType )
         {
+            CharSeeker headerSeeker = null;
             try
             {
+                headerSeeker = headerCharSeekerFactory.open( dataSeeker, config );
                 Mark mark = new Mark();
                 Extractors extractors = new Extractors( config.arrayDelimiter() );
                 Extractor<?> idExtractor = idType.extractor( extractors );
                 int[] delimiter = new int[] {config.delimiter()};
                 List<Header.Entry> columns = new ArrayList<>();
-                for ( int i = 0; !mark.isEndOfLine() && seeker.seek( mark, delimiter ); i++ )
+                for ( int i = 0; !mark.isEndOfLine() && headerSeeker.seek( mark, delimiter ); i++ )
                 {
-                    String columnString = seeker.extract( mark, extractors.string() ).value();
+                    String columnString = headerSeeker.extract( mark, extractors.string() ).value();
                     int typeIndex = columnString.lastIndexOf( ':' );
                     String name;
                     String typeSpec;
@@ -187,6 +296,13 @@ public class DataFactories
             catch ( IOException e )
             {
                 throw new RuntimeException( e );
+            }
+            finally
+            {
+                if ( headerSeeker != null )
+                {
+                    headerCharSeekerFactory.close( headerSeeker );
+                }
             }
         }
 
@@ -233,5 +349,87 @@ public class DataFactories
          */
         protected abstract Header.Entry entry( int index, String name, String typeSpec, Extractors extractors,
                 Extractor<?> idExtractor );
+    }
+
+    private static class DefaultNodeFileHeaderParser extends AbstractDefaultFileHeaderParser
+    {
+        public DefaultNodeFileHeaderParser( HeaderCharSeekerFactory headerCharSeekerFactory )
+        {
+            super( headerCharSeekerFactory, Type.ID );
+        }
+
+        @Override
+        protected Header.Entry entry( int index, String name, String typeSpec, Extractors extractors,
+                Extractor<?> idExtractor )
+        {
+            // For nodes it's simply ID,LABEL,PROPERTY. typeSpec can be either ID,LABEL or a type of property,
+            // like 'int' or 'string_array' or similar, or empty for 'string' property.
+            Type type = null;
+            Extractor<?> extractor = null;
+            if ( name.trim().length() == 0 )
+            {
+                type = Type.IGNORE;
+            }
+            else if ( typeSpec == null )
+            {
+                type = Type.PROPERTY;
+                extractor = extractors.string();
+            }
+            else if ( typeSpec.equalsIgnoreCase( Type.ID.name() ) )
+            {
+                type = Type.ID;
+                extractor = idExtractor;
+            }
+            else if ( typeSpec.equalsIgnoreCase( Type.LABEL.name() ) )
+            {
+                type = Type.LABEL;
+                extractor = extractors.stringArray();
+            }
+            else
+            {
+                type = Type.PROPERTY;
+                extractor = extractors.valueOf( typeSpec );
+            }
+
+            return new Header.Entry( name, type, extractor );
+        }
+    }
+
+    private static class DefaultRelationshipFileHeaderParser extends AbstractDefaultFileHeaderParser
+    {
+        protected DefaultRelationshipFileHeaderParser( HeaderCharSeekerFactory headerCharSeekerFactory )
+        {
+            super( headerCharSeekerFactory, Type.START_NODE, Type.END_NODE, Type.RELATIONSHIP_TYPE );
+        }
+
+        @Override
+        protected Header.Entry entry( int index, String name, String typeSpec, Extractors extractors,
+                Extractor<?> idExtractor )
+        {
+            Type type = null;
+            Extractor<?> extractor = null;
+            if ( index == 0 )
+            {
+                type = Type.START_NODE;
+                extractor = idExtractor;
+            }
+            else if ( index == 1 )
+            {
+                type = Type.END_NODE;
+                extractor = idExtractor;
+            }
+            else if ( index == 2 )
+            {
+                type = Type.RELATIONSHIP_TYPE;
+                extractor = extractors.string();
+            }
+            else
+            {   // Property
+                type = Type.PROPERTY;
+                extractor = extractors.valueOf( typeSpec );
+            }
+
+            return new Header.Entry( name, type, extractor );
+        }
     }
 }

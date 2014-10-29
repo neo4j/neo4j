@@ -22,6 +22,8 @@ package org.neo4j.csv.reader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.IOException;
+import java.util.Iterator;
 
 import static org.neo4j.csv.reader.BufferedCharSeeker.DEFAULT_BUFFER_SIZE;
 import static org.neo4j.csv.reader.ThreadAheadReadable.threadAhead;
@@ -39,6 +41,7 @@ public class CharSeekers
      * @param readAhead whether or not to start a {@link ThreadAheadReadable read-ahead thread}
      * which strives towards always keeping one buffer worth of data read and available from I/O when it's
      * time for the {@link BufferedCharSeeker} to read more data.
+     * @param quotationCharacter character to interpret quotation character.
      * @return a {@link CharSeeker} with optional {@link ThreadAheadReadable read-ahead} capability.
      */
     public static CharSeeker charSeeker( Readable reader, int bufferSize, boolean readAhead, char quotationCharacter )
@@ -62,5 +65,64 @@ public class CharSeekers
     public static CharSeeker charSeeker( File file, char quotationCharacter ) throws FileNotFoundException
     {
         return charSeeker( new FileReader( file ), DEFAULT_BUFFER_SIZE, true, quotationCharacter );
+    }
+
+    /**
+     * Instantiates a {@link CharSeeker} capable of reading from many files, continuing into the next
+     * when one has been read through.
+     *
+     * @param readers {@link Iterator} of {@link Readable} instances which holds the data.
+     * {@link Readable} instances provided by the {@link Iterator} should be lazily opened, upon {@link Iterator#next()}.
+     * @param bufferSize buffer size of the seeker and, if enabled, the read-ahead thread.
+     * @param readAhead whether or not to start a {@link ThreadAheadReadable read-ahead thread}
+     * which strives towards always keeping one buffer worth of data read and available from I/O when it's
+     * time for the {@link BufferedCharSeeker} to read more data.
+     * @param quotationCharacter character to interpret quotation character.
+     * @return a {@link CharSeeker} with optional {@link ThreadAheadReadable read-ahead} capability,
+     * capable of reading, and bridging, multiple files.
+     */
+    public static CharSeeker charSeeker( final Iterator<Readable> readers, final int bufferSize,
+            final boolean readAhead, final char quotationCharacter )
+    {
+        return new CharSeeker()
+        {
+            private CharSeeker current = CharSeeker.EMPTY;
+
+            @Override
+            public boolean seek( Mark mark, int[] untilOneOfChars ) throws IOException
+            {
+                while ( !current.seek( mark, untilOneOfChars ) )
+                {
+                    if ( !goToNextReader() )
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            private boolean goToNextReader() throws IOException
+            {
+                if ( !readers.hasNext() )
+                {
+                    return false;
+                }
+                current.close();
+                current = charSeeker( readers.next(), bufferSize, readAhead, quotationCharacter );
+                return true;
+            }
+
+            @Override
+            public <EXTRACTOR extends Extractor<?>> EXTRACTOR extract( Mark mark, EXTRACTOR extractor )
+            {
+                return current.extract( mark, extractor );
+            }
+
+            @Override
+            public void close() throws IOException
+            {
+                current.close();
+            }
+        };
     }
 }
