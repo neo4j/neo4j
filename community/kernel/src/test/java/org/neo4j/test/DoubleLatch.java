@@ -20,70 +20,81 @@
 package org.neo4j.test;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 public class DoubleLatch
 {
+    private static final int FIVE_MINUTES = 5 * 60 * 1000;
     private final CountDownLatch startSignal;
     private final CountDownLatch finishSignal;
     private final int numberOfContestants;
-    
+
     public DoubleLatch()
     {
         this( 1 );
     }
-    
+
     public DoubleLatch( int numberOfContestants )
     {
         this.numberOfContestants = numberOfContestants;
         this.startSignal = new CountDownLatch( numberOfContestants );
         this.finishSignal = new CountDownLatch( numberOfContestants );
     }
-    
+
     public int getNumberOfContestants()
     {
         return numberOfContestants;
     }
-    
+
     public void startAndAwaitFinish()
     {
         start();
         awaitLatch( finishSignal );
     }
-    
+
     public void awaitStart()
     {
         awaitLatch( startSignal );
     }
-    
+
     public void start()
     {
         startSignal.countDown();
         awaitLatch( startSignal );
     }
-    
+
     public void finish()
     {
         finishSignal.countDown();
     }
-    
+
     public void awaitFinish()
     {
         awaitLatch( finishSignal );
     }
-    
+
     public static void awaitLatch( CountDownLatch latch )
     {
-        try
+        long deadline = System.currentTimeMillis() + FIVE_MINUTES;
+        long remaining;
+
+        while( ( remaining = deadline - System.currentTimeMillis() ) >= 0 )
         {
-            latch.await();
+            try
+            {
+                latch.await( remaining, TimeUnit.MILLISECONDS  );
+                return;
+            }
+            catch ( InterruptedException e )
+            {
+                Thread.interrupted();
+                new RuntimeException( "Thread interrupted while waiting on latch", e).printStackTrace();
+            }
+            Thread.yield();
         }
-        catch ( InterruptedException e )
-        {
-            Thread.interrupted();
-            throw new RuntimeException( e );
-        }
+        throw new RuntimeException( "Failed to acquire latch" );
     }
-    
+
     @Override
     public String toString()
     {

@@ -30,6 +30,8 @@ import org.neo4j.kernel.impl.api.index.IndexMap;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 public class IndexSamplingController
 {
     private final IndexSamplingConfig config;
@@ -108,7 +110,7 @@ public class IndexSamplingController
 
     private void tryEmptyQueue( IndexMap indexMap )
     {
-        if ( emptyLock.tryLock() )
+        if ( tryEmptyLock() )
         {
             try
             {
@@ -127,6 +129,19 @@ public class IndexSamplingController
             {
                 emptyLock.unlock();
             }
+        }
+    }
+
+    private boolean tryEmptyLock()
+    {
+        try
+        {
+            return emptyLock.tryLock( 0, SECONDS );
+        }
+        catch ( InterruptedException ex )
+        {
+            // ignored
+            return false;
         }
     }
 
