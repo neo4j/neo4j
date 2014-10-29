@@ -71,4 +71,24 @@ public interface CharSeeker extends Closeable
      * where either {@link Extractor#value()} or a more specific accessor method can be called to access the value.
      */
     <EXTRACTOR extends Extractor<?>> EXTRACTOR extract( Mark mark, EXTRACTOR extractor );
+
+    public static final CharSeeker EMPTY = new CharSeeker()
+    {
+        @Override
+        public boolean seek( Mark mark, int[] untilOneOfChars )
+        {
+            return false;
+        }
+
+        @Override
+        public <EXTRACTOR extends Extractor<?>> EXTRACTOR extract( Mark mark, EXTRACTOR extractor )
+        {
+            throw new IllegalStateException( "Nothing to extract" );
+        }
+
+        @Override
+        public void close()
+        {   // Nothing to close
+        }
+    };
 }
