@@ -152,6 +152,7 @@ import org.neo4j.kernel.impl.transaction.TransactionCounters;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreInjectedTransactionValidator;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
@@ -866,8 +867,9 @@ public abstract class InternalAbstractGraphDatabase
                 lockManager, this, transactionEventHandlers,
                 monitors.newMonitor( IndexingService.Monitor.class ), fileSystem,
                 storeMigrationProcess, transactionMonitor, kernelHealth,
+                monitors.newMonitor( PhysicalLogFile.Monitor.class ),
                 createHeaderInformationFactory(), startupStatistics, caches, nodeManager, guard, indexStore,
-                getCommitProcessFactory() );
+                getCommitProcessFactory(), monitors );
         dataSourceManager.register( neoDataSource );
     }
 

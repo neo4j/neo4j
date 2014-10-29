@@ -105,6 +105,18 @@ public class SwitchToSlave
             TransactionCommittingResponseUnpacker.class,
     };
 
+    public interface Monitor
+    {
+        void switchToSlaveStarted();
+        void switchToSlaveCompleted( boolean wasSuccessful );
+
+        void storeCopyStarted();
+        void storeCopyCompleted( boolean wasSuccessful );
+
+        void catchupStarted();
+        void catchupCompleted();
+    }
+
     private static final int VERSION_CHECK_TIMEOUT = 10;
 
     private final Logging logging;
@@ -120,6 +132,7 @@ public class SwitchToSlave
     private final MasterClientResolver masterClientResolver;
     private final ByteCounterMonitor byteCounterMonitor;
     private final RequestMonitor requestMonitor;
+    private final Monitor monitor;
 
     public SwitchToSlave( ConsoleLogger console, Config config, DependencyResolver resolver,
                           HaIdGeneratorFactory idGeneratorFactory, Logging logging,
@@ -127,7 +140,7 @@ public class SwitchToSlave
                           ClusterMemberAvailability clusterMemberAvailability,
                           RequestContextFactory requestContextFactory,
                           Iterable<KernelExtensionFactory<?>> kernelExtensions, ResponseUnpacker responseUnpacker,
-                          ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
+                          ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor, Monitor monitor )
     {
         this.console = console;
         this.config = config;
@@ -141,6 +154,7 @@ public class SwitchToSlave
         this.requestMonitor = requestMonitor;
         this.msgLog = logging.getMessagesLog( getClass() );
         this.masterDelegateHandler = masterDelegateHandler;
+        this.monitor = monitor;
 
         this.masterClientResolver = new MasterClientResolver( logging, responseUnpacker,
                 config.get( HaSettings.read_timeout ).intValue(),
@@ -165,51 +179,64 @@ public class SwitchToSlave
     public URI switchToSlave( LifeSupport haCommunicationLife, URI me, URI masterUri,
                               CancellationRequest cancellationRequest ) throws Throwable
     {
-        InstanceId myId = config.get( ClusterSettings.server_id );
+        URI slaveUri;
+        boolean success = false;
 
-        console.log( "ServerId " + myId + ", moving to slave for master " + masterUri );
+        monitor.switchToSlaveStarted();
 
-        assert masterUri != null; // since we are here it must already have been set from outside
-
-        idGeneratorFactory.switchToSlave();
-
-        copyStoreFromMasterIfNeeded( masterUri, cancellationRequest );
-
-        /*
-         * The following check is mandatory, since the store copy can be cancelled and if it was actually
-         * happening then we can't continue, as there is no store in place
-         */
-        if ( cancellationRequest.cancellationRequested() )
+        try
         {
-            return null;
+            InstanceId myId = config.get( ClusterSettings.server_id );
+
+            console.log( "ServerId " + myId + ", moving to slave for master " + masterUri );
+
+            assert masterUri != null; // since we are here it must already have been set from outside
+
+            idGeneratorFactory.switchToSlave();
+
+            copyStoreFromMasterIfNeeded( masterUri, cancellationRequest );
+
+            /*
+             * The following check is mandatory, since the store copy can be cancelled and if it was actually
+             * happening then we can't continue, as there is no store in place
+             */
+            if ( cancellationRequest.cancellationRequested() )
+            {
+                return null;
+            }
+
+            /*
+             * We get here either with a fresh store from the master copy above so we need to
+             * start the ds or we already had a store, so we have already started the ds. Either way,
+             * make sure it's there.
+             */
+            NeoStoreDataSource nioneoDataSource = resolver.resolveDependency( NeoStoreDataSource.class );
+            nioneoDataSource.afterModeSwitch();
+            StoreId myStoreId = nioneoDataSource.getStoreId();
+
+            boolean consistencyChecksExecutedSuccessfully = executeConsistencyChecks(
+                    myId, masterUri, nioneoDataSource, cancellationRequest );
+
+            if ( !consistencyChecksExecutedSuccessfully )
+            {
+                return null;
+            }
+
+            if ( cancellationRequest.cancellationRequested() )
+            {
+                return null;
+            }
+
+            // no exception were thrown and we can proceed
+            slaveUri = startHaCommunication( haCommunicationLife, nioneoDataSource, me, masterUri, myStoreId );
+
+            success = true;
+            console.log( "ServerId " + myId + ", successfully moved to slave for master " + masterUri );
         }
-
-        /*
-         * We get here either with a fresh store from the master copy above so we need to
-         * start the ds or we already had a store, so we have already started the ds. Either way,
-         * make sure it's there.
-         */
-        NeoStoreDataSource nioneoDataSource = resolver.resolveDependency( NeoStoreDataSource.class );
-        nioneoDataSource.afterModeSwitch();
-        StoreId myStoreId = nioneoDataSource.getStoreId();
-
-        boolean consistencyChecksExecutedSuccessfully = executeConsistencyChecks(
-                myId, masterUri, nioneoDataSource, cancellationRequest );
-
-        if ( !consistencyChecksExecutedSuccessfully )
+        finally
         {
-            return null;
+            monitor.switchToSlaveCompleted( success );
         }
-
-        if ( cancellationRequest.cancellationRequested() )
-        {
-            return null;
-        }
-
-        // no exception were thrown and we can proceed
-        URI slaveUri = startHaCommunication( haCommunicationLife, nioneoDataSource, me, masterUri, myStoreId );
-
-        console.log( "ServerId " + myId + ", successfully moved to slave for master " + masterUri );
 
         return slaveUri;
     }
@@ -218,6 +245,8 @@ public class SwitchToSlave
     {
         if ( !isStorePresent( resolver.resolveDependency( FileSystemAbstraction.class ), config ) )
         {
+            boolean success = false;
+            monitor.storeCopyStarted();
             LifeSupport copyLife = new LifeSupport();
             try
             {
@@ -233,10 +262,12 @@ public class SwitchToSlave
                 else
                 {
                     copyStoreFromMaster( masterClient, cancellationRequest );
+                    success = true;
                 }
             }
             finally
             {
+                monitor.storeCopyCompleted( success );
                 copyLife.shutdown();
             }
         }
@@ -397,6 +428,7 @@ public class SwitchToSlave
 
     private void catchUpWithMaster() throws IllegalArgumentException, InterruptedException
     {
+        monitor.catchupStarted();
         RequestContext catchUpRequestContext = requestContextFactory.newRequestContext();
         console.log( "Catching up with master. I'm at " + catchUpRequestContext );
 
@@ -407,6 +439,7 @@ public class SwitchToSlave
         updatePuller.await( UpdatePuller.NEXT_TICKET );
 
         console.log( "Now caught up with master" );
+        monitor.catchupCompleted();
     }
 
     private Server.Configuration serverConfig()

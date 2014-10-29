@@ -149,8 +149,8 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
             recoveredDataVisitor.visit( recoveredDataChannel );
             // intentionally keep it open since we're continuing using the underlying channel for the writer below
             logRotationControl.forceEverything();
+            monitor.recoveryCompleted();
         }
-        monitor.recoveryCompleted();
     }
 
     @Override
@@ -274,6 +274,29 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
         void opened( File logFile, long logVersion, long lastTransactionId, boolean clean );
 
         void failureToTruncate( File logFile, IOException e );
+
+        public class Adapter implements Monitor
+        {
+            @Override
+            public void recoveryRequired( long recoveredLogVersion )
+            {
+            }
+
+            @Override
+            public void recoveryCompleted()
+            {
+            }
+
+            @Override
+            public void opened( File logFile, long logVersion, long lastTransactionId, boolean clean )
+            {
+            }
+
+            @Override
+            public void failureToTruncate( File logFile, IOException e )
+            {
+            }
+        }
     }
 
     @Override

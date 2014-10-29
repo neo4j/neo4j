@@ -98,7 +98,6 @@ public class PhysicalLogFileTest
         try
         {
             life.start();
-            verify( monitor ).recoveryCompleted();
 
             WritableLogChannel writer = logFile.getWriter();
             LogPositionMarker positionMarker = new LogPositionMarker();

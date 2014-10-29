@@ -108,6 +108,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.LogbackWeakDependency;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.kernel.GraphDatabaseDependencies.newDependencies;
 import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
@@ -137,6 +138,15 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     private long stateSwitchTimeoutMillis;
     private TransactionCommittingResponseUnpacker responseUnpacker;
     private Provider<KernelAPI> kernelProvider;
+
+    public HighlyAvailableGraphDatabase( String storeDir, Map<String,String> params,
+                                         Iterable<KernelExtensionFactory<?>> kernelExtensions,
+                                         Iterable<CacheProvider> cacheProviders, Monitors monitors )
+    {
+        this( storeDir, params, newDependencies()
+                .settingsClasses( GraphDatabaseSettings.class, ClusterSettings.class, HaSettings.class )
+                .kernelExtensions( kernelExtensions ).cacheProviders( cacheProviders ).monitors( monitors ) );
+    }
 
     public HighlyAvailableGraphDatabase( String storeDir, Map<String,String> params,
                                          Iterable<KernelExtensionFactory<?>> kernelExtensions,
@@ -461,7 +471,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 logging, masterDelegateInvocationHandler, clusterMemberAvailability, requestContextFactory,
                 kernelExtensions.listFactories(), responseUnpacker,
                 monitors.newMonitor( ByteCounterMonitor.class, SlaveServer.class ),
-                monitors.newMonitor( RequestMonitor.class, SlaveServer.class )
+                monitors.newMonitor( RequestMonitor.class, SlaveServer.class ),
+                monitors.newMonitor( SwitchToSlave.Monitor.class )
         );
 
         SwitchToMaster switchToMasterInstance = new SwitchToMaster( logging, msgLog, this,
