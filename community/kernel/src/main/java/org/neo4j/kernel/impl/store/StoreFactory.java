@@ -143,6 +143,7 @@ public class StoreFactory
 
         if ( storeExists && allowRebuild && !countsStoreExists() )
         {
+            stringLogger.warn( "Missing counts store, rebuilding it." );
             rebuildCountsStore();
         }
 

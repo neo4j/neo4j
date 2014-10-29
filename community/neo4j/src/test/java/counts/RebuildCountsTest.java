@@ -39,12 +39,15 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.kernel.impl.util.TestLogger;
+import org.neo4j.kernel.impl.util.TestLogging;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.index_background_sampling_enabled;
+import static org.neo4j.kernel.impl.util.TestLogger.LogCall.warn;
 
 public class RebuildCountsTest
 {
@@ -64,6 +67,9 @@ public class RebuildCountsTest
         assertEquals( 32, tracker.nodeCount( -1 ) );
         assertEquals( 16, tracker.nodeCount( labelId( ALIEN ) ) );
         assertEquals( 16, tracker.nodeCount( labelId( HUMAN ) ) );
+
+        // and also
+        logger().assertAtLeastOnce( warn( "Missing counts store, rebuilding it." ) );
     }
 
     private void createAliensAndHumans()
@@ -98,12 +104,18 @@ public class RebuildCountsTest
         return ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( NeoStore.class );
     }
 
+    private TestLogger logger()
+    {
+        return logging.getMessagesLog( StoreFactory.class );
+    }
+
     public static final Label ALIEN = label( "Alien" );
     public static final Label HUMAN = label( "Human" );
 
     @Rule
     public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     private final InMemoryIndexProvider indexProvider = new InMemoryIndexProvider( 100 );
+    private final TestLogging logging = new TestLogging();
 
     private TestGraphDatabaseFactory dbFactory;
     private GraphDatabaseService db;
@@ -118,6 +130,7 @@ public class RebuildCountsTest
     private void setupDb( EphemeralFileSystemAbstraction fs )
     {
         dbFactory = new TestGraphDatabaseFactory();
+        dbFactory.setLogging( logging );
         dbFactory.setFileSystem( fs );
         dbFactory.addKernelExtension( new InMemoryIndexProviderFactory( indexProvider ) );
         fs.mkdirs( storeDir );
