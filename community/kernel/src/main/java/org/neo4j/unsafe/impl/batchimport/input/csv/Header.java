@@ -33,10 +33,12 @@ public class Header
     public interface Factory
     {
         /**
-         * @param idExtractor we supply the id extractor explicitly because it's a configuration,
-         * or at least input-global concern and not a concern of this particular header.
+         * @param dataSeeker {@link CharSeeker} containing the data. Usually there's a header for us
+         * to read at the very top of it.
+         * @param configuration {@link Configuration} specific to the format of the data.
+         * @param idType type of values we expect the ids to be.
          */
-        Header create( CharSeeker seeker, Configuration configuration, IdType idType );
+        Header create( CharSeeker dataSeeker, Configuration configuration, IdType idType );
     }
 
     private final Entry[] entries;
