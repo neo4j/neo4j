@@ -227,7 +227,7 @@ public class UpdatePuller implements Runnable, Lifecycle
         {
             if ( !isActive() )
             {
-                throw new IllegalStateException( "Update puller has been halted:" + this );
+                throw new IllegalStateException( this + " has been halted:" + this );
             }
 
             Thread.sleep( 1 );
@@ -263,11 +263,11 @@ public class UpdatePuller implements Runnable, Lifecycle
         }
         catch ( ComException e )
         {
-            cappedLogger.event( Pair.of( "Pull updates failed due to network error.", e ) );
+            cappedLogger.event( Pair.of( "Pull updates by " + this + " failed due to network error.", e ) );
         }
         catch ( Exception e )
         {
-            logger.error( "Pull updates failed", e );
+            logger.error( "Pull updates by " + this + " failed", e );
         }
         lastUpdateTime.setLastUpdateTime( currentTimeMillis() );
     }
