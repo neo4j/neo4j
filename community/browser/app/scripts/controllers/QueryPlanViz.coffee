@@ -32,6 +32,9 @@ angular.module('neo4jApp.controllers')
         operators = []
         links = []
 
+        rows = (operator) ->
+          operator.Rows || operator.EstimatedRows
+
         explore = (operator) ->
           operators.push operator
           for child in operator.children
@@ -39,8 +42,8 @@ angular.module('neo4jApp.controllers')
             links.push
               source: child
               target: operator
-              value: Math.max(1, child.Rows)
-              rows: child.Rows
+              value: Math.max(1, rows(child))
+              rows: rows(child)
 
         explore queryPlan.root
 
