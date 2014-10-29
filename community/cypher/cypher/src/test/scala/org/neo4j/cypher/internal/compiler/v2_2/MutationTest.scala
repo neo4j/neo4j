@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2
 import commands.expressions.{Expression, Literal}
 import mutation.{RelationshipEndpoint, CreateRelationship, CreateNode, DeleteEntityAction}
 import symbols._
-import org.neo4j.cypher.{ExecutionEngineFunSuite, CypherTypeException}
+import org.neo4j.cypher.{ExecutionEngineFunSuite}
 import org.neo4j.graphdb.{Node, NotFoundException}
 import collection.mutable.{Map => MutableMap}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.{PipeMonitor, QueryState, ExecuteUpdateCommandsPipe, NullPipe}
