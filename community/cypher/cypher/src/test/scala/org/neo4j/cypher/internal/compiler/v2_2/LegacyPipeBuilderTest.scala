@@ -38,7 +38,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.{Planner, PlanningMonitor
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.spi.v2_2.TransactionBoundQueryContext
-import org.neo4j.cypher.{GraphDatabaseTestSupport, InternalException}
+import org.neo4j.cypher.{GraphDatabaseTestSupport}
 import org.neo4j.graphdb.DynamicLabel
 import org.scalatest.mock.MockitoSugar
 
