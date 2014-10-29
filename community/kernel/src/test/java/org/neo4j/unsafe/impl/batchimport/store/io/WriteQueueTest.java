@@ -19,9 +19,9 @@
  */
 package org.neo4j.unsafe.impl.batchimport.store.io;
 
-import java.util.concurrent.ExecutorService;
-
 import org.junit.Test;
+
+import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -105,7 +105,7 @@ public class WriteQueueTest
         assertFalse( jobMonitor.hasActiveJobs() );
     }
 
-    private final ExecutorService executor = mock( ExecutorService.class );
+    private final TaskExecutor executor = mock( TaskExecutor.class );
     private final JobMonitor jobMonitor = new JobMonitor();
     private final WriteQueue queue = new WriteQueue( executor, jobMonitor );
 

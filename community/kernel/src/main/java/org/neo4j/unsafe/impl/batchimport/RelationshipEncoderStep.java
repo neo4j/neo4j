@@ -48,13 +48,13 @@ public class RelationshipEncoderStep extends ExecutorServiceStep<List<InputRelat
     private final NodeRelationshipLink nodeRelationshipLink;
 
     public RelationshipEncoderStep( StageControl control,
-            Configuration config, int numberOfExecutors,
+            Configuration config,
             IdMapper idMapper,
             BatchingTokenRepository<?> relationshipTypeRepository,
             RelationshipStore relationshipStore,
             NodeRelationshipLink nodeRelationshipLink )
     {
-        super( control, "RELATIONSHIP", config.workAheadSize(), config.movingAverageSize(), numberOfExecutors );
+        super( control, "RELATIONSHIP", config.workAheadSize(), config.movingAverageSize(), 1 );
         this.idMapper = idMapper;
         this.relationshipTypeRepository = relationshipTypeRepository;
         this.relationshipStore = relationshipStore;

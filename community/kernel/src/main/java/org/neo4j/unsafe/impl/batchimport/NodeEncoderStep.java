@@ -48,13 +48,13 @@ public final class NodeEncoderStep extends ExecutorServiceStep<List<InputNode>>
     private final BatchingLabelTokenRepository labelHolder;
     private final Iterable<Object> allIds;
 
-    public NodeEncoderStep( StageControl control, Configuration config, int numberOfExecutors,
+    public NodeEncoderStep( StageControl control, Configuration config,
             IdMapper idMapper, IdGenerator idGenerator,
             BatchingLabelTokenRepository labelHolder,
             NodeStore nodeStore,
             Iterable<Object> allIds )
     {
-        super( control, "NDOE", config.workAheadSize(), config.movingAverageSize(), numberOfExecutors );
+        super( control, "NDOE", config.workAheadSize(), config.movingAverageSize(), 1 );
         this.idMapper = idMapper;
         this.idGenerator = idGenerator;
         this.nodeStore = nodeStore;

@@ -20,18 +20,33 @@
 package org.neo4j.unsafe.impl.batchimport.staging;
 
 /**
- * Monitors a {@link StageExecution}. An {@link ExecutionMonitor}, providing or displaying statistics
- * about the execution as it progresses.
+ * Gets notified now and then about {@link StageExecution}, where statistics can be read and displayed,
+ * aggregated or in other ways make sense of the data of {@link StageExecution}.
  */
 public interface ExecutionMonitor
 {
     /**
-     * Called when a {@link Stage} has started its execution. This method should not return until all
-     * {@link Step steps} in the {@link Stage} have {@link Step#isCompleted() completed} their processing.
-     *
-     * @param executions execution of a {@link Stage}.
+     * Signals the start of one or more stages,
      */
-    void monitor( StageExecution... executions );
+    void start( StageExecution[] executions );
 
+    /**
+     * Signals the end of the executions previously {@link #start(StageExecution[]) stated}
+     */
+    void end( StageExecution[] executions, long totalTimeMillis );
+
+    /**
+     * Signals the end of the import as a whole
+     */
     void done( long totalTimeMillis );
+
+    /**
+     * @return next time stamp when this monitor would like to check that status of current execution.
+     */
+    long nextCheckTime();
+
+    /**
+     * Called with currently executing {@link StageExecution} instances so that data from them can be gathered.
+     */
+    void check( StageExecution[] executions );
 }

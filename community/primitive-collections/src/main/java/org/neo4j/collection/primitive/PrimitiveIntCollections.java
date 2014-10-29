@@ -746,4 +746,16 @@ public class PrimitiveIntCollections
     {
         return TRUE;
     }
+
+    public static PrimitiveIntIterator constant( final int value )
+    {
+        return new PrimitiveIntBaseIterator()
+        {
+            @Override
+            protected boolean fetchNext()
+            {
+                return next( value );
+            }
+        };
+    }
 }

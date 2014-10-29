@@ -26,11 +26,13 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 /**
  * Strategy for waiting a while, given a certain {@link Thread}.
  */
-public interface WaitStrategy
+public interface ParkStrategy
 {
-    public void wait( Thread thread );
+    void park( Thread thread );
 
-    public static class Park implements WaitStrategy
+    void unpark( Thread thread );
+
+    public static class Park implements ParkStrategy
     {
         private final long nanos;
 
@@ -40,9 +42,15 @@ public interface WaitStrategy
         }
 
         @Override
-        public void wait( Thread thread )
+        public void park( Thread thread )
         {
             LockSupport.parkNanos( nanos );
+        }
+
+        @Override
+        public void unpark( Thread thread )
+        {
+            LockSupport.unpark( thread );
         }
     }
 }

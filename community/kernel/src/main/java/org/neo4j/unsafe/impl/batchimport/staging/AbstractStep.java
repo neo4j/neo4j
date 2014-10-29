@@ -78,9 +78,22 @@ public abstract class AbstractStep<T> implements Step<T>
      * The number of processors processing incoming batches in parallel for this step. Exposed as a method
      * since this number can change over time depending on the load.
      */
-    protected int numberOfParallelProcessors()
+    @Override
+    public int numberOfProcessors()
     {
         return 1;
+    }
+
+    @Override
+    public boolean incrementNumberOfProcessors()
+    {
+        return false;
+    }
+
+    @Override
+    public boolean decrementNumberOfProcessors()
+    {
+        return false;
     }
 
     @Override
@@ -182,7 +195,7 @@ public abstract class AbstractStep<T> implements Step<T>
     protected void addStatsProviders( Collection<StatsProvider> providers )
     {
         providers.add( new ProcessingStats( doneBatches.get()+queuedBatches.get(), doneBatches.get(),
-                totalProcessingTime.total(), totalProcessingTime.average() / numberOfParallelProcessors(),
+                totalProcessingTime.total(), totalProcessingTime.average() / numberOfProcessors(),
                 upstreamIdleTime.get(), downstreamIdleTime.get() ) );
     }
 

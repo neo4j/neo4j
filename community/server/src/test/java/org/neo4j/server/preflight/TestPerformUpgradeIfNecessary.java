@@ -31,10 +31,10 @@ import org.mockito.InOrder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.Monitor;
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.util.TestLogger;
 import org.neo4j.kernel.impl.util.TestLogging;
 import org.neo4j.server.configuration.Configurator;
@@ -53,7 +53,6 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import static org.neo4j.io.fs.FileUtils.copyRecursively;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
-import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
 import static org.neo4j.kernel.logging.DevNullLoggingService.DEV_NULL;
 
 public class TestPerformUpgradeIfNecessary
@@ -116,6 +115,7 @@ public class TestPerformUpgradeIfNecessary
 
     private class TestLogPrinter implements Visitor<TestLogger.LogCall,RuntimeException>
     {
+        @Override
         public boolean visit( TestLogger.LogCall logCall )
         {
             System.out.println( logCall.toString() );
@@ -155,7 +155,7 @@ public class TestPerformUpgradeIfNecessary
         order.verify( monitor, times( 1 ) ).migrationCompleted();
         order.verifyNoMoreInteractions();
 
-        logging.getMessagesLog( ParallelBatchImporter.class ).assertAtLeastOnce( info( "Import completed" ) );
+        logging.getMessagesLog( ParallelBatchImporter.class ).assertContainsMessageContaining( "Import completed" );
     }
 
     private Config buildProperties(boolean allowStoreUpgrade) throws IOException
@@ -171,7 +171,7 @@ public class TestPerformUpgradeIfNecessary
 
         databaseProperties.store( new FileWriter( NEO4J_PROPERTIES.getAbsolutePath() ), null );
 
-        Config serverProperties = new Config ( MapUtil.stringMap( 
+        Config serverProperties = new Config ( MapUtil.stringMap(
                 Configurator.DATABASE_LOCATION_PROPERTY_KEY, STORE_DIRECTORY.getPath(),
                 Configurator.DB_TUNING_PROPERTY_FILE_KEY, NEO4J_PROPERTIES.getAbsolutePath() ) );
 

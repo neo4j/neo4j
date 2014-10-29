@@ -17,22 +17,42 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.helpers;
+package org.neo4j.kernel.impl.transaction.log;
 
-import java.util.concurrent.TimeUnit;
-
-public class FakeClock implements Clock
+public class ControlledParkStrategy implements ParkStrategy
 {
-    private volatile long time = 0;
+    private volatile boolean idle;
 
     @Override
-    public long currentTimeMillis()
+    public void park( Thread thread )
     {
-        return time;
+        idle = true;
+        await( false );
     }
 
-    public void forward( long amount, TimeUnit timeUnit)
+    @Override
+    public void unpark( Thread thread )
     {
-        time = time + timeUnit.toMillis( amount );
+        idle = false;
+    }
+
+    public void awaitIdle()
+    {
+        await( true );
+    }
+
+    private void await( boolean idle )
+    {
+        while ( this.idle != idle )
+        {
+            try
+            {
+                Thread.sleep( 1 );
+            }
+            catch ( InterruptedException e )
+            {
+                throw new RuntimeException( e );
+            }
+        }
     }
 }

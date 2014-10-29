@@ -21,18 +21,16 @@ package org.neo4j.unsafe.impl.batchimport.store.io;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
-import org.junit.Rule;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.util.SimplePool;
-import org.neo4j.test.CleanupRule;
+import org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor;
+import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Writer;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.atLeast;
@@ -43,15 +41,13 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import static org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor.DEFAULT_PARK_STRATEGY;
 import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.SYNCHRONOUS;
 
 public class IoQueueTest
 {
-    @Rule
-    public final CleanupRule cleanupRule = new CleanupRule();
-
-    private final ExecutorService executor = cleanupRule.add( spy( Executors.newFixedThreadPool( 3 ) ) );
-    private final IoQueue queue = new IoQueue( executor, SYNCHRONOUS );
+    private TaskExecutor executor;
+    private IoQueue queue;
     private final Monitor monitor = mock( Monitor.class );
     private final ByteBuffer buffer = ByteBuffer.allocate( 10 );
 
@@ -68,8 +64,7 @@ public class IoQueueTest
         // WHEN
         writer.write( buffer, position, pool );
 
-        executor.shutdown();
-        executor.awaitTermination( 10, SECONDS );
+        executor.shutdown( true );
 
         // THEN
         verify( executor, times( 1 ) ).submit( any( Callable.class ) );
@@ -98,8 +93,7 @@ public class IoQueueTest
         writer1.write( buffer, position2, pool1 );
         writer2.write( buffer, position3, pool2 );
 
-        executor.shutdown();
-        executor.awaitTermination( 10, SECONDS );
+        executor.shutdown( true );
 
         // THEN
 
@@ -108,13 +102,25 @@ public class IoQueueTest
         verify( executor, atMost( 3 ) ).submit( any( Callable.class ) );
 
         // THEN
-        executor.shutdown();
-        executor.awaitTermination( 10, SECONDS );
+        executor.shutdown( true );
         verify( channel1 ).write( buffer, position1 );
         verify( channel1 ).write( buffer, position2 );
         verify( channel2 ).write( buffer, position3 );
 
         verifyNoMoreInteractions( channel1 );
         verifyNoMoreInteractions( channel2 );
+    }
+
+    @Before
+    public void before()
+    {
+        executor = spy( new DynamicTaskExecutor( 3, 20, DEFAULT_PARK_STRATEGY, getClass().getSimpleName() ) );
+        queue = new IoQueue( executor, 3, SYNCHRONOUS );
+    }
+
+    @After
+    public void after()
+    {
+        queue.shutdown();
     }
 }

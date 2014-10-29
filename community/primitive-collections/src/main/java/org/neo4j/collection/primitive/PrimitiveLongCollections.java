@@ -719,4 +719,16 @@ public class PrimitiveLongCollections
             }
         };
     }
+
+    public static PrimitiveLongIterator constant( final long value )
+    {
+        return new PrimitiveLongBaseIterator()
+        {
+            @Override
+            protected boolean fetchNext()
+            {
+                return next( value );
+            }
+        };
+    }
 }

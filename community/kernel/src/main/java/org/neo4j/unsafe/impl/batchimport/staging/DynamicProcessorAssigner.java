@@ -1,0 +1,181 @@
+/**
+ * Copyright (c) 2002-2014 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.unsafe.impl.batchimport.staging;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import org.neo4j.helpers.Pair;
+import org.neo4j.unsafe.impl.batchimport.Configuration;
+import org.neo4j.unsafe.impl.batchimport.EntityStoreUpdaterStep;
+import org.neo4j.unsafe.impl.batchimport.stats.Keys;
+import org.neo4j.unsafe.impl.batchimport.store.io.IoQueue;
+
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
+/**
+ * Monitors {@link StageExecution executions} and makes changes as the execution goes:
+ * <ul>
+ * <li>Figures out roughly how many CPUs (henceforth called processors) are busy processing batches.
+ * The most busy step will have its {@link Step#numberOfProcessors() processors} counted as 1 processor each, all other
+ * will take into consideration how idle the CPUs executing each step is, counted as less than one.</li>
+ * <li>Constantly figures out bottleneck steps and assigns more processors those.</li>
+ * <li>Constantly figures out if there are steps that are way faster than the second fastest step and
+ * removes processors from those steps.</li>
+ * <li>Also manages I/O threads, see {@link IoQueue}, in this aspect proxied by {@link EntityStoreUpdaterStep}.
+ * <li>At all times keeps the total number of processors assigned to steps to a total of less than or equal to
+ * {@link Configuration#maxNumberOfThreads()}.</li>
+ * </ul>
+ */
+public class DynamicProcessorAssigner extends AbstractExecutionMonitor
+{
+    private boolean firstCheck;
+    private final Configuration config;
+    private final Map<Step<?>,Long/*done batches*/> lastChangedProcessors = new HashMap<>();
+    private final int maxWorkers;
+
+    public DynamicProcessorAssigner( Configuration config, int maxWorkers )
+    {
+        super( 200, MILLISECONDS );
+        this.config = config;
+        this.maxWorkers = maxWorkers;
+    }
+
+    @Override
+    public void start( StageExecution[] executions )
+    {   // A new stage begins, any data that we had is irrelevant
+        lastChangedProcessors.clear();
+    }
+
+    @Override
+    public void check( StageExecution[] executions )
+    {
+        if ( !firstCheck )
+        {
+            firstCheck = true;
+            return;
+        }
+
+        int permits = maxWorkers - countActiveProcessors( executions );
+        if ( permits <= 0 )
+        {
+            return;
+        }
+
+        for ( StageExecution execution : executions )
+        {
+            if ( execution.stillExecuting() )
+            {
+                if ( permits > 0 )
+                {
+                    // Be swift at assigning processors to slow steps, i.e. potentially multiple per round
+                    permits -= assignProcessorsToPotentialBottleNeck( execution, permits );
+                }
+                // Be a little more conservative removing processors from too fast steps
+                if ( removeProcessorFromPotentialIdleStep( execution ) )
+                {
+                    permits++;
+                }
+            }
+        }
+    }
+
+    private int assignProcessorsToPotentialBottleNeck( StageExecution execution, int permits )
+    {
+        Pair<Step<?>,Float> bottleNeck = execution.stepsOrderedBy( Keys.avg_processing_time, false ).iterator().next();
+        Step<?> bottleNeckStep = bottleNeck.first();
+        long doneBatches = batches( bottleNeckStep );
+        int usedPermits = 0;
+        if ( batchesPassedSinceLastChange( bottleNeckStep, doneBatches ) >= config.movingAverageSize() )
+        {
+            int optimalProcessorIncrement = min( max( 1, (int) bottleNeck.other().floatValue() - 1 ), permits );
+            for ( int i = 0; i < optimalProcessorIncrement; i++ )
+            {
+                if ( bottleNeckStep.incrementNumberOfProcessors() )
+                {
+                    lastChangedProcessors.put( bottleNeckStep, doneBatches );
+                    usedPermits++;
+                }
+            }
+        }
+        return usedPermits;
+    }
+
+    private boolean removeProcessorFromPotentialIdleStep( StageExecution execution )
+    {
+        Pair<Step<?>,Float> fastest = execution.stepsOrderedBy( Keys.avg_processing_time, true ).iterator().next();
+        if ( fastest.other().floatValue() <= 0.5f )
+        {
+            Step<?> fastestStep = fastest.first();
+            long doneBatches = batches( fastestStep );
+            if ( batchesPassedSinceLastChange( fastestStep, doneBatches ) >= config.movingAverageSize() )
+            {
+                if ( fastestStep.decrementNumberOfProcessors() )
+                {
+                    lastChangedProcessors.put( fastestStep, doneBatches );
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private int avg( Step<?> step )
+    {
+        return (int) step.stats().stat( Keys.avg_processing_time ).asLong();
+    }
+
+    private long batches( Step<?> step )
+    {
+        return step.stats().stat( Keys.done_batches ).asLong();
+    }
+
+    private int countActiveProcessors( StageExecution[] executions )
+    {
+        float processors = 0;
+        for ( StageExecution execution : executions )
+        {
+            if ( execution.stillExecuting() )
+            {
+                long highestAverage = avg( execution.stepsOrderedBy(
+                        Keys.avg_processing_time, false ).iterator().next().first() );
+                for ( Step<?> step : execution.steps() )
+                {
+                    // Calculate how active each step is so that a step that is very cheap
+                    // and idles a lot counts for less than 1 processor, so that bottlenecks can
+                    // "steal" some of its processing power.
+                    long avg = avg( step );
+                    float factor = (float)avg / (float)highestAverage;
+                    processors += factor * step.numberOfProcessors();
+                }
+            }
+        }
+        return Math.round( processors );
+    }
+
+    private long batchesPassedSinceLastChange( Step<?> step, long doneBatches )
+    {
+        return lastChangedProcessors.containsKey( step )
+                ? doneBatches - lastChangedProcessors.get( step )
+                : config.movingAverageSize();
+    }
+}

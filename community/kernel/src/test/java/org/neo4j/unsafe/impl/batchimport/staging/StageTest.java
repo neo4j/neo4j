@@ -25,7 +25,6 @@ import org.junit.Test;
 
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.stats.Keys;
-import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
 
 import static org.junit.Assert.assertEquals;
 
@@ -61,12 +60,12 @@ public class StageTest
 
         // WHEN
         StageExecution execution = stage.execute();
-        ExecutionMonitors.invisible().monitor( execution );
+        new ExecutionSupervisor( ExecutionMonitors.invisible() ).supervise( execution );
 
         // THEN
-        for ( StepStats stats : execution.stats() )
+        for ( Step<?> step : execution.steps() )
         {
-            assertEquals( batches, stats.stat( Keys.done_batches ).asLong() );
+            assertEquals( batches, step.stats().stat( Keys.done_batches ).asLong() );
         }
         stage.close();
     }

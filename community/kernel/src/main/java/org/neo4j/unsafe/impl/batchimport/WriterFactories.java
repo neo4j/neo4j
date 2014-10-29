@@ -37,8 +37,30 @@ public class WriterFactories
             @Override
             public WriterFactory apply( Configuration configuration )
             {
-                return new IoQueue( configuration.numberOfIoThreads(), SYNCHRONOUS );
+                return new IoQueue( 1, configuration.maxNumberOfIoThreads(),
+                        configuration.workAheadSize()*10, SYNCHRONOUS );
             }
         };
+    }
+
+    public static abstract class SingleThreadedWriterFactory implements WriterFactory
+    {
+        @Override
+        public int numberOfProcessors()
+        {
+            return 1;
+        }
+
+        @Override
+        public boolean incrementNumberOfProcessors()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean decrementNumberOfProcessors()
+        {
+            return false;
+        }
     }
 }

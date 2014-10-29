@@ -24,13 +24,14 @@ import java.io.PrintStream;
 import org.neo4j.unsafe.impl.batchimport.stats.Keys;
 
 import static java.lang.Math.max;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import static org.neo4j.helpers.collection.IteratorUtil.last;
 
 /**
  * {@link ExecutionMonitor} that prints progress, e.g. a dot every N batches completed.
  */
-public class CoarseUnboundedProgressExecutionMonitor extends PollingExecutionMonitor
+public class CoarseUnboundedProgressExecutionMonitor extends AbstractExecutionMonitor
 {
     private int prevN = 0;
     private final int dotEveryN;
@@ -38,19 +39,19 @@ public class CoarseUnboundedProgressExecutionMonitor extends PollingExecutionMon
 
     public CoarseUnboundedProgressExecutionMonitor( int dotEveryN, PrintStream out )
     {
-        super( 100 );
+        super( 100, MILLISECONDS );
         this.dotEveryN = dotEveryN;
         this.out = out;
     }
 
     @Override
-    protected void start( StageExecution[] executions )
+    public void start( StageExecution[] executions )
     {
         prevN = 0;
     }
 
     @Override
-    protected void poll( StageExecution[] executions )
+    public void check( StageExecution[] executions )
     {
         int n = prevN;
         for ( StageExecution execution : executions )
@@ -67,7 +68,7 @@ public class CoarseUnboundedProgressExecutionMonitor extends PollingExecutionMon
 
     private int n( StageExecution execution )
     {
-        long doneBatches = last( execution.stats() ).stat( Keys.done_batches ).asLong();
+        long doneBatches = last( execution.steps() ).stats().stat( Keys.done_batches ).asLong();
         int batchSize = execution.getConfig().batchSize();
         long amount = doneBatches*batchSize;
         int n = (int) (amount/dotEveryN);

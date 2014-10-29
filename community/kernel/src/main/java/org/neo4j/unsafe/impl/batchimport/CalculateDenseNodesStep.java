@@ -21,7 +21,6 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import java.util.List;
 
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
@@ -30,7 +29,6 @@ import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 import static java.lang.Math.max;
-import static java.lang.Math.round;
 
 /**
  * Runs through relationship input and counts relationships per node so that dense nodes can be designated.
@@ -39,16 +37,14 @@ public class CalculateDenseNodesStep extends ExecutorServiceStep<List<InputRelat
 {
     private final NodeRelationshipLink nodeRelationshipLink;
     private long highestSeenNodeId;
-    private final StringLogger logger;
     private final IdMapper idMapper;
 
     public CalculateDenseNodesStep( StageControl control, Configuration config,
-            NodeRelationshipLink nodeRelationshipLink, IdMapper idMapper, StringLogger logger )
+            NodeRelationshipLink nodeRelationshipLink, IdMapper idMapper )
     {
         super( control, "CALCULATOR", config.workAheadSize(), config.movingAverageSize(), 1 );
         this.nodeRelationshipLink = nodeRelationshipLink;
         this.idMapper = idMapper;
-        this.logger = logger;
     }
 
     @Override
@@ -95,22 +91,5 @@ public class CalculateDenseNodesStep extends ExecutorServiceStep<List<InputRelat
             throw new InputException( relationship + " specified " + nodeDescription +
                     " node that hasn't been imported" );
         }
-    }
-
-    @Override
-    protected void done()
-    {
-        // Prints a percent of dense nodes, given the supplied dense node threshold
-        long numberOfDenseNodes = 0;
-        for ( long i = 0; i < highestSeenNodeId; i++ )
-        {
-            if ( nodeRelationshipLink.isDense( i ) )
-            {
-                numberOfDenseNodes++;
-            }
-        }
-        logger.info( "# dense nodes: " + numberOfDenseNodes + ", which is " +
-                round( 100D*numberOfDenseNodes/highestSeenNodeId ) + " %" );
-        super.done();
     }
 }

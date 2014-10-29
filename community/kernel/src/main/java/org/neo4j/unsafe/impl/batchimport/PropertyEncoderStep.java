@@ -47,7 +47,7 @@ public class PropertyEncoderStep<ENTITY extends PrimitiveRecord,INPUT extends In
             BatchingPropertyKeyTokenRepository propertyKeyHolder,
             PropertyStore propertyStore )
     {
-        super( control, "PROPERTIES", config.workAheadSize(), config.movingAverageSize(), numberOfExecutors );
+        super( control, "PROPERTIES", config.workAheadSize(), config.movingAverageSize(), numberOfExecutors, true );
         this.propertyKeyHolder = propertyKeyHolder;
         this.arrayDataSize = propertyStore.getArrayStore().dataSize();
         this.stringDataSize = propertyStore.getStringStore().dataSize();

@@ -120,7 +120,7 @@ public class ParallelBatchImporterTest
                 // FIXME: we've seen this fail before with inconsistencies due to some kind of race in IoQueue
                 //        enabled here to try and trigger the error so that we can fix it.
                 // extra slow parallel I/O, actual node id input
-                new Object[]{new IoQueue( 4, synchronousSlowWriterFactory ),
+                new Object[]{new IoQueue( 4, 4, 30, synchronousSlowWriterFactory ),
                         new LongInputIdGenerator(), IdMappings.actual()}
         );
     }
@@ -302,7 +302,7 @@ public class ParallelBatchImporterTest
         assertEquals( count( foundNodes ), nodeCount );
     }
 
-    private static WriterFactory synchronousSlowWriterFactory = new WriterFactory()
+    private static WriterFactory synchronousSlowWriterFactory = new WriterFactories.SingleThreadedWriterFactory()
     {
         @Override
         public Writer create( final StoreChannel channel, final Monitor monitor )

@@ -55,8 +55,18 @@ public interface Configuration
      * Max number of I/O threads doing file write operations. Optimal value for this setting is heavily
      * dependent on hard drive. A spinning disk is most likely best off with 1, where an SSD may see
      * better performance with a handful of threads writing to it simultaneously.
+     * This value eats into the cake of {@link #maxNumberOfThreads()}. The total number of threads
+     * used by the importer at any given time is {@link #maxNumberOfThreads()}, out of those
+     * a maximum number of I/O threads can be used.
      */
-    int numberOfIoThreads();
+    int maxNumberOfIoThreads();
+
+    /**
+     * Max number of threads simultaneously used in total by importer at any given time.
+     * This will have to includes {@link #maxNumberOfIoThreads()}. Defaults to the value provided
+     * by the {@link Runtime#availableProcessors() jvm}.
+     */
+    int maxNumberOfThreads();
 
     /**
      * For statistics the average processing time is based on total processing time divided by
@@ -105,9 +115,15 @@ public interface Configuration
         }
 
         @Override
-        public int numberOfIoThreads()
+        public int maxNumberOfIoThreads()
         {
             return max( 2, Runtime.getRuntime().availableProcessors()/3 );
+        }
+
+        @Override
+        public int maxNumberOfThreads()
+        {
+            return Runtime.getRuntime().availableProcessors();
         }
 
         @Override
@@ -160,9 +176,15 @@ public interface Configuration
         }
 
         @Override
-        public int numberOfIoThreads()
+        public int maxNumberOfIoThreads()
         {
-            return defaults.numberOfIoThreads();
+            return defaults.maxNumberOfIoThreads();
+        }
+
+        @Override
+        public int maxNumberOfThreads()
+        {
+            return defaults.maxNumberOfThreads();
         }
 
         @Override

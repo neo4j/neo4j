@@ -19,38 +19,36 @@
  */
 package org.neo4j.unsafe.impl.batchimport.store.io;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
-import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor;
+import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Writer;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.WriterFactory;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+
 /**
  * Queue of I/O jobs. A job is basically: "write the contents of ByteBuffer B to channel C starting at position P"
  * Calls to public (interface) methods that this class exposes are assumed to be single-threaded.
  */
 public class IoQueue implements WriterFactory
 {
-    private final ExecutorService executor;
+    private final TaskExecutor executor;
     private final JobMonitor jobMonitor = new JobMonitor();
     private final WriterFactory delegateFactory;
-    private int maxIOThreads;
+    private final int maxThreads;
 
-    public IoQueue( int maxIOThreads, WriterFactory delegateFactory )
+    public IoQueue( int initialThreads, int maxThreads, int queueSize, WriterFactory delegateFactory )
     {
-        this( Executors.newFixedThreadPool( maxIOThreads, new NamedThreadFactory( "IoQueue I/O thread" ) ),
-                delegateFactory );
-        this.maxIOThreads = maxIOThreads;
+        this( new DynamicTaskExecutor( initialThreads, queueSize,
+                DynamicTaskExecutor.DEFAULT_PARK_STRATEGY, "IoQueue I/O thread" ), maxThreads, delegateFactory );
     }
 
-    IoQueue( ExecutorService executor, WriterFactory delegateFactory )
+    IoQueue( TaskExecutor executor, int maxIoThreads, WriterFactory delegateFactory )
     {
         this.executor = executor;
         this.delegateFactory = delegateFactory;
+        this.maxThreads = maxIoThreads;
     }
 
     @Override
@@ -86,21 +84,34 @@ public class IoQueue implements WriterFactory
     @Override
     public void shutdown()
     {
-        executor.shutdown();
-        awaitEverythingWritten();
-        try
+        executor.shutdown( true );
+    }
+
+    @Override
+    public int numberOfProcessors()
+    {
+        return executor.numberOfProcessors();
+    }
+
+    @Override
+    public boolean incrementNumberOfProcessors()
+    {
+        if ( executor.numberOfProcessors() >= maxThreads )
         {
-            executor.awaitTermination( 1, TimeUnit.MINUTES );
+            return false;
         }
-        catch ( InterruptedException e )
-        {
-            throw new RuntimeException( e );
-        }
+        return executor.incrementNumberOfProcessors();
+    }
+
+    @Override
+    public boolean decrementNumberOfProcessors()
+    {
+        return executor.decrementNumberOfProcessors();
     }
 
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[" + delegateFactory + ", threads:" + maxIOThreads + "]";
+        return getClass().getSimpleName() + "[" + delegateFactory + ", threads:" + executor.numberOfProcessors() + "]";
     }
 }

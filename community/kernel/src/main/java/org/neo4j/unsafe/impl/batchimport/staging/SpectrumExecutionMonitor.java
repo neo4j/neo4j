@@ -49,9 +49,9 @@ import static org.neo4j.helpers.Format.duration;
  * The specified width is included stage identifier and progress, so in a console the whole
  * console width can be specified.
  */
-public class SpectrumExecutionMonitor extends PollingExecutionMonitor
+public class SpectrumExecutionMonitor extends AbstractExecutionMonitor
 {
-    public static final int DEFAULT_WIDTH = 80;
+    public static final int DEFAULT_WIDTH = 100;
     private static final char[] WEIGHTS = new char[] {' ', 'k', 'M', 'B', 'T'};
 
     private final PrintStream out;
@@ -65,7 +65,7 @@ public class SpectrumExecutionMonitor extends PollingExecutionMonitor
     }
 
     @Override
-    protected void start( StageExecution[] executions )
+    public void start( StageExecution[] executions )
     {
         for ( int i = 0; i < executions.length; i++ )
         {
@@ -79,13 +79,21 @@ public class SpectrumExecutionMonitor extends PollingExecutionMonitor
     }
 
     @Override
-    protected void end( StageExecution[] executions, long totalTimeMillis )
+    public void end( StageExecution[] executions, long totalTimeMillis )
     {
         out.println();
+        out.println( "Done in " + duration( totalTimeMillis ) );
     }
 
     @Override
-    protected void poll( StageExecution[] executions )
+    public void done( long totalTimeMillis )
+    {
+        out.println();
+        out.println( "IMPORT DONE in " + duration( totalTimeMillis ) );
+    }
+
+    @Override
+    public void check( StageExecution[] executions )
     {
         int active = countActive( executions );
         float partWidth = (float) width / active;
@@ -132,17 +140,18 @@ public class SpectrumExecutionMonitor extends PollingExecutionMonitor
         QuantizedProjection projection = new QuantizedProjection( total, width );
         long lastDoneBatches = 0;
         int stepIndex = 0;
-        for ( StepStats step : execution.stats() )
+        for ( Step<?> step : execution.steps() )
         {
-            if ( !projection.next( avg( step ) ) )
+            StepStats stats = step.stats();
+            if ( !projection.next( avg( stats ) ) )
             {
-                throw new IllegalStateException();
+                break; // odd though
             }
             long stepWidth = projection.step();
-            String name = step.toString( DetailLevel.IMPORTANT );
+            String name = stats.toString( DetailLevel.IMPORTANT ) + (step.numberOfProcessors() > 1 ? "(" + step.numberOfProcessors() + ")" : "");
             builder.append( stepIndex++ == 0 ? '[' : '|' );
             int charIndex = 0; // negative value "delays" the text, i.e. pushes it to the right
-            char backgroundChar = '-';
+            char backgroundChar = step.numberOfProcessors() > 1 ? '=' : '-';
             for ( int i = 0; i < stepWidth; i++, charIndex++ )
             {
                 char ch = backgroundChar;
@@ -152,7 +161,7 @@ public class SpectrumExecutionMonitor extends PollingExecutionMonitor
                 }
                 builder.append( ch );
             }
-            lastDoneBatches = step.stat( Keys.done_batches ).asLong();
+            lastDoneBatches = stats.stat( Keys.done_batches ).asLong();
         }
 
         long progress = lastDoneBatches * execution.getConfig().batchSize();
@@ -194,9 +203,9 @@ public class SpectrumExecutionMonitor extends PollingExecutionMonitor
     {
         long[] values = new long[execution.size()];
         int i = 0;
-        for ( StepStats stats : execution.stats() )
+        for ( Step<?> step : execution.steps() )
         {
-            values[i++] = avg( stats );
+            values[i++] = avg( step.stats() );
         }
         return values;
     }
@@ -214,12 +223,5 @@ public class SpectrumExecutionMonitor extends PollingExecutionMonitor
     private long avg( StatsProvider step )
     {
         return step.stat( Keys.avg_processing_time ).asLong();
-    }
-
-    @Override
-    public void done( long totalTimeMillis )
-    {
-        out.println();
-        out.println( "IMPORT DONE. Took: " + duration( totalTimeMillis ) );
     }
 }
