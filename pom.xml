@@ -180,6 +180,7 @@ public class ComponentVersion extends Version
             <prependText>${licensing.prepend.text}</prependText>
             <excludedGroups>
               ^((org.neo4j){1}|(org.neo4j.app){1}|(org.neo4j.browser){1}|(org.neo4j.doc){1}|(org.neo4j.server.plugin){1}|(org.neo4j.assembly){1})$
+              ^((org.neo4j){1}|(org.neo4j.app){1}|(org.neo4j.browser){1}|(org.neo4j.doc){1}|(org.neo4j.server.plugin){1}|(org.neo4j.assembly){1}|(org.neo4j.build){1}|(org.neo4j.examples){1})$
             </excludedGroups>
             <includedScopes>compile</includedScopes>
           </configuration>
