@@ -38,7 +38,7 @@ public class ProcessingStats extends GenericStatsProvider
         add( Keys.total_processing_time, longStat( totalProcessingTime ) );
         add( Keys.upstream_idle_time, longStat( upstreamIdleTime ) );
         add( Keys.downstream_idle_time, longStat( downstreamIdleTime ) );
-        add( Keys.avg_processing_time, new LongBasedStat()
+        add( Keys.avg_processing_time, new LongBasedStat( DetailLevel.BASIC )
         {
             @Override
             public long asLong()

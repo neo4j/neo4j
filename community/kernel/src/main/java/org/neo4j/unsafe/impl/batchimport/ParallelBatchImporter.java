@@ -219,6 +219,11 @@ public class ParallelBatchImporter implements BatchImporter
             }
             executionMonitor.monitor( executions );
         }
+        catch ( Exception e )
+        {
+            logger.error( "Failure during import", e );
+            throw e;
+        }
         finally
         {
             for ( Stage stage : stages )

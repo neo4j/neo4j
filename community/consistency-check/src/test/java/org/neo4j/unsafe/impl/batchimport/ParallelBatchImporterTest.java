@@ -67,7 +67,6 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappings;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.Inputs;
-import org.neo4j.unsafe.impl.batchimport.staging.SilentExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Writer;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.WriterFactory;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoQueue;
@@ -81,6 +80,7 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.function.Functions.constant;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
+import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors.invisible;
 import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.SYNCHRONOUS;
 
 @RunWith(Parameterized.class)
@@ -138,7 +138,7 @@ public class ParallelBatchImporterTest
         // GIVEN
         final BatchImporter inserter = new ParallelBatchImporter( directory.absolutePath(),
                 new DefaultFileSystemAbstraction(), config, new DevNullLoggingService(),
-                new SilentExecutionMonitor(), writerFactory, EMPTY );
+                invisible(), writerFactory, EMPTY );
 
         boolean successful = false;
         int relationshipCount = NODE_COUNT * 3;

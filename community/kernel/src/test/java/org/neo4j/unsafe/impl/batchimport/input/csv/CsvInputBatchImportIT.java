@@ -62,7 +62,6 @@ import org.neo4j.unsafe.impl.batchimport.Configuration.Default;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
-import org.neo4j.unsafe.impl.batchimport.staging.SilentExecutionMonitor;
 
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
@@ -77,6 +76,7 @@ import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.values;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
 import static org.neo4j.unsafe.impl.batchimport.input.Inputs.csv;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
+import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors.invisible;
 
 public class CsvInputBatchImportIT
 {
@@ -85,7 +85,7 @@ public class CsvInputBatchImportIT
     {
         // GIVEN
         BatchImporter importer = new ParallelBatchImporter( directory.absolutePath(), fs,
-                smallBatchSizeConfig(), new DevNullLoggingService(), new SilentExecutionMonitor() );
+                smallBatchSizeConfig(), new DevNullLoggingService(), invisible() );
         List<InputNode> nodeData = randomNodeData();
         List<InputRelationship> relationshipData = randomRelationshipData( nodeData );
 
