@@ -69,15 +69,15 @@ public class Registers
             @Override
             public long incrementFirst( long delta )
             {
-                first += delta;
-                return first;
+                this.first += delta;
+                return this.first;
             }
 
             @Override
             public long incrementSecond( long delta )
             {
-                second += delta;
-                return second;
+                this.second += delta;
+                return this.second;
             }
         };
     }
@@ -99,6 +99,13 @@ public class Registers
             {
                 this.value = value;
             }
+
+            @Override
+            public long increment( long delta )
+            {
+                this.value += delta;
+                return this.value;
+            }
         };
     }
 
@@ -118,6 +125,13 @@ public class Registers
             public void write( int value )
             {
                 this.value = value;
+            }
+
+            @Override
+            public int increment( int delta )
+            {
+                this.value += delta;
+                return this.value;
             }
         };
     }

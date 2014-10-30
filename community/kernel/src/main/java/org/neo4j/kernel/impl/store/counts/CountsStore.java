@@ -26,11 +26,15 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader;
-import org.neo4j.register.Register;
+import org.neo4j.register.Registers;
 
-public class CountsStore extends SortedKeyValueStore<CountsKey, Register.DoubleLongRegister>
+import static org.neo4j.register.Register.DoubleLongRegister;
+import static org.neo4j.register.Register.LongRegister;
+
+public class CountsStore extends SortedKeyValueStore<CountsKey,DoubleLongRegister>
 {
     static final CountsRecordSerializer RECORD_SERIALIZER = CountsRecordSerializer.INSTANCE;
     static final CountsStoreWriter.Factory WRITER_FACTORY = new CountsStoreWriter.Factory();
@@ -62,12 +66,49 @@ public class CountsStore extends SortedKeyValueStore<CountsKey, Register.DoubleL
         }
     }
 
-    public static CountsStore open( FileSystemAbstraction fs, PageCache pageCache, File storeFile )
+    public static CountsStore open( FileSystemAbstraction fs, final PageCache pageCache, final File storeFile )
             throws IOException
     {
         PagedFile pages = mapCountsStore( pageCache, storeFile );
-        SortedKeyValueStoreHeader header = SortedKeyValueStoreHeader.read( pages );
-        return new CountsStore( fs, pageCache, storeFile, pages, header );
+        try
+        {
+            SortedKeyValueStoreHeader header = SortedKeyValueStoreHeader.read( pages );
+            CountsStore countsStore = new CountsStore( fs, pageCache, storeFile, pages, header );
+
+            final LongRegister keys = Registers.newLongRegister( 0 );
+            countsStore.accept( new KeyValueRecordVisitor<CountsKey,DoubleLongRegister>()
+            {
+                private final DoubleLongRegister register = Registers.newDoubleLongRegister();
+
+                @Override
+                public DoubleLongRegister valueRegister()
+                {
+                    return register;
+                }
+
+                @Override
+                public void visit( CountsKey key )
+                {
+                    if ( register.readFirst() == 0 && register.readSecond() == 0 )
+                    {
+                        throw new UnderlyingStorageException( "Counts store contains corrupted values" );
+                    }
+                    keys.increment( 1 );
+                }
+            } );
+
+            if ( keys.read() != header.dataRecords() )
+            {
+                throw new UnderlyingStorageException( "Counts store is corrupted" );
+            }
+
+            return countsStore;
+        }
+        catch ( RuntimeException e )
+        {
+            pageCache.unmap( storeFile );
+            throw e;
+        }
     }
 
     private static PagedFile mapCountsStore( PageCache pageCache, File storeFile ) throws IOException

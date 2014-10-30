@@ -47,6 +47,7 @@ public final class SortedKeyValueStoreHeader
 
     private static final int META_HEADER_SIZE =
             2 /*headerRecords*/ + 2 /*versionLen*/ + 4 /*dataRecords*/ + 8 /*lastTxId*/ + 8 /*minorVersion*/;
+
     private final byte[] storeFormatVersion;
     private final int dataRecords;
     private final long lastTxId;

@@ -58,6 +58,7 @@ public interface Register
         interface Out
         {
             void write( long value );
+            long increment( long delta );
         }
     }
 
@@ -72,6 +73,7 @@ public interface Register
         interface Out
         {
             void write( int value );
+            int increment( int delta );
         }
     }
 
