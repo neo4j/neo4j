@@ -61,6 +61,7 @@ import org.neo4j.kernel.impl.transaction.state.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.TestLogger;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.register.Registers;
 import org.neo4j.test.CleanupRule;
@@ -567,7 +568,7 @@ public class IndexPopulationJobTest
         ctxProvider = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
         counts = db.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate().getCounts();
         populator = mock( IndexPopulator.class );
-        stateHolder = new KernelSchemaStateStore();
+        stateHolder = new KernelSchemaStateStore( DevNullLoggingService.DEV_NULL );
         indexStoreView = newStoreView();
 
         try ( Transaction tx = db.beginTx() )

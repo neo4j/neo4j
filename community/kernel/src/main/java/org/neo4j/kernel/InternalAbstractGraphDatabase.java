@@ -533,7 +533,7 @@ public abstract class InternalAbstractGraphDatabase
 
         guard = config.get( Configuration.execution_guard_enabled ) ? new Guard( msgLog ) : null;
 
-        updateableSchemaState = new KernelSchemaStateStore( newSchemaStateMap() );
+        updateableSchemaState = new KernelSchemaStateStore( newSchemaStateMap(), logging );
 
         lockManager = createLockManager();
 

@@ -22,13 +22,14 @@ package org.neo4j.kernel.impl.api;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.impl.util.TestLogger;
+import org.neo4j.kernel.impl.util.TestLogging;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
 
 public class KernelSchemaStateStoreTest
 {
-    private KernelSchemaStateStore stateStore;
-
     @Test
     public void should_apply_updates_correctly()
     {
@@ -55,11 +56,22 @@ public class KernelSchemaStateStoreTest
         // THEN
         String result = stateStore.get( "key" );
         assertEquals( null, result );
+
+        // AND ALSO
+        logger().assertExactly( info( "Schema state store has been cleared." ) );
     }
+
+    private KernelSchemaStateStore stateStore;
+    private TestLogging logging = new TestLogging();
 
     @Before
     public void before()
     {
-        this.stateStore = new KernelSchemaStateStore();
+        this.stateStore = new KernelSchemaStateStore( logging );
+    }
+
+    private TestLogger logger()
+    {
+        return logging.getMessagesLog( KernelSchemaStateStore.class );
     }
 }

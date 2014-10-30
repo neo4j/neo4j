@@ -1554,7 +1554,7 @@ public class NeoStoreTransactionTest
         SchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( NO_INDEX_PROVIDER );
         Logging logging = new SingleLoggingService( DEV_NULL );
         IndexingService.Monitor monitor = IndexingService.NO_MONITOR;
-        UpdateableSchemaState updateableSchemaState = new KernelSchemaStateStore();
+        UpdateableSchemaState updateableSchemaState = new KernelSchemaStateStore( logging );
         IndexSamplingSetup samplingSetup = new IndexSamplingSetup( new IndexSamplingConfig( new Config() ),
                 storeView, null, mock( TokenNameLookup.class), logging );
         return new CapturingIndexingService(

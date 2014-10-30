@@ -218,7 +218,7 @@ public class TestNeoStore
         NodeManager nodeManager = new NodeManager( null, null, new ThreadToStatementContextBridge() );
         ds = new NeoStoreDataSource(config, sf, StringLogger.DEV_NULL,
                 mock( JobScheduler.class ), DevNullLoggingService.DEV_NULL,
-                new KernelSchemaStateStore(),
+                new KernelSchemaStateStore( DevNullLoggingService.DEV_NULL ),
                 mock(TokenNameLookup.class),
                 dependencyResolverForNoIndexProvider(),
                 mock( PropertyKeyTokenHolder.class ), mock(LabelTokenHolder.class),
