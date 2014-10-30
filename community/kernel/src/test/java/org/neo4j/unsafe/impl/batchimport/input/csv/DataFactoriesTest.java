@@ -33,10 +33,13 @@ import org.neo4j.unsafe.impl.batchimport.input.MissingHeaderException;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyZeroInteractions;
 
 import static org.neo4j.helpers.collection.IteratorUtil.array;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.TABS;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
 
 public class DataFactoriesTest
 {
@@ -59,6 +62,7 @@ public class DataFactoriesTest
                 entry( "also-labels", Type.LABEL, extractors.stringArray() ),
                 entry( "name", Type.PROPERTY, extractors.string() ),
                 entry( "age", Type.PROPERTY, extractors.long_() ) ), header.entries() );
+        seeker.close();
     }
 
     @Test
@@ -80,6 +84,7 @@ public class DataFactoriesTest
                 entry( "type", Type.RELATIONSHIP_TYPE, extractors.string() ),
                 entry( "date", Type.PROPERTY, extractors.long_() ),
                 entry( "more", Type.PROPERTY, extractors.longArray() ) ), header.entries() );
+        seeker.close();
     }
 
     @Test
@@ -100,6 +105,7 @@ public class DataFactoriesTest
                 entry( "two", Type.PROPERTY, extractors.string() ),
                 entry( "", Type.IGNORE, null ),
                 entry( "date", Type.PROPERTY, extractors.long_() ) ), header.entries() );
+        seeker.close();
     }
 
     @Test
@@ -122,6 +128,7 @@ public class DataFactoriesTest
             assertEquals( entry( "name", Type.PROPERTY, extractors.string() ), e.getFirst() );
             assertEquals( entry( "name", Type.PROPERTY, extractors.long_() ), e.getOther() );
         }
+        seeker.close();
     }
 
     @Test
@@ -144,6 +151,7 @@ public class DataFactoriesTest
             assertEquals( entry( "one", Type.ID, extractors.long_() ), e.getFirst() );
             assertEquals( entry( "two", Type.ID, extractors.long_() ), e.getOther() );
         }
+        seeker.close();
     }
 
     @Test
@@ -152,7 +160,6 @@ public class DataFactoriesTest
         // GIVEN
         CharSeeker seeker = new BufferedCharSeeker( new StringReader(
                 "one\ttwo" ) );
-        Extractors extractors = new Extractors( '\t' );
 
         // WHEN
         try
@@ -164,6 +171,28 @@ public class DataFactoriesTest
         {
             assertEquals( Type.ID, e.getMissingType() );
         }
+        seeker.close();
+    }
+
+    @Test
+    public void shouldParseHeaderFromSeparateHeaderFile() throws Exception
+    {
+        // GIVEN
+        CharSeeker dataSeeker = mock( CharSeeker.class );
+        Header.Factory headerFactory =
+                defaultFormatNodeFileHeader( new StringReader( "id:ID\tname:String\tbirth_date:long" ) );
+        Extractors extractors = new Extractors( ';' );
+
+        // WHEN
+        Header header = headerFactory.create( dataSeeker, TABS, IdType.ACTUAL );
+
+        // THEN
+        assertArrayEquals( array(
+                entry( "id", Type.ID, extractors.long_() ),
+                entry( "name", Type.PROPERTY, extractors.string() ),
+                entry( "birth_date", Type.PROPERTY, extractors.long_() ) ), header.entries() );
+        verifyZeroInteractions( dataSeeker );
+        dataSeeker.close();
     }
 
     private Header.Entry entry( String name, Type type, Extractor<?> extractor )
