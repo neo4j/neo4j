@@ -17,7 +17,7 @@ html(class="no-js", lang="en", ng-app="neo4jApp", ng-controller="MainCtrl")
     link(rel="stylesheet", href="styles/main.css")
     //endbuild
 
-  body(ng-class="{'connection-error': offline, 'authorization-error': unauthorized, 'show-drawer': isDrawerShown, 'modal-shown': isPopupShown, 'maximize-editor': editor.maximized}", ng-controller="LayoutCtrl", keydown="globalKey($event)")
+  body(ng-class="{'connection-error': offline, 'show-drawer': isDrawerShown, 'modal-shown': isPopupShown, 'maximize-editor': editor.maximized}", ng-controller="LayoutCtrl", keydown="globalKey($event)")
 
 
     //if lt IE 9

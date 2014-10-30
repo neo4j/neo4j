@@ -78,7 +78,6 @@ angular.module('neo4jApp.controllers')
           if not isUnauthorized
             refresh()
           else 
-            $scope.errorMessage = motdService.unauthorized
             AuthService.forget()
 
         $scope.$on 'auth:status_updated', () ->
