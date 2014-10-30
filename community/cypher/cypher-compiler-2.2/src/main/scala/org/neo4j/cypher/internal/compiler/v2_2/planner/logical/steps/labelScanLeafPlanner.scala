@@ -30,7 +30,7 @@ object labelScanLeafPlanner extends LeafPlanner {
     val labelPredicateMap = qg.selections.labelPredicates
 
     context.metrics.candidateListCreator(
-      for (idName <- qg.patternNodes.toSeq;
+      for (idName <- qg.patternNodes.toSeq if !qg.argumentIds.contains(idName);
            labelPredicate <- labelPredicateMap.getOrElse(idName, Set.empty);
            labelName <- labelPredicate.labels) yield {
         val identName = idName.name

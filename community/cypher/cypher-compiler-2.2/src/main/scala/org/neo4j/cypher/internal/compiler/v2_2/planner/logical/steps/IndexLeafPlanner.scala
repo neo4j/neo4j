@@ -54,7 +54,7 @@ abstract class IndexLeafPlanner extends LeafPlanner {
 
     context.metrics.candidateListCreator(
       predicates.collect {
-        case inPredicate@In(Property(identifier@Identifier(name), propertyKeyName), ConstantExpression(valueExpr)) =>
+        case inPredicate@In(Property(identifier@Identifier(name), propertyKeyName), ConstantExpression(valueExpr)) if !qg.argumentIds.contains(IdName(name)) =>
           producePlanFor(name, propertyKeyName, inPredicate, ManyQueryExpression(valueExpr))
       }.flatten
     )
