@@ -24,7 +24,6 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.ReadOnlyDatabaseKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 
 public class DefaultPropertyTokenCreator extends IsolatedTransactionTokenCreator
@@ -35,7 +34,7 @@ public class DefaultPropertyTokenCreator extends IsolatedTransactionTokenCreator
     }
 
     @Override
-    protected int createKey( Statement statement, String name ) throws ReadOnlyDatabaseKernelException, IllegalTokenNameException
+    protected int createKey( Statement statement, String name ) throws IllegalTokenNameException
     {
         int id = (int) idGeneratorFactory.get( IdType.PROPERTY_KEY_TOKEN ).nextId();
         statement.tokenWriteOperations().propertyKeyCreateForName( name, id );

@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.ha;
 
+import org.jboss.netty.logging.InternalLoggerFactory;
+
 import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.Map;
-
-import org.jboss.netty.logging.InternalLoggerFactory;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -56,6 +56,7 @@ import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.cluster.DefaultElectionCredentialsProvider;
 import org.neo4j.kernel.ha.cluster.HANewSnapshotFunction;
@@ -89,10 +90,10 @@ import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
-import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.core.Caches;
+import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
 import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.store.NeoStore;
@@ -114,6 +115,16 @@ import static org.neo4j.kernel.logging.LogbackWeakDependency.NEW_LOGGER_CONTEXT;
 
 public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 {
+    private final LifeSupport paxosLife = new LifeSupport();
+    private final org.neo4j.kernel.impl.util.Dependencies dependencies =
+            new org.neo4j.kernel.impl.util.Dependencies( new Provider<DependencyResolver>()
+            {
+                @Override
+                public DependencyResolver instance()
+                {
+                    return HighlyAvailableGraphDatabase.this.dependencyResolver;
+                }
+            } );
     private RequestContextFactory requestContextFactory;
     private ClusterMembers members;
     private DelegateInvocationHandler<Master> masterDelegateInvocationHandler;
@@ -124,29 +135,19 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     private ClusterClient clusterClient;
     private ClusterMemberAvailability clusterMemberAvailability;
     private long stateSwitchTimeoutMillis;
-
-    private final LifeSupport paxosLife = new LifeSupport();
-
     private TransactionCommittingResponseUnpacker responseUnpacker;
     private Provider<KernelAPI> kernelProvider;
 
-    private final org.neo4j.kernel.impl.util.Dependencies dependencies = new org.neo4j.kernel.impl.util.Dependencies( new Provider<DependencyResolver>()
-    {
-        @Override
-        public DependencyResolver instance()
-        {
-            return HighlyAvailableGraphDatabase.this.dependencyResolver;
-        }
-    } );
-
-    public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> params,
+    public HighlyAvailableGraphDatabase( String storeDir, Map<String,String> params,
                                          Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                          Iterable<CacheProvider> cacheProviders )
     {
-        this( storeDir, params, newDependencies().settingsClasses(GraphDatabaseSettings.class, ClusterSettings.class, HaSettings.class ).kernelExtensions(kernelExtensions).cacheProviders(cacheProviders));
+        this( storeDir, params, newDependencies()
+                .settingsClasses( GraphDatabaseSettings.class, ClusterSettings.class, HaSettings.class )
+                .kernelExtensions( kernelExtensions ).cacheProviders( cacheProviders ) );
     }
 
-    public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> params, Dependencies dependencies )
+    public HighlyAvailableGraphDatabase( String storeDir, Map<String,String> params, Dependencies dependencies )
     {
         super( storeDir, params, dependencies );
         run();
@@ -160,8 +161,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         master = (Master) Proxy.newProxyInstance( Master.class.getClassLoader(), new Class[]{Master.class},
                 masterDelegateInvocationHandler );
         InstanceId serverId = config.get( ClusterSettings.server_id );
-        requestContextFactory = dependencies.satisfyDependency(new RequestContextFactory( serverId.toIntegerIndex(),
-                getDependencyResolver() ));
+        requestContextFactory = dependencies.satisfyDependency( new RequestContextFactory( serverId.toIntegerIndex(),
+                getDependencyResolver() ) );
 
         this.responseUnpacker = dependencies.satisfyDependency(
                 new TransactionCommittingResponseUnpacker( getDependencyResolver() ) );
@@ -268,31 +269,35 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         memberContext = (HighAvailabilityMemberContext) Proxy.newProxyInstance(
                 HighAvailabilityMemberContext.class.getClassLoader(),
                 new Class[]{HighAvailabilityMemberContext.class}, memberContextDelegateInvocationHandler );
-        clusterMemberAvailability = dependencies.satisfyDependency((ClusterMemberAvailability) Proxy.newProxyInstance(
+        clusterMemberAvailability = dependencies.satisfyDependency( (ClusterMemberAvailability) Proxy.newProxyInstance(
                 ClusterMemberAvailability.class.getClassLoader(),
-                new Class[]{ClusterMemberAvailability.class}, clusterMemberAvailabilityDelegateInvocationHandler ));
+                new Class[]{ClusterMemberAvailability.class}, clusterMemberAvailabilityDelegateInvocationHandler ) );
 
         ElectionCredentialsProvider electionCredentialsProvider = config.get( HaSettings.slave_only ) ?
-                new NotElectableElectionCredentialsProvider() :
-                new DefaultElectionCredentialsProvider( config.get( ClusterSettings.server_id ),
-                        new OnDiskLastTxIdGetter( this ),
-                        new HighAvailabilityMemberInfoProvider()
-                {
-                    @Override
-                    public HighAvailabilityMemberState getHighAvailabilityMemberState()
-                    {
-                        return memberStateMachine.getCurrentState();
-                    }
-                }
-                );
+                                                                  new NotElectableElectionCredentialsProvider() :
+                                                                  new DefaultElectionCredentialsProvider(
+                                                                          config.get( ClusterSettings.server_id ),
+                                                                          new OnDiskLastTxIdGetter( this ),
+                                                                          new HighAvailabilityMemberInfoProvider()
+                                                                          {
+                                                                              @Override
+                                                                              public HighAvailabilityMemberState
+                                                                              getHighAvailabilityMemberState()
+                                                                              {
+                                                                                  return memberStateMachine
+                                                                                          .getCurrentState();
+                                                                              }
+                                                                          }
+                                                                  );
 
 
         ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
 
 
-        clusterClient = dependencies.satisfyDependency( new ClusterClient( monitors, ClusterClient.adapt( config ), logging,
-                electionCredentialsProvider,
-                objectStreamFactory, objectStreamFactory ));
+        clusterClient =
+                dependencies.satisfyDependency( new ClusterClient( monitors, ClusterClient.adapt( config ), logging,
+                        electionCredentialsProvider,
+                        objectStreamFactory, objectStreamFactory ) );
         PaxosClusterMemberEvents localClusterEvents = new PaxosClusterMemberEvents( clusterClient, clusterClient,
                 clusterClient, clusterClient, logging, new Predicate<PaxosClusterMemberEvents.ClusterMembersSnapshot>()
         {
@@ -307,7 +312,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                                 config.get( ClusterSettings.server_id ) ) )
                         {
                             msgLog.error( String.format( "Instance %s has the same serverId as ours (%s) - will not " +
-                                            "join this cluster",
+                                                         "join this cluster",
                                     member.getRoleUri(), config.get( ClusterSettings.server_id ).toIntegerIndex()
                             ) );
                             return true;
@@ -317,7 +322,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 return true;
             }
         }, new HANewSnapshotFunction(), objectStreamFactory, objectStreamFactory,
-                monitors.newMonitor(NamedThreadFactory.Monitor.class )
+                monitors.newMonitor( NamedThreadFactory.Monitor.class )
         );
 
         // Force a reelection after we enter the cluster
@@ -353,8 +358,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         clusterEventsDelegateInvocationHandler.setDelegate( localClusterEvents );
         clusterMemberAvailabilityDelegateInvocationHandler.setDelegate( localClusterMemberAvailability );
 
-        members = dependencies.satisfyDependency(new ClusterMembers( clusterClient, clusterClient, clusterEvents,
-                config.get( ClusterSettings.server_id ) ));
+        members = dependencies.satisfyDependency( new ClusterMembers( clusterClient, clusterClient, clusterEvents,
+                config.get( ClusterSettings.server_id ) ) );
         memberStateMachine = new HighAvailabilityMemberStateMachine( memberContext, availabilityGuard, members,
                 clusterEvents,
                 clusterClient, logging.getMessagesLog( HighAvailabilityMemberStateMachine.class ) );
@@ -380,7 +385,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         {
             throw new InvalidTransactionTypeKernelException(
                     "Modifying the database schema can only be done on the master server, " +
-                            "this server is a slave. Please issue schema modification commands directly to the master."
+                    "this server is a slave. Please issue schema modification commands directly to the master."
             );
         }
     }
@@ -411,24 +416,36 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         Slaves slaves = dependencies.satisfyDependency(
                 life.add( new HighAvailabilitySlaves( members, clusterClient, slaveFactory ) ) );
 
-        final TransactionPropagator pusher = life.add (new TransactionPropagator( TransactionPropagator.from( config ),
+        final TransactionPropagator pusher = life.add( new TransactionPropagator( TransactionPropagator.from( config ),
                 msgLog, slaves, new CommitPusher( jobScheduler ) ) );
 
         return new CommitProcessFactory()
         {
             @Override
             public TransactionCommitProcess create( LogicalTransactionStore logicalTransactionStore,
-                    KernelHealth kernelHealth, NeoStore neoStore, TransactionRepresentationStoreApplier storeApplier,
-                    NeoStoreInjectedTransactionValidator validator, TransactionApplicationMode mode )
+                                                    KernelHealth kernelHealth, NeoStore neoStore,
+                                                    TransactionRepresentationStoreApplier storeApplier,
+                                                    NeoStoreInjectedTransactionValidator validator,
+                                                    TransactionApplicationMode mode, Config config )
             {
-                TransactionRepresentationCommitProcess inner = (TransactionRepresentationCommitProcess)
-                        defaultCommitProcessFactory.create( logicalTransactionStore, kernelHealth, neoStore,
-                                storeApplier, validator, mode );
-                new CommitProcessSwitcher( pusher, master, commitProcessDelegate, requestContextFactory,
-                        memberStateMachine, validator, inner );
+                if ( config.get( GraphDatabaseSettings.read_only ) )
+                {
+                    return defaultCommitProcessFactory.create( logicalTransactionStore, kernelHealth, neoStore,
+                            storeApplier, validator, mode, config );
+                }
+                else
+                {
 
-                return (TransactionCommitProcess) Proxy.newProxyInstance( TransactionCommitProcess.class.getClassLoader(),
-                        new Class[]{ TransactionCommitProcess.class }, commitProcessDelegate );
+                    TransactionCommitProcess inner =
+                            defaultCommitProcessFactory.create( logicalTransactionStore, kernelHealth, neoStore,
+                                    storeApplier, validator, mode, config );
+                    new CommitProcessSwitcher( pusher, master, commitProcessDelegate, requestContextFactory,
+                            memberStateMachine, validator, inner );
+
+                    return (TransactionCommitProcess) Proxy
+                            .newProxyInstance( TransactionCommitProcess.class.getClassLoader(),
+                                    new Class[]{TransactionCommitProcess.class}, commitProcessDelegate );
+                }
             }
         };
     }
@@ -450,8 +467,9 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         SwitchToMaster switchToMasterInstance = new SwitchToMaster( logging, msgLog, this,
                 (HaIdGeneratorFactory) idGeneratorFactory, config, dependencies.provideDependency( SlaveFactory.class ),
                 masterDelegateInvocationHandler, clusterMemberAvailability, dataSourceManager,
-                monitors.newMonitor( ByteCounterMonitor.class, MasterServer.class ), monitors.newMonitor( RequestMonitor.class, MasterServer.class ),
-                monitors.newMonitor( MasterImpl.Monitor.class, MasterImpl.class ));
+                monitors.newMonitor( ByteCounterMonitor.class, MasterServer.class ),
+                monitors.newMonitor( RequestMonitor.class, MasterServer.class ),
+                monitors.newMonitor( MasterImpl.Monitor.class, MasterImpl.class ) );
 
         HighAvailabilityModeSwitcher highAvailabilityModeSwitcher =
                 new HighAvailabilityModeSwitcher( switchToSlaveInstance, switchToMasterInstance,
@@ -496,42 +514,63 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected TokenCreator createRelationshipTypeCreator()
     {
-        DelegateInvocationHandler<TokenCreator> relationshipTypeCreatorDelegate =
-                new DelegateInvocationHandler<>( TokenCreator.class );
-        TokenCreator relationshipTypeCreator =
-                (TokenCreator) Proxy.newProxyInstance( TokenCreator.class.getClassLoader(),
-                        new Class[]{TokenCreator.class}, relationshipTypeCreatorDelegate );
+        if ( config.get( GraphDatabaseSettings.read_only ) )
+        {
+            return new ReadOnlyTokenCreator();
+        }
+        else
+        {
+            DelegateInvocationHandler<TokenCreator> relationshipTypeCreatorDelegate =
+                    new DelegateInvocationHandler<>( TokenCreator.class );
+            TokenCreator relationshipTypeCreator =
+                    (TokenCreator) Proxy.newProxyInstance( TokenCreator.class.getClassLoader(),
+                            new Class[]{TokenCreator.class}, relationshipTypeCreatorDelegate );
 
-        new RelationshipTypeCreatorModeSwitcher( memberStateMachine, relationshipTypeCreatorDelegate,
-                masterDelegateInvocationHandler, requestContextFactory, kernelProvider, idGeneratorFactory );
+            new RelationshipTypeCreatorModeSwitcher( memberStateMachine, relationshipTypeCreatorDelegate,
+                    masterDelegateInvocationHandler, requestContextFactory, kernelProvider, idGeneratorFactory );
 
-        return relationshipTypeCreator;
+            return relationshipTypeCreator;
+        }
     }
 
     @Override
     protected TokenCreator createPropertyKeyCreator()
     {
-        DelegateInvocationHandler<TokenCreator> propertyKeyCreatorDelegate =
-                new DelegateInvocationHandler<>( TokenCreator.class );
-        TokenCreator propertyTokenCreator =
-                (TokenCreator) Proxy.newProxyInstance( TokenCreator.class.getClassLoader(),
-                        new Class[]{TokenCreator.class}, propertyKeyCreatorDelegate );
-        new PropertyKeyCreatorModeSwitcher( memberStateMachine, propertyKeyCreatorDelegate,
-                masterDelegateInvocationHandler, requestContextFactory, kernelProvider, idGeneratorFactory );
-        return propertyTokenCreator;
+        if ( config.get( GraphDatabaseSettings.read_only ) )
+        {
+            return new ReadOnlyTokenCreator();
+        }
+        else
+        {
+            DelegateInvocationHandler<TokenCreator> propertyKeyCreatorDelegate =
+                    new DelegateInvocationHandler<>( TokenCreator.class );
+            TokenCreator propertyTokenCreator =
+                    (TokenCreator) Proxy.newProxyInstance( TokenCreator.class.getClassLoader(),
+                            new Class[]{TokenCreator.class}, propertyKeyCreatorDelegate );
+            new PropertyKeyCreatorModeSwitcher( memberStateMachine, propertyKeyCreatorDelegate,
+                    masterDelegateInvocationHandler, requestContextFactory, kernelProvider, idGeneratorFactory );
+            return propertyTokenCreator;
+        }
     }
 
     @Override
     protected TokenCreator createLabelIdCreator()
     {
-        DelegateInvocationHandler<TokenCreator> labelIdCreatorDelegate =
-                new DelegateInvocationHandler<>( TokenCreator.class );
-        TokenCreator labelIdCreator =
-                (TokenCreator) Proxy.newProxyInstance( TokenCreator.class.getClassLoader(),
-                        new Class[]{TokenCreator.class}, labelIdCreatorDelegate );
-        new LabelTokenCreatorModeSwitcher( memberStateMachine, labelIdCreatorDelegate,
-                masterDelegateInvocationHandler, requestContextFactory,  kernelProvider, idGeneratorFactory );
-        return labelIdCreator;
+        if ( config.get( GraphDatabaseSettings.read_only ) )
+        {
+            return new ReadOnlyTokenCreator();
+        }
+        else
+        {
+            DelegateInvocationHandler<TokenCreator> labelIdCreatorDelegate =
+                    new DelegateInvocationHandler<>( TokenCreator.class );
+            TokenCreator labelIdCreator =
+                    (TokenCreator) Proxy.newProxyInstance( TokenCreator.class.getClassLoader(),
+                            new Class[]{TokenCreator.class}, labelIdCreatorDelegate );
+            new LabelTokenCreatorModeSwitcher( memberStateMachine, labelIdCreatorDelegate,
+                    masterDelegateInvocationHandler, requestContextFactory, kernelProvider, idGeneratorFactory );
+            return labelIdCreator;
+        }
     }
 
     @Override
@@ -642,6 +681,15 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         return dependencies;
     }
 
+    private static final class HAUpgradeConfiguration implements UpgradeConfiguration
+    {
+        @Override
+        public void checkConfigurationAllowsAutomaticUpgrade()
+        {
+            throw new UpgradeNotAllowedByDatabaseModeException();
+        }
+    }
+
     /**
      * At end of startup, wait for instance to become either master or slave.
      * <p/>
@@ -654,15 +702,6 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         public void start() throws Throwable
         {
             availabilityGuard.isAvailable( stateSwitchTimeoutMillis );
-        }
-    }
-
-    private static final class HAUpgradeConfiguration implements UpgradeConfiguration
-    {
-        @Override
-        public void checkConfigurationAllowsAutomaticUpgrade()
-        {
-            throw new UpgradeNotAllowedByDatabaseModeException();
         }
     }
 }

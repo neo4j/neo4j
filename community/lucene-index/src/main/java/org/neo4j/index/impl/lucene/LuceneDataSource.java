@@ -19,21 +19,6 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import static org.neo4j.index.impl.lucene.MultipleBackupDeletionPolicy.SNAPSHOT_ID;
-import static org.neo4j.kernel.impl.store.NeoStore.versionStringToLong;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.Reader;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.KeywordAnalyzer;
 import org.apache.lucene.analysis.LowerCaseFilter;
@@ -74,9 +59,23 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.Reader;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import static org.neo4j.index.impl.lucene.MultipleBackupDeletionPolicy.SNAPSHOT_ID;
+import static org.neo4j.kernel.impl.store.NeoStore.versionStringToLong;
+
 /**
- * An {@link XaDataSource} optimized for the {@link LuceneIndexImplementation}.
- * This class is public because the XA framework requires it.
+ * An DataSource optimized for the {@link LuceneIndexImplementation}.
  */
 public class LuceneDataSource implements Lifecycle
 {
@@ -86,7 +85,6 @@ public class LuceneDataSource implements Lifecycle
     public static abstract class Configuration
     {
         public static final Setting<Integer> lucene_searcher_cache_size = GraphDatabaseSettings.lucene_searcher_cache_size;
-        public static final Setting<Boolean> read_only = GraphDatabaseSettings.read_only;
         public static final Setting<Boolean> allow_store_upgrade = GraphDatabaseSettings.allow_store_upgrade;
         public static final Setting<Boolean> ephemeral = InternalAbstractGraphDatabase.Configuration.ephemeral;
         public static final Setting<File> store_dir = NeoStoreDataSource.Configuration.store_dir;
@@ -173,11 +171,7 @@ public class LuceneDataSource implements Lifecycle
         this.filesystemFacade.cleanWriteLocks( baseStorePath );
         boolean allowUpgrade = config.get( Configuration.allow_store_upgrade );
         this.typeCache = new IndexTypeCache( indexStore );
-        boolean isReadOnly = config.get( Configuration.read_only );
         closed = false;
-        if ( !isReadOnly )
-        {   // TODO do something special if so?
-        }
     }
 
     private File baseDirectory( File storeDir )

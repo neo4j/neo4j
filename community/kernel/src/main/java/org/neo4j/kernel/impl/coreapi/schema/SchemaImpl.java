@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.InvalidTransactionTypeException;
 import org.neo4j.graphdb.Label;
@@ -44,7 +43,6 @@ import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.ReadOnlyDatabaseKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AddIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
@@ -58,12 +56,10 @@ import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
-import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.schema.Schema.IndexState.FAILED;
 import static org.neo4j.graphdb.schema.Schema.IndexState.ONLINE;
@@ -396,10 +392,6 @@ public class SchemaImpl implements Schema
                 {
                     throw new ConstraintViolationException( e.getMessage(), e );
                 }
-                catch ( ReadOnlyDatabaseKernelException e )
-                {
-                    throw new ReadOnlyDbException();
-                }
             }
         }
 
@@ -425,10 +417,6 @@ public class SchemaImpl implements Schema
             catch ( InvalidTransactionTypeKernelException e )
             {
                 throw new ConstraintViolationException( e.getMessage(), e );
-            }
-            catch ( ReadOnlyDatabaseKernelException e )
-            {
-                throw new ReadOnlyDbException();
             }
         }
 
@@ -474,10 +462,6 @@ public class SchemaImpl implements Schema
                 {
                     throw new InvalidTransactionTypeException( e.getMessage(), e );
                 }
-                catch ( ReadOnlyDatabaseKernelException e )
-                {
-                    throw new ReadOnlyDbException();
-                }
             }
         }
 
@@ -498,10 +482,6 @@ public class SchemaImpl implements Schema
             catch ( InvalidTransactionTypeKernelException e )
             {
                 throw new ConstraintViolationException( e.getMessage(), e );
-            }
-            catch ( ReadOnlyDatabaseKernelException e )
-            {
-                throw new ReadOnlyDbException();
             }
         }
 

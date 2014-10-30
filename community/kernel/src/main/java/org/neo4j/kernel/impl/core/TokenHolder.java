@@ -22,33 +22,34 @@ package org.neo4j.kernel.impl.core;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
- *
  * Exists:
- *   get from map
- *
+ * get from map
+ * <p/>
  * Previously when it doesn't exist:
- *   tokenCreator.create
- *     record changes
- *       command execution
- *
+ * tokenCreator.create
+ * record changes
+ * command execution
+ * <p/>
  * Doesn't exist:
- *   tokenCreator.create( name, id )
- *     new kernel transaction
- *       change in statement
- *         commit
- *           record changes
- *             command execution
- *               add to holder
+ * tokenCreator.create( name, id )
+ * new kernel transaction
+ * change in statement
+ * commit
+ * record changes
+ * command execution
+ * add to holder
  */
 public abstract class TokenHolder<TOKEN extends Token> extends LifecycleAdapter
 {
     public static final int NO_ID = -1;
     private final Map<String,Integer> nameToId = new CopyOnWriteHashMap<>();
-    private final Map<Integer, TOKEN> idToToken = new CopyOnWriteHashMap<>();
+    private final Map<Integer,TOKEN> idToToken = new CopyOnWriteHashMap<>();
     private final TokenCreator tokenCreator;
 
     public TokenHolder( TokenCreator tokenCreator )
@@ -58,8 +59,8 @@ public abstract class TokenHolder<TOKEN extends Token> extends LifecycleAdapter
 
     public void addTokens( Token... tokens ) throws NonUniqueTokenException
     {
-        Map<String, Integer> newNameToId = new HashMap<>();
-        Map<Integer, TOKEN> newIdToToken = new HashMap<>();
+        Map<String,Integer> newNameToId = new HashMap<>();
+        Map<Integer,TOKEN> newIdToToken = new HashMap<>();
 
         for ( Token token : tokens )
         {
@@ -80,7 +81,7 @@ public abstract class TokenHolder<TOKEN extends Token> extends LifecycleAdapter
         addToken( token.name(), token.id() );
     }
 
-    void addToken( String name, int id, Map<String, Integer> nameToIdMap, Map<Integer, TOKEN> idToTokenMap )
+    void addToken( String name, int id, Map<String,Integer> nameToIdMap, Map<Integer,TOKEN> idToTokenMap )
             throws NonUniqueTokenException
     {
         TOKEN token = newToken( name, id );
@@ -107,11 +108,19 @@ public abstract class TokenHolder<TOKEN extends Token> extends LifecycleAdapter
         }
 
         // Let's create it
-        id = createToken( name );
-        return id;
+        try
+        {
+            id = createToken( name );
+            return id;
+        }
+        catch ( Throwable e )
+        {
+            throw new TransactionFailureException( "Could not create token", e );
+        }
     }
 
     private synchronized int createToken( String name )
+            throws KernelException
     {
         Integer id = nameToId.get( name );
         if ( id != null )

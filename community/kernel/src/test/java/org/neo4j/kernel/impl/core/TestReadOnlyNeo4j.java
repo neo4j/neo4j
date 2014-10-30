@@ -21,14 +21,15 @@ package org.neo4j.kernel.impl.core;
 
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotInTransactionException;
+import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -36,10 +37,10 @@ import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
@@ -64,23 +65,16 @@ public class TestReadOnlyNeo4j
         {
             readGraphDb.createNode();
 
-            fail( "expected exception" );
-        }
-        catch ( ReadOnlyDbException e )
-        {
-            // good
-        }
-        try
-        {
-            readGraphDb.createNode();
+            tx.success();
+            tx.close();
 
             fail( "expected exception" );
         }
-        catch ( ReadOnlyDbException e )
+        catch ( TransactionFailureException e )
         {
             // good
+            assertThat(e.getCause(), instanceOf( ReadOnlyDbException.class ));
         }
-        tx.finish();
         readGraphDb.shutdown();
     }
 

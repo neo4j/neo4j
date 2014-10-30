@@ -19,17 +19,15 @@
  */
 package org.neo4j.kernel.impl.coreapi;
 
+import java.util.Map;
+
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.kernel.api.exceptions.ReadOnlyDatabaseKernelException;
-import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-
-import java.util.Map;
 
 public class IndexProviderImpl implements IndexProvider
 {
@@ -43,7 +41,7 @@ public class IndexProviderImpl implements IndexProvider
     }
 
     @Override
-    public Index<Node> getOrCreateNodeIndex( String indexName, Map<String, String> customConfiguration )
+    public Index<Node> getOrCreateNodeIndex( String indexName, Map<String,String> customConfiguration )
     {
         try ( Statement statement = transactionBridge.instance() )
         {
@@ -56,10 +54,6 @@ public class IndexProviderImpl implements IndexProvider
         catch ( InvalidTransactionTypeKernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
-        }
-        catch ( ReadOnlyDatabaseKernelException e )
-        {
-            throw new ReadOnlyDbException();
         }
     }
 
@@ -78,10 +72,6 @@ public class IndexProviderImpl implements IndexProvider
         catch ( InvalidTransactionTypeKernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
-        }
-        catch ( ReadOnlyDatabaseKernelException e )
-        {
-            throw new ReadOnlyDbException();
         }
     }
 }

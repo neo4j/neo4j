@@ -53,7 +53,6 @@ import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
-import org.neo4j.kernel.api.exceptions.ReadOnlyDatabaseKernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
@@ -64,7 +63,6 @@ import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
 
 import static java.lang.String.format;
-
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.map;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.graphdb.DynamicLabel.label;
@@ -88,7 +86,7 @@ public class NodeProxy implements Node
     private final long nodeId;
 
     public NodeProxy( long nodeId, NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relLookup,
-               ThreadToStatementContextBridge statementContextProvider )
+                      ThreadToStatementContextBridge statementContextProvider )
     {
         this.nodeId = nodeId;
         this.nodeLookup = nodeLookup;
@@ -119,14 +117,10 @@ public class NodeProxy implements Node
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }
-        catch ( ReadOnlyDatabaseKernelException e )
-        {
-            throw new ReadOnlyDbException();
-        }
         catch ( EntityNotFoundException e )
         {
             throw new IllegalStateException( "Unable to delete Node[" + nodeId +
-                    "] since it has already been deleted." );
+                                             "] since it has already been deleted." );
         }
     }
 
@@ -160,11 +154,11 @@ public class NodeProxy implements Node
     @Override
     public ResourceIterable<Relationship> getRelationships( RelationshipType type, Direction dir )
     {
-        return getRelationships(dir, type);
+        return getRelationships( dir, type );
     }
 
     @Override
-    public ResourceIterable<Relationship> getRelationships( Direction direction, RelationshipType ... types )
+    public ResourceIterable<Relationship> getRelationships( Direction direction, RelationshipType... types )
     {
         Statement statement = statementContextProvider.instance();
         try
@@ -188,7 +182,7 @@ public class NodeProxy implements Node
     @Override
     public boolean hasRelationship( Direction dir )
     {
-        try(ResourceIterator<Relationship> rels = getRelationships(dir).iterator())
+        try ( ResourceIterator<Relationship> rels = getRelationships( dir ).iterator() )
         {
             return rels.hasNext();
         }
@@ -197,13 +191,13 @@ public class NodeProxy implements Node
     @Override
     public boolean hasRelationship( RelationshipType... types )
     {
-        return hasRelationship(Direction.BOTH, types);
+        return hasRelationship( Direction.BOTH, types );
     }
 
     @Override
     public boolean hasRelationship( Direction direction, RelationshipType... types )
     {
-        try(ResourceIterator<Relationship> rels = getRelationships(direction, types).iterator())
+        try ( ResourceIterator<Relationship> rels = getRelationships( direction, types ).iterator() )
         {
             return rels.hasNext();
         }
@@ -212,15 +206,15 @@ public class NodeProxy implements Node
     @Override
     public boolean hasRelationship( RelationshipType type, Direction dir )
     {
-        return hasRelationship(dir, type);
+        return hasRelationship( dir, type );
     }
 
     @Override
     public Relationship getSingleRelationship( RelationshipType type, Direction dir )
     {
-        try(ResourceIterator<Relationship> rels = getRelationships(dir, type).iterator())
+        try ( ResourceIterator<Relationship> rels = getRelationships( dir, type ).iterator() )
         {
-            if(!rels.hasNext())
+            if ( !rels.hasNext() )
             {
                 return null;
             }
@@ -232,7 +226,7 @@ public class NodeProxy implements Node
                 if ( !other.equals( rel ) )
                 {
                     throw new NotFoundException( "More than one relationship[" +
-                            type + ", " + dir + "] found for " + this );
+                                                 type + ", " + dir + "] found for " + this );
                 }
             }
             return rel;
@@ -256,8 +250,10 @@ public class NodeProxy implements Node
             }
             catch ( ConstraintValidationKernelException e )
             {
-                throw new ConstraintViolationException( e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
-            } catch (IllegalArgumentException e)
+                throw new ConstraintViolationException(
+                        e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
+            }
+            catch ( IllegalArgumentException e )
             {
                 // Trying to set an illegal value is a critical error - fail this transaction
                 statementContextProvider.getKernelTransactionBoundToThisThread( true ).failure();
@@ -275,10 +271,6 @@ public class NodeProxy implements Node
         catch ( InvalidTransactionTypeKernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
-        }
-        catch ( ReadOnlyDatabaseKernelException e )
-        {
-            throw new ReadOnlyDbException();
         }
     }
 
@@ -301,10 +293,6 @@ public class NodeProxy implements Node
         catch ( InvalidTransactionTypeKernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
-        }
-        catch ( ReadOnlyDatabaseKernelException e )
-        {
-            throw new ReadOnlyDbException();
         }
     }
 
@@ -450,7 +438,8 @@ public class NodeProxy implements Node
         {
             int relationshipTypeId = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( type.name() );
             return nodeLookup.getNodeManager().newRelationshipProxyById(
-                    statement.dataWriteOperations().relationshipCreate( relationshipTypeId, nodeId, otherNode.getId() ) );
+                    statement.dataWriteOperations()
+                             .relationshipCreate( relationshipTypeId, nodeId, otherNode.getId() ) );
         }
         catch ( IllegalTokenNameException | RelationshipTypeIdNotFoundKernelException e )
         {
@@ -459,15 +448,11 @@ public class NodeProxy implements Node
         catch ( EntityNotFoundException e )
         {
             throw new IllegalStateException( "Node[" + e.entityId() +
-                    "] is deleted and cannot be used to create a relationship" );
+                                             "] is deleted and cannot be used to create a relationship" );
         }
         catch ( InvalidTransactionTypeKernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
-        }
-        catch ( ReadOnlyDatabaseKernelException e )
-        {
-            throw new ReadOnlyDbException();
         }
     }
 
@@ -513,11 +498,13 @@ public class NodeProxy implements Node
         {
             try
             {
-                statement.dataWriteOperations().nodeAddLabel( getId(), statement.tokenWriteOperations().labelGetOrCreateForName( label.name() ) );
+                statement.dataWriteOperations().nodeAddLabel( getId(),
+                        statement.tokenWriteOperations().labelGetOrCreateForName( label.name() ) );
             }
             catch ( ConstraintValidationKernelException e )
             {
-                throw new ConstraintViolationException( e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
+                throw new ConstraintViolationException(
+                        e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
             }
         }
         catch ( IllegalTokenNameException e )
@@ -535,10 +522,6 @@ public class NodeProxy implements Node
         catch ( InvalidTransactionTypeKernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
-        }
-        catch ( ReadOnlyDatabaseKernelException e )
-        {
-            throw new ReadOnlyDbException();
         }
     }
 
@@ -560,10 +543,6 @@ public class NodeProxy implements Node
         catch ( InvalidTransactionTypeKernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
-        }
-        catch ( ReadOnlyDatabaseKernelException e )
-        {
-            throw new ReadOnlyDbException();
         }
     }
 
@@ -610,7 +589,7 @@ public class NodeProxy implements Node
     {
         try ( Statement statement = statementContextProvider.instance() )
         {
-            return statement.readOperations().nodeGetDegree(nodeId, Direction.BOTH);
+            return statement.readOperations().nodeGetDegree( nodeId, Direction.BOTH );
         }
         catch ( EntityNotFoundException e )
         {
@@ -673,7 +652,7 @@ public class NodeProxy implements Node
     @Override
     public Iterable<RelationshipType> getRelationshipTypes()
     {
-        try(Statement statement = statementContextProvider.instance())
+        try ( Statement statement = statementContextProvider.instance() )
         {
             ReadOperations ops = statement.readOperations();
             return map2relTypes( statement, ops.nodeGetRelationshipTypes( nodeId ) );
@@ -688,34 +667,35 @@ public class NodeProxy implements Node
     {
         int[] ids = new int[types.length];
         int outIndex = 0;
-        for(int i=0;i<types.length;i++)
+        for ( int i = 0; i < types.length; i++ )
         {
             int id = statement.readOperations().relationshipTypeGetForName( types[i].name() );
-            if(id != NO_SUCH_RELATIONSHIP_TYPE )
+            if ( id != NO_SUCH_RELATIONSHIP_TYPE )
             {
                 ids[outIndex++] = id;
             }
         }
 
-        if(outIndex != ids.length)
+        if ( outIndex != ids.length )
         {
             // One or more relationship types do not exist, so we can exclude them right away.
-            ids = Arrays.copyOf(ids, outIndex);
+            ids = Arrays.copyOf( ids, outIndex );
         }
         return ids;
     }
 
     private ResourceIterable<Relationship> map2rels( Statement statement, PrimitiveLongIterator input )
     {
-        return asResourceIterable( ResourceClosingIterator.newResourceIterator( statement, map( new FunctionFromPrimitiveLong
-                <Relationship>()
-        {
-            @Override
-            public Relationship apply( long id )
-            {
-                return new RelationshipProxy( id, relLookup, statementContextProvider );
-            }
-        }, input ) ) );
+        return asResourceIterable(
+                ResourceClosingIterator.newResourceIterator( statement, map( new FunctionFromPrimitiveLong
+                        <Relationship>()
+                {
+                    @Override
+                    public Relationship apply( long id )
+                    {
+                        return new RelationshipProxy( id, relLookup, statementContextProvider );
+                    }
+                }, input ) ) );
     }
 
     private Iterable<RelationshipType> map2relTypes( final Statement statement, PrimitiveIntIterator input )

@@ -19,15 +19,6 @@
  */
 package org.neo4j.kernel;
 
-import static java.lang.String.format;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
-import static org.neo4j.helpers.NamedThreadFactory.daemon;
-import static org.neo4j.helpers.Settings.STRING;
-import static org.neo4j.helpers.Settings.setting;
-import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.fail;
-import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
-import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PROPERTY_KEY;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -78,7 +69,6 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.kernel.api.exceptions.ReadOnlyDatabaseKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
@@ -95,6 +85,7 @@ import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
+import org.neo4j.kernel.impl.api.ReadOnlyTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
@@ -123,7 +114,7 @@ import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.NodeProxy.NodeLookup;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
-import org.neo4j.kernel.impl.core.ReadOnlyDbException;
+import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
 import org.neo4j.kernel.impl.core.RelationshipData;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy.RelationshipLookups;
@@ -184,6 +175,15 @@ import org.neo4j.kernel.logging.RollingLogMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.tooling.GlobalGraphOperations;
 
+import static java.lang.String.format;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
+import static org.neo4j.helpers.NamedThreadFactory.daemon;
+import static org.neo4j.helpers.Settings.STRING;
+import static org.neo4j.helpers.Settings.setting;
+import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.fail;
+import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
+import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PROPERTY_KEY;
+
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
  * and lifecycle management of these.
@@ -195,13 +195,12 @@ public abstract class InternalAbstractGraphDatabase
         implements GraphDatabaseService, GraphDatabaseAPI, SchemaWriteGuard
 {
 
-    private final Dependencies dependencies;
-
     public interface Dependencies
     {
         /**
          * Allowed to be null. Null means that no external {@link Monitors} was created, let the
          * database create its own monitors instance.
+         *
          * @return
          */
         Monitors monitors();
@@ -209,6 +208,7 @@ public abstract class InternalAbstractGraphDatabase
         /**
          * Allowed to be null. Null means that no external {@link Logging} was created, let the
          * database create its own logging.
+         *
          * @return
          */
         Logging logging();
@@ -220,34 +220,35 @@ public abstract class InternalAbstractGraphDatabase
         Iterable<CacheProvider> cacheProviders();
     }
 
-    public static class Configuration
-    {
-        public static final Setting<Boolean> read_only = GraphDatabaseSettings.read_only;
-        public static final Setting<Boolean> execution_guard_enabled = GraphDatabaseSettings.execution_guard_enabled;
-        public static final Setting<String> cache_type = GraphDatabaseSettings.cache_type;
-        public static final Setting<Boolean> ephemeral = setting( "ephemeral", Settings.BOOLEAN, Settings.FALSE );
-        public static final Setting<File> store_dir = GraphDatabaseSettings.store_dir;
-        public static final Setting<File> neo_store = GraphDatabaseSettings.neo_store;
-
-        // Kept here to have it not be publicly documented.
-        public static final Setting<String> lock_manager = setting( "lock_manager", STRING, "" );
-        public static final Setting<Boolean> statistics_enabled =
-                setting("statistics_enabled", Settings.BOOLEAN, Settings.FALSE);
-
-        public static final Setting<String> log_configuration_file = setting( "log.configuration", STRING,
-                "neo4j-logback.xml" );
-    }
-
     private static final long MAX_NODE_ID = IdType.NODE.getMaxValue();
     private static final long MAX_RELATIONSHIP_ID = IdType.RELATIONSHIP.getMaxValue();
-
-    protected KernelExtensions kernelExtensions;
-
+    public static CommitProcessFactory defaultCommitProcessFactory = new CommitProcessFactory()
+    {
+        @Override
+        public TransactionCommitProcess create( LogicalTransactionStore logicalTransactionStore,
+                                                KernelHealth kernelHealth, NeoStore neoStore,
+                                                TransactionRepresentationStoreApplier storeApplier,
+                                                NeoStoreInjectedTransactionValidator validator,
+                                                TransactionApplicationMode mode, Config config )
+        {
+            if ( config.get( GraphDatabaseSettings.read_only ) )
+            {
+                return new ReadOnlyTransactionCommitProcess();
+            }
+            else
+            {
+                return new TransactionRepresentationCommitProcess( logicalTransactionStore, kernelHealth,
+                        neoStore, storeApplier, mode );
+            }
+        }
+    };
     protected final DependencyResolver dependencyResolver;
     protected final Config config;
-
+    protected final LifeSupport life = new LifeSupport();
+    private final Dependencies dependencies;
+    private final Map<String,CacheProvider> cacheProviders;
+    protected KernelExtensions kernelExtensions;
     protected File storeDir;
-
     protected Logging logging;
     protected StoreId storeId;
     protected StringLogger msgLog;
@@ -283,8 +284,6 @@ public abstract class InternalAbstractGraphDatabase
     protected Monitors monitors;
     protected TransactionCounters transactionMonitor;
     protected CountingPageCacheMonitor pageCacheMonitor = new CountingPageCacheMonitor();
-    protected final LifeSupport life = new LifeSupport();
-    private final Map<String, CacheProvider> cacheProviders;
     protected AvailabilityGuard availabilityGuard;
     protected long accessTimeout;
     protected StoreUpgrader storeMigrationProcess;
@@ -292,7 +291,7 @@ public abstract class InternalAbstractGraphDatabase
     protected DataSourceManager dataSourceManager;
     private StartupStatisticsProvider startupStatistics;
 
-    protected InternalAbstractGraphDatabase( String storeDir, Map<String, String> params, Dependencies dependencies )
+    protected InternalAbstractGraphDatabase( String storeDir, Map<String,String> params, Dependencies dependencies )
     {
         params.put( Configuration.store_dir.name(), storeDir );
 
@@ -310,9 +309,9 @@ public abstract class InternalAbstractGraphDatabase
         accessTimeout = 1_000; // TODO make configurable
     }
 
-    private Map<String, CacheProvider> mapCacheProviders( Iterable<CacheProvider> cacheProviders )
+    private Map<String,CacheProvider> mapCacheProviders( Iterable<CacheProvider> cacheProviders )
     {
-        Map<String, CacheProvider> map = new HashMap<>();
+        Map<String,CacheProvider> map = new HashMap<>();
         for ( CacheProvider provider : cacheProviders )
         {
             map.put( provider.getName(), provider );
@@ -354,7 +353,7 @@ public abstract class InternalAbstractGraphDatabase
     protected void createDatabaseAvailability()
     {
         // This is how we lock the entire database to avoid threads using it during lifecycle events
-        life.add( new DatabaseAvailability( availabilityGuard, transactionMonitor) );
+        life.add( new DatabaseAvailability( availabilityGuard, transactionMonitor ) );
     }
 
     private void enableAvailabilityLogging()
@@ -420,7 +419,7 @@ public abstract class InternalAbstractGraphDatabase
         }
 
         // Component monitoring
-        if (this.monitors == null)
+        if ( this.monitors == null )
         {
             this.monitors = createMonitors();
         }
@@ -430,7 +429,7 @@ public abstract class InternalAbstractGraphDatabase
         storeMigrationProcess = new StoreUpgrader( createUpgradeConfiguration(), fileSystem,
                 monitors.newMonitor( StoreUpgrader.Monitor.class ), logging );
 
-        Map<String, String> configParams = config.getParams();
+        Map<String,String> configParams = config.getParams();
         config.applyChanges( configParams );
 
         this.msgLog = logging.getMessagesLog( getClass() );
@@ -448,17 +447,21 @@ public abstract class InternalAbstractGraphDatabase
         {
             // Temporarily here to allow experimentally turning off the cache layer entirely. This is different
             // from cache_type=none in that it *completely* bypasses the caching layer.
-            if( config.get(Configuration.cache_type).equals( CacheLayer.EXPERIMENTAL_OFF ) )
+            if ( config.get( Configuration.cache_type ).equals( CacheLayer.EXPERIMENTAL_OFF ) )
             {
                 cacheProvider = new NoCacheProvider();
             }
             else
             {
                 throw new IllegalArgumentException( "No provider for cache type '" + cacheTypeName + "'. " +
-                        "Cache providers are loaded using java service loading where they " +
-                        "register themselves in resource (plain-text) files found on the class path under " +
-                        "META-INF/services/" + CacheProvider.class.getName() + ". This missing provider may have " +
-                        "been caused by either such a missing registration, or by the lack of the provider class itself." );
+                                                    "Cache providers are loaded using java service loading where they" +
+                                                    " " +
+                                                    "register themselves in resource (plain-text) files found on the " +
+                                                    "class path under " +
+                                                    "META-INF/services/" + CacheProvider.class.getName() +
+                                                    ". This missing provider may have " +
+                                                    "been caused by either such a missing registration, " +
+                                                    "or by the lack of the provider class itself." );
 
             }
         }
@@ -468,11 +471,11 @@ public abstract class InternalAbstractGraphDatabase
         pageCache = createPageCache();
         life.add( pageCache );
 
-        kernelEventHandlers = new KernelEventHandlers(logging.getMessagesLog( KernelEventHandlers.class ));
+        kernelEventHandlers = new KernelEventHandlers( logging.getMessagesLog( KernelEventHandlers.class ) );
 
         caches = createCaches();
         diagnosticsManager = life.add( new DiagnosticsManager( logging.getMessagesLog( DiagnosticsManager.class ) ) );
-        monitors.addMonitorListener(new RollingLogMonitor()
+        monitors.addMonitorListener( new RollingLogMonitor()
         {
             @Override
             public void rolledOver()
@@ -480,7 +483,7 @@ public abstract class InternalAbstractGraphDatabase
                 // Add diagnostics at the top of every log file
                 diagnosticsManager.dumpAll();
             }
-        });
+        } );
 
         kernelPanicEventGenerator = new KernelPanicEventGenerator( kernelEventHandlers );
 
@@ -519,7 +522,7 @@ public abstract class InternalAbstractGraphDatabase
         nodeManager = createNodeManager();
 
         transactionEventHandlers = new TransactionEventHandlers( createNodeLookup(), createRelationshipLookups(),
-                threadToTransactionBridge  );
+                threadToTransactionBridge );
 
         indexStore = life.add( new IndexConfigStore( this.storeDir, fileSystem ) );
 
@@ -535,7 +538,8 @@ public abstract class InternalAbstractGraphDatabase
         final IndexProvider indexProvider = new IndexProviderImpl( indexLookup, threadToTransactionBridge );
         nodeAutoIndexer = life.add( new NodeAutoIndexerImpl( config, indexProvider, nodeManager ) );
         relAutoIndexer = life.add( new RelationshipAutoIndexerImpl( config, indexProvider, nodeManager ) );
-        indexManager = new IndexManagerImpl( threadToTransactionBridge, indexProvider, nodeAutoIndexer, relAutoIndexer);
+        indexManager =
+                new IndexManagerImpl( threadToTransactionBridge, indexProvider, nodeAutoIndexer, relAutoIndexer );
 
         recoveryVerifier = createRecoveryVerifier();
 
@@ -604,7 +608,8 @@ public abstract class InternalAbstractGraphDatabase
     {
     }
 
-    private Map<Object, Object> newSchemaStateMap() {
+    private Map<Object,Object> newSchemaStateMap()
+    {
         return new HashMap<>();
     }
 
@@ -616,17 +621,38 @@ public abstract class InternalAbstractGraphDatabase
 
     protected TokenCreator createRelationshipTypeCreator()
     {
-        return new DefaultRelationshipTypeCreator( dataSourceManager, idGeneratorFactory );
+        if ( config.get( GraphDatabaseSettings.read_only ) )
+        {
+            return new ReadOnlyTokenCreator();
+        }
+        else
+        {
+            return new DefaultRelationshipTypeCreator( dataSourceManager, idGeneratorFactory );
+        }
     }
 
     protected TokenCreator createPropertyKeyCreator()
     {
-        return new DefaultPropertyTokenCreator( dataSourceManager, idGeneratorFactory );
+        if ( config.get( GraphDatabaseSettings.read_only ) )
+        {
+            return new ReadOnlyTokenCreator();
+        }
+        else
+        {
+            return new DefaultPropertyTokenCreator( dataSourceManager, idGeneratorFactory );
+        }
     }
 
     protected TokenCreator createLabelIdCreator()
     {
-        return new DefaultLabelIdCreator( dataSourceManager, idGeneratorFactory );
+        if ( config.get( GraphDatabaseSettings.read_only ) )
+        {
+            return new ReadOnlyTokenCreator();
+        }
+        else
+        {
+            return new DefaultLabelIdCreator( dataSourceManager, idGeneratorFactory );
+        }
     }
 
     private NodeManager createNodeManager()
@@ -711,13 +737,13 @@ public abstract class InternalAbstractGraphDatabase
 
             private final RelationshipVisitor<RuntimeException> visitor =
                     new RelationshipVisitor<RuntimeException>()
-            {
-                @Override
-                public void visit( long relId, int type, long startNode, long endNode )
-                {
-                    relationshipData.get().set( startNode, endNode, type );
-                }
-            };
+                    {
+                        @Override
+                        public void visit( long relId, int type, long startNode, long endNode )
+                        {
+                            relationshipData.get().set( startNode, endNode, type );
+                        }
+                    };
 
             @Override
             public GraphDatabaseService getGraphDatabaseService()
@@ -800,26 +826,26 @@ public abstract class InternalAbstractGraphDatabase
         for ( Locks.Factory candidate : Service.load( Locks.Factory.class ) )
         {
             String candidateId = candidate.getKeys().iterator().next();
-            if( candidateId.equals( key ))
+            if ( candidateId.equals( key ) )
             {
                 return candidate.newInstance( ResourceTypes.values() );
             }
-            else if(key.equals( "" ))
+            else if ( key.equals( "" ) )
             {
                 logging.getMessagesLog( InternalAbstractGraphDatabase.class )
-                        .info( "No locking implementation specified, defaulting to '" + candidateId + "'" );
+                       .info( "No locking implementation specified, defaulting to '" + candidateId + "'" );
                 return candidate.newInstance( ResourceTypes.values() );
             }
         }
 
-        if( key.equals( "community" ) )
+        if ( key.equals( "community" ) )
         {
             return new CommunityLockManger();
         }
-        else if(key.equals( "" ))
+        else if ( key.equals( "" ) )
         {
             logging.getMessagesLog( InternalAbstractGraphDatabase.class )
-                    .info( "No locking implementation specified, defaulting to 'community'" );
+                   .info( "No locking implementation specified, defaulting to 'community'" );
             return new CommunityLockManger();
         }
 
@@ -849,20 +875,6 @@ public abstract class InternalAbstractGraphDatabase
     {
         return defaultCommitProcessFactory;
     }
-
-    public static CommitProcessFactory defaultCommitProcessFactory = new CommitProcessFactory()
-    {
-        @Override
-        public TransactionCommitProcess create( LogicalTransactionStore logicalTransactionStore,
-                                                KernelHealth kernelHealth, NeoStore neoStore,
-                                                TransactionRepresentationStoreApplier storeApplier,
-                                                NeoStoreInjectedTransactionValidator validator,
-                                                TransactionApplicationMode mode )
-        {
-            return new TransactionRepresentationCommitProcess( logicalTransactionStore, kernelHealth,
-                    neoStore, storeApplier, mode );
-        }
-    } ;
 
     protected TransactionHeaderInformationFactory createHeaderInformationFactory()
     {
@@ -964,10 +976,6 @@ public abstract class InternalAbstractGraphDatabase
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }
-        catch ( ReadOnlyDatabaseKernelException e )
-        {
-            throw new ReadOnlyDbException();
-        }
     }
 
     @Override
@@ -1002,10 +1010,6 @@ public abstract class InternalAbstractGraphDatabase
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }
-        catch ( ReadOnlyDatabaseKernelException e )
-        {
-            throw new ReadOnlyDbException();
-        }
     }
 
     @Override
@@ -1016,11 +1020,11 @@ public abstract class InternalAbstractGraphDatabase
             throw new NotFoundException( format( "Node %d not found", id ) );
         }
         threadToTransactionBridge.assertInUnterminatedTransaction();
-        try (Statement statement = threadToTransactionBridge.instance())
+        try ( Statement statement = threadToTransactionBridge.instance() )
         {
             if ( !statement.readOperations().nodeExists( id ) )
             {
-                throw new NotFoundException(format( "Node %d not found", id ));
+                throw new NotFoundException( format( "Node %d not found", id ) );
             }
 
             return nodeManager.newNodeProxyById( id );
@@ -1032,10 +1036,10 @@ public abstract class InternalAbstractGraphDatabase
     {
         if ( id < 0 || id > MAX_RELATIONSHIP_ID )
         {
-            throw new NotFoundException( format( "Relationship %d not found", id));
+            throw new NotFoundException( format( "Relationship %d not found", id ) );
         }
         threadToTransactionBridge.assertInUnterminatedTransaction();
-        try (Statement statement = threadToTransactionBridge.instance())
+        try ( Statement statement = threadToTransactionBridge.instance() )
         {
             if ( !statement.readOperations().relationshipExists( id ) )
             {
@@ -1114,6 +1118,160 @@ public abstract class InternalAbstractGraphDatabase
         return storeDir.hashCode();
     }
 
+    @Override
+    public ResourceIterable<Node> findNodesByLabelAndProperty( final Label myLabel, final String key,
+                                                               final Object value )
+    {
+        return new ResourceIterable<Node>()
+        {
+            @Override
+            public ResourceIterator<Node> iterator()
+            {
+                return nodesByLabelAndProperty( myLabel, key, value );
+            }
+        };
+    }
+
+    private ResourceIterator<Node> nodesByLabelAndProperty( Label myLabel, String key, Object value )
+    {
+        Statement statement = threadToTransactionBridge.instance();
+
+        ReadOperations readOps = statement.readOperations();
+        int propertyId = readOps.propertyKeyGetForName( key );
+        int labelId = readOps.labelGetForName( myLabel.name() );
+
+        if ( propertyId == NO_SUCH_PROPERTY_KEY || labelId == NO_SUCH_LABEL )
+        {
+            statement.close();
+            return IteratorUtil.emptyIterator();
+        }
+
+        IndexDescriptor descriptor = findAnyIndexByLabelAndProperty( readOps, propertyId, labelId );
+
+        try
+        {
+            if ( null != descriptor )
+            {
+                // Ha! We found an index - let's use it to find matching nodes
+                return map2nodes( readOps.nodesGetFromIndexLookup( descriptor, value ), statement );
+            }
+        }
+        catch ( IndexNotFoundKernelException e )
+        {
+            // weird at this point but ignore and fallback to a label scan
+        }
+
+        return getNodesByLabelAndPropertyWithoutIndex( propertyId, value, statement, labelId );
+    }
+
+    private IndexDescriptor findAnyIndexByLabelAndProperty( ReadOperations readOps, int propertyId, int labelId )
+    {
+        try
+        {
+            IndexDescriptor descriptor = readOps.indexesGetForLabelAndPropertyKey( labelId, propertyId );
+
+            if ( readOps.indexGetState( descriptor ) == InternalIndexState.ONLINE )
+            {
+                // Ha! We found an index - let's use it to find matching nodes
+                return descriptor;
+            }
+        }
+        catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
+        {
+            // If we don't find a matching index rule, we'll scan all nodes and filter manually (below)
+        }
+        return null;
+    }
+
+    private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex( int propertyId, Object value,
+                                                                           Statement statement, int labelId )
+    {
+        return map2nodes(
+                new PropertyValueFilteringNodeIdIterator(
+                        statement.readOperations().nodesGetForLabel( labelId ),
+                        statement.readOperations(), propertyId, value ), statement );
+    }
+
+    private ResourceIterator<Node> map2nodes( PrimitiveLongIterator input, Statement statement )
+    {
+        return ResourceClosingIterator.newResourceIterator( statement, map( new FunctionFromPrimitiveLong<Node>()
+        {
+            @Override
+            public Node apply( long id )
+            {
+                return getNodeById( id );
+            }
+        }, input ) );
+    }
+
+    @Override
+    public TraversalDescription traversalDescription()
+    {
+        return new MonoDirectionalTraversalDescription( threadToTransactionBridge );
+    }
+
+    @Override
+    public BidirectionalTraversalDescription bidirectionalTraversalDescription()
+    {
+        return new BidirectionalTraversalDescriptionImpl( threadToTransactionBridge );
+    }
+
+    public static class Configuration
+    {
+        public static final Setting<Boolean> read_only = GraphDatabaseSettings.read_only;
+        public static final Setting<Boolean> execution_guard_enabled = GraphDatabaseSettings.execution_guard_enabled;
+        public static final Setting<String> cache_type = GraphDatabaseSettings.cache_type;
+        public static final Setting<Boolean> ephemeral = setting( "ephemeral", Settings.BOOLEAN, Settings.FALSE );
+        public static final Setting<File> store_dir = GraphDatabaseSettings.store_dir;
+        public static final Setting<File> neo_store = GraphDatabaseSettings.neo_store;
+
+        // Kept here to have it not be publicly documented.
+        public static final Setting<String> lock_manager = setting( "lock_manager", STRING, "" );
+        public static final Setting<Boolean> statistics_enabled =
+                setting( "statistics_enabled", Settings.BOOLEAN, Settings.FALSE );
+
+        public static final Setting<String> log_configuration_file = setting( "log.configuration", STRING,
+                "neo4j-logback.xml" );
+    }
+
+    private static class PropertyValueFilteringNodeIdIterator extends PrimitiveLongBaseIterator
+    {
+        private final PrimitiveLongIterator nodesWithLabel;
+        private final ReadOperations statement;
+        private final int propertyKeyId;
+        private final Object value;
+
+        PropertyValueFilteringNodeIdIterator( PrimitiveLongIterator nodesWithLabel, ReadOperations statement,
+                                              int propertyKeyId, Object value )
+        {
+            this.nodesWithLabel = nodesWithLabel;
+            this.statement = statement;
+            this.propertyKeyId = propertyKeyId;
+            this.value = value;
+        }
+
+        @Override
+        protected boolean fetchNext()
+        {
+            for ( boolean hasNext = nodesWithLabel.hasNext(); hasNext; hasNext = nodesWithLabel.hasNext() )
+            {
+                long nextValue = nodesWithLabel.next();
+                try
+                {
+                    if ( statement.nodeGetProperty( nextValue, propertyKeyId ).valueEquals( value ) )
+                    {
+                        return next( nextValue );
+                    }
+                }
+                catch ( EntityNotFoundException e )
+                {
+                    // continue to the next node
+                }
+            }
+            return false;
+        }
+    }
+
     protected final class DefaultKernelData extends KernelData implements Lifecycle
     {
         private final GraphDatabaseAPI graphDb;
@@ -1170,7 +1328,7 @@ public abstract class InternalAbstractGraphDatabase
                 return type.cast( getConfig() );
             }
             else if ( GraphDatabaseService.class.isAssignableFrom( type )
-                    && type.isInstance( InternalAbstractGraphDatabase.this ) )
+                      && type.isInstance( InternalAbstractGraphDatabase.this ) )
             {
                 return type.cast( InternalAbstractGraphDatabase.this );
             }
@@ -1180,12 +1338,12 @@ public abstract class InternalAbstractGraphDatabase
                 return type.cast( lockManager );
             }
             else if ( LockService.class.isAssignableFrom( type )
-                    && type.isInstance( neoDataSource.getLockService() ) )
+                      && type.isInstance( neoDataSource.getLockService() ) )
             {
                 // Locks used to control concurrent access to the store files
                 return type.cast( neoDataSource.getLockService() );
             }
-            else if( StoreFactory.class.isAssignableFrom( type ) && type.isInstance( storeFactory ) )
+            else if ( StoreFactory.class.isAssignableFrom( type ) && type.isInstance( storeFactory ) )
             {
                 return type.cast( storeFactory );
             }
@@ -1241,11 +1399,13 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return type.cast( diagnosticsManager );
             }
-            else if ( RelationshipTypeTokenHolder.class.isAssignableFrom( type ) && type.isInstance( relationshipTypeTokenHolder ) )
+            else if ( RelationshipTypeTokenHolder.class.isAssignableFrom( type ) &&
+                      type.isInstance( relationshipTypeTokenHolder ) )
             {
                 return type.cast( relationshipTypeTokenHolder );
             }
-            else if ( PropertyKeyTokenHolder.class.isAssignableFrom( type ) && type.isInstance( propertyKeyTokenHolder ) )
+            else if ( PropertyKeyTokenHolder.class.isAssignableFrom( type ) &&
+                      type.isInstance( propertyKeyTokenHolder ) )
             {
                 return type.cast( propertyKeyTokenHolder );
             }
@@ -1266,7 +1426,7 @@ public abstract class InternalAbstractGraphDatabase
                 return type.cast( monitors );
             }
             else if ( ThreadToStatementContextBridge.class.isAssignableFrom( type )
-                    && type.isInstance( threadToTransactionBridge ) )
+                      && type.isInstance( threadToTransactionBridge ) )
             {
                 return type.cast( threadToTransactionBridge );
             }
@@ -1278,12 +1438,12 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return type.cast( storeLocker );
             }
-            else if ( IndexManager.class.equals( type )&& type.isInstance( indexManager )  )
+            else if ( IndexManager.class.equals( type ) && type.isInstance( indexManager ) )
             {
                 return type.cast( indexManager );
             }
             else if ( IndexingService.class.isAssignableFrom( type )
-                    && type.isInstance( neoDataSource.getIndexService() ) )
+                      && type.isInstance( neoDataSource.getIndexService() ) )
             {
                 return type.cast( neoDataSource.getIndexService() );
             }
@@ -1291,12 +1451,12 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return type.cast( jobScheduler );
             }
-            else if( KernelAPI.class.equals( type ))
+            else if ( KernelAPI.class.equals( type ) )
             {
                 return type.cast( neoDataSource.getKernel() );
             }
             else if ( LabelScanStore.class.isAssignableFrom( type )
-                && type.isInstance( neoDataSource.getLabelScanStore() ) )
+                      && type.isInstance( neoDataSource.getLabelScanStore() ) )
             {
                 return type.cast( neoDataSource.getLabelScanStore() );
             }
@@ -1312,7 +1472,7 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return type.cast( monitors );
             }
-            else if( TransactionEventHandlers.class.equals( type ))
+            else if ( TransactionEventHandlers.class.equals( type ) )
             {
                 return type.cast( transactionEventHandlers );
             }
@@ -1405,7 +1565,7 @@ public abstract class InternalAbstractGraphDatabase
                             life.start();
 
                             msgLog.logMessage( "Database restarted with the following configuration changes:" +
-                                    change );
+                                               change );
                         }
                         catch ( LifecycleException e )
                         {
@@ -1427,140 +1587,5 @@ public abstract class InternalAbstractGraphDatabase
         {
             config.removeConfigurationChangeListener( listener );
         }
-    }
-
-    @Override
-    public ResourceIterable<Node> findNodesByLabelAndProperty( final Label myLabel, final String key, final Object value )
-    {
-        return new ResourceIterable<Node>()
-        {
-            @Override
-            public ResourceIterator<Node> iterator()
-            {
-                return nodesByLabelAndProperty( myLabel, key, value );
-            }
-        };
-    }
-
-    private ResourceIterator<Node> nodesByLabelAndProperty( Label myLabel, String key, Object value )
-    {
-        Statement statement = threadToTransactionBridge.instance();
-
-        ReadOperations readOps = statement.readOperations();
-        int propertyId = readOps.propertyKeyGetForName( key );
-        int labelId = readOps.labelGetForName( myLabel.name() );
-
-        if ( propertyId == NO_SUCH_PROPERTY_KEY || labelId == NO_SUCH_LABEL )
-        {
-            statement.close();
-            return IteratorUtil.emptyIterator();
-        }
-
-        IndexDescriptor descriptor = findAnyIndexByLabelAndProperty( readOps, propertyId, labelId );
-
-        try
-        {
-            if ( null != descriptor )
-            {
-                // Ha! We found an index - let's use it to find matching nodes
-                return map2nodes( readOps.nodesGetFromIndexLookup( descriptor, value ), statement );
-            }
-        }
-        catch ( IndexNotFoundKernelException e )
-        {
-            // weird at this point but ignore and fallback to a label scan
-        }
-
-        return getNodesByLabelAndPropertyWithoutIndex( propertyId, value, statement, labelId );
-    }
-
-    private IndexDescriptor findAnyIndexByLabelAndProperty( ReadOperations readOps, int propertyId, int labelId )
-    {
-        try
-        {
-            IndexDescriptor descriptor = readOps.indexesGetForLabelAndPropertyKey( labelId, propertyId );
-
-            if ( readOps.indexGetState( descriptor ) == InternalIndexState.ONLINE )
-            {
-                // Ha! We found an index - let's use it to find matching nodes
-                return descriptor;
-            }
-        }
-        catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
-        {
-            // If we don't find a matching index rule, we'll scan all nodes and filter manually (below)
-        }
-        return null;
-    }
-
-    private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex( int propertyId, Object value,
-            Statement statement, int labelId )
-    {
-        return map2nodes(
-            new PropertyValueFilteringNodeIdIterator(
-                    statement.readOperations().nodesGetForLabel( labelId ),
-                    statement.readOperations(), propertyId, value ), statement );
-    }
-
-    private ResourceIterator<Node> map2nodes( PrimitiveLongIterator input, Statement statement )
-    {
-        return ResourceClosingIterator.newResourceIterator( statement, map( new FunctionFromPrimitiveLong<Node>()
-        {
-            @Override
-            public Node apply( long id )
-            {
-                return getNodeById( id );
-            }
-        }, input ) );
-    }
-
-    private static class PropertyValueFilteringNodeIdIterator extends PrimitiveLongBaseIterator
-    {
-        private final PrimitiveLongIterator nodesWithLabel;
-        private final ReadOperations statement;
-        private final int propertyKeyId;
-        private final Object value;
-
-        PropertyValueFilteringNodeIdIterator( PrimitiveLongIterator nodesWithLabel, ReadOperations statement,
-                                              int propertyKeyId, Object value )
-        {
-            this.nodesWithLabel = nodesWithLabel;
-            this.statement = statement;
-            this.propertyKeyId = propertyKeyId;
-            this.value = value;
-        }
-
-        @Override
-        protected boolean fetchNext()
-        {
-            for ( boolean hasNext = nodesWithLabel.hasNext(); hasNext; hasNext = nodesWithLabel.hasNext() )
-            {
-                long nextValue = nodesWithLabel.next();
-                try
-                {
-                    if ( statement.nodeGetProperty( nextValue, propertyKeyId ).valueEquals( value ) )
-                    {
-                        return next( nextValue );
-                    }
-                }
-                catch ( EntityNotFoundException e )
-                {
-                    // continue to the next node
-                }
-            }
-            return false;
-        }
-    }
-
-    @Override
-    public TraversalDescription traversalDescription()
-    {
-        return new MonoDirectionalTraversalDescription(threadToTransactionBridge);
-    }
-
-    @Override
-    public BidirectionalTraversalDescription bidirectionalTraversalDescription()
-    {
-        return new BidirectionalTraversalDescriptionImpl(threadToTransactionBridge);
     }
 }

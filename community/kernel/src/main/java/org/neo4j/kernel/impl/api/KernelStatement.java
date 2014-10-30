@@ -28,7 +28,6 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.kernel.api.exceptions.ReadOnlyDatabaseKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
@@ -38,16 +37,15 @@ import org.neo4j.kernel.impl.locking.Locks;
 
 public class KernelStatement implements TxState.Holder, Statement
 {
-    private final KernelTransactionImplementation transaction;
     protected final Locks.Client locks;
     protected final TxState.Holder txStateHolder;
     protected final IndexReaderFactory indexReaderFactory;
     protected final LabelScanStore labelScanStore;
+    private final KernelTransactionImplementation transaction;
     private final LegacyIndexTransactionState legacyIndexTransactionState;
-
+    private final OperationsFacade facade;
     private LabelScanReader labelScanReader;
     private int referenceCount;
-    private final OperationsFacade facade;
     private boolean closed;
 
     public KernelStatement( KernelTransactionImplementation transaction, IndexReaderFactory indexReaderFactory,
@@ -71,15 +69,14 @@ public class KernelStatement implements TxState.Holder, Statement
     }
 
     @Override
-    public TokenWriteOperations tokenWriteOperations() throws ReadOnlyDatabaseKernelException
+    public TokenWriteOperations tokenWriteOperations()
     {
-        transaction.assertTokenWriteAllowed();
         return facade;
     }
 
     @Override
     public DataWriteOperations dataWriteOperations()
-            throws InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException
+            throws InvalidTransactionTypeKernelException
     {
         transaction.upgradeToDataTransaction();
         return facade;
@@ -87,7 +84,7 @@ public class KernelStatement implements TxState.Holder, Statement
 
     @Override
     public SchemaWriteOperations schemaWriteOperations()
-        throws InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException
+            throws InvalidTransactionTypeKernelException
     {
         transaction.upgradeToSchemaTransaction();
         return facade;

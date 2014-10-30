@@ -19,8 +19,6 @@
  */
 package org.neo4j.index.lucene;
 
-import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexProviders;
 import org.neo4j.index.impl.lucene.LuceneDataSource;
 import org.neo4j.index.impl.lucene.LuceneIndexImplementation;
@@ -38,11 +36,6 @@ public class LuceneKernelExtension extends LifecycleAdapter
     private final IndexProviders indexProviders;
     private LuceneDataSource luceneDataSource;
     private final LifeSupport life = new LifeSupport();
-
-    public static abstract class Configuration
-    {
-        public static final Setting<Boolean> read_only = GraphDatabaseSettings.read_only;
-    }
 
     public LuceneKernelExtension( Config config, IndexConfigStore indexStore,
             FileSystemAbstraction fileSystemAbstraction, IndexProviders indexProviders )

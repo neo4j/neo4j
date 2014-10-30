@@ -34,7 +34,6 @@ import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.kernel.api.exceptions.ReadOnlyDatabaseKernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
@@ -68,7 +67,8 @@ import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 
 /**
- * This class should replace the {@link org.neo4j.kernel.api.KernelTransaction} interface, and take its name, as soon as
+ * This class should replace the {@link org.neo4j.kernel.api.KernelTransaction} interface, and take its name, as soon
+ * as
  * {@code TransitionalTxManagementKernelTransaction} is gone from {@code server}.
  */
 public class KernelTransactionImplementation implements KernelTransaction, TxState.Holder
@@ -78,6 +78,39 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      * This class is pooled and re-used. If you add *any* state to it, you *must* make sure that the #initialize()
      * method resets that state for re-use.
      */
+
+    private enum TransactionType
+    {
+        ANY,
+        DATA
+                {
+                    @Override
+                    TransactionType upgradeToSchemaTransaction() throws InvalidTransactionTypeKernelException
+                    {
+                        throw new InvalidTransactionTypeKernelException(
+                                "Cannot perform schema updates in a transaction that has performed data updates." );
+                    }
+                },
+        SCHEMA
+                {
+                    @Override
+                    TransactionType upgradeToDataTransaction() throws InvalidTransactionTypeKernelException
+                    {
+                        throw new InvalidTransactionTypeKernelException(
+                                "Cannot perform data updates in a transaction that has performed schema updates." );
+                    }
+                };
+
+        TransactionType upgradeToDataTransaction() throws InvalidTransactionTypeKernelException
+        {
+            return DATA;
+        }
+
+        TransactionType upgradeToSchemaTransaction() throws InvalidTransactionTypeKernelException
+        {
+            return SCHEMA;
+        }
+    }
 
     // Logic
     private final SchemaWriteGuard schemaWriteGuard;
@@ -89,20 +122,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final SchemaIndexProviderMap providerMap;
     private final UpdateableSchemaState schemaState;
     private final StatementOperationParts operations;
-    private final boolean readOnly;
     private final Pool<KernelTransactionImplementation> pool;
-
     // State
     private final TransactionRecordState recordState;
     private final CountsState counts = new CountsState();
-    private TxStateImpl txState;
-    private TransactionType transactionType = TransactionType.ANY;
-    private TransactionHooks.TransactionHooksState hooksState;
-    private Locks.Client locks;
-    private boolean closing, closed;
-    private boolean failure, success;
-    private volatile boolean terminated;
-
     // For committing
     private final TransactionHeaderInformationFactory headerInformationFactory;
     private final TransactionCommitProcess commitProcess;
@@ -113,12 +136,20 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final Clock clock;
     private final TransactionToRecordStateVisitor txStateToRecordStateVisitor = new TransactionToRecordStateVisitor();
     private final Collection<Command> extractedCommands = new ArrayCollection<>( 20 );
-
+    private TxStateImpl txState;
+    private TransactionType transactionType = TransactionType.ANY;
+    private TransactionHooks.TransactionHooksState hooksState;
+    private Locks.Client locks;
+    private boolean closing, closed;
+    private boolean failure, success;
+    private volatile boolean terminated;
     // Some header information
     private long startTimeMillis;
     private long lastTransactionIdWhenStarted;
+    /** Implements reusing the same underlying {@link KernelStatement} for overlapping statements. */
+    private KernelStatement currentStatement;
 
-    public KernelTransactionImplementation( StatementOperationParts operations, boolean readOnly,
+    public KernelTransactionImplementation( StatementOperationParts operations,
                                             SchemaWriteGuard schemaWriteGuard, LabelScanStore labelScanStore,
                                             IndexingService indexService,
                                             UpdateableSchemaState schemaState,
@@ -136,7 +167,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             Clock clock )
     {
         this.operations = operations;
-        this.readOnly = readOnly;
         this.schemaWriteGuard = schemaWriteGuard;
         this.labelScanStore = labelScanStore;
         this.indexService = indexService;
@@ -202,9 +232,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
-    /** Implements reusing the same underlying {@link KernelStatement} for overlapping statements. */
-    private KernelStatement currentStatement;
-
     @Override
     public boolean isOpen()
     {
@@ -230,35 +257,20 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         currentStatement = null;
     }
 
-    public void upgradeToDataTransaction() throws InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException
+    public void upgradeToDataTransaction() throws InvalidTransactionTypeKernelException
     {
-        assertDatabaseWritable();
         transactionType = transactionType.upgradeToDataTransaction();
     }
 
-    public void upgradeToSchemaTransaction() throws InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException
+    public void upgradeToSchemaTransaction() throws InvalidTransactionTypeKernelException
     {
         doUpgradeToSchemaTransaction();
         transactionType = transactionType.upgradeToSchemaTransaction();
     }
 
-    public void doUpgradeToSchemaTransaction() throws InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException
+    public void doUpgradeToSchemaTransaction() throws InvalidTransactionTypeKernelException
     {
-        assertDatabaseWritable();
         schemaWriteGuard.assertSchemaWritesAllowed();
-    }
-
-    private void assertDatabaseWritable() throws ReadOnlyDatabaseKernelException
-    {
-        if ( readOnly )
-        {
-            throw new ReadOnlyDatabaseKernelException();
-        }
-    }
-
-    public void assertTokenWriteAllowed() throws ReadOnlyDatabaseKernelException
-    {
-        assertDatabaseWritable();
     }
 
     private void dropCreatedConstraintIndexes() throws TransactionFailureException
@@ -275,7 +287,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 catch ( DropIndexFailureException e )
                 {
                     throw new IllegalStateException( "Constraint index that was created in a transaction should be " +
-                            "possible to drop during rollback of that transaction.", e );
+                                                     "possible to drop during rollback of that transaction.", e );
                 }
                 catch ( TransactionFailureException e )
                 {
@@ -365,10 +377,207 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return recordState;
     }
 
+    @Override
+    public void close() throws TransactionFailureException
+    {
+        assertTransactionOpen();
+        assertTransactionNotClosing();
+        closeCurrentStatementIfAny();
+        closing = true;
+        try
+        {
+            if ( failure || !success )
+            {
+                rollback();
+                if ( success )
+                {
+                    // Success was called, but also failure which means that the client code using this
+                    // transaction passed through a happy path, but the transaction was still marked as
+                    // failed for one or more reasons. Tell the user that although it looked happy it
+                    // wasn't committed, but was instead rolled back.
+                    throw new TransactionFailureException( Status.Transaction.MarkedAsFailed,
+                            "Transaction rolled back even if marked as successful" );
+                }
+            }
+            else
+            {
+                commit();
+            }
+        }
+        finally
+        {
+            closed = true;
+            closing = false;
+        }
+    }
+
+    protected void dispose()
+    {
+        if ( locks != null )
+        {
+            locks.close();
+        }
+
+        this.locks = null;
+        this.transactionType = null;
+        this.hooksState = null;
+        this.txState = null;
+    }
+
+    private void commit() throws TransactionFailureException
+    {
+        boolean success = false;
+
+        try
+        {
+            // Trigger transaction "before" hooks
+            if ( (hooksState = hooks.beforeCommit( txState, this, storeLayer )) != null && hooksState.failed() )
+            {
+                throw new TransactionFailureException( Status.Transaction.HookFailed, hooksState.failure(), "" );
+            }
+
+            prepareRecordChangesFromTransactionState();
+
+            // Convert changes into commands and commit
+            if ( hasChanges() )
+            {
+                try ( LockGroup lockGroup = new LockGroup() )
+                {
+                    // Gather up commands from the various sources
+                    extractedCommands.clear();
+                    recordState.extractCommands( extractedCommands );
+                    legacyIndexTransactionState.extractCommands( extractedCommands );
+                    counts.extractCommands( extractedCommands );
+
+                    /* Here's the deal: we track a quick-to-access hasChanges in transaction state which is true
+                     * if there are any changes imposed by this transaction. Some changes made inside a transaction undo
+                     * previously made changes in that same transaction, and so at some point a transaction may have
+                     * changes and at another point, after more changes seemingly,
+                     * the transaction may not have any changes.
+                     * However, to track that "undoing" of the changes is a bit tedious, intrusive and hard to maintain
+                     * and get right.... So to really make sure the transaction has changes we re-check by looking if we
+                     * have produced any commands to add to the logical log.
+                     */
+                    if ( !extractedCommands.isEmpty() )
+                    {
+                        // Finish up the whole transaction representation
+                        PhysicalTransactionRepresentation transactionRepresentation =
+                                new PhysicalTransactionRepresentation( extractedCommands );
+                        TransactionHeaderInformation headerInformation = headerInformationFactory.create();
+                        transactionRepresentation.setHeader( headerInformation.getAdditionalHeader(),
+                                headerInformation.getMasterId(),
+                                headerInformation.getAuthorId(),
+                                startTimeMillis, lastTransactionIdWhenStarted, clock.currentTimeMillis(),
+                                locks.getLockSessionId() );
+
+                        // Commit the transaction
+                        commitProcess.commit( transactionRepresentation, lockGroup );
+                    }
+
+                    if ( hasTxStateWithChanges() )
+                    {
+                        persistenceCache.apply( txState );
+                    }
+                }
+            }
+            success = true;
+        }
+        finally
+        {
+            if ( !success )
+            {
+                rollback();
+            }
+            else
+            {
+                afterCommit();
+            }
+        }
+    }
+
+    private void rollback() throws TransactionFailureException
+    {
+        try
+        {
+            try
+            {
+                dropCreatedConstraintIndexes();
+            }
+            catch ( IllegalStateException | SecurityException e )
+            {
+                throw new TransactionFailureException( Status.Transaction.CouldNotRollback, e,
+                        "Could not drop created constraint indexes" );
+            }
+
+            // Free any acquired id's
+            if ( txState != null )
+            {
+                txState.accept( new TxState.VisitorAdapter()
+                {
+                    @Override
+                    public void visitCreatedNode( long id )
+                    {
+                        storeLayer.releaseNode( id );
+                    }
+
+                    @Override
+                    public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
+                    {
+                        storeLayer.releaseRelationship( id );
+                    }
+                } );
+            }
+
+            if ( hasTxStateWithChanges() )
+            {
+                persistenceCache.invalidate( txState );
+            }
+        }
+        finally
+        {
+            afterRollback();
+        }
+    }
+
+    private void afterCommit()
+    {
+        try
+        {
+            release();
+            closeTransaction();
+            hooks.afterCommit( txState, this, hooksState );
+        }
+        finally
+        {
+            transactionMonitor.transactionFinished( true );
+        }
+    }
+
+    private void afterRollback()
+    {
+        try
+        {
+            release();
+            closeTransaction();
+            hooks.afterRollback( txState, this, hooksState );
+        }
+        finally
+        {
+            transactionMonitor.transactionFinished( false );
+        }
+    }
+
+    /** Release resources held up by this transaction & return it to the transaction pool. */
+    private void release()
+    {
+        locks.releaseAll();
+        pool.release( this );
+    }
+
     private class TransactionToRecordStateVisitor extends TxState.VisitorAdapter
     {
-        private boolean clearState;
         private final RelationshipDataExtractor relationshipData = new RelationshipDataExtractor();
+        private boolean clearState;
 
         void done()
         {
@@ -461,18 +670,19 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
 
         @Override
-        public void visitNodePropertyChanges( long id, Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed, Iterator<Integer> removed )
+        public void visitNodePropertyChanges( long id, Iterator<DefinedProperty> added,
+                                              Iterator<DefinedProperty> changed, Iterator<Integer> removed )
         {
-            while(removed.hasNext())
+            while ( removed.hasNext() )
             {
                 recordState.nodeRemoveProperty( id, removed.next() );
             }
-            while(changed.hasNext())
+            while ( changed.hasNext() )
             {
                 DefinedProperty prop = changed.next();
                 recordState.nodeChangeProperty( id, prop.propertyKeyId(), prop.value() );
             }
-            while(added.hasNext())
+            while ( added.hasNext() )
             {
                 DefinedProperty prop = added.next();
                 recordState.nodeAddProperty( id, prop.propertyKeyId(), prop.value() );
@@ -480,18 +690,19 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
 
         @Override
-        public void visitRelPropertyChanges( long id, Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed, Iterator<Integer> removed )
+        public void visitRelPropertyChanges( long id, Iterator<DefinedProperty> added,
+                                             Iterator<DefinedProperty> changed, Iterator<Integer> removed )
         {
-            while(removed.hasNext())
+            while ( removed.hasNext() )
             {
                 recordState.relRemoveProperty( id, removed.next() );
             }
-            while(changed.hasNext())
+            while ( changed.hasNext() )
             {
                 DefinedProperty prop = changed.next();
                 recordState.relChangeProperty( id, prop.propertyKeyId(), prop.value() );
             }
-            while(added.hasNext())
+            while ( added.hasNext() )
             {
                 DefinedProperty prop = added.next();
                 recordState.relAddProperty( id, prop.propertyKeyId(), prop.value() );
@@ -499,18 +710,19 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
 
         @Override
-        public void visitGraphPropertyChanges( Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed, Iterator<Integer> removed )
+        public void visitGraphPropertyChanges( Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed,
+                                               Iterator<Integer> removed )
         {
-            while(removed.hasNext())
+            while ( removed.hasNext() )
             {
                 recordState.graphRemoveProperty( removed.next() );
             }
-            while(changed.hasNext())
+            while ( changed.hasNext() )
             {
                 DefinedProperty prop = changed.next();
                 recordState.graphChangeProperty( prop.propertyKeyId(), prop.value() );
             }
-            while(added.hasNext())
+            while ( added.hasNext() )
             {
                 DefinedProperty prop = added.next();
                 recordState.graphAddProperty( prop.propertyKeyId(), prop.value() );
@@ -556,7 +768,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             }
             catch ( EntityNotFoundException e )
             {
-                 // ok, the node was created in this transaction
+                // ok, the node was created in this transaction
             }
 
             // record the state changes to be made to the store
@@ -574,7 +786,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         public void visitAddedIndex( IndexDescriptor element, boolean isConstraintIndex )
         {
             SchemaIndexProvider.Descriptor providerDescriptor = providerMap.getDefaultProvider()
-                    .getProviderDescriptor();
+                                                                           .getProviderDescriptor();
             IndexRule rule;
             if ( isConstraintIndex )
             {
@@ -593,8 +805,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         @Override
         public void visitRemovedIndex( IndexDescriptor element, boolean isConstraintIndex )
         {
-            SchemaStorage.IndexRuleKind kind = isConstraintIndex?
-                    SchemaStorage.IndexRuleKind.CONSTRAINT : SchemaStorage.IndexRuleKind.INDEX;
+            SchemaStorage.IndexRuleKind kind = isConstraintIndex ?
+                                               SchemaStorage.IndexRuleKind.CONSTRAINT
+                                                                 : SchemaStorage.IndexRuleKind.INDEX;
             IndexRule rule = schemaStorage.indexRule( element.getLabelId(), element.getPropertyKeyId(), kind );
             recordState.dropSchemaRule( rule );
         }
@@ -628,7 +841,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 throw new ThisShouldNotHappenError(
                         "Tobias Lindaaker",
                         "Constraint to be removed should exist, since its existence should " +
-                                "have been validated earlier and the schema should have been locked." );
+                        "have been validated earlier and the schema should have been locked." );
             }
             // Remove the index for the constraint as well
             visitRemovedIndex( new IndexDescriptor( element.label(), element.propertyKeyId() ), true );
@@ -653,244 +866,15 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
 
         @Override
-        public void visitCreatedNodeLegacyIndex( String name, Map<String, String> config )
+        public void visitCreatedNodeLegacyIndex( String name, Map<String,String> config )
         {
             legacyIndexTransactionState.createIndex( IndexEntityType.Node, name, config );
         }
 
         @Override
-        public void visitCreatedRelationshipLegacyIndex( String name, Map<String, String> config )
+        public void visitCreatedRelationshipLegacyIndex( String name, Map<String,String> config )
         {
             legacyIndexTransactionState.createIndex( IndexEntityType.Relationship, name, config );
         }
-    }
-
-    private enum TransactionType
-    {
-        ANY,
-        DATA
-                {
-                    @Override
-                    TransactionType upgradeToSchemaTransaction() throws InvalidTransactionTypeKernelException
-                    {
-                        throw new InvalidTransactionTypeKernelException(
-                                "Cannot perform schema updates in a transaction that has performed data updates." );
-                    }
-                },
-        SCHEMA
-                {
-                    @Override
-                    TransactionType upgradeToDataTransaction() throws InvalidTransactionTypeKernelException
-                    {
-                        throw new InvalidTransactionTypeKernelException(
-                                "Cannot perform data updates in a transaction that has performed schema updates." );
-                    }
-                };
-
-        TransactionType upgradeToDataTransaction() throws InvalidTransactionTypeKernelException
-        {
-            return DATA;
-        }
-
-        TransactionType upgradeToSchemaTransaction() throws InvalidTransactionTypeKernelException
-        {
-            return SCHEMA;
-        }
-    }
-
-    @Override
-    public void close() throws TransactionFailureException
-    {
-        assertTransactionOpen();
-        assertTransactionNotClosing();
-        closeCurrentStatementIfAny();
-        closing = true;
-        try
-        {
-            if ( failure || !success )
-            {
-                rollback();
-                if ( success )
-                {
-                    // Success was called, but also failure which means that the client code using this
-                    // transaction passed through a happy path, but the transaction was still marked as
-                    // failed for one or more reasons. Tell the user that although it looked happy it
-                    // wasn't committed, but was instead rolled back.
-                    throw new TransactionFailureException( Status.Transaction.MarkedAsFailed,
-                            "Transaction rolled back even if marked as successful" );
-                }
-            }
-            else
-            {
-                commit();
-            }
-        }
-        finally
-        {
-            closed = true;
-            closing = false;
-        }
-    }
-
-    protected void dispose()
-    {
-        if(locks != null)
-        {
-            locks.close();
-        }
-
-        this.locks = null;
-        this.transactionType = null;
-        this.hooksState = null;
-        this.txState = null;
-    }
-
-    private void commit() throws TransactionFailureException
-    {
-        boolean success = false;
-
-        try
-        {
-            // Trigger transaction "before" hooks
-            if ( (hooksState = hooks.beforeCommit( txState, this, storeLayer )) != null && hooksState.failed() )
-            {
-                throw new TransactionFailureException( Status.Transaction.HookFailed, hooksState.failure(), "" );
-            }
-
-            prepareRecordChangesFromTransactionState();
-
-            // Convert changes into commands and commit
-            if ( hasChanges() )
-            {
-                try ( LockGroup lockGroup = new LockGroup() )
-                {
-                    // Gather up commands from the various sources
-                    extractedCommands.clear();
-                    recordState.extractCommands( extractedCommands );
-                    legacyIndexTransactionState.extractCommands( extractedCommands );
-                    counts.extractCommands( extractedCommands );
-
-                    /* Here's the deal: we track a quick-to-access hasChanges in transaction state which is true
-                     * if there are any changes imposed by this transaction. Some changes made inside a transaction undo
-                     * previously made changes in that same transaction, and so at some point a transaction may have
-                     * changes and at another point, after more changes seemingly, the transaction may not have any changes.
-                     * However, to track that "undoing" of the changes is a bit tedious, intrusive and hard to maintain
-                     * and get right.... So to really make sure the transaction has changes we re-check by looking if we
-                     * have produced any commands to add to the logical log.
-                     */
-                    if ( !extractedCommands.isEmpty() )
-                    {
-                        // Finish up the whole transaction representation
-                        PhysicalTransactionRepresentation transactionRepresentation =
-                                new PhysicalTransactionRepresentation( extractedCommands );
-                        TransactionHeaderInformation headerInformation = headerInformationFactory.create();
-                        transactionRepresentation.setHeader( headerInformation.getAdditionalHeader(),
-                                headerInformation.getMasterId(),
-                                headerInformation.getAuthorId(),
-                                startTimeMillis, lastTransactionIdWhenStarted, clock.currentTimeMillis(),
-                                locks.getLockSessionId() );
-
-                        // Commit the transaction
-                        commitProcess.commit( transactionRepresentation, lockGroup );
-                    }
-
-                    if ( hasTxStateWithChanges() )
-                    {
-                        persistenceCache.apply( txState );
-                    }
-                }
-            }
-            success = true;
-        }
-        finally
-        {
-            if ( !success )
-            {
-                rollback();
-            }
-            else
-            {
-                afterCommit();
-            }
-        }
-    }
-
-    private void rollback() throws TransactionFailureException
-    {
-        try
-        {
-            try
-            {
-                dropCreatedConstraintIndexes();
-            }
-            catch ( IllegalStateException | SecurityException e )
-            {
-                throw new TransactionFailureException( Status.Transaction.CouldNotRollback, e,
-                        "Could not drop created constraint indexes" );
-            }
-
-            // Free any acquired id's
-            if (txState != null)
-            {
-                txState.accept( new TxState.VisitorAdapter()
-                {
-                    @Override
-                    public void visitCreatedNode( long id )
-                    {
-                        storeLayer.releaseNode(id);
-                    }
-
-                    @Override
-                    public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
-                    {
-                        storeLayer.releaseRelationship( id );
-                    }
-                } );
-            }
-
-            if ( hasTxStateWithChanges() )
-            {
-                persistenceCache.invalidate( txState );
-            }
-        }
-        finally
-        {
-            afterRollback();
-        }
-    }
-
-    private void afterCommit()
-    {
-        try
-        {
-            release();
-            closeTransaction();
-            hooks.afterCommit( txState, this, hooksState );
-        }
-        finally
-        {
-            transactionMonitor.transactionFinished( true );
-        }
-    }
-
-    private void afterRollback()
-    {
-        try
-        {
-            release();
-            closeTransaction();
-            hooks.afterRollback( txState, this, hooksState );
-        }
-        finally
-        {
-            transactionMonitor.transactionFinished( false );
-        }
-    }
-
-    /** Release resources held up by this transaction & return it to the transaction pool. */
-    private void release()
-    {
-        locks.releaseAll();
-        pool.release( this );
     }
 }

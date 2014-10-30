@@ -36,7 +36,6 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
-import org.neo4j.kernel.api.exceptions.ReadOnlyDatabaseKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
@@ -60,7 +59,7 @@ public class RelationshipProxy implements Relationship
     private final ThreadToStatementContextBridge statementContextProvider;
 
     public RelationshipProxy( long relId, RelationshipLookups relationshipLookups,
-                       ThreadToStatementContextBridge statementContextProvider )
+                              ThreadToStatementContextBridge statementContextProvider )
     {
         this.relId = relId;
         this.relationshipLookups = relationshipLookups;
@@ -90,14 +89,10 @@ public class RelationshipProxy implements Relationship
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }
-        catch ( ReadOnlyDatabaseKernelException e )
-        {
-            throw new ReadOnlyDbException();
-        }
         catch ( EntityNotFoundException e )
         {
             throw new IllegalStateException( "Unable to delete relationship[" +
-                    relId + "] since it is already deleted." );
+                                             relId + "] since it is already deleted." );
         }
     }
 
@@ -106,9 +101,9 @@ public class RelationshipProxy implements Relationship
     {
         assertInUnterminatedTransaction();
         RelationshipData data = relationshipLookups.getRelationshipData( relId );
-        return new Node[] {
+        return new Node[]{
                 relationshipLookups.newNodeProxy( data.getStartNode() ),
-                relationshipLookups.newNodeProxy( data.getEndNode() ) };
+                relationshipLookups.newNodeProxy( data.getEndNode() )};
     }
 
     @Override
@@ -125,7 +120,7 @@ public class RelationshipProxy implements Relationship
             return relationshipLookups.newNodeProxy( data.getStartNode() );
         }
         throw new NotFoundException( "Node[" + node.getId()
-            + "] not connected to this relationship[" + getId() + "]" );
+                                     + "] not connected to this relationship[" + getId() + "]" );
     }
 
     @Override
@@ -170,7 +165,7 @@ public class RelationshipProxy implements Relationship
         catch ( PropertyKeyIdNotFoundKernelException e )
         {
             throw new ThisShouldNotHappenError( "Jake",
-                                                "Property key retrieved through kernel API should exist." );
+                    "Property key retrieved through kernel API should exist." );
         }
     }
 
@@ -267,10 +262,6 @@ public class RelationshipProxy implements Relationship
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }
-        catch ( ReadOnlyDatabaseKernelException e )
-        {
-            throw new ReadOnlyDbException();
-        }
     }
 
     @Override
@@ -293,10 +284,6 @@ public class RelationshipProxy implements Relationship
         catch ( InvalidTransactionTypeKernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
-        }
-        catch ( ReadOnlyDatabaseKernelException e )
-        {
-            throw new ReadOnlyDbException();
         }
     }
 
@@ -336,7 +323,7 @@ public class RelationshipProxy implements Relationship
     @Override
     public int hashCode()
     {
-        return (int) (( relId >>> 32 ) ^ relId );
+        return (int) ((relId >>> 32) ^ relId);
     }
 
     @Override

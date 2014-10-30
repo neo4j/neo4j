@@ -17,12 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.core;
+package org.neo4j.kernel.impl.api;
 
-import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.impl.locking.LockGroup;
+import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 
-public interface TokenCreator
+/**
+ * For databases in read_only mode, the implementation of {@link org.neo4j.kernel.impl.api.TransactionCommitProcess}
+ * will simply always throw an exception on commit, to ensure that no changes are made.
+ */
+public class ReadOnlyTransactionCommitProcess
+        implements TransactionCommitProcess
 {
-    int getOrCreate( String name )
-            throws KernelException;
+    @Override
+    public long commit( TransactionRepresentation representation, LockGroup locks ) throws TransactionFailureException
+    {
+        throw new ReadOnlyDbException();
+    }
 }

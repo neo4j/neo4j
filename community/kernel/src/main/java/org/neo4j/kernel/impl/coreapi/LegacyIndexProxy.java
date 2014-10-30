@@ -34,16 +34,13 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.kernel.api.exceptions.ReadOnlyDatabaseKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.impl.api.legacyindex.AbstractIndexHits;
 import org.neo4j.kernel.impl.core.EntityFactory;
-import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 
 import static java.lang.Math.max;
 import static java.lang.String.format;
-
 import static org.neo4j.collection.primitive.Primitive.longSet;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.single;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.LEGACY_INDEX;
@@ -51,178 +48,165 @@ import static org.neo4j.kernel.impl.locking.ResourceTypes.legacyIndexResourceId;
 
 public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
 {
-    public interface Lookup
-    {
-        GraphDatabaseService getGraphDatabaseService();
-
-        EntityFactory getEntityFactory();
-    }
-
     public static enum Type
     {
         NODE
-        {
-            @Override
-            Class<Node> getEntityType()
-            {
-                return Node.class;
-            }
+                {
+                    @Override
+                    Class<Node> getEntityType()
+                    {
+                        return Node.class;
+                    }
 
-            @Override
-            Node entity( long id, EntityFactory entityFactory )
-            {
-                return entityFactory.newNodeProxyById( id );
-            }
+                    @Override
+                    Node entity( long id, EntityFactory entityFactory )
+                    {
+                        return entityFactory.newNodeProxyById( id );
+                    }
 
-            @Override
-            LegacyIndexHits get( ReadOperations operations, String name, String key, Object value )
-                    throws LegacyIndexNotFoundKernelException
-            {
-                return operations.nodeLegacyIndexGet( name, key, value );
-            }
+                    @Override
+                    LegacyIndexHits get( ReadOperations operations, String name, String key, Object value )
+                            throws LegacyIndexNotFoundKernelException
+                    {
+                        return operations.nodeLegacyIndexGet( name, key, value );
+                    }
 
-            @Override
-            LegacyIndexHits query( ReadOperations operations, String name, String key, Object queryOrQueryObject )
-                    throws LegacyIndexNotFoundKernelException
-            {
-                return operations.nodeLegacyIndexQuery( name, key, queryOrQueryObject );
-            }
+                    @Override
+                    LegacyIndexHits query( ReadOperations operations, String name, String key,
+                                           Object queryOrQueryObject )
+                            throws LegacyIndexNotFoundKernelException
+                    {
+                        return operations.nodeLegacyIndexQuery( name, key, queryOrQueryObject );
+                    }
 
-            @Override
-            LegacyIndexHits query( ReadOperations operations, String name, Object queryOrQueryObject )
-                    throws LegacyIndexNotFoundKernelException
-            {
-                return operations.nodeLegacyIndexQuery( name, queryOrQueryObject );
-            }
+                    @Override
+                    LegacyIndexHits query( ReadOperations operations, String name, Object queryOrQueryObject )
+                            throws LegacyIndexNotFoundKernelException
+                    {
+                        return operations.nodeLegacyIndexQuery( name, queryOrQueryObject );
+                    }
 
-            @Override
-            void add( DataWriteOperations operations, String name, long id, String key, Object value )
-                    throws EntityNotFoundException, InvalidTransactionTypeKernelException,
-                    ReadOnlyDatabaseKernelException, LegacyIndexNotFoundKernelException
-            {
-                operations.nodeAddToLegacyIndex( name, id, key, value );
-            }
+                    @Override
+                    void add( DataWriteOperations operations, String name, long id, String key, Object value )
+                            throws EntityNotFoundException, InvalidTransactionTypeKernelException,
+                            LegacyIndexNotFoundKernelException
+                    {
+                        operations.nodeAddToLegacyIndex( name, id, key, value );
+                    }
 
-            @Override
-            void remove( DataWriteOperations operations, String name, long id, String key, Object value )
-                    throws InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException,
-                    LegacyIndexNotFoundKernelException
-            {
-                operations.nodeRemoveFromLegacyIndex( name, id, key, value );
-            }
+                    @Override
+                    void remove( DataWriteOperations operations, String name, long id, String key, Object value )
+                            throws InvalidTransactionTypeKernelException, LegacyIndexNotFoundKernelException
+                    {
+                        operations.nodeRemoveFromLegacyIndex( name, id, key, value );
+                    }
 
-            @Override
-            void remove( DataWriteOperations operations, String name, long id, String key )
-                    throws InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException,
-                    LegacyIndexNotFoundKernelException
-            {
-                operations.nodeRemoveFromLegacyIndex( name, id, key );
-            }
+                    @Override
+                    void remove( DataWriteOperations operations, String name, long id, String key )
+                            throws InvalidTransactionTypeKernelException, LegacyIndexNotFoundKernelException
+                    {
+                        operations.nodeRemoveFromLegacyIndex( name, id, key );
+                    }
 
-            @Override
-            void remove( DataWriteOperations operations, String name, long id )
-                    throws InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException,
-                    LegacyIndexNotFoundKernelException
-            {
-                operations.nodeRemoveFromLegacyIndex( name, id );
-            }
+                    @Override
+                    void remove( DataWriteOperations operations, String name, long id )
+                            throws InvalidTransactionTypeKernelException, LegacyIndexNotFoundKernelException
+                    {
+                        operations.nodeRemoveFromLegacyIndex( name, id );
+                    }
 
-            @Override
-            void drop( DataWriteOperations operations, String name )
-                    throws InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException,
-                    LegacyIndexNotFoundKernelException
-            {
-                operations.nodeLegacyIndexDrop( name );
-            }
+                    @Override
+                    void drop( DataWriteOperations operations, String name )
+                            throws InvalidTransactionTypeKernelException, LegacyIndexNotFoundKernelException
+                    {
+                        operations.nodeLegacyIndexDrop( name );
+                    }
 
-            @Override
-            long id( PropertyContainer entity )
-            {
-                return ((Node)entity).getId();
-            }
-        },
+                    @Override
+                    long id( PropertyContainer entity )
+                    {
+                        return ((Node) entity).getId();
+                    }
+                },
         RELATIONSHIP
-        {
-            @Override
-            Class<Relationship> getEntityType()
-            {
-                return Relationship.class;
-            }
+                {
+                    @Override
+                    Class<Relationship> getEntityType()
+                    {
+                        return Relationship.class;
+                    }
 
-            @Override
-            Relationship entity( long id, EntityFactory entityFactory )
-            {
-                return entityFactory.newRelationshipProxyById( id );
-            }
+                    @Override
+                    Relationship entity( long id, EntityFactory entityFactory )
+                    {
+                        return entityFactory.newRelationshipProxyById( id );
+                    }
 
-            @Override
-            LegacyIndexHits get( ReadOperations operations, String name, String key, Object value )
-                    throws LegacyIndexNotFoundKernelException
-            {
-                return operations.relationshipLegacyIndexGet( name, key, value, -1, -1 );
-            }
+                    @Override
+                    LegacyIndexHits get( ReadOperations operations, String name, String key, Object value )
+                            throws LegacyIndexNotFoundKernelException
+                    {
+                        return operations.relationshipLegacyIndexGet( name, key, value, -1, -1 );
+                    }
 
-            @Override
-            LegacyIndexHits query( ReadOperations operations, String name, String key, Object queryOrQueryObject )
-                    throws LegacyIndexNotFoundKernelException
-            {
-                return operations.relationshipLegacyIndexQuery( name, key, queryOrQueryObject, -1, -1 );
-            }
+                    @Override
+                    LegacyIndexHits query( ReadOperations operations, String name, String key,
+                                           Object queryOrQueryObject )
+                            throws LegacyIndexNotFoundKernelException
+                    {
+                        return operations.relationshipLegacyIndexQuery( name, key, queryOrQueryObject, -1, -1 );
+                    }
 
-            @Override
-            LegacyIndexHits query( ReadOperations operations, String name, Object queryOrQueryObject )
-                    throws LegacyIndexNotFoundKernelException
-            {
-                return operations.relationshipLegacyIndexQuery( name, queryOrQueryObject, -1, -1 );
-            }
+                    @Override
+                    LegacyIndexHits query( ReadOperations operations, String name, Object queryOrQueryObject )
+                            throws LegacyIndexNotFoundKernelException
+                    {
+                        return operations.relationshipLegacyIndexQuery( name, queryOrQueryObject, -1, -1 );
+                    }
 
-            @Override
-            void add( DataWriteOperations operations, String name, long id, String key, Object value )
-                    throws EntityNotFoundException, InvalidTransactionTypeKernelException,
-                    ReadOnlyDatabaseKernelException, LegacyIndexNotFoundKernelException
-            {
-                operations.relationshipAddToLegacyIndex( name, id, key, value );
-            }
+                    @Override
+                    void add( DataWriteOperations operations, String name, long id, String key, Object value )
+                            throws EntityNotFoundException, InvalidTransactionTypeKernelException,
+                            LegacyIndexNotFoundKernelException
+                    {
+                        operations.relationshipAddToLegacyIndex( name, id, key, value );
+                    }
 
-            @Override
-            void remove( DataWriteOperations operations, String name, long id, String key, Object value )
-                    throws InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException,
-                    LegacyIndexNotFoundKernelException
-            {
-                operations.relationshipRemoveFromLegacyIndex( name, id, key, value );
-            }
+                    @Override
+                    void remove( DataWriteOperations operations, String name, long id, String key, Object value )
+                            throws InvalidTransactionTypeKernelException, LegacyIndexNotFoundKernelException
+                    {
+                        operations.relationshipRemoveFromLegacyIndex( name, id, key, value );
+                    }
 
-            @Override
-            void remove( DataWriteOperations operations, String name, long id, String key )
-                    throws InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException,
-                    LegacyIndexNotFoundKernelException
-            {
-                operations.relationshipRemoveFromLegacyIndex( name, id, key );
-            }
+                    @Override
+                    void remove( DataWriteOperations operations, String name, long id, String key )
+                            throws InvalidTransactionTypeKernelException, LegacyIndexNotFoundKernelException
+                    {
+                        operations.relationshipRemoveFromLegacyIndex( name, id, key );
+                    }
 
-            @Override
-            void remove( DataWriteOperations operations, String name, long id )
-                    throws InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException,
-                    LegacyIndexNotFoundKernelException
-            {
-                operations.relationshipRemoveFromLegacyIndex( name, id );
-            }
+                    @Override
+                    void remove( DataWriteOperations operations, String name, long id )
+                            throws InvalidTransactionTypeKernelException, LegacyIndexNotFoundKernelException
+                    {
+                        operations.relationshipRemoveFromLegacyIndex( name, id );
+                    }
 
-            @Override
-            void drop( DataWriteOperations operations, String name ) throws InvalidTransactionTypeKernelException,
-                    ReadOnlyDatabaseKernelException, LegacyIndexNotFoundKernelException
-            {
-                operations.relationshipLegacyIndexDrop( name );
-            }
+                    @Override
+                    void drop( DataWriteOperations operations, String name )
+                            throws InvalidTransactionTypeKernelException,
+                            LegacyIndexNotFoundKernelException
+                    {
+                        operations.relationshipLegacyIndexDrop( name );
+                    }
 
-            @Override
-            long id( PropertyContainer entity )
-            {
-                return ((Relationship)entity).getId();
-            }
-        }
-
-        ;
+                    @Override
+                    long id( PropertyContainer entity )
+                    {
+                        return ((Relationship) entity).getId();
+                    }
+                };
 
         abstract <T extends PropertyContainer> Class<T> getEntityType();
 
@@ -238,35 +222,38 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
                 throws LegacyIndexNotFoundKernelException;
 
         abstract void add( DataWriteOperations operations, String name, long id, String key, Object value )
-                throws EntityNotFoundException, InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException,
+                throws EntityNotFoundException, InvalidTransactionTypeKernelException,
                 LegacyIndexNotFoundKernelException;
 
         abstract void remove( DataWriteOperations operations, String name, long id, String key, Object value )
-                throws InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException,
-                LegacyIndexNotFoundKernelException;
+                throws InvalidTransactionTypeKernelException, LegacyIndexNotFoundKernelException;
 
         abstract void remove( DataWriteOperations operations, String name, long id, String key )
-                throws InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException,
-                LegacyIndexNotFoundKernelException;
+                throws InvalidTransactionTypeKernelException, LegacyIndexNotFoundKernelException;
 
         abstract void remove( DataWriteOperations operations, String name, long id )
-                throws InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException,
-                LegacyIndexNotFoundKernelException;
+                throws InvalidTransactionTypeKernelException, LegacyIndexNotFoundKernelException;
 
         abstract void drop( DataWriteOperations operations, String name )
-                throws InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException,
-                LegacyIndexNotFoundKernelException;
+                throws InvalidTransactionTypeKernelException, LegacyIndexNotFoundKernelException;
 
         abstract long id( PropertyContainer entity );
     }
 
+    public interface Lookup
+    {
+        GraphDatabaseService getGraphDatabaseService();
+
+        EntityFactory getEntityFactory();
+    }
+
     protected final String name;
     protected final Type type;
-    private final Lookup lookup;
     protected final ThreadToStatementContextBridge statementContextBridge;
+    private final Lookup lookup;
 
     public LegacyIndexProxy( String name, Type type, Lookup lookup,
-            ThreadToStatementContextBridge statementContextBridge )
+                             ThreadToStatementContextBridge statementContextBridge )
     {
         this.name = name;
         this.type = type;
@@ -405,10 +392,6 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }
-        catch ( ReadOnlyDatabaseKernelException e )
-        {
-            throw new ReadOnlyDbException();
-        }
         catch ( LegacyIndexNotFoundKernelException e )
         {
             throw new NotFoundException( type + " index '" + name + "' doesn't exist" );
@@ -425,10 +408,6 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
         catch ( InvalidTransactionTypeKernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
-        }
-        catch ( ReadOnlyDatabaseKernelException e )
-        {
-            throw new ReadOnlyDbException();
         }
         catch ( LegacyIndexNotFoundKernelException e )
         {
@@ -447,10 +426,6 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }
-        catch ( ReadOnlyDatabaseKernelException e )
-        {
-            throw new ReadOnlyDbException();
-        }
         catch ( LegacyIndexNotFoundKernelException e )
         {
             throw new NotFoundException( type + " index '" + name + "' doesn't exist" );
@@ -468,10 +443,6 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }
-        catch ( ReadOnlyDatabaseKernelException e )
-        {
-            throw new ReadOnlyDbException();
-        }
         catch ( LegacyIndexNotFoundKernelException e )
         {
             throw new NotFoundException( type + " index '" + name + "' doesn't exist" );
@@ -488,10 +459,6 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
         catch ( InvalidTransactionTypeKernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
-        }
-        catch ( ReadOnlyDatabaseKernelException e )
-        {
-            throw new ReadOnlyDbException();
         }
         catch ( LegacyIndexNotFoundKernelException e )
         {
@@ -534,10 +501,6 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }
-        catch ( ReadOnlyDatabaseKernelException e )
-        {
-            throw new ReadOnlyDbException();
-        }
         catch ( LegacyIndexNotFoundKernelException e )
         {
             throw new RuntimeException( e );
@@ -545,7 +508,7 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
     }
 
     private void internalAdd( T entity, String key, Object value, Statement statement ) throws EntityNotFoundException,
-            InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException, LegacyIndexNotFoundKernelException
+            InvalidTransactionTypeKernelException, LegacyIndexNotFoundKernelException
     {
         type.add( statement.dataWriteOperations(), name, type.id( entity ), key, value );
     }

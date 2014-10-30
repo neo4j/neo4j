@@ -24,7 +24,6 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.ReadOnlyDatabaseKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 
@@ -39,32 +38,27 @@ public abstract class IsolatedTransactionTokenCreator implements TokenCreator
     private final Provider<KernelAPI> kernelProvider;
 
     public IsolatedTransactionTokenCreator( Provider<KernelAPI> kernelProvider,
-            IdGeneratorFactory idGeneratorFactory )
+                                            IdGeneratorFactory idGeneratorFactory )
     {
         this.kernelProvider = kernelProvider;
         this.idGeneratorFactory = idGeneratorFactory;
     }
 
     @Override
-    public synchronized int getOrCreate( String name )
+    public synchronized int getOrCreate( String name ) throws org.neo4j.kernel.api.exceptions.KernelException
     {
         KernelAPI kernel = kernelProvider.instance();
-        try ( KernelTransaction transaction = kernel.newTransaction())
+        try ( KernelTransaction transaction = kernel.newTransaction() )
         {
-            try (Statement statement = transaction.acquireStatement())
+            try ( Statement statement = transaction.acquireStatement() )
             {
                 int id = createKey( statement, name );
                 transaction.success();
                 return id;
             }
         }
-        catch ( Exception e )
-        {
-            throw new org.neo4j.graphdb.TransactionFailureException(
-                    "Failure to rollback after creating token failed", e );
-        }
     }
 
     protected abstract int createKey( Statement statement, String name )
-            throws ReadOnlyDatabaseKernelException, IllegalTokenNameException, TooManyLabelsException;
+            throws IllegalTokenNameException, TooManyLabelsException;
 }

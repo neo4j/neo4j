@@ -40,25 +40,13 @@ import org.neo4j.kernel.monitoring.Monitors;
  * records. Each record has a fixed size (<CODE>getRecordSize()</CODE>) so
  * the position for a record can be calculated by
  * <CODE>id * getRecordSize()</CODE>.
- * <p>
+ * <p/>
  * A store has an {@link IdGenerator} managing the records that are free or in
  * use.
  */
 public abstract class AbstractStore extends CommonAbstractStore
 {
-    public static abstract class Configuration extends CommonAbstractStore.Configuration
-    {
-        public static final Setting<Boolean> rebuild_idgenerators_fast = GraphDatabaseSettings.rebuild_idgenerators_fast;
-    }
-
     private final Config conf;
-
-    /**
-     * Returns the fixed size of each record in this store.
-     *
-     * @return The record size
-     */
-    public abstract int getRecordSize();
 
     public AbstractStore(
             File fileName,
@@ -75,6 +63,13 @@ public abstract class AbstractStore extends CommonAbstractStore
                 versionMismatchHandler, monitors );
         this.conf = conf;
     }
+
+    /**
+     * Returns the fixed size of each record in this store.
+     *
+     * @return The record size
+     */
+    public abstract int getRecordSize();
 
     @Override
     protected int getEffectiveRecordSize()
@@ -94,13 +89,13 @@ public abstract class AbstractStore extends CommonAbstractStore
         int expectedVersionLength = UTF8.encode( buildTypeDescriptorAndVersion( getTypeDescriptor() ) ).length;
         long fileSize = getFileChannel().size();
         if ( getRecordSize() != 0
-             && (fileSize - expectedVersionLength) % getRecordSize() != 0 && !isReadOnly() )
+             && (fileSize - expectedVersionLength) % getRecordSize() != 0 )
         {
             setStoreNotOk( new IllegalStateException(
                     "Misaligned file size " + fileSize + " for " + this + ", expected version length:" +
                     expectedVersionLength ) );
         }
-        if ( getStoreOk() && !isReadOnly() )
+        if ( getStoreOk() )
         {
             getFileChannel().truncate( fileSize - expectedVersionLength );
         }
@@ -110,5 +105,11 @@ public abstract class AbstractStore extends CommonAbstractStore
     protected boolean isInUse( byte inUseByte )
     {
         return (inUseByte & 0x1) == Record.IN_USE.intValue();
+    }
+
+    public static abstract class Configuration extends CommonAbstractStore.Configuration
+    {
+        public static final Setting<Boolean> rebuild_idgenerators_fast =
+                GraphDatabaseSettings.rebuild_idgenerators_fast;
     }
 }

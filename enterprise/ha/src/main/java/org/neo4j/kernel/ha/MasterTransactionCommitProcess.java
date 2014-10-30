@@ -22,7 +22,6 @@ package org.neo4j.kernel.ha;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
-import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreInjectedTransactionValidator;
@@ -35,11 +34,11 @@ public class MasterTransactionCommitProcess implements TransactionCommitProcess
 {
     private final TransactionPropagator pusher;
     private final NeoStoreInjectedTransactionValidator validator;
-    private final TransactionRepresentationCommitProcess inner;
+    private final TransactionCommitProcess inner;
 
-    public MasterTransactionCommitProcess( TransactionRepresentationCommitProcess commitProcess,
+    public MasterTransactionCommitProcess( TransactionCommitProcess commitProcess,
                                            TransactionPropagator pusher,
-                                           NeoStoreInjectedTransactionValidator validator)
+                                           NeoStoreInjectedTransactionValidator validator )
     {
         this.inner = commitProcess;
         this.pusher = pusher;
