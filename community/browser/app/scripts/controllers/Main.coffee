@@ -77,14 +77,20 @@ angular.module('neo4jApp.controllers')
         $scope.$watch 'unauthorized', (isUnauthorized) ->
           if not isUnauthorized
             refresh()
-          else $scope.errorMessage = motdService.unauthorized
+          else 
+            $scope.errorMessage = motdService.unauthorized
+            AuthService.forget()
 
         $scope.$on 'auth:status_updated', () ->
           $scope.check()
 
         # Authorization
         AuthService.hasValidAuthorization().then(
-          -> Frame.create({input:"#{Settings.cmdchar}play welcome"})
+          -> 
+            Frame.create({input:"#{Settings.cmdchar}play welcome"})
+            Frame.createOne({input:"#{Settings.cmdchar}server connect"})
+          ,
+          -> Frame.createOne({input:"#{Settings.cmdchar}server connect"})
         )
 
         # XXX: Temporary for now having to change all help files

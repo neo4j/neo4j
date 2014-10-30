@@ -35,7 +35,6 @@ angular.module('neo4jApp.controllers')
 
       $scope.authenticate = ->
         $scope.error_text = ''
-
         if not $scope.password.length
           $scope.error_text += 'You have to enter a password. '
         if not $scope.username.length

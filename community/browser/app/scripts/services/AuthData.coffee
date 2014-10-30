@@ -21,30 +21,28 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 'use strict';
 
 angular.module('neo4jApp.services')
-.factory 'AuthDataService', [
+.service 'AuthDataService', [
   'localStorageService'
   '$base64'
   (localStorageService, $base64) ->
     cached_authorization_data = localStorageService.get('authorization_token') || ''
-    is_authenticated = if cached_authorization_data then yes else no
-    return {
-      setAuthenticated: (is_authenticated) ->
-        is_authenticated = is_authenticated
-      isAuthenticated: ->
-        is_authenticated
-      setAuthData: (authdata) ->
-        return unless authdata
-        encoded = $base64.encode(authdata)
-        cached_authorization_data = encoded
-        localStorageService.set('authorization_token', encoded)
-        is_authenticated = yes
-      clearAuthData: ->
-        localStorageService.remove('authorization_token')
-        cached_authorization_data = null
-        is_authenticated = no
-      getAuthData: ->
-        return cached_authorization_data || localStorageService.get('authorization_token') || ''
-      getAuthToken: ->
-        return $base64.decode(cached_authorization_data || localStorageService.get('authorization_token') || '')
-    }
+    @is_authenticated = if cached_authorization_data or @is_authenticated then yes else no
+    @setAuthenticated = (is_authenticated) ->
+      @is_authenticated = is_authenticated
+    @isAuthenticated = ->
+      @is_authenticated
+    @setAuthData = (authdata) ->
+      return unless authdata
+      encoded = $base64.encode(authdata)
+      cached_authorization_data = encoded
+      localStorageService.set('authorization_token', encoded)
+      @setAuthenticated yes
+    @clearAuthData = ->
+      localStorageService.remove('authorization_token')
+      cached_authorization_data = null
+    @getAuthData = ->
+      return cached_authorization_data || localStorageService.get('authorization_token') || ''
+    @getAuthToken = ->
+      return $base64.decode(cached_authorization_data || localStorageService.get('authorization_token') || '')
+    @
 ]

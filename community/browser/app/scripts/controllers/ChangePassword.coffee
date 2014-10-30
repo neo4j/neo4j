@@ -32,6 +32,7 @@ angular.module('neo4jApp.controllers')
       $scope.current_password = ''
       $scope.password_changed = false
       $scope.$parent.error_text = ''
+      $scope.auth_service = AuthService
 
       $scope.showCurrentPasswordField = ->
         !$scope.$parent.password_change_required

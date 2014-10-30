@@ -20,24 +20,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 'use strict';
 
-angular.module('neo4jApp.services')
-  .factory('HTTPErrorInterceptor', [
-    '$q'
-    '$injector'
-    'Settings'
-    'AuthDataService'
-    ($q, $injector, Settings, AuthDataService) ->
-      Editor = $injector.get 'Editor'
-      interceptor = 
-        responseError: (response) ->
-          #Auth error
-          if response.status is 401
-            Editor.execScript("#{Settings.cmdchar}server connect", no_duplicates = yes)
-            AuthDataService.clearAuthData()
-          $q.reject response
-      interceptor
-])
+angular.module('neo4jApp.directives')
+  .directive('onEnter', [ 
+    ->
+      restrict: 'A',
+      link: (scope, elem, attr, ctrl) ->
+        elem.bind('keyup', (e)->
+          code = e.which || e.keyCode
+          return unless code is 13
 
-angular.module('neo4jApp').config(['$httpProvider', ($httpProvider) ->
-  $httpProvider.interceptors.push 'HTTPErrorInterceptor'
-])
+          if attr.onEnter is 'focus'
+            element = document.getElementById(attr.onEnterTargetId)
+            element.focus()
+          else if attr.onEnter is 'click'
+            element = document.getElementById(attr.onEnterTargetId)
+            angular.element(element).triggerHandler('click')
+            elem.select()
+        )
+  ])

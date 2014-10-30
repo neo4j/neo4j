@@ -75,8 +75,17 @@ describe 'Service: AuthService', () ->
     it ' - Empty auth token in persistent storage on unsuccessful authentication', ->
       AuthDataService.setAuthData('sample')
       httpBackend.expect('POST', "#{Settings.endpoint.auth}").respond(422, JSON.stringify({}));
+      httpBackend.expect('GET', "#{Settings.endpoint.auth}").respond(401, JSON.stringify({}));
       AuthService.authenticate('test', 'test')
       $scope.$apply() if not $scope.$$phase
       httpBackend.flush()
       expect(AuthDataService.getAuthToken()).toBeFalsy()
       expect(AuthService.isAuthenticated()).toBe false
+
+    it ' - isAuthenticated should always be true when auth is disabled on server', ->
+      AuthDataService.setAuthData('sample')
+      httpBackend.expect('GET', "#{Settings.endpoint.auth}").respond(200, JSON.stringify({}));
+      AuthService.forget()
+      $scope.$apply() if not $scope.$$phase
+      httpBackend.flush()
+      expect(AuthService.isAuthenticated()).toBe true

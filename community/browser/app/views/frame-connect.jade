@@ -5,7 +5,7 @@ div(ng-controller="AuthCtrl")
       .view-result(ng-hide="password_change_required")
         article.guide
           div
-            .row
+            .row(ng-show="!auth_service.isAuthenticated()")
               .span4
                 h3 Welcome to Neo4j!
                 p.lead
@@ -20,15 +20,29 @@ div(ng-controller="AuthCtrl")
                   p
                     | Username
                     br
-                    input(type='text', ng-model="username", style="margin: 0")
+                    input(type='text', on-enter="focus", on-enter-target-id="connect_password", autofocus, ng-model="username", style="margin: 0")
                   p
                     | Password
                     br
-                    input(type='password', ng-model="password", style="margin: 0")
+                    input(id="connect_password", on-enter="click", on-enter-target-id="connect_button", type='password', ng-model="password", style="margin: 0")
                   p
-                    button.btn(ng-click="authenticate()", style="margin: 0") Connect
-              .span5(ng-show="auth_service.isAuthenticated()")
-                p You now have a working connection with Neo4j.
+                    button.btn(id="connect_button", ng-click="authenticate()", style="margin: 0") Connect
+            .row(ng-if="auth_service.isAuthenticated() && !password_change_required && !auth_service.current_user")
+              .span4
+                h3 Connection to Neo4j
+                p.lead
+                  | Always connected.
+              .span1
+              .span6
+                p Since server authentication is disabled, you are always connected to the Neo4j database.
+            .row(ng-if="auth_service.isAuthenticated() && !password_change_required && auth_service.current_user")
+              .span4
+                h3 Connected to Neo4j
+                p.lead
+                  | Nice to meet you.
+              .span1
+              .span6
+                p You have a working connection with the Neo4j database.
             .row(ng-show="password_change_required")
       .view-result(ng-show="password_change_required")
         include partials/frame-change-password

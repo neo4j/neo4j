@@ -56,18 +56,25 @@ angular.module('neo4jApp.services')
         )
         promise
 
-      hasValidAuthorization : =>
+      hasValidAuthorization: =>
         that = @
-        Server.get(Settings.endpoint.auth).then(
+        p = Server.get(Settings.endpoint.auth)
+        p.success(
           (r) -> 
             that.setAuthenticatedStatus true
-            that.current_user = r.data
+            that.current_user = r
+            r
+        ).error(
+          (r) ->
+            that.setAuthenticatedStatus false
+            r
         )
 
       forget: =>
         updatePersistentAuthToken false
-        @setAuthenticatedStatus false
-        @current_user = false
+        if @current_user 
+          @current_user = false
+        @hasValidAuthorization()
 
       getAuthInfo: ->
         that = @

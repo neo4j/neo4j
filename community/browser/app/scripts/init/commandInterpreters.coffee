@@ -197,7 +197,7 @@ angular.module('neo4jApp')
               q.resolve(r.data)
             ,
             (r) ->
-              q.reject(error("Server responded #{r.status}"))
+              q.reject(r)
           )
 
           q.promise
@@ -205,6 +205,7 @@ angular.module('neo4jApp')
 
     FrameProvider.interpreters.push
       type: 'auth'
+      fullscreenable: false
       templateUrl: 'views/frame-connect.html'
       matches: (input) ->
         pattern = new RegExp("^#{cmdchar}server connect")
@@ -215,6 +216,7 @@ angular.module('neo4jApp')
 
     FrameProvider.interpreters.push
       type: 'auth'
+      fullscreenable: false
       templateUrl: 'views/frame-disconnect.html'
       matches:  (input) ->
         pattern = new RegExp("^#{cmdchar}server disconnect")
@@ -227,6 +229,7 @@ angular.module('neo4jApp')
 
     FrameProvider.interpreters.push
       type: 'auth'
+      fullscreenable: false
       templateUrl: 'views/frame-server-status.html'
       matches:  (input) ->
         pattern = new RegExp("^#{cmdchar}server status")
@@ -246,6 +249,7 @@ angular.module('neo4jApp')
 
     FrameProvider.interpreters.push
       type: 'auth'
+      fullscreenable: false
       templateUrl: 'views/frame-change-password.html'
       matches:  (input) ->
         pattern = new RegExp("^#{cmdchar}server change-password")
@@ -258,6 +262,7 @@ angular.module('neo4jApp')
 
     FrameProvider.interpreters.push
       type: 'auth'
+      fullscreenable: false
       templateUrl: 'views/frame-invalidate-token.html'
       matches:  (input) ->
         pattern = new RegExp("^#{cmdchar}server invalidate-token")
@@ -270,6 +275,7 @@ angular.module('neo4jApp')
 
     FrameProvider.interpreters.push
       type: 'auth'
+      fullscreenable: false
       templateUrl: 'views/frame-set-token.html'
       matches:  (input) ->
         pattern = new RegExp("^#{cmdchar}server set-token")
@@ -319,8 +325,9 @@ angular.module('neo4jApp')
                   table: response
                   graph: new GraphModel(response)
                 )
-          ,
-          q.reject
+            ,
+            (r) -> 
+              q.reject(r)
           )
 
           q.promise
