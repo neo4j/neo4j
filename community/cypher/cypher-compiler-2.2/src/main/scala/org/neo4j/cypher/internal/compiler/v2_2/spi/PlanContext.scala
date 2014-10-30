@@ -44,5 +44,7 @@ trait PlanContext extends TokenContext {
 
   def getOrCreateFromSchemaState[T](key: Any, f: => T): T
 
+  def getLastCommittedTransactionId: Long
+
   def statistics: GraphStatistics
 }

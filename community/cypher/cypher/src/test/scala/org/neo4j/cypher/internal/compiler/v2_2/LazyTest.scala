@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2
 import commands.expressions.{Literal, Identifier}
 import commands.{GreaterThan, True}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.Argument
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
 import pipes._
 import pipes.matching._
 import symbols.CTInteger
@@ -191,7 +192,9 @@ class LazyTest extends ExecutionEngineFunSuite {
     val fakeDataStatement = mock[OperationsFacade]
     val fakeReadStatement = mock[ReadOperations]
     val fakeStatement = mock[Statement]
+    val idStore = mock[TransactionIdStore]
 
+    when(idStore.getLastCommittedTransactionId()).thenReturn(0)
     when(nodeManager.newNodeProxyById(anyLong())).thenAnswer( new Answer[NodeProxy] {
       def answer( invocation: InvocationOnMock ): NodeProxy = new NodeProxy( invocation.getArguments()(0).asInstanceOf[Long], null, null, null )
     })
@@ -201,6 +204,7 @@ class LazyTest extends ExecutionEngineFunSuite {
     when(fakeGraph.getDependencyResolver).thenReturn(dependencies)
     when(dependencies.resolveDependency(classOf[ThreadToStatementContextBridge])).thenReturn(bridge)
     when(dependencies.resolveDependency(classOf[NodeManager])).thenReturn(nodeManager)
+    when(dependencies.resolveDependency(classOf[TransactionIdStore])).thenReturn(idStore)
     when(dependencies.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])).thenReturn(monitors)
     when(fakeGraph.beginTx()).thenReturn(tx)
     val nodesIterator = PrimitiveLongCollections.iterator( 0L, 1L, 2L, 3L, 4L, 5L, 6L )

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
-import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{namespaceIdentifiers, normalizeReturnClauses, normalizeWithClauses}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_2.parser.{CypherParser, ParserMonitor}
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
@@ -48,6 +48,7 @@ trait CypherCacheFlushingMonitor[T] {
 trait CypherCacheHitMonitor[T] {
   def cacheHit(key: T)
   def cacheMiss(key: T)
+  def cacheDiscard(key: T)
 }
 
 trait CypherCacheMonitor[T, E] extends CypherCacheHitMonitor[T] with CypherCacheFlushingMonitor[E]
@@ -117,9 +118,18 @@ case class CypherCompiler(parser: CypherParser,
 
   def planPreparedQuery(parsedQuery: PreparedQuery, context: PlanContext): (ExecutionPlan, Map[String, Any]) = {
     val cache = provideCache(cacheAccessor, cacheMonitor, context)
-    val plan = cacheAccessor.getOrElseUpdate(cache)(parsedQuery, {
-      executionPlanBuilder.build(context, parsedQuery)
-    })
+    val plan = Iterator.continually {
+      cacheAccessor.getOrElseUpdate(cache)(parsedQuery, {
+        executionPlanBuilder.build(context, parsedQuery)
+      })
+    }.flatMap { plan =>
+      if (plan.isStale(context.getLastCommittedTransactionId, context.statistics)) {
+        cacheAccessor.remove(cache)(parsedQuery)
+        None
+      } else {
+        Some(plan)
+      }
+    }.next()
     (plan, parsedQuery.extractedParams)
   }
 

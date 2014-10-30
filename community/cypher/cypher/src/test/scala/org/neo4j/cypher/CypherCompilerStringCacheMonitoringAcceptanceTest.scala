@@ -37,6 +37,8 @@ class CypherCompilerStringCacheMonitoringAcceptanceTest extends ExecutionEngineF
     def cacheFlushDetected(justBeforeKey: api.Statement) {
       counts = counts.copy(flushes = counts.flushes + 1)
     }
+
+    def cacheDiscard(key: String): Unit = ???
   }
 
   test("should monitor cache miss") {

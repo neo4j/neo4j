@@ -58,5 +58,7 @@ case class CompatibilityFor2_0(graph: GraphDatabaseService, queryCacheSize: Int)
       LegacyExecutionResultWrapper(inner.execute(queryContext(graph, txInfo), params), planDescriptionRequested = false, CypherVersion.v2_0)
 
     def isPeriodicCommit = false
+
+    def isStale(graph: GraphDatabaseAPI, statement: Statement): Boolean = false
   }
 }

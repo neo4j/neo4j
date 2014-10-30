@@ -43,6 +43,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     def cacheFlushDetected(justBeforeKey: CacheAccessor[PreparedQuery, ExecutionPlan]) {
       counts = counts.copy(flushes = counts.flushes + 1)
     }
+
+    def cacheDiscard(key: PreparedQuery): Unit = ???
   }
 
   test("should monitor cache misses") {

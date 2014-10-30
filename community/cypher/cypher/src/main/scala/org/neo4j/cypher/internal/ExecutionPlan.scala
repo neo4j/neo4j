@@ -28,6 +28,10 @@ final case class TransactionInfo(tx: Transaction, isTopLevelTx: Boolean, stateme
 
 trait ExecutionPlan {
   def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]): ExtendedExecutionResult
+
   def profile(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]): ExtendedExecutionResult
+
   def isPeriodicCommit: Boolean
+
+  def isStale(graph: GraphDatabaseAPI, statement: Statement): Boolean
 }

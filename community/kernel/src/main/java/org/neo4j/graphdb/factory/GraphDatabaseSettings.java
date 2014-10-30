@@ -99,6 +99,9 @@ public abstract class GraphDatabaseSettings
     @Description("Used to set the number of Cypher query execution plans that are cached.")
     public static Setting<Integer> query_cache_size = setting( "query_cache_size", INTEGER, "100", min( 0 ) );
 
+    @Description("The minimum lifetime of a query plan before a query is considered for replanning")
+    public static Setting<Integer> query_plan_ttl = setting( "query_plan_ttl", INTEGER, "1000", min( 0 ) );
+
     @Description("Determines if Cypher will allow using file URL when importing data using LOAD CSV. Setting this " +
             "value to false will cause Neo4j to fail LOAD CSV queries that import data from the file system")
     public static Setting<Boolean> allow_file_urls = setting( "allow_file_urls", BOOLEAN, TRUE );
