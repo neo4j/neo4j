@@ -148,4 +148,29 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       )(PlannerQuery.empty)
     )
   }
+
+  test("should solve optional matches with arguments and predicates") {
+    val plan = planFor("""MATCH (n)
+                         |  OPTIONAL MATCH n-[r]-(m)
+                         |  WHERE m.prop = 42
+                         |  RETURN m""".stripMargin).plan.endoRewrite(unnestOptional)
+    plan should equal(
+      Projection(
+        OptionalExpand(
+          AllNodesScan(IdName("n"), Set.empty)(PlannerQuery.empty),
+          IdName("n"),
+          Direction.BOTH,
+          Seq.empty,
+          IdName("m"),
+          IdName("r"),
+          SimplePatternLength,
+          Seq(ast.In(
+            ast.Property(ident("m"), ast.PropertyKeyName("prop")_)_,
+            ast.Collection(Seq(ast.SignedDecimalIntegerLiteral("42")(null)))_
+          )_)
+        )(PlannerQuery.empty),
+        Map("m" -> ident("m"))
+      )(PlannerQuery.empty)
+    )
+  }
 }

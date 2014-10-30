@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assumeDependence._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{SemanticTable, LogicalPlanningTestSupport}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryGraph, SemanticTable, LogicalPlanningTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, PatternRelationship, SimplePatternLength}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{CardinalityTestHelper, QueryGraphProducer}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics

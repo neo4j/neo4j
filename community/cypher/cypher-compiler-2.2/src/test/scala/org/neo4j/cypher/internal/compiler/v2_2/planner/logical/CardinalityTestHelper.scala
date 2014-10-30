@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{normalizeReturnCla
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{Query, Statement}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assumeDependence._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport, Planner, QueryGraph, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 import org.scalatest.mock.MockitoSugar
@@ -65,9 +66,13 @@ trait CardinalityTestHelper extends QueryGraphProducer {
                       knownLabelCardinality: Map[String, Int] = Map.empty,
                       knownIndexSelectivity: Map[(String, String), Double] = Map.empty,
                       knownProperties: Set[String] = Set.empty,
-                      knownRelationshipCardinality: Map[(String, String, String), Int] = Map.empty) {
+                      knownRelationshipCardinality: Map[(String, String, String), Int] = Map.empty,
+                      queryGraphArgumentIds: Set[IdName] = Set.empty) {
 
     def withLabel(tuple: (Symbol, Int)): TestUnit = copy(knownLabelCardinality = knownLabelCardinality + (tuple._1.name -> tuple._2))
+
+    def withQueryGraphArgumentIds(idNames: IdName*): TestUnit =
+      copy(queryGraphArgumentIds = Set(idNames: _*))
 
     def withGraphNodes(number: Int): TestUnit = copy(allNodes = Some(number))
 
@@ -224,7 +229,10 @@ trait CardinalityTestHelper extends QueryGraphProducer {
       mostSelective should equal(Selectivity(number))
     }
 
-    def createQueryGraphAndSemanticStableTable(): QueryGraph = produceQueryGraphForPattern(query)
+    def createQueryGraphAndSemanticStableTable(): QueryGraph = {
+      produceQueryGraphForPattern(query)
+        .withArgumentIds(queryGraphArgumentIds)
+    }
   }
 
   val DEFAULT_PREDICATE_SELECTIVITY = GraphStatistics.DEFAULT_PREDICATE_SELECTIVITY.factor

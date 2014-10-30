@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assu
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, Multiplier, Selectivity}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{Selections, SemanticTable}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryGraph, Selections, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics._
 import org.neo4j.cypher.internal.compiler.v2_2.{LabelId, functions}

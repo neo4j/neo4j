@@ -45,13 +45,17 @@ case class AssumeDependenceQueryGraphCardinalityModel(statistics: GraphStatistic
     (0 to queryGraph.optionalMatches.length)
       .map(queryGraph.optionalMatches.combinations)
       .flatten
+      .map(_.map(_.withoutArguments()))
       .map(_.foldLeft(QueryGraph.empty)(_.withOptionalMatches(Seq.empty) ++ _.withOptionalMatches(Seq.empty)))
       .map(queryGraph.withOptionalMatches(Seq.empty) ++ _)
   }
 
   private def cardinalityForQueryGraph(queryGraph: QueryGraph): Cardinality = {
     val (predicates, selectivity) = estimateSelectivity(queryGraph)
-    val numberOfPatternNodes = predicates.flatMap(_.dependencies).count(queryGraph.patternNodes.contains)
+    val numberOfPatternNodes = predicates
+      .flatMap(_.dependencies)
+      .filter(queryGraph.patternNodes.contains)
+      .count(!queryGraph.argumentIds.contains(_))
     val numberOfGraphNodes = statistics.nodesWithLabelCardinality(None)
 
     (numberOfGraphNodes ^ numberOfPatternNodes) * selectivity
