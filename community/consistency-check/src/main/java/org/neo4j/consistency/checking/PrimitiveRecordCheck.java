@@ -43,6 +43,12 @@ public abstract class PrimitiveRecordCheck
                 public void checkReference( RECORD record, PrimitiveRecord other, CheckerEngine<RECORD, REPORT> engine,
                                             RecordAccess records )
                 {
+                    if ( record.getId() == other.getId() && record.getClass() == other.getClass() )
+                    {
+                        // Owner identities match. Things are as they should be.
+                        return;
+                    }
+
                     if ( other instanceof NodeRecord )
                     {
                         engine.report().multipleOwners( (NodeRecord) other );
