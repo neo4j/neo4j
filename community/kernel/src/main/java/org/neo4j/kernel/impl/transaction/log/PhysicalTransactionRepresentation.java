@@ -62,11 +62,11 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
     }
 
     @Override
-    public void accept( Visitor<Command, IOException> visitor ) throws IOException
+    public void accept( Visitor<Command,IOException> visitor ) throws IOException
     {
         for ( Command command : commands )
         {
-            if (!visitor.visit( command ))
+            if ( visitor.visit( command ) )
             {
                 return;
             }

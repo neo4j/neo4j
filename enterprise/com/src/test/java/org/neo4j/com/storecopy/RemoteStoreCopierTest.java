@@ -19,14 +19,17 @@
  */
 package org.neo4j.com.storecopy;
 
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.Appender;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.com.Response;
 import org.neo4j.com.TransactionStream;
@@ -62,9 +65,6 @@ import org.neo4j.test.ReflectionUtil;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.Appender;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
@@ -76,7 +76,6 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.com.ResourceReleaser.NO_OP;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
@@ -88,9 +87,19 @@ import static org.neo4j.io.fs.FileUtils.relativePath;
 
 public class RemoteStoreCopierTest
 {
+    private final DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     @Rule
     public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
-    private final DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+
+    private static List<KernelExtensionFactory<?>> loadKernelExtensions()
+    {
+        List<KernelExtensionFactory<?>> kernelExtensions = new ArrayList<>();
+        for ( KernelExtensionFactory<?> factory : Service.load( KernelExtensionFactory.class ) )
+        {
+            kernelExtensions.add( factory );
+        }
+        return kernelExtensions;
+    }
 
     @Test
     public void shouldCopyStoreAndStreamTransactionsHappeningWhileDoingSo() throws Exception
@@ -99,7 +108,7 @@ public class RemoteStoreCopierTest
         final File originalDir = new File( testDir.directory(), "original" );
         final File copyDir = new File( testDir.directory(), "copy" );
         Config config = new Config( stringMap( store_dir.name(), copyDir.getAbsolutePath() ) );
-        final GraphDatabaseAPI original = (GraphDatabaseAPI)new GraphDatabaseFactory()
+        final GraphDatabaseAPI original = (GraphDatabaseAPI) new GraphDatabaseFactory()
                 .newEmbeddedDatabase( originalDir.getAbsolutePath() );
         final DependencyResolver resolver = original.getDependencyResolver();
         final FileSystemAbstraction fileSystem = resolver.resolveDependency( FileSystemAbstraction.class );
@@ -140,7 +149,8 @@ public class RemoteStoreCopierTest
                         File file = files.next();
                         try ( StoreChannel fileChannel = fileSystem.open( file, "r" ) )
                         {
-                            writer.write( relativePath( baseDir, file ), fileChannel, temporaryBuffer, file.length() > 0 );
+                            writer.write( relativePath( baseDir, file ), fileChannel, temporaryBuffer,
+                                    file.length() > 0 );
                         }
                     }
                 }
@@ -157,21 +167,23 @@ public class RemoteStoreCopierTest
                 TransactionStream transactions = new TransactionStream()
                 {
                     @Override
-                    public void accept( Visitor<CommittedTransactionRepresentation, IOException> visitor )
+                    public void accept( Visitor<CommittedTransactionRepresentation,IOException> visitor )
                             throws IOException
                     {
 //                        long highTransactionId = transactionIdStore.getLastCommittedTransactionId();
                         LogicalTransactionStore txStore = resolver.resolveDependency( LogicalTransactionStore.class );
-                        try (IOCursor<CommittedTransactionRepresentation> cursor = txStore.getTransactions( transactionIdWhenStartingCopy + 1 ) )
+                        try ( IOCursor<CommittedTransactionRepresentation> cursor = txStore
+                                .getTransactions( transactionIdWhenStartingCopy + 1 ) )
                         {
-                            while (cursor.next() && visitor.visit( cursor.get() ))
+                            while ( cursor.next() && !visitor.visit( cursor.get() ) )
                             {
                                 ;
                             }
                         }
                     }
                 };
-                return response = spy( new TransactionStreamResponse<>( null, original.storeId(), transactions, NO_OP ) );
+                return response =
+                        spy( new TransactionStreamResponse<>( null, original.storeId(), transactions, NO_OP ) );
             }
 
             @Override
@@ -190,7 +202,8 @@ public class RemoteStoreCopierTest
         try ( Transaction tx = copy.beginTx() )
         {
             GlobalGraphOperations globalOps = GlobalGraphOperations.at( copy );
-            assertThat( single( globalOps.getAllNodesWithLabel( label( "BeforeCopyBegins" ) ) ).getId(), equalTo( 0l ) );
+            assertThat( single( globalOps.getAllNodesWithLabel( label( "BeforeCopyBegins" ) ) ).getId(),
+                    equalTo( 0l ) );
             assertThat( single( globalOps.getAllNodesWithLabel( label( "AfterCopy" ) ) ).getId(), equalTo( 1l ) );
             tx.success();
         }
@@ -216,7 +229,7 @@ public class RemoteStoreCopierTest
     }
 
     @Test
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings( "rawtypes" )
     public void shouldNotCloseAppendersOfProvidedLoggingOnFinish() throws Exception
     {
         // Given
@@ -241,15 +254,5 @@ public class RemoteStoreCopierTest
         LoggerContext context = ReflectionUtil.getPrivateField( logging, "loggerContext", LoggerContext.class );
         List<Appender<ILoggingEvent>> appenders = asList( context.getLogger( "org.neo4j" ).iteratorForAppenders() );
         assertThat( appenders, not( empty() ) );
-    }
-
-    private static List<KernelExtensionFactory<?>> loadKernelExtensions()
-    {
-        List<KernelExtensionFactory<?>> kernelExtensions = new ArrayList<>();
-        for ( KernelExtensionFactory<?> factory : Service.load( KernelExtensionFactory.class ) )
-        {
-            kernelExtensions.add( factory );
-        }
-        return kernelExtensions;
     }
 }

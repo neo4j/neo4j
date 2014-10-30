@@ -40,14 +40,14 @@ public class LogEntryWriterv1 implements LogEntryWriter
     public LogEntryWriterv1( WritableLogChannel channel, final NeoCommandHandler commandWriter )
     {
         this.channel = channel;
-        this.serializer = new Visitor<Command, IOException>()
+        this.serializer = new Visitor<Command,IOException>()
         {
             @Override
             public boolean visit( Command command ) throws IOException
             {
                 writeLogEntryHeader( COMMAND );
                 command.handle( commandWriter );
-                return true;
+                return false;
             }
         };
     }
@@ -59,11 +59,11 @@ public class LogEntryWriterv1 implements LogEntryWriter
 
     @Override
     public void writeStartEntry( int masterId, int authorId, long timeWritten, long latestCommittedTxWhenStarted,
-            byte[] additionalHeaderData ) throws IOException
+                                 byte[] additionalHeaderData ) throws IOException
     {
         writeLogEntryHeader( TX_START );
         channel.putInt( masterId ).putInt( authorId ).putLong( timeWritten ).putLong( latestCommittedTxWhenStarted )
-                .putInt( additionalHeaderData.length ).put( additionalHeaderData, additionalHeaderData.length );
+               .putInt( additionalHeaderData.length ).put( additionalHeaderData, additionalHeaderData.length );
     }
 
     @Override

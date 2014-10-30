@@ -45,10 +45,10 @@ public class CountsStoreApplier extends NeoCommandHandler.Adapter
     private final CountsAcceptor countsStore;
     private final NodeStore nodeStore;
     private final CacheAccessBackDoor cacheAccess;
+    private final Map<Integer/*labelId*/,IntCounter> labelDelta = new HashMap<>();
+    private final Map<Integer/*typeId*/,IntCounter> relationshipTypeDelta = new HashMap<>();
     private int nodesDelta;
     private int relsDelta;
-    private final Map<Integer/*labelId*/, IntCounter> labelDelta = new HashMap<>();
-    private final Map<Integer/*typeId*/, IntCounter> relationshipTypeDelta = new HashMap<>();
 
     public CountsStoreApplier( CountsAcceptor countsStore, NodeStore nodeStore, CacheAccessBackDoor cacheAccess )
     {
@@ -57,101 +57,7 @@ public class CountsStoreApplier extends NeoCommandHandler.Adapter
         this.cacheAccess = cacheAccess;
     }
 
-    @Override
-    public boolean visitNodeCommand( Command.NodeCommand command ) throws IOException
-    {
-        NodeRecord before = command.getBefore(), after = command.getAfter();
-        if ( !before.inUse() && after.inUse() )
-        { // node added
-            nodesDelta++;
-        }
-        else if ( before.inUse() && !after.inUse() )
-        { // node deleted
-            nodesDelta--;
-        }
-        if ( before.getLabelField() != after.getLabelField() )
-        {
-            long[] labelsBefore = labels( before );
-            long[] labelsAfter = labels( after );
-            for ( PrimitiveLongIterator added = diff( labelsBefore, labelsAfter ); added.hasNext(); )
-            {
-                label( added.next() ).increment();
-            }
-            for ( PrimitiveLongIterator removed = diff( labelsAfter, labelsBefore ); removed.hasNext(); )
-            {
-                label( removed.next() ).decrement();
-            }
-        }
-        return true;
-    }
-
-    private IntCounter label( Number label )
-    {
-        return counter( labelDelta, label.intValue() );
-    }
-
-    @Override
-    public boolean visitRelationshipCommand( Command.RelationshipCommand command ) throws IOException
-    {
-        RelationshipRecord record = command.getRecord();
-        if ( record.isCreated() )
-        {
-            relsDelta++;
-            relationshipType( record.getType() ).increment();
-        }
-        else if ( !record.inUse() )
-        {
-            relsDelta--;
-            relationshipType( record.getType() ).decrement();
-        }
-        return true;
-    }
-
-    @Override
-    public boolean visitUpdateCountsCommand( Command.CountsCommand command ) throws IOException
-    {
-        long delta = command.delta();
-        countsStore.updateCountsForRelationship(
-                command.startLabelId(), command.typeId(), command.endLabelId(), delta );
-        return true;
-    }
-
-    private IntCounter relationshipType( int type )
-    {
-        return counter( relationshipTypeDelta, type );
-    }
-
-    @Override
-    public void apply()
-    {
-        // nodes
-        countsStore.updateCountsForNode( ANY_LABEL, nodesDelta );
-        long labelsTotalDelta = 0;
-        for ( Map.Entry<Integer, IntCounter> label : labelDelta.entrySet() )
-        {
-            final int count = label.getValue().value();
-            countsStore.updateCountsForNode( label.getKey(), count );
-            labelsTotalDelta += count;
-        }
-        // relationships
-        long relTypesTotalDelta = 0;
-        countsStore.updateCountsForRelationship( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, relsDelta );
-        for ( Map.Entry<Integer, IntCounter> type : relationshipTypeDelta.entrySet() )
-        {
-            final int count = type.getValue().value();
-            countsStore.updateCountsForRelationship( ANY_LABEL, type.getKey(), ANY_LABEL, count );
-            relTypesTotalDelta += count;
-        }
-
-        cacheAccess.applyCountUpdates( nodesDelta, relsDelta, labelsTotalDelta, relTypesTotalDelta );
-    }
-
-    private long[] labels( NodeRecord node )
-    {
-        return node.inUse() ? parseLabelsField( node ).get( nodeStore ) : null;
-    }
-
-    private static <KEY> IntCounter counter( Map<KEY, IntCounter> map, KEY key )
+    private static <KEY> IntCounter counter( Map<KEY,IntCounter> map, KEY key )
     {
         IntCounter counter = map.get( key );
         if ( counter == null )
@@ -193,5 +99,99 @@ public class CountsStoreApplier extends NeoCommandHandler.Adapter
             target.remove( label );
         }
         return target;
+    }
+
+    @Override
+    public boolean visitNodeCommand( Command.NodeCommand command ) throws IOException
+    {
+        NodeRecord before = command.getBefore(), after = command.getAfter();
+        if ( !before.inUse() && after.inUse() )
+        { // node added
+            nodesDelta++;
+        }
+        else if ( before.inUse() && !after.inUse() )
+        { // node deleted
+            nodesDelta--;
+        }
+        if ( before.getLabelField() != after.getLabelField() )
+        {
+            long[] labelsBefore = labels( before );
+            long[] labelsAfter = labels( after );
+            for ( PrimitiveLongIterator added = diff( labelsBefore, labelsAfter ); added.hasNext(); )
+            {
+                label( added.next() ).increment();
+            }
+            for ( PrimitiveLongIterator removed = diff( labelsAfter, labelsBefore ); removed.hasNext(); )
+            {
+                label( removed.next() ).decrement();
+            }
+        }
+        return false;
+    }
+
+    private IntCounter label( Number label )
+    {
+        return counter( labelDelta, label.intValue() );
+    }
+
+    @Override
+    public boolean visitRelationshipCommand( Command.RelationshipCommand command ) throws IOException
+    {
+        RelationshipRecord record = command.getRecord();
+        if ( record.isCreated() )
+        {
+            relsDelta++;
+            relationshipType( record.getType() ).increment();
+        }
+        else if ( !record.inUse() )
+        {
+            relsDelta--;
+            relationshipType( record.getType() ).decrement();
+        }
+        return false;
+    }
+
+    @Override
+    public boolean visitUpdateCountsCommand( Command.CountsCommand command ) throws IOException
+    {
+        long delta = command.delta();
+        countsStore.updateCountsForRelationship(
+                command.startLabelId(), command.typeId(), command.endLabelId(), delta );
+        return false;
+    }
+
+    private IntCounter relationshipType( int type )
+    {
+        return counter( relationshipTypeDelta, type );
+    }
+
+    @Override
+    public void apply()
+    {
+        // nodes
+        countsStore.updateCountsForNode( ANY_LABEL, nodesDelta );
+        long labelsTotalDelta = 0;
+        for ( Map.Entry<Integer,IntCounter> label : labelDelta.entrySet() )
+        {
+            final int count = label.getValue().value();
+            countsStore.updateCountsForNode( label.getKey(), count );
+            labelsTotalDelta += count;
+        }
+        // relationships
+        long relTypesTotalDelta = 0;
+        countsStore.updateCountsForRelationship( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, relsDelta );
+        for ( Map.Entry<Integer,IntCounter> type : relationshipTypeDelta.entrySet() )
+        {
+            final int count = type.getValue().value();
+            countsStore.updateCountsForRelationship( ANY_LABEL, type.getKey(), ANY_LABEL, count );
+            relTypesTotalDelta += count;
+        }
+
+        cacheAccess.applyCountUpdates( nodesDelta, relsDelta, labelsTotalDelta, relTypesTotalDelta );
+    }
+
+    private long[] labels( NodeRecord node )
+    {
+        return node.inUse() ? parseLabelsField( node ).get( nodeStore ) : null;
     }
 }

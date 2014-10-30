@@ -70,13 +70,6 @@ import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFact
  */
 public class StoreCopyClient
 {
-    public static final String TEMP_COPY_DIRECTORY_NAME = "temp-copy";
-    private final Config config;
-    private final Iterable<KernelExtensionFactory<?>> kernelExtensions;
-    private final ConsoleLogger console;
-    private final Logging logging;
-    private final FileSystemAbstraction fs;
-
     /**
      * This is built as a pluggable interface to allow backup and HA to use this code independently of each other,
      * each implements it's own version of how to copy a store from a remote location.
@@ -88,8 +81,25 @@ public class StoreCopyClient
         void done();
     }
 
+    public static final String TEMP_COPY_DIRECTORY_NAME = "temp-copy";
+    private static final FileFilter STORE_FILE_FILTER = new FileFilter()
+    {
+        @Override
+        public boolean accept( File file )
+        {
+            // Skip log files and tx files from temporary database
+            return !file.getName().startsWith( "metrics" )
+                   && !file.getName().startsWith( "messages." );
+        }
+    };
+    private final Config config;
+    private final Iterable<KernelExtensionFactory<?>> kernelExtensions;
+    private final ConsoleLogger console;
+    private final Logging logging;
+    private final FileSystemAbstraction fs;
+
     public StoreCopyClient( Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions,
-            ConsoleLogger console, Logging logging, FileSystemAbstraction fs )
+                            ConsoleLogger console, Logging logging, FileSystemAbstraction fs )
     {
         this.config = config;
         this.kernelExtensions = kernelExtensions;
@@ -170,9 +180,9 @@ public class StoreCopyClient
                 }
 
                 @Override
-                public Visitor<CommittedTransactionRepresentation, IOException> transactions()
+                public Visitor<CommittedTransactionRepresentation,IOException> transactions()
                 {
-                    return new Visitor<CommittedTransactionRepresentation, IOException>()
+                    return new Visitor<CommittedTransactionRepresentation,IOException>()
                     {
                         @Override
                         public boolean visit( CommittedTransactionRepresentation transaction ) throws IOException
@@ -180,7 +190,7 @@ public class StoreCopyClient
                             long txId = transaction.getCommitEntry().getTxId();
                             writer.append( transaction.getTransactionRepresentation(), txId );
                             firstTxId.compareAndSet( -1, txId );
-                            return true;
+                            return false;
                         }
                     };
                 }
@@ -190,19 +200,24 @@ public class StoreCopyClient
             // header of the log that we just wrote.
             writeLogHeader( fs,
                     logFiles.getLogFileForVersion( logVersionRepository.getCurrentLogVersion() ),
-                    logVersionRepository.getCurrentLogVersion(), firstTxId.get() != -1 ? firstTxId.get()-1 : 0 );
+                    logVersionRepository.getCurrentLogVersion(), firstTxId.get() != -1 ? firstTxId.get() - 1 : 0 );
 
             if ( firstTxId.get() == -1 )
             {
                 console.warn( "Important: There are no available transaction logs on the target database, which " +
-                        "means the backup could not save a point-in-time reference. This means you cannot use this " +
-                        "backup for incremental backups, and it means you cannot use it directly to seed an HA " +
-                        "cluster. The next time you perform a backup, a full backup will be done. If you wish to " +
-                        "use this backup as a seed for a cluster, you need to start a stand-alone database on " +
-                        "it, and commit one write transaction, to create the transaction log needed to seed the " +
-                        "cluster. To avoid this happening, make sure you never manually delete transaction log " +
-                        "files (" + PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX +"XXX), " +
-                        "and that you configure the database to keep at least a few days worth of transaction logs." );
+                              "means the backup could not save a point-in-time reference. This means you cannot use " +
+                              "this " +
+                              "backup for incremental backups, and it means you cannot use it directly to seed an HA " +
+                              "cluster. The next time you perform a backup, a full backup will be done. If you wish " +
+                              "to " +
+                              "use this backup as a seed for a cluster, you need to start a stand-alone database on " +
+                              "it, and commit one write transaction, to create the transaction log needed to seed the" +
+                              " " +
+                              "cluster. To avoid this happening, make sure you never manually delete transaction log " +
+                              "files (" + PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX +
+                              "XXX), " +
+                              "and that you configure the database to keep at least a few days worth of transaction " +
+                              "logs." );
             }
         }
         finally
@@ -218,7 +233,8 @@ public class StoreCopyClient
                 .setKernelExtensions( kernelExtensions )
                 .newEmbeddedDatabaseBuilder( tempStore.getAbsolutePath() )
                 .setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE )
-                .setConfig( GraphDatabaseSettings.allow_store_upgrade, config.get( GraphDatabaseSettings.allow_store_upgrade ).toString() )
+                .setConfig( GraphDatabaseSettings.allow_store_upgrade,
+                        config.get( GraphDatabaseSettings.allow_store_upgrade ).toString() )
                 .setConfig( InternalAbstractGraphDatabase.Configuration.log_configuration_file, logConfigFileName() )
                 .newGraphDatabase();
     }
@@ -249,7 +265,7 @@ public class StoreCopyClient
             public void close()
             {
                 actual.close();
-                console.log( "Done, copied " + totalFiles + " files");
+                console.log( "Done, copied " + totalFiles + " files" );
             }
         };
     }
@@ -271,18 +287,7 @@ public class StoreCopyClient
         }
     }
 
-    private static final FileFilter STORE_FILE_FILTER = new FileFilter()
-    {
-        @Override
-        public boolean accept( File file )
-        {
-            // Skip log files and tx files from temporary database
-            return !file.getName().startsWith( "metrics" )
-                    && !file.getName().startsWith("messages." );
-        }
-    };
-
-    public static class NoRecoveryAssertingVisitor implements Visitor<ReadableVersionableLogChannel, IOException>
+    public static class NoRecoveryAssertingVisitor implements Visitor<ReadableVersionableLogChannel,IOException>
     {
         @Override
         public boolean visit( ReadableVersionableLogChannel element ) throws IOException

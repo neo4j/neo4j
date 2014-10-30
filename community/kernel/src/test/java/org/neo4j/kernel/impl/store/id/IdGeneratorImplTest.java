@@ -19,19 +19,27 @@
  */
 package org.neo4j.kernel.impl.store.id;
 
-import java.io.File;
-
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
 
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.test.EphemeralFileSystemRule;
 
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 public class IdGeneratorImplTest
 {
+
+    public final
+    @Rule
+    EphemeralFileSystemRule fsr = new EphemeralFileSystemRule();
+    private final File file = new File( "ids" );
+
     @Test
     public void shouldNotAcceptMinusOne() throws Exception
     {
@@ -64,6 +72,19 @@ public class IdGeneratorImplTest
         assertEquals( highId, readHighId );
     }
 
-    public final @Rule EphemeralFileSystemRule fsr = new EphemeralFileSystemRule();
-    private final File file = new File( "ids" );
+    @Test
+    public void shouldBeAbleToReadWrittenGenerator()
+    {
+        // Given
+        IdGeneratorImpl.createGenerator( fsr.get(), file );
+        IdGeneratorImpl idGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, false, 42 );
+
+        idGenerator.close();
+
+        // When
+        idGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, false, 0 );
+
+        // Then
+        assertThat( idGenerator.getHighId(), equalTo( 42L ) );
+    }
 }

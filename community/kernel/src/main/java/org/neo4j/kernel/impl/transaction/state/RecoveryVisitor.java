@@ -65,7 +65,7 @@ public class RecoveryVisitor implements Visitor<CommittedTransactionRepresentati
         recoveredCount.incrementAndGet();
         lastTransactionIdApplied = txId;
         monitor.transactionRecovered( txId );
-        return true;
+        return false;
     }
 
     @Override

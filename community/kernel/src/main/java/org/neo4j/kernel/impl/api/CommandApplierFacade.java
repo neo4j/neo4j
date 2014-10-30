@@ -29,7 +29,6 @@ import org.neo4j.kernel.impl.index.IndexCommand.DeleteCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.transaction.command.Command.LabelTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.NeoStoreCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
@@ -39,8 +38,9 @@ import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipGroupCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipTypeTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
+import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 
-public class CommandApplierFacade implements NeoCommandHandler, Visitor<Command, IOException>
+public class CommandApplierFacade implements NeoCommandHandler, Visitor<Command,IOException>
 {
     private final NeoCommandHandler[] handlers;
 
@@ -78,18 +78,18 @@ public class CommandApplierFacade implements NeoCommandHandler, Visitor<Command,
     public boolean visit( Command element ) throws IOException
     {
         element.handle( this );
-        return true;
+        return false;
     }
 
     @Override
     public boolean visitNodeCommand( NodeCommand command ) throws IOException
     {
-        boolean result = true;
+        boolean result = false;
         for ( NeoCommandHandler handler : handlers )
         {
-            if ( !handler.visitNodeCommand( command ) )
+            if ( handler.visitNodeCommand( command ) )
             {
-                result = false;
+                result = true;
             }
         }
         return result;
@@ -98,12 +98,12 @@ public class CommandApplierFacade implements NeoCommandHandler, Visitor<Command,
     @Override
     public boolean visitRelationshipCommand( RelationshipCommand command ) throws IOException
     {
-        boolean result = true;
+        boolean result = false;
         for ( NeoCommandHandler handler : handlers )
         {
-            if ( !handler.visitRelationshipCommand( command ) )
+            if ( handler.visitRelationshipCommand( command ) )
             {
-                result = false;
+                result = true;
             }
         }
         return result;
@@ -112,12 +112,12 @@ public class CommandApplierFacade implements NeoCommandHandler, Visitor<Command,
     @Override
     public boolean visitPropertyCommand( PropertyCommand command ) throws IOException
     {
-        boolean result = true;
+        boolean result = false;
         for ( NeoCommandHandler handler : handlers )
         {
-            if ( !handler.visitPropertyCommand( command ) )
+            if ( handler.visitPropertyCommand( command ) )
             {
-                result = false;
+                result = true;
             }
         }
         return result;
@@ -126,12 +126,12 @@ public class CommandApplierFacade implements NeoCommandHandler, Visitor<Command,
     @Override
     public boolean visitRelationshipGroupCommand( RelationshipGroupCommand command ) throws IOException
     {
-        boolean result = true;
+        boolean result = false;
         for ( NeoCommandHandler handler : handlers )
         {
-            if ( !handler.visitRelationshipGroupCommand( command ) )
+            if ( handler.visitRelationshipGroupCommand( command ) )
             {
-                result = false;
+                result = true;
             }
         }
         return result;
@@ -140,12 +140,12 @@ public class CommandApplierFacade implements NeoCommandHandler, Visitor<Command,
     @Override
     public boolean visitRelationshipTypeTokenCommand( RelationshipTypeTokenCommand command ) throws IOException
     {
-        boolean result = true;
+        boolean result = false;
         for ( NeoCommandHandler handler : handlers )
         {
-            if ( !handler.visitRelationshipTypeTokenCommand( command ) )
+            if ( handler.visitRelationshipTypeTokenCommand( command ) )
             {
-                result = false;
+                result = true;
             }
         }
         return result;
@@ -154,12 +154,12 @@ public class CommandApplierFacade implements NeoCommandHandler, Visitor<Command,
     @Override
     public boolean visitPropertyKeyTokenCommand( PropertyKeyTokenCommand command ) throws IOException
     {
-        boolean result = true;
+        boolean result = false;
         for ( NeoCommandHandler handler : handlers )
         {
-            if ( !handler.visitPropertyKeyTokenCommand( command ) )
+            if ( handler.visitPropertyKeyTokenCommand( command ) )
             {
-                result = false;
+                result = true;
             }
         }
         return result;
@@ -168,12 +168,12 @@ public class CommandApplierFacade implements NeoCommandHandler, Visitor<Command,
     @Override
     public boolean visitSchemaRuleCommand( SchemaRuleCommand command ) throws IOException
     {
-        boolean result = true;
+        boolean result = false;
         for ( NeoCommandHandler handler : handlers )
         {
-            if ( !handler.visitSchemaRuleCommand( command ) )
+            if ( handler.visitSchemaRuleCommand( command ) )
             {
-                result = false;
+                result = true;
             }
         }
         return result;
@@ -182,12 +182,12 @@ public class CommandApplierFacade implements NeoCommandHandler, Visitor<Command,
     @Override
     public boolean visitNeoStoreCommand( NeoStoreCommand command ) throws IOException
     {
-        boolean result = true;
+        boolean result = false;
         for ( NeoCommandHandler handler : handlers )
         {
-            if ( !handler.visitNeoStoreCommand( command ) )
+            if ( handler.visitNeoStoreCommand( command ) )
             {
-                result = false;
+                result = true;
             }
         }
         return result;
@@ -196,12 +196,12 @@ public class CommandApplierFacade implements NeoCommandHandler, Visitor<Command,
     @Override
     public boolean visitLabelTokenCommand( LabelTokenCommand command ) throws IOException
     {
-        boolean result = true;
+        boolean result = false;
         for ( NeoCommandHandler handler : handlers )
         {
-            if ( !handler.visitLabelTokenCommand( command ) )
+            if ( handler.visitLabelTokenCommand( command ) )
             {
-                result = false;
+                result = true;
             }
         }
         return result;
@@ -210,12 +210,12 @@ public class CommandApplierFacade implements NeoCommandHandler, Visitor<Command,
     @Override
     public boolean visitIndexRemoveCommand( RemoveCommand command ) throws IOException
     {
-        boolean result = true;
+        boolean result = false;
         for ( NeoCommandHandler handler : handlers )
         {
-            if ( !handler.visitIndexRemoveCommand( command ) )
+            if ( handler.visitIndexRemoveCommand( command ) )
             {
-                result = false;
+                result = true;
             }
         }
         return result;
@@ -224,12 +224,12 @@ public class CommandApplierFacade implements NeoCommandHandler, Visitor<Command,
     @Override
     public boolean visitIndexAddNodeCommand( AddNodeCommand command ) throws IOException
     {
-        boolean result = true;
+        boolean result = false;
         for ( NeoCommandHandler handler : handlers )
         {
-            if ( !handler.visitIndexAddNodeCommand( command ) )
+            if ( handler.visitIndexAddNodeCommand( command ) )
             {
-                result = false;
+                result = true;
             }
         }
         return result;
@@ -238,12 +238,12 @@ public class CommandApplierFacade implements NeoCommandHandler, Visitor<Command,
     @Override
     public boolean visitIndexAddRelationshipCommand( AddRelationshipCommand command ) throws IOException
     {
-        boolean result = true;
+        boolean result = false;
         for ( NeoCommandHandler handler : handlers )
         {
-            if ( !handler.visitIndexAddRelationshipCommand( command ) )
+            if ( handler.visitIndexAddRelationshipCommand( command ) )
             {
-                result = false;
+                result = true;
             }
         }
         return result;
@@ -252,12 +252,12 @@ public class CommandApplierFacade implements NeoCommandHandler, Visitor<Command,
     @Override
     public boolean visitIndexDeleteCommand( DeleteCommand command ) throws IOException
     {
-        boolean result = true;
+        boolean result = false;
         for ( NeoCommandHandler handler : handlers )
         {
-            if ( !handler.visitIndexDeleteCommand( command ) )
+            if ( handler.visitIndexDeleteCommand( command ) )
             {
-                result = false;
+                result = true;
             }
         }
         return result;
@@ -266,12 +266,12 @@ public class CommandApplierFacade implements NeoCommandHandler, Visitor<Command,
     @Override
     public boolean visitIndexCreateCommand( CreateCommand command ) throws IOException
     {
-        boolean result = true;
+        boolean result = false;
         for ( NeoCommandHandler handler : handlers )
         {
-            if ( !handler.visitIndexCreateCommand( command ) )
+            if ( handler.visitIndexCreateCommand( command ) )
             {
-                result = false;
+                result = true;
             }
         }
         return result;
@@ -280,12 +280,12 @@ public class CommandApplierFacade implements NeoCommandHandler, Visitor<Command,
     @Override
     public boolean visitIndexDefineCommand( IndexDefineCommand command ) throws IOException
     {
-        boolean result = true;
+        boolean result = false;
         for ( NeoCommandHandler handler : handlers )
         {
-            if ( !handler.visitIndexDefineCommand( command ) )
+            if ( handler.visitIndexDefineCommand( command ) )
             {
-                result = false;
+                result = true;
             }
         }
         return result;
@@ -294,12 +294,12 @@ public class CommandApplierFacade implements NeoCommandHandler, Visitor<Command,
     @Override
     public boolean visitUpdateCountsCommand( Command.CountsCommand command ) throws IOException
     {
-        boolean result = true;
+        boolean result = false;
         for ( NeoCommandHandler handler : handlers )
         {
-            if ( !handler.visitUpdateCountsCommand( command ) )
+            if ( handler.visitUpdateCountsCommand( command ) )
             {
-                result = false;
+                result = true;
             }
         }
         return result;

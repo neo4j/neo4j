@@ -44,34 +44,52 @@ import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
  * Implementations need to provide all these methods of course, but it is expected that they will delegate
  * the actual work to implementations that hold related functionality together, using a Facade pattern.
  * For example, it is conceivable that a CommandWriterHandler would use a NeoCommandHandler and a SchemaCommandHandler.
- *
+ * <p/>
  * The order in which the methods of a NeoCommandHandler is expected to be called is this:
  * <ol>
  * <li>zero or more calls to visit??? methods</li>
  * <li>{@link #apply()}</li>
  * <li>{@link #close()}</li>
  * </ol>
+ * <p/>
+ * The boolean returned from visit methods is false for continuing traversal, and true for breaking traversal.
  */
 public interface NeoCommandHandler extends AutoCloseable
 {
+    public static final NeoCommandHandler EMPTY = new NeoCommandHandler.Adapter();
+
     // NeoStore commands
     boolean visitNodeCommand( Command.NodeCommand command ) throws IOException;
+
     boolean visitRelationshipCommand( Command.RelationshipCommand command ) throws IOException;
+
     boolean visitPropertyCommand( Command.PropertyCommand command ) throws IOException;
+
     boolean visitRelationshipGroupCommand( Command.RelationshipGroupCommand command ) throws IOException;
+
     boolean visitRelationshipTypeTokenCommand( Command.RelationshipTypeTokenCommand command ) throws IOException;
+
     boolean visitLabelTokenCommand( Command.LabelTokenCommand command ) throws IOException;
+
     boolean visitPropertyKeyTokenCommand( Command.PropertyKeyTokenCommand command ) throws IOException;
+
     boolean visitSchemaRuleCommand( Command.SchemaRuleCommand command ) throws IOException;
+
     boolean visitNeoStoreCommand( Command.NeoStoreCommand command ) throws IOException;
 
     // Index commands
     boolean visitIndexAddNodeCommand( AddNodeCommand command ) throws IOException;
+
     boolean visitIndexAddRelationshipCommand( AddRelationshipCommand command ) throws IOException;
+
     boolean visitIndexRemoveCommand( RemoveCommand command ) throws IOException;
+
     boolean visitIndexDeleteCommand( DeleteCommand command ) throws IOException;
+
     boolean visitIndexCreateCommand( CreateCommand command ) throws IOException;
+
     boolean visitIndexDefineCommand( IndexDefineCommand command ) throws IOException;
+
     boolean visitUpdateCountsCommand( Command.CountsCommand command ) throws IOException;
 
     /**
@@ -86,105 +104,103 @@ public interface NeoCommandHandler extends AutoCloseable
     @Override
     void close();
 
-    public static final NeoCommandHandler EMPTY = new NeoCommandHandler.Adapter();
-
     public static class Adapter implements NeoCommandHandler
     {
         @Override
         public boolean visitNodeCommand( NodeCommand command ) throws IOException
         {
-            return true;
+            return false;
         }
 
         @Override
         public boolean visitRelationshipCommand( RelationshipCommand command ) throws IOException
         {
-            return true;
+            return false;
         }
 
         @Override
         public boolean visitPropertyCommand( PropertyCommand command ) throws IOException
         {
-            return true;
+            return false;
         }
 
         @Override
         public boolean visitRelationshipGroupCommand( RelationshipGroupCommand command ) throws IOException
         {
-            return true;
+            return false;
         }
 
         @Override
         public boolean visitRelationshipTypeTokenCommand( RelationshipTypeTokenCommand command ) throws IOException
         {
-            return true;
+            return false;
         }
 
         @Override
         public boolean visitLabelTokenCommand( LabelTokenCommand command ) throws IOException
         {
-            return true;
+            return false;
         }
 
         @Override
         public boolean visitPropertyKeyTokenCommand( PropertyKeyTokenCommand command ) throws IOException
         {
-            return true;
+            return false;
         }
 
         @Override
         public boolean visitSchemaRuleCommand( SchemaRuleCommand command ) throws IOException
         {
-            return true;
+            return false;
         }
 
         @Override
         public boolean visitNeoStoreCommand( NeoStoreCommand command ) throws IOException
         {
-            return true;
+            return false;
         }
 
         @Override
         public boolean visitIndexAddNodeCommand( AddNodeCommand command ) throws IOException
         {
-            return true;
+            return false;
         }
 
         @Override
         public boolean visitIndexAddRelationshipCommand( AddRelationshipCommand command )
                 throws IOException
         {
-            return true;
+            return false;
         }
 
         @Override
         public boolean visitIndexRemoveCommand( RemoveCommand command ) throws IOException
         {
-            return true;
+            return false;
         }
 
         @Override
         public boolean visitIndexDeleteCommand( DeleteCommand command ) throws IOException
         {
-            return true;
+            return false;
         }
 
         @Override
         public boolean visitIndexCreateCommand( CreateCommand command ) throws IOException
         {
-            return true;
+            return false;
         }
 
         @Override
         public boolean visitIndexDefineCommand( IndexDefineCommand command ) throws IOException
         {
-            return true;
+            return false;
         }
 
         @Override
         public boolean visitUpdateCountsCommand( Command.CountsCommand command ) throws IOException
         {
-            return true;
+            return false;
         }
 
         @Override
@@ -316,7 +332,7 @@ public interface NeoCommandHandler extends AutoCloseable
         }
     }
 
-    public static class HandlerVisitor implements Visitor<Command, IOException>
+    public static class HandlerVisitor implements Visitor<Command,IOException>
     {
         private final NeoCommandHandler handler;
 
@@ -329,7 +345,7 @@ public interface NeoCommandHandler extends AutoCloseable
         public boolean visit( Command element ) throws IOException
         {
             element.handle( handler );
-            return true;
+            return false;
         }
     }
 }

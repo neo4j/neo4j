@@ -19,13 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.command;
 
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.kernel.impl.transaction.command.CommandReaderFactory.COLLECTION_DYNAMIC_RECORD_ADDER;
-import static org.neo4j.kernel.impl.transaction.command.CommandReaderFactory.PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER;
-import static org.neo4j.kernel.impl.transaction.command.CommandReaderFactory.PROPERTY_DELETED_DYNAMIC_RECORD_ADDER;
-import static org.neo4j.kernel.impl.transaction.command.CommandReaderFactory.PROPERTY_INDEX_DYNAMIC_RECORD_ADDER;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -49,6 +42,13 @@ import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.transaction.command.CommandReaderFactory.DynamicRecordAdder;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.kernel.impl.transaction.command.CommandReaderFactory.COLLECTION_DYNAMIC_RECORD_ADDER;
+import static org.neo4j.kernel.impl.transaction.command.CommandReaderFactory.PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER;
+import static org.neo4j.kernel.impl.transaction.command.CommandReaderFactory.PROPERTY_DELETED_DYNAMIC_RECORD_ADDER;
+import static org.neo4j.kernel.impl.transaction.command.CommandReaderFactory.PROPERTY_INDEX_DYNAMIC_RECORD_ADDER;
+
 public class PhysicalLogNeoCommandReaderV0_20 implements CommandReader
 {
     private final PhysicalNeoCommandReader reader = new PhysicalNeoCommandReader();
@@ -70,57 +70,57 @@ public class PhysicalLogNeoCommandReaderV0_20 implements CommandReader
 
         switch ( commandType )
         {
-            case NeoCommandType.NODE_COMMAND:
-            {
-                command = new Command.NodeCommand();
-                break;
-            }
-            case NeoCommandType.PROP_COMMAND:
-            {
-                command = new Command.PropertyCommand();
-                break;
-            }
-            case NeoCommandType.PROP_INDEX_COMMAND:
-            {
-                command = new Command.PropertyKeyTokenCommand();
-                break;
-            }
-            case NeoCommandType.REL_COMMAND:
-            {
-                command = new Command.RelationshipCommand();
-                break;
-            }
-            case NeoCommandType.REL_TYPE_COMMAND:
-            {
-                command = new Command.RelationshipTypeTokenCommand();
-                break;
-            }
-            case NeoCommandType.LABEL_KEY_COMMAND:
-            {
-                command = new Command.LabelTokenCommand();
-                break;
-            }
-            case NeoCommandType.NEOSTORE_COMMAND:
-            {
-                command = new Command.NeoStoreCommand();
-                break;
-            }
-            case NeoCommandType.SCHEMA_RULE_COMMAND:
-            {
-                command = new Command.SchemaRuleCommand();
-                break;
-            }
-            case NeoCommandType.NONE:
-            {
-                command = null;
-                break;
-            }
-            default:
-            {
-                throw new IOException( "Unknown command type[" + commandType + "]" );
-            }
+        case NeoCommandType.NODE_COMMAND:
+        {
+            command = new Command.NodeCommand();
+            break;
         }
-        if ( command != null && !command.handle( reader ) )
+        case NeoCommandType.PROP_COMMAND:
+        {
+            command = new Command.PropertyCommand();
+            break;
+        }
+        case NeoCommandType.PROP_INDEX_COMMAND:
+        {
+            command = new Command.PropertyKeyTokenCommand();
+            break;
+        }
+        case NeoCommandType.REL_COMMAND:
+        {
+            command = new Command.RelationshipCommand();
+            break;
+        }
+        case NeoCommandType.REL_TYPE_COMMAND:
+        {
+            command = new Command.RelationshipTypeTokenCommand();
+            break;
+        }
+        case NeoCommandType.LABEL_KEY_COMMAND:
+        {
+            command = new Command.LabelTokenCommand();
+            break;
+        }
+        case NeoCommandType.NEOSTORE_COMMAND:
+        {
+            command = new Command.NeoStoreCommand();
+            break;
+        }
+        case NeoCommandType.SCHEMA_RULE_COMMAND:
+        {
+            command = new Command.SchemaRuleCommand();
+            break;
+        }
+        case NeoCommandType.NONE:
+        {
+            command = null;
+            break;
+        }
+        default:
+        {
+            throw new IOException( "Unknown command type[" + commandType + "]" );
+        }
+        }
+        if ( command != null && command.handle( reader ) )
         {
             return null;
         }
@@ -138,13 +138,13 @@ public class PhysicalLogNeoCommandReaderV0_20 implements CommandReader
             NodeRecord before = readNodeRecord( id );
             if ( before == null )
             {
-                return false;
+                return true;
             }
 
             NodeRecord after = readNodeRecord( id );
             if ( after == null )
             {
-                return false;
+                return true;
             }
 
             if ( !before.inUse() && after.inUse() )
@@ -153,7 +153,7 @@ public class PhysicalLogNeoCommandReaderV0_20 implements CommandReader
             }
 
             command.init( before, after );
-            return true;
+            return false;
         }
 
         @Override
@@ -199,7 +199,7 @@ public class PhysicalLogNeoCommandReaderV0_20 implements CommandReader
                 record.setInUse( false );
             }
             command.init( record );
-            return true;
+            return false;
         }
 
         @Override
@@ -212,18 +212,18 @@ public class PhysicalLogNeoCommandReaderV0_20 implements CommandReader
             PropertyRecord before = readPropertyRecord( id );
             if ( before == null )
             {
-                return false;
+                return true;
             }
 
             // AFTER
             PropertyRecord after = readPropertyRecord( id );
             if ( after == null )
             {
-                return false;
+                return true;
             }
 
             command.init( before, after );
-            return true;
+            return false;
         }
 
         @Override
@@ -245,7 +245,7 @@ public class PhysicalLogNeoCommandReaderV0_20 implements CommandReader
             record.setFirstLoop( channel.getLong() );
             record.setOwningNode( channel.getLong() );
             command.init( record );
-            return true;
+            return false;
         }
 
         @Override
@@ -257,7 +257,7 @@ public class PhysicalLogNeoCommandReaderV0_20 implements CommandReader
             byte inUseFlag = channel.get();
             boolean inUse = false;
             if ( (inUseFlag & Record.IN_USE.byteValue()) ==
-                    Record.IN_USE.byteValue() )
+                 Record.IN_USE.byteValue() )
             {
                 inUse = true;
             }
@@ -274,12 +274,12 @@ public class PhysicalLogNeoCommandReaderV0_20 implements CommandReader
                 DynamicRecord dr = readDynamicRecord();
                 if ( dr == null )
                 {
-                    return false;
+                    return true;
                 }
                 record.addNameRecord( dr );
             }
             command.init( record );
-            return true;
+            return false;
         }
 
         @Override
@@ -290,7 +290,7 @@ public class PhysicalLogNeoCommandReaderV0_20 implements CommandReader
             byte inUseFlag = channel.get();
             boolean inUse = false;
             if ( (inUseFlag & Record.IN_USE.byteValue()) ==
-                    Record.IN_USE.byteValue() )
+                 Record.IN_USE.byteValue() )
             {
                 inUse = true;
             }
@@ -307,12 +307,12 @@ public class PhysicalLogNeoCommandReaderV0_20 implements CommandReader
                 DynamicRecord dr = readDynamicRecord();
                 if ( dr == null )
                 {
-                    return false;
+                    return true;
                 }
                 record.addNameRecord( dr );
             }
             command.init( record );
-            return true;
+            return false;
         }
 
         @Override
@@ -338,10 +338,10 @@ public class PhysicalLogNeoCommandReaderV0_20 implements CommandReader
             int recordNr = readDynamicRecords( record, PROPERTY_INDEX_DYNAMIC_RECORD_ADDER );
             if ( recordNr == -1 )
             {
-                return false;
+                return true;
             }
             command.init( record );
-            return true;
+            return false;
         }
 
         @Override
@@ -366,11 +366,11 @@ public class PhysicalLogNeoCommandReaderV0_20 implements CommandReader
             channel.getLong();
 
             SchemaRule rule = first( recordsAfter ).inUse() ?
-                    readSchemaRule( recordsAfter ) :
-                    readSchemaRule( recordsBefore );
+                              readSchemaRule( recordsAfter ) :
+                              readSchemaRule( recordsBefore );
 
             command.init( recordsBefore, recordsAfter, rule );
-            return true;
+            return false;
         }
 
         @Override
@@ -380,7 +380,7 @@ public class PhysicalLogNeoCommandReaderV0_20 implements CommandReader
             NeoStoreRecord record = new NeoStoreRecord();
             record.setNextProp( nextProp );
             command.init( record );
-            return true;
+            return false;
         }
 
         private NodeRecord readNodeRecord( long id )
@@ -421,7 +421,7 @@ public class PhysicalLogNeoCommandReaderV0_20 implements CommandReader
             // id+type+in_use(byte)+nr_of_bytes(int)+next_block(long)
             long id = channel.getLong();
             assert id >= 0 && id <= (1l << 36) - 1 : id
-                    + " is not a valid dynamic record id";
+                                                     + " is not a valid dynamic record id";
             int type = channel.getInt();
             byte inUseFlag = channel.get();
             boolean inUse = (inUseFlag & Record.IN_USE.byteValue()) != 0;
@@ -433,11 +433,15 @@ public class PhysicalLogNeoCommandReaderV0_20 implements CommandReader
                 record.setStartRecord( (inUseFlag & Record.FIRST_IN_CHAIN.byteValue()) != 0 );
                 int nrOfBytes = channel.getInt();
                 assert nrOfBytes >= 0 && nrOfBytes < ((1 << 24) - 1) : nrOfBytes
-                        + " is not valid for a number of bytes field of a dynamic record";
+                                                                       +
+                                                                       " is not valid for a number of bytes field of " +
+                                                                       "a dynamic record";
                 long nextBlock = channel.getLong();
                 assert (nextBlock >= 0 && nextBlock <= (1l << 36 - 1))
-                        || (nextBlock == Record.NO_NEXT_BLOCK.intValue()) : nextBlock
-                        + " is not valid for a next record field of a dynamic record";
+                       || (nextBlock == Record.NO_NEXT_BLOCK.intValue()) : nextBlock
+                                                                           +
+                                                                           " is not valid for a next record field of " +
+                                                                           "a dynamic record";
                 record.setNextBlock( nextBlock );
                 byte data[] = new byte[nrOfBytes];
                 channel.get( data, nrOfBytes );
@@ -518,9 +522,9 @@ public class PhysicalLogNeoCommandReaderV0_20 implements CommandReader
             if ( (inUse && !record.inUse()) || (!inUse && record.inUse()) )
             {
                 throw new IllegalStateException( "Weird, inUse was read in as "
-                        + inUse
-                        + " but the record is "
-                        + record );
+                                                 + inUse
+                                                 + " but the record is "
+                                                 + record );
             }
             return record;
         }
@@ -530,16 +534,16 @@ public class PhysicalLogNeoCommandReaderV0_20 implements CommandReader
             PropertyBlock toReturn = new PropertyBlock();
             byte blockSize = channel.get(); // the size is stored in bytes // 1
             assert blockSize > 0 && blockSize % 8 == 0 : blockSize
-                    + " is not a valid block size value";
+                                                         + " is not a valid block size value";
             // Read in blocks
             long[] blocks = readLongs( blockSize / 8 );
             assert blocks.length == blockSize / 8 : blocks.length
-                    + " longs were read in while i asked for what corresponds to "
-                    + blockSize;
+                                                    + " longs were read in while i asked for what corresponds to "
+                                                    + blockSize;
             assert PropertyType.getPropertyType( blocks[0], false ).calculateNumberOfBlocksUsed(
                     blocks[0] ) == blocks.length : blocks.length
-                    + " is not a valid number of blocks for type "
-                    + PropertyType.getPropertyType(
+                                                   + " is not a valid number of blocks for type "
+                                                   + PropertyType.getPropertyType(
                     blocks[0], false );
             /*
              *  Ok, now we may be ready to return, if there are no DynamicRecords. So

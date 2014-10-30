@@ -19,17 +19,17 @@
  */
 package org.neo4j.com;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.LinkedList;
-import java.util.List;
-
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder;
 import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.LinkedList;
+import java.util.List;
 
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.helpers.collection.Visitor;
@@ -55,90 +55,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterv1;
 public abstract class Protocol
 {
     public static final int MEGA = 1024 * 1024;
-    public static final int DEFAULT_FRAME_LENGTH = 16*MEGA;
-
-    private final int chunkSize;
-    private final byte applicationProtocolVersion;
-    private final byte internalProtocolVersion;
-
-    public Protocol( int chunkSize, byte applicationProtocolVersion, byte internalProtocolVersion )
-    {
-        this.chunkSize = chunkSize;
-        this.applicationProtocolVersion = applicationProtocolVersion;
-        this.internalProtocolVersion = internalProtocolVersion;
-    }
-
-    public void serializeRequest( Channel channel, ChannelBuffer buffer, RequestType<?> type, RequestContext ctx,
-                                  Serializer payload ) throws IOException
-    {
-        buffer.clear();
-        ChunkingChannelBuffer chunkingBuffer = new ChunkingChannelBuffer( buffer,
-                channel, chunkSize, internalProtocolVersion, applicationProtocolVersion );
-        chunkingBuffer.writeByte( type.id() );
-        writeContext( ctx, chunkingBuffer );
-        payload.write( chunkingBuffer );
-        chunkingBuffer.done();
-    }
-
-    public <PAYLOAD> Response<PAYLOAD> deserializeResponse( BlockingReadHandler<ChannelBuffer> reader,
-            ByteBuffer input, long timeout, Deserializer<PAYLOAD> payloadDeserializer,
-            ResourceReleaser channelReleaser) throws IOException
-    {
-        final DechunkingChannelBuffer dechunkingBuffer = new DechunkingChannelBuffer( reader, timeout,
-                internalProtocolVersion, applicationProtocolVersion );
-
-        PAYLOAD response = payloadDeserializer.read( dechunkingBuffer, input );
-        StoreId storeId = readStoreId( dechunkingBuffer, input );
-
-        // Response type is what previously was a byte saying how many data sources there were in the
-        // coming transaction stream response. For backwards compatibility we keep it as a byte and we introduce
-        // the transaction obligation response type as -1
-        byte responseType = dechunkingBuffer.readByte();
-        if ( responseType == TransactionObligationResponse.RESPONSE_TYPE )
-        {
-            // It is a transaction obligation response
-            long obligationTxId = dechunkingBuffer.readLong();
-            return new TransactionObligationResponse<>( response, storeId, obligationTxId, channelReleaser );
-        }
-
-        // It's a transaction stream in this response
-        TransactionStream transactions = new TransactionStream()
-        {
-            @Override
-            public void accept( Visitor<CommittedTransactionRepresentation, IOException> visitor ) throws IOException
-            {
-                LogEntryReader<ReadableLogChannel> reader = new LogEntryReaderFactory().create();
-                NetworkReadableLogChannel channel = new NetworkReadableLogChannel( dechunkingBuffer );
-
-                try ( PhysicalTransactionCursor<ReadableLogChannel> cursor =
-                        new PhysicalTransactionCursor<>( channel, reader ) )
-                {
-                    while ( cursor.next() && visitor.visit( cursor.get() ) )
-                    {   // Plow through it
-                    }
-                }
-            }
-        };
-        return new TransactionStreamResponse<>( response, storeId, transactions, channelReleaser );
-    }
-
-    protected abstract StoreId readStoreId( ChannelBuffer source, ByteBuffer byteBuffer );
-
-    private void writeContext( RequestContext context, ChannelBuffer targetBuffer )
-    {
-        targetBuffer.writeLong( context.getEpoch() );
-        targetBuffer.writeInt( context.machineId() );
-        targetBuffer.writeInt( context.getEventIdentifier() );
-        long tx = context.lastAppliedTransaction();
-        targetBuffer.writeLong( tx );
-        targetBuffer.writeInt( context.getMasterId() );
-        targetBuffer.writeLong( context.getChecksum() );
-    }
-
-    /* ========================
-       Static utility functions
-       ======================== */
-
+    public static final int DEFAULT_FRAME_LENGTH = 16 * MEGA;
     public static final ObjectSerializer<Integer> INTEGER_SERIALIZER = new ObjectSerializer<Integer>()
     {
         @Override
@@ -187,91 +104,54 @@ public abstract class Protocol
         {
         }
     };
-    public static class FileStreamsDeserializer implements Deserializer<Void>
-    {
-        private final StoreWriter writer;
-
-        public FileStreamsDeserializer( StoreWriter writer )
-        {
-            this.writer = writer;
-        }
-
-        // NOTICE: this assumes a "smart" ChannelBuffer that continues to next chunk
-        @Override
-        public Void read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
-        {
-            int pathLength;
-            while ( 0 != ( pathLength = buffer.readUnsignedShort() ) )
-            {
-                String path = readString( buffer, pathLength );
-                boolean hasData = buffer.readByte() == 1;
-                writer.write( path, hasData ? new BlockLogReader( buffer ) : null, temporaryBuffer, hasData );
-            }
-            writer.close();
-            return null;
-        }
-    }
-
-    public static class TransactionSerializer implements Serializer
-    {
-        private final TransactionRepresentation tx;
-
-        public TransactionSerializer( TransactionRepresentation tx )
-        {
-            this.tx = tx;
-        }
-
-        @Override
-        public void write( ChannelBuffer buffer ) throws IOException
-        {
-            NetworkWritableLogChannel channel = new NetworkWritableLogChannel( buffer );
-
-            writeString( buffer, NeoStoreDataSource.DEFAULT_DATA_SOURCE_NAME );
-            channel.putInt( tx.getAuthorId() );
-            channel.putInt( tx.getMasterId() );
-            channel.putLong( tx.getLatestCommittedTxWhenStarted() );
-            channel.putLong( tx.getTimeStarted() );
-            channel.putLong( tx.getTimeCommitted() );
-            channel.putInt( tx.additionalHeader().length );
-            channel.put( tx.additionalHeader(), tx.additionalHeader().length );
-            new LogEntryWriterv1( channel, new CommandWriter( channel ) ).serialize( tx );
-        }
-    }
-
     public static final Deserializer<TransactionRepresentation> TRANSACTION_REPRESENTATION_DESERIALIZER =
             new Deserializer<TransactionRepresentation>()
-    {
-        @Override
-        public TransactionRepresentation read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws
-                IOException
-        {
-            LogEntryReader<ReadableLogChannel> reader = new LogEntryReaderFactory().create();
-            NetworkReadableLogChannel channel = new NetworkReadableLogChannel( buffer );
-
-            int authorId = channel.getInt();
-            int masterId = channel.getInt();
-            long latestCommittedTxWhenStarted = channel.getLong();
-            long timeStarted = channel.getLong();
-            long timeCommitted = channel.getLong();
-
-            int headerLength = channel.getInt();
-            byte[] header = new byte[headerLength];
-
-            channel.get( header, headerLength );
-
-            LogEntryCommand entryRead;
-            List<Command> commands = new LinkedList<>();
-            while ( (entryRead = (LogEntryCommand) reader.readLogEntry( channel )) != null )
             {
-                commands.add( entryRead.getXaCommand() );
-            }
+                @Override
+                public TransactionRepresentation read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws
+                        IOException
+                {
+                    LogEntryReader<ReadableLogChannel> reader = new LogEntryReaderFactory().create();
+                    NetworkReadableLogChannel channel = new NetworkReadableLogChannel( buffer );
 
-            PhysicalTransactionRepresentation toReturn = new PhysicalTransactionRepresentation( commands );
-            toReturn.setHeader( header, masterId, authorId, timeStarted, latestCommittedTxWhenStarted,
-                    timeCommitted, -1 );
-            return toReturn;
-        }
-    };
+                    int authorId = channel.getInt();
+                    int masterId = channel.getInt();
+                    long latestCommittedTxWhenStarted = channel.getLong();
+                    long timeStarted = channel.getLong();
+                    long timeCommitted = channel.getLong();
+
+                    int headerLength = channel.getInt();
+                    byte[] header = new byte[headerLength];
+
+                    channel.get( header, headerLength );
+
+                    LogEntryCommand entryRead;
+                    List<Command> commands = new LinkedList<>();
+                    while ( (entryRead = (LogEntryCommand) reader.readLogEntry( channel )) != null )
+                    {
+                        commands.add( entryRead.getXaCommand() );
+                    }
+
+                    PhysicalTransactionRepresentation toReturn = new PhysicalTransactionRepresentation( commands );
+                    toReturn.setHeader( header, masterId, authorId, timeStarted, latestCommittedTxWhenStarted,
+                            timeCommitted, -1 );
+                    return toReturn;
+                }
+            };
+    private final int chunkSize;
+
+    /* ========================
+       Static utility functions
+       ======================== */
+    private final byte applicationProtocolVersion;
+    private final byte internalProtocolVersion;
+
+    public Protocol( int chunkSize, byte applicationProtocolVersion, byte internalProtocolVersion )
+    {
+        this.chunkSize = chunkSize;
+        this.applicationProtocolVersion = applicationProtocolVersion;
+        this.internalProtocolVersion = internalProtocolVersion;
+    }
 
     public static void addLengthFieldPipes( ChannelPipeline pipeline, int frameLength )
     {
@@ -306,9 +186,12 @@ public abstract class Protocol
         byte value = buffer.readByte();
         switch ( value )
         {
-        case 0: return false;
-        case 1: return true;
-        default: throw new ComException( "Invalid boolean value " + value );
+        case 0:
+            return false;
+        case 1:
+            return true;
+        default:
+            throw new ComException( "Invalid boolean value " + value );
         }
     }
 
@@ -327,7 +210,126 @@ public abstract class Protocol
         if ( chunkSize > frameLength )
         {
             throw new IllegalArgumentException( "Chunk size " + chunkSize +
-                    " needs to be equal or less than frame length " + frameLength );
+                                                " needs to be equal or less than frame length " + frameLength );
+        }
+    }
+
+    public void serializeRequest( Channel channel, ChannelBuffer buffer, RequestType<?> type, RequestContext ctx,
+                                  Serializer payload ) throws IOException
+    {
+        buffer.clear();
+        ChunkingChannelBuffer chunkingBuffer = new ChunkingChannelBuffer( buffer,
+                channel, chunkSize, internalProtocolVersion, applicationProtocolVersion );
+        chunkingBuffer.writeByte( type.id() );
+        writeContext( ctx, chunkingBuffer );
+        payload.write( chunkingBuffer );
+        chunkingBuffer.done();
+    }
+
+    public <PAYLOAD> Response<PAYLOAD> deserializeResponse( BlockingReadHandler<ChannelBuffer> reader,
+                                                            ByteBuffer input, long timeout,
+                                                            Deserializer<PAYLOAD> payloadDeserializer,
+                                                            ResourceReleaser channelReleaser ) throws IOException
+    {
+        final DechunkingChannelBuffer dechunkingBuffer = new DechunkingChannelBuffer( reader, timeout,
+                internalProtocolVersion, applicationProtocolVersion );
+
+        PAYLOAD response = payloadDeserializer.read( dechunkingBuffer, input );
+        StoreId storeId = readStoreId( dechunkingBuffer, input );
+
+        // Response type is what previously was a byte saying how many data sources there were in the
+        // coming transaction stream response. For backwards compatibility we keep it as a byte and we introduce
+        // the transaction obligation response type as -1
+        byte responseType = dechunkingBuffer.readByte();
+        if ( responseType == TransactionObligationResponse.RESPONSE_TYPE )
+        {
+            // It is a transaction obligation response
+            long obligationTxId = dechunkingBuffer.readLong();
+            return new TransactionObligationResponse<>( response, storeId, obligationTxId, channelReleaser );
+        }
+
+        // It's a transaction stream in this response
+        TransactionStream transactions = new TransactionStream()
+        {
+            @Override
+            public void accept( Visitor<CommittedTransactionRepresentation,IOException> visitor ) throws IOException
+            {
+                LogEntryReader<ReadableLogChannel> reader = new LogEntryReaderFactory().create();
+                NetworkReadableLogChannel channel = new NetworkReadableLogChannel( dechunkingBuffer );
+
+                try ( PhysicalTransactionCursor<ReadableLogChannel> cursor =
+                              new PhysicalTransactionCursor<>( channel, reader ) )
+                {
+                    while ( cursor.next() && !visitor.visit( cursor.get() ) )
+                    {
+                    }
+                }
+            }
+        };
+        return new TransactionStreamResponse<>( response, storeId, transactions, channelReleaser );
+    }
+
+    protected abstract StoreId readStoreId( ChannelBuffer source, ByteBuffer byteBuffer );
+
+    private void writeContext( RequestContext context, ChannelBuffer targetBuffer )
+    {
+        targetBuffer.writeLong( context.getEpoch() );
+        targetBuffer.writeInt( context.machineId() );
+        targetBuffer.writeInt( context.getEventIdentifier() );
+        long tx = context.lastAppliedTransaction();
+        targetBuffer.writeLong( tx );
+        targetBuffer.writeInt( context.getMasterId() );
+        targetBuffer.writeLong( context.getChecksum() );
+    }
+
+    public static class FileStreamsDeserializer implements Deserializer<Void>
+    {
+        private final StoreWriter writer;
+
+        public FileStreamsDeserializer( StoreWriter writer )
+        {
+            this.writer = writer;
+        }
+
+        // NOTICE: this assumes a "smart" ChannelBuffer that continues to next chunk
+        @Override
+        public Void read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
+        {
+            int pathLength;
+            while ( 0 != (pathLength = buffer.readUnsignedShort()) )
+            {
+                String path = readString( buffer, pathLength );
+                boolean hasData = buffer.readByte() == 1;
+                writer.write( path, hasData ? new BlockLogReader( buffer ) : null, temporaryBuffer, hasData );
+            }
+            writer.close();
+            return null;
+        }
+    }
+
+    public static class TransactionSerializer implements Serializer
+    {
+        private final TransactionRepresentation tx;
+
+        public TransactionSerializer( TransactionRepresentation tx )
+        {
+            this.tx = tx;
+        }
+
+        @Override
+        public void write( ChannelBuffer buffer ) throws IOException
+        {
+            NetworkWritableLogChannel channel = new NetworkWritableLogChannel( buffer );
+
+            writeString( buffer, NeoStoreDataSource.DEFAULT_DATA_SOURCE_NAME );
+            channel.putInt( tx.getAuthorId() );
+            channel.putInt( tx.getMasterId() );
+            channel.putLong( tx.getLatestCommittedTxWhenStarted() );
+            channel.putLong( tx.getTimeStarted() );
+            channel.putLong( tx.getTimeCommitted() );
+            channel.putInt( tx.additionalHeader().length );
+            channel.put( tx.additionalHeader(), tx.additionalHeader().length );
+            new LogEntryWriterv1( channel, new CommandWriter( channel ) ).serialize( tx );
         }
     }
 }

@@ -45,7 +45,6 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
-import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.transaction.state.LazyIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
@@ -67,8 +66,8 @@ public class IndexTransactionApplier extends NeoCommandHandler.Adapter
         }
     };
 
-    private final Map<Long, NodeCommand> nodeCommands = new HashMap<>();
-    private final Map<Long, List<PropertyCommand>> propertyCommands = new HashMap<>();
+    private final Map<Long,NodeCommand> nodeCommands = new HashMap<>();
+    private final Map<Long,List<PropertyCommand>> propertyCommands = new HashMap<>();
     private final List<NodeLabelUpdate> labelUpdates = new ArrayList<>();
 
     private final IndexingService indexingService;
@@ -80,8 +79,8 @@ public class IndexTransactionApplier extends NeoCommandHandler.Adapter
     private final TransactionApplicationMode mode;
 
     public IndexTransactionApplier( IndexingService indexingService, LabelScanStore labelScanStore,
-            NodeStore nodeStore, PropertyStore propertyStore, CacheAccessBackDoor cacheAccess,
-            PropertyLoader propertyLoader, TransactionApplicationMode mode )
+                                    NodeStore nodeStore, PropertyStore propertyStore, CacheAccessBackDoor cacheAccess,
+                                    PropertyLoader propertyLoader, TransactionApplicationMode mode )
     {
         this.indexingService = indexingService;
         this.labelScanStore = labelScanStore;
@@ -153,7 +152,7 @@ public class IndexTransactionApplier extends NeoCommandHandler.Adapter
         NodeLabels labelFieldBefore = parseLabelsField( before );
         NodeLabels labelFieldAfter = parseLabelsField( after );
         if ( !(labelFieldBefore.isInlined() && labelFieldAfter.isInlined()
-                && before.getLabelField() == after.getLabelField()) )
+               && before.getLabelField() == after.getLabelField()) )
         {
             long[] labelsBefore = labelFieldBefore.getIfLoaded();
             long[] labelsAfter = labelFieldAfter.getIfLoaded();
@@ -163,7 +162,7 @@ public class IndexTransactionApplier extends NeoCommandHandler.Adapter
             }
         }
 
-        return true;
+        return false;
     }
 
     @Override
@@ -180,7 +179,7 @@ public class IndexTransactionApplier extends NeoCommandHandler.Adapter
             }
             group.add( command );
         }
-        return true;
+        return false;
     }
 
     @Override
@@ -190,32 +189,33 @@ public class IndexTransactionApplier extends NeoCommandHandler.Adapter
         {
             switch ( command.getMode() )
             {
-                case UPDATE:
-                    // Shouldn't we be more clear about that we are waiting for an index to come online here?
-                    // right now we just assume that an update to index records means wait for it to be online.
-                    if ( ((IndexRule) command.getSchemaRule()).isConstraintIndex() )
+            case UPDATE:
+                // Shouldn't we be more clear about that we are waiting for an index to come online here?
+                // right now we just assume that an update to index records means wait for it to be online.
+                if ( ((IndexRule) command.getSchemaRule()).isConstraintIndex() )
+                {
+                    try
                     {
-                        try
-                        {
-                            indexingService.activateIndex( command.getSchemaRule().getId() );
-                        }
-                        catch ( IndexNotFoundKernelException | IndexActivationFailedKernelException |
-                                IndexPopulationFailedKernelException e )
-                        {
-                            throw new IllegalStateException( "Unable to enable constraint, backing index is not online.", e );
-                        }
+                        indexingService.activateIndex( command.getSchemaRule().getId() );
                     }
-                    break;
-                case CREATE:
-                    indexingService.createIndex( (IndexRule) command.getSchemaRule() );
-                    break;
-                case DELETE:
-                    indexingService.dropIndex( (IndexRule) command.getSchemaRule() );
-                    break;
-                default:
-                    throw new IllegalStateException( command.getMode().name() );
+                    catch ( IndexNotFoundKernelException | IndexActivationFailedKernelException |
+                            IndexPopulationFailedKernelException e )
+                    {
+                        throw new IllegalStateException( "Unable to enable constraint, backing index is not online.",
+                                e );
+                    }
+                }
+                break;
+            case CREATE:
+                indexingService.createIndex( (IndexRule) command.getSchemaRule() );
+                break;
+            case DELETE:
+                indexingService.dropIndex( (IndexRule) command.getSchemaRule() );
+                break;
+            default:
+                throw new IllegalStateException( command.getMode().name() );
             }
         }
-        return true;
+        return false;
     }
 }

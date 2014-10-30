@@ -47,16 +47,17 @@ public class LegacyIndexApplier extends NeoCommandHandler.Adapter
         Iterable<IndexImplementation> providers();
     }
 
-    private IndexDefineCommand defineCommand;
     private final ProviderLookup providerLookup;
-    private final Map<String, NeoCommandHandler> providerAppliers = new HashMap<>();
+    private final Map<String,NeoCommandHandler> providerAppliers = new HashMap<>();
     private final IndexConfigStore indexConfigStore;
     private final IdOrderingQueue transactionOrdering;
     private final long transactionId;
     private final TransactionApplicationMode mode;
+    private IndexDefineCommand defineCommand;
 
     public LegacyIndexApplier( IndexConfigStore indexConfigStore, ProviderLookup providerLookup,
-            IdOrderingQueue transactionOrdering, long transactionId, TransactionApplicationMode mode )
+                               IdOrderingQueue transactionOrdering, long transactionId,
+                               TransactionApplicationMode mode )
     {
         this.indexConfigStore = indexConfigStore;
         this.providerLookup = providerLookup;
@@ -73,10 +74,11 @@ public class LegacyIndexApplier extends NeoCommandHandler.Adapter
         if ( applier == null )
         {
             IndexEntityType entityType = IndexEntityType.byId( command.getEntityType() );
-            Map<String, String> config = indexConfigStore.get( entityType.entityClass(), indexName );
+            Map<String,String> config = indexConfigStore.get( entityType.entityClass(), indexName );
             if ( config == null )
             {
-                throw new IllegalStateException( "Unknown " + entityType.nameToLowerCase() + " index '" + indexName + "'" );
+                throw new IllegalStateException(
+                        "Unknown " + entityType.nameToLowerCase() + " index '" + indexName + "'" );
             }
             String providerName = config.get( PROVIDER );
             applier = providerLookup.lookup( providerName ).newApplier( mode.needsIdempotencyChecks() );
@@ -122,7 +124,7 @@ public class LegacyIndexApplier extends NeoCommandHandler.Adapter
     public boolean visitIndexDefineCommand( IndexDefineCommand command ) throws IOException
     {
         this.defineCommand = command;
-        return true;
+        return false;
     }
 
     @Override

@@ -19,12 +19,12 @@
  */
 package org.neo4j.com;
 
-import java.io.IOException;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+
+import java.io.IOException;
 
 import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
@@ -36,7 +36,6 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 
 import static java.lang.System.currentTimeMillis;
 import static java.lang.Thread.yield;
-
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -47,7 +46,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
-
 import static org.neo4j.com.MadeUpServer.FRAME_LENGTH;
 import static org.neo4j.com.TxChecksumVerifier.ALWAYS_MATCH;
 
@@ -57,8 +55,8 @@ public class TestCommunication
     private static final byte APPLICATION_PROTOCOL_VERSION = 0;
 
     private static final int PORT = 1234;
-    private StoreId storeIdToUse;
     private final LifeSupport life = new LifeSupport();
+    private StoreId storeIdToUse;
     private Builder builder;
 
     @Before
@@ -141,7 +139,8 @@ public class TestCommunication
             public Response<Void> fetchDataStream( MadeUpWriter writer, int dataSize )
             {
                 writer.write( new FailingByteChannel( dataSize, failureMessage ) );
-                return new TransactionStreamResponse<>( null, storeIdToUse, TransactionStream.EMPTY, ResourceReleaser.NO_OP );
+                return new TransactionStreamResponse<>( null, storeIdToUse, TransactionStream.EMPTY,
+                        ResourceReleaser.NO_OP );
             }
         };
         MadeUpServer server = builder.server( serverImplementation );
@@ -555,7 +554,7 @@ public class TestCommunication
     }
 
     public class TransactionStreamVerifyingResponseHandler
-            implements Response.Handler, Visitor<CommittedTransactionRepresentation, IOException>
+            implements Response.Handler, Visitor<CommittedTransactionRepresentation,IOException>
     {
         private final long txCount;
         private long expectedTxId;
@@ -572,7 +571,7 @@ public class TestCommunication
         }
 
         @Override
-        public Visitor<CommittedTransactionRepresentation, IOException> transactions()
+        public Visitor<CommittedTransactionRepresentation,IOException> transactions()
         {
             return this;
         }
@@ -582,7 +581,7 @@ public class TestCommunication
         {
             assertEquals( expectedTxId++, element.getCommitEntry().getTxId() );
             assertThat( element.getCommitEntry().getTxId(), lessThan( txCount ) );
-            return true;
+            return false;
         }
     }
 
@@ -597,7 +596,7 @@ public class TestCommunication
         }
 
         @Override
-        public Visitor<CommittedTransactionRepresentation, IOException> transactions()
+        public Visitor<CommittedTransactionRepresentation,IOException> transactions()
         {
             throw new UnsupportedOperationException( "Should not be called" );
         }

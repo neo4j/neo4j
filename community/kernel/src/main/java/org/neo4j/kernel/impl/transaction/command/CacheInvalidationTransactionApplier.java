@@ -48,7 +48,8 @@ public class CacheInvalidationTransactionApplier extends NeoCommandHandler.Adapt
     private final LabelTokenStore labelTokenStore;
     private final PropertyKeyTokenStore propertyKeyTokenStore;
 
-    public CacheInvalidationTransactionApplier( NeoCommandHandler delegate, NeoStore neoStore, CacheAccessBackDoor cacheAccess )
+    public CacheInvalidationTransactionApplier( NeoCommandHandler delegate, NeoStore neoStore,
+                                                CacheAccessBackDoor cacheAccess )
     {
         this.delegate = delegate;
         this.cacheAccess = cacheAccess;
@@ -65,7 +66,7 @@ public class CacheInvalidationTransactionApplier extends NeoCommandHandler.Adapt
 
         cacheAccess.removeNodeFromCache( command.getKey() );
 
-        return true;
+        return false;
     }
 
     @Override
@@ -101,7 +102,7 @@ public class CacheInvalidationTransactionApplier extends NeoCommandHandler.Adapt
             }
         }
 
-        return true;
+        return false;
     }
 
     @Override
@@ -120,7 +121,7 @@ public class CacheInvalidationTransactionApplier extends NeoCommandHandler.Adapt
             cacheAccess.removeRelationshipFromCache( relId );
         }
 
-        return true;
+        return false;
     }
 
     @Override
@@ -137,7 +138,7 @@ public class CacheInvalidationTransactionApplier extends NeoCommandHandler.Adapt
         Token type = relationshipTypeTokenStore.getToken( (int) command.getKey() );
         cacheAccess.addRelationshipTypeToken( type );
 
-        return true;
+        return false;
     }
 
     @Override
@@ -148,7 +149,7 @@ public class CacheInvalidationTransactionApplier extends NeoCommandHandler.Adapt
         Token labelId = labelTokenStore.getToken( (int) command.getKey() );
         cacheAccess.addLabelToken( labelId );
 
-        return true;
+        return false;
     }
 
     @Override
@@ -159,7 +160,7 @@ public class CacheInvalidationTransactionApplier extends NeoCommandHandler.Adapt
         Token index = propertyKeyTokenStore.getToken( (int) command.getKey() );
         cacheAccess.addPropertyKeyToken( index );
 
-        return true;
+        return false;
     }
 
     @Override
@@ -175,7 +176,7 @@ public class CacheInvalidationTransactionApplier extends NeoCommandHandler.Adapt
 
         cacheAccess.removeGraphPropertiesFromCache();
 
-        return true;
+        return false;
     }
 
     @Override
