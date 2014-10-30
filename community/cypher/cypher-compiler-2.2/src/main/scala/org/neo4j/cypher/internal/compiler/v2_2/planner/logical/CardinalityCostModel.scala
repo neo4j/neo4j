@@ -62,7 +62,6 @@ case class CardinalityCostModel(cardinality: CardinalityModel) extends CostModel
 
   private def cardinalityForPlan(plan: LogicalPlan): Cardinality = plan match {
     case Selection(_, left) => cardinality(left)
-    case exp: Expand        => cardinality(exp)
     case _                  => plan.lhs.map(cardinality).getOrElse(cardinality(plan))
   }
 
