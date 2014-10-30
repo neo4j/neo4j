@@ -34,6 +34,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 
 import static java.lang.System.currentTimeMillis;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 public class StringIdMapperTest
@@ -81,6 +82,22 @@ public class StringIdMapperTest
                 fail( "Couldn't find " + id + " even though I added it just previously" );
             }
         }
+    }
+
+    @Test
+    public void shouldEncodeShortStrings() throws Exception
+    {
+        // GIVEN
+        StringIdMapper mapper = new StringIdMapper( LongArrayFactory.AUTO );
+
+        // WHEN
+        mapper.put( "123", 1 );
+        mapper.put( "456", 2 );
+        mapper.prepare( null );
+
+        // THEN
+        assertEquals( 2L, mapper.get( "456" ) );
+        assertEquals( 1L, mapper.get( "123" ) );
     }
 
     private String randomUUID()

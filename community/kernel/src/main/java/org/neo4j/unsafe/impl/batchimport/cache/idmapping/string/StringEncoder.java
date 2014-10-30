@@ -40,7 +40,7 @@ public class StringEncoder
     private int numChars;
 
     // scratch data structures
-    private int[] encodedInt;
+    private final int[] encodedInt = new int[2];
     private byte[] encodedBytes = new byte[128];
     private final int[] codes;
 
