@@ -44,17 +44,16 @@ public class CountsStoreApplier extends NeoCommandHandler.Adapter
 {
     private final CountsAcceptor countsStore;
     private final NodeStore nodeStore;
-    private final CacheAccessBackDoor cacheAccess;
     private final Map<Integer/*labelId*/,IntCounter> labelDelta = new HashMap<>();
     private final Map<Integer/*typeId*/,IntCounter> relationshipTypeDelta = new HashMap<>();
+
     private int nodesDelta;
     private int relsDelta;
 
-    public CountsStoreApplier( CountsAcceptor countsStore, NodeStore nodeStore, CacheAccessBackDoor cacheAccess )
+    public CountsStoreApplier( CountsAcceptor countsStore, NodeStore nodeStore )
     {
         this.countsStore = countsStore;
         this.nodeStore = nodeStore;
-        this.cacheAccess = cacheAccess;
     }
 
     private static <KEY> IntCounter counter( Map<KEY,IntCounter> map, KEY key )
@@ -170,24 +169,18 @@ public class CountsStoreApplier extends NeoCommandHandler.Adapter
     {
         // nodes
         countsStore.updateCountsForNode( ANY_LABEL, nodesDelta );
-        long labelsTotalDelta = 0;
-        for ( Map.Entry<Integer,IntCounter> label : labelDelta.entrySet() )
+        for ( Map.Entry<Integer, IntCounter> label : labelDelta.entrySet() )
         {
             final int count = label.getValue().value();
             countsStore.updateCountsForNode( label.getKey(), count );
-            labelsTotalDelta += count;
         }
         // relationships
-        long relTypesTotalDelta = 0;
         countsStore.updateCountsForRelationship( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, relsDelta );
         for ( Map.Entry<Integer,IntCounter> type : relationshipTypeDelta.entrySet() )
         {
             final int count = type.getValue().value();
             countsStore.updateCountsForRelationship( ANY_LABEL, type.getKey(), ANY_LABEL, count );
-            relTypesTotalDelta += count;
         }
-
-        cacheAccess.applyCountUpdates( nodesDelta, relsDelta, labelsTotalDelta, relTypesTotalDelta );
     }
 
     private long[] labels( NodeRecord node )
