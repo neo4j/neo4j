@@ -43,10 +43,14 @@ define(
             xhr.setRequestHeader("Authorization", "Basic realm=\"Neo4j\" " + token) unless token is null
         })
 
+        # Handle authorization errors
         $(document).ajaxError( (ev, xhr) -> 
           if xhr.status is 401 
             $("#auth-error").show()
         )
+
+        # Check if authorization is needed on startup
+        $.get(location.protocol + "//" + location.host + "/db/data", (->))
 
         @appState = new ApplicationState
         @appState.set server : new neo4js.GraphDatabase(location.protocol + "//" + location.host)
