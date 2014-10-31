@@ -156,9 +156,15 @@ public abstract class SortedKeyValueStore<K extends Comparable<K>, VR> implement
         try ( InputStream in = fs.openAsInputStream( file ) )
         {
             // skip the header
-            for ( long bytes = header.headerRecords() * RECORD_SIZE; bytes != 0; )
+            for ( long bytes = header.headerRecords() * RECORD_SIZE; bytes > 0; bytes-- )
             {
-                bytes -= in.skip( bytes );
+                // if we reach the end of the file stop
+                // NOTE: we cannot use skip here since it does not detected EOF
+                int read = in.read();
+                if ( read == -1 )
+                {
+                    break;
+                }
             }
             byte[] record = new byte[RECORD_SIZE];
             ByteBuffer buffer = ByteBuffer.wrap( record );

@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
@@ -43,7 +43,6 @@ import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -52,8 +51,9 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.BASE_MINOR_VERSION;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class CountsRotationTest
 {
@@ -68,11 +68,20 @@ public class CountsRotationTest
 
         // THEN
         assertTrue( fs.fileExists( alphaStoreFile() ) );
-        assertFalse( fs.fileExists( betaStoreFile() ) );
+        assertTrue( fs.fileExists( betaStoreFile() ) );
 
         try ( CountsStore store = CountsStore.open( fs, pageCache, alphaStoreFile() ) )
         {
-            assertEquals( TransactionIdStore.BASE_TX_ID, store.lastTxId() );
+            assertEquals( BASE_TX_ID, store.lastTxId() );
+            assertEquals( BASE_MINOR_VERSION + 1, store.minorVersion() );
+            assertEquals( 0, store.totalRecordsStored() );
+            assertEquals( 0, allRecords( store ).size() );
+        }
+
+        try ( CountsStore store = CountsStore.open( fs, pageCache, betaStoreFile() ) )
+        {
+            assertEquals( BASE_TX_ID, store.lastTxId() );
+            assertEquals( BASE_MINOR_VERSION, store.minorVersion() );
             assertEquals( 0, store.totalRecordsStored() );
             assertEquals( 0, allRecords( store ).size() );
         }
@@ -99,7 +108,8 @@ public class CountsRotationTest
         try ( CountsStore store = CountsStore.open( fs, pageCache, betaStoreFile() ) )
         {
             // a transaction for creating the label and a transaction for the node
-            assertEquals( TransactionIdStore.BASE_TX_ID + 1 + 1, store.lastTxId() );
+            assertEquals( BASE_TX_ID + 1 + 1, store.lastTxId() );
+            assertEquals( BASE_MINOR_VERSION, store.minorVersion() );
             // one for all nodes and one for the created "A" label
             assertEquals( 1 + 1, store.totalRecordsStored() );
             assertEquals( 1 + 1, allRecords( store ).size() );
@@ -136,7 +146,8 @@ public class CountsRotationTest
             // NOTE since the rotation happens before the second transaction is committed we do not see those changes
             // in the stats
             // a transaction for creating the label and a transaction for the node
-            assertEquals( TransactionIdStore.BASE_TX_ID + 1 + 1, store.lastTxId() );
+            assertEquals( BASE_TX_ID + 1 + 1, store.lastTxId() );
+            assertEquals( BASE_MINOR_VERSION, store.minorVersion() );
             // one for all nodes and one for the created "B" label
             assertEquals( 1 + 1, store.totalRecordsStored() );
             assertEquals( 1 + 1, allRecords( store ).size() );

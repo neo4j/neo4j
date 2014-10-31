@@ -70,39 +70,63 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     {
         try
         {
-            boolean hasAlpha = fs.fileExists( alpha ), hasBeta = fs.fileExists( beta );
-            if ( hasAlpha && hasBeta )
-            {
-                CountsStore alphaStore = CountsStore.open( fs, pageCache, alpha );
-                CountsStore betaStore = CountsStore.open( fs, pageCache, beta );
+            CountsStore alphaStore = openVerifiedCountsStore( fs, pageCache, alpha );
+            CountsStore betaStore = openVerifiedCountsStore( fs, pageCache, beta );
 
-                if ( isAlphaStoreMoreRecent( alphaStore, betaStore ) )
-                {
-                    betaStore.close();
-                    return alphaStore;
-                }
-                else
-                {
-                    alphaStore.close();
-                    return betaStore;
-                }
-            }
-            else if ( hasAlpha )
+            boolean isAlphaCorrupted = alphaStore == null;
+            boolean isBetaCorrupted = betaStore == null;
+            if ( isAlphaCorrupted && isBetaCorrupted )
             {
-                return CountsStore.open( fs, pageCache, alpha );
+                throw new UnderlyingStorageException(
+                    "Both counts store files are corrupted. Please shut down the database and delete them " +
+                    "to have the database recreate the counts store on next startup" );
             }
-            else if ( hasBeta )
+
+            if ( isAlphaCorrupted )
             {
-                return CountsStore.open( fs, pageCache, beta );
+                return betaStore;
+            }
+
+            if ( isBetaCorrupted )
+            {
+                return alphaStore;
+            }
+
+            // default case
+            if ( isAlphaStoreMoreRecent( alphaStore, betaStore ) )
+            {
+                betaStore.close();
+                return alphaStore;
             }
             else
             {
-                throw new IllegalStateException( "Storage file not found." );
+                alphaStore.close();
+                return betaStore;
             }
         }
         catch ( IOException e )
         {
             throw new UnderlyingStorageException( e );
+        }
+    }
+
+    private static CountsStore openVerifiedCountsStore( FileSystemAbstraction fs, PageCache pageCache, File file )
+            throws IOException
+    {
+        if ( !fs.fileExists( file ) )
+        {
+            throw new UnderlyingStorageException(
+                "Expected counts store file " + file + " to exist. You may recreate the counts store by shutting down "
+              + "the database first, deleting the counts store files manually and then restarting the database");
+        }
+
+        try
+        {
+            return CountsStore.open( fs, pageCache, file );
+        }
+        catch ( UnderlyingStorageException ex )
+        {
+            return null;
         }
     }
 
@@ -117,14 +141,11 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     {
         long alphaTxId = alphaStore.lastTxId(), betaTxId = betaStore.lastTxId();
         long alphaVersion = alphaStore.minorVersion(), betaVersion = betaStore.minorVersion();
-
-        // TODO: Check with txIdProvider to infer if these numbers make any sense
-
         if ( alphaTxId == betaTxId )
         {
             if ( alphaVersion == betaVersion )
             {
-                throw new IllegalStateException( "Found two storage files with same last tx id and minor version" );
+                throw new UnderlyingStorageException( "Found two storage files with same tx id and minor version" );
             }
             return alphaVersion > betaVersion;
         }

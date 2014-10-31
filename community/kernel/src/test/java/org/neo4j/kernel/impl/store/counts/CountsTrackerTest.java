@@ -30,6 +30,7 @@ import java.util.concurrent.Future;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Function;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.CountsOracle;
@@ -46,6 +47,7 @@ import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.store.CommonAbstractStore.buildTypeDescriptorAndVersion;
 import static org.neo4j.kernel.impl.store.counts.CountsStore.WRITER_FACTORY;
 import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.BASE_MINOR_VERSION;
+import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.META_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class CountsTrackerTest
@@ -211,6 +213,7 @@ public class CountsTrackerTest
         PageCache pageCache = pageCache();
 
         createStoreFile( fs, pageCache, alphaFile, BASE_TX_ID + 1);
+        createStoreFile( fs, pageCache, betaFile, BASE_TX_ID );
 
         {
             CountsTracker tracker = new CountsTracker( fs, pageCache, storeFile() );
@@ -225,6 +228,28 @@ public class CountsTrackerTest
             CountsTracker tracker = new CountsTracker( fs, pageCache, storeFile() );
             assertEquals( betaFile, tracker.storeFile() );
             tracker.close();
+        }
+    }
+
+    @Test
+    public void shouldPickTheUncorruptedCountsStoreFile() throws IOException
+    {
+        // given
+        EphemeralFileSystemAbstraction fs = this.fs.get();
+        PageCache pageCache = pageCache();
+        createStoreFile( fs, pageCache, alphaStoreFile(), BASE_TX_ID );
+        createStoreFile( fs, pageCache, betaStoreFile(), BASE_TX_ID + 1 );
+
+        try ( StoreChannel channel = fs.open( betaStoreFile(), "rw" ) )
+        {
+            channel.truncate( META_HEADER_SIZE / 2 );
+            channel.force( false );
+        }
+
+        // when
+        try ( CountsTracker tracker = new CountsTracker( fs, pageCache, storeFile() ) )
+        {
+            assertEquals( alphaStoreFile(), tracker.storeFile() );
         }
     }
 
