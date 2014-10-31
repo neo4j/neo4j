@@ -27,6 +27,7 @@ object allNodesLeafPlanner extends LeafPlanner {
   def apply(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext) =
     context.metrics.candidateListCreator(
       queryGraph.patternNodes
+        .filter(!queryGraph.argumentIds.contains(_))
         .map(planAllNodesScan(_, queryGraph.argumentIds)).toSeq
     )
 }

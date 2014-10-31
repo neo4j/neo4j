@@ -47,13 +47,14 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics,
     (0 to queryGraph.optionalMatches.length)
       .map(queryGraph.optionalMatches.combinations)
       .flatten
+      .map(_.map(_.withoutArguments()))
       .map(_.foldLeft(QueryGraph.empty)(_.withOptionalMatches(Seq.empty) ++ _.withOptionalMatches(Seq.empty)))
       .map(queryGraph.withOptionalMatches(Seq.empty) ++ _)
   }
 
   private def cardinalityForQueryGraph(qg: QueryGraph)(implicit semanticTable: SemanticTable): Cardinality = {
     val selectivity = calculateSelectivity(qg)
-    val numberOfPatternNodes = qg.patternNodes.size
+    val numberOfPatternNodes = qg.patternNodes.count(!qg.argumentIds.contains(_))
     val numberOfGraphNodes = stats.nodesWithLabelCardinality(None)
 
     (numberOfGraphNodes ^ numberOfPatternNodes) * selectivity

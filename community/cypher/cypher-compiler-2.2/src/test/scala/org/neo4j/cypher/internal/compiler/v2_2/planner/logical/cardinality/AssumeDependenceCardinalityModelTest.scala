@@ -20,6 +20,7 @@
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assumeDependence._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{SemanticTable, LogicalPlanningTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.CardinalityTestHelper
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
@@ -263,6 +264,16 @@ class AssumeDependenceCardinalityModelTest extends CypherFunSuite with LogicalPl
       withLabel('BAR -> 1000).
       withRelationshipCardinality('FOO -> 'TYPE -> 'BAR -> 100).
       shouldHaveCardinality(100)
+  }
+
+  test("honours bound arguments") {
+    givenPattern("MATCH (a:FOO)-[:TYPE]->(b:BAR)").
+      withQueryGraphArgumentIds(IdName("a")).
+      withGraphNodes(500).
+      withLabel('FOO -> 100).
+      withLabel('BAR -> 400).
+      withRelationshipCardinality('FOO -> 'TYPE -> 'BAR -> 1000).
+      shouldHaveCardinality( 1000 / 500)
   }
 
   test("predicates in optional match do not decrease the cardinality matches") {

@@ -1611,6 +1611,24 @@ return b
     result.toList should equal (List(Map("b" -> b)))
   }
 
+  test("make sure that we are handling arguments in leaf plans") {
+
+    val a = createLabeledNode("LABEL")
+    val b = createLabeledNode("LABEL")
+    val c = createLabeledNode("LABEL")
+
+    relate(a, b,  "r")
+    relate(b, c,  "r")
+
+    val query = s"""MATCH (a), (b) WHERE (id(a) = ${a.getId} OR (a)-[:r]->(b:MISSING_LABEL)) AND ((a)-[:r]->(b:LABEL) OR (a)-[:r]->(b:MISSING_LABEL)) RETURN b""".stripMargin
+
+    //WHEN
+    val result = executeWithNewPlanner(query)
+
+    //THEN
+    result.toList should equal (List(Map("b" -> b)))
+  }
+
   test("issue #2907 should only check label on end node") {
 
     val a = createLabeledNode("BLUE")

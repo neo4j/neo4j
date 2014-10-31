@@ -20,6 +20,7 @@
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assumeIndependence.{IndependenceCombiner, AssumeIndependenceQueryGraphCardinalityModel}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{SemanticTable, LogicalPlanningTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.CardinalityTestHelper
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
@@ -39,7 +40,7 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
       shouldHaveCardinality(42)
   }
 
-  ignore("cross product of all nodes of two labels") { //TODO: Probably don't need to figure this out now
+  test("cross product of all nodes of two labels") {
     givenPattern("MATCH (n:A) MATCH (m:B)").
       withGraphNodes(425).
       withLabel('A -> 42).
@@ -47,7 +48,7 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
       shouldHaveCardinality(42 * 10)
   }
 
-  ignore("cross product of all nodes") {
+  test("cross product of all nodes") {
     givenPattern("MATCH a, b").
       withGraphNodes(425).
       shouldHaveCardinality(425 * 425)
@@ -59,7 +60,7 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
       shouldHaveCardinality(1)
   }
 
-  ignore("cross product of all nodes and a label scan") {
+  test("cross product of all nodes and a label scan") {
     givenPattern("MATCH a, (b:B)").
       withGraphNodes(40).
       withLabel('B -> 30).
@@ -397,13 +398,23 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
       shouldHaveCardinality(500)
   }
 
-  ignore("optional match will in worst case be a cartesian product") {
+  test("honours bound arguments") {
+    givenPattern("MATCH (a:FOO)-[:TYPE]->(b:BAR)").
+      withQueryGraphArgumentIds(IdName("a")).
+      withGraphNodes(500).
+      withLabel('FOO -> 100).
+      withLabel('BAR -> 400).
+      withRelationshipCardinality('FOO -> 'TYPE -> 'BAR -> 1000).
+      shouldHaveCardinality( 1000 / 500)
+  }
+
+  test("optional match will in worst case be a cartesian product") {
     givenPattern("MATCH (a) OPTIONAL MATCH (b)").
       withGraphNodes(1000).
       shouldHaveCardinality(1000 * 1000)
   }
 
-  ignore("multiple optional matches - multiple cross joins") {
+  test("multiple optional matches - multiple cross joins") {
     givenPattern("MATCH (a:FOO) OPTIONAL MATCH (b:BAR) OPTIONAL MATCH (a) WHERE a.prop = 42").
       withGraphNodes(10000).
       withLabel('FOO -> 100).
