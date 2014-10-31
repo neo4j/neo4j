@@ -98,6 +98,8 @@ object exceptionHandlerFor2_2 extends MapToPublicExceptions[CypherException] {
       case e: CypherException_v2_2 => throw e.mapToPublic(exceptionHandlerFor2_2)
     }
   }
+
+  def failedIndexException(indexName: String): CypherException = throw new FailedIndexException(indexName)
 }
 
 trait CompatibilityFor2_2 {

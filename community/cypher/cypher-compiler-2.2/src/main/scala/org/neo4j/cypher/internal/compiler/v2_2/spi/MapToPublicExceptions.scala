@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_2.spi
 import org.neo4j.cypher.internal.compiler.v2_2.CypherException
 
 trait MapToPublicExceptions[T <: Throwable] {
+  def failedIndexException(indexName: String): T
+
   def periodicCommitInOpenTransactionException(): T
 
   def syntaxException(message: String, query: String, offset: Option[Int]): T
