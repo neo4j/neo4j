@@ -57,8 +57,8 @@ angular.module('neo4jApp.services')
             "Ready for anything."
             "Every graph starts with the first node."
           ],
-          unauthorized: [
-            "Neo4j needs to make sure you are you. Please authenticate."
+          disconnected: [
+            "Disconnected from Neo4j. Please check if the cord is unplugged."
           ],
           callToAction: [
             {
