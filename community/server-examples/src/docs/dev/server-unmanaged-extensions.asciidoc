@@ -89,3 +89,46 @@ which results in
 Hello World, nodeId=123
 ----
 
+
+Testing your extension
+======================
+
+Neo4j provides tools to help you write integration tests for your extensions.
+You can access this toolkit by adding the following test dependency to your project:
+
+["source","xml","unnumbered","2",presubs="attributes"]
+--------
+<dependency>
+   <groupId>org.neo4j.test</groupId>
+   <artifactId>neo4j-harness</artifactId>
+   <version>{neo4j.version}</version>
+   <scope>provided</scope>
+</dependency>
+--------
+
+The test toolkit provides a mechanism to start a Neo4j instance with custom configuration and with extensions of your choice.
+It also provides mechanisms to specify data fixtures to include when starting Neo4j.
+
+.Usage example
+[snippet,java]
+----
+component=neo4j-harness
+source=org/neo4j/harness/doc/ExtensionTestingDocTest.java
+tag=testExtension
+classifier=test-sources
+----
+
+The full source code of the example is found here:
+https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/neo4j-harness/src/test/java/org/neo4j/harness/doc/ExtensionTestingDocTest.java[ExtensionTestingDocTest.java]
+
+
+If you are using the JUnit test framework, there is a JUnit rule available as well.
+
+.JUnit example
+[snippet,java]
+----
+component=neo4j-harness
+source=org/neo4j/harness/doc/JUnitDocTest.java
+tag=useJUnitRule
+classifier=test-sources
+----
