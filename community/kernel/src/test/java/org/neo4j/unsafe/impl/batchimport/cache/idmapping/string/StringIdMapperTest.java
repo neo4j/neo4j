@@ -20,10 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
 import java.util.Iterator;
-import java.util.Random;
-import java.util.UUID;
 
-import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.helpers.collection.PrefetchingIterator;
@@ -31,8 +28,6 @@ import org.neo4j.unsafe.impl.batchimport.cache.GatheringMemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.LongArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
-
-import static java.lang.System.currentTimeMillis;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -49,7 +44,6 @@ public class StringIdMapperTest
             @Override
             public Iterator<Object> iterator()
             {
-                resetRandomness();
                 return new PrefetchingIterator<Object>()
                 {
                     private int i;
@@ -57,7 +51,9 @@ public class StringIdMapperTest
                     @Override
                     protected Object fetchNextOrNull()
                     {
-                        return i++ < 300_000 ? randomUUID() : null;
+                        return i++ < 300_000
+                                ? "" + i
+                                : null;
                     }
                 };
             }
@@ -98,26 +94,5 @@ public class StringIdMapperTest
         // THEN
         assertEquals( 2L, mapper.get( "456" ) );
         assertEquals( 1L, mapper.get( "123" ) );
-    }
-
-    private String randomUUID()
-    {
-        random.nextBytes( scratchBytes );
-        return UUID.nameUUIDFromBytes( scratchBytes ).toString();
-    }
-
-    private final long seed = currentTimeMillis();
-    private Random random;
-    private final byte[] scratchBytes = new byte[20];
-
-    @Before
-    public void before() throws Exception
-    {
-        resetRandomness();
-    }
-
-    private void resetRandomness()
-    {
-        random = new Random( seed );
     }
 }

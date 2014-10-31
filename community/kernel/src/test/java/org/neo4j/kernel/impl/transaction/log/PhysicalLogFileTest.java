@@ -49,7 +49,6 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;

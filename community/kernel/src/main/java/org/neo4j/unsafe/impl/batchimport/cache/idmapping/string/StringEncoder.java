@@ -32,22 +32,24 @@ public class StringEncoder
     private static long UPPER_INT_MASK = 0x00000000_FFFFFFFFL;
     private static final int FOURTH_BYTE = 0x000000FF;
 
+    // fixed values
     private final int numCodes;
-    // A state-ful byte[] that changes as part of each call to encode
-    private final byte[] reMap = new byte[256];
     private final int encodingThreshold = 7;
 
+    // data changing over time, potentially with each encoding
+    private final byte[] reMap = new byte[256];
     private int numChars;
+    private int maxIdLength;
 
-    // scratch data structures
-    private final int[] encodedInt = new int[2];
-    private byte[] encodedBytes = new byte[128];
-    private final int[] codes;
+    // reused scratch structures to reduce garbage
+    private byte[] scratchEncodedBytes = new byte[100];
+    private final int[] scratchCodes;
+    private final int[] scratchSimplestCodes = new int[2];
 
     public StringEncoder( int codingStrength )
     {
-        this.numCodes = codingStrength > 2 ? codingStrength : 2;
-        this.codes = new int[numCodes];
+        numCodes = codingStrength > 2 ? codingStrength : 2;
+        scratchCodes = new int[numCodes];
         Arrays.fill( reMap, (byte)-1 );
     }
 
@@ -60,45 +62,52 @@ public class StringEncoder
     private int[] encodeInt( String s )
     {
         // construct bytes from string
-        int length = s.length();
-        byte[] bytes = encodedBytes( length );
-        for ( int i = 0; i < length; i++ )
+        int inputLength = s.length();
+        byte[] bytes = encodedBytes( inputLength );
+        for ( int i = 0; i < inputLength; i++ )
         {
             bytes[i] = (byte) ((s.charAt( i )) % 127);
         }
-        reMap( bytes, length );
-        // encode
-        if ( length <= encodingThreshold )
+        reMap( bytes, inputLength );
+        if ( inputLength > 127 )
         {
-            return simplestCode( bytes, length, encodedInt );
+            if ( inputLength > maxIdLength )
+            {
+                maxIdLength = inputLength;
+            }
         }
-        for ( int i = 0; i < codes.length; )
+        // encode
+        if ( inputLength <= encodingThreshold )
         {
-            codes[i] = getCode( bytes, length, 1 );//relPrimes[index][i]);
-            codes[i + 1] = getCode( bytes, length, bytes.length - 1 );//relPrimes[index][i+1]);
+            return simplestCode( bytes, inputLength );
+        }
+        for ( int i = 0; i < numCodes; )
+        {
+            scratchCodes[i] = getCode( bytes, inputLength, 1 );//relPrimes[index][i]);
+            scratchCodes[i + 1] = getCode( bytes, inputLength, inputLength - 1 );//relPrimes[index][i+1]);
             i += 2;
         }
-        int carryOver = lengthEncoder( length ) << 1;
+        int carryOver = lengthEncoder( inputLength ) << 1;
         int temp = 0;
-        for ( int i = 0; i < codes.length; i++ )
+        for ( int i = 0; i < numCodes; i++ )
         {
-            temp = codes[i] & FOURTH_BYTE;
-            codes[i] = codes[i] >>> 8 | carryOver << 24;
+            temp = scratchCodes[i] & FOURTH_BYTE;
+            scratchCodes[i] = scratchCodes[i] >>> 8 | carryOver << 24;
             carryOver = temp;
         }
-        return codes;
+        return scratchCodes;
     }
 
     private byte[] encodedBytes( int length )
     {
-        if ( length > encodedBytes.length )
+        if ( length > scratchEncodedBytes.length )
         {
-            encodedBytes = new byte[length];
+            scratchEncodedBytes = new byte[length];
         }
-        return encodedBytes;
+        return scratchEncodedBytes;
     }
 
-    private static int lengthEncoder( int length )
+    private int lengthEncoder( int length )
     {
         if ( length < 32 )
         {
@@ -126,9 +135,9 @@ public class StringEncoder
         }
     }
 
-    private void reMap( byte[] bytes, int length )
+    private void reMap( byte[] bytes, int inputLength )
     {
-        for ( int i = 0; i < length; i++ )
+        for ( int i = 0; i < inputLength; i++ )
         {
             if ( reMap[bytes[i]] == -1 )
             {
@@ -138,27 +147,29 @@ public class StringEncoder
         }
     }
 
-    private static int[] simplestCode( byte[] bytes, int length, int[] target )
+    private int[] simplestCode( byte[] bytes, int inputLength )
     {
-        target[0] = bytes.length << 25;
-        for ( int i = 0; i < 3 && i < length; i++ )
+        scratchSimplestCodes[0] = inputLength << 25;
+        scratchSimplestCodes[1] = 0;
+        for ( int i = 0; i < 3 && i < inputLength; i++ )
         {
-            target[0] = target[0] | bytes[i] << ((2 - i) * 8);
+            scratchSimplestCodes[0] = scratchSimplestCodes[0] | bytes[i] << ((2 - i) * 8);
         }
-        for ( int i = 3; i < 7 && i < length; i++ )
+        for ( int i = 3; i < 7 && i < inputLength; i++ )
         {
-            target[1] = target[1] | (bytes[i]) << ((6 - i) * 8);
+            scratchSimplestCodes[1] = scratchSimplestCodes[1] | (bytes[i]) << ((6 - i) * 8);
         }
-        return target;
+        return scratchSimplestCodes;
     }
 
-    private static int getCode( byte[] bytes, int length, int order )
+    private int getCode( byte[] bytes, int inputLength, int order )
     {
         long code = 0;
-        for ( int i = 0; i < length; i++ )
+        int size = inputLength;
+        for ( int i = 0; i < size; i++ )
         {
             //code += (((long)bytes[(i*order) % size]) << (i % 7)*8);
-            long val = bytes[(i * order) % length];
+            long val = bytes[(i * order) % size];
             for ( int k = 1; k <= i; k++ )
             {
                 long prev = val;
@@ -167,21 +178,5 @@ public class StringEncoder
             code += val;
         }
         return (int) code;
-    }
-
-    public static int GCD( int a, int b )
-    {
-        int temp;
-        if ( a < b )
-        {
-            temp = a;
-            a = b;
-            b = temp;
-        }
-        if ( a % b == 0 )
-        {
-            return (b);
-        }
-        return (GCD( a % b, b ));
     }
 }
