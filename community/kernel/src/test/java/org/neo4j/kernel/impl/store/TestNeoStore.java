@@ -224,8 +224,9 @@ public class TestNeoStore
                 mock( RelationshipTypeTokenHolder.class), locks,
                 mock( SchemaWriteGuard.class), mock( TransactionEventHandlers.class), IndexingService.NO_MONITOR, fs,
                 mock( StoreUpgrader.class ), mock( TransactionMonitor.class ), kernelHealth,
+                mock( PhysicalLogFile.Monitor.class ),
                 TransactionHeaderInformationFactory.DEFAULT, new StartupStatisticsProvider(), caches, nodeManager,
-                null, null, InternalAbstractGraphDatabase.defaultCommitProcessFactory );
+                null, null, InternalAbstractGraphDatabase.defaultCommitProcessFactory, mock(Monitors.class) );
         ds.init();
         ds.start();
 

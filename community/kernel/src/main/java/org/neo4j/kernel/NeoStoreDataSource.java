@@ -139,6 +139,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
@@ -147,6 +148,8 @@ import static org.neo4j.kernel.impl.transaction.state.CacheLoaders.relationshipL
 
 public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotationControl, IndexProviders
 {
+    private final Monitors monitors;
+
     private enum Diagnostics implements DiagnosticsExtractor<NeoStoreDataSource>
     {
         NEO_STORE_VERSIONS( "Store versions:" )
@@ -219,6 +222,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
     private final StoreUpgrader storeMigrationProcess;
     private final TransactionMonitor transactionMonitor;
     private final KernelHealth kernelHealth;
+    private final PhysicalLogFile.Monitor physicalLogMonitor;
     private final TransactionHeaderInformationFactory transactionHeaderInformationFactory;
     private final StartupStatisticsProvider startupStatistics;
     private final Caches cacheProvider;
@@ -274,11 +278,12 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
                                SchemaWriteGuard schemaWriteGuard, TransactionEventHandlers transactionEventHandlers,
                                IndexingService.Monitor indexingServiceMonitor, FileSystemAbstraction fs,
                                StoreUpgrader storeMigrationProcess, TransactionMonitor transactionMonitor,
-                               KernelHealth kernelHealth,
+                               KernelHealth kernelHealth, PhysicalLogFile.Monitor physicalLogMonitor,
                                TransactionHeaderInformationFactory transactionHeaderInformationFactory,
                                StartupStatisticsProvider startupStatistics,
                                Caches cacheProvider, NodeManager nodeManager, Guard guard,
-                               IndexConfigStore indexConfigStore, CommitProcessFactory commitProcessFactory )
+                               IndexConfigStore indexConfigStore, CommitProcessFactory commitProcessFactory,
+                               Monitors monitors )
     {
         this.config = config;
         this.tokenNameLookup = tokenNameLookup;
@@ -296,12 +301,14 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
         this.storeMigrationProcess = storeMigrationProcess;
         this.transactionMonitor = transactionMonitor;
         this.kernelHealth = kernelHealth;
+        this.physicalLogMonitor = physicalLogMonitor;
         this.transactionHeaderInformationFactory = transactionHeaderInformationFactory;
         this.startupStatistics = startupStatistics;
         this.cacheProvider = cacheProvider;
         this.nodeManager = nodeManager;
         this.guard = guard;
         this.indexConfigStore = indexConfigStore;
+        this.monitors = monitors;
 
         readOnly = config.get( Configuration.read_only );
         msgLog = stringLogger;
@@ -451,20 +458,23 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
                             cacheAccess, lockService, legacyIndexProviderLookup, indexConfigStore,
                             legacyIndexTransactionOrdering ) );
 
-            LoggingLogFileMonitor logMonitor = new LoggingLogFileMonitor( logging.getMessagesLog( getClass() ) );
+            LoggingLogFileMonitor loggingLogMonitor = new LoggingLogFileMonitor( logging.getMessagesLog( getClass() ) );
+
             final TransactionRepresentationStoreApplier storeRecoverer =
                     new TransactionRepresentationStoreApplier(
                             indexingService, labelScanStore, neoStore, cacheAccess, lockService,
                             legacyIndexProviderLookup, indexConfigStore, IdOrderingQueue.BYPASS );
 
+            monitors.addMonitorListener( loggingLogMonitor );
+
             RecoveryVisitor recoveryVisitor = new RecoveryVisitor( neoStore, storeRecoverer,
-                    recoveredCount, logMonitor );
+                    recoveredCount, loggingLogMonitor );
             LogEntryReader<ReadableVersionableLogChannel> logEntryReader = new LogEntryReaderFactory().versionable();
             Visitor<ReadableVersionableLogChannel,IOException> logFileRecoverer =
                     new LogFileRecoverer( logEntryReader, recoveryVisitor );
             logFile = dependencies.satisfyDependency( new PhysicalLogFile( fs, logFiles,
                     config.get( GraphDatabaseSettings.logical_log_rotation_threshold ), logPruneStrategy, neoStore,
-                    neoStore, logMonitor, this, transactionMetadataCache, logFileRecoverer ) );
+                    neoStore, physicalLogMonitor, this, transactionMetadataCache, logFileRecoverer ) );
 
             final LogicalTransactionStore logicalTransactionStore = dependencies.satisfyDependency(
                     new PhysicalLogicalTransactionStore( logFile,
