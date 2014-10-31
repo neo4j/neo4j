@@ -36,7 +36,6 @@ import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 
 public class CountsStoreApplierTest
 {
-    private final CacheAccessBackDoor cacheAccess = mock( CacheAccessBackDoor.class );
     private final CountsAcceptor countsAcceptor = mock( CountsAcceptor.class );
     private final NodeStore nodeStore = mock( NodeStore.class );
 
@@ -44,7 +43,8 @@ public class CountsStoreApplierTest
     public void shouldNotifyCacheAccessOnHowManyUpdatesOnCountsWeHadSoFar() throws IOException
     {
         // GIVEN
-        final CountsStoreApplier applier = new CountsStoreApplier( countsAcceptor, nodeStore, cacheAccess );
+
+        final CountsStoreApplier applier = new CountsStoreApplier( countsAcceptor, nodeStore );
 
         // WHEN
         applier.visitNodeCommand( addNodeCommand() );
@@ -52,7 +52,6 @@ public class CountsStoreApplierTest
 
         // THEN
         verify( countsAcceptor, times( 1 ) ).updateCountsForNode( ANY_LABEL, 1 );
-        verify( cacheAccess, times( 1 ) ).applyCountUpdates( 1, 0, 0, 0 );
     }
 
     private Command.NodeCommand addNodeCommand()
