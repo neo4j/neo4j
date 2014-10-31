@@ -93,6 +93,16 @@ public class OutputFormat
         return response( Response.status( status ), representation );
     }
 
+    /**
+     * Before the 'errors' response existed, we would just spit out stack traces.
+     * For new endpoints, we should return the new 'errors' response format, which will bundle stack traces only on
+     * unknown problems.
+     */
+    public Response badRequestWithoutLegacyStacktrace( Throwable exception )
+    {
+        return response( Response.status( BAD_REQUEST ), new ExceptionRepresentation( exception, false ) );
+    }
+
     public Response badRequest( Throwable exception )
     {
         return response( Response.status( BAD_REQUEST ), new ExceptionRepresentation( exception ) );
@@ -124,6 +134,12 @@ public class OutputFormat
             throws BadInputException
     {
         return response( Response.status( Status.CONFLICT ), representation );
+    }
+
+    /** @see {@link #badRequestWithoutLegacyStacktrace} */
+    public Response serverErrorWithoutLegacyStacktrace( Throwable exception )
+    {
+        return response( Response.status( Status.INTERNAL_SERVER_ERROR ), new ExceptionRepresentation( exception, false ) );
     }
 
     public Response serverError( Throwable exception )

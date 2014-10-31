@@ -79,7 +79,7 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
         RESTDocsGenerator.ResponseEntity response = gen.get()
                 .noGraph()
                 .expectedStatus( 200 )
-                .payload( quotedJson( "{'user':'neo4j', 'password':'neo4j'}" ) )
+                .payload( quotedJson( "{'username':'neo4j', 'password':'neo4j'}" ) )
                 .post( authURL() );
 
         // Then
@@ -109,7 +109,7 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
         RESTDocsGenerator.ResponseEntity response = gen.get()
                 .noGraph()
                 .expectedStatus( 200 )
-                .payload( quotedJson( "{'user':'neo4j', 'password':'secret'}" ) )
+                .payload( quotedJson( "{'username':'neo4j', 'password':'secret'}" ) )
                 .post( authURL() );
 
         // Then
@@ -141,7 +141,7 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
     {
         // Given
         startServerWithConfiguredUser();
-        String token = HTTP.POST( authURL(), RawPayload.quotedJson( "{'user':'neo4j','password':'secret'}" ) )
+        String token = HTTP.POST( authURL(), RawPayload.quotedJson( "{'username':'neo4j','password':'secret'}" ) )
                 .get( "authorization_token" ).asText();
 
         // Document
@@ -168,7 +168,7 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
         RESTDocsGenerator.ResponseEntity response = gen.get()
                 .noGraph()
                 .expectedStatus( 422 )
-                .payload( quotedJson( "{'user':'bob', 'password':'incorrect'}" ) )
+                .payload( quotedJson( "{'username':'bob', 'password':'incorrect'}" ) )
                 .post( authURL() );
 
         // Then
@@ -189,7 +189,7 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
     {
         // Given
         startServerWithConfiguredUser();
-        String authToken = HTTP.POST( authURL(), RawPayload.quotedJson( "{'user':'neo4j','password':'secret'}" ) )
+        String authToken = HTTP.POST( authURL(), RawPayload.quotedJson( "{'username':'neo4j','password':'secret'}" ) )
                 .get( "authorization_token" ).asText();
 
         // Document
@@ -353,7 +353,7 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
         {
             // Done in a loop because we're racing with the clock to get enough failed requests into 5 seconds
             response = HTTP.POST( server.baseUri().resolve( "authenticate" ).toString(),
-                    HTTP.RawPayload.quotedJson( "{'user':'neo4j', 'password':'something that is wrong'}" ) );
+                    HTTP.RawPayload.quotedJson( "{'username':'neo4j', 'password':'something that is wrong'}" ) );
 
             if(response.status() == 429)
             {
@@ -397,7 +397,7 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
         assertThat(response.header(HttpHeaders.WWW_AUTHENTICATE ), equalTo("None"));
 
         // When authorized
-        String token = HTTP.POST( authURL(), RawPayload.quotedJson( "{'user':'neo4j','password':'secret'}" ) )
+        String token = HTTP.POST( authURL(), RawPayload.quotedJson( "{'username':'neo4j','password':'secret'}" ) )
                 .get( "authorization_token" ).asText();
         response = HTTP.withHeaders( HttpHeaders.AUTHORIZATION, challengeResponse( token ) ).request( method, server.baseUri().resolve( path ).toString(), payload );
         assertThat(response.status(), equalTo(expectedAuthorizedStatus));

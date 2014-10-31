@@ -39,7 +39,7 @@ angular.module('neo4jApp.services')
       authenticate: (username, password) =>
         that = @
         @current_password = password
-        promise = Server.post(Settings.endpoint.auth, {user: username, password: password})
+        promise = Server.post(Settings.endpoint.auth, {username: username, password: password})
         promise.then(
           (r) ->
             response = r.data

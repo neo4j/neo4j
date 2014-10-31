@@ -93,7 +93,7 @@ public class UserService
         }
         catch ( BadInputException | IllegalTokenException e )
         {
-            return output.badRequest( e );
+            return output.badRequestWithoutLegacyStacktrace( e );
         }
         catch ( TooManyAuthenticationAttemptsException e )
         {
@@ -101,7 +101,7 @@ public class UserService
         }
         catch ( IOException e )
         {
-            return output.serverError( e );
+            return output.serverErrorWithoutLegacyStacktrace( e );
         }
     }
 
@@ -137,7 +137,7 @@ public class UserService
         }
         catch ( BadInputException e )
         {
-            return output.badRequest( e );
+            return output.badRequestWithoutLegacyStacktrace( e );
         }
         catch ( TooManyAuthenticationAttemptsException e )
         {
@@ -145,17 +145,22 @@ public class UserService
         }
         catch ( IOException e )
         {
-            return output.serverError( e );
+            return output.serverErrorWithoutLegacyStacktrace( e );
         }
     }
 
     private String getString( Map<String, Object> data, String key ) throws BadInputException
     {
         Object o = data.get( key );
-        if(o != null && o instanceof String)
+        if( o == null )
         {
-            return (String)o;
+            throw new BadInputException( String.format("Required parameter '%s' is missing.", key) );
         }
-        throw new BadInputException( String.format("Expected '%s' to be a string.", key) );
+        if(!(o instanceof String))
+        {
+            throw new BadInputException( String.format("Expected '%s' to be a string.", key) );
+        }
+
+        return (String)o;
     }
 }

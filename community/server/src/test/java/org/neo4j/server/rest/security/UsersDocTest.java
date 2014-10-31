@@ -71,7 +71,7 @@ public class UsersDocTest extends ExclusiveServerTestBase
     {
         // Given
         startServerWithConfiguredUser();
-        String token = HTTP.POST( authURL(), HTTP.RawPayload.quotedJson( "{'user':'neo4j','password':'secret'}" ) )
+        String token = HTTP.POST( authURL(), HTTP.RawPayload.quotedJson( "{'username':'neo4j','password':'secret'}" ) )
                 .get( "authorization_token" ).asText();
 
         // Document
@@ -106,7 +106,7 @@ public class UsersDocTest extends ExclusiveServerTestBase
     {
         // Given
         startServerWithConfiguredUser();
-        String originalToken = HTTP.POST( authURL(), HTTP.RawPayload.quotedJson( "{'user':'neo4j','password':'secret'}" ) )
+        String originalToken = HTTP.POST( authURL(), HTTP.RawPayload.quotedJson( "{'username':'neo4j','password':'secret'}" ) )
                 .get( "authorization_token" ).asText();
 
         // Document
@@ -123,10 +123,10 @@ public class UsersDocTest extends ExclusiveServerTestBase
         assertThat( newToken.length(), not( 0 ) );
 
         // And then the new password should work
-        assertEquals(200, HTTP.POST( authURL(), HTTP.RawPayload.quotedJson( "{'user':'neo4j','password':'qwerty'}" ) ).status());
+        assertEquals(200, HTTP.POST( authURL(), HTTP.RawPayload.quotedJson( "{'username':'neo4j','password':'qwerty'}" ) ).status());
 
         // And then the old password should not be invalid
-        assertEquals(422, HTTP.POST( authURL(), HTTP.RawPayload.quotedJson( "{'user':'neo4j','password':'secret'}" ) ).status());
+        assertEquals(422, HTTP.POST( authURL(), HTTP.RawPayload.quotedJson( "{'username':'neo4j','password':'secret'}" ) ).status());
     }
 
     /**
@@ -145,7 +145,7 @@ public class UsersDocTest extends ExclusiveServerTestBase
         // Given
         startServerWithConfiguredUser();
 
-        String originalToken = HTTP.POST( authURL(), HTTP.RawPayload.quotedJson( "{'user':'neo4j','password':'secret'}" ) )
+        String originalToken = HTTP.POST( authURL(), HTTP.RawPayload.quotedJson( "{'username':'neo4j','password':'secret'}" ) )
                 .get( "authorization_token" ).asText();
 
         // Document
