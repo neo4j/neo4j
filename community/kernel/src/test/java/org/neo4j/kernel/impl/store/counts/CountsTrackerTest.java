@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.concurrent.Future;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Function;
@@ -43,13 +43,27 @@ import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.ThreadingRule;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.kernel.impl.store.CommonAbstractStore.buildTypeDescriptorAndVersion;
 import static org.neo4j.kernel.impl.store.counts.CountsStore.WRITER_FACTORY;
+import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.BASE_MINOR_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class CountsTrackerTest
 {
+    @Test
+    public void shouldCreateBothAlphaAndBetaOnCreation() throws IOException
+    {
+        // given
+        CountsTracker.createEmptyCountsStore( pageCache(), storeFile(), VERSION );
+
+        // when
+        CountsStore.open( fs.get(), pageCache(), alphaStoreFile() ).close();
+        CountsStore.open( fs.get(), pageCache(), betaStoreFile() ).close();
+
+        // then
+        // it does not blow up
+    }
+
     @Test
     public void shouldStoreCounts() throws Exception
     {
@@ -260,7 +274,7 @@ public class CountsTrackerTest
 
     private void createStoreFile( EphemeralFileSystemAbstraction fs, PageCache pageCache, File file, long lastTxId ) throws IOException
     {
-        SortedKeyValueStoreHeader header = SortedKeyValueStoreHeader.empty( VERSION );
+        SortedKeyValueStoreHeader header = SortedKeyValueStoreHeader.with( VERSION, BASE_TX_ID, BASE_MINOR_VERSION );
         CountsStoreWriter writer = WRITER_FACTORY.create( fs, pageCache, header, file, lastTxId );
         writer.close();
         writer.openForReading().close();

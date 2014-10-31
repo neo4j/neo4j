@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.store.kvstore;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -34,8 +34,9 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
+import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.BASE_MINOR_VERSION;
+import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.with;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class SortedKeyValueStoreHeaderTest
@@ -44,7 +45,7 @@ public class SortedKeyValueStoreHeaderTest
     public void shouldCreateAnEmptyHeader()
     {
         // when
-        SortedKeyValueStoreHeader header = SortedKeyValueStoreHeader.empty( ALL_STORES_VERSION );
+        SortedKeyValueStoreHeader header = with( ALL_STORES_VERSION, BASE_TX_ID, BASE_MINOR_VERSION );
 
         // then
         assertEquals( BASE_TX_ID, header.lastTxId() );
@@ -57,7 +58,7 @@ public class SortedKeyValueStoreHeaderTest
     public void shouldUpdateHeader()
     {
         // given
-        SortedKeyValueStoreHeader header = SortedKeyValueStoreHeader.empty( ALL_STORES_VERSION );
+        SortedKeyValueStoreHeader header = with( ALL_STORES_VERSION, BASE_TX_ID, BASE_MINOR_VERSION );
 
         // when
         SortedKeyValueStoreHeader newHeader = header.update( 42, 24, 12 );
@@ -74,7 +75,8 @@ public class SortedKeyValueStoreHeaderTest
     public void shouldWriteHeaderInPageFile() throws IOException
     {
         // given
-        SortedKeyValueStoreHeader header = SortedKeyValueStoreHeader.empty( ALL_STORES_VERSION ).update( 42, 24, 12 );
+        SortedKeyValueStoreHeader header =
+                with( ALL_STORES_VERSION, BASE_TX_ID, BASE_MINOR_VERSION ).update( 42, 24, 12 );
 
         // when
         try

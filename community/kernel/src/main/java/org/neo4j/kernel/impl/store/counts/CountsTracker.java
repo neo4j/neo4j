@@ -40,6 +40,9 @@ import static org.neo4j.kernel.impl.store.counts.CountsKey.indexCountsKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.indexSampleKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.nodeKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipKey;
+import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.BASE_MINOR_VERSION;
+import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.with;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 /**
  * {@link CountsTracker} maintains two files, the {@link #alphaFile} and the {@link #betaFile} that it rotates between.
@@ -131,9 +134,16 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
         }
     }
 
-    public static void createEmptyCountsStore( PageCache pageCache, File file, String version )
+    public static void createEmptyCountsStore( PageCache pageCache, File file, String storeVersion )
     {
-        CountsStore.createEmpty( pageCache, storeFile( file, ALPHA ), version );
+        // create both files initially to avoid problems with unflushed metadata
+        // increase alpha minor version by 1 to ensure that we use alpha after creating the store
+
+        File alpha = storeFile( file, ALPHA );
+        CountsStore.createEmpty( pageCache, alpha, with( storeVersion, BASE_TX_ID, BASE_MINOR_VERSION + 1 ) );
+
+        File beta = storeFile( file, BETA );
+        CountsStore.createEmpty( pageCache, beta, with( storeVersion, BASE_TX_ID, BASE_MINOR_VERSION ) );
     }
 
     public boolean acceptTx( long txId )

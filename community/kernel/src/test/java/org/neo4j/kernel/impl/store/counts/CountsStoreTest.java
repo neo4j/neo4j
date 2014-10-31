@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
+import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -53,6 +54,7 @@ import static org.neo4j.kernel.impl.store.counts.CountsKeyType.ENTITY_NODE;
 import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore.RECORD_SIZE;
 import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.BASE_MINOR_VERSION;
 import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.META_HEADER_SIZE;
+import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.with;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class CountsStoreTest
@@ -61,7 +63,7 @@ public class CountsStoreTest
     public void shouldCreateAnEmptyStore() throws IOException
     {
         // when
-        CountsStore.createEmpty( pageCache, alpha, ALL_STORES_VERSION );
+        CountsStore.createEmpty( pageCache, alpha, header );
         try ( CountsStore counts = CountsStore.open( fs, pageCache, alpha ) )
         {
             // then
@@ -94,7 +96,7 @@ public class CountsStoreTest
     public void shouldBumpMinorVersion() throws IOException
     {
         // when
-        CountsStore.createEmpty( pageCache, alpha, ALL_STORES_VERSION );
+        CountsStore.createEmpty( pageCache, alpha, header );
         try ( CountsStore counts = CountsStore.open( fs, pageCache, alpha ) )
         {
             // when
@@ -114,7 +116,7 @@ public class CountsStoreTest
     public void shouldUpdateTheStore() throws IOException
     {
         // given
-        CountsStore.createEmpty( pageCache, alpha, ALL_STORES_VERSION );
+        CountsStore.createEmpty( pageCache, alpha, header );
         SortedKeyValueStore.Writer<CountsKey, Register.DoubleLongRegister> writer;
         try ( CountsStore counts = CountsStore.open( fs, pageCache, alpha ) )
         {
@@ -302,6 +304,7 @@ public class CountsStoreTest
     private final int lastCommittedTxId = 42;
     private FileSystemAbstraction fs;
     private PageCache pageCache;
+    private final SortedKeyValueStoreHeader header = with( ALL_STORES_VERSION, BASE_TX_ID, BASE_MINOR_VERSION );
 
     @Before
     public void setup()

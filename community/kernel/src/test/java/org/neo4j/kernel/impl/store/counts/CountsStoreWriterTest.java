@@ -19,18 +19,17 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsVisitor;
-import org.neo4j.kernel.impl.store.AbstractStore;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader;
@@ -40,11 +39,14 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
 import static org.junit.Assert.assertEquals;
-
+import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.indexCountsKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.indexSampleKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.nodeKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipKey;
+import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.BASE_MINOR_VERSION;
+import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.with;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class CountsStoreWriterTest
 {
@@ -139,8 +141,7 @@ public class CountsStoreWriterTest
     @Rule
     public PageCacheRule pageCacheRule = new PageCacheRule();
 
-    private final SortedKeyValueStoreHeader emptyHeader = SortedKeyValueStoreHeader.empty( AbstractStore
-            .ALL_STORES_VERSION );
+    private final SortedKeyValueStoreHeader emptyHeader = with( ALL_STORES_VERSION, BASE_TX_ID, BASE_MINOR_VERSION );
     private final File file = new File( "file" );
     private final long lastTxId = 100;
     private FileSystemAbstraction fs;

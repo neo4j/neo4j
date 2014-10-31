@@ -45,14 +45,14 @@ public class CountsStore extends SortedKeyValueStore<CountsKey,DoubleLongRegiste
         super( fs, pageCache, file, pages, header, RECORD_SERIALIZER, WRITER_FACTORY );
     }
 
-    public static void createEmpty( PageCache pageCache, File storeFile, String version )
+    public static void createEmpty( PageCache pageCache, File storeFile, SortedKeyValueStoreHeader header )
     {
         try
         {
             PagedFile pages = mapCountsStore( pageCache, storeFile );
             try
             {
-                SortedKeyValueStoreHeader.empty( version ).write( pages );
+                header.write( pages );
             }
             finally
             {

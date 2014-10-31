@@ -30,19 +30,18 @@ import static java.lang.String.format;
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore.RECORD_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public final class SortedKeyValueStoreHeader
 {
     public static final long BASE_MINOR_VERSION = 1l;
 
-    public static SortedKeyValueStoreHeader empty( String storeFormatVersion )
+    public static SortedKeyValueStoreHeader with( String storeFormatVersion, long lastTxId, long minorVersion )
     {
         if ( storeFormatVersion == null )
         {
             throw new IllegalArgumentException( "store format version cannot be null" );
         }
-        return new SortedKeyValueStoreHeader( UTF8.encode( storeFormatVersion ), 0, BASE_TX_ID, BASE_MINOR_VERSION );
+        return new SortedKeyValueStoreHeader( UTF8.encode( storeFormatVersion ), 0, lastTxId, minorVersion );
     }
 
     private static final int META_HEADER_SIZE =
