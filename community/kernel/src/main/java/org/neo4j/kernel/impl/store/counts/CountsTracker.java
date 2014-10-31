@@ -59,11 +59,19 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     private final ReadWriteLock updateLock = new ReentrantReadWriteLock( /*fair=*/true );
     private volatile CountsTrackerState state;
 
-    public CountsTracker( FileSystemAbstraction fs, PageCache pageCache, File storeFileBase )
+    public CountsTracker( FileSystemAbstraction fs, PageCache pageCache, File storeFileBase, long neoStoreTxId )
     {
         this.alphaFile = storeFile( storeFileBase, ALPHA );
         this.betaFile = storeFile( storeFileBase, BETA );
-        this.state = new ConcurrentCountsTrackerState( openStore( fs, pageCache, this.alphaFile, this.betaFile ) );
+        CountsStore store = openStore( fs, pageCache, this.alphaFile, this.betaFile );
+        if ( store.lastTxId() < neoStoreTxId )
+        {
+            IOException exOnClose = safelyCloseTheStore( store );
+            throw new UnderlyingStorageException(
+                "Corrupted counts store. Please shut down the database and manually delete the counts store files " +
+                "to have the database recreate them on next startup", exOnClose );
+        }
+        this.state = new ConcurrentCountsTrackerState( store );
     }
 
     private static CountsStore openStore( FileSystemAbstraction fs, PageCache pageCache, File alpha, File beta )
@@ -325,7 +333,7 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
         try ( LockWrapper _ = new LockWrapper( updateLock.writeLock() ) )
         {
             CountsTrackerState state = this.state;
-            if ( state.hasChanges() )
+            if ( state.hasChanges() || state.lastTxId() != lastCommittedTxId )
             {
                 // select the next file, and create a writer for it
                 try ( CountsStore.Writer<CountsKey, DoubleLongRegister> writer =
@@ -362,5 +370,18 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     private static File storeFile( File base, String version )
     {
         return new File( base.getParentFile(), base.getName() + version );
+    }
+
+    private IOException safelyCloseTheStore( CountsStore store )
+    {
+        try
+        {
+            store.close();
+            return null;
+        }
+        catch ( IOException ex )
+        {
+            return ex;
+        }
     }
 }

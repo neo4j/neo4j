@@ -66,7 +66,6 @@ import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
-import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStore;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
@@ -211,7 +210,6 @@ public class TestNeoStore
 
         Locks locks = mock( Locks.class );
         Locks.Client lockClient = mock(Locks.Client.class);
-        TransactionHeaderInformation headerInformation = new TransactionHeaderInformation( -1, 1, new byte[0] );
         when(locks.newClient()).thenReturn( lockClient );
         DefaultCaches caches = new DefaultCaches( StringLogger.DEV_NULL, new Monitors() );
         caches.configure( new NoCacheProvider(), config );

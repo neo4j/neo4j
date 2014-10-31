@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -34,6 +35,7 @@ import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
+import static org.neo4j.kernel.impl.store.counts.CountsKeyType.EMPTY;
 import static org.neo4j.kernel.impl.store.counts.CountsKeyType.ENTITY_NODE;
 import static org.neo4j.kernel.impl.store.counts.CountsKeyType.ENTITY_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.counts.CountsKeyType.INDEX_COUNTS;
@@ -96,7 +98,8 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
     @Override
     public void visit( CountsKey key )
     {
-        if ( valueRegister.readSecond() != 0 /* only writeToBuffer values that count */ )
+        // only writeToBuffer values that count
+        if ( valueRegister.readFirst() != 0 || valueRegister.readSecond() != 0 )
         {
             totalRecords++;
             key.accept( this, valueRegister );
@@ -156,7 +159,10 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
             int offset = page.getOffset();
             if ( offset >= pagedFile.pageSize() )
             { // we've reached the end of this page
-                page.next();
+                if ( !page.next() )
+                {
+                    throw new IOException( "Could not acquire next page." );
+                }
                 offset = 0;
             }
             do
@@ -190,6 +196,7 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
     @Override
     public void close() throws IOException
     {
+        zeroPadding( pagedFile, page );
         if ( !page.next( 0 ) )
         {
             throw new IOException( "Could not update header." );
@@ -198,6 +205,16 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
         page.close();
         page = null;
         pagedFile.flush();
+    }
+
+    private void zeroPadding( PagedFile pagedFile, PageCursor page ) throws IOException
+    {
+        final long lastPageId = pagedFile.getLastPageId();
+        final int pageSize = pagedFile.pageSize();
+        while ( page.getCurrentPageId() < lastPageId || page.getOffset() < pageSize )
+        {
+           write( EMPTY, 0, 0, 0, 0, 0 );
+        }
     }
 
     private SortedKeyValueStoreHeader newHeader()

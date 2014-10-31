@@ -134,6 +134,11 @@ public class StoreFactory
 
     public NeoStore newNeoStore( boolean allowCreateEmpty, boolean allowRebuild )
     {
+        return newNeoStore( allowCreateEmpty, allowRebuild, -1 /* unknown */ );
+    }
+
+    private NeoStore newNeoStore( boolean allowCreateEmpty, boolean allowRebuild, long txId )
+    {
         boolean storeExists = storeExists();
 
         if ( !storeExists && allowCreateEmpty )
@@ -141,10 +146,15 @@ public class StoreFactory
             return createNeoStore();
         }
 
+        if ( txId == -1)
+        {
+            txId = NeoStore.getTxId( fileSystemAbstraction, neoStoreFileName );
+        }
+
         if ( storeExists && allowRebuild && !countsStoreExists() )
         {
             stringLogger.warn( "Missing counts store, rebuilding it." );
-            rebuildCountsStore();
+            rebuildCountsStore( txId );
         }
 
         // The store exists already, start it
@@ -157,7 +167,7 @@ public class StoreFactory
                 newNodeStore(),
                 newSchemaStore(),
                 newRelationshipGroupStore(),
-                newCountsStore(),
+                newCountsStore( txId ),
                 versionMismatchHandler, monitors );
     }
 
@@ -171,7 +181,7 @@ public class StoreFactory
         return CountsTracker.countsStoreExists( fileSystemAbstraction, storeFileName( COUNTS_STORE ) );
     }
 
-    private void rebuildCountsStore()
+    private void rebuildCountsStore( long txId )
     {
         final LifeSupport life = new LifeSupport();
         life.start();
@@ -184,13 +194,14 @@ public class StoreFactory
 
             try ( NodeStore nodeStore = newNodeStore();
                   RelationshipStore relationshipStore = newRelationshipStore();
-                  CountsTracker tracker = new CountsTracker( fileSystemAbstraction, pageCache, storeFileBase ) )
+                  CountsTracker tracker =
+                          new CountsTracker( fileSystemAbstraction, pageCache, storeFileBase, BASE_TX_ID ) )
             {
                 CountsComputer.computeCounts( nodeStore, relationshipStore ).
                         accept( new CountsAccessor.Initializer( tracker ) );
                 try
                 {
-                    tracker.rotate( NeoStore.getTxId( fileSystemAbstraction, neoStoreFileName ) );
+                    tracker.rotate( txId );
                 }
                 catch ( IOException e )
                 {
@@ -353,9 +364,9 @@ public class StoreFactory
                 fileSystemAbstraction, stringLogger, dynamicLabelStore, versionMismatchHandler, monitors );
     }
 
-    private CountsTracker newCountsStore()
+    private CountsTracker newCountsStore( long txId )
     {
-        return new CountsTracker( fileSystemAbstraction, pageCache, storeFileName( COUNTS_STORE ) );
+        return new CountsTracker( fileSystemAbstraction, pageCache, storeFileName( COUNTS_STORE ), txId );
     }
 
     public NeoStore createNeoStore()
@@ -388,7 +399,7 @@ public class StoreFactory
         createRelationshipGroupStore( config.get( Configuration.dense_node_threshold ) );
         createCountsStore();
 
-        NeoStore neoStore = newNeoStore( false, false );
+        NeoStore neoStore = newNeoStore( false, false, BASE_TX_ID );
         /*
          * created time | random long | backup version | tx id | store version | next prop | latest constraint tx |
          * upgrade time | upgrade id

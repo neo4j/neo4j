@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -50,7 +50,6 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.kernel.impl.store.StoreFactory.buildTypeDescriptorAndVersion;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.nodeKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipKey;
@@ -319,7 +318,7 @@ public class CountsComputerTest
 
     private void rebuildCounts( CountsRecordState countsState, long lastCommittedTransactionId ) throws IOException
     {
-        final CountsTracker tracker = new CountsTracker( fs, pageCache, new File( dir, COUNTS_STORE_BASE ) );
+        CountsTracker tracker = new CountsTracker( fs, pageCache, new File( dir, COUNTS_STORE_BASE ), BASE_TX_ID );
         countsState.accept( new CountsAccessor.Initializer( tracker ) );
         tracker.rotate( lastCommittedTransactionId );
         tracker.close();
