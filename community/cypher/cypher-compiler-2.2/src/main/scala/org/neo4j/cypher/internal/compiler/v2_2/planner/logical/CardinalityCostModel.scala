@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.Collection
-import org.neo4j.cypher.internal.compiler.v2_2.commands.ManyQueryExpression
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 
@@ -32,47 +30,43 @@ case class CardinalityCostModel(cardinality: CardinalityModel) extends CostModel
   val CPU_BOUND_PLAN_COST_PER_ROW: CostPerRow = 0.1
   val DB_ACCESS_BOUND_PLAN_COST_PER_ROW: CostPerRow = 1.0
 
-  private def costPerRow(plan: LogicalPlan): CostPerRow = plan match {
+  case class CostCoefficients(lhsCoefficient: CostPerRow, rhsCoefficient: CostPerRow, outputCoefficient: CostPerRow, constantCost: Cost)
+
+  def costCoefficients(plan: LogicalPlan): CostCoefficients = plan match {
 
     case _: NodeHashJoin |
-      _: Aggregation |
-      _: Apply |
-      _: CartesianProduct |
-      _: AbstractLetSemiApply |
-      _: Limit |
-      _: Optional |
-      _: SingleRow |
-      _: OuterHashJoin |
-      _: AbstractSemiApply |
-      _: Skip |
-      _: Sort |
-      _: SortedLimit |
-      _: Union |
-      _: UnwindCollection
-    => CPU_BOUND_PLAN_COST_PER_ROW
-
-    case NodeIndexSeek(_, _, _, ManyQueryExpression(Collection(elements)), _) =>
-      DB_ACCESS_BOUND_PLAN_COST_PER_ROW * Multiplier(elements.size)
-
-    case NodeIndexSeek(_, _, _, ManyQueryExpression(Collection(elements)), _) =>
-      DB_ACCESS_BOUND_PLAN_COST_PER_ROW * Multiplier(10)
-
-    case _ => DB_ACCESS_BOUND_PLAN_COST_PER_ROW
-  }
-
-  private def cardinalityForPlan(plan: LogicalPlan): Cardinality = plan match {
-    case Selection(_, left) => cardinality(left)
-    case _                  => plan.lhs.map(cardinality).getOrElse(cardinality(plan))
-  }
-
-  def apply(plan: LogicalPlan): Cost = plan match {
-    case CartesianProduct(lhs, rhs) =>
-      apply(lhs) + cardinality(lhs) * apply(rhs)
+         _: Aggregation |
+         _: Apply |
+         _: CartesianProduct |
+         _: AbstractLetSemiApply |
+         _: Limit |
+         _: Optional |
+         _: SingleRow |
+         _: OuterHashJoin |
+         _: AbstractSemiApply |
+         _: Skip |
+         _: Sort |
+         _: SortedLimit |
+         _: Union |
+         _: UnwindCollection =>
+      CostCoefficients(
+        CPU_BOUND_PLAN_COST_PER_ROW,
+        CPU_BOUND_PLAN_COST_PER_ROW,
+        CPU_BOUND_PLAN_COST_PER_ROW,
+        Cost(0))
 
     case _ =>
-      val totalCost = cardinalityForPlan(plan) * costPerRow(plan) +
-      plan.lhs.map(this).getOrElse(Cost(0)) +
-      plan.rhs.map(this).getOrElse(Cost(0))
-      totalCost
+      CostCoefficients(
+        DB_ACCESS_BOUND_PLAN_COST_PER_ROW,
+        DB_ACCESS_BOUND_PLAN_COST_PER_ROW,
+        DB_ACCESS_BOUND_PLAN_COST_PER_ROW,
+        Cost(0))
+  }
+
+  def apply(plan: LogicalPlan): Cost = {
+    val CostCoefficients(lhsCoefficient, rhsCoefficient, outputCoefficient, constantCost) = costCoefficients(plan)
+    plan.lhs.map(cardinality).map(_ * lhsCoefficient).getOrElse(Cost(0)) +
+      plan.rhs.map(cardinality).map(_ * lhsCoefficient).getOrElse(Cost(0)) +
+      cardinality(plan) * outputCoefficient + constantCost
   }
 }
