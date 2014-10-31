@@ -24,13 +24,15 @@ import java.io.IOException;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.io.pagecache.PageCacheMonitor;
+import org.neo4j.io.pagecache.monitoring.MajorFlushEvent;
+import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.muninn.jsr166e.StampedLock;
+import org.neo4j.io.pagecache.monitoring.PageFaultEvent;
 
 final class MuninnPagedFile implements PagedFile
 {
@@ -53,7 +55,6 @@ final class MuninnPagedFile implements PagedFile
     final StampedLock[] translationTableLocks;
 
     final PageSwapper swapper;
-    final PageFlusher flusher;
     private final MuninnCursorPool cursorPool;
 
     // Accessed via Unsafe
@@ -87,8 +88,7 @@ final class MuninnPagedFile implements PagedFile
         }
         PageEvictionCallback onEviction = new MuninnPageEvictionCallback(
                 translationTables, translationTableLocks );
-        swapper = new MonitoredPageSwapper( swapperFactory.createPageSwapper( file, pageSize, onEviction ), monitor );
-        flusher = new PageFlusher( swapper );
+        swapper = swapperFactory.createPageSwapper( file, pageSize, onEviction );
         initialiseLastPageId( swapper.getLastPageId() );
     }
 
@@ -142,22 +142,26 @@ final class MuninnPagedFile implements PagedFile
     @Override
     public void flush() throws IOException
     {
-        for ( int i = 0; i < translationTableStripeLevel; i++ )
+        try ( MajorFlushEvent flushEvent = monitor.beginFileFlush( swapper ) )
         {
-            PrimitiveLongObjectMap<MuninnPage> translationTable = translationTables[i];
-            StampedLock translationTableLock = translationTableLocks[i];
+            PageFlusher flusher = new PageFlusher( swapper, flushEvent );
+            for ( int i = 0; i < translationTableStripeLevel; i++ )
+            {
+                PrimitiveLongObjectMap<MuninnPage> translationTable = translationTables[i];
+                StampedLock translationTableLock = translationTableLocks[i];
 
-            long stamp = translationTableLock.readLock();
-            try
-            {
-                translationTable.visitEntries( flusher );
+                long stamp = translationTableLock.readLock();
+                try
+                {
+                    translationTable.visitEntries( flusher );
+                }
+                finally
+                {
+                    translationTableLock.unlockRead( stamp );
+                }
             }
-            finally
-            {
-                translationTableLock.unlockRead( stamp );
-            }
+            force();
         }
-        force();
     }
 
     @Override
@@ -223,9 +227,10 @@ final class MuninnPagedFile implements PagedFile
     /**
      * Grab a free page for the purpose of page faulting. Possibly blocking if
      * none are immediately available.
+     * @param faultEvent
      */
-    MuninnPage grabFreePage() throws IOException
+    MuninnPage grabFreePage( PageFaultEvent faultEvent ) throws IOException
     {
-        return pageCache.grabFreePage();
+        return pageCache.grabFreePage( faultEvent );
     }
 }

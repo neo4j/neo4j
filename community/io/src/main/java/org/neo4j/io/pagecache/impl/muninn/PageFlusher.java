@@ -23,14 +23,18 @@ import java.io.IOException;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectVisitor;
 import org.neo4j.io.pagecache.PageSwapper;
+import org.neo4j.io.pagecache.monitoring.FlushEventOpportunity;
+import org.neo4j.io.pagecache.monitoring.MajorFlushEvent;
 
 final class PageFlusher implements PrimitiveLongObjectVisitor<MuninnPage>
 {
     private final PageSwapper swapper;
+    private final FlushEventOpportunity flushOpportunity;
 
-    public PageFlusher( PageSwapper swapper )
+    public PageFlusher( PageSwapper swapper, MajorFlushEvent flushEvent )
     {
         this.swapper = swapper;
+        this.flushOpportunity = flushEvent.flushEventOpportunity();
     }
 
     @Override
@@ -39,7 +43,7 @@ final class PageFlusher implements PrimitiveLongObjectVisitor<MuninnPage>
         long stamp = page.readLock();
         try
         {
-            page.flush( swapper, filePageId );
+            page.flush( swapper, filePageId, flushOpportunity );
         }
         catch ( IOException e )
         {

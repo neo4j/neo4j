@@ -19,9 +19,6 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
-import static org.neo4j.io.pagecache.impl.muninn.UnsafeUtil.allowUnalignedMemoryAccess;
-import static org.neo4j.io.pagecache.impl.muninn.UnsafeUtil.storeByteOrderIsNative;
-
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.nio.ByteBuffer;
@@ -29,10 +26,16 @@ import java.nio.channels.ClosedChannelException;
 
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.Page;
-import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.impl.muninn.jsr166e.StampedLock;
+import org.neo4j.io.pagecache.monitoring.EvictionEvent;
+import org.neo4j.io.pagecache.monitoring.FlushEvent;
+import org.neo4j.io.pagecache.monitoring.FlushEventOpportunity;
+import org.neo4j.io.pagecache.monitoring.PageFaultEvent;
+
+import static org.neo4j.io.pagecache.impl.muninn.UnsafeUtil.allowUnalignedMemoryAccess;
+import static org.neo4j.io.pagecache.impl.muninn.UnsafeUtil.storeByteOrderIsNative;
 
 final class MuninnPage extends StampedLock implements Page
 {
@@ -303,7 +306,7 @@ final class MuninnPage extends StampedLock implements Page
      * This method assumes that initBuffer() has already been called at least once.
      */
     @Override
-    public void swapIn( StoreChannel channel, long offset, int length ) throws IOException
+    public int swapIn( StoreChannel channel, long offset, int length ) throws IOException
     {
         assert isWriteLocked() : "swapIn requires write lock to protect the cache page";
         int readTotal = 0;
@@ -325,6 +328,7 @@ final class MuninnPage extends StampedLock implements Page
             {
                 bufferProxy.put( (byte) 0 );
             }
+            return readTotal;
         }
         catch ( ClosedChannelException e )
         {
@@ -368,26 +372,47 @@ final class MuninnPage extends StampedLock implements Page
     /**
      * NOTE: This method must be called while holding a pessimistic lock on the page.
      */
-    public void flush() throws IOException
+    public void flush( FlushEventOpportunity flushOpportunity ) throws IOException
     {
         if ( swapper != null && dirty )
         {
             // The page is bound and has stuff to flush
-            swapper.write( filePageId, this );
-            dirty = false;
+            doFlush( swapper, filePageId, flushOpportunity );
         }
     }
 
     /**
      * NOTE: This method must be called while holding a pessimistic lock on the page.
      */
-    public void flush( PageSwapper swapper, long filePageId ) throws IOException
+    public void flush(
+            PageSwapper swapper,
+            long filePageId,
+            FlushEventOpportunity flushOpportunity ) throws IOException
     {
         if ( dirty && this.swapper == swapper && this.filePageId == filePageId )
         {
             // The page is bound to the given swapper and has stuff to flush
-            swapper.write( filePageId, this );
+            doFlush( swapper, filePageId, flushOpportunity );
+        }
+    }
+
+    private void doFlush(
+            PageSwapper swapper,
+            long filePageId,
+            FlushEventOpportunity flushOpportunity ) throws IOException
+    {
+        FlushEvent event = flushOpportunity.beginFlush( filePageId, cachePageId, swapper );
+        try
+        {
+            int bytesWritten = swapper.write( filePageId, this );
             dirty = false;
+            event.addBytesWritten( bytesWritten );
+            event.done();
+        }
+        catch ( IOException e )
+        {
+            event.done( e );
+            throw e;
         }
     }
 
@@ -401,7 +426,8 @@ final class MuninnPage extends StampedLock implements Page
      */
     public void fault(
             PageSwapper swapper,
-            long filePageId ) throws IOException
+            long filePageId,
+            PageFaultEvent faultEvent ) throws IOException
     {
         assert isWriteLocked(): "Cannot fault page without write-lock";
         if ( this.swapper != null || this.filePageId != PageCursor.UNBOUND_PAGE_ID )
@@ -422,18 +448,23 @@ final class MuninnPage extends StampedLock implements Page
         // the file page, so any subsequent thread that finds the page in their
         // translation table will re-do the page fault.
         this.filePageId = filePageId; // Page now considered isLoaded()
-        swapper.read( filePageId, this );
+        int bytesRead = swapper.read( filePageId, this );
+        faultEvent.addBytesRead( bytesRead );
+        faultEvent.setCachePageId( cachePageId );
         this.swapper = swapper; // Page now considered isBoundTo( swapper, filePageId )
     }
 
     /**
      * NOTE: This method MUST be called while holding the page write lock.
      */
-    public void evict( PageCacheMonitor monitor ) throws IOException
+    public void evict( EvictionEvent evictionEvent ) throws IOException
     {
         assert isWriteLocked(): "Cannot evict page without write-lock";
         long filePageId = this.filePageId;
-        flush();
+        evictionEvent.setCachePageId( cachePageId );
+        evictionEvent.setFilePageId( filePageId );
+
+        flush( evictionEvent.flushEventOpportunity() );
         UnsafeUtil.setMemory( pointer, cachePageSize, (byte) 0 );
         this.filePageId = PageCursor.UNBOUND_PAGE_ID;
 
@@ -445,7 +476,7 @@ final class MuninnPage extends StampedLock implements Page
             // The swapper can be null if the last page fault
             // that page threw an exception.
             swapper.evicted( filePageId, this );
-            monitor.evicted( filePageId, swapper );
+            evictionEvent.setSwapper( swapper );
         }
     }
 
@@ -480,6 +511,12 @@ final class MuninnPage extends StampedLock implements Page
     public long getFilePageId()
     {
         return filePageId;
+    }
+
+    @Override
+    public int getCachePageId()
+    {
+        return cachePageId;
     }
 
     @Override

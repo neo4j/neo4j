@@ -19,6 +19,29 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
+import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongIntMap;
+import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.PageCacheTest;
+import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.RecordingPageCacheMonitor;
+import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
+
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
@@ -31,28 +54,6 @@ import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 import static org.neo4j.io.pagecache.RecordingPageCacheMonitor.Evict;
 import static org.neo4j.io.pagecache.RecordingPageCacheMonitor.Fault;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
-import org.junit.Test;
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongIntMap;
-import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
-import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.io.pagecache.PageCacheMonitor;
-import org.neo4j.io.pagecache.PageCacheTest;
-import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.RecordingPageCacheMonitor;
 
 public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
 {
@@ -107,7 +108,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         }
         assertNotNull( monitor.observe( Fault.class ) );
 
-        int clockArm = pageCache.evictPages( 1, 0 );
+        int clockArm = pageCache.evictPages( 1, 0, monitor.beginPageEvictions( 1 ) );
         assertThat( clockArm, is( 1 ) );
         assertNotNull( monitor.observe( Evict.class ) );
     }
@@ -139,7 +140,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         }
         assertNotNull( monitor.observe( Fault.class ) );
 
-        int clockArm = pageCache.evictPages( 1, 0 );
+        int clockArm = pageCache.evictPages( 1, 0, monitor.beginPageEvictions( 1 ) );
         assertThat( clockArm, is( 1 ) );
         assertNotNull( monitor.observe( Evict.class ) );
 
@@ -167,7 +168,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         }
         assertNotNull( monitor.observe( Fault.class ) );
 
-        int clockArm = pageCache.evictPages( 1, 0 );
+        int clockArm = pageCache.evictPages( 1, 0, monitor.beginPageEvictions( 1 ) );
         assertThat( clockArm, is( 1 ) );
         assertNotNull( monitor.observe( Evict.class ) );
 
@@ -199,7 +200,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         assertNotNull( monitor.observe( Fault.class ) );
         assertNotNull( monitor.observe( Fault.class ) );
 
-        int clockArm = pageCache.evictPages( 2, 0 );
+        int clockArm = pageCache.evictPages( 2, 0, monitor.beginPageEvictions( 2 ) );
         assertThat( clockArm, is( 2 ) );
         assertNotNull( monitor.observe( Evict.class ) );
         assertNotNull( monitor.observe( Evict.class ) );
@@ -246,7 +247,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             cursor.putLong( value + 1 );
         }
 
-        int clockArm = pageCache.evictPages( 1, 0 );
+        int clockArm = pageCache.evictPages( 1, 0, PageCacheMonitor.NULL_EVICTION_RUN_EVENT );
         assertThat( clockArm, is( 1 ) );
 
         ByteBuffer buf = ByteBuffer.allocate( 16 );
@@ -306,7 +307,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             // this is expected
         }
 
-        pageCache.evictPages( 1, 0 );
+        pageCache.evictPages( 1, 0, PageCacheMonitor.NULL_EVICTION_RUN_EVENT );
 
         try
         {

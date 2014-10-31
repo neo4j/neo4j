@@ -26,11 +26,15 @@ import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.io.pagecache.PageCacheMonitor;
+import org.neo4j.io.pagecache.monitoring.EvictionEvent;
+import org.neo4j.io.pagecache.monitoring.EvictionRunEvent;
+import org.neo4j.io.pagecache.monitoring.MajorFlushEvent;
+import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.RunnablePageCache;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
+import org.neo4j.io.pagecache.monitoring.PageFaultEvent;
 
 /**
  * The Muninn {@link org.neo4j.io.pagecache.PageCache page cache} implementation.
@@ -258,6 +262,7 @@ public class MuninnPageCache implements RunnablePageCache
         current = new FileMapping( file, pagedFile );
         current.next = mappedFiles;
         mappedFiles = current;
+        monitor.mappedFile( file );
         return pagedFile;
     }
 
@@ -284,6 +289,7 @@ public class MuninnPageCache implements RunnablePageCache
                     {
                         prev.next = current.next;
                     }
+                    monitor.unmappedFile( file );
                     pagedFile.close();
                 }
                 break;
@@ -298,22 +304,25 @@ public class MuninnPageCache implements RunnablePageCache
     {
         assertNotClosed();
         flushAllPages();
-        evictorException = null;
+        clearEvictorException();
     }
 
     private void flushAllPages() throws IOException
     {
-        for ( int i = 0; i < pages.length; i++ )
+        try ( MajorFlushEvent cacheFlush = monitor.beginCacheFlush() )
         {
-            MuninnPage page = pages[i];
-            long stamp = page.writeLock();
-            try
+            for ( int i = 0; i < pages.length; i++ )
             {
-                page.flush();
-            }
-            finally
-            {
-                page.unlockWrite( stamp );
+                MuninnPage page = pages[i];
+                long stamp = page.writeLock();
+                try
+                {
+                    page.flush( cacheFlush.flushEventOpportunity() );
+                }
+                finally
+                {
+                    page.unlockWrite( stamp );
+                }
             }
         }
     }
@@ -388,7 +397,7 @@ public class MuninnPageCache implements RunnablePageCache
         return pages.length;
     }
 
-    MuninnPage grabFreePage() throws IOException
+    MuninnPage grabFreePage( PageFaultEvent faultEvent ) throws IOException
     {
         // Review the comment on the freelist field before making changes to
         // this part of the code.
@@ -432,6 +441,7 @@ public class MuninnPageCache implements RunnablePageCache
                 if ( compareAndSetFreelistHead( null, waiter ) )
                 {
                     unparkEvictor();
+                    faultEvent.setParked( true );
                     return waiter.park( this );
                 }
             }
@@ -475,6 +485,7 @@ public class MuninnPageCache implements RunnablePageCache
                 if ( compareAndSetFreelistHead( current, waiter ) )
                 {
                     unparkEvictor();
+                    faultEvent.setParked( true );
                     return waiter.park( this );
                 }
             }
@@ -526,7 +537,10 @@ public class MuninnPageCache implements RunnablePageCache
         while ( !Thread.interrupted() )
         {
             int pageCountToEvict = parkUntilEvictionRequired( keepFree );
-            clockArm = evictPages( pageCountToEvict, clockArm );
+            try ( EvictionRunEvent evictionRunEvent = monitor.beginPageEvictions( pageCountToEvict ) )
+            {
+                clockArm = evictPages( pageCountToEvict, clockArm, evictionRunEvent );
+            }
         }
 
         // The last thing we do, is unparking any thread that might be waiting
@@ -580,7 +594,7 @@ public class MuninnPageCache implements RunnablePageCache
         }
     }
 
-    int evictPages( int pageCountToEvict, int clockArm )
+    int evictPages( int pageCountToEvict, int clockArm, EvictionRunEvent evictionRunEvent )
     {
         FreePageWaiter waiters = grabFreePageWaitersIfAny();
 
@@ -606,8 +620,6 @@ public class MuninnPageCache implements RunnablePageCache
                 if ( stamp != 0 )
                 {
                     // We got the lock.
-                    boolean pageEvicted = false;
-
                     // Assume that the eviction is going to succeed, so that we
                     // always make some kind of progress. This means that, if
                     // we have a temporary outage of the storage system, for
@@ -618,25 +630,11 @@ public class MuninnPageCache implements RunnablePageCache
                     // This reduces the CPU load and power usage in such a
                     // scenario.
                     pageCountToEvict--;
+                    boolean pageEvicted;
 
-                    try
+                    try ( EvictionEvent evictionEvent = evictionRunEvent.beginEviction() )
                     {
-                        page.evict( monitor );
-                        evictorException = null;
-                        pageEvicted = true;
-                    }
-                    catch ( IOException ioException )
-                    {
-                        evictorException = ioException;
-                    }
-                    catch ( OutOfMemoryError ignore )
-                    {
-                        evictorException = oomException;
-                    }
-                    catch ( Throwable throwable )
-                    {
-                        evictorException = new IOException(
-                                "Eviction thread encountered a problem", throwable );
+                        pageEvicted = evictPage( page, evictionEvent );
                     }
                     finally
                     {
@@ -707,6 +705,33 @@ public class MuninnPageCache implements RunnablePageCache
         return clockArm;
     }
 
+    private boolean evictPage( MuninnPage page, EvictionEvent evictionEvent )
+    {
+        try
+        {
+            page.evict( evictionEvent );
+            clearEvictorException();
+            return true;
+        }
+        catch ( IOException ioException )
+        {
+            evictorException = ioException;
+            evictionEvent.threwException( ioException );
+        }
+        catch ( OutOfMemoryError ignore )
+        {
+            evictorException = oomException;
+            evictionEvent.threwException( oomException );
+        }
+        catch ( Throwable throwable )
+        {
+            evictorException = new IOException(
+                    "Eviction thread encountered a problem", throwable );
+            evictionEvent.threwException( evictorException );
+        }
+        return false;
+    }
+
     private FreePageWaiter grabFreePageWaitersIfAny()
     {
         Object freelistHead = getFreelistHead();
@@ -730,6 +755,11 @@ public class MuninnPageCache implements RunnablePageCache
             waiters = tail;
         }
         return result;
+    }
+
+    private void clearEvictorException()
+    {
+        evictorException = null;
     }
 
     @Override

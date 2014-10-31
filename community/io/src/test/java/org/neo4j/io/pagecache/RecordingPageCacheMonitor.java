@@ -19,11 +19,21 @@
  */
 package org.neo4j.io.pagecache;
 
+import org.hamcrest.Matcher;
+
+import java.io.File;
+import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import org.hamcrest.Matcher;
+import org.neo4j.io.pagecache.monitoring.EvictionEvent;
+import org.neo4j.io.pagecache.monitoring.EvictionRunEvent;
+import org.neo4j.io.pagecache.monitoring.FlushEventOpportunity;
+import org.neo4j.io.pagecache.monitoring.MajorFlushEvent;
+import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
+import org.neo4j.io.pagecache.monitoring.PageFaultEvent;
+import org.neo4j.io.pagecache.monitoring.PinEvent;
 
 public class RecordingPageCacheMonitor implements PageCacheMonitor
 {
@@ -31,16 +41,14 @@ public class RecordingPageCacheMonitor implements PageCacheMonitor
     private CountDownLatch trapLatch;
     private Matcher<? extends Event> trap;
 
-    @Override
-    public void pageFaulted(long filePageId, PageSwapper swapper)
+    public void pageFaulted( long filePageId, PageSwapper swapper )
     {
         Fault event = new Fault( swapper, filePageId );
         record.add( event );
         trip( event );
     }
 
-    @Override
-    public void evicted(long filePageId, PageSwapper swapper)
+    public void evicted( long filePageId, PageSwapper swapper )
     {
         Evict event = new Evict( swapper, filePageId );
         record.add( event );
@@ -48,21 +56,134 @@ public class RecordingPageCacheMonitor implements PageCacheMonitor
     }
 
     @Override
-    public void pinned(boolean exclusiveLock, long filePageId, PageSwapper swapper)
+    public void mappedFile( File file )
     {
         // we currently do not record these
     }
 
     @Override
-    public void unpinned(boolean exclusiveLock, long filePageId, PageSwapper swapper)
+    public void unmappedFile( File file )
     {
         // we currently do not record these
     }
 
     @Override
-    public void flushed(long filePageId, PageSwapper swapper)
+    public EvictionRunEvent beginPageEvictions( int pageCountToEvict )
     {
-        // we currently do not record these
+        return new EvictionRunEvent()
+        {
+            @Override
+            public EvictionEvent beginEviction()
+            {
+                return new EvictionEvent()
+                {
+                    private long filePageId;
+                    private PageSwapper swapper;
+
+                    @Override
+                    public void setFilePageId( long filePageId )
+                    {
+
+                        this.filePageId = filePageId;
+                    }
+
+                    @Override
+                    public void setSwapper( PageSwapper swapper )
+                    {
+                        this.swapper = swapper;
+                    }
+
+                    @Override
+                    public FlushEventOpportunity flushEventOpportunity()
+                    {
+                        return PageCacheMonitor.NULL_FLUSH_EVENT_OPPORTUNITY;
+                    }
+
+                    @Override
+                    public void threwException( IOException exception )
+                    {
+                    }
+
+                    @Override
+                    public void setCachePageId( int cachePageId )
+                    {
+                    }
+
+                    @Override
+                    public void close()
+                    {
+                        evicted( filePageId, swapper );
+                    }
+                };
+            }
+
+            @Override
+            public void close()
+            {
+            }
+        };
+    }
+
+    @Override
+    public PinEvent beginPin( boolean exclusiveLock, final long filePageId, final PageSwapper swapper )
+    {
+        return new PinEvent()
+        {
+            @Override
+            public void setCachePageId( int cachePageId )
+            {
+            }
+
+            @Override
+            public PageFaultEvent beginPageFault()
+            {
+                return new PageFaultEvent()
+                {
+                    @Override
+                    public void addBytesRead( int bytes )
+                    {
+                    }
+
+                    @Override
+                    public void done()
+                    {
+                        pageFaulted( filePageId, swapper );
+                    }
+
+                    @Override
+                    public void done( Throwable throwable )
+                    {
+                    }
+
+                    @Override
+                    public void setCachePageId( int cachePageId )
+                    {
+                    }
+
+                    @Override
+                    public void setParked( boolean parked )
+                    {
+                    }
+                };
+            }
+
+            @Override
+            public void done()
+            {
+            }
+        };
+    }
+
+    @Override
+    public MajorFlushEvent beginFileFlush( PageSwapper swapper )
+    {
+        return PageCacheMonitor.NULL_MAJOR_FLUSH_EVENT;
+    }
+
+    @Override
+    public MajorFlushEvent beginCacheFlush()
+    {
+        return PageCacheMonitor.NULL_MAJOR_FLUSH_EVENT;
     }
 
     public <T extends Event> T observe( Class<T> type ) throws InterruptedException

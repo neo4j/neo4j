@@ -22,7 +22,7 @@ package org.neo4j.management.impl;
 import javax.management.NotCompliantMBeanException;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.io.pagecache.CountingPageCacheMonitor;
+import org.neo4j.io.pagecache.monitoring.CountingPageCacheMonitor;
 import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
@@ -53,59 +53,63 @@ public final class PageCacheBean extends ManagementBeanProvider
         }
 
         @Override
-        public int getFaults()
+        public long getFaults()
         {
             return pageCacheMonitor.countFaults();
         }
 
         @Override
-        public int getEvictions()
+        public long getEvictions()
         {
             return pageCacheMonitor.countEvictions();
         }
 
         @Override
-        public int getPins()
+        public long getPins()
         {
             return pageCacheMonitor.countPins();
         }
 
         @Override
-        public int getUnpins()
+        public long getUnpins()
         {
             return pageCacheMonitor.countUnpins();
         }
 
         @Override
-        public int getTakenExclusiveLocks()
-        {
-            return pageCacheMonitor.countTakenExclusiveLocks();
-        }
-
-        @Override
-        public int getTakenSharedLocks()
-        {
-            return pageCacheMonitor.countTakenSharedLocks();
-        }
-
-        @Override
-        public int getReleasedExclusiveLocks()
-        {
-            return pageCacheMonitor.countReleasedExclusiveLocks();
-        }
-
-        @Override
-        public int getReleasedSharedLocks()
-        {
-            return pageCacheMonitor.countReleasedSharedLocks();
-        }
-
-        @Override
-        public int getFlushes()
+        public long getFlushes()
         {
             return pageCacheMonitor.countFlushes();
         }
 
+        @Override
+        public long getBytesRead()
+        {
+            return pageCacheMonitor.countBytesRead();
+        }
 
+        @Override
+        public long getBytesWritten()
+        {
+            return pageCacheMonitor.countBytesWritten();
+        }
+
+        @Override
+        public long getFileMappings()
+        {
+            return pageCacheMonitor.countFilesMapped();
+        }
+
+        @Override
+        public long getFileUnmappings()
+        {
+            return pageCacheMonitor.countFilesUnmapped();
+        }
+
+        @Override
+        public long getEvictionExceptions()
+        {
+            return pageCacheMonitor.countEvictionExceptions();
+        }
     }
 }
