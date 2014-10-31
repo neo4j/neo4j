@@ -19,29 +19,9 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.consistency.checking.RecordCheckTestBase.inUse;
-import static org.neo4j.consistency.checking.RecordCheckTestBase.notInUse;
-import static org.neo4j.consistency.checking.full.ExecutionOrderIntegrationTest.config;
-import static org.neo4j.consistency.checking.schema.IndexRules.loadAllIndexRules;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
-import static org.neo4j.helpers.collection.IteratorUtil.iterator;
-import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
-import static org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
-import static org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore.allocateFromNumbers;
-import static org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore.getRightArray;
-import static org.neo4j.kernel.impl.nioneo.store.PropertyType.ARRAY;
-import static org.neo4j.kernel.impl.nioneo.store.Record.NO_NEXT_PROPERTY;
-import static org.neo4j.kernel.impl.nioneo.store.Record.NO_NEXT_RELATIONSHIP;
-import static org.neo4j.kernel.impl.nioneo.store.labels.DynamicNodeLabels.dynamicPointer;
-import static org.neo4j.kernel.impl.nioneo.store.labels.LabelIdArray.prependNodeId;
-import static org.neo4j.kernel.impl.util.Bits.bits;
-import static org.neo4j.test.Property.property;
-import static org.neo4j.test.Property.set;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -52,9 +32,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
@@ -74,6 +51,7 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
@@ -98,6 +76,30 @@ import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
+
+import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.consistency.checking.RecordCheckTestBase.inUse;
+import static org.neo4j.consistency.checking.RecordCheckTestBase.notInUse;
+import static org.neo4j.consistency.checking.full.ExecutionOrderIntegrationTest.config;
+import static org.neo4j.consistency.checking.schema.IndexRules.loadAllIndexRules;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
+import static org.neo4j.helpers.collection.IteratorUtil.iterator;
+import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
+import static org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
+import static org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore.allocateFromNumbers;
+import static org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore.getRightArray;
+import static org.neo4j.kernel.impl.nioneo.store.PropertyType.ARRAY;
+import static org.neo4j.kernel.impl.nioneo.store.Record.NO_NEXT_PROPERTY;
+import static org.neo4j.kernel.impl.nioneo.store.Record.NO_NEXT_RELATIONSHIP;
+import static org.neo4j.kernel.impl.nioneo.store.labels.DynamicNodeLabels.dynamicPointer;
+import static org.neo4j.kernel.impl.nioneo.store.labels.LabelIdArray.prependNodeId;
+import static org.neo4j.kernel.impl.util.Bits.bits;
+import static org.neo4j.test.Property.property;
+import static org.neo4j.test.Property.set;
 
 public class FullCheckIntegrationTest
 {
@@ -137,7 +139,8 @@ public class FullCheckIntegrationTest
 
     private ConsistencySummaryStatistics check( DirectStoreAccess stores ) throws ConsistencyCheckIncompleteException
     {
-        FullCheck checker = new FullCheck( config( TaskExecutionOrder.MULTI_PASS ), ProgressMonitorFactory.NONE );
+        Config config = config( TaskExecutionOrder.MULTI_PASS );
+        FullCheck checker = new FullCheck( config, ProgressMonitorFactory.NONE );
         return checker.execute( stores, StringLogger.wrap( log ) );
     }
 

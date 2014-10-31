@@ -19,16 +19,16 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.CheckDecorator;
@@ -68,7 +68,6 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.withSettings;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
@@ -139,9 +138,11 @@ public class ExecutionOrderIntegrationTest
 
     static Config config( TaskExecutionOrder executionOrder )
     {
-        return new Config( stringMap(
-                ConsistencyCheckSettings.consistency_check_execution_order.name(), executionOrder.name() ),
-                GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
+        Map<String,String> params = stringMap(
+                ConsistencyCheckSettings.consistency_check_execution_order.name(), executionOrder.name(),
+                // Enable property owners check by default in tests:
+                ConsistencyCheckSettings.consistency_check_property_owners.name(), "true" );
+        return new Config( params, GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
     }
 
     private static class InvocationLog
