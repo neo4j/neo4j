@@ -32,6 +32,7 @@ import org.codehaus.jackson.JsonGenerator;
 
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.cypher.javacompat.QueryStatistics;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.rest.repr.util.RFC1123;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
@@ -326,7 +327,14 @@ public class ExecutionResultSerializer
 
     private IOException loggedIOException( IOException exception )
     {
-        log.error( "Failed to generate JSON output.", exception );
+        if(Exceptions.contains(exception, "Broken pipe", IOException.class ))
+        {
+            log.error( "Unable to reply to request, because the client has closed the connection (Broken pipe)." );
+        }
+        else
+        {
+            log.error( "Failed to generate JSON output.", exception );
+        }
         return exception;
     }
 }
