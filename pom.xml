@@ -24,7 +24,7 @@
     <licensing.prepend.text>notice-agpl-prefix.txt</licensing.prepend.text>
     <licensing.phase>compile</licensing.phase>
     <lucene.version>3.6.2</lucene.version>
-    <powermock.version>1.4.12</powermock.version>
+    <powermock.version>1.5.5</powermock.version>
     <slf4j-api.version>1.6.2</slf4j-api.version>
     <logback-classic.version>1.0.9</logback-classic.version>
   </properties>
@@ -471,7 +471,7 @@ public class ComponentVersion extends Version
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-all</artifactId>
-        <version>1.9.0</version>
+        <version>1.9.5</version>
         <scope>test</scope>
       </dependency>
       <dependency>
