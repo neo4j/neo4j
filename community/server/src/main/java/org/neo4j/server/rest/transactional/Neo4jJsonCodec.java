@@ -26,6 +26,7 @@ import java.util.Set;
 
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.map.ObjectMapper;
+
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 
@@ -64,53 +65,82 @@ public class Neo4jJsonCodec extends ObjectMapper
     private void writeMap( JsonGenerator out, Map value ) throws IOException
     {
         out.writeStartObject();
-        Set<Map.Entry> set = value.entrySet();
-        for ( Map.Entry e : set )
+        try
         {
-            out.writeFieldName( e.getKey().toString() );
-            writeValue( out, e.getValue() );
+            Set<Map.Entry> set = value.entrySet();
+            for ( Map.Entry e : set )
+            {
+                out.writeFieldName( e.getKey().toString() );
+                writeValue( out, e.getValue() );
+            }
         }
-        out.writeEndObject();
+        finally
+        {
+            out.writeEndObject();
+        }
     }
 
     private void writeIterator( JsonGenerator out, Iterator value ) throws IOException
     {
         out.writeStartArray();
-        while ( value.hasNext() )
+        try
         {
-            writeValue( out, value.next() );
+            while ( value.hasNext() )
+            {
+                writeValue( out, value.next() );
+            }
         }
-        out.writeEndArray();
+        finally
+        {
+            out.writeEndArray();
+        }
     }
 
     private void writePath( JsonGenerator out, Iterator<PropertyContainer> value ) throws IOException
     {
         out.writeStartArray();
-        while ( value.hasNext() )
+        try
         {
-            writePropertyContainer( out, value.next() );
+            while ( value.hasNext() )
+            {
+                writePropertyContainer( out, value.next() );
+            }
         }
-        out.writeEndArray();
+        finally
+        {
+            out.writeEndArray();
+        }
     }
 
     private void writePropertyContainer( JsonGenerator out, PropertyContainer value ) throws IOException
     {
         out.writeStartObject();
-        for ( String key : value.getPropertyKeys() )
+        try
         {
-            out.writeObjectField( key, value.getProperty( key ) );
+            for ( String key : value.getPropertyKeys() )
+            {
+                out.writeObjectField( key, value.getProperty( key ) );
+            }
         }
-        out.writeEndObject();
+        finally
+        {
+            out.writeEndObject();
+        }
     }
 
     private void writeByteArray( JsonGenerator out, byte[] bytes ) throws IOException
     {
         out.writeStartArray();
-        for ( byte b : bytes )
+        try
         {
-            out.writeNumber( (int) b );
+            for ( byte b : bytes )
+            {
+                out.writeNumber( (int) b );
+            }
         }
-        out.writeEndArray();
+        finally
+        {
+            out.writeEndArray();
+        }
     }
-
 }
