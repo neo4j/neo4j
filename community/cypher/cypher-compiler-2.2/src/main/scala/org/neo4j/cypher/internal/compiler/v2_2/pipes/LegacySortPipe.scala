@@ -35,7 +35,7 @@ case class LegacySortPipe(source: Pipe, sortDescription: List[SortItem])
       sortWith((a, b) => compareBy(a, b, sortDescription)(state)).iterator
 
   def planDescription =
-    source.planDescription.andThen(this, "Sort", sortDescription.map(item => LegacyExpression(item.expression)):_*)
+    source.planDescription.andThen(this, "Sort", identifiers, sortDescription.map(item => LegacyExpression(item.expression)):_*)
 
   override def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources

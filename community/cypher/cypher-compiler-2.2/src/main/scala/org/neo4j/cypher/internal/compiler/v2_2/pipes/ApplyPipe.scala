@@ -37,7 +37,7 @@ case class ApplyPipe(source: Pipe, inner: Pipe)(val estimatedCardinality: Option
     }
 
   def planDescription =
-    PlanDescriptionImpl(this, "Apply", TwoChildren(source.planDescription, inner.planDescription), Seq.empty)
+    PlanDescriptionImpl(this, "Apply", TwoChildren(source.planDescription, inner.planDescription), Seq.empty, identifiers)
 
   def symbols: SymbolTable = source.symbols.add(inner.symbols.identifiers)
 

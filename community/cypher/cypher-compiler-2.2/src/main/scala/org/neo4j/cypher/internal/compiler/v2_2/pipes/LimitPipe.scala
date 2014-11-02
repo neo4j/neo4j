@@ -42,7 +42,7 @@ case class LimitPipe(source: Pipe, exp: Expression)
 
   override def planDescription = source
     .planDescription
-    .andThen(this, "Limit", LegacyExpression(exp))
+    .andThen(this, "Limit", identifiers, LegacyExpression(exp))
 
   def symbols: SymbolTable = source.symbols
 

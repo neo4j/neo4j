@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.{LabelId, _}
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.{IntroducedIdentifier, LabelName}
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.LabelName
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.{SymbolTable, _}
 
@@ -53,7 +53,7 @@ case class NodeByLabelScanPipe(ident: String, label: Either[String, LabelId])
     case Right(id) => id.id.toString
   }
 
-  def planDescription = new PlanDescriptionImpl(this, "NodeByLabelScan", NoChildren, Seq(IntroducedIdentifier(ident), LabelName(labelName)))
+  def planDescription = new PlanDescriptionImpl(this, "NodeByLabelScan", NoChildren, Seq(LabelName(labelName)), identifiers)
 
   def symbols: SymbolTable = new SymbolTable(Map(ident -> CTNode))
 

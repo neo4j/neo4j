@@ -32,7 +32,6 @@ case class NodeOuterHashJoinPipe(nodeIdentifiers: Set[String], source: Pipe, inn
                                 (val estimatedCardinality: Option[Long] = None)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
   val nullColumns: Map[String, Any] = nullableIdentifiers.map(_ -> null).toMap
-  val identifiers = nodeIdentifiers.toIndexedSeq
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
 
@@ -63,7 +62,8 @@ case class NodeOuterHashJoinPipe(nodeIdentifiers: Set[String], source: Pipe, inn
     new PlanDescriptionImpl(this,
       "NodeOuterHashJoin",
       TwoChildren(source.planDescription, inner.planDescription),
-      Seq.empty
+      Seq.empty,
+      identifiers
     )
 
   def symbols: SymbolTable = source.symbols.add(inner.symbols.identifiers)
@@ -94,11 +94,13 @@ case class NodeOuterHashJoinPipe(nodeIdentifiers: Set[String], source: Pipe, inn
     probeTable
   }
 
-  private def computeKey(context: ExecutionContext): Option[Vector[Long]] = {
-    val key = new Array[Long](identifiers.length)
+  private val myIdentifiers = nodeIdentifiers.toIndexedSeq
 
-    for (idx <- 0 until identifiers.length) {
-      key(idx) = context(identifiers(idx)) match {
+  private def computeKey(context: ExecutionContext): Option[Vector[Long]] = {
+    val key = new Array[Long](myIdentifiers.length)
+
+    for (idx <- 0 until myIdentifiers.length) {
+      key(idx) = context(myIdentifiers(idx)) match {
         case n: Node => n.getId
         case _ => return None
       }

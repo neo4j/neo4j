@@ -19,14 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planDescription
 
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.UnNamedNameGenerator._
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments._
-
 import scala.collection.mutable
 
+
 object renderDetails extends (InternalPlanDescription => String) {
-
-  val handledArguments = Set(classOf[Rows], classOf[DbHits], classOf[IntroducedIdentifier])
-
 
   def apply(plan: InternalPlanDescription): String = {
     val plans: Seq[InternalPlanDescription] = plan.flatten
@@ -40,13 +38,12 @@ object renderDetails extends (InternalPlanDescription => String) {
         val rows = p.arguments.collectFirst { case Rows(count) => count.toString}
         val estimatedRows = p.arguments.collectFirst { case EstimatedRows(count) => count.toString}
         val dbHits = p.arguments.collectFirst { case DbHits(count) => count.toString}
-        val ids = Some(p.arguments.collect { case IntroducedIdentifier(id) => id}.mkString(", "))
+        val ids = Some(p.orderedIdentifiers.filter(_.isNamed).mkString(", "))
         val other = Some(p.arguments.collect {
           case x
             if !x.isInstanceOf[Rows] &&
               !x.isInstanceOf[DbHits] &&
-              !x.isInstanceOf[EstimatedRows] &&
-              !x.isInstanceOf[IntroducedIdentifier] => PlanDescriptionArgumentSerializer.serialize(x)
+              !x.isInstanceOf[EstimatedRows] => PlanDescriptionArgumentSerializer.serialize(x)
         }.mkString("; "))
 
         Seq("Operator" -> name, "EstimatedRows" -> estimatedRows, "Rows" -> rows,

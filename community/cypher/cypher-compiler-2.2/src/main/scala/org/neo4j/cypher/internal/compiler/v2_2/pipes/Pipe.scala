@@ -23,9 +23,11 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.mutation.Effectful
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{ArgumentPlanDescription, InternalPlanDescription}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Cardinality
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.helpers.ThisShouldNotHappenError
+
+import scala.collection.Set
+import scala.collection.immutable
 
 trait PipeMonitor {
   def startSetup(queryId: AnyRef, pipe: Pipe)
@@ -80,6 +82,8 @@ trait Pipe extends Effectful {
   Runs the predicate on all the inner Pipe until no pipes are left, or one returns true.
    */
   def exists(pred: Pipe => Boolean): Boolean
+
+  def identifiers: immutable.Set[String] = symbols.identifiers.keySet.toSet
 }
 
 case class NullPipe(symbols: SymbolTable = SymbolTable())
@@ -99,7 +103,7 @@ case class NullPipe(symbols: SymbolTable = SymbolTable())
 
   def exists(pred: Pipe => Boolean) = pred(this)
 
-  def planDescription: InternalPlanDescription = new ArgumentPlanDescription(this)
+  def planDescription: InternalPlanDescription = new ArgumentPlanDescription(this, Seq.empty, identifiers)
 
   override def localEffects = Effects.NONE
 

@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.commands._
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.matching.{MatchingContext, PatternGraph}
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.IntroducedIdentifier
 
 case class MatchPipe(source: Pipe,
                      predicates: Seq[Predicate],
@@ -47,7 +46,7 @@ case class MatchPipe(source: Pipe,
   override def localEffects = Effects.READS_ENTITIES
 
   override def planDescription =
-    source.planDescription.andThen(this, matchingContext.builder.name, identifiersInClause.map(IntroducedIdentifier).toSeq:_*)
+    source.planDescription.andThen(this, matchingContext.builder.name, identifiers)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources

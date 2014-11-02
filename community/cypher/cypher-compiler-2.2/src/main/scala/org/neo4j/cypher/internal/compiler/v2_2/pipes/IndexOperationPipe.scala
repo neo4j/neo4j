@@ -55,7 +55,7 @@ case class IndexOperationPipe(indexOp: IndexOperation)(implicit val monitor: Pip
 
   def symbols = new SymbolTable()
 
-  def planDescription = PlanDescriptionImpl(this, indexOp.toString, NoChildren, Seq.empty)
+  def planDescription = PlanDescriptionImpl(this, indexOp.toString, NoChildren, Seq.empty, identifiers)
 
   def exists(pred: Pipe => Boolean) = pred(this)
 

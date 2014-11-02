@@ -33,7 +33,7 @@ case class EmptyResultPipe(source: Pipe)(implicit pipeMonitor: PipeMonitor) exte
     Iterator.empty
   }
 
-  override def planDescription = source.planDescription.andThen(this, "EmptyResult")
+  override def planDescription = source.planDescription.andThen(this, "EmptyResult", identifiers)
 
   def symbols = SymbolTable()
 

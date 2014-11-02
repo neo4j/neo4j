@@ -45,7 +45,7 @@ trait UpdateAction extends TypeSafe with AstNode[UpdateAction] {
 
   def shortName: String = getClass.getSimpleName.replace("Action", "")
 
-  def arguments: Seq[Argument] = identifiers.map(tuple => IntroducedIdentifier(tuple._1)) :+ UpdateActionName(shortName)
+  def arguments: Seq[Argument] = Seq(UpdateActionName(shortName))
 
   def effects(symbols: SymbolTable): Effects = {
     var completeEffects = localEffects(symbols)

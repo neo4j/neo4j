@@ -35,7 +35,6 @@ object PlanDescriptionArgumentSerializer {
       case KeyExpressions(expressions) => expressions.mkString(SEPARATOR)
       case DbHits(value) => value.toString
       case _: EntityByIdRhs => arg.toString
-      case IntroducedIdentifier(n) => n
       case Rows(value) => value.toString
       case EstimatedRows(value) => value.toString
       case Version(version) => version

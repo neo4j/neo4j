@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_2.{InternalException, ExecutionContext}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.Predicate
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.IntroducedIdentifier
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.graphdb.{Direction, Node}
 
@@ -66,7 +65,7 @@ case class OptionalExpandPipe(source: Pipe, from: String, relName: String, to: S
 
   def planDescription =
     source.planDescription.
-      andThen(this, "OptionalExpand", IntroducedIdentifier(relName), IntroducedIdentifier(to))
+      andThen(this, "OptionalExpand", identifiers)
 
   def symbols = source.symbols.add(to, CTNode).add(relName, CTRelationship)
 

@@ -34,11 +34,10 @@ trait RelationshipStartItemIdentifiers extends StartItem {
   def identifiers: Seq[(String, CypherType)] = Seq(identifierName -> CTRelationship)
 }
 
-abstract class StartItem(val identifierName: String, val args: Seq[Argument])
+abstract class StartItem(val identifierName: String, val arguments: Seq[Argument])
   extends TypeSafe with EffectfulAstNode[StartItem] {
   def producerType: String = getClass.getSimpleName
   def identifiers: Seq[(String, CypherType)]
-  def arguments: Seq[Argument] = args ++ identifiers.map(x => Arguments.IntroducedIdentifier(x._1))
   def mutating: Boolean = effects.writes()
 }
 
@@ -149,7 +148,7 @@ case class LoadCSV(withHeaders: Boolean, url: Expression, identifier: String, fi
   override def localEffects = Effects.NONE
 }
 
-case class Unwind(expression: Expression, identifier: String) extends StartItem(identifier, Seq(Arguments.IntroducedIdentifier(identifier)))
+case class Unwind(expression: Expression, identifier: String) extends StartItem(identifier, Seq())
   with ReadOnlyStartItem {
   def identifiers: Seq[(String, CypherType)] = Seq(identifierName -> CTAny)
   override def localEffects = Effects.NONE

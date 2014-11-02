@@ -42,7 +42,7 @@ case class SkipPipe(source: Pipe, exp: Expression)
 
   override def planDescription = source
     .planDescription
-    .andThen(this, "Skip", LegacyExpression(exp))
+    .andThen(this, "Skip", identifiers, LegacyExpression(exp))
 
   def symbols: SymbolTable = source.symbols
 

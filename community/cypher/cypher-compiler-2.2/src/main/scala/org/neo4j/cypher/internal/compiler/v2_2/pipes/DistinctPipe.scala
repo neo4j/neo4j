@@ -62,7 +62,7 @@ case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])(val 
     }
   }
 
-  def planDescription = source.planDescription.andThen(this, "Distinct", KeyNames(expressions.keys.toSeq))
+  def planDescription = source.planDescription.andThen(this, "Distinct", identifiers, KeyNames(expressions.keys.toSeq))
 
   def symbols: SymbolTable = {
     val identifiers = Eagerly.immutableMapValues(expressions, (e: Expression) => e.evaluateType(CTAny, source.symbols))

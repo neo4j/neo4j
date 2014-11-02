@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_2.{InternalException, ExecutionContext}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.IntroducedIdentifier
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.graphdb.{Direction, Node, Relationship}
@@ -93,10 +92,7 @@ sealed abstract class VarLengthExpandPipe[T](source: Pipe,
     row.getOrElse(fromName, throw new InternalException(s"Expected to find a node at $fromName but found nothing"))
 
   def planDescription = source.planDescription.
-    andThen(this, "Var length expand",
-      IntroducedIdentifier(fromName),
-      IntroducedIdentifier(toName),
-      IntroducedIdentifier(relName))
+    andThen(this, "Var length expand", identifiers)
 
   def symbols = source.symbols.add(toName, CTNode).add(relName, CTRelationship)
 

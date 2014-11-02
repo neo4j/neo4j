@@ -111,7 +111,7 @@ case class TopPipe(source: Pipe, sortDescription: List[SortItem], countExpressio
 
   def planDescription =
     source.planDescription
-      .andThen(this, "Top", LegacyExpression(countExpression), KeyExpressions(sortDescription.map(_.expression)))
+      .andThen(this, "Top", identifiers, LegacyExpression(countExpression), KeyExpressions(sortDescription.map(_.expression)))
 
   def symbols = source.symbols
 

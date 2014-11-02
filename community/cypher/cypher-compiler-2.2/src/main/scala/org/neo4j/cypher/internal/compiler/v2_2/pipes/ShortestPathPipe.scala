@@ -23,10 +23,9 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.commands._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.IntroducedIdentifier
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.cypher.internal.helpers._
-import org.neo4j.graphdb.{Path, Relationship}
+import org.neo4j.graphdb.Path
 
 import scala.collection.JavaConverters._
 /**
@@ -62,7 +61,7 @@ case class ShortestPathPipe(source: Pipe, ast: ShortestPath)
   }
 
   override def planDescription =
-    source.planDescription.andThen(this, "ShortestPath", IntroducedIdentifier(ast.pathName))
+    source.planDescription.andThen(this, "ShortestPath", identifiers)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources

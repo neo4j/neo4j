@@ -21,21 +21,20 @@ package org.neo4j.cypher.internal.compiler.v2_2.planDescription
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.{NullPipe, Pipe, PipeMonitor}
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.IntroducedIdentifier
 
 class RenderAsTreeTests extends CypherFunSuite {
 
   val pipe = NullPipe()(mock[PipeMonitor])
 
   test("single node is represented nicely") {
-    renderAsTree(PlanDescriptionImpl(pipe, "NAME", NoChildren, Seq.empty)) should equal(
+    renderAsTree(PlanDescriptionImpl(pipe, "NAME", NoChildren, Seq.empty, Set())) should equal(
       "NAME")
   }
 
   test("node feeding from other node") {
 
-    val leaf = PlanDescriptionImpl(pipe, "LEAF", NoChildren, Seq.empty)
-    val plan = leaf.andThen(mock[Pipe], "ROOT")
+    val leaf = PlanDescriptionImpl(pipe, "LEAF", NoChildren, Seq.empty, Set())
+    val plan = leaf.andThen(mock[Pipe], "ROOT", Set())
 
     renderAsTree(plan) should equal(
       """ROOT
@@ -45,9 +44,9 @@ class RenderAsTreeTests extends CypherFunSuite {
 
   test("node feeding from two nodes") {
 
-    val leaf1 = PlanDescriptionImpl(pipe, "LEAF1", NoChildren, Seq.empty)
-    val leaf2 = PlanDescriptionImpl(pipe, "LEAF2", NoChildren, Seq.empty)
-    val plan = PlanDescriptionImpl(pipe, "ROOT", TwoChildren(leaf1, leaf2), Seq.empty)
+    val leaf1 = PlanDescriptionImpl(pipe, "LEAF1", NoChildren, Seq.empty, Set())
+    val leaf2 = PlanDescriptionImpl(pipe, "LEAF2", NoChildren, Seq.empty, Set())
+    val plan = PlanDescriptionImpl(pipe, "ROOT", TwoChildren(leaf1, leaf2), Seq.empty, Set())
 
     renderAsTree(plan) should equal(
       """ROOT
@@ -59,9 +58,9 @@ class RenderAsTreeTests extends CypherFunSuite {
 
   test("node feeding of node that is feeding of node") {
 
-    val leaf = PlanDescriptionImpl(pipe, "LEAF", NoChildren, Seq.empty)
-    val intermediate = PlanDescriptionImpl(pipe, "INTERMEDIATE", SingleChild(leaf), Seq.empty)
-    val plan = PlanDescriptionImpl(pipe, "ROOT", SingleChild(intermediate), Seq.empty)
+    val leaf = PlanDescriptionImpl(pipe, "LEAF", NoChildren, Seq.empty, Set())
+    val intermediate = PlanDescriptionImpl(pipe, "INTERMEDIATE", SingleChild(leaf), Seq.empty, Set())
+    val plan = PlanDescriptionImpl(pipe, "ROOT", SingleChild(intermediate), Seq.empty, Set())
     val tree = renderAsTree(plan)
 
     tree should equal(
@@ -74,9 +73,9 @@ class RenderAsTreeTests extends CypherFunSuite {
 
   test("root with two auto named nodes") {
 
-    val leaf1 = PlanDescriptionImpl(pipe, "LEAF", NoChildren, Seq(IntroducedIdentifier("a")))
-    val leaf2 = PlanDescriptionImpl(pipe, "LEAF", NoChildren, Seq(IntroducedIdentifier("b")))
-    val plan = PlanDescriptionImpl(pipe, "ROOT", TwoChildren(leaf1, leaf2), Seq.empty)
+    val leaf1 = PlanDescriptionImpl(pipe, "LEAF", NoChildren, Seq(), Set("a"))
+    val leaf2 = PlanDescriptionImpl(pipe, "LEAF", NoChildren, Seq(), Set("b"))
+    val plan = PlanDescriptionImpl(pipe, "ROOT", TwoChildren(leaf1, leaf2), Seq.empty, Set())
     val tree = renderAsTree(plan)
 
     tree should equal(
@@ -89,11 +88,11 @@ class RenderAsTreeTests extends CypherFunSuite {
 
   test("root with two leafs, one of which is deep") {
 
-    val leaf1 = PlanDescriptionImpl(pipe, "LEAF1", NoChildren, Seq.empty)
-    val leaf2 = PlanDescriptionImpl(pipe, "LEAF2", NoChildren, Seq.empty)
-    val leaf3 = PlanDescriptionImpl(pipe, "LEAF3", NoChildren, Seq.empty)
-    val intermediate = PlanDescriptionImpl(pipe, "INTERMEDIATE", TwoChildren(leaf1, leaf2), Seq.empty)
-    val plan = PlanDescriptionImpl(pipe, "ROOT", TwoChildren(intermediate, leaf3), Seq.empty)
+    val leaf1 = PlanDescriptionImpl(pipe, "LEAF1", NoChildren, Seq.empty, Set())
+    val leaf2 = PlanDescriptionImpl(pipe, "LEAF2", NoChildren, Seq.empty, Set())
+    val leaf3 = PlanDescriptionImpl(pipe, "LEAF3", NoChildren, Seq.empty, Set())
+    val intermediate = PlanDescriptionImpl(pipe, "INTERMEDIATE", TwoChildren(leaf1, leaf2), Seq.empty, Set())
+    val plan = PlanDescriptionImpl(pipe, "ROOT", TwoChildren(intermediate, leaf3), Seq.empty, Set())
     renderAsTree(plan) should equal(
 """ROOT
   |
@@ -108,13 +107,13 @@ class RenderAsTreeTests extends CypherFunSuite {
 
   test("root with two intermediate nodes coming from four leaf nodes") {
 
-    val leaf1 = PlanDescriptionImpl(pipe, "LEAF", NoChildren, Seq(IntroducedIdentifier("a")))
-    val leaf2 = PlanDescriptionImpl(pipe, "LEAF", NoChildren, Seq(IntroducedIdentifier("b")))
-    val leaf3 = PlanDescriptionImpl(pipe, "LEAF", NoChildren, Seq(IntroducedIdentifier("c")))
-    val leaf4 = PlanDescriptionImpl(pipe, "LEAF", NoChildren, Seq(IntroducedIdentifier("d")))
-    val intermediate1 = PlanDescriptionImpl(pipe, "INTERMEDIATE", TwoChildren(leaf1, leaf2), Seq.empty)
-    val intermediate2 = PlanDescriptionImpl(pipe, "INTERMEDIATE", TwoChildren(leaf3, leaf4), Seq.empty)
-    val plan = PlanDescriptionImpl(pipe, "ROOT", TwoChildren(intermediate1, intermediate2), Seq.empty)
+    val leaf1 = PlanDescriptionImpl(pipe, "LEAF", NoChildren, Seq(), Set("a"))
+    val leaf2 = PlanDescriptionImpl(pipe, "LEAF", NoChildren, Seq(), Set("b"))
+    val leaf3 = PlanDescriptionImpl(pipe, "LEAF", NoChildren, Seq(), Set("c"))
+    val leaf4 = PlanDescriptionImpl(pipe, "LEAF", NoChildren, Seq(), Set("d"))
+    val intermediate1 = PlanDescriptionImpl(pipe, "INTERMEDIATE", TwoChildren(leaf1, leaf2), Seq.empty, Set())
+    val intermediate2 = PlanDescriptionImpl(pipe, "INTERMEDIATE", TwoChildren(leaf3, leaf4), Seq.empty, Set())
+    val plan = PlanDescriptionImpl(pipe, "ROOT", TwoChildren(intermediate1, intermediate2), Seq.empty, Set())
     renderAsTree(plan) should equal(
       """ROOT
         |  |

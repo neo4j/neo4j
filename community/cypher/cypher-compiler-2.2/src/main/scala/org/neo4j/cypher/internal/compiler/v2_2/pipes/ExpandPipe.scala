@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_2.{InternalException, ExecutionContext}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.IntroducedIdentifier
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.graphdb.{Direction, Node, Relationship}
@@ -59,8 +58,7 @@ sealed abstract class ExpandPipe[T](source: Pipe,
     row.getOrElse(from, throw new InternalException(s"Expected to find a node at $from but found nothing"))
 
   def planDescription = {
-    val arguments = Seq(IntroducedIdentifier(relName), IntroducedIdentifier(to))
-    source.planDescription.andThen(this, "Expand", arguments:_*)
+    source.planDescription.andThen(this, "Expand", identifiers)
   }
 
   val symbols = source.symbols.add(to, CTNode).add(relName, CTRelationship)

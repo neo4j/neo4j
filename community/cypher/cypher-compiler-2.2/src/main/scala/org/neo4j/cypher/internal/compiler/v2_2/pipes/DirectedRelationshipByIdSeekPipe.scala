@@ -46,11 +46,8 @@ case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: EntityById
     pipe = this,
     name = "DirectedRelationshipByIdSeekPipe",
     children = NoChildren,
-    _arguments = Seq(
-      Arguments.IntroducedIdentifier(ident),
-      Arguments.IntroducedIdentifier(toNode),
-      Arguments.IntroducedIdentifier(fromNode),
-      Arguments.EntityByIdRhs(relIdExpr))
+    _arguments = Seq(Arguments.EntityByIdRhs(relIdExpr)),
+    identifiers
   )
 
   def symbols = new SymbolTable(Map(ident -> CTRelationship, toNode -> CTNode, fromNode -> CTNode))
