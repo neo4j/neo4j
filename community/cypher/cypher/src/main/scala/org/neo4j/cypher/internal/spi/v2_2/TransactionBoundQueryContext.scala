@@ -19,27 +19,26 @@
  */
 package org.neo4j.cypher.internal.spi.v2_2
 
-import org.neo4j.graphdb._
-import org.neo4j.kernel.impl.api.KernelStatement
-import org.neo4j.kernel.impl.util.register.NeoRegister.RelType
-import org.neo4j.kernel.{InternalAbstractGraphDatabase, GraphDatabaseAPI}
-import collection.JavaConverters._
-import collection.mutable
-import scala.collection.Iterator
-import org.neo4j.graphdb.DynamicRelationshipType._
+import org.neo4j.collection.primitive.PrimitiveLongIterator
+import org.neo4j.cypher.internal.compiler.v2_2.{EntityNotFoundException, FailedIndexException}
+import org.neo4j.cypher.internal.compiler.v2_2.spi._
 import org.neo4j.cypher.internal.helpers.JavaConversionSupport
 import org.neo4j.cypher.internal.helpers.JavaConversionSupport._
+import org.neo4j.graphdb.DynamicRelationshipType._
+import org.neo4j.graphdb._
+import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.helpers.collection.IteratorUtil
 import org.neo4j.kernel.api._
-import org.neo4j.cypher.{FailedIndexException, EntityNotFoundException}
-import org.neo4j.tooling.GlobalGraphOperations
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
-import org.neo4j.helpers.collection.IteratorUtil
-import org.neo4j.cypher.internal.compiler.v2_2.spi._
-import org.neo4j.collection.primitive.PrimitiveLongIterator
+import org.neo4j.kernel.impl.api.KernelStatement
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase}
+import org.neo4j.tooling.GlobalGraphOperations
+
+import scala.collection.JavaConverters._
+import scala.collection.{Iterator, mutable}
 
 final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
                                          var tx: Transaction,
