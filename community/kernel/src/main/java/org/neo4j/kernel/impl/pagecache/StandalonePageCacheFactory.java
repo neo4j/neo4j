@@ -23,7 +23,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCacheMonitor;
+import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;

@@ -32,15 +32,14 @@ import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
+import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.perftest.enterprise.util.Configuration;
 import org.neo4j.perftest.enterprise.util.Conversion;
 import org.neo4j.perftest.enterprise.util.Parameters;
@@ -49,7 +48,6 @@ import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
 import static java.util.Arrays.asList;
-
 import static org.neo4j.perftest.enterprise.util.Configuration.SYSTEM_PROPERTIES;
 import static org.neo4j.perftest.enterprise.util.Configuration.settingsOf;
 import static org.neo4j.perftest.enterprise.util.Predicate.integerRange;
@@ -130,7 +128,7 @@ public class DataGenerator
                 swapperFactory,
                 jobScheduler,
                 new Config(),
-                new Monitors().newMonitor( PageCacheMonitor.class ) );
+                PageCacheMonitor.NULL );
         pageCache.start();
         StoreAccess stores = new StoreAccess( pageCache, storeDir );
         try

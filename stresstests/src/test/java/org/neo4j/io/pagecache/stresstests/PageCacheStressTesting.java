@@ -21,7 +21,7 @@ package org.neo4j.io.pagecache.stresstests;
 
 import org.junit.Test;
 
-import org.neo4j.io.pagecache.CountingPageCacheMonitor;
+import org.neo4j.io.pagecache.monitoring.DefaultPageCacheMonitor;
 import org.neo4j.io.pagecache.stress.PageCacheStressTest;
 
 import static java.lang.Integer.parseInt;
@@ -36,13 +36,10 @@ import static org.neo4j.io.pagecache.stress.Conditions.timePeriod;
 public class PageCacheStressTesting
 {
     static {
-        // This is disabled by default, but we have tests that verify that
-        // pinned and unpinned are called correctly.
-        // Setting this property here in the test class should ensure that
-        // it is set before the MuninnPageCache classes are loaded, and
-        // thus before they check this value.
-        System.setProperty(
-                "org.neo4j.io.pagecache.impl.muninn.MuninnPageCursor.monitorPinUnpin", "true" );
+        // Pin/Unpin monitoring is disabled by default for performance reasons,
+        // but we have tests that verify that pinned and unpinned are called
+        // correctly.
+        DefaultPageCacheMonitor.enablePinUnpinMonitoring();
     }
 
     @Test
@@ -57,7 +54,7 @@ public class PageCacheStressTesting
 
         String workingDirectory = fromEnvironmentOrDefault( "PAGE_CACHE_STRESS_WORKING_DIRECTORY", getProperty( "java.io.tmpdir" ) );
 
-        CountingPageCacheMonitor monitor = new CountingPageCacheMonitor();
+        DefaultPageCacheMonitor monitor = new DefaultPageCacheMonitor();
 
         PageCacheStressTest runner = new PageCacheStressTest.Builder()
                 .with( timePeriod( durationInMinutes, MINUTES ) )

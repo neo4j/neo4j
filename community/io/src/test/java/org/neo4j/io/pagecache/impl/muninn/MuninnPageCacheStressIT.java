@@ -21,7 +21,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import org.junit.Test;
 
-import org.neo4j.io.pagecache.CountingPageCacheMonitor;
+import org.neo4j.io.pagecache.monitoring.DefaultPageCacheMonitor;
 import org.neo4j.io.pagecache.stress.Condition;
 import org.neo4j.io.pagecache.stress.PageCacheStressTest;
 
@@ -36,16 +36,10 @@ import static org.neo4j.io.pagecache.stress.Conditions.numberOfEvictions;
  */
 public class MuninnPageCacheStressIT
 {
-    // Run the class initializer for the MuninnPageCacheTest,
-    // such that we make sure that the pin/unpin monitoring gets enabled.
-    static {
-        new MuninnPageCacheTest();
-    }
-
     @Test
     public void shouldHandleTheStressOfOneMillionEvictions() throws Exception
     {
-        CountingPageCacheMonitor monitor = new CountingPageCacheMonitor();
+        DefaultPageCacheMonitor monitor = new DefaultPageCacheMonitor();
         Condition condition = numberOfEvictions( monitor, 1_000_000 );
 
         PageCacheStressTest runner = new PageCacheStressTest.Builder()

@@ -29,29 +29,32 @@ public interface PageCache
     final String NAME = "Page cache";
 
     @Description( "Number of page faults" )
-    int getFaults();
+    long getFaults();
 
     @Description( "Number of page evictions" )
-    int getEvictions();
+    long getEvictions();
 
     @Description( "Number of page pins" )
-    int getPins();
+    long getPins();
 
     @Description( "Number of page unpins" )
-    int getUnpins();
-
-    @Description( "Number of taken exclusive page locks" )
-    int getTakenExclusiveLocks();
-
-    @Description( "Number of taken shared page locks" )
-    int getTakenSharedLocks();
-
-    @Description( "Number of released exclusive page locks" )
-    int getReleasedExclusiveLocks();
-
-    @Description( "Number of released shared page locks" )
-    int getReleasedSharedLocks();
+    long getUnpins();
 
     @Description( "Number of page flushes" )
-    int getFlushes();
+    long getFlushes();
+
+    @Description( "Number of bytes read from durable storage" )
+    long getBytesRead();
+
+    @Description( "Number of bytes written to durable storage" )
+    long getBytesWritten();
+
+    @Description( "Number of files that have been mapped into the page cache" )
+    long getFileMappings();
+
+    @Description( "Number of files that have been unmapped from the page cache" )
+    long getFileUnmappings();
+
+    @Description( "Number of exceptions caught during page eviction" )
+    public long getEvictionExceptions();
 }

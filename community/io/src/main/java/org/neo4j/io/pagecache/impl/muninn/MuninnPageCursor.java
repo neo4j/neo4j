@@ -26,14 +26,14 @@ import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.impl.muninn.jsr166e.StampedLock;
+import org.neo4j.io.pagecache.monitoring.PageFaultEvent;
+import org.neo4j.io.pagecache.monitoring.PinEvent;
 
 abstract class MuninnPageCursor implements PageCursor
 {
-    static final boolean monitorPinUnpin = Boolean.getBoolean(
-            "org.neo4j.io.pagecache.impl.muninn.MuninnPageCursor.monitorPinUnpin" );
-
     protected MuninnPagedFile pagedFile;
     protected MuninnPage page;
+    protected PinEvent pinEvent;
     protected long pageId;
     protected int pf_flags;
     protected long currentPageId;
@@ -78,6 +78,7 @@ abstract class MuninnPageCursor implements PageCursor
     {
         this.page = page;
         this.offset = 0;
+        pinEvent.setCachePageId( page.getCachePageId() );
     }
 
     @Override
@@ -114,12 +115,13 @@ abstract class MuninnPageCursor implements PageCursor
             long ttlStamp,
             PageSwapper swapper ) throws IOException
     {
+        PageFaultEvent faultEvent = pinEvent.beginPageFault();
         MuninnPage page;
         long stamp;
         try
         {
             // The grabFreePage method might throw.
-            page = pagedFile.grabFreePage();
+            page = pagedFile.grabFreePage( faultEvent );
 
             // We got a free page, and we know that we have race-free access to it.
             // Well, it's not entirely race free, because other paged files might have
@@ -129,6 +131,11 @@ abstract class MuninnPageCursor implements PageCursor
             stamp = page.writeLock();
             translationTable.put( filePageId, page );
         }
+        catch ( Throwable throwable )
+        {
+            faultEvent.done( throwable );
+            throw throwable;
+        }
         finally
         {
             translationTableLock.unlockWrite( ttlStamp );
@@ -137,16 +144,17 @@ abstract class MuninnPageCursor implements PageCursor
         try
         {
             page.initBuffer();
-            page.fault( swapper, filePageId );
+            page.fault( swapper, filePageId, faultEvent );
         }
         catch ( Throwable throwable )
         {
             page.unlockWrite( stamp );
+            faultEvent.done( throwable );
             throw throwable;
         }
         convertPageFaultLock( page, stamp );
         pinCursorToPage( page, filePageId, swapper );
-        pagedFile.monitor.pageFaulted( filePageId, swapper );
+        faultEvent.done();
     }
 
     protected abstract void unpinCurrentPage();

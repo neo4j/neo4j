@@ -26,7 +26,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCacheMonitor;
+import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;

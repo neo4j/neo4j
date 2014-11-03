@@ -59,10 +59,11 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.ResourceClosingIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.CountingPageCacheMonitor;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
+import org.neo4j.io.pagecache.monitoring.DefaultPageCacheMonitor;
+import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
+import org.neo4j.io.pagecache.monitoring.PageCacheMonitorFactory;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
@@ -284,7 +285,7 @@ public abstract class InternalAbstractGraphDatabase
     protected UpdateableSchemaState updateableSchemaState;
     protected Monitors monitors;
     protected TransactionCounters transactionMonitor;
-    protected CountingPageCacheMonitor pageCacheMonitor = new CountingPageCacheMonitor();
+    protected PageCacheMonitor pageCacheMonitor;
     protected AvailabilityGuard availabilityGuard;
     protected long accessTimeout;
     protected StoreUpgrader storeMigrationProcess;
@@ -349,6 +350,33 @@ public abstract class InternalAbstractGraphDatabase
     protected TransactionCounters createTransactionCounters()
     {
         return new TransactionCounters();
+    }
+
+    private PageCacheMonitor createPageCacheMonitor( Config config, StringLogger msgLog )
+    {
+        String desiredImplementationName = config.get( Configuration.pagecache_monitor );
+
+        // The setting is specified with 'null' as a default value.
+        if ( desiredImplementationName != null )
+        {
+            for ( PageCacheMonitorFactory factory : Service.load( PageCacheMonitorFactory.class ) )
+            {
+                try
+                {
+                    if ( factory.getImplementationName().equals( desiredImplementationName ) )
+                    {
+                        return factory.createPageCacheMonitor();
+                    }
+                }
+                catch ( Exception e )
+                {
+                    msgLog.warn( "Failed to instantiate desired PageCacheMonitor implementation '" +
+                                 desiredImplementationName + "'", e );
+                }
+            }
+        }
+
+        return new DefaultPageCacheMonitor();
     }
 
     protected void createDatabaseAvailability()
@@ -436,6 +464,8 @@ public abstract class InternalAbstractGraphDatabase
         this.msgLog = logging.getMessagesLog( getClass() );
 
         config.setLogger( msgLog );
+
+        pageCacheMonitor = createPageCacheMonitor( config, msgLog );
 
         this.storeLocker = life.add( new StoreLockerLifecycleAdapter(
                 new StoreLocker( fileSystem ), storeDir ) );
@@ -1234,6 +1264,8 @@ public abstract class InternalAbstractGraphDatabase
 
         public static final Setting<String> log_configuration_file = setting( "log.configuration", STRING,
                 "neo4j-logback.xml" );
+        public static final Setting<String> pagecache_monitor =
+                setting( "pagecache_monitor", Settings.STRING, (String) null ); // 'null' default.
     }
 
     private static class PropertyValueFilteringNodeIdIterator extends PrimitiveLongBaseIterator

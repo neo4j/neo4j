@@ -37,10 +37,7 @@ final class MuninnReadPageCursor extends MuninnPageCursor
 
         if ( p != null )
         {
-            if ( monitorPinUnpin )
-            {
-                pagedFile.monitor.unpinned( false, currentPageId, pagedFile.swapper );
-            }
+            pinEvent.done();
             assert optimisticLock || p.isReadLocked() :
                     "pinned page wasn't really locked; not even optimistically: " + p;
 
@@ -77,6 +74,7 @@ final class MuninnReadPageCursor extends MuninnPageCursor
         StampedLock translationTableLock = pagedFile.translationTableLocks[stripe];
         PrimitiveLongObjectMap<MuninnPage> translationTable = pagedFile.translationTables[stripe];
         PageSwapper swapper = pagedFile.swapper;
+        pinEvent = pagedFile.monitor.beginPin( false, filePageId, swapper );
         MuninnPage page;
 
         long stamp = translationTableLock.tryOptimisticRead();
@@ -168,10 +166,6 @@ final class MuninnReadPageCursor extends MuninnPageCursor
     {
         reset( page );
         page.incrementUsage();
-        if ( monitorPinUnpin )
-        {
-            pagedFile.monitor.pinned( false, filePageId, swapper );
-        }
     }
 
     @Override

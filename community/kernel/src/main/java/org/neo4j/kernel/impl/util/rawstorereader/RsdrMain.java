@@ -26,16 +26,15 @@ import java.nio.ByteBuffer;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.xml.bind.DatatypeConverter;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
+import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -55,11 +54,9 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.monitoring.Monitors;
 
 import static javax.transaction.xa.Xid.MAXBQUALSIZE;
 import static javax.transaction.xa.Xid.MAXGTRIDSIZE;
-
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 
@@ -100,7 +97,7 @@ public class RsdrMain
         jobScheduler.init();
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( files );
         LifecycledPageCache pageCache = new LifecycledPageCache(
-                swapperFactory, jobScheduler, config, new Monitors().newMonitor( PageCacheMonitor.class ) );
+                swapperFactory, jobScheduler, config, PageCacheMonitor.NULL );
         pageCache.start();
         StringLogger logger = StringLogger.DEV_NULL;
         StoreFactory factory = new StoreFactory(

@@ -19,23 +19,23 @@
  */
 package org.neo4j.io.pagecache.stress;
 
-import static java.lang.System.getProperty;
-import static java.nio.file.Paths.get;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.number.OrderingComparison.greaterThanOrEqualTo;
-import static org.hamcrest.number.OrderingComparison.lessThan;
-import static org.junit.Assert.assertThat;
-import static org.neo4j.io.pagecache.PageCacheMonitor.NULL;
-import static org.neo4j.io.pagecache.stress.StressTestRecord.SizeOfCounter;
-
 import java.io.File;
 import java.nio.file.Files;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCacheMonitor;
+import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.RunnablePageCache;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
+
+import static java.lang.System.getProperty;
+import static java.nio.file.Paths.get;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.lessThan;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.io.pagecache.monitoring.PageCacheMonitor.NULL;
+import static org.neo4j.io.pagecache.stress.StressTestRecord.SizeOfCounter;
 
 /**
  * A stress test for page cache(s).
@@ -85,8 +85,12 @@ public class PageCacheStressTest
 
     public void run() throws Exception
     {
-        RunnablePageCache pageCacheUnderTest = new MuninnPageCache( new DefaultFileSystemAbstraction(), numberOfCachePages, cachePageSize, monitor );
-        RunnablePageCache pageCacheKeepingCount = new MuninnPageCache( new DefaultFileSystemAbstraction(), numberOfCachePages, cachePageSize, monitor );
+        RunnablePageCache pageCacheUnderTest = new MuninnPageCache(
+                new DefaultFileSystemAbstraction(),
+                numberOfCachePages, cachePageSize, monitor );
+        RunnablePageCache pageCacheKeepingCount = new MuninnPageCache(
+                new DefaultFileSystemAbstraction(),
+                numberOfCachePages, cachePageSize, monitor );
 
         Thread thread1 = new Thread( pageCacheUnderTest );
         Thread thread2 = new Thread( pageCacheKeepingCount );

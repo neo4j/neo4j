@@ -23,7 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCacheMonitor;
+import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -52,7 +52,7 @@ public class PageCacheRule extends ExternalResource
         }
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs );
         pageCache = new LifecycledPageCache(
-                swapperFactory, jobScheduler, config, new Monitors().newMonitor( PageCacheMonitor.class ) );
+                swapperFactory, jobScheduler, config, PageCacheMonitor.NULL );
         pageCache.start();
         return pageCache;
     }
