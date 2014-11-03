@@ -70,6 +70,12 @@ public class HPCSettingFunctions
         {
             return (float) ((bytes / heap()) * 100);
         }
+
+        @Override
+        public String toString()
+        {
+            return "a value between 0 and 100";
+        }
     };
     /** Overrides another hpc config setting if any explicit config is specified. */
     static Function2<HPCMemoryConfig, Function<String, String>, HPCMemoryConfig> OTHER_CACHE_SETTINGS_OVERRIDE = new Function2<HPCMemoryConfig, Function<String, String>, HPCMemoryConfig>()
@@ -101,6 +107,12 @@ public class HPCSettingFunctions
 
             return basedOnRatio;
         }
+
+        @Override
+        public String toString()
+        {
+            return "cannot be used in conjunction with other object cache size settings";
+        }
     };
     /** Disallows cache total size to go beyond the available heap. */
     static Function2<HPCMemoryConfig, Function<String, String>, HPCMemoryConfig> TOTAL_NOT_ALLOWED_ABOVE_HEAP = new Function2<HPCMemoryConfig, Function<String, String>, HPCMemoryConfig>()
@@ -116,6 +128,12 @@ public class HPCSettingFunctions
                         input.nodeCacheSize(), input.relCacheSize(), input.total(), heap() ) );
             }
             return input;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "may not be set to more than 80% of the available heap space";
         }
     };
 

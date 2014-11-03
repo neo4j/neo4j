@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
 import java.lang.management.ManagementFactory;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -50,6 +51,8 @@ import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.ha.CreateEmptyDb;
+import org.neo4j.helpers.Triplet;
+import org.neo4j.kernel.configuration.AsciiDocListGenerator;
 import org.neo4j.test.AsciiDocGenerator;
 import org.neo4j.test.TargetDirectory;
 
@@ -107,13 +110,8 @@ public class JmxDocTest
     @Test
     public void dumpJmxInfo() throws Exception
     {
-        StringBuilder beanList = new StringBuilder( 4096 );
-        StringBuilder altBeanList = new StringBuilder( 2048 );
-        altBeanList.append( IFDEF_NONHTMLOUTPUT );
-        beanList.append( "[[jmx-list]]\n" + ".MBeans exposed by Neo4j\n"
-                + IFDEF_HTMLOUTPUT
-                + "[options=\"header\", cols=\"m,\"]\n" + "|===\n"
-                + "|Name|Description\n" );
+        List<Triplet<String, String, String>> beanItems = new ArrayList<>();
+        AsciiDocListGenerator listGenerator = new AsciiDocListGenerator( "jmx-list", "MBeans exposed by Neo4j", false );
 
         MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
         SortedMap<String, ObjectName> neo4jBeans = new TreeMap<String, ObjectName>(
@@ -162,34 +160,15 @@ public class JmxDocTest
                     .replace( '\n', ' ' );
 
             String id = getId( name );
-            beanList.append( "|<<" )
-                    .append( id )
-                    .append( ',' )
-                    .append( name )
-                    .append( ">>|" )
-                    .append( description )
-                    .append( '\n' );
-
-            altBeanList.append( "* <<" )
-                    .append( id )
-                    .append( ',' )
-                    .append( name )
-                    .append( ">>: " )
-                    .append( description )
-                    .append( '\n' );
+            beanItems.add( Triplet.of( id, name, description ) );
 
             writeDetailsToFile( id, objectName, bean, info, description );
         }
-        beanList.append( "|===\n" )
-                .append( ENDIF );
-        altBeanList.append( ENDIF )
-                .append( "\n" );
-        beanList.append( altBeanList.toString() );
         Writer fw = null;
         try
         {
             fw = AsciiDocGenerator.getFW( "target/docs/ops", "JMX List" );
-            fw.write( beanList.toString() );
+            fw.write( listGenerator.generateListAndTableCombo( beanItems ) );
         }
         finally
         {

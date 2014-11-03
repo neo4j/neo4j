@@ -49,7 +49,7 @@ There are three ways you can disable UDC:
 
 . If you are using Maven, and want to make sure that UDC is never installed in your system, a dependency element like this will do that:
 +
-[source,xml]
+["source","xml","unnumbered","2",presubs="attributes"]
 --------------------
  <dependency>
    <groupId>org.neo4j</groupId>
@@ -63,8 +63,9 @@ There are three ways you can disable UDC:
    </exclusions>
  </dependency>
 --------------------
-+
-_Where $\{neo4j-version} is the Neo4j version in use._
 
-. Lastly, if you are using a packaged version of Neo4j, and do not want to make any change to the jars, setting the configuration parameter +neo4j.ext.udc.enabled=false+ in _conf/neo4j.properties_ will ensure that UDC is never activated.
+. Lastly, if you are using a packaged version of Neo4j, and do not want to make any change to the jars, see below for the setting to use in _conf/neo4j.properties_ to disable UDC.
+
+include::{importdir}/neo4j-udc-docs-jar/ops/configuration-attributes.asciidoc[]
+
 

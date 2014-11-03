@@ -38,6 +38,7 @@ import static org.neo4j.helpers.Settings.setting;
 /**
  * Settings for High Availability mode
  */
+@Description( "High Availability configuration settings" )
 public class HaSettings
 {
     @Migrator
@@ -59,7 +60,8 @@ public class HaSettings
     @Description( "Hostname and port to bind the HA server." )
     public static final Setting<HostnamePort> ha_server = setting( "ha.server", HOSTNAME_PORT, "0.0.0.0:6001-6011" );
 
-    @Description("Whether this instance should only participate as slave in cluster. If set to true, it will never be elected as master.")
+    @Description("Whether this instance should only participate as slave in cluster. "
+            + "If set to `true`, it will never be elected as master.")
     public static final Setting<Boolean> slave_only = setting( "ha.slave_only", BOOLEAN, Settings.FALSE );
 
     @Description( "Policy for how to handle branched data." )
@@ -67,7 +69,7 @@ public class HaSettings
             options( BranchedDataPolicy.class ), "keep_all" );
 
     @Description( "Max size of the data chunks that flows between master and slaves in HA. Bigger size may increase " +
-            "throughput, but may be more sensitive to variations in bandwidth, whereas lower size increases tolerance" +
+            "throughput, but may also be more sensitive to variations in bandwidth, whereas lower size increases tolerance" +
             " for bandwidth variations." )
     public static final Setting<Long> com_chunk_size =
             setting( "ha.com_chunk_size", BYTES, "2M", min( 1024L ) );

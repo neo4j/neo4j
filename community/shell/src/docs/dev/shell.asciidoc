@@ -32,23 +32,10 @@ You need to make sure that the shell jar file is on the classpath when you start
 [[shell-enabling-remote]]
 === Enabling the shell server ===
 
-Shell is enabled by the configuration in _conf/neo4j.properties_. Here are some sample configurations:
+Shell is enabled from the main configuration of Neo4j, see <<configuration-settings>>.
+Here's the available settings:
 
-[source,plain]
-----
-# Enable the remote shell feature
-remote_shell_enabled = true
-
-# By default, shell listens only on the loopback interface, but you can specify the IP address of any network interface or use 0.0.0.0 for all interfaces
-remote_shell_host = 127.0.0.1
-
-# The default port is 1337, but you can specify something else if you like
-remote_shell_port = 1337
-
-# If you want to be a little protective of your data,
-# you can also tell the shell to only support read operations
-remote_shell_read_only = true
-----
+include::{importdir}/neo4j-shell-docs-jar/ops/configuration-attributes.asciidoc[]
 
 There are two ways to start the shell, either by connecting to a remote shell server or by pointing it to a Neo4j store path.
 

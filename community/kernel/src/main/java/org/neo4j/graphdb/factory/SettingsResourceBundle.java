@@ -28,7 +28,8 @@ import java.util.Set;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.Functions;
-import org.neo4j.kernel.configuration.Title;
+import org.neo4j.kernel.configuration.Internal;
+import org.neo4j.kernel.configuration.Obsoleted;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 
 /**
@@ -39,7 +40,15 @@ import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 public class SettingsResourceBundle
         extends ResourceBundle
 {
-    private final Class settingsClass;
+    public static final String MANDATORY = ".mandatory";
+    public static final String DEFAULT = ".default";
+    public static final String INTERNAL = ".internal";
+    public static final String VALIDATIONMESSAGE = ".validationmessage";
+    public static final String OBSOLETED = ".obsoleted";
+    public static final String DEPRECATED = ".deprecated";
+    public static final String DESCRIPTION = ".description";
+    public static final String CLASS_DESCRIPTION = "description";
+    private final Class<?> settingsClass;
 
     public SettingsResourceBundle( Class settingsClass )
     {
@@ -49,7 +58,7 @@ public class SettingsResourceBundle
     @Override
     protected Object handleGetObject( String key )
     {
-        if ( key.equals( "description" ) )
+        if ( key.equals( CLASS_DESCRIPTION ) )
         {
             Description description = (Description) settingsClass.getAnnotation( Description.class );
             return description.value();
@@ -57,40 +66,59 @@ public class SettingsResourceBundle
 
         String name = key.substring( 0, key.lastIndexOf( "." ) );
 
-        if ( key.endsWith( ".description" ) )
+        if ( key.endsWith( DESCRIPTION ) )
         {
             Field settingField = getField( name );
             return settingField.getAnnotation( Description.class ).value();
         }
 
-        if ( key.endsWith( ".title" ) )
+        if ( key.endsWith( DEPRECATED ) )
         {
-            Field settingField = getField( name );
-            @SuppressWarnings("deprecation")
-            Title annotation = settingField.getAnnotation( Title.class );
-            if ( annotation != null )
-            {
-                return annotation.value();
-            }
-            else
-            {
-                // read_only -> Read only
-                name = name.replace( '_', ' ' );
-                name = name.substring( 0, 1 ).toUpperCase() + name.substring( 1 );
-                return name;
-            }
+            return "The " + name + " configuration setting has been deprecated.";
         }
 
-        if ( key.endsWith( ".default" ) )
+        if ( key.endsWith( INTERNAL ) )
+        {
+            return "The " + name + " configuration setting is for internal use.";
+        }
+
+        if ( key.endsWith( OBSOLETED ) )
+        {
+            Field settingField = getField( name );
+            return settingField.getAnnotation( Obsoleted.class ).value();
+        }
+
+        if ( key.endsWith( VALIDATIONMESSAGE ) )
         {
             try
             {
-                return getFieldValue( name ).apply( Functions.<String, String>nullFunction() ).toString();
+                Field settingField = getField( name );
+                Setting<?> setting = (Setting<?>) settingField.get( null );
+                return setting.toString();
             }
             catch ( Exception e )
             {
                 // Ignore
             }
+        }
+
+        if ( key.endsWith( DEFAULT ) )
+        {
+            Field settingField = getField( name );
+            try
+            {
+                Setting<?> setting = (Setting<?>) settingField.get( null );
+                return setting.getDefaultValue().toString();
+            }
+            catch ( Exception e )
+            {
+                // Ignore
+            }
+        }
+
+        if ( key.endsWith( MANDATORY ) )
+        {
+            return "The " + name + " configuration setting is mandatory.";
         }
 
         throw new IllegalResourceException( "Could not find resource for property " + key );
@@ -139,27 +167,58 @@ public class SettingsResourceBundle
             Description description = (Description) settingsClass.getAnnotation( Description.class );
             if ( description != null )
             {
-                keys.add( "description" );
+                keys.add( CLASS_DESCRIPTION );
             }
         }
 
         for ( Field field : settingsClass.getFields() )
         {
+            Setting<?> setting = null;
             try
             {
-                Setting<?> setting = (Setting<?>) field.get( null );
-                if ( field.getAnnotation( Description.class ) != null )
-                {
-                    keys.add( setting.name() + ".description" );
-                    if ( setting.apply( Functions.<String, String>nullFunction() ) != null )
-                    {
-                        keys.add( setting.name() + ".default" );
-                    }
-                }
+                setting = (Setting<?>) field.get( null );
             }
             catch ( Exception e )
             {
-                // Ignore
+                continue;
+            }
+            String name = setting.name();
+            if ( field.getAnnotation( Internal.class ) != null )
+            {
+                keys.add( name + INTERNAL );
+            }
+            if ( field.getAnnotation( Description.class ) != null )
+            {
+                keys.add( name + DESCRIPTION );
+                keys.add( name + VALIDATIONMESSAGE );
+                Object defaultValue = null;
+                try
+                {
+                    defaultValue = setting.apply( Functions.<String, String>nullFunction() );
+                }
+                catch ( IllegalArgumentException iae )
+                {
+                    if ( iae.toString().indexOf( "mandatory" ) != -1 )
+                    {
+                        keys.add( name + MANDATORY );
+                    }
+                }
+                if ( defaultValue != null )
+                {
+                    keys.add( name + DEFAULT );
+                }
+            }
+            else
+            {
+                System.out.println( "Missing description for: " + field.getName() );
+            }
+            if ( field.getAnnotation( Deprecated.class ) != null )
+            {
+                keys.add( name + DEPRECATED );
+            }
+            if ( field.getAnnotation( Obsoleted.class ) != null )
+            {
+                keys.add( name + OBSOLETED );
             }
         }
         return keys;

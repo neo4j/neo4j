@@ -54,7 +54,7 @@ operation without having to go down and work with the file/disk I/O layer.
 
 == Configuring Neo4j ==
 
-See <<kernel-configuration>> and <<configuration-jvm>> for information on how to configure Neo4j and the JVM.
+See <<configuration>> and <<configuration-jvm>> for information on how to configure Neo4j and the JVM.
 These settings have a lot of impact on performance.
 
 === Disks, RAM and other tips ===

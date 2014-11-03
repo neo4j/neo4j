@@ -30,6 +30,7 @@
     <powermock.version>1.5.5</powermock.version>
     <slf4j-api.version>1.7.7</slf4j-api.version>
     <logback-classic.version>1.1.2</logback-classic.version>
+    <generate-config-docs-phase>prepare-package</generate-config-docs-phase>
   </properties>
 
   <modules>

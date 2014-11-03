@@ -130,7 +130,6 @@ The available cache types are:
 | soft         | Provides optimal utilization of the available memory.
                  Suitable for high performance traversal.
                  May run into GC issues under high load if the frequently accessed parts of the graph does not fit in the cache.
-
                  This is the default cache type in Neo4j Community Edition.
 | weak         | Provides short life span for cached objects.
                  Suitable for high throughput applications where a larger portion of the graph than what can fit into memory is frequently accessed.
@@ -138,13 +137,10 @@ The available cache types are:
                  Provides good performance if your graph is small enough to fit in memory.
 | hpc          | The High-Performance Cache. Provides means of assigning a specific amount of memory to dedicate to caching loaded nodes and relationships.
                  Small footprint and fast insert/lookup. Should be the best option for most scenarios. See below on how to configure it.
-<<<<<<< HEAD
-                 Note that this option is only available in Neo4j Enterprise Edition where it is the default implementation.
-=======
                  This cache type is only available in the Neo4j Enterprise Edition, and is the default in that edition.
->>>>>>> upstream/2.1-maint
 |==========================================
 
+[[high-performance-cache]]
 === High-Performance Cache ===
 
 How much memory to allocate to the High Performance Cache can be fine tuned to suit your use case.
@@ -173,30 +169,12 @@ For other collectors, it will be half of the total heap size.
 The advanced configuration gives more fine-grained control of how much memory to allocate specific parts of the cache.
 There are two aspects to this configuration.
 
-One is the size of the array referencing the objects that are put in the cache.
-It is specified as a fraction of the heap, for example specifying +5+ will let that array itself take up 5% out of the entire heap.
-Increasing this figure (up to a maximum of 10) will reduce the chance of hash collisions at the expense of more heap used for it.
-More collisions means more redundant loading of objects from the low level cache.
+* The size of the array referencing the objects that are put in the cache.
+* The maximum size of all the objects in the cache.
 
-[options="header",cols="<35m,<55,<10m"]
-|==========================================
-| `configuration option`            | Description (what it controls)                                                                 | Example value
-| node_cache_array_fraction         | Fraction of the heap to dedicate to the array holding the nodes in the cache (max 10).         | 7
-| relationship_cache_array_fraction | Fraction of the heap to dedicate to the array holding the relationships in the cache (max 10). | 5
-|==========================================
+See below for further details.
 
-The other aspect is the maximum size of all the objects in the cache. It is specified as size in bytes, for example +500M+ for 500 megabytes or +2G+ for two gigabytes.
-Right before the maximum size is reached a +purge+ is performed where (currently) random objects are evicted from the cache until the cache size gets below 90% of the maximum size.
-Optimal settings for the maximum size depends on the size of your graph.
-The configured maximum size should leave enough room for other objects to coexist in the same JVM, but at the same time large enough to keep loading from the low level cache at a minimum.
-Predicted load on the JVM as well as layout of domain level objects should also be take into consideration.  
-
-[options="header",cols="<25m,<65,<10m"]
-|==========================================
-| `configuration option`   | Description (what it controls)                                           | Example value
-| node_cache_size          | Maximum size of the heap memory to dedicate to the cached nodes.         | 2G
-| relationship_cache_size  | Maximum size of the heap memory to dedicate to the cached relationships. | 800M
-|==========================================
+include::{importdir}/neo4j-ha-docs-jar/ops/hpc-configuration-attributes.asciidoc[]
 
 You can read about references and relevant JVM settings for Sun HotSpot here:
 
