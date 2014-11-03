@@ -16,9 +16,9 @@ div(ng-controller="GenerateTokenCtrl")
                   p
                     | Your Password
                     br
-                    input(type='password', ng-model="current_password", style="margin: 0")
+                    input(type='password', ng-model="current_password", style="margin: 0", focus-on="1", on-enter="click", on-enter-target-id="invalidate_token_button")
                   p
-                    button.btn(ng-click="generateToken()", style="margin: 0") Invalidate authorization token
+                    button.btn(id="invalidate_token_button", ng-click="generateToken()", style="margin: 0") Invalidate authorization token
               .span5(ng-show="token_changed")
                 br
                 br

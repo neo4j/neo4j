@@ -18,23 +18,13 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-'use strict';
+'use strict'
 
-angular.module('neo4jApp.directives')
-  .directive('onEnter', [ 
-    ->
-      restrict: 'A',
-      link: (scope, elem, attr, ctrl) ->
-        elem.bind('keydown', (e)->
-          code = e.which || e.keyCode
-          return unless code is 13
-
-          if attr.onEnter is 'focus'
-            element = document.getElementById(attr.onEnterTargetId)
-            element.focus()
-          else if attr.onEnter is 'click'
-            element = document.getElementById(attr.onEnterTargetId)
-            angular.element(element).triggerHandler('click')
-            elem.select()
-        )
-  ])
+angular.module('neo4jApp.controllers')
+  .controller 'DisconnectCtrl', [
+    '$scope'
+    'AuthService'
+    ($scope, AuthService) ->
+      $scope.auth_service = AuthService
+      $scope.focusEditor()
+  ]

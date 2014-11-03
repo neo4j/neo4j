@@ -55,11 +55,11 @@ angular.module('neo4jApp.controllers')
           
             #New user who just changed the default password.
             if not is_authenticated
-              Frame.create({input:"#{Settings.cmdchar}server status"})
               Frame.create({input:"#{Settings.cmdchar}play welcome"})
 
             $scope.password_changed = true
             $scope.$parent.error_text = ''
+            $scope.focusEditor()
           ,
           (r) ->
             $scope.$parent.error_text = r.data.errors[0].message or "Server response code: #{r.status}"

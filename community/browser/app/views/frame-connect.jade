@@ -20,7 +20,7 @@ div(ng-controller="AuthCtrl")
                   p
                     | Username
                     br
-                    input(type='text', on-enter="focus", on-enter-target-id="connect_password", autofocus, ng-model="username", style="margin: 0")
+                    input(type='text', on-enter="focus", on-enter-target-id="connect_password", focus-on="1", ng-model="username", style="margin: 0")
                   p
                     | Password
                     br
@@ -31,18 +31,29 @@ div(ng-controller="AuthCtrl")
               .span4
                 h3 Connection to Neo4j
                 p.lead
-                  | Always connected.
+                  | Connected.
               .span1
               .span6
-                p Since server authentication is disabled, you are always connected to the Neo4j database.
+                p Connected to the Neo4j database (no authentication required).
             .row(ng-if="auth_service.isAuthenticated() && !password_change_required && auth_service.current_user")
               .span4
                 h3 Connected to Neo4j
                 p.lead
                   | Nice to meet you.
               .span1
-              .span6
-                p You have a working connection with the Neo4j database.
+              .span7(ng-hide="!auth_service.current_user")
+                p
+                ul.big.undecorated
+                  li
+                    span.center-tbl-left-col 
+                      | Current user: 
+                    code
+                      | {{auth_service.current_user.user}}
+                  li
+                    span.center-tbl-left-col
+                      | Authorization token: 
+                    code
+                      | {{auth_service.current_user.authorization_token}}
             .row(ng-show="password_change_required")
       .view-result(ng-show="password_change_required")
         include partials/frame-change-password

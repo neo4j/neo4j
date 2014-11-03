@@ -48,6 +48,7 @@ angular.module('neo4jApp.controllers')
                 $scope.current_password = $scope.password
                 return $scope.password_change_required = true 
               Frame.create({input:"#{Settings.cmdchar}play welcome"})
+              $scope.focusEditor()
           ,
           (r) -> 
             $scope.error_text = r.data.errors[0].message or "Server response code: #{r.status}"

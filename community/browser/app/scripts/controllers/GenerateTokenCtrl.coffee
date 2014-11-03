@@ -44,6 +44,7 @@ angular.module('neo4jApp.controllers')
             Frame.create({input:"#{Settings.cmdchar}server status"})
             $scope.token_changed = true
             $scope.error_text = ''
+            $scope.focusEditor()
           ,
           (r) ->
             $scope.error_text = r.data.errors[0].message or "Server response code: #{r.status}"
@@ -63,6 +64,7 @@ angular.module('neo4jApp.controllers')
             Frame.create({input:"#{Settings.cmdchar}server status"})
             $scope.token_changed = true
             $scope.error_text = ''
+            $scope.focusEditor()
           ,
           (r) ->
             $scope.error_text = r.data.errors[0].message or "Server response code: #{r.status}"

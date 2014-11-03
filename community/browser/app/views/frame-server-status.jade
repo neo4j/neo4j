@@ -30,6 +30,6 @@ div(ng-controller="AuthCtrl")
               .span5(ng-show="!frame.response.user && auth_service.isAuthenticated()")
                 p You have a working connection with the Neo4j database and server authentication is disabled.
       .status-bar(ng-class='{error: frame.hasErrors, loading: frame.isLoading}')
-        div(ng-show="frame.errorText")
+        div(ng-show="errorText")
           .icon-warning-sign
-          {{frame.errorText}}
+          {{errorText}}

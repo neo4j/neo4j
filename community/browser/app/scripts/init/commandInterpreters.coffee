@@ -230,6 +230,7 @@ angular.module('neo4jApp')
     FrameProvider.interpreters.push
       type: 'auth'
       fullscreenable: false
+      hide_connect_frame: yes
       templateUrl: 'views/frame-server-status.html'
       matches:  (input) ->
         pattern = new RegExp("^#{cmdchar}server status")
