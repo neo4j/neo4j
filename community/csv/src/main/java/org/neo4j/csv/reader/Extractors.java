@@ -227,9 +227,31 @@ public class Extractors
         return doubleArray;
     }
 
-    private static class StringExtractor implements Extractor<String>
+    private static abstract class AbstractExtractor<T> implements Extractor<T>
+    {
+        private final String toString;
+
+        AbstractExtractor( String toString )
+        {
+            this.toString = toString;
+        }
+
+        @Override
+        public String toString()
+        {
+            return toString;
+        }
+    }
+
+    private static class StringExtractor extends AbstractExtractor<String>
     {
         private String value;
+
+        StringExtractor()
+        {
+            super( String.class.getSimpleName() );
+        }
+
 
         @Override
         public void extract( char[] data, int offset, int length )
@@ -242,17 +264,16 @@ public class Extractors
         {
             return value;
         }
-
-        @Override
-        public String toString()
-        {
-            return String.class.getSimpleName();
-        }
     }
 
-    public static class LongExtractor implements Extractor<Long>
+    public static class LongExtractor extends AbstractExtractor<Long>
     {
         private long value;
+
+        LongExtractor()
+        {
+            super( Long.TYPE.getSimpleName() );
+        }
 
         @Override
         public void extract( char[] data, int offset, int length )
@@ -274,17 +295,16 @@ public class Extractors
         {
             return value;
         }
-
-        @Override
-        public String toString()
-        {
-            return Long.TYPE.getSimpleName();
-        }
     }
 
-    public static class IntExtractor implements Extractor<Integer>
+    public static class IntExtractor extends AbstractExtractor<Integer>
     {
         private int value;
+
+        IntExtractor()
+        {
+            super( Integer.TYPE.toString() );
+        }
 
         @Override
         public void extract( char[] data, int offset, int length )
@@ -306,17 +326,16 @@ public class Extractors
         {
             return value;
         }
-
-        @Override
-        public String toString()
-        {
-            return Integer.TYPE.getSimpleName();
-        }
     }
 
-    public static class ShortExtractor implements Extractor<Short>
+    public static class ShortExtractor extends AbstractExtractor<Short>
     {
         private short value;
+
+        ShortExtractor()
+        {
+            super( Short.TYPE.getSimpleName() );
+        }
 
         @Override
         public void extract( char[] data, int offset, int length )
@@ -338,17 +357,16 @@ public class Extractors
         {
             return value;
         }
-
-        @Override
-        public String toString()
-        {
-            return Short.TYPE.getSimpleName();
-        }
     }
 
-    public static class ByteExtractor implements Extractor<Byte>
+    public static class ByteExtractor extends AbstractExtractor<Byte>
     {
         private byte value;
+
+        ByteExtractor()
+        {
+            super( Byte.TYPE.getSimpleName() );
+        }
 
         @Override
         public void extract( char[] data, int offset, int length )
@@ -370,12 +388,6 @@ public class Extractors
         {
             return value;
         }
-
-        @Override
-        public String toString()
-        {
-            return Byte.TYPE.getSimpleName();
-        }
     }
 
     private static final char[] BOOLEAN_MATCH;
@@ -385,9 +397,14 @@ public class Extractors
         Boolean.TRUE.toString().getChars( 0, BOOLEAN_MATCH.length, BOOLEAN_MATCH, 0 );
     }
 
-    public static class BooleanExtractor implements Extractor<Boolean>
+    public static class BooleanExtractor extends AbstractExtractor<Boolean>
     {
         private boolean value;
+
+        BooleanExtractor()
+        {
+            super( Boolean.TYPE.getSimpleName() );
+        }
 
         @Override
         public void extract( char[] data, int offset, int length )
@@ -405,17 +422,16 @@ public class Extractors
         {
             return value;
         }
-
-        @Override
-        public String toString()
-        {
-            return Boolean.TYPE.getSimpleName();
-        }
     }
 
-    public static class CharExtractor implements Extractor<Character>
+    public static class CharExtractor extends AbstractExtractor<Character>
     {
         private char value;
+
+        CharExtractor()
+        {
+            super( Character.TYPE.getSimpleName() );
+        }
 
         @Override
         public void extract( char[] data, int offset, int length )
@@ -437,17 +453,16 @@ public class Extractors
         {
             return value;
         }
-
-        @Override
-        public String toString()
-        {
-            return Character.TYPE.getSimpleName();
-        }
     }
 
-    public static class FloatExtractor implements Extractor<Float>
+    public static class FloatExtractor extends AbstractExtractor<Float>
     {
         private float value;
+
+        FloatExtractor()
+        {
+            super( Float.TYPE.getSimpleName() );
+        }
 
         @Override
         public void extract( char[] data, int offset, int length )
@@ -466,17 +481,16 @@ public class Extractors
         {
             return value;
         }
-
-        @Override
-        public String toString()
-        {
-            return Float.TYPE.getSimpleName();
-        }
     }
 
-    public static class DoubleExtractor implements Extractor<Double>
+    public static class DoubleExtractor extends AbstractExtractor<Double>
     {
         private double value;
+
+        DoubleExtractor()
+        {
+            super( Double.TYPE.getSimpleName() );
+        }
 
         @Override
         public void extract( char[] data, int offset, int length )
@@ -495,24 +509,17 @@ public class Extractors
         {
             return value;
         }
-
-        @Override
-        public String toString()
-        {
-            return Double.TYPE.getSimpleName();
-        }
     }
 
-    private static abstract class ArrayExtractor<T> implements Extractor<T>
+    private static abstract class ArrayExtractor<T> extends AbstractExtractor<T>
     {
         protected final char arrayDelimiter;
-        private final Class<?> componentType;
         protected T value;
 
         ArrayExtractor( char arrayDelimiter, Class<?> componentType )
         {
+            super( componentType.getSimpleName() + "[]" );
             this.arrayDelimiter = arrayDelimiter;
-            this.componentType = componentType;
         }
 
         @Override
@@ -556,12 +563,6 @@ public class Extractors
         public boolean equals( Object obj )
         {
             return getClass().equals( obj.getClass() );
-        }
-
-        @Override
-        public String toString()
-        {
-            return componentType.getSimpleName() + "[]";
         }
     }
 

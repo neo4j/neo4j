@@ -287,20 +287,4 @@ public enum StoreFile
                     " for " + targetStoreFileName );
         }
     }
-
-    public static void deleteIdFile( FileSystemAbstraction fs, File directory, StoreFile... stores )
-    {
-        for ( StoreFile store : stores )
-        {
-            fs.deleteFile( new File( directory, store.idFileName() ) );
-        }
-    }
-
-    public static void deleteStoreFile( FileSystemAbstraction fs, File directory, StoreFile... stores )
-    {
-        for ( StoreFile store : stores )
-        {
-            fs.deleteFile( new File( directory, store.storeFileName() ) );
-        }
-    }
 }

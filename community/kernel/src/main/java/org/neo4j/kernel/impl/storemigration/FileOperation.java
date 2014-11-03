@@ -68,6 +68,15 @@ public enum FileOperation
             File fromFile = new File( fromDirectory, fileName );
             fs.moveToDirectory( fromFile, toDirectory );
         }
+    },
+    DELETE
+    {
+        @Override
+        public void perform( FileSystemAbstraction fs, String fileName, File fromDirectory, File toDirectory )
+                throws IOException
+        {
+            fs.deleteFile( new File( fromDirectory, fileName ) );
+        }
     };
 
     public abstract void perform( FileSystemAbstraction fs, String fileName, File fromDirectory, File toDirectory )

@@ -31,6 +31,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -86,6 +87,7 @@ import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createP
 import static org.neo4j.kernel.impl.store.NeoStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.store.StoreFactory.buildTypeDescriptorAndVersion;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
+import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 import static org.neo4j.unsafe.impl.batchimport.WriterFactories.parallel;
@@ -545,7 +547,9 @@ public class StoreMigrator implements StoreMigrationParticipant
                 throw new IllegalStateException( "Unknown version to upgrade from: " + versionToUpgradeFrom );
         }
 
-        StoreFile.deleteIdFile( fileSystem, migrationDir, idFilesToDelete );
+        StoreFile.fileOperation( DELETE, fileSystem, migrationDir, null,
+                Iterables.<StoreFile,StoreFile>iterable( idFilesToDelete ),
+                true, false, StoreFileType.ID );
 
         // Move the migrated ones into the store directory
         StoreFile.fileOperation( MOVE, fileSystem, migrationDir, storeDir, filesToMove,

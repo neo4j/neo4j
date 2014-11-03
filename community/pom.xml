@@ -43,6 +43,7 @@
     <module>neo4j</module>
     <module>neo4j-community</module>
     <module>shell</module>
+    <module>batch-import-tool</module>
     <module>embedded-examples</module>
     <module>server-api</module>
     <module>graphviz</module>

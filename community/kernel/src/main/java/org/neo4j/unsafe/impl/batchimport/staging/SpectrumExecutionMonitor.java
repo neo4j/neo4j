@@ -52,7 +52,7 @@ import static org.neo4j.helpers.Format.duration;
 public class SpectrumExecutionMonitor extends PollingExecutionMonitor
 {
     public static final int DEFAULT_WIDTH = 80;
-    private static final char[] WEIGHTS = new char[] {'k', 'M', 'B', 'T'};
+    private static final char[] WEIGHTS = new char[] {' ', 'k', 'M', 'B', 'T'};
 
     private final PrintStream out;
     private final int width;
