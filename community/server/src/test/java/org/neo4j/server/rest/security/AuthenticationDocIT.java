@@ -84,7 +84,7 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
 
         // Then
         JsonNode data = JsonHelper.jsonNode( response.entity() );
-        assertThat(data.get("user").asText(), equalTo("neo4j"));
+        assertThat(data.get("username").asText(), equalTo("neo4j"));
         assertThat(data.has("authorization_token" ), is( false ));
         assertThat(data.has("authorization_token_change" ), is( false ));
         assertThat(data.get("password_change_required").asBoolean(), equalTo( true ));
@@ -114,7 +114,7 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
 
         // Then
         JsonNode data = JsonHelper.jsonNode( response.entity() );
-        assertThat(data.get("user").asText(), equalTo("neo4j"));
+        assertThat(data.get("username").asText(), equalTo("neo4j"));
         assertThat(data.get("password_change_required").asBoolean(), equalTo( false ));
         assertThat(data.get("authorization_token").asText().length(), greaterThan(0));
         assertThat(data.get("authorization_token_change").asText(), equalTo( server.baseUri().resolve("user/neo4j/authorization_token").toString() ));
@@ -201,7 +201,7 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
 
         // Then
         JsonNode data = JsonHelper.jsonNode( response.entity() );
-        assertThat(data.get( "user" ).asText(), equalTo("neo4j"));
+        assertThat(data.get( "username" ).asText(), equalTo("neo4j"));
     }
 
     /**
@@ -291,7 +291,7 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
         // When & Then
         assertEquals( 400, HTTP.POST( authURL() ).status() );
         assertEquals( 400, HTTP.POST( authURL(), RawPayload.quotedJson("{'password':'whatever'}") ).status() );
-        assertEquals( 400, HTTP.POST( authURL(), RawPayload.quotedJson("{'password':1234, 'user':{}}") ).status() );
+        assertEquals( 400, HTTP.POST( authURL(), RawPayload.quotedJson("{'password':1234, 'username':{}}") ).status() );
     }
 
     @Test

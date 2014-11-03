@@ -84,7 +84,7 @@ angular.module('neo4jApp.services')
 
       setNewPassword: (old_passwd, new_passwd) ->
         that = @
-        promise = Server.post("#{Settings.endpoint.authUser}/#{@current_user.user}/password"
+        promise = Server.post("#{Settings.endpoint.authUser}/#{@current_user.username}/password"
           , {password: old_passwd, new_password: new_passwd})
         .then(
           (r) -> 
@@ -94,7 +94,7 @@ angular.module('neo4jApp.services')
         promise
 
       setNewAuthToken: (passwd, new_authorization_token) ->
-        promise = Server.post("#{Settings.endpoint.authUser}/#{@current_user.user}/authorization_token"
+        promise = Server.post("#{Settings.endpoint.authUser}/#{@current_user.username}/authorization_token"
           , {password: passwd, new_authorization_token: new_authorization_token})
         .then( ->
           updatePersistentAuthToken {authorization_token: new_authorization_token}
@@ -102,7 +102,7 @@ angular.module('neo4jApp.services')
         promise
 
       generateNewAuthToken: (passwd) ->
-        promise = Server.post("#{Settings.endpoint.authUser}/#{@current_user.user}/authorization_token"
+        promise = Server.post("#{Settings.endpoint.authUser}/#{@current_user.username}/authorization_token"
           , {password: passwd})
         promise.then((r)->
           response = r.data

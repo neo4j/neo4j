@@ -12,22 +12,22 @@ div(ng-controller="AuthCtrl")
                 p.lead
                   | This is your current server connection information.
               .span1
-              .span7(ng-hide="!frame.response.user")
+              .span7(ng-hide="!frame.response.username")
                 p
                 ul.big.undecorated
                   li
                     span.center-tbl-left-col 
                       | Current user: 
                     code
-                      | {{frame.response.user}}
+                      | {{frame.response.username}}
                   li
                     span.center-tbl-left-col
                       | Authorization token: 
                     code
                       | {{frame.response.authorization_token}}
-              .span5.error(ng-show="!frame.response.user && !auth_service.isAuthenticated()")
+              .span5.error(ng-show="!frame.response.username && !auth_service.isAuthenticated()")
                 p You are not connected to the server.
-              .span5(ng-show="!frame.response.user && auth_service.isAuthenticated()")
+              .span5(ng-show="!frame.response.username && auth_service.isAuthenticated()")
                 p You have a working connection with the Neo4j database and server authentication is disabled.
       .status-bar(ng-class='{error: frame.hasErrors, loading: frame.isLoading}')
         div(ng-show="errorText")
