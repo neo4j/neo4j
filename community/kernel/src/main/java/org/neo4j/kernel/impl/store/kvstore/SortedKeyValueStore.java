@@ -30,6 +30,8 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.register.Register;
+import org.neo4j.register.Registers;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 
@@ -153,7 +155,7 @@ public abstract class SortedKeyValueStore<K extends Comparable<K>, VR> implement
         return header.dataRecords();
     }
 
-    public void accept( KeyValueRecordVisitor<K, VR> visitor )
+    public void accept( KeyValueRecordVisitor<K, VR> visitor, VR register )
     {
         try ( InputStream in = fs.openAsInputStream( file ) )
         {
@@ -179,7 +181,7 @@ public abstract class SortedKeyValueStore<K extends Comparable<K>, VR> implement
                     continue;
                 }
                 buffer.position( 0 );
-                readNext = recordSerializer.visitRecord( buffer, visitor );
+                readNext = recordSerializer.visitRecord( buffer, visitor, register );
                 offset = 0;
             }
         }

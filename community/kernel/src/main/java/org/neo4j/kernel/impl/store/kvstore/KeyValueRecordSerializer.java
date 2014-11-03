@@ -26,7 +26,7 @@ import org.neo4j.io.pagecache.PageCursor;
 
 public interface KeyValueRecordSerializer<K extends Comparable<K>, VR>
 {
-    boolean visitRecord( ByteBuffer buffer, KeyValueRecordVisitor<K, VR> visitor );
+    boolean visitRecord( ByteBuffer buffer, KeyValueRecordVisitor<K, VR> visitor, VR valueRegister );
 
     K readRecord( PageCursor cursor, int offset, VR valueRegister ) throws IOException;
 

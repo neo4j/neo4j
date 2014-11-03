@@ -299,18 +299,10 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     {
         state.accept( new KeyValueRecordVisitor<CountsKey, DoubleLongRegister>()
         {
-            private final DoubleLongRegister valueRegister = Registers.newDoubleLongRegister();
-
             @Override
-            public DoubleLongRegister valueRegister()
+            public void visit( CountsKey key, DoubleLongRegister register )
             {
-                return valueRegister;
-            }
-
-            @Override
-            public void visit( CountsKey key )
-            {
-                key.accept( visitor, valueRegister );
+                key.accept( visitor, register );
             }
         } );
     }

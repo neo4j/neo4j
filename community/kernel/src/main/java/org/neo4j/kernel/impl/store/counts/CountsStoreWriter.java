@@ -41,10 +41,11 @@ import static org.neo4j.kernel.impl.store.counts.CountsKeyType.ENTITY_RELATIONSH
 import static org.neo4j.kernel.impl.store.counts.CountsKeyType.INDEX_COUNTS;
 import static org.neo4j.kernel.impl.store.counts.CountsKeyType.INDEX_SAMPLE;
 import static org.neo4j.kernel.impl.store.counts.CountsStore.RECORD_SIZE;
+import static org.neo4j.register.Register.DoubleLongRegister;
 
-public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, Register.DoubleLongRegister>, CountsVisitor
+public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, DoubleLongRegister>, CountsVisitor
 {
-    public static class Factory implements SortedKeyValueStore.WriterFactory<CountsKey, Register.DoubleLongRegister>
+    public static class Factory implements SortedKeyValueStore.WriterFactory<CountsKey, DoubleLongRegister>
     {
         @Override
         public CountsStoreWriter create( FileSystemAbstraction fs, PageCache pageCache,
@@ -56,7 +57,6 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
         }
     }
 
-    private final Register.DoubleLongRegister valueRegister = Registers.newDoubleLongRegister();
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
     private final SortedKeyValueStoreHeader oldHeader;
@@ -91,19 +91,13 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
     }
 
     @Override
-    public Register.DoubleLongRegister valueRegister()
-    {
-        return valueRegister;
-    }
-
-    @Override
-    public void visit( CountsKey key )
+    public void visit( CountsKey key, DoubleLongRegister register )
     {
         // only writeToBuffer values that count
-        if ( valueRegister.readFirst() != 0 || valueRegister.readSecond() != 0 )
+        if ( register.readFirst() != 0 || register.readSecond() != 0 )
         {
             totalRecords++;
-            key.accept( this, valueRegister );
+            key.accept( this, register );
         }
     }
 

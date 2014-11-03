@@ -48,6 +48,7 @@ import static org.neo4j.kernel.impl.store.counts.CountsStore.RECORD_SIZE;
 import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.BASE_MINOR_VERSION;
 import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.with;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
+import static org.neo4j.register.Register.DoubleLongRegister;
 
 public class CountsStoreWriterTest
 {
@@ -58,14 +59,15 @@ public class CountsStoreWriterTest
         final CountsStoreWriter writer = new CountsStoreWriter( fs, pageCache, emptyHeader, file, lastTxId );
 
         // when
-        writer.valueRegister().write( 0, 42 );
-        writer.visit( nodeKey( 0 ) );
-        writer.valueRegister().write( 0, 24 );
-        writer.visit( relationshipKey( 1, 2, 3 ) );
-        writer.valueRegister().write( 9, 11 );
-        writer.visit( indexCountsKey( 4, 5 ) );
-        writer.valueRegister().write( 24, 84 );
-        writer.visit( indexSampleKey( 4, 5 ) );
+        DoubleLongRegister valueRegister = Registers.newDoubleLongRegister();
+        valueRegister.write( 0, 42 );
+        writer.visit( nodeKey( 0 ), valueRegister );
+        valueRegister.write( 0, 24 );
+        writer.visit( relationshipKey( 1, 2, 3 ), valueRegister );
+        valueRegister.write( 9, 11 );
+        writer.visit( indexCountsKey( 4, 5 ), valueRegister );
+        valueRegister.write( 24, 84 );
+        writer.visit( indexSampleKey( 4, 5 ), valueRegister );
         writer.close();
 
         // then
@@ -76,18 +78,10 @@ public class CountsStoreWriterTest
             assertEquals( lastTxId, counts.lastTxId() );
             assertEquals( 4, counts.totalRecordsStored() );
             assertEquals( file, counts.file() );
-            counts.accept( new KeyValueRecordVisitor<CountsKey, Register.DoubleLongRegister>()
+            counts.accept( new KeyValueRecordVisitor<CountsKey, DoubleLongRegister>()
             {
-                private final Register.DoubleLongRegister valueRegister = Registers.newDoubleLongRegister();
-
                 @Override
-                public Register.DoubleLongRegister valueRegister()
-                {
-                    return valueRegister;
-                }
-
-                @Override
-                public void visit( CountsKey key )
+                public void visit( CountsKey key, DoubleLongRegister valueRegister )
                 {
                     key.accept( new CountsVisitor()
                     {
@@ -127,7 +121,7 @@ public class CountsStoreWriterTest
                         }
                     }, valueRegister );
                 }
-            } );
+            }, Registers.newDoubleLongRegister() );
 
         }
         finally

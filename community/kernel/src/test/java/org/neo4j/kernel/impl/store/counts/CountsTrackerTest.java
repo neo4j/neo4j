@@ -53,6 +53,7 @@ import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.BASE
 import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.META_HEADER_SIZE;
 import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.with;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
+import static org.neo4j.register.Register.DoubleLongRegister;
 
 public class CountsTrackerTest
 {
@@ -340,16 +341,15 @@ public class CountsTrackerTest
         }
 
         @Override
-        CountsStore.Writer<CountsKey, Register.DoubleLongRegister> nextWriter( CountsTrackerState state, long lastCommittedTxId )
+        CountsStore.Writer<CountsKey, DoubleLongRegister> nextWriter( CountsTrackerState state, long lastCommittedTxId )
                 throws IOException
         {
             final CountsStoreWriter writer = (CountsStoreWriter) super.nextWriter( state, lastCommittedTxId );
-            return new CountsStore.Writer<CountsKey, Register.DoubleLongRegister>()
+            return new CountsStore.Writer<CountsKey, DoubleLongRegister>()
             {
-                private final Register.DoubleLongRegister valueRegister = Registers.newDoubleLongRegister();
 
                 @Override
-                public SortedKeyValueStore<CountsKey, Register.DoubleLongRegister> openForReading() throws IOException
+                public SortedKeyValueStore<CountsKey, DoubleLongRegister> openForReading() throws IOException
                 {
                     barrier.reached();
                     return writer.openForReading();
@@ -362,16 +362,9 @@ public class CountsTrackerTest
                 }
 
                 @Override
-                public void visit( CountsKey key )
+                public void visit( CountsKey key, DoubleLongRegister valueRegister )
                 {
-                    writer.valueRegister().write( valueRegister.readFirst(), valueRegister.readSecond() );
-                    writer.visit( key );
-                }
-
-                @Override
-                public Register.DoubleLongRegister valueRegister()
-                {
-                    return valueRegister;
+                    writer.visit( key, valueRegister );
                 }
             };
         }

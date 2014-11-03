@@ -21,6 +21,5 @@ package org.neo4j.kernel.impl.store.kvstore;
 
 public interface KeyValueRecordVisitor<K extends Comparable<K>, VR>
 {
-    VR valueRegister();
-    void visit( K key );
+    void visit( K key, VR register );
 }

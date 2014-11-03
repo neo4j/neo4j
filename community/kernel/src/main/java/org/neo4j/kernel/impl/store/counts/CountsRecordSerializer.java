@@ -99,7 +99,9 @@ public final class CountsRecordSerializer implements KeyValueRecordSerializer<Co
     }
 
     @Override
-    public boolean visitRecord(ByteBuffer buffer, KeyValueRecordVisitor<CountsKey, DoubleLongRegister> visitor)
+    public boolean visitRecord( ByteBuffer buffer,
+                                KeyValueRecordVisitor<CountsKey, DoubleLongRegister> visitor,
+                                DoubleLongRegister valueRegister )
     {
         // read type
         byte type = buffer.get();
@@ -115,7 +117,7 @@ public final class CountsRecordSerializer implements KeyValueRecordSerializer<Co
         // read value
         long first = buffer.getLong();
         long second = buffer.getLong();
-        visitor.valueRegister().write( first, second );
+        valueRegister.write( first, second );
 
         CountsKey key;
         switch ( CountsKeyType.fromCode( type ) )
@@ -153,7 +155,7 @@ public final class CountsRecordSerializer implements KeyValueRecordSerializer<Co
             default:
                 throw new IllegalStateException( "Unknown counts key type: " + type );
         }
-        visitor.visit( key );
+        visitor.visit( key, valueRegister );
         return true;
     }
 

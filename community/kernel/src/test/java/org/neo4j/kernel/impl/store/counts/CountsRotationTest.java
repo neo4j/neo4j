@@ -54,6 +54,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.BASE_MINOR_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
+import static org.neo4j.register.Register.DoubleLongRegister;
 
 public class CountsRotationTest
 {
@@ -203,25 +204,18 @@ public class CountsRotationTest
     }
 
 
-    private Collection<Pair<CountsKey, Long>> allRecords( SortedKeyValueStore<CountsKey, Register.DoubleLongRegister> store )
+    private Collection<Pair<CountsKey, Long>> allRecords( SortedKeyValueStore<CountsKey, DoubleLongRegister> store )
     {
         final Collection<Pair<CountsKey, Long>> records = new ArrayList<>();
-        store.accept( new KeyValueRecordVisitor<CountsKey, Register.DoubleLongRegister>()
+        store.accept( new KeyValueRecordVisitor<CountsKey, DoubleLongRegister>()
         {
-            private final Register.DoubleLongRegister valueRegister = Registers.newDoubleLongRegister();
-
             @Override
-            public void visit( CountsKey key  )
+            public void visit( CountsKey key, DoubleLongRegister valueRegister  )
             {
                 records.add( Pair.of( key, valueRegister.readSecond() ) );
             }
 
-            @Override
-            public Register.DoubleLongRegister valueRegister()
-            {
-                return valueRegister;
-            }
-        } );
+        }, Registers.newDoubleLongRegister() );
         return records;
     }
 }

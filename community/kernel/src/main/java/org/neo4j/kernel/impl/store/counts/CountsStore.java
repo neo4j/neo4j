@@ -79,16 +79,8 @@ public class CountsStore extends SortedKeyValueStore<CountsKey,DoubleLongRegiste
             final LongRegister keys = Registers.newLongRegister( 0 );
             countsStore.accept( new KeyValueRecordVisitor<CountsKey,DoubleLongRegister>()
             {
-                private final DoubleLongRegister register = Registers.newDoubleLongRegister();
-
                 @Override
-                public DoubleLongRegister valueRegister()
-                {
-                    return register;
-                }
-
-                @Override
-                public void visit( CountsKey key )
+                public void visit( CountsKey key, DoubleLongRegister register )
                 {
                     if ( register.readFirst() == 0 && register.readSecond() == 0 )
                     {
@@ -96,7 +88,7 @@ public class CountsStore extends SortedKeyValueStore<CountsKey,DoubleLongRegiste
                     }
                     keys.increment( 1 );
                 }
-            } );
+            }, Registers.newDoubleLongRegister() );
 
             if ( keys.read() != header.dataRecords() )
             {

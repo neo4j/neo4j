@@ -232,7 +232,7 @@ class ConcurrentCountsTrackerState implements CountsTrackerState
     {
         try ( Merger<CountsKey> merger = new Merger<>( visitor, sortedUpdates( counts, samples ) ) )
         {
-            store.accept( merger );
+            store.accept( merger, Registers.newDoubleLongRegister() );
         }
     }
 
@@ -289,23 +289,14 @@ class ConcurrentCountsTrackerState implements CountsTrackerState
         private final KeyValueRecordVisitor<K, DoubleLongRegister> target;
         private final Update<K>[] updates;
         private int next;
-        private final DoubleLongRegister valueRegister;
 
         public Merger( KeyValueRecordVisitor<K, DoubleLongRegister> target, Update<K>[] updates )
         {
             this.target = target;
             this.updates = updates;
-            this.valueRegister = target.valueRegister();
         }
-
         @Override
-        public DoubleLongRegister valueRegister()
-        {
-            return valueRegister;
-        }
-
-        @Override
-        public void visit( K key )
+        public void visit( K key, DoubleLongRegister register  )
         {
             while ( next < updates.length )
             {
@@ -314,30 +305,34 @@ class ConcurrentCountsTrackerState implements CountsTrackerState
                 if ( cmp == 0 )
                 { // overwrite the value in the store
                     next++;
-                    nextUpdate.writeTo( valueRegister );
+                    nextUpdate.writeTo( register );
                 }
                 else if ( cmp > 0 )
                 { // write this before writing the entry from the store
                     next++;
-                    long originalFirst = valueRegister.readFirst();
-                    long originalSecond = valueRegister.readSecond();
-                    nextUpdate.writeTo( valueRegister );
-                    target.visit( nextUpdate.key );
-                    valueRegister.write( originalFirst, originalSecond );
+                    long originalFirst = register.readFirst();
+                    long originalSecond = register.readSecond();
+                    nextUpdate.writeTo( register );
+                    target.visit( nextUpdate.key, register );
+                    register.write( originalFirst, originalSecond );
                     continue; // then see if there are more entries to consider from the updates...
                 }
                 break;
             }
-            target.visit( key );
+            target.visit( key, register );
         }
 
         public void close()
         {
-            for ( int i = next; i < updates.length; i++ )
+            if ( next < updates.length)
             {
-                Update<K> update = updates[i];
-                update.writeTo( valueRegister );
-                target.visit( update.key );
+                DoubleLongRegister register = Registers.newDoubleLongRegister();
+                for ( int i = next; i < updates.length; i++ )
+                {
+                    Update<K> update = updates[i];
+                    update.writeTo( register );
+                    target.visit( update.key, register );
+                }
             }
         }
     }
