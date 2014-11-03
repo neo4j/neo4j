@@ -25,6 +25,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
@@ -73,7 +74,7 @@ public class InProcessBuilderTest
         }
 
         // And after it's been closed, it should've cleaned up after itself.
-        assertThat( workDir.list().length, equalTo( 0 ) );
+        assertThat( Arrays.toString( workDir.list() ), workDir.list().length, equalTo( 0 ) );
     }
 
     @Test
