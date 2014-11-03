@@ -95,6 +95,10 @@ public class UserService
         {
             return output.badRequestWithoutLegacyStacktrace( e );
         }
+        catch ( IllegalArgumentException e )
+        {
+            return output.response( UNPROCESSABLE, new ExceptionRepresentation( new Neo4jError( Status.Request.Invalid, e.getMessage() ) ) );
+        }
         catch ( TooManyAuthenticationAttemptsException e )
         {
             return output.response( TOO_MANY, new ExceptionRepresentation( new Neo4jError( e.status(), e ) ) );
@@ -139,6 +143,10 @@ public class UserService
         {
             return output.badRequestWithoutLegacyStacktrace( e );
         }
+        catch ( IllegalArgumentException e )
+        {
+            return output.response( UNPROCESSABLE, new ExceptionRepresentation( new Neo4jError( Status.Request.Invalid, e.getMessage() ) ) );
+        }
         catch ( TooManyAuthenticationAttemptsException e )
         {
             return output.response( TOO_MANY, new ExceptionRepresentation( new Neo4jError( e.status(), e ) ) );
@@ -149,16 +157,16 @@ public class UserService
         }
     }
 
-    private String getString( Map<String, Object> data, String key ) throws BadInputException
+    private String getString( Map<String, Object> data, String key ) throws IllegalArgumentException
     {
         Object o = data.get( key );
         if( o == null )
         {
-            throw new BadInputException( String.format("Required parameter '%s' is missing.", key) );
+            throw new IllegalArgumentException( String.format("Required parameter '%s' is missing.", key) );
         }
         if(!(o instanceof String))
         {
-            throw new BadInputException( String.format("Expected '%s' to be a string.", key) );
+            throw new IllegalArgumentException( String.format("Expected '%s' to be a string.", key) );
         }
 
         return (String)o;
