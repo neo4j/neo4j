@@ -73,4 +73,13 @@ public class EntityStoreUpdaterStep<T extends PrimitiveRecord> extends ExecutorS
         super.addStatsProviders( providers );
         providers.add( monitor );
     }
+
+    @Override
+    protected void done()
+    {
+        // Stop the I/O monitor, since the stats in there is based on time passed since the start
+        // and bytes written. NodeStage and CalculateDenseNodesStage can be run in parallel so if
+        // NodeStage completes before CalculateDenseNodesStage then we want to stop the time in the I/O monitor.
+        monitor.stop();
+    }
 }

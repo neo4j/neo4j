@@ -39,7 +39,7 @@ public class DetailedExecutionMonitor extends PollingExecutionMonitor
 
     public DetailedExecutionMonitor( PrintStream out )
     {
-        this( out, SECONDS.toMillis( 5 ) );
+        this( out, 5 );
     }
 
     public DetailedExecutionMonitor( PrintStream out, long intervalSeconds )
