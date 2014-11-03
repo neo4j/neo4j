@@ -19,18 +19,12 @@
  */
 package org.neo4j.helpers;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.net.URL;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -39,9 +33,6 @@ import java.util.NoSuchElementException;
 import java.util.ServiceLoader;
 import java.util.Set;
 
-import org.neo4j.helpers.collection.FilteringIterable;
-import org.neo4j.helpers.collection.IterableWrapper;
-import org.neo4j.helpers.collection.NestingIterable;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 
 /**
@@ -200,10 +191,6 @@ public abstract class Service
     {
         Iterable<T> loader;
         if ( null != (loader = java6Loader( type )) )
-        {
-            return loader;
-        }
-        if ( null != (loader = ourOwnLoader( type )) )
         {
             return loader;
         }
@@ -369,84 +356,5 @@ public abstract class Service
                 servicesMap.put( instance.getClass().getName(), instance );
             }
         }
-    }
-
-    // TODO find out if this is ever used in practice
-    private static <T> Iterable<T> ourOwnLoader( final Class<T> type )
-    {
-        Collection<URL> urls = new HashSet<>();
-        try
-        {
-            Enumeration<URL> resources = Thread.currentThread().getContextClassLoader()
-                    .getResources( "META-INF/services/" + type.getName() );
-            while ( resources.hasMoreElements() )
-            {
-                urls.add( resources.nextElement() );
-            }
-        }
-        catch ( IOException e )
-        {
-            return null;
-        }
-        return new NestingIterable<T, BufferedReader>(
-                FilteringIterable.notNull( new IterableWrapper<BufferedReader, URL>( urls )
-                {
-                    @Override
-                    protected BufferedReader underlyingObjectToObject( URL url )
-                    {
-                        try
-                        {
-                            return new BufferedReader( new InputStreamReader( url.openStream(), "utf-8" ) );
-                        }
-                        catch ( IOException e )
-                        {
-                            return null;
-                        }
-                    }
-                } ) )
-        {
-            @Override
-            protected Iterator<T> createNestedIterator( final BufferedReader input )
-            {
-                return new PrefetchingIterator<T>()
-                {
-                    @Override
-                    protected T fetchNextOrNull()
-                    {
-                        try
-                        {
-                            String line;
-                            while ( null != (line = input.readLine()) )
-                            {
-                                try
-                                {
-                                    return type.cast( Class.forName( line ).newInstance() );
-                                }
-                                catch ( Exception | LinkageError ignore )
-                                {
-                                }
-                            }
-                            input.close();
-                            return null;
-                        }
-                        catch ( IOException e )
-                        {
-                            return null;
-                        }
-                    }
-
-                    /* Finalizer - close the input stream.
-                     * Prevent leakage of open files. Finalizers impact GC performance,
-                     * but there are expected to be few of these objects.
-                     */
-                    @Override
-                    protected void finalize() throws Throwable
-                    {
-                        input.close();
-                        super.finalize();
-                    }
-                };
-            }
-        };
     }
 }
