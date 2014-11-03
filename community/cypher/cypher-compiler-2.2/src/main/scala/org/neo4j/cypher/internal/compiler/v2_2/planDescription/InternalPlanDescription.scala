@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planDescription
 import org.neo4j.cypher.internal.compiler.v2_2.commands
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.{Pipe, RonjaPipe, EntityByIdRhs => PipeEntityByIdRhs}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments._
+import org.neo4j.graphdb.Direction
 
 /**
  * Abstract description of an execution plan
@@ -85,6 +86,7 @@ object InternalPlanDescription {
     case class Version(value: String) extends Argument {
       override def name = "version"
     }
+    case class ExpandExpression(from: String, relName: String, to: String, direction: Direction, varLength: Boolean = false) extends Argument
   }
 }
 

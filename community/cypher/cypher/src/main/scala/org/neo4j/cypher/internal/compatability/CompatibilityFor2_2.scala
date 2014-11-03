@@ -212,38 +212,48 @@ case class ExecutionResultWrapperFor2_2(inner: InternalExecutionResult, version:
 
   def hasNext = exceptionHandlerFor2_2.runSafely{inner.hasNext}
 
-  def convert(i: InternalPlanDescription): PlanDescription = exceptionHandlerFor2_2.runSafely{CompatibilityPlanDescription(i)}
+  def convert(i: InternalPlanDescription): PlanDescription = exceptionHandlerFor2_2.runSafely {
+    CompatibilityPlanDescription(i, version)
+  }
 }
 
-case class CompatibilityPlanDescription(inner: InternalPlanDescription) extends PlanDescription {
+case class CompatibilityPlanDescription(inner: InternalPlanDescription, version: CypherVersion) extends PlanDescription {
   self =>
   def children = exceptionHandlerFor2_2.runSafely {
-    inner.children.toSeq.map(CompatibilityPlanDescription.apply)
+    inner.children.toSeq.map(CompatibilityPlanDescription.apply(_, version))
   }
 
-  def arguments: Map[String, AnyRef] =  exceptionHandlerFor2_2.runSafely {
+  def arguments: Map[String, AnyRef] = exceptionHandlerFor2_2.runSafely {
     inner.arguments.map {
       arg => arg.name -> PlanDescriptionArgumentSerializer.serialize(arg)
     }.toMap
   }
 
-  def hasProfilerStatistics =  exceptionHandlerFor2_2.runSafely {inner.arguments.exists(_.isInstanceOf[DbHits])}
+  def hasProfilerStatistics = exceptionHandlerFor2_2.runSafely {
+    inner.arguments.exists(_.isInstanceOf[DbHits])
+  }
 
-  def name =  exceptionHandlerFor2_2.runSafely {inner.name}
+  def name = exceptionHandlerFor2_2.runSafely {
+    inner.name
+  }
 
-  def asJava: javacompat.PlanDescription =  exceptionHandlerFor2_2.runSafely {asJava(self)}
+  def asJava: javacompat.PlanDescription = exceptionHandlerFor2_2.runSafely {
+    asJava(self)
+  }
 
-  override def toString: String =  exceptionHandlerFor2_2.runSafely {inner.toString}
+  override def toString: String = exceptionHandlerFor2_2.runSafely {
+    s"Compiler CYPHER ${version.name}\n\n$inner.toString"
+  }
 
-  def asJava(in: PlanDescription): javacompat.PlanDescription =  new javacompat.PlanDescription {
-      def getProfilerStatistics: ProfilerStatistics = new ProfilerStatistics {
-        def getDbHits: Long = extract { case DbHits(count) => count}
+  def asJava(in: PlanDescription): javacompat.PlanDescription = new javacompat.PlanDescription {
+    def getProfilerStatistics: ProfilerStatistics = new ProfilerStatistics {
+      def getDbHits: Long = extract { case DbHits(count) => count}
 
-        def getRows: Long = extract { case Rows(count) => count}
+      def getRows: Long = extract { case Rows(count) => count}
 
-        private def extract(f: PartialFunction[Argument, Long]): Long =
-          inner.arguments.collectFirst(f).getOrElse(throw new InternalException("Don't have profiler stats"))
-      }
+      private def extract(f: PartialFunction[Argument, Long]): Long =
+        inner.arguments.collectFirst(f).getOrElse(throw new InternalException("Don't have profiler stats"))
+    }
 
     def getName: String = name
 
@@ -255,7 +265,7 @@ case class CompatibilityPlanDescription(inner: InternalPlanDescription) extends 
 
     override def toString: String = self.toString
   }
-}
+ }
 
 case class CompatibilityFor2_2Cost(graph: GraphDatabaseService,
                                    queryCacheSize: Int,

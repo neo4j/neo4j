@@ -25,6 +25,7 @@ import scala.collection.mutable
 
 
 object renderDetails extends (InternalPlanDescription => String) {
+  val UNNAMED_PATTERN = """  (UNNAMED|FRESHID|AGGREGATION)\d+"""
 
   def apply(plan: InternalPlanDescription): String = {
     val plans: Seq[InternalPlanDescription] = plan.flatten
@@ -43,8 +44,9 @@ object renderDetails extends (InternalPlanDescription => String) {
           case x
             if !x.isInstanceOf[Rows] &&
               !x.isInstanceOf[DbHits] &&
-              !x.isInstanceOf[EstimatedRows] => PlanDescriptionArgumentSerializer.serialize(x)
-        }.mkString("; "))
+              !x.isInstanceOf[EstimatedRows] &&
+              !x.isInstanceOf[Version] => PlanDescriptionArgumentSerializer.serialize(x)
+        }.mkString("; ").replaceAll(UNNAMED_PATTERN, ""))
 
         Seq("Operator" -> name, "EstimatedRows" -> estimatedRows, "Rows" -> rows,
           "DbHits" -> dbHits, "Identifiers" -> ids, "Other" -> other)
