@@ -41,7 +41,6 @@ public class CsvInput implements Input
     private final IdType idType;
     private final IdMapping idMapping;
     private final Configuration config;
-
     private final int[] delimiter;
 
     public CsvInput(

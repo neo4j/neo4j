@@ -63,8 +63,8 @@ public class Inputs
             Configuration configuration )
     {
         return new CsvInput(
-                DataFactories.file( nodes ), DataFactories.defaultFormatNodeFileHeader(),
-                DataFactories.file( relationships ), DataFactories.defaultFormatRelationshipFileHeader(),
+                DataFactories.data( nodes ), DataFactories.defaultFormatNodeFileHeader(),
+                DataFactories.data( relationships ), DataFactories.defaultFormatRelationshipFileHeader(),
                 idType, configuration );
     }
 }

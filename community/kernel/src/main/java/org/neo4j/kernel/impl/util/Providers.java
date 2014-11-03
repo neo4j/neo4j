@@ -23,7 +23,7 @@ import org.neo4j.helpers.Provider;
 
 public class Providers
 {
-    public static <T> Provider<T> singletonProvider( final T value)
+    public static <T> Provider<T> singletonProvider( final T value )
     {
         return new Provider<T>()
         {
