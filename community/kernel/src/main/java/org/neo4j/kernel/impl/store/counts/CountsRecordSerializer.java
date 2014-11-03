@@ -34,7 +34,7 @@ import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipKey;
 
 /**
  * Node Key:
- *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
+ *  0 1 2 3 4 5 6 7 8 9 A B C D E F
  * [x, , , , , , , , , , , ,x,x,x,x]
  *  _                       _ _ _ _
  *  |                          |
@@ -43,7 +43,7 @@ import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipKey;
  * <p/>
  *
  * Relationship Key:
- *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
+ *  0 1 2 3 4 5 6 7 8 9 A B C D E F
  * [x, ,x,x,x,x, ,x,x,x,x, ,x,x,x,x]
  *  _   _ _ _ _   _ _ _ _   _ _ _ _
  *  |      |         |         |
@@ -53,30 +53,39 @@ import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipKey;
  * <p/>
  *
  * Index Key:
- *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
+ *  0 1 2 3 4 5 6 7 8 9 A B C D E F
  * [x, , , , , , ,x,x,x,x, ,x,x,x,x]
  *  _             _ _ _ _   _ _ _ _
  *  |                |         |
  *  entry       property key   label
- *  type             id        id
- *  id
+ *  type id          id        id
  * <p/>
  *
  * Count value:
- *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
+ *  0 1 2 3 4 5 6 7 8 9 A B C D E F
  * [ , , , , , , , ,x,x,x,x,x,x,x,x]
- *  _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
- *  |               |
- *  updates         size
+ *                  _ _ _ _ _ _ _ _
+ *                   |
+ *                  value
  * <p/>
  *
- * Sample value:
- *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
- * [x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x]
+ * Index count:
+ *  0 1 2 3 4 5 6 7 8 9 A B C D E F
+ * [u,u,u,u,u,u,u,u,s,s,s,s,s,s,s,s]
  *  _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
  *  |               |
- *  unique          size
+ *  updates seen    index size
  * <p/>
+ *
+ * Index sample:
+ *  0 1 2 3 4 5 6 7 8 9 A B C D E F
+ * [u,u,u,u,u,u,u,u,s,s,s,s,s,s,s,s]
+ *  _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+ *  |               |
+ *  unique count    sample size
+ * <p/>
+ *
+ * 'entry type' - see {@link org.neo4j.kernel.impl.store.counts.CountsKeyType}
  */
 public final class CountsRecordSerializer implements KeyValueRecordSerializer<CountsKey, DoubleLongRegister>
 {

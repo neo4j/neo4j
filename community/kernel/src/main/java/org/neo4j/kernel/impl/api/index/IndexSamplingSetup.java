@@ -65,7 +65,7 @@ public class IndexSamplingSetup
         return new IndexSamplingController( samplingConfig, jobFactory, jobQueue, jobTracker, snapshotProvider );
     }
 
-    public ValueSampler createValueSample( boolean unique )
+    public ValueSampler createValueSampler( boolean unique )
     {
         return unique ? new UniqueIndexSampler() : new NonUniqueIndexSampler( samplingConfig.bufferSize() );
     }

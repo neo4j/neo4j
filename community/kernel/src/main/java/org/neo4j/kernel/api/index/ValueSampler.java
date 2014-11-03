@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.neo4j.register.Register;
+import static org.neo4j.register.Register.DoubleLong;
 
 public interface ValueSampler
 {
@@ -28,5 +28,6 @@ public interface ValueSampler
     void include( String value );
     void exclude( String value );
 
-    long result( Register.DoubleLongRegister register );
+    /** Writes sampling result in the register, and returns the size of the index. */
+    long result( DoubleLong.Out register );
 }

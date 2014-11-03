@@ -75,7 +75,7 @@ public class IndexProxySetup
         // TODO: This is here because there is a circular dependency from PopulatingIndexProxy to FlippableIndexProxy
         final String indexUserDescription = indexUserDescription( descriptor, providerDescriptor );
         final IndexConfiguration config = new IndexConfiguration( constraint );
-        ValueSampler sampler = samplingSetup.createValueSample( constraint );
+        ValueSampler sampler = samplingSetup.createValueSampler( constraint );
         IndexPopulator populator = populatorFromProvider( providerDescriptor, ruleId, descriptor, config, sampler );
 
         FailedIndexProxyFactory failureDelegateFactory = new FailedPopulatingIndexProxyFactory(
@@ -160,7 +160,7 @@ public class IndexProxySetup
                                               IndexPopulationFailure populationFailure )
     {
         IndexConfiguration config = new IndexConfiguration( unique );
-        ValueSampler sampler = samplingSetup.createValueSample( unique );
+        ValueSampler sampler = samplingSetup.createValueSampler( unique );
         IndexPopulator indexPopulator =
                 populatorFromProvider( providerDescriptor, ruleId, descriptor, config, sampler );
         String indexUserDescription = indexUserDescription(descriptor, providerDescriptor);

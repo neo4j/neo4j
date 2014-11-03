@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.api.index.sampling;
 import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.register.Register;
 
+import static org.neo4j.register.Register.DoubleLong;
+
 public class UniqueIndexSampler implements ValueSampler
 {
     long count = 0;
@@ -45,7 +47,7 @@ public class UniqueIndexSampler implements ValueSampler
     }
 
     @Override
-    public long result( Register.DoubleLongRegister register )
+    public long result( DoubleLong.Out register )
     {
         register.write( count, count );
         return count;

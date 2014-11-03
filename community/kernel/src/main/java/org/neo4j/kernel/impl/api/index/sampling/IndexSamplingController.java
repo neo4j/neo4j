@@ -166,23 +166,34 @@ public class IndexSamplingController
 
     private void sampleIndexOnTracker( IndexMap indexMap, IndexDescriptor descriptor )
     {
-        IndexProxy proxy = indexMap.getIndexProxy( descriptor );
-        if ( proxy == null || proxy.getState() != InternalIndexState.ONLINE )
+        IndexSamplingJob job = createSamplingJob( indexMap, descriptor );
+        if ( job != null )
         {
-            return;
+            jobTracker.scheduleSamplingJob( job );
         }
-
-        jobTracker.scheduleSamplingJob( jobFactory.create( config, proxy ) );
     }
 
     private void sampleIndexOnCurrentThread( IndexMap indexMap, IndexDescriptor descriptor )
     {
+        IndexSamplingJob job = createSamplingJob( indexMap, descriptor );
+        if ( job != null )
+        {
+            job.run();
+        }
+    }
+
+    private IndexSamplingJob createSamplingJob( IndexMap indexMap, IndexDescriptor descriptor )
+    {
         IndexProxy proxy = indexMap.getIndexProxy( descriptor );
+        IndexSamplingJob job;
         if ( proxy == null || proxy.getState() != InternalIndexState.ONLINE )
         {
-            return;
+            job = null;
         }
-
-        jobFactory.create( config, proxy ).run();
+        else
+        {
+            job = jobFactory.create( config, proxy );
+        }
+        return job;
     }
 }

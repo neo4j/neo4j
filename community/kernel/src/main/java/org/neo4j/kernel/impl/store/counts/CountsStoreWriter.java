@@ -152,7 +152,7 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
 
 
     // See CountsRecordSerializer for format
-    private void write( CountsKeyType keyType, int startLabelId, int relTypeId, int endLabelId, long first, long second )
+    private void write( CountsKeyType keyType, int firstId, int secondId, int thirdId, long first, long second )
     {
         try
         {
@@ -171,11 +171,11 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
 
                 page.putByte( keyType.code );
                 page.putByte( (byte) 0 );
-                page.putInt( startLabelId );
+                page.putInt( firstId );
                 page.putByte( (byte) 0 );
-                page.putInt( relTypeId );
+                page.putInt( secondId );
                 page.putByte( (byte) 0 );
-                page.putInt( endLabelId );
+                page.putInt( thirdId );
 
                 page.putLong( first );
                 page.putLong( second );

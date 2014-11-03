@@ -23,6 +23,8 @@ import org.neo4j.helpers.collection.MultiSet;
 import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.register.Register;
 
+import static org.neo4j.register.Register.DoubleLong;
+
 public class NonUniqueIndexSampler implements ValueSampler
 {
     private static final int INITIAL_SIZE = 1 << 16;
@@ -75,7 +77,7 @@ public class NonUniqueIndexSampler implements ValueSampler
     }
 
     @Override
-    public long result( Register.DoubleLongRegister register )
+    public long result( DoubleLong.Out register )
     {
         if ( !values.isEmpty() )
         {
