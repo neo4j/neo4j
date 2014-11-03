@@ -21,6 +21,8 @@ package org.neo4j.tooling.batchimport;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Map.Entry;
 
 import org.neo4j.function.Function;
 import org.neo4j.helpers.Args;
@@ -30,6 +32,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.storemigration.FileOperation;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
+import org.neo4j.kernel.impl.util.Converters;
+import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.logging.SystemOutLogging;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
@@ -40,11 +44,9 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 
-import static org.neo4j.tooling.batchimport.Converters.toIdType;
-import static org.neo4j.tooling.batchimport.Converters.withDefault;
-import static org.neo4j.tooling.batchimport.Validators.CONTAINS_NO_EXISTING_DATABASE;
-import static org.neo4j.tooling.batchimport.Validators.DIRECTORY_IS_WRITABLE;
-import static org.neo4j.tooling.batchimport.Validators.FILE_EXISTS;
+import static java.io.File.pathSeparator;
+
+import static org.neo4j.kernel.impl.util.Converters.withDefault;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.TABS;
@@ -56,10 +58,17 @@ import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultF
  */
 public class BatchImporterTool
 {
+    private static final Function<String,IdType> TO_ID_TYPE = new Function<String,IdType>()
+    {
+        @Override
+        public IdType apply( String from )
+        {
+            return IdType.valueOf( from.toUpperCase() );
+        }
+    };
+
     private static final String NODE_DATA = "nodes";
     private static final String RELATIONSHIP_DATA = "relationships";
-    private static final String NODE_HEADER = "nodes-header";
-    private static final String RELATIONSHIP_HEADER = "relationships-header";
     private static final String STORE_DIR = "into";
     private static final String DELIMITER = "delimiter";
     private static final String ARRAY_DELIMITER = "array-delimiter";
@@ -69,28 +78,28 @@ public class BatchImporterTool
     public static void main( String[] incomingArguments )
     {
         Args args = new Args( incomingArguments );
+        if ( asksForUsage( args ) )
+        {
+            printUsage();
+            return;
+        }
 
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        File storeDir, nodesFile, relationshipsFile, nodeHeaderFile, relationshipHeaderFile;
-        storeDir = parseArgument( args, STORE_DIR, Converters.<File>mandatory(), Converters.toFile(),
-                DIRECTORY_IS_WRITABLE, CONTAINS_NO_EXISTING_DATABASE );
-        nodesFile = parseArgument( args, NODE_DATA, Converters.<File>mandatory(), Converters.toFile(),
-                FILE_EXISTS );
-        relationshipsFile = parseArgument( args, RELATIONSHIP_DATA, Converters.<File>mandatory(),
-                Converters.toFile(), FILE_EXISTS );
-        nodeHeaderFile = parseArgument( args, NODE_HEADER, Converters.<File>optional(),
-                Converters.toFile(), FILE_EXISTS );
-        relationshipHeaderFile = parseArgument( args, RELATIONSHIP_HEADER, Converters.<File>optional(),
-                Converters.toFile(), FILE_EXISTS );
-        // If we specify headers as the same as the data files it's the same as not specifying header
-        // files at all since we will read headers off of the top of the data files.
-        if ( nodeHeaderFile != null && nodeHeaderFile.equals( nodesFile ) )
+        File storeDir;
+        File[] nodesFiles, relationshipsFiles;
+        try
         {
-            nodeHeaderFile = null;
+            storeDir = args.interpretOption( STORE_DIR, Converters.<File>mandatory(), Converters.toFile(),
+                    Validators.DIRECTORY_IS_WRITABLE, Validators.CONTAINS_NO_EXISTING_DATABASE );
+            nodesFiles = args.interpretOption( NODE_DATA, Converters.<File[]>mandatory(), Converters.toFiles(),
+                    Validators.FILES_EXISTS, Validators.<File>atLeast( 1 ) );
+            relationshipsFiles = args.interpretOption( RELATIONSHIP_DATA, Converters.<File[]>mandatory(),
+                    Converters.toFiles(), Validators.FILES_EXISTS, Validators.<File>atLeast( 1 ) );
         }
-        if ( relationshipHeaderFile != null && relationshipHeaderFile.equals( relationshipsFile ) )
+        catch ( IllegalArgumentException e )
         {
-            relationshipHeaderFile = null;
+            printUsage();
+            throw new RuntimeException( e ); // throw in order to have process exit with !0
         }
 
         BatchImporter importer = new ParallelBatchImporter( storeDir.getPath(),
@@ -101,17 +110,13 @@ public class BatchImporterTool
                 ExecutionMonitors.defaultVisible() );
         Input input = new CsvInput(
                 // TODO Ability to specify multiple files?
-                DataFactories.file( nodesFile ),
-                nodeHeaderFile != null
-                        ? defaultFormatNodeFileHeader( nodeHeaderFile )
-                        : defaultFormatNodeFileHeader(),
+                DataFactories.data( nodesFiles ),
+                defaultFormatNodeFileHeader(),
                 // TODO Ability to specify multiple files?
-                DataFactories.file( relationshipsFile ),
-                relationshipHeaderFile != null
-                        ? defaultFormatRelationshipFileHeader( relationshipHeaderFile )
-                        : defaultFormatRelationshipFileHeader(),
-                parseArgument( args, ID_TYPE, withDefault( IdType.STRING ), toIdType() ),
-                csvConfiguration( args, nodesFile ) );
+                DataFactories.data( relationshipsFiles ),
+                defaultFormatRelationshipFileHeader(),
+                args.interpretOption( ID_TYPE, withDefault( IdType.STRING ), TO_ID_TYPE ),
+                csvConfiguration( args, nodesFiles[0] ) );
         boolean success = false;
         try
         {
@@ -140,13 +145,75 @@ public class BatchImporterTool
         }
     }
 
+    private static void printUsage()
+    {
+        System.out.println( "Usage:" );
+        printArgumentUsage( "--into <store-dir>", "database directory to import into. " +
+                "Must not contain existing database." );
+        printArgumentUsage( "--nodes <file1>" + pathSeparator + "<file2>" + pathSeparator + "...",
+                "Node CSV header and data. Multiple files will be logically seen as one big file " +
+                "from the perspective of the importer. First line must contain the header." );
+        printArgumentUsage( "--relationships <file1>" + pathSeparator + "<file2>" + pathSeparator + "...",
+                "Relationship CSV header and data. Multiple files will be logically seen as one big file " +
+                "from the perspective of the importer. First line must contain the header." );
+        printArgumentUsage( "--delimiter <delimiter-character>",
+                "Delimiter character between values in CSV data." );
+        printArgumentUsage( "--array-delimiter <array-delimiter-character>",
+                "Delimiter character between array elements within a value in CSV data." );
+        printArgumentUsage( "--quote <quotation-character>",
+                "Character to treat as quotation character in values in CSV data. " +
+                "Quotes inside quotes like '\"\"' and '\\\"' are supported." );
+        printArgumentUsage( "--id-type <id-type>",
+                "One out of " + Arrays.toString( IdType.values() ) + " and specifies how ids in node/relationship " +
+                "input files are treated.\n" +
+                IdType.STRING + ": arbitrary strings for identifying nodes.\n" +
+                IdType.ACTUAL + ": (advanced) actual node ids, starting from 0" );
+    }
+
+    private static void printArgumentUsage( String usage, String description )
+    {
+        System.out.println( usage );
+        for ( String line : Args.splitLongLine( description, 80 ) )
+        {
+            System.out.println( "\t" + line );
+        }
+    }
+
+    private static boolean asksForUsage( Args args )
+    {
+        for ( String orphan : args.orphans() )
+        {
+            if ( isHelpKey( orphan ) )
+            {
+                return true;
+            }
+        }
+
+        for ( Entry<String,String> option : args.asMap().entrySet() )
+        {
+            if ( isHelpKey( option.getKey() ) )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isHelpKey( String key )
+    {
+        return key.equals( "?" ) || key.equals( "help" );
+    }
+
     private static Configuration csvConfiguration( Args args, File nodesFile )
     {
         String name = nodesFile.getName().toLowerCase();
         final Configuration defaultConfiguration = name.endsWith( ".tsv" ) ? TABS : COMMAS;
-        final Character specificDelimiter = parseCharArgument( args, DELIMITER );
-        final Character specificArrayDelimiter = parseCharArgument( args, ARRAY_DELIMITER );
-        final Character specificQuote = parseCharArgument( args, QUOTE );
+        final Character specificDelimiter =
+                args.interpretOption( DELIMITER, Converters.<Character>optional(), Converters.toCharacter() );
+        final Character specificArrayDelimiter =
+                args.interpretOption( ARRAY_DELIMITER, Converters.<Character>optional(), Converters.toCharacter() );
+        final Character specificQuote =
+                args.interpretOption( QUOTE, Converters.<Character>optional(), Converters.toCharacter() );
         return new Configuration()
         {
             @Override
@@ -173,35 +240,5 @@ public class BatchImporterTool
                         : defaultConfiguration.quotationCharacter();
             }
         };
-    }
-
-    @SafeVarargs
-    private static <T> T parseArgument( Args args, String key, Function<String,T> defaultValue,
-            Function<String,T> converter, Validator<T>... validators )
-    {
-        T value;
-        if ( !args.has( key ) )
-        {
-            value = defaultValue.apply( key );
-        }
-        else
-        {
-            String stringValue = args.get( key );
-            value = converter.apply( stringValue );
-        }
-
-        if ( value != null )
-        {
-            for ( Validator<T> validator : validators )
-            {
-                validator.validate( value );
-            }
-        }
-        return value;
-    }
-
-    private static Character parseCharArgument( Args args, String key )
-    {
-        return parseArgument( args, key, Converters.<Character>optional(), Converters.toCharacter() );
     }
 }

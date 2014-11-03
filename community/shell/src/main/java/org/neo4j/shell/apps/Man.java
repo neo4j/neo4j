@@ -22,7 +22,6 @@ package org.neo4j.shell.apps;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
@@ -39,6 +38,8 @@ import org.neo4j.shell.impl.AbstractApp;
 import org.neo4j.shell.impl.AbstractAppServer;
 import org.neo4j.shell.impl.ClassLister;
 
+import static org.neo4j.helpers.Args.splitLongLine;
+
 /**
  * Prints a short manual for an {@link App}.
  */
@@ -48,13 +49,14 @@ public class Man extends AbstractApp
     public static final int CONSOLE_WIDTH = 80;
 
     private static Collection<String> availableCommands;
-    
+
     public Man()
     {
         addOptionDefinition( "l", new OptionDefinition( OptionValueType.NONE,
                 "Display the commands in a vertical list" ) );
     }
 
+    @Override
     public Continuation execute( AppCommandParser parser, Session session,
         Output out ) throws Exception
     {
@@ -67,7 +69,7 @@ public class Man extends AbstractApp
 
         App app = this.getApp( parser );
         out.println( "" );
-        for ( String line : splitDescription( fixDesciption( app.getDescription() ),
+        for ( String line : splitLongLine( fixDesciption( app.getDescription() ),
                 CONSOLE_WIDTH ) )
         {
             out.println( line );
@@ -78,7 +80,7 @@ public class Man extends AbstractApp
         {
             hasOptions = true;
             String description = fixDesciption( app.getDescription( option ) );
-            String[] descriptionLines = splitDescription( description, CONSOLE_WIDTH );
+            String[] descriptionLines = splitLongLine( description, CONSOLE_WIDTH );
             for ( int i = 0; i < descriptionLines.length; i++ )
             {
                 String line = "";
@@ -97,44 +99,6 @@ public class Man extends AbstractApp
             println( out, "" );
         }
         return Continuation.INPUT_COMPLETE;
-    }
-
-    private static String[] splitDescription( String description, int maxLength )
-    {
-        List<String> lines = new ArrayList<String>();
-        while ( description.length() > 0 )
-        {
-            String line = description.substring( 0, Math.min( maxLength, description.length() ) );
-            int position = line.indexOf( "\n" );
-            if ( position > -1 )
-            {
-                line = description.substring( 0, position );
-                lines.add( line );
-                description = description.substring( position );
-                if ( description.length() > 0 )
-                {
-                    description = description.substring( 1 );
-                }
-            }
-            else
-            {
-                position = description.length() > maxLength ?
-                        findSpaceBefore( description, maxLength ) : description.length();
-                line = description.substring( 0, position );
-                lines.add( line );
-                description = description.substring( position );
-            }
-        }
-        return lines.toArray( new String[lines.size()] );
-    }
-
-    private static int findSpaceBefore( String description, int position )
-    {
-        while ( !Character.isWhitespace( description.charAt( position ) ) )
-        {
-            position--;
-        }
-        return position + 1;
     }
 
     private static String getShortUsageString()

@@ -17,12 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.tooling.batchimport;
+package org.neo4j.kernel.impl.util;
 
 import java.io.File;
 
 import org.neo4j.function.Function;
-import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 
 public class Converters
 {
@@ -74,6 +73,24 @@ public class Converters
         };
     }
 
+    public static Function<String,File[]> toFiles()
+    {
+        return new Function<String,File[]>()
+        {
+            @Override
+            public File[] apply( String from )
+            {
+                String[] names = from.split( File.pathSeparator );
+                File[] file = new File[names.length];
+                for ( int i = 0; i < names.length; i++ )
+                {
+                    file[i] = new File( names[i] );
+                }
+                return file;
+            }
+        };
+    }
+
     public static Function<String,Character> toCharacter()
     {
         return new Function<String,Character>()
@@ -91,14 +108,14 @@ public class Converters
         };
     }
 
-    public static Function<String,IdType> toIdType()
+    public static Function<String,Integer> toInt()
     {
-        return new Function<String,IdType>()
+        return new Function<String,Integer>()
         {
             @Override
-            public IdType apply( String from )
+            public Integer apply( String from )
             {
-                return IdType.valueOf( from.toUpperCase() );
+                return new Integer( from );
             }
         };
     }

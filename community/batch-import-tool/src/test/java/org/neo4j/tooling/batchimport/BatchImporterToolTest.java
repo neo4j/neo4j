@@ -40,6 +40,7 @@ import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 
+import static java.io.File.pathSeparator;
 import static java.lang.System.currentTimeMillis;
 
 import static org.junit.Assert.assertEquals;
@@ -69,11 +70,13 @@ public class BatchImporterToolTest
         List<String> nodeIds = nodeIds();
         Configuration config = Configuration.COMMAS;
         BatchImporterTool.main( arguments(
-                "--into",                  directory.absolutePath(),
-                "--nodes",                 nodeData( false, config, nodeIds ).getAbsolutePath(),
-                "--relationships",         relationshipData( false, config, nodeIds ).getAbsolutePath(),
-                "--nodes-header",          nodeHeader( config ).getAbsolutePath(),
-                "--relationships-header",  relationshipHeader( config ).getAbsolutePath() ) );
+                "--into", directory.absolutePath(),
+                "--nodes",
+                    nodeHeader( config ).getAbsolutePath() + pathSeparator +
+                    nodeData( false, config, nodeIds ).getAbsolutePath(),
+                "--relationships",
+                    relationshipHeader( config ).getAbsolutePath() + pathSeparator +
+                    relationshipData( false, config, nodeIds ).getAbsolutePath() ) );
 
         // THEN
         verifyData();

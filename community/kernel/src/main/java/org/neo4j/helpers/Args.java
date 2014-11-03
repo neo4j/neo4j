@@ -24,6 +24,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.function.Function;
+import org.neo4j.kernel.impl.util.Validator;
+
 /**
  * Parses a String[] argument from a main-method. It expects values to be either
  * key/value pairs or just "orphan" values (w/o a key associated).
@@ -270,5 +273,100 @@ public class Args
             usage.append( ' ' ).append( param );
         }
         return usage.toString();
+    }
+
+    /**
+     * Useful for printing usage where the description itself shouldn't have knowledge about the width
+     * of the window where it's printed. Existing new-line characters in the text are honored.
+     *
+     * @param description text to split, if needed.
+     * @param maxLength line length to split at, actually closest previous white space.
+     * @return description split into multiple lines if need be.
+     */
+    public static String[] splitLongLine( String description, int maxLength )
+    {
+        List<String> lines = new ArrayList<>();
+        while ( description.length() > 0 )
+        {
+            String line = description.substring( 0, Math.min( maxLength, description.length() ) );
+            int position = line.indexOf( "\n" );
+            if ( position > -1 )
+            {
+                line = description.substring( 0, position );
+                lines.add( line );
+                description = description.substring( position );
+                if ( description.length() > 0 )
+                {
+                    description = description.substring( 1 );
+                }
+            }
+            else
+            {
+                position = description.length() > maxLength ?
+                        findSpaceBefore( description, maxLength ) : description.length();
+                line = description.substring( 0, position );
+                lines.add( line );
+                description = description.substring( position );
+            }
+        }
+        return lines.toArray( new String[lines.size()] );
+    }
+
+    private static int findSpaceBefore( String description, int position )
+    {
+        while ( !Character.isWhitespace( description.charAt( position ) ) )
+        {
+            position--;
+        }
+        return position + 1;
+    }
+
+    @SafeVarargs
+    public final <T> T interpretOption( String key, Function<String,T> defaultValue,
+            Function<String,T> converter, Validator<T>... validators )
+    {
+        T value;
+        if ( !has( key ) )
+        {
+            value = defaultValue.apply( key );
+        }
+        else
+        {
+            String stringValue = get( key );
+            value = converter.apply( stringValue );
+        }
+        return validated( value, validators );
+    }
+
+    @SafeVarargs
+    public final <T> T interpretOrphan( int index, Function<String,T> defaultValue,
+            Function<String,T> converter, Validator<T>... validators )
+    {
+        assert index >= 0;
+
+        T value;
+        if ( index >= orphans.size() )
+        {
+            value = defaultValue.apply( "argument at index " + index );
+        }
+        else
+        {
+            String stringValue = orphans.get( index );
+            value = converter.apply( stringValue );
+        }
+        return validated( value, validators );
+    }
+
+    @SafeVarargs
+    private final <T> T validated( T value, Validator<T>... validators )
+    {
+        if ( value != null )
+        {
+            for ( Validator<T> validator : validators )
+            {
+                validator.validate( value );
+            }
+        }
+        return value;
     }
 }

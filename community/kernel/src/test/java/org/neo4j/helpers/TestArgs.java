@@ -19,10 +19,15 @@
  */
 package org.neo4j.helpers;
 
+import org.junit.Test;
+
+import org.neo4j.kernel.impl.util.Converters;
+import org.neo4j.kernel.impl.util.Validator;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
-import org.junit.Test;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 public class TestArgs
 {
@@ -38,7 +43,7 @@ public class TestArgs
         assertTrue( args.has( "v" ) );
         assertTrue( args.orphans().isEmpty() );
     }
-    
+
     @Test
     public void testInterleavedEqualsArgsAndSplitKeyValue()
     {
@@ -48,12 +53,12 @@ public class TestArgs
         assertTrue( args.has( "v" ) );
         assertEquals( 1234, args.getNumber( "port", null ).intValue() );
         assertEquals( "Something", args.get( "name", null ) );
-        
+
         assertEquals( 2, args.orphans().size() );
         assertEquals( "param1", args.orphans().get( 0 ) );
         assertEquals( "param2", args.orphans().get( 1 ) );
     }
-    
+
     @Test
     public void testParameterWithDashValue()
     {
@@ -63,7 +68,7 @@ public class TestArgs
         assertEquals( "-", args.get ( "file", null ) );
         assertTrue( args.orphans().isEmpty() );
     }
-    
+
     @Test
     public void testEnum()
     {
@@ -72,7 +77,7 @@ public class TestArgs
         Enum<MyEnum> result = args.getEnum( MyEnum.class, "enum", MyEnum.first );
         assertEquals( MyEnum.second, result );
     }
-        
+
     @Test
     public void testEnumWithDefault()
     {
@@ -81,7 +86,7 @@ public class TestArgs
         MyEnum result = args.getEnum( MyEnum.class, "enum", MyEnum.third );
         assertEquals( MyEnum.third, result );
     }
-    
+
     @Test( expected = IllegalArgumentException.class )
     public void testEnumWithInvalidValue() throws Exception
     {
@@ -89,7 +94,41 @@ public class TestArgs
         Args args = new Args( line );
         args.getEnum( MyEnum.class, "myenum", MyEnum.third );
     }
-    
+
+    @Test
+    public void shouldInterpretOption() throws Exception
+    {
+        // GIVEN
+        int expectedValue = 42;
+        Args args = new Args( "--arg", String.valueOf( expectedValue ) );
+        @SuppressWarnings( "unchecked" )
+        Validator<Integer> validator = mock( Validator.class );
+
+        // WHEN
+        int value = args.interpretOption( "arg", Converters.<Integer>mandatory(), Converters.toInt(), validator );
+
+        // THEN
+        assertEquals( expectedValue, value );
+        verify( validator ).validate( expectedValue );
+    }
+
+    @Test
+    public void shouldInterpretOrphan() throws Exception
+    {
+        // GIVEN
+        int expectedValue = 42;
+        Args args = new Args( String.valueOf( expectedValue ) );
+        @SuppressWarnings( "unchecked" )
+        Validator<Integer> validator = mock( Validator.class );
+
+        // WHEN
+        int value = args.interpretOrphan( 0, Converters.<Integer>mandatory(), Converters.toInt(), validator );
+
+        // THEN
+        assertEquals( expectedValue, value );
+        verify( validator ).validate( expectedValue );
+    }
+
     private static enum MyEnum
     {
         first,
