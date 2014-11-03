@@ -51,7 +51,7 @@ import static org.neo4j.kernel.impl.store.counts.CountsKey.indexSampleKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.nodeKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKeyType.ENTITY_NODE;
-import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore.RECORD_SIZE;
+import static org.neo4j.kernel.impl.store.counts.CountsStore.RECORD_SIZE;
 import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.BASE_MINOR_VERSION;
 import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.META_HEADER_SIZE;
 import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.with;
@@ -304,7 +304,8 @@ public class CountsStoreTest
     private final int lastCommittedTxId = 42;
     private FileSystemAbstraction fs;
     private PageCache pageCache;
-    private final SortedKeyValueStoreHeader header = with( ALL_STORES_VERSION, BASE_TX_ID, BASE_MINOR_VERSION );
+    private final SortedKeyValueStoreHeader header =
+            with( RECORD_SIZE, ALL_STORES_VERSION, BASE_TX_ID, BASE_MINOR_VERSION );
 
     @Before
     public void setup()

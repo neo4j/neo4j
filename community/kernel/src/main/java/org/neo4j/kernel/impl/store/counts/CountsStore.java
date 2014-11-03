@@ -36,13 +36,14 @@ import static org.neo4j.register.Register.LongRegister;
 
 public class CountsStore extends SortedKeyValueStore<CountsKey,DoubleLongRegister>
 {
+    static final int RECORD_SIZE /*bytes*/ = 16 /*key*/ + 16 /*value*/;
     static final CountsRecordSerializer RECORD_SERIALIZER = CountsRecordSerializer.INSTANCE;
     static final CountsStoreWriter.Factory WRITER_FACTORY = new CountsStoreWriter.Factory();
 
     public CountsStore( FileSystemAbstraction fs, PageCache pageCache, File file, PagedFile pages,
                         SortedKeyValueStoreHeader header )
     {
-        super( fs, pageCache, file, pages, header, RECORD_SERIALIZER, WRITER_FACTORY );
+        super( fs, pageCache, file, pages, header, RECORD_SERIALIZER, RECORD_SIZE, WRITER_FACTORY );
     }
 
     public static void createEmpty( PageCache pageCache, File storeFile, SortedKeyValueStoreHeader header )
@@ -72,7 +73,7 @@ public class CountsStore extends SortedKeyValueStore<CountsKey,DoubleLongRegiste
         PagedFile pages = mapCountsStore( pageCache, storeFile );
         try
         {
-            SortedKeyValueStoreHeader header = SortedKeyValueStoreHeader.read( pages );
+            SortedKeyValueStoreHeader header = SortedKeyValueStoreHeader.read( RECORD_SIZE, pages );
             CountsStore countsStore = new CountsStore( fs, pageCache, storeFile, pages, header );
 
             final LongRegister keys = Registers.newLongRegister( 0 );

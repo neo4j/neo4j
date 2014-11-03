@@ -40,6 +40,7 @@ import static org.neo4j.kernel.impl.store.counts.CountsKey.indexCountsKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.indexSampleKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.nodeKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipKey;
+import static org.neo4j.kernel.impl.store.counts.CountsStore.RECORD_SIZE;
 import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.BASE_MINOR_VERSION;
 import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.with;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
@@ -169,10 +170,12 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
         // increase alpha minor version by 1 to ensure that we use alpha after creating the store
 
         File alpha = storeFile( file, ALPHA );
-        CountsStore.createEmpty( pageCache, alpha, with( storeVersion, BASE_TX_ID, BASE_MINOR_VERSION + 1 ) );
+        CountsStore.createEmpty( pageCache, alpha,
+                with( RECORD_SIZE, storeVersion, BASE_TX_ID, BASE_MINOR_VERSION + 1 ) );
 
         File beta = storeFile( file, BETA );
-        CountsStore.createEmpty( pageCache, beta, with( storeVersion, BASE_TX_ID, BASE_MINOR_VERSION ) );
+        CountsStore.createEmpty( pageCache, beta,
+                with( RECORD_SIZE, storeVersion, BASE_TX_ID, BASE_MINOR_VERSION ) );
     }
 
     public boolean acceptTx( long txId )

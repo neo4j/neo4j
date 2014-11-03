@@ -40,6 +40,7 @@ import static org.neo4j.kernel.impl.store.counts.CountsKeyType.ENTITY_NODE;
 import static org.neo4j.kernel.impl.store.counts.CountsKeyType.ENTITY_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.counts.CountsKeyType.INDEX_COUNTS;
 import static org.neo4j.kernel.impl.store.counts.CountsKeyType.INDEX_SAMPLE;
+import static org.neo4j.kernel.impl.store.counts.CountsStore.RECORD_SIZE;
 
 public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, Register.DoubleLongRegister>, CountsVisitor
 {
@@ -73,7 +74,7 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
         this.fs = fs;
         this.pageCache = pageCache;
         int pageSize = pageCache.pageSize();
-        if ( pageSize % SortedKeyValueStore.RECORD_SIZE != 0 )
+        if ( pageSize % RECORD_SIZE != 0 )
         {
             throw new IllegalStateException( "page size must a multiple of the record size" );
         }
@@ -86,7 +87,7 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
         {
             throw new IOException( "Could not acquire page." );
         }
-        page.setOffset( this.oldHeader.headerRecords() * SortedKeyValueStore.RECORD_SIZE );
+        page.setOffset( this.oldHeader.headerRecords() * RECORD_SIZE );
     }
 
     @Override

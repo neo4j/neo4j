@@ -44,6 +44,7 @@ import static org.neo4j.kernel.impl.store.counts.CountsKey.indexCountsKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.indexSampleKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.nodeKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipKey;
+import static org.neo4j.kernel.impl.store.counts.CountsStore.RECORD_SIZE;
 import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.BASE_MINOR_VERSION;
 import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.with;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
@@ -141,7 +142,8 @@ public class CountsStoreWriterTest
     @Rule
     public PageCacheRule pageCacheRule = new PageCacheRule();
 
-    private final SortedKeyValueStoreHeader emptyHeader = with( ALL_STORES_VERSION, BASE_TX_ID, BASE_MINOR_VERSION );
+    private final SortedKeyValueStoreHeader emptyHeader =
+            with( RECORD_SIZE, ALL_STORES_VERSION, BASE_TX_ID, BASE_MINOR_VERSION );
     private final File file = new File( "file" );
     private final long lastTxId = 100;
     private FileSystemAbstraction fs;

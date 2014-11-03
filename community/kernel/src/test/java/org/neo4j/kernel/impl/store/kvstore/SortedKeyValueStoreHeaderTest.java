@@ -45,7 +45,7 @@ public class SortedKeyValueStoreHeaderTest
     public void shouldCreateAnEmptyHeader()
     {
         // when
-        SortedKeyValueStoreHeader header = with( ALL_STORES_VERSION, BASE_TX_ID, BASE_MINOR_VERSION );
+        SortedKeyValueStoreHeader header = with( RECORD_SIZE, ALL_STORES_VERSION, BASE_TX_ID, BASE_MINOR_VERSION );
 
         // then
         assertEquals( BASE_TX_ID, header.lastTxId() );
@@ -58,7 +58,7 @@ public class SortedKeyValueStoreHeaderTest
     public void shouldUpdateHeader()
     {
         // given
-        SortedKeyValueStoreHeader header = with( ALL_STORES_VERSION, BASE_TX_ID, BASE_MINOR_VERSION );
+        SortedKeyValueStoreHeader header = with( RECORD_SIZE, ALL_STORES_VERSION, BASE_TX_ID, BASE_MINOR_VERSION );
 
         // when
         SortedKeyValueStoreHeader newHeader = header.update( 42, 24, 12 );
@@ -76,7 +76,7 @@ public class SortedKeyValueStoreHeaderTest
     {
         // given
         SortedKeyValueStoreHeader header =
-                with( ALL_STORES_VERSION, BASE_TX_ID, BASE_MINOR_VERSION ).update( 42, 24, 12 );
+                with( RECORD_SIZE, ALL_STORES_VERSION, BASE_TX_ID, BASE_MINOR_VERSION ).update( 42, 24, 12 );
 
         // when
         try
@@ -86,7 +86,7 @@ public class SortedKeyValueStoreHeaderTest
             pagedFile.flush();
 
             // then
-            assertEquals( header, SortedKeyValueStoreHeader.read( pagedFile ) );
+            assertEquals( header, SortedKeyValueStoreHeader.read( RECORD_SIZE, pagedFile ) );
         }
         finally
         {
@@ -102,6 +102,7 @@ public class SortedKeyValueStoreHeaderTest
     private File file = new File( "file" );
     private EphemeralFileSystemAbstraction fs;
     private PageCache pageCache;
+    private static final int RECORD_SIZE = 32;
 
     @Before
     public void setup()

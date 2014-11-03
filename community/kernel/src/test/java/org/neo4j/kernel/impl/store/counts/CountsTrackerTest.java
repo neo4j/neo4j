@@ -47,9 +47,11 @@ import org.neo4j.test.ThreadingRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.store.CommonAbstractStore.buildTypeDescriptorAndVersion;
+import static org.neo4j.kernel.impl.store.counts.CountsStore.RECORD_SIZE;
 import static org.neo4j.kernel.impl.store.counts.CountsStore.WRITER_FACTORY;
 import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.BASE_MINOR_VERSION;
 import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.META_HEADER_SIZE;
+import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.with;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class CountsTrackerTest
@@ -320,7 +322,7 @@ public class CountsTrackerTest
 
     private void createStoreFile( EphemeralFileSystemAbstraction fs, PageCache pageCache, File file, long lastTxId ) throws IOException
     {
-        SortedKeyValueStoreHeader header = SortedKeyValueStoreHeader.with( VERSION, BASE_TX_ID, BASE_MINOR_VERSION );
+        SortedKeyValueStoreHeader header = with( RECORD_SIZE, VERSION, BASE_TX_ID, BASE_MINOR_VERSION );
         CountsStoreWriter writer = WRITER_FACTORY.create( fs, pageCache, header, file, lastTxId );
         writer.close();
         writer.openForReading().close();
