@@ -83,6 +83,7 @@ public final class RepresentationType
             NOTHING = new RepresentationType( "void", null ),
             // System
             EXCEPTION = new RepresentationType( "exception" ),
+            AUTHORIZATION = new RepresentationType( "authorization" ),
             MAP = new RepresentationType( "map", "maps", Map.class ),
             NULL = new RepresentationType( "null", "nulls", Object.class );
 

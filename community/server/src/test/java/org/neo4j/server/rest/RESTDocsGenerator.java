@@ -36,20 +36,20 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientRequest;
+import com.sun.jersey.api.client.ClientRequest.Builder;
+import com.sun.jersey.api.client.ClientResponse;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.Predicates;
 import org.neo4j.test.AsciiDocGenerator;
 import org.neo4j.test.GraphDefinition;
 import org.neo4j.test.TestData.Producer;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientRequest;
-import com.sun.jersey.api.client.ClientRequest.Builder;
-import com.sun.jersey.api.client.ClientResponse;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 /**
  * Generate asciidoc-formatted documentation from HTTP requests and responses.
@@ -91,7 +91,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
     private int expectedResponseStatus = -1;
     private MediaType expectedMediaType = MediaType.valueOf( "application/json; charset=UTF-8" );
     private MediaType payloadMediaType = MediaType.APPLICATION_JSON_TYPE;
-    private final List<String> expectedHeaderFields = new ArrayList<>();
+    private final List<Pair<String, Predicate<String>>> expectedHeaderFields = new ArrayList<>();
     private String payload;
     private final Map<String, String> addedRequestHeaders = new TreeMap<>(  );
     private boolean noDoc = false;
@@ -230,7 +230,21 @@ public class RESTDocsGenerator extends AsciiDocGenerator
      */
     public RESTDocsGenerator expectedHeader( final String expectedHeaderField )
     {
-        this.expectedHeaderFields.add( expectedHeaderField );
+        this.expectedHeaderFields.add( Pair.of(expectedHeaderField, Predicates.<String>notNull()) );
+        return this;
+    }
+
+    /**
+     * Add an expected response header. If the heading is missing in the
+     * response the test will fail. The header and its value are also included
+     * in the documentation.
+     *
+     * @param expectedHeaderField the expected header
+     * @param expectedValue the expected header value
+     */
+    public RESTDocsGenerator expectedHeader( final String expectedHeaderField, String expectedValue )
+    {
+        this.expectedHeaderFields.add( Pair.of(expectedHeaderField, Predicates.equalTo( expectedValue )) );
         return this;
     }
 
@@ -300,7 +314,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
      */
     private ResponseEntity retrieveResponseFromRequest( final String title, final String description,
             final String method, final String uri, final int responseCode, final MediaType accept,
-            final List<String> headerFields )
+            final List<Pair<String,Predicate<String>>> headerFields )
     {
         ClientRequest request;
         try
@@ -321,7 +335,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
      */
     private ResponseEntity retrieveResponseFromRequest( final String title, final String description,
             final String method, final String uri, final String payload, final MediaType payloadType,
-            final int responseCode, final MediaType accept, final List<String> headerFields )
+            final int responseCode, final MediaType accept, final List<Pair<String,Predicate<String>>> headerFields )
     {
         ClientRequest request;
         try
@@ -358,7 +372,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
      * Send the request and create the documentation.
      */
     private ResponseEntity retrieveResponse( final String title, final String description, final String uri,
-            final int responseCode, final MediaType type, final List<String> headerFields, final ClientRequest request )
+            final int responseCode, final MediaType type, final List<Pair<String,Predicate<String>>> headerFields, final ClientRequest request )
     {
         DocumentationData data = new DocumentationData();
         getRequestHeaders( data, request.getHeaders() );
@@ -392,10 +406,10 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         {
             assertTrue( "wrong response type: "+ data.entity, response.getType().isCompatible( type ) );
         }
-        for ( String headerField : headerFields )
+        for ( Pair<String,Predicate<String>> headerField : headerFields )
         {
-            assertNotNull( "wrong headers: "+ data.entity, response.getHeaders()
-                    .get( headerField ) );
+            assertTrue( "wrong headers: " + response.getHeaders(), headerField.other().accept( response.getHeaders()
+                    .getFirst( headerField.first() ) ) );
         }
         if ( noDoc )
         {
@@ -407,7 +421,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         data.setUri( uri );
         data.setStatus( responseCode );
         assertEquals( "Wrong response status. response: " + data.entity, responseCode, response.getStatus() );
-        getResponseHeaders( data, response.getHeaders(), headerFields );
+        getResponseHeaders( data, response.getHeaders(), headerNames(headerFields) );
         if ( graph == null )
         {
             document( data );
@@ -420,6 +434,16 @@ public class RESTDocsGenerator extends AsciiDocGenerator
             }
         }
         return new ResponseEntity( response, data.entity );
+    }
+
+    private List<String> headerNames( List<Pair<String, Predicate<String>>> headerPredicates )
+    {
+        List<String> names = new ArrayList<>();
+        for ( Pair<String, Predicate<String>> headerPredicate : headerPredicates )
+        {
+            names.add( headerPredicate.first() );
+        }
+        return names;
     }
 
     private void getResponseHeaders( final DocumentationData data, final MultivaluedMap<String, String> headers,

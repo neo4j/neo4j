@@ -26,7 +26,7 @@ body {
 
 .info-splash {
   margin: 15% auto;
-  width: 152px;
+  width: 250px;
 }
 
 .info-splash h1 {
@@ -37,6 +37,10 @@ body {
   padding: 0;
   text-align: center;
   text-shadow: 1px 1px 2px #555555
+}
+
+.info-splash p {
+  color: #DDDDDD;
 }
 
 #splash {
@@ -593,6 +597,12 @@ body {
   /* Mmm, IE */
   -ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=80)";
 	filter: alpha(opacity=80);
+}
+
+
+.overlay h2
+{
+  color: #efefef;
 }
 
 /**

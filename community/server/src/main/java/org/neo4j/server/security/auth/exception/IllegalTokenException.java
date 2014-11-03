@@ -17,30 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security;
+package org.neo4j.server.security.auth.exception;
 
-public class KeyStoreInformation {
+import org.neo4j.kernel.api.exceptions.Status;
 
-    private final String keyStorePath;
-    private final char[] keyStorePassword;
-    private final char[] keyPassword;
-    
-    public KeyStoreInformation(String keyStorePath, char[] keyStorePassword, char[] keyPassword) {
-        this.keyStorePassword = keyStorePassword;
-        this.keyStorePath = keyStorePath;
-        this.keyPassword = keyPassword;
-    }
-    
-    public String getKeyStorePath() {
-        return keyStorePath;
-    }
-    
-    public char[] getKeyStorePassword() {
-        return keyStorePassword;
+public class IllegalTokenException extends Exception implements Status.HasStatus
+{
+    private final Status status;
+
+    public IllegalTokenException( String message )
+    {
+        super(message);
+        this.status = Status.Request.Invalid;
     }
 
-    public char[] getKeyPassword() {
-        return keyPassword;
+    @Override
+    public Status status()
+    {
+        return status;
     }
-    
 }

@@ -98,6 +98,20 @@ module.exports = (grunt) ->
               port: 7474,
               https: false,
               changeOrigin: false
+          },
+          {
+              context: '/authenticate',
+              host: 'localhost',
+              port: 7474,
+              https: false,
+              changeOrigin: false
+          },
+          {
+              context: '/user',
+              host: 'localhost',
+              port: 7474,
+              https: false,
+              changeOrigin: false
           }
       ]
 
