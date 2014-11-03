@@ -31,9 +31,6 @@ import org.neo4j.io.pagecache.monitoring.PinEvent;
 
 abstract class MuninnPageCursor implements PageCursor
 {
-    static final boolean monitorPinUnpin = Boolean.getBoolean(
-            "org.neo4j.io.pagecache.impl.muninn.MuninnPageCursor.monitorPinUnpin" );
-
     protected MuninnPagedFile pagedFile;
     protected MuninnPage page;
     protected PinEvent pinEvent;

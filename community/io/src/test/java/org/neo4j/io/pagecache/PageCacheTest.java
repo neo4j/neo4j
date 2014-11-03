@@ -97,6 +97,12 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
     protected EphemeralFileSystemAbstraction fs;
 
     @BeforeClass
+    public static void enablePinUnpinMonitoring()
+    {
+        DefaultPageCacheMonitor.enablePinUnpinMonitoring();
+    }
+
+    @BeforeClass
     public static void startExecutor()
     {
         executor = Executors.newCachedThreadPool();

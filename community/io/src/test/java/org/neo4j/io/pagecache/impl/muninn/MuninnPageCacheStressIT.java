@@ -36,12 +36,6 @@ import static org.neo4j.io.pagecache.stress.Conditions.numberOfEvictions;
  */
 public class MuninnPageCacheStressIT
 {
-    // Run the class initializer for the MuninnPageCacheTest,
-    // such that we make sure that the pin/unpin monitoring gets enabled.
-    static {
-        new MuninnPageCacheTest();
-    }
-
     @Test
     public void shouldHandleTheStressOfOneMillionEvictions() throws Exception
     {

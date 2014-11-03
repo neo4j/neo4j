@@ -21,6 +21,10 @@ package org.neo4j.io.pagecache.monitoring;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.lang.invoke.SwitchPoint;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.io.pagecache.PageSwapper;
@@ -30,6 +34,52 @@ import org.neo4j.io.pagecache.PageSwapper;
  */
 public class DefaultPageCacheMonitor implements PageCacheMonitor
 {
+    private static final MethodHandle beginPinMH;
+    private static final SwitchPoint beginPinSwitchPoint;
+    static
+    {
+        try
+        {
+            // A hidden setting to have pin/unpin monitoring enabled from the start by default.
+            boolean alwaysEnabled = Boolean.getBoolean(
+                    "org.neo4j.io.pagecache.monitoring.monitorPinUnpin" );
+
+            MethodType type = MethodType.methodType( PinEvent.class );
+            MethodHandles.Lookup lookup = MethodHandles.lookup();
+            MethodHandle monitoredPinMH = lookup.findVirtual( DefaultPageCacheMonitor.class, "beginMonitoredPin", type );
+            if ( alwaysEnabled )
+            {
+                beginPinMH = monitoredPinMH;
+                beginPinSwitchPoint = null;
+            }
+            else
+            {
+                MethodHandle nullPinMH = lookup.findVirtual( DefaultPageCacheMonitor.class, "beginNullPin", type );
+                beginPinSwitchPoint = new SwitchPoint();
+                beginPinMH = beginPinSwitchPoint.guardWithTest( nullPinMH, monitoredPinMH );
+            }
+        }
+        catch ( Exception e )
+        {
+            throw new AssertionError( "Unexpected MethodHandle initiation error", e );
+        }
+    }
+
+    /**
+     * Enable monitoring of page pins and unpins, which is disabled by default for
+     * performance reasons.
+     *
+     * This is a one-way operation; once monitoring of pinning and unpinning has been
+     * enabled, it cannot be disabled again without restarting the JVM.
+     */
+    public static void enablePinUnpinMonitoring()
+    {
+        if ( beginPinSwitchPoint != null && !beginPinSwitchPoint.hasBeenInvalidated() )
+        {
+            SwitchPoint.invalidateAll( new SwitchPoint[]{ beginPinSwitchPoint } );
+        }
+    }
+
     protected final AtomicLong faults = new AtomicLong();
     protected final AtomicLong evictions = new AtomicLong();
     protected final AtomicLong pins = new AtomicLong();
@@ -206,6 +256,31 @@ public class DefaultPageCacheMonitor implements PageCacheMonitor
 
     @Override
     public PinEvent beginPin( boolean exclusiveLock, long filePageId, PageSwapper swapper )
+    {
+        try
+        {
+            return (PinEvent) beginPinMH.invokeExact( this );
+        }
+        catch ( Throwable throwable )
+        {
+            throw new AssertionError( "Unexpected MethodHandle error", throwable );
+        }
+    }
+
+    /**
+     * Invoked through beginPinMH.
+     */
+    @SuppressWarnings( "UnusedDeclaration" )
+    private PinEvent beginNullPin()
+    {
+        return NULL_PIN_EVENT;
+    }
+
+    /**
+     * Invoked through beginPinMH.
+     */
+    @SuppressWarnings( "UnusedDeclaration" )
+    private PinEvent beginMonitoredPin()
     {
         pins.getAndIncrement();
         return pinEvent;

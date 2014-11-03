@@ -36,13 +36,10 @@ import static org.neo4j.io.pagecache.stress.Conditions.timePeriod;
 public class PageCacheStressTesting
 {
     static {
-        // This is disabled by default, but we have tests that verify that
-        // pinned and unpinned are called correctly.
-        // Setting this property here in the test class should ensure that
-        // it is set before the MuninnPageCache classes are loaded, and
-        // thus before they check this value.
-        System.setProperty(
-                "org.neo4j.io.pagecache.impl.muninn.MuninnPageCursor.monitorPinUnpin", "true" );
+        // Pin/Unpin monitoring is disabled by default for performance reasons,
+        // but we have tests that verify that pinned and unpinned are called
+        // correctly.
+        DefaultPageCacheMonitor.enablePinUnpinMonitoring();
     }
 
     @Test
