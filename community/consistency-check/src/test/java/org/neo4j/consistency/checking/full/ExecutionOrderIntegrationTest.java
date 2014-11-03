@@ -19,16 +19,6 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.withSettings;
-
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.test.Property.property;
-import static org.neo4j.test.Property.set;
-
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Method;
@@ -39,7 +29,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.CheckDecorator;
 import org.neo4j.consistency.checking.CheckerEngine;
@@ -72,6 +61,12 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.test.Property.property;
+import static org.neo4j.test.Property.set;
 
 public class ExecutionOrderIntegrationTest
 {
@@ -139,9 +134,11 @@ public class ExecutionOrderIntegrationTest
 
     static Config config( TaskExecutionOrder executionOrder )
     {
-        return new Config( stringMap(
-                ConsistencyCheckSettings.consistency_check_execution_order.name(), executionOrder.name() ),
-                GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
+        Map<String,String> params = stringMap(
+                ConsistencyCheckSettings.consistency_check_execution_order.name(), executionOrder.name(),
+                // Enable property owners check by default in tests:
+                ConsistencyCheckSettings.consistency_check_property_owners.name(), "true" );
+        return new Config( params, GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
     }
 
     private static class InvocationLog
