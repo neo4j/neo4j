@@ -22,3 +22,6 @@ include::set-multiple-properties-using-one-set-clause.asciidoc[]
 
 include::set-a-label-on-a-node.asciidoc[]
 include::set-multiple-labels-on-a-node.asciidoc[]
+include::set-a-label-on-a-node-using-an-expression.asciidoc[]
+include::set-a-label-on-a-node-using-parameters.asciidoc[]
+include::set-multiple-labels-on-a-node-using-an-expression.asciidoc[]

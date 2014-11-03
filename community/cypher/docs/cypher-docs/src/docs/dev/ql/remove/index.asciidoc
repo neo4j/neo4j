@@ -17,8 +17,8 @@ include::includes/cypher-remove-graph.asciidoc[]
 :leveloffset: 2
 
 include::remove-a-property.asciidoc[]
-
 include::remove-a-label-from-a-node.asciidoc[]
-
 include::removing-multiple-labels.asciidoc[]
-
+include::remove-a-label-from-a-node-using-an-expression.asciidoc[]
+include::remove-a-label-from-a-node-using-parameters.asciidoc[]
+include::remove-multiple-labels-from-a-node-using-an-expression.asciidoc[]

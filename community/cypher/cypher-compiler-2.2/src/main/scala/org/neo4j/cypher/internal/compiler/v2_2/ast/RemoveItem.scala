@@ -30,6 +30,14 @@ case class RemoveLabelItem(expression: Expression, labels: Seq[LabelName])(val p
     expression.expectType(CTNode.covariant)
 }
 
+case class RemoveLabelsExpressionItem(expression: Expression, labelsExpression: Expression, multiple: Boolean)(val position: InputPosition) extends RemoveItem {
+  def semanticCheck =
+    expression.semanticCheck(Expression.SemanticContext.Simple) chain
+    expression.expectType(CTNode.covariant) chain
+    labelsExpression.semanticCheck(Expression.SemanticContext.Simple) chain
+    labelsExpression.expectType(if(multiple) CTCollection(CTString).covariant else CTString.covariant)
+}
+
 case class RemovePropertyItem(property: Property) extends RemoveItem {
   def position = property.position
 

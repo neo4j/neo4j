@@ -205,4 +205,122 @@ foreach(n in nodes(p) |
     b should haveProperty("x").withValue("X")
     c should haveProperty("x").withValue("X")
   }
+
+  test("set label from a simple label string expression") {
+    // given
+    val a = createNode()
+    val b = createNode()
+    val c = createNode()
+
+    // when
+    execute("MATCH (n) SET n LABEL 'A'")
+
+    // then
+    a should haveLabels("A")
+    b should haveLabels("A")
+    c should haveLabels("A")
+  }
+
+  test("set label from a string property on the node") {
+    // given
+    val a = createNode("A")
+    val b = createNode("B")
+    val c = createNode("C")
+
+    // when
+    execute("MATCH (n) SET n LABEL n.name")
+
+    // then
+    a should haveLabels("A")
+    b should haveLabels("B")
+    c should haveLabels("C")
+  }
+
+  test("sets multiple labels from string collection") {
+    // given
+    val a = createNode("A")
+    val b = createNode("B")
+    val c = createNode("C")
+
+    // when
+    execute("MATCH (n) SET n LABELS ['A','B','C']")
+
+    // then
+    a should haveLabels("A", "B", "C")
+    b should haveLabels("A", "B", "C")
+    c should haveLabels("A", "B", "C")
+  }
+
+  test("when given empty collection, does nothing") {
+    // given
+    val a = createNode()
+
+    // when
+    execute("MATCH (n) SET n LABELS []")
+
+    // then
+    a should haveLabels()
+  }
+
+  test("when given a null expression") {
+    // given
+    val a = createLabeledNode("A")
+
+    // when
+    execute("MATCH (n) SET n LABELS null")
+
+    // then
+    a should haveLabels("A")
+  }
+
+  test("when given a null expression2") {
+    // given
+    val a = createLabeledNode("A")
+
+    // when
+    execute("MATCH (n) SET n LABEL n.missingProperty")
+
+    // then
+    a should haveLabels("A")
+  }
+
+  test("when given a collection mixing nulls and non-nulls") {
+    // given
+    val a = createLabeledNode("A")
+
+    // when
+    execute("MATCH (n) SET n LABELS ['B', null]")
+
+    // then
+    a should haveLabels("A", "B")
+  }
+
+  test("setting labels inside foreach") {
+    // given an empty database
+
+    // when
+    execute(
+      """FOREACH(x in ['A','B','C'] |
+        | CREATE (n)
+        | SET n LABEL x
+        |)""".stripMargin)
+
+    // then
+    execute("MATCH (a:A), (b:B), (c:C) RETURN *").size should equal (1)
+  }
+
+  test("setting labels from an expression") {
+    // given
+    val a = createNode("A")
+    val b = createNode("B")
+    val c = createNode("C")
+
+    // when
+    execute("MATCH (n) WITH collect(n.name) as names MATCH (n) SET n LABELS names")
+
+    // then
+    a should haveOnlyLabels("A", "B", "C")
+    b should haveOnlyLabels("A", "B", "C")
+    c should haveOnlyLabels("A", "B", "C")
+  }
 }

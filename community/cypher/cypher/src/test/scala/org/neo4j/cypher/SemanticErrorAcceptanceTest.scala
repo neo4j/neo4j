@@ -427,6 +427,34 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     )
   }
 
+  test("SET LABEL with collections") {
+    executeAndEnsureError(
+      "CREATE (n) SET n LABEL ['A','B']",
+      "Type mismatch: expected String but was Collection<String> (line 1, column 24)"
+    )
+  }
+
+  test("SET LABELS with single string") {
+    executeAndEnsureError(
+      "CREATE (n) SET n LABELS 'A'",
+      "Type mismatch: expected Collection<String> but was String (line 1, column 25)"
+    )
+  }
+
+  test("REMOVE LABEL with collections") {
+    executeAndEnsureError(
+      "MATCH (n) REMOVE n LABEL ['A','B']",
+      "Type mismatch: expected String but was Collection<String> (line 1, column 26)"
+    )
+  }
+
+  test("REMOVE LABELS with single string") {
+    executeAndEnsureError(
+      "MATCH (n) REMOVE n LABELS 'A'",
+      "Type mismatch: expected Collection<String> but was String (line 1, column 27)"
+    )
+  }
+
   def executeAndEnsureError(query: String, message: String) {
     try {
       execute(query).toList

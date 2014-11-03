@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.commands
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{StringHelper, Expression}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.mutation.{GraphElementPropertyFunctions, UpdateAction}
@@ -61,4 +61,34 @@ case class LabelAction(entity: Expression, labelOp: LabelOp, labels: Seq[KeyToke
   def identifiers = Seq.empty
 
   def symbolTableDependencies = entity.symbolTableDependencies ++ labels.flatMap(_.symbolTableDependencies)
+}
+
+case class LabelExpressionAction(entity: Expression, labelOp: LabelOp, labels: Expression)
+  extends UpdateAction with GraphElementPropertyFunctions with CollectionSupport with StringHelper {
+
+  def localEffects(ignored: SymbolTable) = Effects.WRITES_NODES
+
+  def children = Seq(entity, labels)
+
+  def rewrite(f: (Expression) => Expression) =
+    LabelExpressionAction(entity.rewrite(f), labelOp, labels.rewrite(f))
+
+  def exec(context: ExecutionContext, state: QueryState) = {
+    val node      = CastSupport.castOrFail[Node](entity(context)(state))
+    val queryCtx  = state.query
+    val labelIds  = makeTraversable(labels(context)(state)).flatMap {
+      label => Option(asString(label)).map(queryCtx.getOrCreateLabelId)
+    }
+
+    labelOp match {
+      case LabelSetOp => queryCtx.setLabelsOnNode(node.getId, labelIds.iterator)
+      case LabelRemoveOp => queryCtx.removeLabelsFromNode(node.getId, labelIds.iterator)
+    }
+
+    Iterator(context)
+  }
+
+  def identifiers = Seq.empty
+
+  def symbolTableDependencies = entity.symbolTableDependencies ++ labels.symbolTableDependencies
 }
