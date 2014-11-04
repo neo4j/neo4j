@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.BlockingQueue;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.ServletException;
@@ -42,6 +43,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import ch.qos.logback.access.jetty.RequestLogImpl;
+import ch.qos.logback.access.servlet.TeeFilter;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionManager;
@@ -57,7 +59,6 @@ import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.webapp.WebAppContext;
-
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
@@ -340,9 +341,13 @@ public class Jetty9WebServer implements WebServer
     }
 
     @Override
-    public void setHttpLoggingConfiguration( File logbackConfigFile )
+    public void setHttpLoggingConfiguration( File logbackConfigFile, boolean enableContentLogging )
     {
         this.requestLoggingConfiguration = logbackConfigFile;
+        if(enableContentLogging)
+        {
+            addFilter( new TeeFilter(), "/*" );
+        }
     }
 
     @Override
@@ -573,8 +578,7 @@ public class Jetty9WebServer implements WebServer
     {
         for ( FilterDefinition filterDef : filters )
         {
-            context.addFilter( new FilterHolder(
-                            filterDef.getFilter() ),
+            context.addFilter( new FilterHolder( filterDef.getFilter() ),
                     filterDef.getPathSpec(), EnumSet.allOf( DispatcherType.class )
             );
         }

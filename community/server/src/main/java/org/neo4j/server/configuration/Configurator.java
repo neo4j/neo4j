@@ -101,6 +101,10 @@ public interface Configurator
     String HTTP_LOGGING = "org.neo4j.server.http.log.enabled";
     boolean DEFAULT_HTTP_LOGGING = false;
     String HTTP_LOG_CONFIG_LOCATION = "org.neo4j.server.http.log.config";
+
+    String HTTP_CONTENT_LOGGING = "org.neo4j.server.http.unsafe.content_log.enabled";
+    boolean DEFAULT_HTTP_CONTENT_LOGGING = false;
+
     String WADL_ENABLED = "unsupported_wadl_generation_enabled";
 
     String STARTUP_TIMEOUT = "org.neo4j.server.startup_timeout";
