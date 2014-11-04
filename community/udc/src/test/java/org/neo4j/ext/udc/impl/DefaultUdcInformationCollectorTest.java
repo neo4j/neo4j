@@ -26,13 +26,7 @@ import java.util.Map;
 import org.junit.Test;
 
 import org.neo4j.ext.udc.UdcConstants;
-import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.ResourceIterable;
-import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.*;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.index.IndexManager;
@@ -181,6 +175,12 @@ public class DefaultUdcInformationCollectorTest
 
         @Override
         public Iterable<Node> getAllNodes()
+        {
+            return null;
+        }
+
+        @Override
+        public ResourceIterator<Node> findNodes( Label label, String key, Object value )
         {
             return null;
         }

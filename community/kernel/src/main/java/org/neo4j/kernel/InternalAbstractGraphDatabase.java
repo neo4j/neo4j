@@ -1151,6 +1151,12 @@ public abstract class InternalAbstractGraphDatabase
     }
 
     @Override
+    public ResourceIterator<Node> findNodes( final Label myLabel, final String key, final Object value )
+    {
+        return nodesByLabelAndProperty( myLabel, key, value );
+    }
+
+    @Override
     public ResourceIterable<Node> findNodesByLabelAndProperty( final Label myLabel, final String key,
                                                                final Object value )
     {
