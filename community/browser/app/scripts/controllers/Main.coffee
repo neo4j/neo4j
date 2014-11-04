@@ -71,9 +71,9 @@ angular.module('neo4jApp.controllers')
           if not serverIsOffline
             refresh()
 
-        # XXX: Temporary for now having to change all help files
         $scope.$watch 'server', (val) ->
           $scope.neo4j.version = val.neo4j_version
+          if val.neo4j_version then $scope.motd.setCallToActionVersion(val.neo4j_version)
         , true
 
         refresh()

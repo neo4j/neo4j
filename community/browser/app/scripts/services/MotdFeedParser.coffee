@@ -20,19 +20,26 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 'use strict';
 
-class RssFeedService
+class MotdFeedParser
 
-  constructor: ($http) ->
-    RssFeedService::get = () ->
-      format = "json"
-      username = "neo4jmotd"
-      apiUrl = "http://assets.neo4j.org/v2/#{format}/#{username}?callback=JSON_CALLBACK&count=10?plain=true"
+  constructor: ->
 
-      $http.jsonp(apiUrl)
-      .error (results) ->
-        $log.error 'Error fetching feed: ', results
-      .then (response) ->
-        return [] unless response.data
-        response.data 
+  explodeTags: (tags) ->
+    out = {}
+    return out unless tags.length
+    for pair in tags
+      parts = pair.split('=')
+      out[parts[0]] = parts[1]
+    out
 
-angular.module('neo4jApp.services').service 'rssFeedService', ['$http', RssFeedService]
+  getFirstMatch: (feed, match_filter) ->
+    that = @
+    items = feed.filter (x) ->
+      return true if not Object.keys(match_filter).length
+      tags = that.explodeTags(x.t)
+      for k, v of match_filter
+        return false unless v tags[k]
+      true
+    items[0] or {}
+
+angular.module('neo4jApp.services').service 'motdFeedParser', [MotdFeedParser]
