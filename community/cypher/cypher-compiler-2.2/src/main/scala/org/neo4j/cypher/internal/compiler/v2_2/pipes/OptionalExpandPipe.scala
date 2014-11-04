@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.ExpandExpression
 import org.neo4j.cypher.internal.compiler.v2_2.{InternalException, ExecutionContext}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.Predicate
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
@@ -65,7 +66,7 @@ case class OptionalExpandPipe(source: Pipe, from: String, relName: String, to: S
 
   def planDescription =
     source.planDescription.
-      andThen(this, "OptionalExpand", identifiers)
+      andThen(this, "OptionalExpand", identifiers, ExpandExpression(from, relName, to, dir))
 
   def symbols = source.symbols.add(to, CTNode).add(relName, CTRelationship)
 

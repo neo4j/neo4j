@@ -20,8 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planDescription
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.pipes.{NullPipe, PipeMonitor}
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.{VarLengthExpandPipeForStringTypes, ExpandPipeForStringTypes, NullPipe, PipeMonitor}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments._
+import org.neo4j.graphdb.Direction
 
 class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
 
@@ -103,6 +104,54 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
         ||  NAME(0) |             1 |    2 |    633 |           b | :Label(Prop) |
         ||  NAME(1) |             1 |   42 |     33 |           a |              |
         |+----------+---------------+------+--------+-------------+--------------+
+        |""".stripMargin)
+  }
+
+
+  test("Expand contains information about its relations") {
+    val arguments = Seq(
+      Rows(42),
+      DbHits(33))
+    val expandPipe = ExpandPipeForStringTypes(pipe, "from", "rel", "to", Direction.INCOMING, Seq.empty)(Some(1L))(mock[PipeMonitor])
+
+    renderDetails(expandPipe.planDescription) should equal(
+      """+----------+---------------+-------------+---------------------+
+        || Operator | EstimatedRows | Identifiers |               Other |
+        |+----------+---------------+-------------+---------------------+
+        ||   Expand |             1 |     rel, to | (from)<-[:rel]-(to) |
+        |+----------+---------------+-------------+---------------------+
+        |""".stripMargin)
+  }
+
+  test("Var length expand contains information about its relations") {
+    val arguments = Seq(
+      Rows(42),
+      DbHits(33))
+    val expandPipe = VarLengthExpandPipeForStringTypes(pipe, "from", "rel", "to", Direction.INCOMING, Direction.OUTGOING, Seq.empty, 0, None)(Some(1L))(mock[PipeMonitor])
+
+    renderDetails(expandPipe.planDescription) should equal(
+      """+-------------------+---------------+-------------+----------------------+
+        ||          Operator | EstimatedRows | Identifiers |                Other |
+        |+-------------------+---------------+-------------+----------------------+
+        || Var length expand |             1 |     rel, to | (from)-[:rel*]->(to) |
+        |+-------------------+---------------+-------------+----------------------+
+        |""".stripMargin)
+  }
+
+  test("do not show unnamed identifiers") {
+    val arguments = Seq(
+      Rows(42),
+      DbHits(33),
+      ExpandExpression("  UNNAMED123", "R", "  UNNAMED24", Direction.OUTGOING)
+    )
+
+    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n", "  UNNAMED123", "  UNNAMED2", "  UNNAMED24"))
+    renderDetails(plan) should equal(
+      """|+----------+---------------+------+--------+-------------+-------------+
+        || Operator | EstimatedRows | Rows | DbHits | Identifiers |       Other |
+        |+----------+---------------+------+--------+-------------+-------------+
+        ||     NAME |             1 |   42 |     33 |           n | ()-[:R]->() |
+        |+----------+---------------+------+--------+-------------+-------------+
         |""".stripMargin)
   }
 }
