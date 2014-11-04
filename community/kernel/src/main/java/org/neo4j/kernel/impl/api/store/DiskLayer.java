@@ -442,12 +442,6 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public long indexUpdates( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
-    {
-        return indexService.indexUpdates( indexId( descriptor ) );
-    }
-
-    @Override
     public double indexUniqueValuesPercentage( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexService.indexUniqueValuesPercentage( indexId( descriptor ) );

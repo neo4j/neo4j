@@ -68,11 +68,6 @@ public interface SchemaReadOperations
     long indexSize( KernelStatement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
-     * Get the number of index updates since the last sampling.
-     **/
-    long indexUpdates( KernelStatement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
-
-    /**
      * Calculate the index unique values percentage.
      **/
     double indexUniqueValuesPercentage( KernelStatement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException;

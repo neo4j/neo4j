@@ -935,19 +935,9 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public long indexSize( KernelStatement statement, IndexDescriptor descriptor )
-            throws IndexNotFoundKernelException
-
+    public long indexSize( KernelStatement statement, IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return storeLayer.indexSize( descriptor );
-    }
-
-    @Override
-    public long indexUpdates( KernelStatement statement, IndexDescriptor descriptor )
-            throws IndexNotFoundKernelException
-
-    {
-        return storeLayer.indexUpdates( descriptor );
     }
 
     @Override
