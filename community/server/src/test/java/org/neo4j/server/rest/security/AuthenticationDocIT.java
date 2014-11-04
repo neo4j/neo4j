@@ -289,9 +289,9 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
         startServerWithConfiguredUser();
 
         // When & Then
-        assertEquals( 400, HTTP.POST( authURL() ).status() );
-        assertEquals( 400, HTTP.POST( authURL(), RawPayload.quotedJson("{'password':'whatever'}") ).status() );
-        assertEquals( 400, HTTP.POST( authURL(), RawPayload.quotedJson("{'password':1234, 'username':{}}") ).status() );
+        assertEquals( 422, HTTP.POST( authURL() ).status() );
+        assertEquals( 422, HTTP.POST( authURL(), RawPayload.quotedJson("{'password':'whatever'}") ).status() );
+        assertEquals( 422, HTTP.POST( authURL(), RawPayload.quotedJson("{'password':1234, 'username':{}}") ).status() );
     }
 
     @Test
