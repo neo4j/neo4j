@@ -31,7 +31,7 @@ article.guide
           //-   a(play-topic='product-graph') Product Recommendations
 
     .hero-unit
-      p 
+      p(ng-class="{'motd-bang': motd.callToAction.bang}")
         a(href="{{ motd.callToAction.u}}") {{ motd.callToAction.d }}
 
     footer

@@ -263,8 +263,22 @@ select
   margin-bottom: 0
 
 .hero-unit
-  padding 2em 60px 1em 60px
+  padding 1em 60px
   margin-top 1em
+  margin-bottom: 30px;
+  font-size: 18px;
+  font-weight: 200;
+  line-height: 30px;
+  color: inherit;
+  background-color: #eeeeee;
+  border-radius: 6px;
+  p
+    margin: 0
+    &.motd-bang
+      a
+        font-size: 17px
+        &:before
+          content: "\f071"
 
 .dl-horizontal
   dt

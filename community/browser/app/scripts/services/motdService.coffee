@@ -22,9 +22,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 angular.module('neo4jApp.services')
   .factory 'motdService', [
-    '$log'
-    'rssFeedService'
-    ($log, rssFeedService) ->
+    'rssFeedService', 
+    'motdFeedParser'
+    (rssFeedService, motdFeedParser) ->
       class Motd
 
         choices =
@@ -78,6 +78,34 @@ angular.module('neo4jApp.services')
         constructor: ->
           @refresh()
 
+        setCallToActionVersion: (version) ->
+          return if @cta_version is version
+          @cta_version = version
+          @refresh()
+
+        getCallToActionFeedItem: (feed) ->
+          that = @
+          match_filter = 
+            version: (val) ->
+              return true unless val 
+              re = new RegExp('^' + val + '$')
+              res = re.test(that.cta_version)
+            combo: (val) -> 
+              return false unless val
+              res = /^!/.test val
+          item = motdFeedParser.getFirstMatch(feed, match_filter)
+
+          if not item?.d
+            match_filter = 
+              version: (val) -> 
+                return true unless val
+                re = new RegExp('^' + val + '$')
+                hit = re.test(that.cta_version) 
+                return hit or val is 'neo4j'
+            item = motdFeedParser.getFirstMatch(feed, match_filter)
+          item.bang = motdFeedParser.explodeTags(item.t).combo?.replace(/[^a-z]*/ig, '')
+          item
+
         refresh: ->
           @quote = @pickRandomlyFrom(choices.quotes)
           @tip = @pickRandomlyFrom(choices.tips)
@@ -85,9 +113,7 @@ angular.module('neo4jApp.services')
           @emptiness = @pickRandomlyFrom(choices.emptiness)
           @disconnected = @pickRandomlyFrom(choices.disconnected)
           @callToAction = @pickRandomlyFrom(choices.callToAction)
-          rssFeedService.get().then (feed) =>
-            if feed[0]
-              @callToAction = feed[0]
+          rssFeedService.get().then (feed) => @callToAction = @getCallToActionFeedItem feed
 
 
         pickRandomlyFrom: (fromThis) ->
