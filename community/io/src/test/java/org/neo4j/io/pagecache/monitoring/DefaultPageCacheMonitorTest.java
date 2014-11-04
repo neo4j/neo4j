@@ -24,6 +24,7 @@ public class DefaultPageCacheMonitorTest extends PageCacheMonitorTest
     @Override
     protected DefaultPageCacheMonitor createMonitor()
     {
+        DefaultPageCacheMonitor.enablePinUnpinMonitoring();
         return new DefaultPageCacheMonitor();
     }
 }
