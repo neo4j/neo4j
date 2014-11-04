@@ -399,13 +399,38 @@ public class IndexingAcceptanceTest
         }
     }
 
+
+    @Test( expected = MultipleFoundException.class )
+    public void shouldThrowWhenMulitpleResultsForSingleNode() throws Exception
+    {
+        // given
+        GraphDatabaseService graph = dbRule.getGraphDatabaseService();
+        createIndex( graph, LABEL1, "name" );
+
+        Node node1, node2;
+        try ( Transaction tx = graph.beginTx() )
+        {
+            node1 = graph.createNode( LABEL1 );
+            node1.setProperty( "name", "Stefan" );
+
+            node2 = graph.createNode( LABEL1 );
+            node2.setProperty( "name", "Stefan" );
+            tx.success();
+        }
+
+        try ( Transaction tx = graph.beginTx() )
+        {
+            graph.findNode( LABEL1, "name", "Stefan" );
+        }
+    }
+
     private void assertCanCreateAndFind( GraphDatabaseService db, Label label, String propertyKey, Object value )
     {
         Node created = createNode( db, map( propertyKey, value ), label );
 
         try ( Transaction tx = db.beginTx() )
         {
-            Node found = single( db.findNodes( label, propertyKey, value ) );
+            Node found = db.findNode( label, propertyKey, value );
             assertThat( found, equalTo( created ) );
             found.delete();
             tx.success();

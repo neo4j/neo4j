@@ -31,6 +31,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.MultipleFoundException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -85,17 +86,27 @@ public class IndexFormatCompatibilityTest
         }
     }
 
+    @Test( expected = MultipleFoundException.class )
+    public void shouldThrowWhenMulitpleResultsForSingleNode() throws Exception
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.findNode( label( "Person" ), "age", 4 );
+        }
+    }
+
     @Test
     public void shouldFindCorrectNodesUsingUniquePropertyLookup() throws Exception
     {
         try ( Transaction tx = db.beginTx() )
         {
-            assertEquals( 1, age(single( db.findNodes( label( "Person" ), "externalId", 0 ) ) ) );
-            assertEquals( 2, age(single( db.findNodes( label( "Person" ), "externalId", 1 ) ) ) );
-            assertEquals( 3, age(single( db.findNodes( label( "Person" ), "externalId", 2 ) ) ) );
-            assertEquals( 4, age(single( db.findNodes( label( "Person" ), "externalId", 3 ) ) ) );
-            assertEquals( 2, age(single( db.findNodes( label( "Person" ), "externalId", 4 ) ) ) );
+            assertEquals( 1, age( db.findNode( label( "Person" ), "externalId", 0 ) ) );
+            assertEquals( 2, age( db.findNode( label( "Person" ), "externalId", 1 ) ) );
+            assertEquals( 3, age( db.findNode( label( "Person" ), "externalId", 2 ) ) );
+            assertEquals( 4, age( db.findNode( label( "Person" ), "externalId", 3 ) ) );
+            assertEquals( 2, age( db.findNode( label( "Person" ), "externalId", 4 ) ) );
             assertTrue( asList( db.findNodes( label( "Person" ), "externalId", 10 ) ).isEmpty() );
+            assertEquals( null, db.findNode( label( "Person" ), "externalId", 10 ) );
 
             tx.success();
         }

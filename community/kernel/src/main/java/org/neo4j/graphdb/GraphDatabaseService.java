@@ -122,6 +122,18 @@ public interface GraphDatabaseService
     ResourceIterator<Node> findNodes( Label label, String key, Object value );
 
     /**
+     * Equivalent to {@link #findNodes(Label, String, Object)}, however it must find no more than one
+     * @{link Node node} or it will throw an exception.
+     *
+     * @param label consider nodes with this label
+     * @param key   required property key
+     * @param value required property value
+     * @return an iterator containing all matching nodes. See { @link ResourceIterator } for responsibilities.
+     * @throws MultipleFoundException if more than one matching {@link Node node} is found
+     */
+    Node findNode( Label label, String key, Object value );
+
+    /**
      * Returns all {@link Node nodes} with a specific {@link Label label}.
      *
      * Please take care that the returned {@link ResourceIterator} is closed correctly and as soon as possible

@@ -142,7 +142,7 @@ public class TestRecoveryScenarios
         // -- really the problem was that recovery threw exception, so mostly assert that.
         try ( Transaction tx = db.beginTx() )
         {
-            assertEquals( node, single( db.findNodes( label, "key", "value" ) ) );
+            assertEquals( node, db.findNode( label, "key", "value" ) );
             tx.success();
         }
     }

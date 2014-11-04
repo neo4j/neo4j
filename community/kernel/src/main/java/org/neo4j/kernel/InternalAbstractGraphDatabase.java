@@ -34,6 +34,7 @@ import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.MultipleFoundException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
@@ -1156,6 +1157,30 @@ public abstract class InternalAbstractGraphDatabase
     public ResourceIterator<Node> findNodes( final Label myLabel, final String key, final Object value )
     {
         return nodesByLabelAndProperty( myLabel, key, value );
+    }
+
+    @Override
+    public Node findNode( final Label myLabel, final String key, final Object value )
+    {
+        ResourceIterator<Node> iterator = findNodes( myLabel, key, value );
+
+        try
+        {
+            if ( !iterator.hasNext() )
+            {
+                return null;
+            }
+            Node node = iterator.next();
+            if ( iterator.hasNext() )
+            {
+                throw new MultipleFoundException();
+            }
+            return node;
+        }
+        finally
+        {
+            iterator.close();
+        }
     }
 
     @Override

@@ -390,7 +390,7 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestBase
     private static void assertUserExistsUniquelyInGraphDb( GraphDatabaseService graph, Transaction tx, String username )
     {
         Label label = DynamicLabel.label( "User" );
-        Node result = singleOrNull( graph.findNodes( label, "name", username ) );
+        Node result = graph.findNode( label, "name", username );
         assertNotNull( format( "User '%s' not created.", username ), result );
         tx.success();
     }

@@ -103,7 +103,7 @@ public class UniqueIndexRecoveryTests
         try ( Transaction tx = db.beginTx() )
         {
             assertThat(
-                    single( db.findNodes( LABEL, PROPERTY_KEY, PROPERTY_VALUE ) ),
+                    db.findNode( LABEL, PROPERTY_KEY, PROPERTY_VALUE ),
                     equalTo( unLabeledNode ) );
             tx.success();
         }
