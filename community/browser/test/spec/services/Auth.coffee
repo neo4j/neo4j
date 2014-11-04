@@ -24,7 +24,7 @@ describe 'Service: AuthService', () ->
 
     it ' - Persist auth token on successful authentication, generation of new token and manual update of token', ->
       success_response = 
-        user: 'test'
+        username: 'test'
         authorization_token: 'longtoken'
       httpBackend.expect('POST', "#{Settings.endpoint.auth}")
         .respond(200, JSON.stringify(success_response));
@@ -63,7 +63,7 @@ describe 'Service: AuthService', () ->
 
     it ' - Flag is_authenticated is true on successful authentication', ->
       success_response = 
-        user: 'neo4j'
+        username: 'neo4j'
         authorization_token: 'longtoken'
       httpBackend.expect('POST', "#{Settings.endpoint.auth}").respond(200, JSON.stringify(success_response));
       AuthService.authenticate('test', 'test')
