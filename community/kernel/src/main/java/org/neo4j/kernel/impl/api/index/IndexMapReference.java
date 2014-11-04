@@ -21,11 +21,12 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 
-public class IndexMapReference
+public class IndexMapReference implements IndexMapSnapshotProvider
 {
     private volatile IndexMap indexMap = new IndexMap();
 
-    public IndexMap getIndexMapCopy()
+    @Override
+    public IndexMap indexMapSnapshot()
     {
         return indexMap.clone();
     }
@@ -67,7 +68,7 @@ public class IndexMapReference
     public IndexProxy removeIndexProxy( long indexId )
     {
         // ASSUMPTION: Only called at shutdown or during commit (single-threaded in each case)
-        IndexMap newIndexMap = getIndexMapCopy();
+        IndexMap newIndexMap = indexMapSnapshot();
         IndexProxy indexProxy = newIndexMap.removeIndexProxy( indexId );
         setIndexMap( newIndexMap );
         return indexProxy;

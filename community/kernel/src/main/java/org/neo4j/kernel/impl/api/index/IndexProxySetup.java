@@ -30,6 +30,9 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
+import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.logging.Logging;
 
@@ -39,7 +42,7 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 public class IndexProxySetup
 {
-    private final IndexSamplingSetup samplingSetup;
+    private final IndexSamplingConfig samplingConfig;
     private final IndexStoreView storeView;
     private final SchemaIndexProviderMap providerMap;
     private final UpdateableSchemaState updateableSchemaState;
@@ -47,7 +50,7 @@ public class IndexProxySetup
     private final JobScheduler scheduler;
     private final Logging logging;
 
-    public IndexProxySetup( IndexSamplingSetup samplingSetup,
+    public IndexProxySetup( IndexSamplingConfig samplingConfig,
                             IndexStoreView storeView,
                             SchemaIndexProviderMap providerMap,
                             UpdateableSchemaState updateableSchemaState,
@@ -55,7 +58,7 @@ public class IndexProxySetup
                             JobScheduler scheduler,
                             Logging logging )
     {
-        this.samplingSetup = samplingSetup;
+        this.samplingConfig = samplingConfig;
         this.storeView = storeView;
         this.providerMap = providerMap;
         this.updateableSchemaState = updateableSchemaState;
@@ -75,7 +78,8 @@ public class IndexProxySetup
         // TODO: This is here because there is a circular dependency from PopulatingIndexProxy to FlippableIndexProxy
         final String indexUserDescription = indexUserDescription( descriptor, providerDescriptor );
         final IndexConfiguration config = new IndexConfiguration( constraint );
-        ValueSampler sampler = samplingSetup.createValueSampler( constraint );
+        ValueSampler sampler = constraint ? new UniqueIndexSampler()
+                                          : new NonUniqueIndexSampler( samplingConfig.bufferSize() );
         IndexPopulator populator = populatorFromProvider( providerDescriptor, ruleId, descriptor, config, sampler );
 
         FailedIndexProxyFactory failureDelegateFactory = new FailedPopulatingIndexProxyFactory(
@@ -160,7 +164,8 @@ public class IndexProxySetup
                                               IndexPopulationFailure populationFailure )
     {
         IndexConfiguration config = new IndexConfiguration( unique );
-        ValueSampler sampler = samplingSetup.createValueSampler( unique );
+        ValueSampler sampler = unique ? new UniqueIndexSampler()
+                                      : new NonUniqueIndexSampler( samplingConfig.bufferSize() );
         IndexPopulator indexPopulator =
                 populatorFromProvider( providerDescriptor, ruleId, descriptor, config, sampler );
         String indexUserDescription = indexUserDescription(descriptor, providerDescriptor);

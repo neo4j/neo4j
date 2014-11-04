@@ -29,30 +29,40 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.index.IndexMap;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
+import org.neo4j.kernel.impl.util.JobScheduler;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.BACKGROUND_REBUILD_UPDATED;
+import static org.neo4j.kernel.impl.util.JobScheduler.Group.indexSamplingController;
 
 public class IndexSamplingController
 {
+
     private final IndexSamplingConfig config;
     private final IndexSamplingJobFactory jobFactory;
+    private final IndexSamplingJobQueue jobQueue;
     private final IndexSamplingJobTracker jobTracker;
     private final IndexMapSnapshotProvider indexMapSnapshotProvider;
-    private final IndexSamplingJobQueue jobQueue;
-    private final Lock emptyLock;
+    private final JobScheduler scheduler;
+    private final Predicate<IndexDescriptor> indexRecoveryCondition;
+    private final Lock emptyLock = new ReentrantLock( true );
 
-    public IndexSamplingController( IndexSamplingConfig config,
-                                    IndexSamplingJobFactory jobFactory,
-                                    IndexSamplingJobQueue jobQueue,
-                                    IndexSamplingJobTracker jobTracker,
-                                    IndexMapSnapshotProvider indexMapSnapshotProvider )
+    // use IndexSamplingControllerFactory.create do not instantiate directly
+    IndexSamplingController( IndexSamplingConfig config,
+                             IndexSamplingJobFactory jobFactory,
+                             IndexSamplingJobQueue jobQueue,
+                             IndexSamplingJobTracker jobTracker,
+                             IndexMapSnapshotProvider indexMapSnapshotProvider,
+                             JobScheduler scheduler,
+                             Predicate<IndexDescriptor> indexRecoveryCondition )
     {
         this.config = config;
         this.jobFactory = jobFactory;
         this.indexMapSnapshotProvider = indexMapSnapshotProvider;
         this.jobQueue = jobQueue;
         this.jobTracker = jobTracker;
-        this.emptyLock =  new ReentrantLock( true );
+        this.scheduler = scheduler;
+        this.indexRecoveryCondition = indexRecoveryCondition;
     }
 
     public IndexSamplingConfig config()
@@ -77,7 +87,7 @@ public class IndexSamplingController
         }
     }
 
-    public void recoverIndexSamples( Predicate<IndexDescriptor> needsReSampling )
+    public void recoverIndexSamples()
     {
         emptyLock.lock();
         try
@@ -87,7 +97,7 @@ public class IndexSamplingController
             while ( descriptors.hasNext() )
             {
                 IndexDescriptor descriptor = descriptors.next();
-                if ( needsReSampling.accept( descriptor ) )
+                if ( indexRecoveryCondition.accept( descriptor ) )
                 {
                     sampleIndexOnCurrentThread( indexMap, descriptor );
                 }
@@ -195,5 +205,21 @@ public class IndexSamplingController
             job = jobFactory.create( config, proxy );
         }
         return job;
+    }
+
+    public void start()
+    {
+        if ( config.backgroundSampling() )
+        {
+            Runnable samplingRunner = new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    sampleIndexes( BACKGROUND_REBUILD_UPDATED );
+                }
+            };
+            scheduler.scheduleRecurring( indexSamplingController, samplingRunner, 10, SECONDS );
+        }
     }
 }

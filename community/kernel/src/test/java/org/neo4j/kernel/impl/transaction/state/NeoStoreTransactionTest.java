@@ -62,13 +62,15 @@ import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
+import org.neo4j.kernel.impl.api.index.IndexMapReference;
 import org.neo4j.kernel.impl.api.index.IndexProxySetup;
-import org.neo4j.kernel.impl.api.index.IndexSamplingSetup;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.IndexUpdates;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingControllerFactory;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.Lock;
@@ -1530,15 +1532,17 @@ public class NeoStoreTransactionTest
             return new PhysicalTransactionRepresentation( commands );
         }
     }
+
     private class CapturingIndexingService extends IndexingService
     {
         private final Set<NodePropertyUpdate> updates = new HashSet<>();
 
-        public CapturingIndexingService( IndexSamplingSetup samplingSetup, IndexProxySetup proxySetup,
-                                         SchemaIndexProviderMap providerMap, IndexStoreView storeView,
-                                         Iterable<IndexRule> indexRules, Logging logging, Monitor monitor )
+        public CapturingIndexingService( IndexProxySetup proxySetup, SchemaIndexProviderMap providerMap,
+                                         IndexMapReference indexMapRef, IndexStoreView storeView,
+                                         Iterable<IndexRule> indexRules, IndexSamplingController samplingController,
+                                         Logging logging, Monitor monitor )
         {
-            super( samplingSetup, proxySetup, providerMap, storeView, indexRules, logging, monitor );
+            super( proxySetup, providerMap, indexMapRef, storeView, indexRules, samplingController, logging, monitor );
         }
 
         @Override
@@ -1554,15 +1558,24 @@ public class NeoStoreTransactionTest
         SchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( NO_INDEX_PROVIDER );
         Logging logging = new SingleLoggingService( DEV_NULL );
         IndexingService.Monitor monitor = IndexingService.NO_MONITOR;
-        UpdateableSchemaState updateableSchemaState = new KernelSchemaStateStore( logging );
-        IndexSamplingSetup samplingSetup = new IndexSamplingSetup( new IndexSamplingConfig( new Config() ),
-                storeView, null, mock( TokenNameLookup.class), logging );
+        UpdateableSchemaState schemaState = new KernelSchemaStateStore( logging );
+        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
+        TokenNameLookup tokenNameLookup = mock( TokenNameLookup.class );
+        IndexMapReference indexMapRef = new IndexMapReference();
+        IndexSamplingControllerFactory
+                samplingFactory = new IndexSamplingControllerFactory(
+                samplingConfig, storeView, null, tokenNameLookup, logging
+        );
+        IndexProxySetup proxySetup =
+                new IndexProxySetup( samplingConfig, storeView, providerMap, schemaState, null, null, logging );
+        IndexSamplingController samplingController = samplingFactory.create( indexMapRef );
         return new CapturingIndexingService(
-                samplingSetup,
-                new IndexProxySetup( samplingSetup, storeView, providerMap, updateableSchemaState, null, null, logging ),
+                proxySetup,
                 providerMap,
+                indexMapRef,
                 storeView,
                 Collections.<IndexRule>emptyList(),
+                samplingController,
                 logging,
                 monitor
         );

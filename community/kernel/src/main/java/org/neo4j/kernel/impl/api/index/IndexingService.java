@@ -47,6 +47,7 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingControllerFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -77,18 +78,17 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  * If, however, it is {@link org.neo4j.kernel.api.index.InternalIndexState#ONLINE}, the index provider is required to
  * also guarantee that the index had been flushed to disk.
  */
-public class IndexingService extends LifecycleAdapter implements IndexMapSnapshotProvider
+public class IndexingService extends LifecycleAdapter
 {
     private final IndexSamplingController samplingController;
-    private final IndexSamplingSetup samplingSetup;
     private final IndexProxySetup proxySetup;
-    private final IndexMapReference indexMapRef = new IndexMapReference();
     private final IndexStoreView storeView;
     private final SchemaIndexProviderMap providerMap;
+    private final IndexMapReference indexMapRef;
     private final Iterable<IndexRule> indexRules;
     private final StringLogger logger;
-    private final Set<Long> recoveredNodeIds = new HashSet<>();
     private final Monitor monitor;
+    private final Set<Long> recoveredNodeIds = new HashSet<>();
 
     enum State
     {
@@ -131,20 +131,22 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
 
     private volatile State state = State.NOT_STARTED;
 
-    protected IndexingService( IndexSamplingSetup samplingSetup,
-                               IndexProxySetup proxySetup,
+    // use IndexService.create do not instantiate manually
+    protected IndexingService( IndexProxySetup proxySetup,
                                SchemaIndexProviderMap providerMap,
+                               IndexMapReference indexMapRef,
                                IndexStoreView storeView,
                                Iterable<IndexRule> indexRules,
+                               IndexSamplingController samplingController,
                                Logging logging,
                                Monitor monitor )
     {
-        this.storeView = storeView;
-        this.samplingSetup = samplingSetup;
         this.proxySetup = proxySetup;
-        this.samplingController = samplingSetup.createIndexSamplingController( this );
         this.providerMap = providerMap;
+        this.indexMapRef = indexMapRef;
+        this.storeView = storeView;
         this.indexRules = indexRules;
+        this.samplingController = samplingController;
         this.monitor = monitor;
         this.logger = logging.getMessagesLog( getClass() );
     }
@@ -166,26 +168,25 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
                     ") is on your classpath." );
         }
 
-        IndexSamplingSetup samplingSetup =
-                new IndexSamplingSetup( samplingConfig, storeView, scheduler, tokenNameLookup, logging );
-        return new IndexingService(
-            samplingSetup,
-            new IndexProxySetup( samplingSetup, storeView, providerMap, updateableSchemaState, tokenNameLookup, scheduler, logging ),
-            providerMap,
-            storeView,
-            indexRules,
-            logging,
-            monitor
+        IndexMapReference indexMapRef = new IndexMapReference();
+        IndexSamplingControllerFactory factory =
+                new IndexSamplingControllerFactory( samplingConfig, storeView, scheduler, tokenNameLookup, logging );
+        IndexSamplingController indexSamplingController = factory.create( indexMapRef );
+        IndexProxySetup proxySetup = new IndexProxySetup(
+                samplingConfig, storeView, providerMap, updateableSchemaState, tokenNameLookup, scheduler, logging
         );
+
+        return new IndexingService( proxySetup, providerMap, indexMapRef, storeView, indexRules,
+                indexSamplingController, logging, monitor );
     }
 
     /**
-         * Called while the database starts up, before recovery.
-         */
+     * Called while the database starts up, before recovery.
+     */
     @Override
     public void init()
     {
-        IndexMap indexMap = indexMapSnapshot();
+        IndexMap indexMap = indexMapRef.indexMapSnapshot();
 
         for ( IndexRule indexRule : indexRules )
         {
@@ -230,7 +231,7 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
         state = State.STARTING;
 
         applyRecoveredUpdates();
-        IndexMap indexMap = indexMapSnapshot();
+        IndexMap indexMap = indexMapRef.indexMapSnapshot();
 
         final Map<Long, Pair<IndexDescriptor, SchemaIndexProvider.Descriptor>> rebuildingDescriptors = new HashMap<>();
 
@@ -284,8 +285,9 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
 
         indexMapRef.setIndexMap( indexMap );
 
-        samplingController.recoverIndexSamples( samplingSetup.reSamplingPredicate() );
-        samplingSetup.scheduleBackgroundJob( samplingController );
+        samplingController.recoverIndexSamples();
+        samplingController.start();
+
         state = State.RUNNING;
     }
 
@@ -334,7 +336,7 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
      */
     public void createIndex( IndexRule rule )
     {
-        IndexMap indexMap = indexMapSnapshot();
+        IndexMap indexMap = indexMapRef.indexMapSnapshot();
 
         long ruleId = rule.getId();
         IndexProxy index = indexMap.getIndexProxy( ruleId );
@@ -366,12 +368,6 @@ public class IndexingService extends LifecycleAdapter implements IndexMapSnapsho
 
         indexMap.putIndexProxy( rule.getId(), index );
         indexMapRef.setIndexMap( indexMap );
-    }
-
-    @Override
-    public IndexMap indexMapSnapshot()
-    {
-        return indexMapRef.getIndexMapCopy();
     }
 
     public void updateIndexes( IndexUpdates updates, long transactionId, boolean forceIdempotency )
