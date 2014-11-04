@@ -33,6 +33,7 @@ import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Mark;
 import org.neo4j.csv.reader.Readables;
 import org.neo4j.function.Factory;
+import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.unsafe.impl.batchimport.input.DuplicateHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.MissingHeaderException;
@@ -87,6 +88,24 @@ public class DataFactories
             public CharSeeker create( Configuration config )
             {
                 return charSeeker( multipleFiles( files ), DEFAULT_BUFFER_SIZE, true, config.quotationCharacter() );
+            }
+        };
+    }
+
+    /**
+     * Creates an {@link Iterable} of {@link DataFactory} instances where each {@link DataFactory} represents one
+     * input group, with its own header, normally extracted using {@link #defaultFormatNodeFileHeader()}.
+     *
+     * @return {@link DataFactory} that returns a {@link CharSeeker} over all the supplied {@code files}.
+     */
+    public static Iterable<DataFactory> data( Iterable<File[]> fileGroups )
+    {
+        return new IterableWrapper<DataFactory,File[]>( fileGroups )
+        {
+            @Override
+            protected DataFactory underlyingObjectToObject( File[] files )
+            {
+                return data( files );
             }
         };
     }

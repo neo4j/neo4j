@@ -30,6 +30,7 @@ import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
@@ -40,11 +41,13 @@ import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_LABELS;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
 
 public class CsvInputTest
 {
@@ -54,7 +57,7 @@ public class CsvInputTest
         // GIVEN
         IdType idType = IdType.ACTUAL;
         Input input = new CsvInput(
-                data( "123,Mattias Persson,HACKER" ),
+                dataIterable( data( "123,Mattias Persson,HACKER" ) ),
                 header( entry( "id", Type.ID, idType.extractor( extractors ) ),
                         entry( "name", Type.PROPERTY, extractors.string() ),
                         entry( "labels", Type.LABEL, extractors.string() ) ),
@@ -72,8 +75,8 @@ public class CsvInputTest
         // GIVEN
         IdType idType = IdType.STRING;
         Input input = new CsvInput( null, null,
-                data( "node1,node2,KNOWS,1234567\n" +
-                      "node2,node10,HACKS,987654" ),
+                dataIterable( data( "node1,node2,KNOWS,1234567\n" +
+                      "node2,node10,HACKS,987654" ) ),
                 header( entry( "from", Type.START_NODE, idType.extractor( extractors ) ),
                         entry( "to", Type.END_NODE, idType.extractor( extractors ) ),
                         entry( "type", Type.RELATIONSHIP_TYPE, extractors.string() ),
@@ -89,17 +92,23 @@ public class CsvInputTest
     public void shouldCloseDataIteratorsInTheEnd() throws Exception
     {
         // GIVEN
-        CharSeeker nodeData = mock( CharSeeker.class );
-        CharSeeker relationshipData = mock( CharSeeker.class );
+        CharSeeker nodeData = spy( charSeeker( "test" ) );
+        CharSeeker relationshipData = spy( charSeeker( "test" ) );
         IdType idType = IdType.STRING;
         Input input = new CsvInput(
-                given( nodeData ), header( entry( "single", Type.IGNORE, idType.extractor( extractors ) ) ),
-                given( relationshipData ), header( entry( "single", Type.IGNORE, idType.extractor( extractors ) ) ),
+                dataIterable( given( nodeData ) ), header( entry( "single", Type.IGNORE, idType.extractor( extractors ) ) ),
+                dataIterable( given( relationshipData ) ), header( entry( "single", Type.IGNORE, idType.extractor( extractors ) ) ),
                 idType, COMMAS );
 
         // WHEN
-        input.nodes().iterator().close();
-        input.relationships().iterator().close();
+        try ( ResourceIterator<InputNode> iterator = input.nodes().iterator() )
+        {
+            iterator.next();
+        }
+        try ( ResourceIterator<InputRelationship> iterator = input.relationships().iterator() )
+        {
+            iterator.next();
+        }
 
         // THEN
         verify( nodeData, times( 1 ) ).close();
@@ -111,9 +120,9 @@ public class CsvInputTest
     {
         // GIVEN
         Input input = new CsvInput(
-                data( "1,ultralisk,ZERG,10\n" +
-                      "2,corruptor,ZERG\n" +
-                      "3,mutalisk,ZERG,3" ),
+                dataIterable( data( "1,ultralisk,ZERG,10\n" +
+                                "2,corruptor,ZERG\n" +
+                                "3,mutalisk,ZERG,3" ) ),
                 header(
                       entry( "id", Type.ID, extractors.long_() ),
                       entry( "unit", Type.PROPERTY, extractors.string() ),
@@ -137,8 +146,8 @@ public class CsvInputTest
     {
         // GIVEN
         Input input = new CsvInput(
-                data( "1,zergling,bubble,bobble\n" +
-                      "2,scv,pun,intended" ),
+                dataIterable( data( "1,zergling,bubble,bobble\n" +
+                                "2,scv,pun,intended" ) ),
                 header(
                       entry( "id", Type.ID, extractors.long_() ),
                       entry( "name", Type.PROPERTY, extractors.string() ) ),
@@ -152,6 +161,29 @@ public class CsvInputTest
             assertNode( nodes.next(), 2L, new Object[] { "name", "scv" }, InputEntity.NO_LABELS );
             assertFalse( nodes.hasNext() );
         }
+    }
+
+    @Test
+    public void shouldHandleMultipleInputGroups() throws Exception
+    {
+        // GIVEN multiple input groups, each with their own, specific, header
+        DataFactory group1 = data( "id:ID,name,kills:int,health:int\n" +
+                                   "1,Jim,10,100\n" +
+                                   "2,Abathur,0,200\n" );
+        DataFactory group2 = data( "id:ID,type\n" +
+                                   "3,zergling\n" +
+                                   "4,csv\n" );
+        Input input = new CsvInput( dataIterable( group1, group2 ), defaultFormatNodeFileHeader(),
+                                    null, null,
+                                    IdType.STRING, Configuration.COMMAS );
+
+        // WHEN iterating over them, THEN the expected data should come out
+        ResourceIterator<InputNode> nodes = input.nodes().iterator();
+        assertNode( nodes.next(), "1", properties( "name", "Jim", "kills", 10, "health", 100 ), NO_LABELS );
+        assertNode( nodes.next(), "2", properties( "name", "Abathur", "kills", 0, "health", 200 ), NO_LABELS );
+        assertNode( nodes.next(), "3", properties( "type", "zergling" ), NO_LABELS );
+        assertNode( nodes.next(), "4", properties( "type", "csv" ), NO_LABELS );
+        assertFalse( nodes.hasNext() );
     }
 
     private DataFactory given( final CharSeeker data )
@@ -217,9 +249,19 @@ public class CsvInputTest
             @Override
             public CharSeeker create( Configuration config )
             {
-                return new BufferedCharSeeker( new StringReader( data ) );
+                return charSeeker( data );
             }
         };
+    }
+
+    private CharSeeker charSeeker( String data )
+    {
+        return new BufferedCharSeeker( new StringReader( data ) );
+    }
+
+    private Iterable<DataFactory> dataIterable( DataFactory... data )
+    {
+        return Iterables.<DataFactory,DataFactory>iterable( data );
     }
 
     public final @Rule TestDirectory directory = TargetDirectory.testDirForTest( getClass() );

@@ -34,18 +34,30 @@ import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
  */
 public class CsvInput implements Input
 {
-    private final DataFactory nodeDataFactory;
+    private final Iterable<DataFactory> nodeDataFactory;
     private final Header.Factory nodeHeaderFactory;
-    private final DataFactory relationshipDataFactory;
+    private final Iterable<DataFactory> relationshipDataFactory;
     private final Header.Factory relationshipHeaderFactory;
     private final IdType idType;
     private final IdMapping idMapping;
     private final Configuration config;
     private final int[] delimiter;
 
+    /**
+     * @param nodeDataFactory multiple {@link DataFactory} instances providing data, each {@link DataFactory}
+     * specifies an input group with its own header, extracted by the {@code nodeHeaderFactory}. From the outside
+     * it looks like one stream of nodes.
+     * @param nodeHeaderFactory factory for reading node headers.
+     * @param relationshipDataFactory multiple {@link DataFactory} instances providing data, each {@link DataFactory}
+     * specifies an input group with its own header, extracted by the {@code relationshipHeaderFactory}.
+     * From the outside it looks like one stream of relationships.
+     * @param relationshipHeaderFactory factory for reading relationship headers.
+     * @param idType {@link IdType} to expect in id fields of node and relationship input.
+     * @param config CSV configuration.
+     */
     public CsvInput(
-            DataFactory nodeDataFactory, Header.Factory nodeHeaderFactory,
-            DataFactory relationshipDataFactory, Header.Factory relationshipHeaderFactory,
+            Iterable<DataFactory> nodeDataFactory, Header.Factory nodeHeaderFactory,
+            Iterable<DataFactory> relationshipDataFactory, Header.Factory relationshipHeaderFactory,
             IdType idType, Configuration config )
     {
         this.nodeDataFactory = nodeDataFactory;
@@ -67,15 +79,15 @@ public class CsvInput implements Input
             @Override
             public ResourceIterator<InputNode> iterator()
             {
-                // Open the data stream. It's closed by the batch importer when execution is done.
-                final CharSeeker dataStream = nodeDataFactory.create( config );
-
-                // Read the header, given the data stream. This allows the header factory to be able to
-                // parse the header from the data stream directly. Or it can decide to grab the header
-                // from somewhere else, it's up to that factory.
-                final Header dataHeader = nodeHeaderFactory.create( dataStream, config, idType );
-
-                return new InputNodeDeserializer( dataHeader, dataStream, delimiter );
+                return new InputGroupsDeserializer<InputNode>( nodeDataFactory.iterator(),
+                                                               nodeHeaderFactory, config, idType )
+                {
+                    @Override
+                    protected ResourceIterator<InputNode> entityDeserializer( CharSeeker dataStream, Header dataHeader )
+                    {
+                        return new InputNodeDeserializer( dataHeader, dataStream, delimiter );
+                    }
+                };
             }
         };
     }
@@ -88,15 +100,16 @@ public class CsvInput implements Input
             @Override
             public ResourceIterator<InputRelationship> iterator()
             {
-                // Open the data stream. It's closed by the batch importer when execution is done.
-                final CharSeeker dataStream = relationshipDataFactory.create( config );
-
-                // Read the header, given the data stream. This allows the header factory to be able to
-                // parse the header from the data stream directly. Or it can decide to grab the header
-                // from somewhere else, it's up to that factory.
-                final Header dataHeader = relationshipHeaderFactory.create( dataStream, config, idType );
-
-                return new InputRelationshipDeserializer( dataHeader, dataStream, delimiter );
+                return new InputGroupsDeserializer<InputRelationship>( relationshipDataFactory.iterator(),
+                                                                       relationshipHeaderFactory, config, idType )
+                {
+                    @Override
+                    protected ResourceIterator<InputRelationship> entityDeserializer( CharSeeker dataStream,
+                                                                                      Header dataHeader )
+                    {
+                        return new InputRelationshipDeserializer( dataHeader, dataStream, delimiter );
+                    }
+                };
             }
         };
     }

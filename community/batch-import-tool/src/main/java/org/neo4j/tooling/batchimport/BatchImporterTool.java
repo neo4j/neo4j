@@ -22,6 +22,7 @@ package org.neo4j.tooling.batchimport;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Map.Entry;
 
 import org.neo4j.function.Function;
@@ -49,7 +50,6 @@ import static java.io.File.pathSeparator;
 import static org.neo4j.kernel.impl.util.Converters.withDefault;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.TABS;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
 
@@ -86,14 +86,15 @@ public class BatchImporterTool
 
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         File storeDir;
-        File[] nodesFiles, relationshipsFiles;
+        // The input groups
+        Collection<File[]> nodesFiles, relationshipsFiles;
         try
         {
             storeDir = args.interpretOption( STORE_DIR, Converters.<File>mandatory(), Converters.toFile(),
                     Validators.DIRECTORY_IS_WRITABLE, Validators.CONTAINS_NO_EXISTING_DATABASE );
-            nodesFiles = args.interpretOption( NODE_DATA, Converters.<File[]>mandatory(), Converters.toFiles(),
+            nodesFiles = args.interpretOptions( NODE_DATA, Converters.<File[]>mandatory(), Converters.toFiles(),
                     Validators.FILES_EXISTS, Validators.<File>atLeast( 1 ) );
-            relationshipsFiles = args.interpretOption( RELATIONSHIP_DATA, Converters.<File[]>mandatory(),
+            relationshipsFiles = args.interpretOptions( RELATIONSHIP_DATA, Converters.<File[]>mandatory(),
                     Converters.toFiles(), Validators.FILES_EXISTS, Validators.<File>atLeast( 1 ) );
         }
         catch ( IllegalArgumentException e )
@@ -116,7 +117,7 @@ public class BatchImporterTool
                 DataFactories.data( relationshipsFiles ),
                 defaultFormatRelationshipFileHeader(),
                 args.interpretOption( ID_TYPE, withDefault( IdType.STRING ), TO_ID_TYPE ),
-                csvConfiguration( args, nodesFiles[0] ) );
+                csvConfiguration( args ) );
         boolean success = false;
         try
         {
@@ -152,10 +153,12 @@ public class BatchImporterTool
                 "Must not contain existing database." );
         printArgumentUsage( "--nodes <file1>" + pathSeparator + "<file2>" + pathSeparator + "...",
                 "Node CSV header and data. Multiple files will be logically seen as one big file " +
-                "from the perspective of the importer. First line must contain the header." );
+                "from the perspective of the importer. First line must contain the header. " +
+                "Multiple input groups like these can be specified in one import, where each group has its own header." );
         printArgumentUsage( "--relationships <file1>" + pathSeparator + "<file2>" + pathSeparator + "...",
                 "Relationship CSV header and data. Multiple files will be logically seen as one big file " +
-                "from the perspective of the importer. First line must contain the header." );
+                "from the perspective of the importer. First line must contain the header. " +
+                "Multiple input groups like these can be specified in one import, where each group has its own header." );
         printArgumentUsage( "--delimiter <delimiter-character>",
                 "Delimiter character between values in CSV data." );
         printArgumentUsage( "--array-delimiter <array-delimiter-character>",
@@ -167,7 +170,7 @@ public class BatchImporterTool
                 "One out of " + Arrays.toString( IdType.values() ) + " and specifies how ids in node/relationship " +
                 "input files are treated.\n" +
                 IdType.STRING + ": arbitrary strings for identifying nodes.\n" +
-                IdType.ACTUAL + ": (advanced) actual node ids, starting from 0" );
+                IdType.ACTUAL + ": (advanced) actual node ids, starting from 0." );
     }
 
     private static void printArgumentUsage( String usage, String description )
@@ -204,10 +207,9 @@ public class BatchImporterTool
         return key.equals( "?" ) || key.equals( "help" );
     }
 
-    private static Configuration csvConfiguration( Args args, File nodesFile )
+    private static Configuration csvConfiguration( Args args )
     {
-        String name = nodesFile.getName().toLowerCase();
-        final Configuration defaultConfiguration = name.endsWith( ".tsv" ) ? TABS : COMMAS;
+        final Configuration defaultConfiguration = COMMAS;
         final Character specificDelimiter =
                 args.interpretOption( DELIMITER, Converters.<Character>optional(), Converters.toCharacter() );
         final Character specificArrayDelimiter =

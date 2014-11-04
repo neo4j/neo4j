@@ -740,4 +740,18 @@ public class PrimitiveIntCollections
             }
         };
     }
+
+    private static final PrimitiveIntPredicate TRUE = new PrimitiveIntPredicate()
+    {
+        @Override
+        public boolean accept( int value )
+        {
+            return true;
+        }
+    };
+
+    public static PrimitiveIntPredicate alwaysTrue()
+    {
+        return TRUE;
+    }
 }

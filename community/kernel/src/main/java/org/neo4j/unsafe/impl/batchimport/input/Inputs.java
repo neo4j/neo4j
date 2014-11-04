@@ -26,9 +26,11 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapping;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.CsvInput;
 import org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories;
+import org.neo4j.unsafe.impl.batchimport.input.csv.DataFactory;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 
 import static org.neo4j.helpers.collection.Iterables.asResourceIterable;
+import static org.neo4j.helpers.collection.Iterables.iterable;
 
 public class Inputs
 {
@@ -62,9 +64,11 @@ public class Inputs
     public static Input csv( File nodes, File relationships, IdType idType,
             Configuration configuration )
     {
+        Iterable<DataFactory> nodeData = iterable( DataFactories.data( nodes ) );
+        Iterable<DataFactory> relationshipData = iterable( DataFactories.data( relationships ) );
         return new CsvInput(
-                DataFactories.data( nodes ), DataFactories.defaultFormatNodeFileHeader(),
-                DataFactories.data( relationships ), DataFactories.defaultFormatRelationshipFileHeader(),
+                nodeData, DataFactories.defaultFormatNodeFileHeader(),
+                relationshipData, DataFactories.defaultFormatRelationshipFileHeader(),
                 idType, configuration );
     }
 }
