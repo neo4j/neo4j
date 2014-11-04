@@ -105,6 +105,7 @@ import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
 import static org.neo4j.server.rest.repr.RepresentationType.CONSTRAINT_DEFINITION;
@@ -1409,7 +1410,7 @@ public class DatabaseActions
         else if ( properties.size() == 1 )
         {
             Map.Entry<String, Object> prop = Iterables.single( properties.entrySet() );
-            nodes = graphDb.findNodesByLabelAndProperty( label( labelName ), prop.getKey(), prop.getValue() );
+            nodes = loop( graphDb.findNodes( label( labelName ), prop.getKey(), prop.getValue() ) );
         }
         else
         {

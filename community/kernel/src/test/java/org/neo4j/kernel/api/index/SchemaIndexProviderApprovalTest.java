@@ -32,7 +32,7 @@ import org.junit.runners.Parameterized.Parameters;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.Function;
@@ -201,7 +201,7 @@ public abstract class SchemaIndexProviderApprovalTest
     private static void addToResults( GraphDatabaseService db, HashMap<TestValue, Set<Object>> results,
                                       TestValue value )
     {
-        ResourceIterable<Node> foundNodes = db.findNodesByLabelAndProperty( label( LABEL ), PROPERTY_KEY, value.value );
+        ResourceIterator<Node> foundNodes = db.findNodes( label( LABEL ), PROPERTY_KEY, value.value );
         Set<Object> propertyValues = asSet( map( PROPERTY_EXTRACTOR, foundNodes ) );
         results.put( value, propertyValues );
     }

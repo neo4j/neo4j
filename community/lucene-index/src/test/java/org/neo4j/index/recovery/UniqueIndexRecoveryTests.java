@@ -56,7 +56,7 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertFalse;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.Iterables.single;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
 
 /**
  * Arbitrary recovery scenarios boiled down to as small tests as possible
@@ -103,7 +103,7 @@ public class UniqueIndexRecoveryTests
         try ( Transaction tx = db.beginTx() )
         {
             assertThat(
-                    single( db.findNodesByLabelAndProperty( LABEL, PROPERTY_KEY, PROPERTY_VALUE ) ),
+                    single( db.findNodes( LABEL, PROPERTY_KEY, PROPERTY_VALUE ) ),
                     equalTo( unLabeledNode ) );
             tx.success();
         }

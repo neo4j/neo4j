@@ -234,8 +234,7 @@ public class UniqueConstraintHaIT
     {
         try(Transaction tx = db.beginTx())
         {
-            assertThat( asList( db.findNodesByLabelAndProperty( label( "User" ), "name", "Bob" ) ).size(),
-                    equalTo(1));
+            assertThat( asList( db.findNodes( label( "User" ), "name", "Bob" ) ).size(), equalTo(1));
             tx.success();
         }
     }

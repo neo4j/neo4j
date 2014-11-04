@@ -49,6 +49,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.Iterables;
@@ -299,8 +300,7 @@ public class ParallelBatchImporterTest
         assertEquals( count( allNodesWithLabel ), nodeCount );
 
         // All nodes also have the same age=10 property, so we should again find them all
-        ResourceIterable<Node> foundNodes =
-                db.findNodesByLabelAndProperty( firstLabel, "age", 10 );
+        ResourceIterator<Node> foundNodes = db.findNodes( firstLabel, "age", 10 );
         assertEquals( count( foundNodes ), nodeCount );
     }
 

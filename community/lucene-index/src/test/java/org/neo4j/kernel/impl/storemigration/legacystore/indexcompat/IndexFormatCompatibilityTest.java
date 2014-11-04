@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.storemigration.legacystore.indexcompat;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 
 import org.junit.After;
@@ -40,9 +41,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.IteratorUtil.asList;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
 
 @Ignore( "This test is for an index format change between 2.0.0 and 2.0.x so not applicable for later versions" )
 public class IndexFormatCompatibilityTest
@@ -69,15 +71,15 @@ public class IndexFormatCompatibilityTest
         try ( Transaction tx = db.beginTx() )
         {
             assertEquals( IteratorUtil.<Integer>asSet(),
-                    externalIds( db.findNodesByLabelAndProperty( label( "Person" ), "age", 0 ) ) );
+                    externalIds( db.findNodes( label( "Person" ), "age", 0 ) ) );
             assertEquals( asSet( 0 ),
-                    externalIds( db.findNodesByLabelAndProperty( label( "Person" ), "age", 1 ) ) );
+                    externalIds( db.findNodes( label( "Person" ), "age", 1 ) ) );
             assertEquals( asSet( 1, 4 ),
-                    externalIds( db.findNodesByLabelAndProperty( label( "Person" ), "age", 2 ) ) );
+                    externalIds( db.findNodes( label( "Person" ), "age", 2 ) ) );
             assertEquals( asSet( 2, 5, 7 ),
-                    externalIds( db.findNodesByLabelAndProperty( label( "Person" ), "age", 3 ) ) );
+                    externalIds( db.findNodes( label( "Person" ), "age", 3 ) ) );
             assertEquals( asSet( 3, 6, 8, 9 ),
-                    externalIds( db.findNodesByLabelAndProperty( label( "Person" ), "age", 4 ) ) );
+                    externalIds( db.findNodes( label( "Person" ), "age", 4 ) ) );
 
             tx.success();
         }
@@ -88,21 +90,21 @@ public class IndexFormatCompatibilityTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            assertEquals( 1, age(single( db.findNodesByLabelAndProperty( label( "Person" ), "externalId", 0 ) ) ) );
-            assertEquals( 2, age(single( db.findNodesByLabelAndProperty( label( "Person" ), "externalId", 1 ) ) ) );
-            assertEquals( 3, age(single( db.findNodesByLabelAndProperty( label( "Person" ), "externalId", 2 ) ) ) );
-            assertEquals( 4, age(single( db.findNodesByLabelAndProperty( label( "Person" ), "externalId", 3 ) ) ) );
-            assertEquals( 2, age(single( db.findNodesByLabelAndProperty( label( "Person" ), "externalId", 4 ) ) ) );
-            assertTrue( asList( db.findNodesByLabelAndProperty( label( "Person" ), "externalId", 10 ) ).isEmpty() );
+            assertEquals( 1, age(single( db.findNodes( label( "Person" ), "externalId", 0 ) ) ) );
+            assertEquals( 2, age(single( db.findNodes( label( "Person" ), "externalId", 1 ) ) ) );
+            assertEquals( 3, age(single( db.findNodes( label( "Person" ), "externalId", 2 ) ) ) );
+            assertEquals( 4, age(single( db.findNodes( label( "Person" ), "externalId", 3 ) ) ) );
+            assertEquals( 2, age(single( db.findNodes( label( "Person" ), "externalId", 4 ) ) ) );
+            assertTrue( asList( db.findNodes( label( "Person" ), "externalId", 10 ) ).isEmpty() );
 
             tx.success();
         }
     }
 
-    private Set<Integer> externalIds( Iterable<Node> nodes )
+    private Set<Integer> externalIds( Iterator<Node> nodes )
     {
         HashSet<Integer> externalIds = new HashSet<>();
-        for ( Node node : nodes )
+        for ( Node node : loop( nodes ) )
         {
             externalIds.add( ((Number) node.getProperty( "externalId" )).intValue() );
         }

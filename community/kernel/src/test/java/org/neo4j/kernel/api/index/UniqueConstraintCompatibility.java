@@ -799,7 +799,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
      */
     private Node lookUpNode( Object value )
     {
-        return single( db.findNodesByLabelAndProperty( label, property, value ), null );
+        return single( db.findNodes( label, property, value ), null );
     }
 
     // -- Set Up: Transaction handling

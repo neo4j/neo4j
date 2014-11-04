@@ -67,8 +67,8 @@ public class BatchInsertionIT
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase(testDir.directory().getAbsolutePath());
         try(Transaction tx = db.beginTx())
         {
-            assertThat( count( db.findNodesByLabelAndProperty( label( "User" ), "name", "Bob" ) ), equalTo(1) );
-            assertThat( count( db.findNodesByLabelAndProperty( label( "Admin" ), "name", "Bob" ) ), equalTo(1) );
+            assertThat( count( db.findNodes( label( "User" ), "name", "Bob" ) ), equalTo(1) );
+            assertThat( count( db.findNodes( label( "Admin" ), "name", "Bob" ) ), equalTo(1) );
         }
         finally
         {
@@ -94,7 +94,7 @@ public class BatchInsertionIT
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase(testDir.directory().getAbsolutePath());
         try(Transaction tx = db.beginTx())
         {
-            assertThat( count( db.findNodesByLabelAndProperty( label( "Banana" ), "name", "Bob" ) ), equalTo(0) );
+            assertThat( count( db.findNodes( label( "Banana" ), "name", "Bob" ) ), equalTo(0) );
         }
         finally
         {

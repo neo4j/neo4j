@@ -45,6 +45,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertThat;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import static org.neo4j.test.DatabaseFunctions.addLabel;
 import static org.neo4j.test.DatabaseFunctions.awaitIndexesOnline;
 import static org.neo4j.test.DatabaseFunctions.createNode;
@@ -170,7 +171,7 @@ public class UniqueIndexApplicationIT
             public List<Long> apply( GraphDatabaseService graphDb )
             {
                 ArrayList<Long> ids = new ArrayList<>();
-                for ( Node node : graphDb.findNodesByLabelAndProperty( label, propertyKey, value ) )
+                for ( Node node : loop( graphDb.findNodes( label, propertyKey, value ) ) )
                 {
                     ids.add( node.getId() );
                 }

@@ -52,7 +52,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.Iterables.single;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.test.EphemeralFileSystemRule.shutdownDb;
 
 /**
@@ -107,7 +107,7 @@ public class TestRecoveryScenarios
         try ( Transaction tx = db.beginTx() )
         {
             assertEquals( "Updates not propagated correctly during recovery", Collections.<Node>emptyList(),
-                    IteratorUtil.asList( db.findNodesByLabelAndProperty( label, "key", "value" ) ) );
+                    IteratorUtil.asList( db.findNodes( label, "key", "value" ) ) );
             tx.success();
         }
     }
@@ -142,7 +142,7 @@ public class TestRecoveryScenarios
         // -- really the problem was that recovery threw exception, so mostly assert that.
         try ( Transaction tx = db.beginTx() )
         {
-            assertEquals( node, single( db.findNodesByLabelAndProperty( label, "key", "value" ) ) );
+            assertEquals( node, single( db.findNodes( label, "key", "value" ) ) );
             tx.success();
         }
     }

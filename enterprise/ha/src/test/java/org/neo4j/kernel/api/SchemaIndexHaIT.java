@@ -390,8 +390,7 @@ public class SchemaIndexHaIT
         for ( Map.Entry<Object, Node> entry : expectedData.entrySet() )
         {
             assertEquals( asSet( entry.getValue() ),
-                    asUniqueSet( db.findNodesByLabelAndProperty( index.getLabel(),
-                            single( index.getPropertyKeys() ), entry.getKey() ) ) );
+                    asUniqueSet( db.findNodes( index.getLabel(), single( index.getPropertyKeys() ), entry.getKey() ) ) );
         }
     }
 

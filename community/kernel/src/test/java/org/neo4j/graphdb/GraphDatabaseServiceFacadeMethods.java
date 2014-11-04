@@ -23,6 +23,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableCollection;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
 /**
  * Test convenience: all the methods on GraphDatabaseService, callable using generic interface
@@ -103,7 +104,7 @@ public class GraphDatabaseServiceFacadeMethods
         @Override
         public void call( GraphDatabaseService graphDatabaseService )
         {
-            for ( Node node : graphDatabaseService.findNodesByLabelAndProperty( label( "bar" ), "baz", 23 ) )
+            for ( Node node : loop( graphDatabaseService.findNodes( label( "bar" ), "baz", 23 ) ) )
             {
 
             }

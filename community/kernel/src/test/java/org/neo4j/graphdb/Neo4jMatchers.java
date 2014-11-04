@@ -43,6 +43,7 @@ import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.arrayAsCollection;
 
 public class Neo4jMatchers
@@ -397,7 +398,7 @@ public class Neo4jMatchers
             @Override
             protected Iterable<Node> manifest()
             {
-                return db.findNodesByLabelAndProperty( label, propertyName, propertyValue );
+                return loop( db.findNodes( label, propertyName, propertyValue ) );
             }
         };
     }

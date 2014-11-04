@@ -174,7 +174,7 @@ public class IndexTxStateLookupTest
             graphDb.createNode( label( "Node" ) ).setProperty( "prop", store );
 
             // then
-            assertEquals( 1, count( graphDb.findNodesByLabelAndProperty( label( "Node" ), "prop", lookup ) ) );
+            assertEquals( 1, count( graphDb.findNodes( label( "Node" ), "prop", lookup ) ) );
             tx.success();
         }
     }
@@ -189,7 +189,7 @@ public class IndexTxStateLookupTest
             db.clearCache();
 
             // then
-            assertEquals( 1, count( graphDb.findNodesByLabelAndProperty( label( "Node" ), "prop", lookup ) ) );
+            assertEquals( 1, count( graphDb.findNodes( label( "Node" ), "prop", lookup ) ) );
             tx.success();
         }
     }
@@ -206,7 +206,7 @@ public class IndexTxStateLookupTest
         // then
         try ( Transaction tx = graphDb.beginTx() )
         {
-            assertEquals( 1, count( graphDb.findNodesByLabelAndProperty( label( "Node" ), "prop", lookup ) ) );
+            assertEquals( 1, count( graphDb.findNodes( label( "Node" ), "prop", lookup ) ) );
             tx.success();
         }
     }
@@ -224,7 +224,7 @@ public class IndexTxStateLookupTest
         // then
         try ( Transaction tx = graphDb.beginTx() )
         {
-            assertEquals( 1, count( graphDb.findNodesByLabelAndProperty( label( "Node" ), "prop", lookup ) ) );
+            assertEquals( 1, count( graphDb.findNodes( label( "Node" ), "prop", lookup ) ) );
             tx.success();
         }
     }
