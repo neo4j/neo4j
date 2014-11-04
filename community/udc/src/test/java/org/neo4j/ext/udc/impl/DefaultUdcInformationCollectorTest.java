@@ -186,6 +186,12 @@ public class DefaultUdcInformationCollectorTest
         }
 
         @Override
+        public ResourceIterator<Node> findNodes( Label label )
+        {
+            return null;
+        }
+
+        @Override
         public ResourceIterable<Node> findNodesByLabelAndProperty( Label label, String key, Object value )
         {
             return null;

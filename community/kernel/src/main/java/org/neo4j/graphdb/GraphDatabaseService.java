@@ -122,6 +122,17 @@ public interface GraphDatabaseService
     ResourceIterator<Node> findNodes( Label label, String key, Object value );
 
     /**
+     * Returns all {@link Node nodes} with a specific {@link Label label}.
+     *
+     * Please take care that the returned {@link ResourceIterator} is closed correctly and as soon as possible
+     * inside your transaction to avoid potential blocking of write operations.
+     *
+     * @param label the {@link Label} to return nodes for.
+     * @return {@link Iterable} containing nodes with a specific label.
+     */
+    ResourceIterator<Node> findNodes( Label label );
+
+    /**
      * Returns all nodes having the label, and the wanted property value.
      * If an online index is found, it will be used to look up the requested
      * nodes.

@@ -97,6 +97,7 @@ import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
+import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.api.store.CacheLayer;
 import org.neo4j.kernel.impl.cache.BridgingCacheAccess;
 import org.neo4j.kernel.impl.cache.CacheProvider;
@@ -182,6 +183,7 @@ import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.helpers.NamedThreadFactory.daemon;
 import static org.neo4j.helpers.Settings.STRING;
 import static org.neo4j.helpers.Settings.setting;
+import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.fail;
 import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
 import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PROPERTY_KEY;
@@ -1157,6 +1159,12 @@ public abstract class InternalAbstractGraphDatabase
     }
 
     @Override
+    public ResourceIterator<Node> findNodes( final Label myLabel )
+    {
+        return allNodesWithLabel( myLabel );
+    }
+
+    @Override
     public ResourceIterable<Node> findNodesByLabelAndProperty( final Label myLabel, final String key,
                                                                final Object value )
     {
@@ -1228,6 +1236,28 @@ public abstract class InternalAbstractGraphDatabase
                 new PropertyValueFilteringNodeIdIterator(
                         statement.readOperations().nodesGetForLabel( labelId ),
                         statement.readOperations(), propertyId, value ), statement );
+    }
+
+    private ResourceIterator<Node> allNodesWithLabel( final Label myLabel )
+    {
+        Statement statement = threadToTransactionBridge.instance();
+
+        int labelId = statement.readOperations().labelGetForName( myLabel.name() );
+        if ( labelId == KeyReadOperations.NO_SUCH_LABEL )
+        {
+            statement.close();
+            return emptyIterator();
+        }
+
+        final PrimitiveLongIterator nodeIds = statement.readOperations().nodesGetForLabel( labelId );
+        return ResourceClosingIterator.newResourceIterator( statement, map( new FunctionFromPrimitiveLong<Node>()
+        {
+            @Override
+            public Node apply( long nodeId )
+            {
+                return nodeManager.newNodeProxyById( nodeId );
+            }
+        }, nodeIds ) );
     }
 
     private ResourceIterator<Node> map2nodes( PrimitiveLongIterator input, Statement statement )

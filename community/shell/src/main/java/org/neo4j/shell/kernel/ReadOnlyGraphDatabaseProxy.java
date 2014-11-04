@@ -974,6 +974,12 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     }
 
     @Override
+    public ResourceIterator<Node> findNodes( Label label )
+    {
+        return actual.findNodes( label );
+    }
+
+    @Override
     public ResourceIterable<Node> findNodesByLabelAndProperty( Label label, String key, Object value )
     {
         return actual.findNodesByLabelAndProperty( label, key, value );
