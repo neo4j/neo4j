@@ -32,7 +32,7 @@ import static org.junit.Assert.assertThat;
 
 public abstract class PageCacheMonitorTest
 {
-    private DefaultPageCacheMonitor monitor;
+    private PageCacheMonitor monitor;
     private PageSwapper swapper;
 
     @Before
@@ -42,7 +42,7 @@ public abstract class PageCacheMonitorTest
         swapper = new DummyPageSwapper( "filename" );
     }
 
-    protected abstract DefaultPageCacheMonitor createMonitor();
+    protected abstract PageCacheMonitor createMonitor();
 
     @Test
     public void mustCountPinsAndUnpins()
