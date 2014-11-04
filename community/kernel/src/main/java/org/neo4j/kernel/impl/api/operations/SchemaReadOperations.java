@@ -63,11 +63,6 @@ public interface SchemaReadOperations
     InternalIndexState indexGetState( KernelStatement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
-     * Get the number of index entries.
-     **/
-    long indexSize( KernelStatement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
-
-    /**
      * Calculate the index unique values percentage.
      **/
     double indexUniqueValuesPercentage( KernelStatement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException;

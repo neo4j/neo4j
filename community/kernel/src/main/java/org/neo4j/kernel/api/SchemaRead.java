@@ -55,9 +55,6 @@ interface SchemaRead
     /** Calculate the index unique values percentage (range: {@code 0.0} exclusive to {@code 1.0} inclusive). */
     double indexUniqueValuesSelectivity( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
-    /** Get the number of index entries. */
-    long indexSize( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
-
     /** Returns the failure description of a failed index. */
     String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 

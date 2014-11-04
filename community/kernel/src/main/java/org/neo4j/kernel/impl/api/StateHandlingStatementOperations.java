@@ -935,12 +935,6 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public long indexSize( KernelStatement statement, IndexDescriptor descriptor ) throws IndexNotFoundKernelException
-    {
-        return storeLayer.indexSize( descriptor );
-    }
-
-    @Override
     public PrimitiveLongIterator nodeGetRelationships( KernelStatement state, long nodeId, Direction direction,
                                                        int[] relTypes ) throws EntityNotFoundException
     {

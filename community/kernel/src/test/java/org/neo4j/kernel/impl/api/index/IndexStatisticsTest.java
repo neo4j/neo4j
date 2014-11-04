@@ -125,17 +125,6 @@ public class IndexStatisticsTest
         // then
         try
         {
-            indexSize( index );
-            fail( "Expected IndexNotFoundKernelException to be thrown" );
-        }
-        catch ( IndexNotFoundKernelException e )
-        {
-            assertEquals( 0l, getTracker().indexSize( index.getLabelId(), index.getPropertyKeyId() ) );
-        }
-
-        // and also
-        try
-        {
             indexSelectivity( index );
             fail( "Expected IndexNotFoundKernelException to be thrown" );
         }
@@ -146,16 +135,9 @@ public class IndexStatisticsTest
             assertDoubleLongEquals( 0l, 0l, register );
         }
 
-        // and also
-        try
-        {
-            indexSelectivity( index );
-            fail( "Expected IndexNotFoundKernelException to be thrown" );
-        }
-        catch ( IndexNotFoundKernelException e )
-        {
-            assertEquals( 0l, getTracker().indexUpdates( index.getLabelId(), index.getPropertyKeyId() ) );
-        }
+        // and then index size and index updates are zero on disk
+        assertEquals( 0l, getTracker().indexSize( index.getLabelId(), index.getPropertyKeyId() ) );
+        assertEquals( 0l, getTracker().indexUpdates( index.getLabelId(), index.getPropertyKeyId() ) );
     }
 
     @Test
@@ -346,13 +328,10 @@ public class IndexStatisticsTest
 
     private long indexSize( IndexDescriptor descriptor ) throws KernelException
     {
-        try ( Transaction tx = db.beginTx() )
-        {
-            Statement statement = bridge.instance();
-            long indexSize = statement.readOperations().indexSize( descriptor );
-            tx.success();
-            return indexSize;
-        }
+        return ((GraphDatabaseAPI) db).getDependencyResolver()
+                                      .resolveDependency( NeoStoreDataSource.class )
+                                      .getIndexService()
+                                      .indexSize( indexId( descriptor ) );
     }
 
     private long indexUpdates( IndexDescriptor descriptor ) throws KernelException
