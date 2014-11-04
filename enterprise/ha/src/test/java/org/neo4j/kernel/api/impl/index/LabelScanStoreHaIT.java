@@ -38,7 +38,6 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -77,7 +76,7 @@ public class LabelScanStoreHaIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            int count = count( GlobalGraphOperations.at( db ).getAllNodesWithLabel( label ) );
+            int count = count( db.findNodes( label ) );
             tx.success();
             return count;
         }

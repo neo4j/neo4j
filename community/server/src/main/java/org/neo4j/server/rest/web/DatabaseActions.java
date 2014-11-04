@@ -21,6 +21,7 @@ package org.neo4j.server.rest.web;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -104,8 +105,8 @@ import com.sun.jersey.api.core.HttpContext;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.asList;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
 import static org.neo4j.server.rest.repr.RepresentationType.CONSTRAINT_DEFINITION;
@@ -1401,16 +1402,16 @@ public class DatabaseActions
 
     public ListRepresentation getNodesWithLabel( String labelName, Map<String, Object> properties )
     {
-        Iterable<Node> nodes;
+        Iterator<Node> nodes;
 
         if ( properties.size() == 0 )
         {
-            nodes = GlobalGraphOperations.at( graphDb ).getAllNodesWithLabel( label( labelName ) );
+            nodes = graphDb.findNodes( label( labelName ) );
         }
         else if ( properties.size() == 1 )
         {
             Map.Entry<String, Object> prop = Iterables.single( properties.entrySet() );
-            nodes = loop( graphDb.findNodes( label( labelName ), prop.getKey(), prop.getValue() ) );
+            nodes = graphDb.findNodes( label( labelName ), prop.getKey(), prop.getValue() );
         }
         else
         {
@@ -1419,7 +1420,7 @@ public class DatabaseActions
         }
 
         IterableWrapper<NodeRepresentation, Node> nodeRepresentations =
-                new IterableWrapper<NodeRepresentation, Node>( nodes )
+                new IterableWrapper<NodeRepresentation, Node>( asList( nodes ) )
                 {
                     @Override
                     protected NodeRepresentation underlyingObjectToObject( Node node )

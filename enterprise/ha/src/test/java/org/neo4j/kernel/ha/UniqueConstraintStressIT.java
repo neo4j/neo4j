@@ -41,13 +41,13 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.test.AbstractClusterTest;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadRule;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 
 /**
@@ -168,7 +168,7 @@ public class UniqueConstraintStressIT extends AbstractClusterTest
         try( Transaction tx = master.beginTx() )
         {
             Set<Object> values = new HashSet<>();
-            for ( Node node : GlobalGraphOperations.at( master ).getAllNodesWithLabel( label ) )
+            for ( Node node : loop( master.findNodes( label ) ) )
             {
                 Object value = node.getProperty( property );
                 if ( values.contains( value ) )

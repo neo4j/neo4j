@@ -34,7 +34,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.DatabaseRule.RestartAction;
 import org.neo4j.test.EmbeddedDatabaseRule;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
@@ -163,7 +162,7 @@ public class LuceneLabelScanStoreChaosIT
     {
         try ( Transaction tx = dbRule.getGraphDatabaseService().beginTx() )
         {
-            return asSet( GlobalGraphOperations.at( dbRule.getGraphDatabaseService() ).getAllNodesWithLabel( label ) );
+            return asSet( dbRule.getGraphDatabaseService().findNodes( label ) );
         }
     }
 

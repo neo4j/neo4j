@@ -34,7 +34,6 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.Function;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -162,14 +161,14 @@ public class Neo4jMatchers
         };
     }
 
-    public static TypeSafeDiagnosingMatcher<GlobalGraphOperations> hasNoNodes( final Label withLabel )
+    public static TypeSafeDiagnosingMatcher<GraphDatabaseService> hasNoNodes( final Label withLabel )
     {
-        return new TypeSafeDiagnosingMatcher<GlobalGraphOperations>()
+        return new TypeSafeDiagnosingMatcher<GraphDatabaseService>()
         {
             @Override
-            protected boolean matchesSafely( GlobalGraphOperations glops, Description mismatchDescription )
+            protected boolean matchesSafely( GraphDatabaseService db, Description mismatchDescription )
             {
-                Set<Node> found = asSet( glops.getAllNodesWithLabel( withLabel ) );
+                Set<Node> found = asSet( db.findNodes( withLabel ) );
                 if ( !found.isEmpty() )
                 {
                     mismatchDescription.appendText( "found " + found.toString() );
@@ -186,15 +185,15 @@ public class Neo4jMatchers
         };
     }
 
-    public static TypeSafeDiagnosingMatcher<GlobalGraphOperations> hasNodes( final Label withLabel, final Node... expectedNodes )
+    public static TypeSafeDiagnosingMatcher<GraphDatabaseService> hasNodes( final Label withLabel, final Node... expectedNodes )
     {
-        return new TypeSafeDiagnosingMatcher<GlobalGraphOperations>()
+        return new TypeSafeDiagnosingMatcher<GraphDatabaseService>()
         {
             @Override
-            protected boolean matchesSafely( GlobalGraphOperations glops, Description mismatchDescription )
+            protected boolean matchesSafely( GraphDatabaseService db, Description mismatchDescription )
             {
                 Set<Node> expected = asSet( expectedNodes );
-                Set<Node> found = asSet( glops.getAllNodesWithLabel( withLabel ) );
+                Set<Node> found = asSet( db.findNodes( withLabel ) );
                 if ( !expected.equals( found ) )
                 {
                     mismatchDescription.appendText( "found " + found.toString() );

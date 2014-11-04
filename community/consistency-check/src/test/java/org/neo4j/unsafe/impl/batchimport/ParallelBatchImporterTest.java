@@ -48,7 +48,6 @@ import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -295,8 +294,7 @@ public class ParallelBatchImporterTest
 
         // The label scan store should find all nodes since they all have the same labels
         Label firstLabel = DynamicLabel.label( LABELS[0] );
-        ResourceIterable<Node> allNodesWithLabel =
-                globalOps.getAllNodesWithLabel( firstLabel );
+        ResourceIterator<Node> allNodesWithLabel = db.findNodes( firstLabel );
         assertEquals( count( allNodesWithLabel ), nodeCount );
 
         // All nodes also have the same age=10 property, so we should again find them all

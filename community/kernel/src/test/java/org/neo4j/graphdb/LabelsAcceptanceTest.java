@@ -412,7 +412,6 @@ public class LabelsAcceptanceTest
     {
         // Given
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
-        GlobalGraphOperations glops = GlobalGraphOperations.at( beansAPI );
 
         // When
         Transaction tx = beansAPI.beginTx();
@@ -422,8 +421,8 @@ public class LabelsAcceptanceTest
         tx.finish();
 
         // THEN
-        assertThat( glops, inTx( beansAPI, hasNodes( Labels.MY_LABEL, node ) ) );
-        assertThat( glops, inTx( beansAPI, hasNoNodes( Labels.MY_OTHER_LABEL ) ) );
+        assertThat( beansAPI, inTx( beansAPI, hasNodes( Labels.MY_LABEL, node ) ) );
+        assertThat( beansAPI, inTx( beansAPI, hasNoNodes( Labels.MY_OTHER_LABEL ) ) );
     }
 
     @Test
@@ -431,7 +430,6 @@ public class LabelsAcceptanceTest
     {
         // GIVEN
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
-        GlobalGraphOperations glops = GlobalGraphOperations.at( beansAPI );
         Node node1 = createNode( beansAPI, Labels.MY_LABEL, Labels.MY_OTHER_LABEL );
         Node node2 = createNode( beansAPI, Labels.MY_LABEL, Labels.MY_OTHER_LABEL );
 
@@ -444,8 +442,8 @@ public class LabelsAcceptanceTest
             node3 = beansAPI.createNode( Labels.MY_LABEL );
             node2.removeLabel( Labels.MY_LABEL );
             // extracted here to be asserted below
-            nodesWithMyLabel = asSet( glops.getAllNodesWithLabel( Labels.MY_LABEL ) );
-            nodesWithMyOtherLabel = asSet( glops.getAllNodesWithLabel( Labels.MY_OTHER_LABEL ) );
+            nodesWithMyLabel = asSet( beansAPI.findNodes( Labels.MY_LABEL ) );
+            nodesWithMyOtherLabel = asSet( beansAPI.findNodes( Labels.MY_OTHER_LABEL ) );
             tx.success();
         }
         finally

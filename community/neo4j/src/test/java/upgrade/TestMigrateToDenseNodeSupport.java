@@ -31,7 +31,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -52,7 +52,6 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.allow_store_upgrad
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
-import static org.neo4j.tooling.GlobalGraphOperations.at;
 
 public class TestMigrateToDenseNodeSupport
 {
@@ -165,7 +164,7 @@ public class TestMigrateToDenseNodeSupport
         db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir.getAbsolutePath() ).newGraphDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            ResourceIterable<Node> allNodesWithLabel = at( db ).getAllNodesWithLabel( referenceNode );
+            ResourceIterator<Node> allNodesWithLabel = db.findNodes( referenceNode );
             Node refNode = single( allNodesWithLabel );
             int sparseCount = 0;
             for ( Relationship relationship : refNode.getRelationships( Types.SPARSE, OUTGOING ) )

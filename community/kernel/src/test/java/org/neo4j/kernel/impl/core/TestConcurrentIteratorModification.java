@@ -31,7 +31,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.EmbeddedDatabaseRule;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.*;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -45,7 +44,6 @@ public class TestConcurrentIteratorModification {
     {
         // given
         GraphDatabaseService graph = dbRule.getGraphDatabaseService();
-        GlobalGraphOperations glops = GlobalGraphOperations.at( graph );
         Label label = DynamicLabel.label( "Bird" );
 
         Node node1, node2, node3;
@@ -59,7 +57,7 @@ public class TestConcurrentIteratorModification {
         Set<Node> result = new HashSet<>();
         try ( Transaction tx = graph.beginTx() ) {
             node3 = graph.createNode( label );
-            ResourceIterator<Node> iterator = glops.getAllNodesWithLabel( label ).iterator();
+            ResourceIterator<Node> iterator = graph.findNodes( label );
             node3.removeLabel( label );
             graph.createNode( label );
             while ( iterator.hasNext() )

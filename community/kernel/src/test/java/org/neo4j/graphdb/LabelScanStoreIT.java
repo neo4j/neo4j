@@ -26,14 +26,13 @@ import org.junit.Test;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.*;
 import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
 
 public class LabelScanStoreIT
 {
@@ -167,7 +166,7 @@ public class LabelScanStoreIT
             {
                 Label label = label( "Label-" + l );
                 assertThat( "Should have founnd node when looking for label " + label,
-                        single( GlobalGraphOperations.at( db ).getAllNodesWithLabel( label ) ), equalTo( node ) );
+                        single( db.findNodes( label ) ), equalTo( node ) );
             }
         }
     }
@@ -197,7 +196,7 @@ public class LabelScanStoreIT
     {
         try ( Transaction tx = dbRule.getGraphDatabaseService().beginTx() )
         {
-            return asSet( GlobalGraphOperations.at( dbRule.getGraphDatabaseService() ).getAllNodesWithLabel( label ) );
+            return asSet( dbRule.getGraphDatabaseService().findNodes( label ) );
         }
     }
 
