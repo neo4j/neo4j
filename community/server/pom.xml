@@ -757,44 +757,6 @@
         </os>
       </activation>
       <build>
-=======
-        </dependency>
-    </dependencies>
-
-    <build>
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-                <excludes>
-                    <exclude>webadmin-html/index.html</exclude>
-                </excludes>
-                <filtering>false</filtering>
-            </resource>
-
-            <resource>
-                <directory>src/main/resources/</directory>
-                <includes>
-                    <include>webadmin-html/index.html</include>
-                </includes>
-                <filtering>true</filtering>
-            </resource>
-
-            <resource>
-                <directory>${project.build.directory}/generated-sources</directory>
-            </resource>
-            <resource>
-                <directory>${basedir}</directory>
-                <targetPath>META-INF</targetPath>
-                <includes>
-                    <include>NOTICE.txt</include>
-                    <include>LICENSE.txt</include>
-                    <include>CHANGES.txt</include>
-                    <include>LICENSES.txt</include>
-                </includes>
-            </resource>
-        </resources>
-
->>>>>>> upstream/2.1-maint
         <plugins>
           <plugin>
             <artifactId>maven-surefire-plugin</artifactId>
