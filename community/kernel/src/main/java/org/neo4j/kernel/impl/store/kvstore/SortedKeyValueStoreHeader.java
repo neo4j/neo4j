@@ -19,16 +19,18 @@
  */
 package org.neo4j.kernel.impl.store.kvstore;
 
-import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
-import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore.RECORD_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
-
 import java.io.IOException;
 import java.util.Arrays;
 
 import org.neo4j.helpers.UTF8;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+
+import static java.lang.String.format;
+import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
+import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore.RECORD_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public final class SortedKeyValueStoreHeader
 {
@@ -95,8 +97,8 @@ public final class SortedKeyValueStoreHeader
     @Override
     public String toString()
     {
-        return String.format( "%s[storeFormatVersion=%s, dataRecords=%d, lastTxId=%d]",
-                              getClass().getSimpleName(), storeFormatVersion(), dataRecords, lastTxId );
+        return format( "%s[storeFormatVersion=%s, dataRecords=%d, lastTxId=%d]",
+                getClass().getSimpleName(), storeFormatVersion(), dataRecords, lastTxId );
     }
 
     public SortedKeyValueStoreHeader update( int dataRecords, long lastTxId )
@@ -128,7 +130,7 @@ public final class SortedKeyValueStoreHeader
 
     public static SortedKeyValueStoreHeader read( PagedFile pagedFile ) throws IOException
     {
-        try ( PageCursor page = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+        try ( PageCursor page = pagedFile.io( 0, PF_SHARED_LOCK ) )
         {
             if ( page.next() )
             {
@@ -136,7 +138,9 @@ public final class SortedKeyValueStoreHeader
                 short versionLength;
                 int dataRecords;
                 long lastTxId;
-                byte[] storeFormatVersion;
+                byte[] storeFormatVersion = null;
+                int versionSpace = -1;
+                byte[] tail = null;
                 do
                 {
                     page.setOffset( 0 );
@@ -144,27 +148,57 @@ public final class SortedKeyValueStoreHeader
                     versionLength = page.getShort();
                     dataRecords = page.getInt();
                     lastTxId = page.getLong();
-                    int versionSpace = headerRecords * RECORD_SIZE - META_HEADER_SIZE;
-                    if ( versionLength > versionSpace || versionLength < (versionSpace - RECORD_SIZE) )
+                    // go on only if read data are meaningful
+                    if ( versionLength >= 0 )
                     {
-                        throw new IOException( String.format( "Invalid header data, versionLength=%d, versionSpace=%d.",
-                                                              versionLength, versionSpace ) );
-                    }
-                    storeFormatVersion = new byte[versionLength];
-                    page.getBytes( storeFormatVersion );
-                    for ( int i = versionSpace - versionLength; i-- > 0; )
-                    {
-                        if ( page.getByte() != 0 )
+                        storeFormatVersion = new byte[versionLength];
+                        page.getBytes( storeFormatVersion );
+                        versionSpace = headerRecords * RECORD_SIZE - META_HEADER_SIZE;
+                        int tailLength = versionSpace - versionLength - 1;
+                        // go on only if read data are meaningful
+                        if ( tailLength >= 0 )
                         {
-                            throw new IOException( "Unexpected header data." );
+                            tail = new byte[tailLength];
+                            page.getBytes( tail );
                         }
                     }
                 } while ( page.shouldRetry() );
+
+                checkConsistentHeader( versionLength, versionSpace );
+                checkZeroPadded( tail );
+
                 return new SortedKeyValueStoreHeader( storeFormatVersion, dataRecords, lastTxId );
             }
             else
             {
                 throw new IOException( "Could not read count store header page" );
+            }
+        }
+    }
+
+    private static void checkConsistentHeader( short versionLength, int versionSpace ) throws IOException
+    {
+        if ( versionLength < 0 && versionLength > versionSpace || versionLength < (versionSpace - RECORD_SIZE) )
+        {
+            throw new IOException(
+                    format( "Invalid header data, versionLength=%d, versionSpace=%d.", versionLength, versionSpace )
+            );
+        }
+    }
+
+    private static void checkZeroPadded( byte[] tail ) throws IOException
+    {
+        if ( tail == null )
+        {
+            throw new IOException( "Unexpected header data." );
+        }
+
+
+        for ( int i = 0; i < tail.length; i++ )
+        {
+            if ( tail[i] != 0 )
+            {
+                throw new IOException( "Unexpected header data." );
             }
         }
     }

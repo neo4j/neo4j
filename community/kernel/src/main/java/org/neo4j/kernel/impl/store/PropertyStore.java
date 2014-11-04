@@ -327,19 +327,21 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     {
         try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_LOCK ) )
         {
+            PropertyRecord record = null;
             if ( cursor.next() )
             {
-                PropertyRecord record;
                 do
                 {
                     record = getRecord( id, cursor, RecordLoad.NORMAL );
                 } while ( cursor.shouldRetry() );
-                return record;
             }
-            else
+
+            if ( record == null || !record.inUse() )
             {
                 throw new InvalidRecordException( "PropertyRecord[" + id + "] not in use" );
             }
+
+            return record;
         }
         catch ( IOException e )
         {
@@ -352,19 +354,15 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     {
         try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_LOCK ) )
         {
+            PropertyRecord record = null;
             if ( cursor.next() )
             {
-                PropertyRecord record;
                 do
                 {
                     record = getRecord( id, cursor, RecordLoad.FORCE );
                 } while ( cursor.shouldRetry() );
-                return record;
             }
-            else
-            {
-                return new PropertyRecord( id );
-            }
+            return record == null? new PropertyRecord( id ) : record;
         }
         catch ( IOException e )
         {
@@ -386,7 +384,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
 
     private PropertyRecord getRecordFromBuffer( long id, PageCursor cursor )
     {
-        int offsetAtBeggining = cursor.getOffset();
+        int offsetAtBeginning = cursor.getOffset();
         PropertyRecord record = new PropertyRecord( id );
 
         /*
@@ -400,7 +398,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
         record.setPrevProp( longFromIntAndMod( prevProp, prevMod ) );
         record.setNextProp( longFromIntAndMod( nextProp, nextMod ) );
 
-        while ( cursor.getOffset() - offsetAtBeggining < RECORD_SIZE )
+        while ( cursor.getOffset() - offsetAtBeginning < RECORD_SIZE )
         {
             PropertyBlock newBlock = getPropertyBlock( cursor );
             if ( newBlock != null )
@@ -420,12 +418,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     private PropertyRecord getRecord( long id, PageCursor cursor, RecordLoad load )
     {
         cursor.setOffset( (int) (id * RECORD_SIZE % storeFile.pageSize()) );
-        PropertyRecord toReturn = getRecordFromBuffer( id, cursor );
-        if ( !toReturn.inUse() && load != RecordLoad.FORCE )
-        {
-            throw new InvalidRecordException( "PropertyRecord[" + id + "] not in use" );
-        }
-        return toReturn;
+        return getRecordFromBuffer( id, cursor );
     }
 
     /*

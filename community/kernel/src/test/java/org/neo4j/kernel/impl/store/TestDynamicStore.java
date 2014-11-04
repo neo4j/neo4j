@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -29,11 +34,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
@@ -43,9 +43,6 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.DynamicArrayStore;
-import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.StoreVersionMismatchHandler;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -55,7 +52,6 @@ import org.neo4j.test.PageCacheRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 
 public class TestDynamicStore
@@ -218,11 +214,6 @@ public class TestDynamicStore
                 store.updateRecord( record );
             }
             store.close();
-            /*
-             * try { store.allocateRecords( blockId, new byte[10] ); fail(
-             * "Closed store should throw exception" ); } catch (
-             * RuntimeException e ) { // good }
-             */
             try
             {
                 store.getArrayFor( store.getRecords( blockId ) );
@@ -335,45 +326,6 @@ public class TestDynamicStore
             deleteBothFiles();
         }
     }
-
-//    private static class ByteStore extends AbstractDynamicStore
-//    {
-//        // store version, each store ends with this string (byte encoded)
-//        private static final String VERSION = "DynamicTestVersion v0.1";
-//
-//        public ByteStore( String fileName, IdGeneratorFactory idGenerator, String storeDir )
-//        {
-//            super( fileName, MapUtil.map( "neo_store", fileName,
-//                    IdGeneratorFactory.class, idGenerator, "store_dir", storeDir ), IdType.ARRAY_BLOCK );
-//        }
-//
-//        public String getTypeDescriptor()
-//        {
-//            return VERSION;
-//        }
-//
-//        public static ByteStore createStore( String fileName, int blockSize, String storeDir )
-//        {
-//            createEmptyStore( fileName, blockSize, VERSION, ID_GENERATOR_FACTORY,
-//                    IdType.ARRAY_BLOCK );
-//            return new ByteStore( fileName, ID_GENERATOR_FACTORY, storeDir );
-//        }
-//
-//        public byte[] getBytes( long blockId )
-//        {
-//            return null;
-////            return get( blockId );
-//        }
-//
-//        // public char[] getChars( int blockId ) throws IOException
-//        // {
-//        // return getAsChar( blockId );
-//        // }
-//
-////        public void flush()
-////        {
-////        }
-//    }
 
     private byte[] createBytes( int length )
     {

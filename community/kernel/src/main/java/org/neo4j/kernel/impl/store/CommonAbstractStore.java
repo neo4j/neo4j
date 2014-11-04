@@ -566,16 +566,6 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         return configuration.get( Configuration.store_dir );
     }
 
-    protected void assertIdExists( long position )
-    {
-        if ( (position > getHighId() || !storeOk) )
-        {
-            throw new InvalidRecordException(
-                    "Position[" + position + "] requested for high id[" + getHighId() +
-                    "], store is ok[" + storeOk + "]", causeOfStoreNotOk );
-        }
-    }
-
     /**
      * Returns the name of this store.
      *

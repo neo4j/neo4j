@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.kvstore;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.neo4j.io.pagecache.PageCursor;
@@ -27,7 +28,7 @@ public interface KeyValueRecordSerializer<K extends Comparable<K>, VR>
 {
     boolean visitRecord( ByteBuffer buffer, KeyValueRecordVisitor<K, VR> visitor );
 
-    K readRecord( PageCursor cursor, VR valueRegister );
+    K readRecord( PageCursor cursor, int offset, VR valueRegister ) throws IOException;
 
     void writeDefaultValue( VR valueRegister );
 }

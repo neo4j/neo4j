@@ -30,7 +30,6 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -75,14 +74,15 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
                 RelationshipGroupRecord record;
                 do
                 {
-                    record = getRecord( id, cursor, RecordLoad.NORMAL );
+                    record = getRecord( id, cursor );
                 } while ( cursor.shouldRetry() );
-                return record;
+
+                if ( record != null )
+                {
+                    return record;
+                }
             }
-            else
-            {
-                throw new InvalidRecordException( "Record[" + id + "] not in use" );
-            }
+            throw new InvalidRecordException( "Record[" + id + "] not in use" );
         }
         catch ( IOException e )
         {
@@ -112,7 +112,7 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
         }
     }
 
-    private RelationshipGroupRecord getRecord( long id, PageCursor cursor, RecordLoad load )
+    private RelationshipGroupRecord getRecord( long id, PageCursor cursor )
     {
         cursor.setOffset( offsetForId( id ) );
 
@@ -123,11 +123,7 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
         boolean inUse = (inUseByte&0x1) > 0;
         if ( !inUse )
         {
-            switch ( load )
-            {
-            case NORMAL: throw new InvalidRecordException( "Record[" + id + "] not in use" );
-            case CHECK: return null;
-            }
+            return null;
         }
 
         // [    ,xxx ] high firstIn bits
@@ -221,14 +217,15 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
                 RelationshipGroupRecord record;
                 do
                 {
-                    record = getRecord( id, cursor, RecordLoad.FORCE );
+                    record = getRecord( id, cursor );
                 } while ( cursor.shouldRetry() );
-                return record;
+
+                if ( record != null )
+                {
+                    return record;
+                }
             }
-            else
-            {
-                return new RelationshipGroupRecord( id, -1 );
-            }
+            return new RelationshipGroupRecord( id, -1 );
         }
         catch ( IOException e )
         {

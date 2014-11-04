@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.store.counts;
 import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
 import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.neo4j.io.pagecache.PageCursor;
@@ -107,22 +108,31 @@ public class CountsRecordSerializer implements KeyValueRecordSerializer<CountsKe
     }
 
     @Override
-    public CountsKey readRecord( PageCursor cursor, Register.LongRegister value )
+    public CountsKey readRecord( PageCursor cursor, int offset, Register.LongRegister value ) throws IOException
     {
-        // read type
-        byte type = cursor.getByte();
+        byte type;
+        int one, two, three;
+        long count;
 
-        // read key
-        cursor.getByte(); // skip unused byte
-        int one = cursor.getInt();
-        cursor.getByte(); // skip unused byte
-        int two = cursor.getInt();
-        cursor.getByte(); // skip unused byte
-        int three = cursor.getInt();
+        do
+        {
+            cursor.setOffset( offset );
 
-        // read value
-        cursor.getLong(); // skip unused long
-        long count =  cursor.getLong();
+            // read type
+            type = cursor.getByte();
+
+            // read key
+            cursor.getByte(); // skip unused byte
+            one = cursor.getInt();
+            cursor.getByte(); // skip unused byte
+            two = cursor.getInt();
+            cursor.getByte(); // skip unused byte
+            three = cursor.getInt();
+
+            // read value
+            cursor.getLong(); // skip unused long
+            count =  cursor.getLong();
+        } while ( cursor.shouldRetry() );
 
         CountsKey key;
         switch ( type )
