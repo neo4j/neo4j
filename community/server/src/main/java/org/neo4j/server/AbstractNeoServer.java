@@ -475,8 +475,11 @@ public abstract class AbstractNeoServer implements NeoServer
         {
             return;
         }
+        boolean contentLoggingEnabled = configurator.configuration().getBoolean( Configurator.HTTP_CONTENT_LOGGING,
+                Configurator.DEFAULT_HTTP_CONTENT_LOGGING );
+
         String logLocation = getConfiguration().getString( Configurator.HTTP_LOG_CONFIG_LOCATION );
-        webServer.setHttpLoggingConfiguration( new File( logLocation ) );
+        webServer.setHttpLoggingConfiguration( new File( logLocation ), contentLoggingEnabled );
     }
 
     private void setUpTimeoutFilter()

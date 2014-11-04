@@ -147,22 +147,26 @@ public class HTTPLoggingPreparednessRuleTest
 
     public static String createLogbackConfigXml( File logDirectory )
     {
+        return createLogbackConfigXml( logDirectory, "%h %l %user [%t{dd/MMM/yyyy:HH:mm:ss Z}] \"%r\" %s %b \"%i{Referer}\" \"%i{User-Agent}\"" );
+    }
 
+    public static String createLogbackConfigXml( File logDirectory, String logPattern )
+    {
         return "<configuration>\n" +
-            "  <appender name=\"FILE\" class=\"ch.qos.logback.core.rolling.RollingFileAppender\">\n" +
-            "    <file>" + logDirectory.getAbsolutePath() + File.separator + "http.log</file>\n" +
-            "    <rollingPolicy class=\"ch.qos.logback.core.rolling.TimeBasedRollingPolicy\">\n" +
-            "      <fileNamePattern>" + logDirectory.getAbsolutePath() + File.separator + "http.%d{yyyy-MM-dd_HH}.log</fileNamePattern>\n" +
-            "      <maxHistory>30</maxHistory>\n" +
-            "    </rollingPolicy>\n" +
-            "\n" +
-            "    <encoder>\n" +
-            "      <!-- Note the deliberate misspelling of \"referer\" in accordance with RFC 2616 -->\n" +
-            "      <pattern>%h %l %user [%t{dd/MMM/yyyy:HH:mm:ss Z}] \"%r\" %s %b \"%i{Referer}\" \"%i{User-Agent}\"</pattern>\n" +
-            "    </encoder>\n" +
-            "  </appender>\n" +
-            "\n" +
-            "  <appender-ref ref=\"FILE\" />\n" +
-            "</configuration>";
+                "  <appender name=\"FILE\" class=\"ch.qos.logback.core.rolling.RollingFileAppender\">\n" +
+                "    <file>" + logDirectory.getAbsolutePath() + File.separator + "http.log</file>\n" +
+                "    <rollingPolicy class=\"ch.qos.logback.core.rolling.TimeBasedRollingPolicy\">\n" +
+                "      <fileNamePattern>" + logDirectory.getAbsolutePath() + File.separator + "http.%d{yyyy-MM-dd_HH}.log</fileNamePattern>\n" +
+                "      <maxHistory>30</maxHistory>\n" +
+                "    </rollingPolicy>\n" +
+                "\n" +
+                "    <encoder>\n" +
+                "      <!-- Note the deliberate misspelling of \"referer\" in accordance with RFC 2616 -->\n" +
+                "      <pattern>"+logPattern+"</pattern>\n" +
+                "    </encoder>\n" +
+                "  </appender>\n" +
+                "\n" +
+                "  <appender-ref ref=\"FILE\" />\n" +
+                "</configuration>";
     }
 }
