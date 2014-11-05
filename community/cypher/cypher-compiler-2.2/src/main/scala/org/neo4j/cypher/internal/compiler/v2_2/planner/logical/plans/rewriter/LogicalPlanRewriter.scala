@@ -21,15 +21,16 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSequencer
+import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 
 class LogicalPlanRewriter {
 
   private val instance = RewriterStepSequencer.newDefault("LogicalPlanRewriter")(
     mergeTwoSelections,
-    unnestEmptyApply,
+    unnestApply,
     unnestOptional
   )
 
-
-  def rewrite(in: LogicalPlan): LogicalPlan = in.endoRewrite(instance)
+  def rewrite(in: LogicalPlan): LogicalPlan =
+    iterateUntilConverged((p: LogicalPlan) => p.endoRewrite(instance))(in)
 }

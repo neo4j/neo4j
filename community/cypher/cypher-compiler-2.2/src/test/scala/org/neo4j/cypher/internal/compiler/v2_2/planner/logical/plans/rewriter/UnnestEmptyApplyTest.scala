@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
+import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
+import org.neo4j.graphdb.Direction
 
 class UnnestEmptyApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should unnest apply with a single SingleRow on the lhs") {
@@ -29,7 +31,7 @@ class UnnestEmptyApplyTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val singleRow = SingleRow(Set.empty)(solved)()
     val input = Apply(singleRow, rhs)(solved)
 
-    input.endoRewrite(unnestEmptyApply) should equal(rhs)
+    rewrite(input) should equal(rhs)
   }
 
   test("should unnest apply with a single SingleRow on the rhs") {
@@ -37,7 +39,7 @@ class UnnestEmptyApplyTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val singleRow = SingleRow(Set.empty)(solved)()
     val input = Apply(lhs, singleRow)(solved)
 
-    input.endoRewrite(unnestEmptyApply) should equal(lhs)
+    rewrite(input) should equal(lhs)
   }
 
   test("should unnest also when deeper in the structure") {
@@ -46,18 +48,15 @@ class UnnestEmptyApplyTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val apply = Apply(lhs, singleRow)(solved)
     val optional = Optional(apply)(solved)
 
-    optional.endoRewrite(unnestEmptyApply) should equal(Optional(lhs)(solved))
-  }
-
-  test("should not take on plans that do not match the description") {
-    val lhs = newMockedLogicalPlan()
-    val rhs = newMockedLogicalPlan()
-    val input = Apply(lhs, rhs)(solved)
-
-    input.endoRewrite(unnestEmptyApply) should equal(input)
+    rewrite(optional) should equal(Optional(lhs)(solved))
   }
 
   test("should unnest one level deeper") {
+    /*
+           Apply
+         LHS  OuterJoin
+              Arg   RHS
+     */
     val argPlan = SingleRow(Set(IdName("a")))(solved)()
     val lhs = newMockedLogicalPlan("a")
     val rhs = newMockedLogicalPlan("a")
@@ -70,7 +69,7 @@ class UnnestEmptyApplyTest extends CypherFunSuite with LogicalPlanningTestSuppor
         )(solved)
       )(solved)
 
-    input.endoRewrite(unnestEmptyApply) should equal(
+    rewrite(input) should equal(
       OuterHashJoin(Set(IdName("a")), lhs, rhs)(solved)
     )
   }
@@ -83,6 +82,61 @@ class UnnestEmptyApplyTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
     val input = Apply(lhs, optional)(solved)
 
-    input.endoRewrite(unnestEmptyApply) should equal(input)
+    rewrite(input) should equal(input)
   }
+
+  test("apply on apply should be extracted nicely") {
+    /*
+                            Apply1
+                         LHS   Apply2       =>  Expand
+                             Arg1  Expand        LHS
+                                      Arg2
+     */
+
+    // Given
+    val lhs: LogicalPlan = newMockedLogicalPlan("a")
+    val arg1: LogicalPlan = SingleRow(Set(IdName("a")))(solved)()
+    val arg2: LogicalPlan = SingleRow(Set(IdName("a")))(solved)()
+    val expand: LogicalPlan = Expand(arg2, IdName("a"), Direction.OUTGOING, Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), SimplePatternLength, Seq.empty)(solved)
+    val apply2: LogicalPlan = Apply(arg1, expand)(solved)
+    val apply: LogicalPlan = Apply(lhs, apply2)(solved)
+
+    // When
+    val result = rewrite(apply)
+
+    // Then
+    result should equal(Expand(lhs, IdName("a"), Direction.OUTGOING, Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), SimplePatternLength, Seq.empty)(solved))
+  }
+
+  test("apply on apply on optional should be OK") {
+    /*
+                            Apply1                Apply
+                         LHS   Apply2       =>  LHS Optional
+                             Arg1  Optional             Expand
+                                     Expand                Arg
+                                       Arg2
+     */
+
+    // Given
+    val lhs: LogicalPlan = newMockedLogicalPlan("a")
+    val arg1: LogicalPlan = SingleRow(Set(IdName("a")))(solved)()
+    val arg2: LogicalPlan = SingleRow(Set(IdName("a")))(solved)()
+    val expand: LogicalPlan = Expand(arg2, IdName("a"), Direction.OUTGOING, Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), SimplePatternLength, Seq.empty)(solved)
+    val optional: LogicalPlan = Optional(expand)(solved)
+    val apply2: LogicalPlan = Apply(arg1, optional)(solved)
+    val apply: LogicalPlan = Apply(lhs, apply2)(solved)
+
+    // When
+    val result = rewrite(apply)
+
+    // Then
+    result should equal(Apply(
+      lhs,
+      Optional(
+        Expand(arg2, IdName("a"), Direction.OUTGOING, Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), SimplePatternLength, Seq.empty)(solved))(solved)
+    )(solved))
+  }
+
+  private def rewrite(p: LogicalPlan): LogicalPlan =
+    iterateUntilConverged((p: LogicalPlan) => p.endoRewrite(unnestApply))(p)
 }

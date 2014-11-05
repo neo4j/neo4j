@@ -73,20 +73,22 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
 
   test("should build optional ProjectEndpoints") {
     planFor("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a1)<-[r]-(b2) RETURN a1, r, b2").plan match {
-      case Projection(Apply(
-        Limit(Expand(AllNodesScan(IdName("b1"), _), _, _, _, _, _, _, _, _), _),
-        Apply(SingleRow(_), Optional(
-          Selection(
-            predicates,
-            ProjectEndpoints(
-              SingleRow(_), IdName("r"), IdName("b2"), IdName("a1$$$_"), true, SimplePatternLength
-            )
-          )
-        ))
-      ), _) => {
+      case Projection(
+            Apply(
+              Limit(
+                Expand(
+                  AllNodesScan(IdName("b1"), _), _, _, _, _, _, _, _, _), _),
+              Optional(
+                Selection(
+                  predicates,
+                  ProjectEndpoints(
+                    SingleRow(_), IdName("r"), IdName("b2"), IdName("a1$$$_"), true, SimplePatternLength
+                  )
+                  )
+                )
+      ), _) =>
         val predicate: ast.Expression = ast.Equals(ast.Identifier("a1")_, ast.Identifier("a1$$$_")_)_
         predicates should equal(Seq(predicate))
-      }
     }
   }
 
@@ -94,7 +96,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
     planFor("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a2)<-[r]-(b2) WHERE a1 = a2 RETURN a1, r, b2").plan match {
       case Projection(Apply(
         Limit(Expand(AllNodesScan(IdName("b1"), _), _, _, _, _, _, _, _,_), _),
-        Apply(SingleRow(_), Optional(
+        Optional(
           Selection(
             predicates1,
             ProjectEndpoints(
@@ -102,8 +104,8 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
               IdName("r"), IdName("b2"), IdName("a2$$$_"), true, SimplePatternLength
             )
           )
-        ))
-      ), _) => {
+        )
+      ), _) =>
         args should equal(Set(IdName("r"), IdName("a1")))
 
         val predicate1: ast.Expression = ast.Equals(ast.Identifier("a2")_, ast.Identifier("a2$$$_")_)_
@@ -111,7 +113,6 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
 
         val predicate2: ast.Expression = ast.Equals(ast.Identifier("a1")_, ast.Identifier("a2")_)_
         predicates2 should equal(Seq(predicate2))
-      }
     }
   }
 
@@ -119,7 +120,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
     planFor("MATCH (a1)-[r]->(b1) WITH r LIMIT 1 OPTIONAL MATCH (a2)-[r]->(b2) RETURN a2, r, b2").plan  match {
       case Projection(Apply(
         Limit(Expand(AllNodesScan(IdName("b1"), _), _, _, _, _, _, _, _, _), _),
-        Apply(SingleRow(_), Optional(
+        Optional(
           Selection(
             predicates,
             ProjectEndpoints(
@@ -127,11 +128,10 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
               IdName("r"), IdName("a2$$$_"), IdName("b2"), true, SimplePatternLength
             )
           )
-        ))
-      ), _) => {
+        )
+      ), _) =>
         val predicate: ast.Expression = ast.Equals(ast.Identifier("a2")_, ast.Identifier("a2$$$_")_)_
         predicates should equal(Seq(predicate))
-      }
     }
   }
 
