@@ -35,11 +35,11 @@ import org.codehaus.jackson.JsonNode;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.Mute;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
 import org.neo4j.test.server.HTTP;
 
 import static junit.framework.TestCase.fail;
