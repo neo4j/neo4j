@@ -689,6 +689,21 @@ public class ExecutionResultSerializerTest
         log.assertExactly( error( "Failed to generate JSON output.", failure ) );
     }
 
+    @Test
+    public void shouldAbbreviateWellKnownIOErrors() throws Exception
+    {
+        // given
+        OutputStream output = mock( OutputStream.class, new ThrowsException( new IOException("Broken pipe") ) );
+        TestLogger log = new TestLogger();
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, log );
+
+        // when
+        serializer.finish();
+
+        // then
+        log.assertExactly( error( "Unable to reply to request, because the client has closed the connection (Broken pipe)." ) );
+    }
+
     @SuppressWarnings({"unchecked"})
     @Test
     public void shouldCloseResultIterator() throws Exception
