@@ -19,10 +19,19 @@
  */
 package org.neo4j.helpers;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+
 import org.junit.Test;
+import org.neo4j.kernel.impl.util.Converters;
+import org.neo4j.kernel.impl.util.Validator;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 public class TestArgs
 {
@@ -88,6 +97,71 @@ public class TestArgs
         String[] line = { "--myenum=something" };
         Args args = new Args( line );
         args.getEnum( MyEnum.class, "myenum", MyEnum.third );
+    }
+
+    @Test
+    public void shouldInterpretOption() throws Exception
+    {
+        // GIVEN
+        int expectedValue = 42;
+        Args args = new Args( "--arg", String.valueOf( expectedValue ) );
+        @SuppressWarnings( "unchecked" )
+        Validator<Integer> validator = mock( Validator.class );
+
+        // WHEN
+        int value = args.interpretOption( "arg", Converters.<Integer>mandatory(), Converters.toInt(), validator );
+
+        // THEN
+        assertEquals( expectedValue, value );
+        verify( validator ).validate( expectedValue );
+    }
+
+    @Test
+    public void shouldInterpretOrphan() throws Exception
+    {
+        // GIVEN
+        int expectedValue = 42;
+        Args args = new Args( String.valueOf( expectedValue ) );
+        @SuppressWarnings( "unchecked" )
+        Validator<Integer> validator = mock( Validator.class );
+
+        // WHEN
+        int value = args.interpretOrphan( 0, Converters.<Integer>mandatory(), Converters.toInt(), validator );
+
+        // THEN
+        assertEquals( expectedValue, value );
+        verify( validator ).validate( expectedValue );
+    }
+
+    @Test
+    public void shouldInterpretMultipleOptionValues() throws Exception
+    {
+        // GIVEN
+        Collection<Integer> expectedValues = Arrays.asList( 12, 34, 56 );
+        List<String> argList = new ArrayList<>();
+        String key = "number";
+        for ( int value : expectedValues )
+        {
+            argList.add( "--" + key );
+            argList.add( String.valueOf( value ) );
+        }
+        Args args = new Args( argList.toArray( new String[argList.size()] ) );
+
+        // WHEN
+        try
+        {
+            args.get( key );
+            fail( "Should have failed" );
+        }
+        catch ( IllegalArgumentException e )
+        {   // Good
+        }
+
+        Collection<Integer> numbers = args.interpretOptions( key, Converters.<Integer>optional(),
+                Converters.toInt() );
+
+        // THEN
+        assertEquals( expectedValues, numbers );
     }
 
     @Test
