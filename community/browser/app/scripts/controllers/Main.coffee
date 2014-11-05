@@ -39,7 +39,8 @@ angular.module('neo4jApp.controllers')
           $scope.host = $window.location.host
 
         $scope.motd = motdService
-
+        $scope.auth_service = AuthService
+        
         $scope.neo4j =
           license =
             type: "GPLv3"

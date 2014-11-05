@@ -5,7 +5,7 @@ div(ng-controller="GenerateTokenCtrl")
       .view-result
         article.guide
           div
-            .row(ng-show="auth_service.isAuthenticated() && auth_service.current_user")
+            .row(ng-show="static_is_authenticated && static_user")
               .span4
                 h3 Invalidate authorization token
                 p.lead
@@ -23,14 +23,14 @@ div(ng-controller="GenerateTokenCtrl")
                 br
                 br
                 p Your new authorization token is now in effect.
-            .row(ng-if="auth_service.isAuthenticated() && !auth_service.current_user")
+            .row(ng-if="static_is_authenticated && !static_user")
               .span4
                 h3 Invalidate authorization token
                 p.lead This is not available.
               .span1
               .span5
                 p You can't invalidate a token when server authentication is disabled.
-            .row(ng-if="!auth_service.isAuthenticated()")
+            .row(ng-if="!static_is_authenticated")
               .span4
                 h3 Invalidate authorization token
                 p.lead This is not available.

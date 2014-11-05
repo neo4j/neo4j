@@ -27,6 +27,9 @@ angular.module('neo4jApp.services')
   (localStorageService, $base64) ->
     cached_authorization_data = localStorageService.get('authorization_token') || ''
     @is_authenticated = if cached_authorization_data or @is_authenticated then yes else no
+    @current_user = false
+    @setCurrentUser = (user_obj) ->
+      @current_user = user_obj
     @setAuthenticated = (is_authenticated) ->
       @is_authenticated = is_authenticated
     @isAuthenticated = ->

@@ -32,9 +32,11 @@ angular.module('neo4jApp.services')
       return AuthDataService.clearAuthData() unless response.authorization_token?
       AuthDataService.setAuthData ":#{response.authorization_token}"
 
+    setCurrentUser = (user_obj) ->
+      AuthDataService.setCurrentUser user_obj
+
     class AuthService
       constructor: ->
-        @current_user = false
 
       authenticate: (username, password) =>
         that = @
@@ -43,7 +45,7 @@ angular.module('neo4jApp.services')
         promise.then(
           (r) ->
             response = r.data
-            that.current_user = response
+            setCurrentUser response
             
             return r if response.password_change_required is true
             updatePersistentAuthToken response
@@ -62,39 +64,40 @@ angular.module('neo4jApp.services')
         p.success(
           (r) -> 
             that.setAuthenticatedStatus true
-            that.current_user = r
+            setCurrentUser r
             r
         ).error(
           (r) ->
             that.setAuthenticatedStatus false
+            setCurrentUser false
             r
         )
 
       forget: =>
         updatePersistentAuthToken false
-        if @current_user 
-          @current_user = false
+        if @getCurrentUser()
+          setCurrentUser false
         @hasValidAuthorization()
 
       getAuthInfo: ->
         that = @
         Server.get(Settings.endpoint.auth).then( (r)->
-          that.current_user = r.data
+          setCurrentUser r.data
         )
 
       setNewPassword: (old_passwd, new_passwd) ->
         that = @
-        promise = Server.post("#{Settings.endpoint.authUser}/#{@current_user.username}/password"
+        promise = Server.post("#{Settings.endpoint.authUser}/#{@getCurrentUser().username}/password"
           , {password: old_passwd, new_password: new_passwd})
         .then(
           (r) -> 
             updatePersistentAuthToken r.data
-            that.setAuthenticatedStatus true
+            that.hasValidAuthorization()
         )
         promise
 
       setNewAuthToken: (passwd, new_authorization_token) ->
-        promise = Server.post("#{Settings.endpoint.authUser}/#{@current_user.username}/authorization_token"
+        promise = Server.post("#{Settings.endpoint.authUser}/#{@getCurrentUser().username}/authorization_token"
           , {password: passwd, new_authorization_token: new_authorization_token})
         .then( ->
           updatePersistentAuthToken {authorization_token: new_authorization_token}
@@ -102,7 +105,7 @@ angular.module('neo4jApp.services')
         promise
 
       generateNewAuthToken: (passwd) ->
-        promise = Server.post("#{Settings.endpoint.authUser}/#{@current_user.username}/authorization_token"
+        promise = Server.post("#{Settings.endpoint.authUser}/#{@getCurrentUser().username}/authorization_token"
           , {password: passwd})
         promise.then((r)->
           response = r.data
@@ -115,6 +118,9 @@ angular.module('neo4jApp.services')
       setAuthenticatedStatus: (is_authenticated) =>
         AuthDataService.setAuthenticated is_authenticated
         $rootScope.$emit 'auth:status_updated'
+
+      getCurrentUser: ->
+        AuthDataService.current_user
       
     new AuthService()
 ]

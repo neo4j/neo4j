@@ -223,7 +223,6 @@ angular.module('neo4jApp')
         input.match(pattern)
       exec: ['Settings', 'AuthService', (Settings, AuthService) ->
         (input, q) -> 
-          AuthService.forget()
           q.resolve()
       ]
 

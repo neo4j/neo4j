@@ -2,22 +2,22 @@ div(ng-controller="DisconnectCtrl")
   .outer
     include partials/frame-common-actions
     .inner
-      .view-result(ng-hide="password_change_required")
+      .view-result
         article.guide
           div
-            .row(ng-if="!auth_service.isAuthenticated() && !auth_service.current_user")
+            .row(ng-show="!static_is_authenticated && !static_user")
               .span4
                 h3 Disconnected
                 p.lead
                   | You are  disconnected from the server.
-            .row(ng-if="auth_service.isAuthenticated() && !auth_service.current_user")
+            .row(ng-show="static_is_authenticated && !static_user")
               .span4
                 h3 Disconnect
                 p.lead No disconnect available.
               .span1
               .span5
                 p Since server authentication is disabled you can't disconnect the Neo4j Browser.
-            .row(ng-if="auth_service.isAuthenticated() && auth_service.current_user")
+            .row(ng-show="static_is_authenticated && static_user")
               .span4
                 h3 Disconnection
                 p.lead

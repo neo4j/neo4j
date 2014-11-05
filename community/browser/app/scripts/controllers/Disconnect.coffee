@@ -25,6 +25,10 @@ angular.module('neo4jApp.controllers')
     '$scope'
     'AuthService'
     ($scope, AuthService) ->
-      $scope.auth_service = AuthService
+      AuthService.forget().then( ->
+        $scope.static_user = angular.copy(AuthService.getCurrentUser())
+        $scope.static_is_authenticated = AuthService.isAuthenticated()
+      )
+
       $scope.focusEditor()
   ]

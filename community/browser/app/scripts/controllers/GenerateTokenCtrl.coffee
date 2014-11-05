@@ -30,7 +30,8 @@ angular.module('neo4jApp.controllers')
       $scope.current_password = ''
       $scope.token_changed = false
       $scope.error_text = ''
-      $scope.auth_service = AuthService
+      $scope.static_user = angular.copy(AuthService.getCurrentUser())
+      $scope.static_is_authenticated = AuthService.isAuthenticated()
 
       $scope.generateToken = ->
         $scope.error_text = ''

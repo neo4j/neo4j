@@ -25,9 +25,9 @@ div(ng-controller="AuthCtrl")
                       | Authorization token: 
                     code
                       | {{frame.response.authorization_token}}
-              .span5.error(ng-show="!frame.response.username && !auth_service.isAuthenticated()")
+              .span5.error(ng-show="!frame.response.username && !static_is_authenticated")
                 p You are not connected to the server.
-              .span5(ng-show="!frame.response.username && auth_service.isAuthenticated()")
+              .span5(ng-show="!frame.response.username && static_is_authenticated")
                 p You have a working connection with the Neo4j database and server authentication is disabled.
       .status-bar(ng-class='{error: frame.hasErrors, loading: frame.isLoading}')
         div(ng-show="errorText")

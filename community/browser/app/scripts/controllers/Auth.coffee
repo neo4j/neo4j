@@ -31,7 +31,9 @@ angular.module('neo4jApp.controllers')
       $scope.password = ''
       $scope.error_text = ''
       $scope.current_password = ''
-      $scope.auth_service = AuthService
+      $scope.static_user = angular.copy(AuthService.getCurrentUser())
+      $scope.static_is_authenticated = AuthService.isAuthenticated()
+
 
       $scope.authenticate = ->
         $scope.error_text = ''
@@ -47,10 +49,21 @@ angular.module('neo4jApp.controllers')
               if r.data.password_change_required
                 $scope.current_password = $scope.password
                 return $scope.password_change_required = true 
+              
+              $scope.static_user = angular.copy(AuthService.getCurrentUser())
+              $scope.static_is_authenticated = AuthService.isAuthenticated()
+              
               Frame.create({input:"#{Settings.cmdchar}play welcome"})
               $scope.focusEditor()
           ,
           (r) -> 
             $scope.error_text = r.data.errors[0].message or "Server response code: #{r.status}"
+        )
+
+      $scope.defaultPasswordChanged = ->
+        AuthService.hasValidAuthorization().then(->
+          $scope.password_change_required = false
+          $scope.static_user = angular.copy(AuthService.getCurrentUser())
+          $scope.static_is_authenticated = AuthService.isAuthenticated()
         )
   ]
