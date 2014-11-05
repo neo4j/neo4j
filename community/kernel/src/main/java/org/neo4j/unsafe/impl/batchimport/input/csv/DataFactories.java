@@ -28,11 +28,12 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.csv.reader.CharSeeker;
-import org.neo4j.csv.reader.CharSeekers;
 import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Mark;
 import org.neo4j.csv.reader.Readables;
+import org.neo4j.function.Factory;
+import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.unsafe.impl.batchimport.input.DuplicateHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.MissingHeaderException;
@@ -40,6 +41,7 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
 
 import static org.neo4j.csv.reader.BufferedCharSeeker.DEFAULT_BUFFER_SIZE;
 import static org.neo4j.csv.reader.CharSeekers.charSeeker;
+import static org.neo4j.csv.reader.Readables.multipleFiles;
 
 
 /**
@@ -48,9 +50,12 @@ import static org.neo4j.csv.reader.CharSeekers.charSeeker;
 public class DataFactories
 {
     /**
-     * @return a {@link CharSeeker} over the supplied {@code file}.
+     * Creates a {@link DataFactory} where all data exists in one file. If the first line is a header,
+     * {@link #defaultFormatNodeFileHeader()} can be used to extract that.
+     *
+     * @return {@link DataFactory} that returns a {@link CharSeeker} over the supplied {@code file}.
      */
-    public static DataFactory file( final File file )
+    public static DataFactory data( final File file )
     {
         return new DataFactory()
         {
@@ -59,7 +64,7 @@ public class DataFactories
             {
                 try
                 {
-                    return CharSeekers.charSeeker( Readables.file( file ), config.quotationCharacter() );
+                    return charSeeker( Readables.file( file ), DEFAULT_BUFFER_SIZE, true, config.quotationCharacter() );
                 }
                 catch ( FileNotFoundException e )
                 {
@@ -69,15 +74,55 @@ public class DataFactories
         };
     }
 
-    public static DataFactory files( final File... files )
+    /**
+     * Creates a {@link DataFactory} where data exists in multiple files. If the first line of the first file is a header,
+     * {@link #defaultFormatNodeFileHeader()} can be used to extract that.
+     *
+     * @return {@link DataFactory} that returns a {@link CharSeeker} over all the supplied {@code files}.
+     */
+    public static DataFactory data( final File... files )
     {
         return new DataFactory()
         {
             @Override
             public CharSeeker create( Configuration config )
             {
-                return charSeeker( Readables.multipleFiles( files ), DEFAULT_BUFFER_SIZE, true,
-                        config.quotationCharacter() );
+                return charSeeker( multipleFiles( files ), DEFAULT_BUFFER_SIZE, true, config.quotationCharacter() );
+            }
+        };
+    }
+
+    /**
+     * Creates an {@link Iterable} of {@link DataFactory} instances where each {@link DataFactory} represents one
+     * input group, with its own header, normally extracted using {@link #defaultFormatNodeFileHeader()}.
+     *
+     * @return {@link DataFactory} that returns a {@link CharSeeker} over all the supplied {@code files}.
+     */
+    public static Iterable<DataFactory> data( Iterable<File[]> fileGroups )
+    {
+        return new IterableWrapper<DataFactory,File[]>( fileGroups )
+        {
+            @Override
+            protected DataFactory underlyingObjectToObject( File[] files )
+            {
+                return data( files );
+            }
+        };
+    }
+
+    /**
+     * @param readable we need to have this as a {@link Factory} since one data file may be opened and scanned
+     * multiple times.
+     * @return {@link DataFactory} that returns a {@link CharSeeker} over the supplied {@code readable}
+     */
+    public static DataFactory data( final Factory<Readable> readable )
+    {
+        return new DataFactory()
+        {
+            @Override
+            public CharSeeker create( Configuration config )
+            {
+                return charSeeker( readable.newInstance(), DEFAULT_BUFFER_SIZE, true, config.quotationCharacter() );
             }
         };
     }
@@ -85,20 +130,13 @@ public class DataFactories
     /**
      * Header parser that will read header information, using the default node header format,
      * from the top of the data file.
+     *
+     * This header factory can be used even when the header exists in a separate file, if that file
+     * is the first in the list of files supplied to {@link #data(File...)}.
      */
     public static Header.Factory defaultFormatNodeFileHeader()
     {
         return new DefaultNodeFileHeaderParser( READ_FROM_DATA_SEEKER );
-    }
-
-    /**
-     * Header parser that will read header information, using the default node header format,
-     * from a file of choice.
-     * @param file {@link File} containing header information.
-     */
-    public static Header.Factory defaultFormatNodeFileHeader( File file )
-    {
-        return new DefaultNodeFileHeaderParser( new HeaderFromSeparateFileFactory( file ) );
     }
 
     /**
@@ -114,20 +152,13 @@ public class DataFactories
     /**
      * Header parser that will read header information, using the default relationship header format,
      * from the top of the data file.
+     *
+     * This header factory can be used even when the header exists in a separate file, if that file
+     * is the first in the list of files supplied to {@link #data(File...)}.
      */
     public static Header.Factory defaultFormatRelationshipFileHeader()
     {
         return new DefaultRelationshipFileHeaderParser( READ_FROM_DATA_SEEKER );
-    }
-
-    /**
-     * Header parser that will read header information, using the default node header format,
-     * from a file of choice.
-     * @param file {@link File} containing header information.
-     */
-    public static Header.Factory defaultFormatRelationshipFileHeader( File file )
-    {
-        return new DefaultRelationshipFileHeaderParser( new HeaderFromSeparateFileFactory( file ) );
     }
 
     /**
@@ -190,22 +221,6 @@ public class DataFactories
             {
                 throw new RuntimeException( "Unable to close header reader", e );
             }
-        }
-    }
-
-    private static class HeaderFromSeparateFileFactory extends SeparateHeaderReaderFactory
-    {
-        private final File file;
-
-        HeaderFromSeparateFileFactory( File file )
-        {
-            this.file = file;
-        }
-
-        @Override
-        public CharSeeker open( CharSeeker seeker, Configuration config ) throws IOException
-        {
-            return charSeeker( Readables.file( file ), config.quotationCharacter() );
         }
     }
 

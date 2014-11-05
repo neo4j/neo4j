@@ -17,9 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.tooling.batchimport;
+package org.neo4j.kernel.impl.util;
 
-interface Validator<T>
+/**
+ * Validates a value, throws {@link IllegalArgumentException} for invalid values.
+ */
+public interface Validator<T>
 {
     void validate( T value );
 }

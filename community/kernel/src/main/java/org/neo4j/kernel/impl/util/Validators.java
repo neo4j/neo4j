@@ -17,24 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.tooling.batchimport;
+package org.neo4j.kernel.impl.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.store.record.NeoStoreUtil;
 
 public class Validators
 {
-    public static final Validator<File> FILE_EXISTS = new Validator<File>()
+    public static final Validator<File[]> FILES_EXISTS = new Validator<File[]>()
     {
         @Override
-        public void validate( File value )
+        public void validate( File[] files )
         {
-            if ( !value.exists() )
+            for ( File file : files )
             {
-                throw new IllegalArgumentException( value + " doesn't exist" );
+                if ( !file.exists() )
+                {
+                    throw new IllegalArgumentException( file + " doesn't exist" );
+                }
             }
         }
     };
@@ -76,4 +80,20 @@ public class Validators
             }
         }
     };
+
+    public static <T> Validator<T[]> atLeast( final int length )
+    {
+        return new Validator<T[]>()
+        {
+            @Override
+            public void validate( T[] value )
+            {
+                if ( value.length < length )
+                {
+                    throw new IllegalArgumentException( "Expected " + Arrays.toString( value ) +
+                            " to have at least " + length + " items, but had only " + value.length );
+                }
+            }
+        };
+    }
 }

@@ -27,6 +27,7 @@ import org.neo4j.csv.reader.BufferedCharSeeker;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
+import org.neo4j.function.Factory;
 import org.neo4j.unsafe.impl.batchimport.input.DuplicateHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.MissingHeaderException;
 
@@ -36,9 +37,11 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
+import static org.neo4j.csv.reader.Readables.multipleSources;
 import static org.neo4j.helpers.collection.IteratorUtil.array;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.TABS;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.data;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
 
 public class DataFactoriesTest
@@ -175,7 +178,7 @@ public class DataFactoriesTest
     }
 
     @Test
-    public void shouldParseHeaderFromSeparateHeaderFile() throws Exception
+    public void shouldParseHeaderFromSeparateReader() throws Exception
     {
         // GIVEN
         CharSeeker dataSeeker = mock( CharSeeker.class );
@@ -193,6 +196,35 @@ public class DataFactoriesTest
                 entry( "birth_date", Type.PROPERTY, extractors.long_() ) ), header.entries() );
         verifyZeroInteractions( dataSeeker );
         dataSeeker.close();
+    }
+
+    @Test
+    public void shouldParseHeaderFromFirstLineOfFirstInputFile() throws Exception
+    {
+        // GIVEN
+        final Readable firstSource = new StringReader( "id:ID\tname:String\tbirth_date:long" );
+        final Readable secondSource = new StringReader( "0\tThe node\t123456789" );
+        DataFactory dataFactory = data( new Factory<Readable>()
+        {
+            @Override
+            public Readable newInstance()
+            {
+                return multipleSources( firstSource, secondSource );
+            }
+        } );
+        Header.Factory headerFactory = defaultFormatNodeFileHeader();
+        Extractors extractors = new Extractors( ';' );
+
+        // WHEN
+        CharSeeker seeker = dataFactory.create( TABS );
+        Header header = headerFactory.create( seeker, TABS, IdType.ACTUAL );
+
+        // THEN
+        assertArrayEquals( array(
+                entry( "id", Type.ID, extractors.long_() ),
+                entry( "name", Type.PROPERTY, extractors.string() ),
+                entry( "birth_date", Type.PROPERTY, extractors.long_() ) ), header.entries() );
+        seeker.close();
     }
 
     private Header.Entry entry( String name, Type type, Extractor<?> extractor )

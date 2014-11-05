@@ -59,15 +59,13 @@ public class ThreadAheadReadable extends Thread implements Readable, Closeable
     public int read( CharBuffer target ) throws IOException
     {
         // are we still healthy and all that?
-        if ( ioException != null )
-        {
-            throw new IOException( "IOException occured on read-ahead thread", ioException );
-        }
+        assertHealthy();
 
         // wait until thread has made data available
         while ( !hasReadAhead )
         {
             parkAWhile();
+            assertHealthy();
         }
 
         // copy data from the read ahead buffer into the target buffer
@@ -88,6 +86,14 @@ public class ThreadAheadReadable extends Thread implements Readable, Closeable
         hasReadAhead = false;
         LockSupport.unpark( this );
         return bytesToCopy;
+    }
+
+    private void assertHealthy() throws IOException
+    {
+        if ( ioException != null )
+        {
+            throw new IOException( "IOException occured in read-ahead thread", ioException );
+        }
     }
 
     private void parkAWhile()
