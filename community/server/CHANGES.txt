@@ -1,3 +1,7 @@
+2.1.6
+-----
+o Introduce optional support for authentication and authorization using Authorization Tokens
+
 2.1.5
 -----
 o Node REST representations now contain the labels of the node
