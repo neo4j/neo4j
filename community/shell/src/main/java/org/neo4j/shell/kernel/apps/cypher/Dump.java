@@ -19,14 +19,12 @@
  */
 package org.neo4j.shell.kernel.apps.cypher;
 
-import static org.neo4j.helpers.Exceptions.launderedException;
-
 import java.rmi.RemoteException;
 
 import org.neo4j.cypher.export.CypherResultSubGraph;
 import org.neo4j.cypher.export.DatabaseSubGraph;
 import org.neo4j.cypher.export.SubGraph;
-import org.neo4j.cypher.javacompat.ExtendedExecutionResult;
+import org.neo4j.graphdb.Result;
 import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
@@ -34,6 +32,8 @@ import org.neo4j.shell.Continuation;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
+
+import static org.neo4j.helpers.Exceptions.launderedException;
 
 @Service.Implementation( App.class )
 public class Dump extends Start
@@ -89,7 +89,7 @@ public class Dump extends Start
     }
 
     @Override
-    protected void handleResult( Output out, ExtendedExecutionResult result, long startTime ) throws RemoteException, ShellException
+    protected void handleResult( Output out, Result result, long startTime ) throws RemoteException, ShellException
     {
         final SubGraph subGraph = CypherResultSubGraph.from(result, getServer().getDb(), false);
         export( subGraph, out);

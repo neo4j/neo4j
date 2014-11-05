@@ -36,23 +36,29 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.neo4j.cypher.javacompat.ExecutionEngine;
-import org.neo4j.cypher.javacompat.ExecutionResult;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.test.AsciiDocGenerator;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
 import static java.util.Arrays.asList;
+
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+
 import static org.neo4j.cypher.javacompat.RegularExpressionMatcher.matchesPattern;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
@@ -63,7 +69,6 @@ public class JavaExecutionEngineDocTest
     private static final ObjectWriter WRITER = MAPPER.writerWithDefaultPrettyPrinter();
     private static final File docsTargetDir = new File( "target/docs/dev/general" );
     private GraphDatabaseService db;
-    private ExecutionEngine engine;
     private Node andreasNode;
     private Node johanNode;
     private Node michaelaNode;
@@ -87,7 +92,6 @@ public class JavaExecutionEngineDocTest
     public void setUp() throws IOException
     {
         db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
-        engine = new ExecutionEngine( db );
         Transaction tx = db.beginTx();
         michaelaNode = db.createNode();
         andreasNode = db.createNode();
@@ -132,6 +136,7 @@ public class JavaExecutionEngineDocTest
 
     private void dumpToFile( final String id, final String query, final Object params ) throws Exception
     {
+        QueryExecutionEngine engine = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( QueryExecutionEngine.class );
         StringBuffer sb = new StringBuffer( 2048 );
         String prettifiedJson = WRITER.writeValueAsString( params );
         sb.append( "\n.Parameters\n[source,javascript]\n----\n" )
@@ -145,8 +150,7 @@ public class JavaExecutionEngineDocTest
     public void exampleQuery() throws Exception
     {
 // START SNIPPET: JavaQuery
-        ExecutionEngine engine = new ExecutionEngine( db );
-        ExecutionResult result = engine.execute( "MATCH n WHERE id(n) = 0 AND 1=1 RETURN n" );
+        Result result = db.execute( "MATCH n WHERE id(n) = 0 AND 1=1 RETURN n" );
 
         assertThat( result.columns(), hasItem( "n" ) );
         Iterator<Node> n_column = result.columnAs( "n" );
@@ -160,9 +164,7 @@ public class JavaExecutionEngineDocTest
         makeFriends( michaelaNode, andreasNode );
         makeFriends( michaelaNode, johanNode );
 
-        ExecutionEngine engine = new ExecutionEngine( db );
-
-        ExecutionResult result = engine.execute( "MATCH n-->friend WHERE id(n) = 0 RETURN collect(friend)" );
+        Result result = db.execute( "MATCH n-->friend WHERE id(n) = 0 RETURN collect(friend)" );
 
         Iterable<Node> friends = (Iterable<Node>) result.columnAs( "collect(friend)" ).next();
         assertThat( friends, hasItems( andreasNode, johanNode ) );
@@ -177,8 +179,8 @@ public class JavaExecutionEngineDocTest
                 "where id(one) = 1 and id(two) = 2 and id(three) = 3 and id(four) = 4 and id(five) = 5 " +
                 "and id(six) = 6 and id(seven) = 7 and id(eight) = 8 and id(nine) = 9 and id(ten) = 10 " +
                 "return one, two, three, four, five, six, seven, eight, nine, ten";
-        ExecutionResult result = engine.execute( q );
-        assertThat( result.dumpToString(), matchesPattern( "one.*two.*three.*four.*five.*six.*seven.*eight.*nine.*ten" ) );
+        Result result = db.execute( q );
+        assertThat( result.resultAsString(), matchesPattern( "one.*two.*three.*four.*five.*six.*seven.*eight.*nine.*ten" ) );
     }
 
     private void createTenNodes()
@@ -200,7 +202,7 @@ public class JavaExecutionEngineDocTest
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "id", 0 );
         String query = "MATCH n WHERE id(n) = {id} RETURN n.name";
-        ExecutionResult result = engine.execute( query, params );
+        Result result = db.execute( query, params );
         // END SNIPPET: exampleWithParameterForNodeId
 
         assertThat( result.columns(), hasItem( "n.name" ) );
@@ -216,14 +218,14 @@ public class JavaExecutionEngineDocTest
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "ids", Arrays.asList( 0, 1, 2 ) );
         String query = "MATCH n WHERE id(n) in {ids} RETURN n.name";
-        ExecutionResult result = engine.execute( query, params );
+        Result result = db.execute( query, params );
         // END SNIPPET: exampleWithParameterForMultipleNodeIds
 
         assertEquals( asList( "Michaela", "Andreas", "Johan" ), this.<String>toList( result, "n.name" ) );
         dumpToFile( "exampleWithParameterForMultipleNodeIds", query, params );
     }
 
-    private <T> List<T> toList( ExecutionResult result, String column )
+    private <T> List<T> toList( Result result, String column )
     {
         List<T> results = new ArrayList<T>();
         IteratorUtil.addToCollection( result.<T>columnAs( column ), results );
@@ -237,7 +239,7 @@ public class JavaExecutionEngineDocTest
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "name", "Johan" );
         String query = "MATCH (n) WHERE n.name = {name} RETURN n";
-        ExecutionResult result = engine.execute( query, params );
+        Result result = db.execute( query, params );
         // END SNIPPET: exampleWithStringLiteralAsParameter
 
         assertEquals( asList( johanNode ), this.<Node>toList( result, "n" ) );
@@ -251,7 +253,7 @@ public class JavaExecutionEngineDocTest
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "name", "Johan" );
         String query = "MATCH (n {name: {name}}) RETURN n";
-        ExecutionResult result = engine.execute( query, params );
+        Result result = db.execute( query, params );
         // END SNIPPET: exampleWithShortSyntaxStringLiteralAsParameter
 
         assertEquals( asList( johanNode ), this.<Node>toList( result, "n" ) );
@@ -267,7 +269,7 @@ public class JavaExecutionEngineDocTest
             Map<String, Object> params = new HashMap<String, Object>();
             params.put( "value", "Michaela" );
             String query = "START n=node:people(name = {value}) RETURN n";
-            ExecutionResult result = engine.execute( query, params );
+            Result result = db.execute( query, params );
             // END SNIPPET: exampleWithParameterForIndexValue
             assertEquals( asList( michaelaNode ), this.<Node>toList( result, "n" ) );
             dumpToFile( "exampleWithParameterForIndexValue", query, params );
@@ -283,7 +285,7 @@ public class JavaExecutionEngineDocTest
             Map<String, Object> params = new HashMap<String, Object>();
             params.put( "query", "name:Andreas" );
             String query = "START n=node:people({query}) RETURN n";
-            ExecutionResult result = engine.execute( query, params );
+            Result result = db.execute( query, params );
             // END SNIPPET: exampleWithParametersForQuery
             assertEquals( asList( andreasNode ), this.<Node>toList( result, "n" ) );
             dumpToFile( "exampleWithParametersForQuery", query, params );
@@ -297,7 +299,7 @@ public class JavaExecutionEngineDocTest
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "node", andreasNode );
         String query = "MATCH n WHERE n = {node} RETURN n.name";
-        ExecutionResult result = engine.execute( query, params );
+        Result result = db.execute( query, params );
         // END SNIPPET: exampleWithParameterForNodeObject
 
         assertThat( result.columns(), hasItem( "n.name" ) );
@@ -313,7 +315,7 @@ public class JavaExecutionEngineDocTest
         params.put( "s", 1 );
         params.put( "l", 1 );
         String query = "MATCH (n) RETURN n.name SKIP {s} LIMIT {l}";
-        ExecutionResult result = engine.execute( query, params );
+        Result result = db.execute( query, params );
         // END SNIPPET: exampleWithParameterForSkipLimit
 
         assertThat( result.columns(), hasItem( "n.name" ) );
@@ -329,7 +331,7 @@ public class JavaExecutionEngineDocTest
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "regex", ".*h.*" );
         String query = "MATCH (n) WHERE n.name =~ {regex} RETURN n.name";
-        ExecutionResult result = engine.execute( query, params );
+        Result result = db.execute( query, params );
         // END SNIPPET: exampleWithParameterRegularExpression
         dumpToFile( "exampleWithParameterRegularExpression", query, params );
 
@@ -350,11 +352,11 @@ public class JavaExecutionEngineDocTest
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "props", props );
         String query = "CREATE ({props})";
-        engine.execute( query, params );
+        db.execute( query, params );
         // END SNIPPET: create_node_from_map
         dumpToFile( "create_node_from_map", query, params );
 
-        ExecutionResult result = engine.execute( "match (n) where n.name = 'Andres' and n.position = 'Developer' return n" );
+        Result result = db.execute( "match (n) where n.name = 'Andres' and n.position = 'Developer' return n" );
         assertThat( count( result ), is( 1 ) );
     }
 
@@ -376,17 +378,17 @@ public class JavaExecutionEngineDocTest
         List<Map<String, Object>> maps = Arrays.asList( n1, n2 );
         params.put( "props", maps );
         String query = "CREATE (n:Person {props}) RETURN n";
-        engine.execute( query, params );
+        db.execute( query, params );
         // END SNIPPET: create_multiple_nodes_from_map
         dumpToFile( "create_multiple_nodes_from_map", query, params );
 
-        ExecutionResult result = engine.execute( "match (n:Person) where n.name in ['Andres', 'Michael'] and n.position = 'Developer' return n" );
+        Result result = db.execute( "match (n:Person) where n.name in ['Andres', 'Michael'] and n.position = 'Developer' return n" );
         assertThat( count( result ), is( 2 ) );
 
-        result = engine.execute( "match (n:Person) where n.children = 3 return n" );
+        result = db.execute( "match (n:Person) where n.children = 3 return n" );
         assertThat( count( result ), is( 1 ) );
 
-        result = engine.execute( "match (n:Person) where n.awesome = true return n" );
+        result = db.execute( "match (n:Person) where n.awesome = true return n" );
         assertThat( count( result ), is( 1 ) );
     }
 
@@ -404,11 +406,11 @@ public class JavaExecutionEngineDocTest
             params.put( "props", n1 );
 
             String query = "MATCH (n) WHERE n.name='Michaela' SET n = {props}";
-            engine.execute( query, params );
+            db.execute( query, params );
             // END SNIPPET: set_properties_on_a_node_from_a_map
             dumpToFile( "set_properties_on_a_node_from_a_map", query, params );
 
-            engine.execute( "match (n) where n.name in ['Andres', 'Michael'] and n.position = 'Developer' return n" );
+            db.execute( "match (n) where n.name in ['Andres', 'Michael'] and n.position = 'Developer' return n" );
             assertThat( michaelaNode.getProperty( "name" ).toString(), is( "Andres" ) );
         }
     }
@@ -424,7 +426,7 @@ public class JavaExecutionEngineDocTest
         params.put( "props", props );
 
         String query = "MATCH n WHERE id(n) = 0 CREATE UNIQUE p = n-[:REL]->({props}) RETURN last(nodes(p)) AS X";
-        ExecutionResult result = engine.execute( query, params );
+        Result result = db.execute( query, params );
         assertThat( count( result ), is( 1 ) );
     }
 
@@ -444,17 +446,33 @@ public class JavaExecutionEngineDocTest
         params.put( "props2", props2 );
 
         String query = "MATCH n WHERE id(n) = 0 CREATE UNIQUE p = n-[:REL]->({props1})-[:LER]->({props2}) RETURN p";
-        ExecutionResult result = engine.execute( query, params );
+        Result result = db.execute( query, params );
         assertThat( count( result ), is( 1 ) );
     }
 
     @Test
     public void prettifier_makes_pretty() throws Exception
     {
+        QueryExecutionEngine engine = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( QueryExecutionEngine.class );
         String given = "match (n)-->() return n";
         String expected = String.format("MATCH (n)-->()%nRETURN n");
 
         assertEquals(expected, engine.prettify(given));
+    }
+
+    @Test
+    public void explain_returns_plan() throws Exception
+    {
+        // START SNIPPET: explain_returns_plan
+        Result result = db.execute( "EXPLAIN CREATE (user:User{name:{name}}) RETURN user" );
+
+        assert result.getQueryExecutionType().isExplained();
+        assert result.getQueryExecutionType().requestedExecutionPlanDescription();
+        assert !result.hasNext();
+        assert !result.getQueryStatistics().containsUpdates();
+        assert result.columns().isEmpty();
+        assert !result.getExecutionPlanDescription().hasProfilerStatistics();
+        // END SNIPPET: explain_returns_plan
     }
 
     private void makeFriends( Node a, Node b )

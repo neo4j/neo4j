@@ -56,6 +56,14 @@ public class Neo4jError
         this.cause = cause;
     }
 
+    @Override
+    public String toString()
+    {
+        cause.printStackTrace();
+        return String.format( "%s[%s, cause=\"%s\"]",
+                              getClass().getSimpleName(), status.code(), cause );
+    }
+
     public Throwable cause() { return cause; }
 
     public Status status()

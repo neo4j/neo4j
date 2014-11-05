@@ -19,7 +19,6 @@
 package org.neo4j.examples.server.unmanaged;
 
 import java.nio.charset.Charset;
-
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -29,7 +28,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
-import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.GraphDatabaseService;
 
 //START SNIPPET: HelloWorldResource
@@ -37,12 +35,10 @@ import org.neo4j.graphdb.GraphDatabaseService;
 public class HelloWorldResource
 {
     private final GraphDatabaseService database;
-    private final ExecutionEngine cypher;
 
-    public HelloWorldResource( @Context GraphDatabaseService database, @Context ExecutionEngine cypher )
+    public HelloWorldResource( @Context GraphDatabaseService database )
     {
         this.database = database;
-        this.cypher = cypher;
     }
 
     @GET

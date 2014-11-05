@@ -23,8 +23,14 @@ import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.cypher.CypherException;
+import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.QueryExecutionException;
+import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.Result;
+import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 
 /**
  * Holds Cypher query result sets, in tabular form. Each row of the result is a map
@@ -38,21 +44,24 @@ import org.neo4j.graphdb.ResourceIterator;
  * set, or use <code>columnAs()</code> to access a single column with result objects
  * cast to a type.
  *
- * @deprecated See {@link org.neo4j.cypher.javacompat.ExtendedExecutionResult}
+ * @deprecated See {@link org.neo4j.graphdb.Result}, and use
+ * {@link org.neo4j.graphdb.GraphDatabaseService#execute(String, Map)} instead.
  */
 @Deprecated
-public class ExecutionResult implements ResourceIterable<Map<String,Object>>
+public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Result
 {
-    private final org.neo4j.cypher.ExecutionResult inner;
+    private final org.neo4j.cypher.ExtendedExecutionResult inner;
+    private final ResourceIterator<Map<String, Object>> iter;
 
     /**
      * Constructor used by the Cypher framework. End-users should not
      * create an ExecutionResult directly, but instead use the result
      * returned from calling {@link ExecutionEngine#execute(String)}.
      */
-    public ExecutionResult( org.neo4j.cypher.ExecutionResult projection )
+    public ExecutionResult( org.neo4j.cypher.ExtendedExecutionResult projection )
     {
         inner = projection;
+        iter = inner.javaIterator();
     }
 
     /**
@@ -69,9 +78,32 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>
      * @throws ClassCastException when the result object can not be cast to the requested type
      * @throws org.neo4j.graphdb.NotFoundException when the column name does not appear in the original query
      */
+    @Override
     public <T> ResourceIterator<T> columnAs( String n )
     {
-        return inner.javaColumnAs( n );
+        // this method is both a legacy method, and a method on Result,
+        // prefer conforming to the new API and convert exceptions
+        try
+        {
+            return new ExceptionConversion<>( inner.<T>javaColumnAs( n ) );
+        }
+        catch ( CypherException e )
+        {
+            throw converted( e );
+        }
+    }
+
+    @Override
+    public QueryExecutionType getQueryExecutionType()
+    {
+        try
+        {
+            return inner.executionType();
+        }
+        catch ( CypherException e )
+        {
+            throw converted( e );
+        }
     }
 
     /**
@@ -79,15 +111,25 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>
      *
      * @return List of the column names.
      */
+    @Override
     public List<String> columns()
     {
-        return inner.javaColumns();
+        // this method is both a legacy method, and a method on Result,
+        // prefer conforming to the new API and convert exceptions
+        try
+        {
+            return inner.javaColumns();
+        }
+        catch ( CypherException e )
+        {
+            throw converted( e );
+        }
     }
 
     @Override
     public String toString()
     {
-        return inner.toString();
+        return inner.toString(); // legacy method - don't convert exceptions...
     }
 
     /**
@@ -100,16 +142,24 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>
      */
     public String dumpToString()
     {
-        return inner.dumpToString();
+        return inner.dumpToString(); // legacy method - don't convert exceptions...
     }
 
     /**
      * Returns statistics about this result.
      * @return statistics about this result
      */
+    @Override
     public QueryStatistics getQueryStatistics()
     {
-        return new QueryStatistics( inner.queryStatistics() );
+        try
+        {
+            return new QueryStatistics( inner.queryStatistics() );
+        }
+        catch ( CypherException e )
+        {
+            throw converted( e );
+        }
     }
 
     /**
@@ -118,12 +168,12 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>
      */
     public PlanDescription executionPlanDescription()
     {
-        return inner.executionPlanDescription().asJava();
+        return inner.executionPlanDescription().asJava(); // legacy method - don't convert exceptions...
     }
 
     public void toString( PrintWriter writer )
     {
-        inner.dumpToString( writer );
+        inner.dumpToString( writer ); // legacy method - don't convert exceptions...
     }
 
     /**
@@ -140,6 +190,157 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>
     @Override
     public ResourceIterator<Map<String, Object>> iterator()
     {
-        return inner.javaIterator();
+        return iter; // legacy method - don't convert exceptions...
+    }
+
+    @Override
+    public boolean hasNext()
+    {
+        try
+        {
+            return iter.hasNext();
+        }
+        catch ( CypherException e )
+        {
+            throw converted( e );
+        }
+    }
+
+    @Override
+    public Map<String, Object> next()
+    {
+        try
+        {
+            return iter.next();
+        }
+        catch ( CypherException e )
+        {
+            throw converted( e );
+        }
+    }
+
+    @Override
+    public void close()
+    {
+        try
+        {
+            iter.close();
+        }
+        catch ( CypherException e )
+        {
+            throw converted( e );
+        }
+    }
+
+    @Override
+    public ExecutionPlanDescription getExecutionPlanDescription()
+    {
+        try
+        {
+            return new Description( inner.executionPlanDescription() );
+        }
+        catch ( CypherException e )
+        {
+            throw converted( e );
+        }
+    }
+
+    @Override
+    public String resultAsString()
+    {
+        try
+        {
+            return dumpToString();
+        }
+        catch ( CypherException e )
+        {
+            throw converted( e );
+        }
+    }
+
+    @Override
+    public void writeAsStringTo( PrintWriter writer )
+    {
+        try
+        {
+            toString( writer );
+        }
+        catch ( CypherException e )
+        {
+            throw converted( e );
+        }
+    }
+
+    @Override
+    public void remove()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    private static class ExceptionConversion<T> implements ResourceIterator<T>
+    {
+        private final ResourceIterator<T> inner;
+
+        public ExceptionConversion( ResourceIterator<T> inner )
+        {
+            this.inner = inner;
+        }
+
+        @Override
+        public void close()
+        {
+            try
+            {
+                inner.close();
+            }
+            catch ( CypherException e )
+            {
+                throw converted( e );
+            }
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+            try
+            {
+                return inner.hasNext();
+            }
+            catch ( CypherException e )
+            {
+                throw converted( e );
+            }
+        }
+
+        @Override
+        public T next()
+        {
+            try
+            {
+                return inner.next();
+            }
+            catch ( CypherException e )
+            {
+                throw converted( e );
+            }
+        }
+
+        @Override
+        public void remove()
+        {
+            try
+            {
+                inner.remove();
+            }
+            catch ( CypherException e )
+            {
+                throw converted( e );
+            }
+        }
+    }
+
+    private static QueryExecutionException converted( CypherException e )
+    {
+        return new QueryExecutionKernelException( e ).asUserException();
     }
 }

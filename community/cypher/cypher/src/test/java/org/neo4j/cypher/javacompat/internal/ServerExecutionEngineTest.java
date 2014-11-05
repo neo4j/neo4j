@@ -21,6 +21,8 @@ package org.neo4j.cypher.javacompat.internal;
 
 import org.junit.Rule;
 import org.junit.Test;
+
+import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.assertFalse;
@@ -35,7 +37,8 @@ public class ServerExecutionEngineTest
     public void shouldDetectPeriodicCommitQueries() throws Exception
     {
         // GIVEN
-        ServerExecutionEngine engine = new ServerExecutionEngine( rule.getGraphDatabaseService() );
+        QueryExecutionEngine engine = rule.getGraphDatabaseAPI().getDependencyResolver()
+                                          .resolveDependency( QueryExecutionEngine.class );
 
         // WHEN
         boolean result = engine.isPeriodicCommit("USING PERIODIC COMMIT LOAD CSV FROM 'file:///tmp/foo.csv' AS line CREATE ()");
@@ -48,7 +51,8 @@ public class ServerExecutionEngineTest
     public void shouldNotDetectNonPeriodicCommitQueriesAsPeriodicCommitQueries() throws Exception
     {
         // GIVEN
-        ServerExecutionEngine engine = new ServerExecutionEngine( rule.getGraphDatabaseService() );
+        QueryExecutionEngine engine = rule.getGraphDatabaseAPI().getDependencyResolver()
+                                          .resolveDependency( QueryExecutionEngine.class );
 
         // WHEN
         boolean result = engine.isPeriodicCommit("CREATE ()");
@@ -61,7 +65,8 @@ public class ServerExecutionEngineTest
     public void shouldNotDetectInvalidQueriesAsPeriodicCommitQueries() throws Exception
     {
         // GIVEN
-        ServerExecutionEngine engine = new ServerExecutionEngine( rule.getGraphDatabaseService() );
+        QueryExecutionEngine engine = rule.getGraphDatabaseAPI().getDependencyResolver()
+                                          .resolveDependency( QueryExecutionEngine.class );
 
         // WHEN
         boolean result = engine.isPeriodicCommit("MATCH n RETURN m");

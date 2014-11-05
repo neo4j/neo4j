@@ -20,6 +20,7 @@
 package org.neo4j.shell.kernel;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.neo4j.graphdb.DependencyResolver;
@@ -32,6 +33,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Transaction;
@@ -90,6 +92,18 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     public Transaction beginTx()
     {
         return actual.beginTx();
+    }
+
+    @Override
+    public Result execute( String query )
+    {
+        return execute( query, Collections.<String, Object>emptyMap() );
+    }
+
+    @Override
+    public Result execute( String query, Map<String, Object> parameters )
+    {
+        return readOnly();
     }
 
     @Override

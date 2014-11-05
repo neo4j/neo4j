@@ -24,8 +24,12 @@ import javax.ws.rs.ext.Provider;
 import com.sun.jersey.api.core.HttpContext;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 
-/** This exists as a convenience for extension authors, to access the cypher execution engine. */
-@Provider
+/**
+ * This exists as a convenience for extension authors, to access the cypher execution engine.
+ *
+ * @deprecated Use {@link org.neo4j.graphdb.GraphDatabaseService#execute(String)} instead.
+ */
+@Deprecated @Provider
 public class ExecutionEngineProvider extends InjectableProvider<ExecutionEngine>
 {
     public CypherExecutor cypherExecutor;

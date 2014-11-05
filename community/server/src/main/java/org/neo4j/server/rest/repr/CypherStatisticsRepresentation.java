@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.rest.repr;
 
-import org.neo4j.cypher.javacompat.QueryStatistics;
+import org.neo4j.graphdb.QueryStatistics;
 
 public class CypherStatisticsRepresentation extends MappingRepresentation
 {
@@ -36,10 +36,10 @@ public class CypherStatisticsRepresentation extends MappingRepresentation
     {
         serializer.putBoolean( "contains_updates", stats.containsUpdates() );
         serializer.putNumber( "nodes_created", stats.getNodesCreated() );
-        serializer.putNumber( "nodes_deleted", stats.getDeletedNodes() );
+        serializer.putNumber( "nodes_deleted", stats.getNodesDeleted() );
         serializer.putNumber( "properties_set", stats.getPropertiesSet() );
         serializer.putNumber( "relationships_created", stats.getRelationshipsCreated() );
-        serializer.putNumber( "relationship_deleted", stats.getDeletedRelationships() );
+        serializer.putNumber( "relationship_deleted", stats.getRelationshipsDeleted() );
         serializer.putNumber( "labels_added", stats.getLabelsAdded() );
         serializer.putNumber( "labels_removed", stats.getLabelsRemoved() );
         serializer.putNumber( "indexes_added", stats.getIndexesAdded() );

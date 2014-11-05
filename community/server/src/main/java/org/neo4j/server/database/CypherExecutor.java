@@ -20,35 +20,34 @@
 package org.neo4j.server.database;
 
 import org.neo4j.cypher.javacompat.internal.ServerExecutionEngine;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class CypherExecutor extends LifecycleAdapter
 {
     private final Database database;
-    private final StringLogger logger;
     private ServerExecutionEngine executionEngine;
 
-    public CypherExecutor( Database database, StringLogger logger )
+    public CypherExecutor( Database database )
     {
         this.database = database;
-        this.logger = logger;
     }
 
-	public ServerExecutionEngine getExecutionEngine()
+    public ServerExecutionEngine getExecutionEngine()
     {
-		return executionEngine;
-	}
+        return executionEngine;
+    }
 
-	@Override
-	public void start() throws Throwable
-	{
-		this.executionEngine = new ServerExecutionEngine( database.getGraph(), logger );
-	}
+    @Override
+    public void start() throws Throwable
+    {
+        this.executionEngine = (ServerExecutionEngine) database.getGraph().getDependencyResolver()
+                                                               .resolveDependency( QueryExecutionEngine.class );
+    }
 
-	@Override
-	public void stop() throws Throwable
-	{
-		this.executionEngine = null;
-	}
+    @Override
+    public void stop() throws Throwable
+    {
+        this.executionEngine = null;
+    }
 }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphdb;
 
+import java.util.Map;
+
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.index.IndexManager;
@@ -216,6 +218,27 @@ public interface GraphDatabaseService
      * @return a new transaction instance
      */
     Transaction beginTx();
+
+    /**
+     * Executes a query and returns an iterable that contains the result set.
+     *
+     * This method is the same as {@link #execute(String, java.util.Map)} with an empty parameters-map.
+     *
+     * @param query The query to execute
+     * @return A {@link org.neo4j.graphdb.Result} that contains the result set.
+     * @throws QueryExecutionException If the Query contains errors
+     */
+    Result execute( String query ) throws QueryExecutionException;
+
+    /**
+     * Executes a query and returns an iterable that contains the result set.
+     *
+     * @param query      The query to execute
+     * @param parameters Parameters for the query
+     * @return A {@link org.neo4j.graphdb.Result} that contains the result set
+     * @throws QueryExecutionException If the Query contains errors
+     */
+    Result execute( String query, Map<String,Object> parameters ) throws QueryExecutionException;
 
     /**
      * Registers {@code handler} as a handler for transaction events which

@@ -1,3 +1,7 @@
+2.2.0-SNAPSHOT
+--------------
+o Introduced GraphDatabaseService.execute(...) for executing cypher queries.
+
 2.2.0-M01
 ---------
 o Configuration for store memory mapping values is now changed to be a

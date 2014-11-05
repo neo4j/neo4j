@@ -325,6 +325,12 @@ public interface Status
             this.description = description;
         }
 
+        @Override
+        public String toString()
+        {
+            return "Status.Code[" + serialize() + "]";
+        }
+
         /**
          * The portable, serialized status code. This will always be in the format:
          *

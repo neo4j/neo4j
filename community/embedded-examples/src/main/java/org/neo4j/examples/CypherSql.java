@@ -33,14 +33,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.cypher.javacompat.ExecutionEngine;
-import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 
@@ -55,13 +54,11 @@ public class CypherSql
     private Connection sqldb;
     private String identifierQuoteString;
     private final GraphDatabaseService graphdb;
-    private final ExecutionEngine engine;
     List<TestData> queries;
 
     public CypherSql( final GraphDatabaseService graphdb )
     {
         this.graphdb = graphdb;
-        this.engine = new ExecutionEngine( graphdb );
     }
 
     public static void main( String[] args ) throws SQLException
@@ -550,8 +547,8 @@ public class CypherSql
     {
         try ( Transaction transaction = graphdb.beginTx() )
         {
-            ExecutionResult executionResult = engine.execute( cypher );
-            return executionResult.dumpToString();
+            Result executionResult = graphdb.execute( cypher );
+            return executionResult.resultAsString();
         }
     }
 

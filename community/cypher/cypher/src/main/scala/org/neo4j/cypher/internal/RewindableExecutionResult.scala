@@ -23,13 +23,14 @@ import org.neo4j.cypher.internal.compatability.{ExecutionResultWrapperFor2_2, ex
 import org.neo4j.cypher.internal.compiler.v2_2.PipeExecutionResult
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
 import org.neo4j.cypher.{ExecutionResult, InternalException}
+import org.neo4j.graphdb.QueryExecutionType.QueryType
 
 object RewindableExecutionResult {
   self =>
   def apply(inner: InternalExecutionResult): InternalExecutionResult = inner match {
     case other: PipeExecutionResult  =>
       exceptionHandlerFor2_2.runSafely {
-        new PipeExecutionResult(other.result.toEager, other.columns, other.state, other.executionPlanBuilder, other.planType)
+        new PipeExecutionResult(other.result.toEager, other.columns, other.state, other.executionPlanBuilder, other.planType, QueryType.READ_WRITE)
       }
     case _ =>
       inner

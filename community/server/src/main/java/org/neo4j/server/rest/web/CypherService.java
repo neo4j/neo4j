@@ -28,9 +28,9 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
 import org.neo4j.cypher.CypherException;
-import org.neo4j.cypher.javacompat.ExtendedExecutionResult;
-import org.neo4j.cypher.javacompat.internal.ServerExecutionEngine;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Result;
+import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.CypherResultRepresentation;
@@ -95,7 +95,7 @@ public class CypherService
         }
         try
         {
-            ServerExecutionEngine executionEngine = cypherExecutor.getExecutionEngine();
+            QueryExecutionEngine executionEngine = cypherExecutor.getExecutionEngine();
             boolean periodicCommitQuery = executionEngine.isPeriodicCommit( query );
             CommitOnSuccessfulStatusCodeRepresentationWriteHandler handler = (CommitOnSuccessfulStatusCodeRepresentationWriteHandler) this.output.getRepresentationWriteHandler();
             if ( periodicCommitQuery )
@@ -103,16 +103,16 @@ public class CypherService
                 handler.closeTransaction();
             }
 
-            ExtendedExecutionResult result;
+            Result result;
             if ( profile )
             {
-                result = executionEngine.profile( query, params );
+                result = executionEngine.profileQuery( query, params );
                 includePlan = true;
             }
             else
             {
-                result = executionEngine.execute( query, params );
-                includePlan = result.planDescriptionRequested();
+                result = executionEngine.executeQuery( query, params );
+                includePlan = result.getQueryExecutionType().requestedExecutionPlanDescription();
             }
 
             if ( periodicCommitQuery )

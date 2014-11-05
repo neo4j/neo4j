@@ -31,8 +31,6 @@ import java.util.List;
 import java.util.Map;
 import javax.servlet.Filter;
 
-import org.neo4j.cypher.javacompat.ExecutionEngine;
-import org.neo4j.cypher.javacompat.internal.ServerExecutionEngine;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Clock;
@@ -44,6 +42,7 @@ import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
+import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -97,6 +96,7 @@ import org.neo4j.shell.ShellSettings;
 import static java.lang.Math.round;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.impl.util.JobScheduler.Group.serverTransactionTimeout;
@@ -217,7 +217,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
                 transactionFacade = createTransactionalActions();
 
-                cypherExecutor = new CypherExecutor( database, dependencies.logging().getMessagesLog(CypherExecutor.class) );
+                cypherExecutor = new CypherExecutor( database );
 
                 configureWebServer();
 
@@ -311,7 +311,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
         return new TransactionFacade(
                 new TransitionalPeriodTransactionMessContainer( database.getGraph() ),
-                new ServerExecutionEngine( database.getGraph(), dependencies.logging().getMessagesLog( ExecutionEngine.class ) ),
+                database.getGraph().getDependencyResolver().resolveDependency( QueryExecutionEngine.class ),
                 transactionRegistry,
                 dependencies.logging().getMessagesLog(TransactionFacade.class)
         );

@@ -19,22 +19,28 @@
  */
 package org.neo4j.cypher.example;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.neo4j.cypher.javacompat.ExecutionEngine;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.*;
-import org.neo4j.test.GraphDescription.Graph;
-import org.neo4j.visualization.asciidoc.AsciidocHelper;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.Map;
+
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.test.AsciiDocGenerator;
+import org.neo4j.test.GraphDescription;
+import org.neo4j.test.GraphDescription.Graph;
+import org.neo4j.test.GraphHolder;
+import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.JavaTestDocsGenerator;
+import org.neo4j.test.TestData;
+import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createCypherSnippet;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createQueryResultSnippet;
@@ -48,7 +54,6 @@ public class IntroDocTest implements GraphHolder
     TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor(
             this, true ) );
     private static ImpermanentGraphDatabase graphdb;
-    private static ExecutionEngine engine;
 
     @Test
     @Graph( value = { "John friend Sara", "John friend Joe",
@@ -72,7 +77,7 @@ public class IntroDocTest implements GraphHolder
                     createCypherSnippet( query ) ) );
             fw.append( "\nResulting in:\n\n" );
             fw.append( AsciiDocGenerator.dumpToSeparateFileWithType( new File( DOCS_TARGET ), "intro.result",
-                    createQueryResultSnippet( engine.execute( query ).dumpToString() ) ) );
+                    createQueryResultSnippet( graphdb.execute( query ).resultAsString() ) ) );
 
             fw.append( "\nNext up we will add filtering to set more parts "
                     + "in motion:\n\nWe take a list of user names "
@@ -86,7 +91,7 @@ public class IntroDocTest implements GraphHolder
                     createCypherSnippet( query ) ) );
             fw.append( "\nResulting in:\n\n" );
             fw.append( AsciiDocGenerator.dumpToSeparateFileWithType( new File( DOCS_TARGET ), "intro.result",
-                    createQueryResultSnippet( engine.execute( query ).dumpToString() ) ) );
+                    createQueryResultSnippet( graphdb.execute( query ).resultAsString() ) ) );
             fw.close();
         }
     }
@@ -96,8 +101,6 @@ public class IntroDocTest implements GraphHolder
     {
         graphdb = (ImpermanentGraphDatabase)new TestGraphDatabaseFactory().newImpermanentDatabase();
         graphdb.cleanContent();
-
-        engine = new ExecutionEngine( graphdb );
     }
     
     @AfterClass

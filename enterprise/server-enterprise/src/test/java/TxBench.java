@@ -31,7 +31,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -51,7 +50,6 @@ public class TxBench
 
 
     private static GraphDatabaseService db;
-    private static ExecutionEngine ee;
 
     public static void setup() throws IOException
     {
@@ -61,10 +59,9 @@ public class TxBench
             FileUtils.deleteRecursively( path );
         }
         db = new GraphDatabaseFactory().newEmbeddedDatabase( path.getAbsolutePath() );
-        ee = new ExecutionEngine( db );
         try( Transaction tx = db.beginTx() )
         {
-            ee.execute( "CREATE INDEX ON :User(name)" );
+            db.execute( "CREATE INDEX ON :User(name)" );
             tx.success();
         }
 
@@ -84,7 +81,7 @@ public class TxBench
             try ( Transaction tx = db.beginTx() )
             {
                 params.put( "name", ThreadLocalRandom.current().nextInt( 100000 ) );
-                ee.execute( "MERGE (n:User {name:{name}}) RETURN n", params );
+                db.execute( "MERGE (n:User {name:{name}}) RETURN n", params );
                 tx.success();
             }
         }

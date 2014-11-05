@@ -21,7 +21,8 @@ package org.neo4j.cypher
 
 import org.neo4j.kernel.api.exceptions.{KernelException, Status}
 
-abstract class CypherException(message: String, cause: Throwable) extends RuntimeException(message, cause) {
+abstract class CypherException(message: String, cause: Throwable) extends RuntimeException(message, cause)
+with Status.HasStatus {
   def status: Status
   def this(message: String) = this(message, null)
 }

@@ -23,13 +23,13 @@ import java.io.PrintWriter
 import java.util
 import java.util.Collections
 
-import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
-import org.neo4j.cypher.internal.helpers.{Eagerly, CollectionSupport}
-import org.neo4j.cypher.internal.{Profiled, Explained, PlanType}
+import org.neo4j.cypher.internal.helpers.{CollectionSupport, Eagerly}
+import org.neo4j.cypher.internal.{Explained, PlanType, Profiled}
+import org.neo4j.graphdb.QueryExecutionType.{QueryType, profiled, query}
 import org.neo4j.graphdb.ResourceIterator
 
 import scala.collection.JavaConverters._
@@ -39,7 +39,8 @@ class PipeExecutionResult(val result: ResultIterator,
                           val columns: List[String],
                           val state: QueryState,
                           val executionPlanBuilder: () => InternalPlanDescription,
-                          val planType: PlanType)
+                          val planType: PlanType,
+                          val queryType: QueryType)
   extends InternalExecutionResult
   with CollectionSupport {
 
@@ -98,5 +99,7 @@ class PipeExecutionResult(val result: ResultIterator,
     def remove() { Collections.emptyIterator[T]().remove() }
     def close() { self.close() }
   }
+
+  def executionType = if (planType == Profiled) profiled(queryType) else query(queryType)
 }
 

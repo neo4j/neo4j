@@ -21,15 +21,14 @@ package org.neo4j.server.rest.repr;
 
 import java.util.Map;
 
-import org.neo4j.cypher.javacompat.PlanDescription;
-import org.neo4j.cypher.javacompat.ProfilerStatistics;
 import org.neo4j.function.Function;
+import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.helpers.collection.IterableWrapper;
 
 import static org.neo4j.server.rest.repr.ObjectToRepresentationConverter.getMapRepresentation;
 
 /**
- * This takes a function that resolves to a {@link PlanDescription}, and it does so for two reasons:
+ * This takes a function that resolves to a {@link org.neo4j.graphdb.ExecutionPlanDescription}, and it does so for two reasons:
  *  - The plan description needs to be fetched *after* the result is streamed to the user
  *  - This method is recursive, so it's not enough to just pass in the execution plan to the root call of it
  *    subsequent inner calls could not re-use that execution plan (that would just lead to an infinite loop)
@@ -42,12 +41,12 @@ public abstract class CypherPlanRepresentation extends MappingRepresentation
         super( "plan" );
     }
 
-    protected abstract PlanDescription getPlan();
+    protected abstract ExecutionPlanDescription getPlan();
 
     @Override
     protected void serialize( MappingSerializer mappingSerializer )
     {
-        final PlanDescription planDescription = getPlan();
+        final ExecutionPlanDescription planDescription = getPlan();
 
         mappingSerializer.putString( "name", planDescription.getName() );
         Map<String, Object> arguments = planDescription.getArguments();
@@ -56,18 +55,17 @@ public abstract class CypherPlanRepresentation extends MappingRepresentation
 
         if ( planDescription.hasProfilerStatistics() )
         {
-            ProfilerStatistics stats = planDescription.getProfilerStatistics();
+            ExecutionPlanDescription.ProfilerStatistics stats = planDescription.getProfilerStatistics();
             mappingSerializer.putNumber( "rows", stats.getRows() );
             mappingSerializer.putNumber( "dbHits", stats.getDbHits() );
         }
 
         mappingSerializer.putList( "children",
                 new ListRepresentation( "children",
-                        new IterableWrapper<Representation, PlanDescription>( planDescription.getChildren() )
+                        new IterableWrapper<Representation, ExecutionPlanDescription>( planDescription.getChildren() )
                         {
-
                             @Override
-                            protected Representation underlyingObjectToObject( final PlanDescription childPlan )
+                            protected Representation underlyingObjectToObject( final ExecutionPlanDescription childPlan )
                             {
                                 return newFromPlan( childPlan );
                             }
@@ -76,16 +74,16 @@ public abstract class CypherPlanRepresentation extends MappingRepresentation
         );
     }
 
-    public static CypherPlanRepresentation newFromProvider( final Function<Object, PlanDescription> planProvider )
+    public static CypherPlanRepresentation newFromProvider( final Function<Object, ExecutionPlanDescription> planProvider )
     {
         return new CypherPlanRepresentation()
         {
-            private PlanDescription plan = null;
+            private ExecutionPlanDescription plan = null;
             private boolean fetched = false;
 
 
             @Override
-            protected PlanDescription getPlan()
+            protected ExecutionPlanDescription getPlan()
             {
                 if ( !fetched )
                 {
@@ -97,12 +95,12 @@ public abstract class CypherPlanRepresentation extends MappingRepresentation
         };
     }
 
-    public static CypherPlanRepresentation newFromPlan( final PlanDescription plan )
+    public static CypherPlanRepresentation newFromPlan( final ExecutionPlanDescription plan )
     {
         return new CypherPlanRepresentation()
         {
             @Override
-            protected PlanDescription getPlan()
+            protected ExecutionPlanDescription getPlan()
             {
                 return plan;
             }

@@ -26,19 +26,21 @@ import java.util.List;
 
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.InvalidSemanticsException;
-import org.neo4j.cypher.javacompat.ExtendedExecutionResult;
-import org.neo4j.cypher.javacompat.internal.ServerExecutionEngine;
+import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.DeadlockDetectedException;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.impl.query.QueryExecutionEngine;
+import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.rest.transactional.error.InternalBeginTransactionError;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.server.rest.web.TransactionUriScheme;
 
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
-import static org.neo4j.server.rest.transactional.TransactionHandle.StatementExecutionStrategy.EXECUTE_STATEMENT_USING_PERIODIC_COMMIT;
 import static org.neo4j.server.rest.transactional.TransactionHandle.StatementExecutionStrategy.EXECUTE_STATEMENT;
+import static org.neo4j.server.rest.transactional.TransactionHandle.StatementExecutionStrategy.EXECUTE_STATEMENT_USING_PERIODIC_COMMIT;
 import static org.neo4j.server.rest.transactional.TransactionHandle.StatementExecutionStrategy.SKIP_EXECUTE_STATEMENT;
 
 /**
@@ -61,14 +63,14 @@ import static org.neo4j.server.rest.transactional.TransactionHandle.StatementExe
 public class TransactionHandle implements TransactionTerminationHandle
 {
     private final TransitionalPeriodTransactionMessContainer txManagerFacade;
-    private final ServerExecutionEngine engine;
+    private final QueryExecutionEngine engine;
     private final TransactionRegistry registry;
     private final TransactionUriScheme uriScheme;
     private final StringLogger log;
     private final long id;
     private TransitionalTxManagementKernelTransaction context;
 
-    public TransactionHandle( TransitionalPeriodTransactionMessContainer txManagerFacade, ServerExecutionEngine engine,
+    public TransactionHandle( TransitionalPeriodTransactionMessContainer txManagerFacade, QueryExecutionEngine engine,
                               TransactionRegistry registry, TransactionUriScheme uriScheme, StringLogger log )
     {
         this.txManagerFacade = txManagerFacade;
@@ -313,13 +315,12 @@ public class TransactionHandle implements TransactionTerminationHandle
             while ( statements.hasNext() )
             {
                 Statement statement = statements.next();
-                ExtendedExecutionResult result;
                 try
                 {
-                    result = engine.execute( statement.statement(), statement.parameters() );
-                    output.statementResult(result, statement.includeStats(), statement.resultDataContents());
+                    Result result = engine.executeQuery( statement.statement(), statement.parameters() );
+                    output.statementResult( result, statement.includeStats(), statement.resultDataContents() );
                 }
-                catch ( CypherException e )
+                catch ( KernelException | CypherException e )
                 {
                     errors.add( new Neo4jError( e.status(), e ) );
                     break;
@@ -354,21 +355,22 @@ public class TransactionHandle implements TransactionTerminationHandle
     {
         try
         {
-            ExtendedExecutionResult result;
             try
             {
                 Statement statement = statements.next();
                 if ( statements.hasNext() )
                 {
-                    throw new InvalidSemanticsException("Cannot execute another statement after executing PERIODIC COMMIT statement in the same transaction");
+                    throw new QueryExecutionKernelException(
+                            new InvalidSemanticsException( "Cannot execute another statement after executing " +
+                                                           "PERIODIC COMMIT statement in the same transaction" ) );
                 }
 
-                result = engine.execute( statement.statement(), statement.parameters() );
+                Result result = engine.executeQuery( statement.statement(), statement.parameters() );
                 ensureActiveTransaction();
                 output.statementResult( result, statement.includeStats(), statement.resultDataContents() );
                 closeContextAndCollectErrors(errors);
             }
-            catch ( CypherException e )
+            catch ( KernelException | CypherException e )
             {
                 errors.add( new Neo4jError( e.status(), e ) );
             }

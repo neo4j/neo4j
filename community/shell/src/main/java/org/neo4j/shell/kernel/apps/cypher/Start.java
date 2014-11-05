@@ -24,14 +24,10 @@ import java.rmi.RemoteException;
 import java.text.MessageFormat;
 import java.util.Map;
 
-import org.neo4j.cypher.CypherException;
-import org.neo4j.cypher.javacompat.ExecutionEngine;
-import org.neo4j.cypher.javacompat.ExtendedExecutionResult;
-import org.neo4j.cypher.javacompat.internal.ServerExecutionEngine;
-import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.Result;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.impl.query.QueryExecutionEngine;
+import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Continuation;
@@ -45,7 +41,7 @@ import org.neo4j.shell.kernel.apps.TransactionProvidingApp;
 @Service.Implementation(App.class)
 public class Start extends TransactionProvidingApp
 {
-    private ServerExecutionEngine engine;
+    private QueryExecutionEngine engine;
 
     @Override
     public String getDescription()
@@ -68,10 +64,10 @@ public class Start extends TransactionProvidingApp
             try
             {
                 final long startTime = System.currentTimeMillis();
-                ExtendedExecutionResult result = getResult( trimQuery( query ), getParameters( session ) );
+                Result result = getResult( trimQuery( query ), getParameters( session ) );
                 handleResult( out, result, startTime );
             }
-            catch ( CypherException e )
+            catch ( QueryExecutionKernelException e )
             {
                 throw ShellException.wrapCause( e );
             }
@@ -83,10 +79,10 @@ public class Start extends TransactionProvidingApp
         }
     }
 
-    protected ExtendedExecutionResult getResult( String query, Map<String, Object> parameters ) throws ShellException,
-            RemoteException
+    protected Result getResult( String query, Map<String, Object> parameters )
+            throws ShellException, RemoteException, QueryExecutionKernelException
     {
-        return getEngine().execute( query, parameters );
+        return getEngine().executeQuery( query, parameters );
     }
 
     protected String trimQuery( String query )
@@ -94,27 +90,21 @@ public class Start extends TransactionProvidingApp
         return query.substring( 0, query.lastIndexOf( ";" ) );
     }
 
-    protected void handleResult( Output out, ExtendedExecutionResult result, long startTime ) throws RemoteException, ShellException
+    protected void handleResult( Output out, Result result, long startTime )
+            throws RemoteException, ShellException
     {
         printResult( out, result, startTime );
     }
 
-    private void printResult( Output out, ExtendedExecutionResult result, long startTime ) throws RemoteException
+    private void printResult( Output out, Result result, long startTime ) throws RemoteException
     {
-        result.toString( new PrintWriter( new OutputAsWriter( out ) ) );
+        result.writeAsStringTo( new PrintWriter( new OutputAsWriter( out ) ) );
         out.println( (now() - startTime) + " ms" );
-        if ( result.planDescriptionRequested() )
+        if ( result.getQueryExecutionType().requestedExecutionPlanDescription() )
         {
             out.println();
-            out.println( result.executionPlanDescription().toString() );
+            out.println( result.getExecutionPlanDescription().toString() );
         }
-    }
-
-    protected StringLogger getCypherLogger()
-    {
-        DependencyResolver dependencyResolver = getServer().getDb().getDependencyResolver();
-        Logging logging = dependencyResolver.resolveDependency( Logging.class );
-        return logging.getMessagesLog( ExecutionEngine.class );
     }
 
     protected Map<String, Object> getParameters(Session session) throws ShellException
@@ -136,17 +126,11 @@ public class Start extends TransactionProvidingApp
     }
 
 
-    protected ServerExecutionEngine getEngine()
+    protected QueryExecutionEngine getEngine()
     {
         if ( this.engine == null )
         {
-            synchronized ( this )
-            {
-                if ( this.engine == null )
-                {
-                    this.engine = new ServerExecutionEngine( getServer().getDb(), getCypherLogger() );
-                }
-            }
+            this.engine = getServer().getDb().getDependencyResolver().resolveDependency( QueryExecutionEngine.class );
         }
         return this.engine;
     }

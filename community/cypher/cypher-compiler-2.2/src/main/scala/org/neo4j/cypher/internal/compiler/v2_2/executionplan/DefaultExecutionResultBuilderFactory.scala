@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 
-import org.neo4j.cypher.internal.{Explained, PlanType}
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.pipes._
-import org.neo4j.cypher.internal.compiler.v2_2.spi.{QueryContext, CSVResources}
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v2_2.spi.{CSVResources, QueryContext}
+import org.neo4j.cypher.internal.{Explained, PlanType}
 import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.graphdb.QueryExecutionType.QueryType
 
 case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo, columns: List[String], planType: PlanType) extends ExecutionResultBuilderFactory {
   def create(): ExecutionResultBuilder =
@@ -74,15 +75,26 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo, columns: Lis
       }
     }
 
-    private def createResults(state: QueryState): InternalExecutionResult =
+    private def createResults(state: QueryState): InternalExecutionResult = {
+      val queryType =
+        if (pipeInfo.pipe.isInstanceOf[IndexOperationPipe] || pipeInfo.pipe.isInstanceOf[ConstraintOperationPipe])
+          QueryType.SCHEMA_WRITE
+        else if (pipeInfo.updating) {
+          if (columns.isEmpty)
+            QueryType.WRITE
+          else
+            QueryType.READ_WRITE
+        } else
+          QueryType.READ_ONLY
       if (planType == Explained) {
-        new ExplainExecutionResult(columns, pipeInfo.pipe.planDescription)
+        new ExplainExecutionResult(columns, pipeInfo.pipe.planDescription, queryType)
       } else {
         val results = pipeInfo.pipe.createResults(state)
         val resultIterator = buildResultIterator(results, pipeInfo.updating)
         val descriptor = buildDescriptor(pipeInfo.pipe, resultIterator.wasMaterialized)
-        new PipeExecutionResult(resultIterator, columns, state, descriptor, planType)
+        new PipeExecutionResult(resultIterator, columns, state, descriptor, planType, queryType)
       }
+    }
 
     private def queryContext = maybeQueryContext.get
 

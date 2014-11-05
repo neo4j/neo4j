@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.compiler.v2_2.{CypherCompilerFactory, Legacy, PlannerName, Ronja, CypherException => CypherException_v2_2}
 import org.neo4j.cypher.internal.spi.v2_2.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.ProfilerStatistics
-import org.neo4j.graphdb.{GraphDatabaseService, ResourceIterator}
+import org.neo4j.graphdb.{QueryExecutionType, GraphDatabaseService, ResourceIterator}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.{KernelAPI, Statement}
@@ -213,6 +213,8 @@ case class ExecutionResultWrapperFor2_2(inner: InternalExecutionResult, version:
   def convert(i: InternalPlanDescription): PlanDescription = exceptionHandlerFor2_2.runSafely {
     CompatibilityPlanDescription(i, version)
   }
+
+  def executionType: QueryExecutionType = exceptionHandlerFor2_2.runSafely {inner.executionType}
 }
 
 case class CompatibilityPlanDescription(inner: InternalPlanDescription, version: CypherVersion) extends PlanDescription {

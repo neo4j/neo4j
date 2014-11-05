@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.compatability
 import java.io.PrintWriter
 
 import org.neo4j.cypher.internal.AmendedRootPlanDescription
-import org.neo4j.cypher.{PlanDescription, CypherVersion, ExecutionResult, ExtendedExecutionResult}
+import org.neo4j.cypher._
+import org.neo4j.graphdb.QueryExecutionType.{QueryType, profiled, query}
 
 case class LegacyExecutionResultWrapper(inner: ExecutionResult, planDescriptionRequested: Boolean, version: CypherVersion) extends ExtendedExecutionResult {
   def columns = inner.columns
@@ -49,4 +50,20 @@ case class LegacyExecutionResultWrapper(inner: ExecutionResult, planDescriptionR
   def next() = inner.next()
 
   def hasNext = inner.hasNext
+
+  def executionType = if (planDescriptionRequested) profiled(queryType) else query(queryType)
+
+  // since we can't introspect the query result returned by the legacy planners, this is the best we can do
+  private def queryType = if (schemaQuery(queryStatistics()))
+    QueryType.SCHEMA_WRITE
+  else if (columns.isEmpty)
+    QueryType.WRITE
+  else
+    QueryType.READ_WRITE
+
+  private def schemaQuery(stats: QueryStatistics): Boolean = stats.containsUpdates &&
+    (stats.indexesAdded > 0 ||
+      stats.indexesRemoved > 0 ||
+      stats.constraintsAdded > 0 ||
+      stats.constraintsRemoved > 0)
 }

@@ -22,12 +22,13 @@ package org.neo4j.shell.kernel.apps.cypher;
 import java.rmi.RemoteException;
 import java.util.Map;
 
-import org.neo4j.cypher.javacompat.ExtendedExecutionResult;
-import org.neo4j.cypher.javacompat.internal.ServerExecutionEngine;
+import org.neo4j.graphdb.Result;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.TopLevelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.query.QueryExecutionEngine;
+import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.shell.App;
 import org.neo4j.shell.ShellException;
 
@@ -35,11 +36,11 @@ import org.neo4j.shell.ShellException;
 public class Using extends Start
 {
     @Override
-    protected ExtendedExecutionResult getResult( String query, Map<String, Object> parameters )
-            throws ShellException, RemoteException
+    protected Result getResult( String query, Map<String, Object> parameters )
+            throws ShellException, RemoteException, QueryExecutionKernelException
     {
         GraphDatabaseAPI graphDatabaseAPI = getServer().getDb();
-        ServerExecutionEngine engine = getEngine();
+        QueryExecutionEngine engine = getEngine();
         if ( engine.isPeriodicCommit( query ) )
         {
             ThreadToStatementContextBridge manager =

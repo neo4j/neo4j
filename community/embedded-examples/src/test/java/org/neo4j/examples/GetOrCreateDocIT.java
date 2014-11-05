@@ -29,7 +29,7 @@ import java.util.NoSuchElementException;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.neo4j.cypher.javacompat.ExecutionEngine;
+
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -86,12 +86,12 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestBase
         }
     }
 
-    class CypherGetOrCreate extends GetOrCreate<ExecutionEngine>
+    class CypherGetOrCreate extends GetOrCreate<GraphDatabaseService>
     {
         @Override
-        public Node getOrCreateUser( String username, GraphDatabaseService graphDb, ExecutionEngine engine )
+        public Node getOrCreateUser( String username, GraphDatabaseService graphDb, GraphDatabaseService engine )
         {
-            return getOrCreateWithCypher( username, graphDb, engine );
+            return getOrCreateWithCypher( username, graphDb );
         }
     }
 
@@ -250,11 +250,11 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestBase
     @Test
     public void getOrCreateUsingCypher() throws Exception
     {
-        new ThreadRunner<ExecutionEngine>( new CypherGetOrCreate(), "cypher") {
+        new ThreadRunner<GraphDatabaseService>( new CypherGetOrCreate(), "cypher") {
             @Override
-            ExecutionEngine createDependency()
+            GraphDatabaseService createDependency()
             {
-                return createExecutionEngineAndConstraint( graphdb() );
+                return createConstraint( graphdb() );
             }
         }.run();
     }
@@ -330,7 +330,7 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestBase
         // END SNIPPET: getOrCreateWithFactory
     }
 
-    private Node getOrCreateWithCypher( String username, GraphDatabaseService graphDb, ExecutionEngine engine )
+    private Node getOrCreateWithCypher( String username, GraphDatabaseService graphDb )
     {
         // START SNIPPET: getOrCreateWithCypher
         Node result = null;
@@ -340,7 +340,7 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestBase
             String queryString = "MERGE (n:User {name: {name}}) RETURN n";
             Map<String, Object> parameters = new HashMap<>();
             parameters.put( "name", username );
-            resultIterator = engine.execute( queryString, parameters ).columnAs( "n" );
+            resultIterator = graphDb.execute( queryString, parameters ).columnAs( "n" );
             result = resultIterator.next();
             tx.success();
             return result;
@@ -360,9 +360,9 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestBase
         }
     }
 
-    private ExecutionEngine createExecutionEngineAndConstraint( GraphDatabaseService graphdb )
+    private GraphDatabaseService createConstraint( GraphDatabaseService graphdb )
     {
-        // START SNIPPET: prepareExecutionEngineAndConstraint
+        // START SNIPPET: prepareConstraint
         try ( Transaction tx = graphdb.beginTx() )
         {
             graphdb.schema()
@@ -371,9 +371,8 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestBase
                     .create();
             tx.success();
         }
-
-        return new ExecutionEngine( graphdb() );
-        // END SNIPPET: prepareExecutionEngineAndConstraint
+        // END SNIPPET: prepareConstraint
+        return graphdb;
     }
 
     private static void assertUserExistsUniquelyInIndex( GraphDatabaseService graph, Transaction tx, String username )
