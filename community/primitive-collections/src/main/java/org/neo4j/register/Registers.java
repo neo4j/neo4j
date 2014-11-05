@@ -67,17 +67,11 @@ public class Registers
             }
 
             @Override
-            public long incrementFirst( long delta )
+            public void increment( long firstDelta, long secondDelta )
             {
-                this.first += delta;
-                return this.first;
-            }
+                this.first += firstDelta;
+                this.second += secondDelta;
 
-            @Override
-            public long incrementSecond( long delta )
-            {
-                this.second += delta;
-                return this.second;
             }
         };
     }

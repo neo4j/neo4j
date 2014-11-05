@@ -190,21 +190,14 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     }
 
     @Override
-    public long incrementNodeCount( int labelId, long delta )
+    public void incrementNodeCount( int labelId, long delta )
     {
-        if ( delta == 0 )
+        try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
         {
-            return nodeCount( labelId );
-        }
-        else
-        {
-            try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
-            {
-                CountsKey.NodeKey key = nodeKey( labelId );
-                long value = state.incrementNodeCount( key, delta );
-                assert value >= 0 : String.format( "incrementNodeCount(key=%s, delta=%d) -> value=%d", key, delta, value );
-                return value;
-            }
+            CountsKey.NodeKey key = nodeKey( labelId );
+            state.incrementNodeCount( key, delta );
+            long value = state.nodeCount( key );
+            assert value >= 0 : String.format( "incrementNodeCount(key=%s, delta=%d) -> value=%d", key, delta, value );
         }
     }
 
@@ -215,21 +208,16 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     }
 
     @Override
-    public long incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta )
+    public void incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta )
     {
-        if ( delta == 0 )
-        {
-            return relationshipCount( startLabelId, typeId, endLabelId );
-        }
-        {
             try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
             {
                 CountsKey.RelationshipKey key = relationshipKey( startLabelId, typeId, endLabelId );
-                long value = state.incrementRelationshipCount( key, delta );
-                assert value >= 0 : String.format( "incrementRelationshipCount(key=%s, delta=%d) -> value=%d", key, delta, value );
-                return value;
+                state.incrementRelationshipCount( key, delta );
+                long value = state.relationshipCount( key );
+                assert value >= 0 :
+                        String.format( "incrementRelationshipCount(key=%s, delta=%d) -> value=%d", key, delta, value );
             }
-        }
     }
 
     @Override
@@ -263,13 +251,13 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     }
 
     @Override
-    public long incrementIndexUpdates( int labelId, int propertyKeyId, long delta )
+    public void incrementIndexUpdates( int labelId, int propertyKeyId, long delta )
     {
         try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
         {
             IndexCountsKey key = indexCountsKey( labelId, propertyKeyId );
             assert delta >= 0 : String.format( "incrementIndexUpdates(key=%s, delta=%d)", key, delta );
-            return state.incrementIndexUpdates( key, delta );
+            state.incrementIndexUpdates( key, delta );
         }
     }
 

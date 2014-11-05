@@ -38,12 +38,10 @@ public interface Register
         interface Out
         {
             void write( long first, long second );
+            void increment( long firstDelta, long secondDelta );
 
             void writeFirst( long value );
             void writeSecond( long value );
-
-            long incrementFirst( long delta );
-            long incrementSecond( long delta );
         }
     }
 

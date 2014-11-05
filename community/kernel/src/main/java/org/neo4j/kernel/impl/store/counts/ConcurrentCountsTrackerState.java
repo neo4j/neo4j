@@ -77,9 +77,9 @@ class ConcurrentCountsTrackerState implements CountsTrackerState
     }
 
     @Override
-    public long incrementNodeCount( NodeKey nodeKey, long delta )
+    public void incrementNodeCount( NodeKey nodeKey, long delta )
     {
-        return incrementCount( nodeKey, delta );
+        incrementCount( nodeKey, delta );
     }
 
     @Override
@@ -89,9 +89,9 @@ class ConcurrentCountsTrackerState implements CountsTrackerState
     }
 
     @Override
-    public long incrementRelationshipCount( RelationshipKey relationshipKey, long delta )
+    public void incrementRelationshipCount( RelationshipKey relationshipKey, long delta )
     {
-        return incrementCount( relationshipKey, delta );
+        incrementCount( relationshipKey, delta );
     }
 
     @Override
@@ -113,9 +113,9 @@ class ConcurrentCountsTrackerState implements CountsTrackerState
     }
 
     @Override
-    public long incrementIndexUpdates( IndexCountsKey indexCountsKey, long delta )
+    public void incrementIndexUpdates( IndexCountsKey indexCountsKey, long delta )
     {
-        return writeRegister( indexCountsKey ).incrementFirst( delta );
+        writeRegister( indexCountsKey ).increment( delta, 0l );
     }
 
     @Override

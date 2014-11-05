@@ -146,37 +146,18 @@ public class ConcurrentRegisters
                 }
 
                 @Override
-                public long incrementFirst( long delta )
+                public void increment( long firstDelta, long secondDelta )
                 {
                     long stamp = lock.writeLock();
-                    long result;
                     try
                     {
-                        result = first + delta;
-                        this.first = result;
+                        this.first += firstDelta;
+                        this.second += secondDelta;
                     }
                     finally
                     {
                         lock.unlock( stamp );
                     }
-                    return result;
-                }
-
-                @Override
-                public long incrementSecond( long delta )
-                {
-                    long stamp = lock.writeLock();
-                    long result;
-                    try
-                    {
-                        result = second + delta;
-                        this.second = result;
-                    }
-                    finally
-                    {
-                        lock.unlock( stamp );
-                    }
-                    return result;
                 }
             };
         }

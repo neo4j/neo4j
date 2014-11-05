@@ -33,13 +33,13 @@ public interface CountsAccessor
 
     DoubleLongRegister indexSample( int labelId, int propertyKeyId, DoubleLongRegister target );
 
-    long incrementNodeCount( int labelId, long delta );
+    void incrementNodeCount( int labelId, long delta );
 
-    long incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta );
+    void incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta );
 
     void replaceIndexSize( int labelId, int propertyKeyId, long total );
 
-    long incrementIndexUpdates( int labelId, int propertyKeyId, long total );
+    void incrementIndexUpdates( int labelId, int propertyKeyId, long total );
 
     void replaceIndexUpdates( int labelId, int propertyKeyId, long total );
 

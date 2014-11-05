@@ -47,13 +47,13 @@ interface CountsTrackerState extends Closeable
 
     void indexSample( IndexSampleKey indexSampleKey, DoubleLongRegister target );
 
-    long incrementNodeCount( NodeKey nodeKey, long delta );
+    void incrementNodeCount( NodeKey nodeKey, long delta );
 
-    long incrementRelationshipCount( RelationshipKey relationshipKey, long delta );
+    void incrementRelationshipCount( RelationshipKey relationshipKey, long delta );
 
     void replaceIndexSize( IndexCountsKey indexCountsKey, long total );
 
-    long incrementIndexUpdates( IndexCountsKey indexCountsKey, long delta );
+    void incrementIndexUpdates( IndexCountsKey indexCountsKey, long delta );
 
     void replaceIndexUpdates( IndexCountsKey indexCountsKey, long total );
 

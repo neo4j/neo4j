@@ -53,9 +53,9 @@ public class CountsRecordState implements CountsVisitor.Visitable, CountsAccesso
     }
 
     @Override
-    public long incrementNodeCount( int labelId, long delta )
+    public void incrementNodeCount( int labelId, long delta )
     {
-        return counts( nodeKey( labelId ) ).incrementSecond( delta );
+        counts( nodeKey( labelId ) ).increment( 0l, delta );
     }
 
     @Override
@@ -72,9 +72,9 @@ public class CountsRecordState implements CountsVisitor.Visitable, CountsAccesso
     }
 
     @Override
-    public long incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta )
+    public void incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta )
     {
-        return counts( relationshipKey( startLabelId, typeId, endLabelId ) ).incrementSecond( delta );
+        counts( relationshipKey( startLabelId, typeId, endLabelId ) ).increment( 0l, delta );
     }
 
     @Override
@@ -96,9 +96,9 @@ public class CountsRecordState implements CountsVisitor.Visitable, CountsAccesso
     }
 
     @Override
-    public long incrementIndexUpdates( int labelId, int propertyKeyId, long delta )
+    public void incrementIndexUpdates( int labelId, int propertyKeyId, long delta )
     {
-        return counts( indexCountsKey( labelId, propertyKeyId ) ).incrementFirst( delta );
+        counts( indexCountsKey( labelId, propertyKeyId ) ).increment( delta, 0l );
     }
 
     @Override
