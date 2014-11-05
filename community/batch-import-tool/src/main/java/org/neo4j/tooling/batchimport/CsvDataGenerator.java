@@ -88,7 +88,7 @@ public class CsvDataGenerator
         case IGNORE:
             return;
         default:
-            value = entry.name() + ":" + entry.type().name();
+            value = (entry.name() != null ? entry.name() : "") + ":" + entry.type().name();
             break;
         }
         builder.append( value );
@@ -143,10 +143,10 @@ public class CsvDataGenerator
         case LABEL:
             randomLabels( builder, config.arrayDelimiter() );
             break;
-        case START_NODE: case END_NODE:
+        case START_ID: case END_ID:
             builder.append( random.nextInt( highNodeId ) );
             break;
-        case RELATIONSHIP_TYPE:
+        case TYPE:
             builder.append( "TYPE_" ).append( random.nextInt( 4 ) );
             break;
         default:
@@ -212,16 +212,16 @@ public class CsvDataGenerator
         Configuration config = Configuration.COMMAS;
         Extractors extractors = new Extractors( config.arrayDelimiter() );
         Header nodeHeader = new Header( new Entry[] {
-                new Entry( "id", Type.ID, extractors.string() ),
+                new Entry( null, Type.ID, extractors.string() ),
                 new Entry( "name", Type.PROPERTY, extractors.string() ),
                 new Entry( "age", Type.PROPERTY, extractors.int_() ),
                 new Entry( "something", Type.PROPERTY, extractors.string() ),
-                new Entry( "label", Type.LABEL, extractors.stringArray() ),
+                new Entry( null, Type.LABEL, extractors.stringArray() ),
         } );
         Header relationshipHeader = new Header( new Entry[] {
-                new Entry( "start", Type.START_NODE, extractors.string() ),
-                new Entry( "end", Type.END_NODE, extractors.string() ),
-                new Entry( "type", Type.RELATIONSHIP_TYPE, extractors.string() )
+                new Entry( null, Type.START_ID, extractors.string() ),
+                new Entry( null, Type.END_ID, extractors.string() ),
+                new Entry( null, Type.TYPE, extractors.string() )
         } );
 
         ProgressListener progress = textual( System.out ).singlePart( "Generating", nodeCount + relationshipCount );

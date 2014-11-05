@@ -73,7 +73,7 @@ public class DataFactoriesTest
     {
         // GIVEN
         CharSeeker seeker = new BufferedCharSeeker( new StringReader(
-                "node one\tnode two\ttype\tdate:long\tmore:long[]" ) );
+                ":START_ID\t:END_ID\ttype:TYPE\tdate:long\tmore:long[]" ) );
         IdType idType = IdType.ACTUAL;
         Extractors extractors = new Extractors( '\t' );
 
@@ -82,9 +82,9 @@ public class DataFactoriesTest
 
         // THEN
         assertArrayEquals( array(
-                entry( "node one", Type.START_NODE, idType.extractor( extractors ) ),
-                entry( "node two", Type.END_NODE, idType.extractor( extractors ) ),
-                entry( "type", Type.RELATIONSHIP_TYPE, extractors.string() ),
+                entry( null, Type.START_ID, idType.extractor( extractors ) ),
+                entry( null, Type.END_ID, idType.extractor( extractors ) ),
+                entry( "type", Type.TYPE, extractors.string() ),
                 entry( "date", Type.PROPERTY, extractors.long_() ),
                 entry( "more", Type.PROPERTY, extractors.longArray() ) ), header.entries() );
         seeker.close();

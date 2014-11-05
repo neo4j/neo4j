@@ -159,7 +159,7 @@ public class CsvInputBatchImportIT
         try ( Writer writer = fs.openAsWriter( file, "utf-8", false ) )
         {
             // Header
-            println( writer, "start,end,type" );
+            println( writer, ":start_id,:end_id,:type" );
 
             // Data
             for ( InputRelationship relationship : relationshipData )

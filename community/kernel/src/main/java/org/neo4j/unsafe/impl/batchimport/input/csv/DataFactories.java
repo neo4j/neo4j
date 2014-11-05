@@ -266,18 +266,22 @@ public class DataFactories
                 List<Header.Entry> columns = new ArrayList<>();
                 for ( int i = 0; !mark.isEndOfLine() && headerSeeker.seek( mark, delimiter ); i++ )
                 {
-                    String columnString = headerSeeker.extract( mark, extractors.string() ).value();
-                    int typeIndex = columnString.lastIndexOf( ':' );
+                    String entryString = headerSeeker.extract( mark, extractors.string() ).value();
+                    int typeIndex = entryString.lastIndexOf( ':' );
                     String name;
                     String typeSpec;
                     if ( typeIndex != -1 )
                     {   // Specific type given
-                        name = columnString.substring( 0, typeIndex );
-                        typeSpec = columnString.substring( typeIndex+1 );
+                        name = entryString.substring( 0, typeIndex );
+                        if ( name.length() == 0 )
+                        {
+                            name = null;
+                        }
+                        typeSpec = entryString.substring( typeIndex+1 );
                     }
                     else
                     {
-                        name = columnString;
+                        name = entryString;
                         typeSpec = null;
                     }
                     columns.add( entry( i, name, typeSpec, extractors, idExtractor ) );
@@ -316,7 +320,7 @@ public class DataFactories
                     properties.put( entry.name(), entry );
                     break;
 
-                case ID: case START_NODE: case END_NODE: case RELATIONSHIP_TYPE:
+                case ID: case START_ID: case END_ID: case TYPE:
                     Entry existingSingletonEntry = singletonEntries.get( entry.type() );
                     if ( existingSingletonEntry != null )
                     {
@@ -392,7 +396,7 @@ public class DataFactories
     {
         protected DefaultRelationshipFileHeaderParser( HeaderCharSeekerFactory headerCharSeekerFactory )
         {
-            super( headerCharSeekerFactory, Type.START_NODE, Type.END_NODE, Type.RELATIONSHIP_TYPE );
+            super( headerCharSeekerFactory, Type.START_ID, Type.END_ID, Type.TYPE );
         }
 
         @Override
@@ -401,19 +405,24 @@ public class DataFactories
         {
             Type type = null;
             Extractor<?> extractor = null;
-            if ( index == 0 )
+            if ( typeSpec == null )
+            {   // Property
+                type = Type.PROPERTY;
+                extractor = extractors.string();
+            }
+            else if ( typeSpec.equalsIgnoreCase( Type.START_ID.name() ) )
             {
-                type = Type.START_NODE;
+                type = Type.START_ID;
                 extractor = idExtractor;
             }
-            else if ( index == 1 )
+            else if ( typeSpec.equalsIgnoreCase( Type.END_ID.name() ) )
             {
-                type = Type.END_NODE;
+                type = Type.END_ID;
                 extractor = idExtractor;
             }
-            else if ( index == 2 )
+            else if ( typeSpec.equalsIgnoreCase( Type.TYPE.name() ) )
             {
-                type = Type.RELATIONSHIP_TYPE;
+                type = Type.TYPE;
                 extractor = extractors.string();
             }
             else

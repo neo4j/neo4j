@@ -77,9 +77,9 @@ public class CsvInputTest
         Input input = new CsvInput( null, null,
                 dataIterable( data( "node1,node2,KNOWS,1234567\n" +
                       "node2,node10,HACKS,987654" ) ),
-                header( entry( "from", Type.START_NODE, idType.extractor( extractors ) ),
-                        entry( "to", Type.END_NODE, idType.extractor( extractors ) ),
-                        entry( "type", Type.RELATIONSHIP_TYPE, extractors.string() ),
+                header( entry( "from", Type.START_ID, idType.extractor( extractors ) ),
+                        entry( "to", Type.END_ID, idType.extractor( extractors ) ),
+                        entry( "type", Type.TYPE, extractors.string() ),
                         entry( "since", Type.PROPERTY, extractors.long_() ) ), idType, COMMAS );
 
         // WHEN/THEN

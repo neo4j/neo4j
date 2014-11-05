@@ -44,13 +44,13 @@ class InputRelationshipDeserializer extends InputEntityDeserializer<InputRelatio
     {
         switch ( entry.type() )
         {
-        case RELATIONSHIP_TYPE:
+        case TYPE:
             type = (String) value;
             break;
-        case START_NODE:
+        case START_ID:
             startNode = value;
             break;
-        case END_NODE:
+        case END_ID:
             endNode = value;
             break;
         }

@@ -40,6 +40,7 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
+import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
 
 import static java.io.File.pathSeparator;
 import static java.lang.System.currentTimeMillis;
@@ -256,7 +257,8 @@ public class BatchImporterToolTest
     private void writeRelationshipHeader( PrintStream writer, Configuration config )
     {
         char delimiter = config.delimiter();
-        writer.println( "start" + delimiter + "end" + delimiter + "type" + delimiter + "created:long" );
+        writer.println( ":" + Type.START_ID + delimiter + ":" + Type.END_ID + delimiter +
+                        ":" + Type.TYPE + delimiter + "created:long" );
     }
 
     private void writeRelationshipData( PrintStream writer, Configuration config, List<String> nodeIds,
