@@ -30,24 +30,51 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 public class HighlyAvailableGraphDatabaseFactory extends GraphDatabaseFactory
 {
 
-    public GraphDatabaseService newHighlyAvailableDatabase( String path )
+    @Override
+    public GraphDatabaseService newEmbeddedDatabase( final String path )
     {
-        return newHighlyAvailableDatabaseBuilder( path ).newGraphDatabase();
+        return newEmbeddedDatabaseBuilder( path ).newGraphDatabase();
     }
 
-    public GraphDatabaseBuilder newHighlyAvailableDatabaseBuilder( final String path )
+    @Override
+    public GraphDatabaseBuilder newEmbeddedDatabaseBuilder( final String path )
     {
         final GraphDatabaseFactoryState state = getStateCopy();
 
         return new GraphDatabaseBuilder( new GraphDatabaseBuilder.DatabaseCreator()
         {
+
             @Override
-            public GraphDatabaseService newDatabase( Map<String, String> config )
+            public GraphDatabaseService newDatabase( final Map<String, String> config )
             {
                 config.put( "ephemeral", "false" );
 
                 return new HighlyAvailableGraphDatabase( path, config, state.databaseDependencies() );
             }
         } );
+    }
+
+    /**
+     * @deprecated By using
+     *             {@link HighlyAvailableGraphDatabaseFactory#newEmbeddedDatabase(String)}
+     *             you get an abstraction of this factory, so you can either use
+     *             this factory or {@link GraphDatabaseFactory}.
+     */
+    @Deprecated
+    public GraphDatabaseService newHighlyAvailableDatabase( final String path )
+    {
+        return newEmbeddedDatabase( path );
+    }
+
+    /**
+     * @deprecated By using
+     *             {@link HighlyAvailableGraphDatabaseFactory#newEmbeddedDatabaseBuilder(String)}
+     *             you get an abstraction of this factory, so you can either use
+     *             this factory or {@link GraphDatabaseFactory}.
+     */
+    @Deprecated
+    public GraphDatabaseBuilder newHighlyAvailableDatabaseBuilder( final String path )
+    {
+        return newEmbeddedDatabaseBuilder( path );
     }
 }
