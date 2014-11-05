@@ -27,7 +27,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.index.ValueSampler;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 
 public class InMemoryIndexProvider extends SchemaIndexProvider
@@ -59,26 +59,28 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
 
     @Override
     public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexConfiguration config,
-                                        ValueSampler sampler )
+                                        IndexSamplingConfig samplingConfig )
     {
         InMemoryIndex index = config.isUnique()
                 ? new UniqueInMemoryIndex( descriptor.getPropertyKeyId() ) : new InMemoryIndex();
         indexes.put( indexId, index );
-        return index.getPopulator( sampler );
+        return index.getPopulator();
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( long indexId, IndexConfiguration config )
+    public IndexAccessor getOnlineAccessor( long indexId, IndexConfiguration indexConfig,
+                                            IndexSamplingConfig samplingConfig )
     {
         InMemoryIndex index = indexes.get( indexId );
         if ( index == null || index.getState() != InternalIndexState.ONLINE )
         {
             throw new IllegalStateException( "Index " + indexId + " not online yet" );
         }
-        if ( config.isUnique() && !(index instanceof UniqueInMemoryIndex) )
+        if ( indexConfig.isUnique() && !(index instanceof UniqueInMemoryIndex) )
         {
-            throw new IllegalStateException( String.format( "The index [%s] was not created as a unique index.",
-                    indexId ) );
+            throw new IllegalStateException(
+                    String.format( "The index [%s] was not created as a unique index.", indexId )
+            );
         }
         return index.getOnlineAccessor();
     }

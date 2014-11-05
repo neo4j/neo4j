@@ -19,34 +19,17 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
-import org.neo4j.kernel.api.index.ValueSampler;
-import org.neo4j.register.Register;
-
 import static org.neo4j.register.Register.DoubleLong;
 
-public class UniqueIndexSampler implements ValueSampler
+public class UniqueIndexSampler
 {
     long count = 0;
 
-    @Override
-    public void ignore( int numRows )
+    public void increment( int count )
     {
-        count += numRows;
+        this.count += count;
     }
 
-    @Override
-    public void include( String value )
-    {
-        count++;
-    }
-
-    @Override
-    public void exclude( String value )
-    {
-        count--;
-    }
-
-    @Override
     public long result( DoubleLong.Out register )
     {
         register.write( count, count );

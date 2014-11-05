@@ -23,6 +23,8 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Resource;
 
+import static org.neo4j.register.Register.DoubleLong;
+
 /**
  * Reader for an {@link IndexAccessor}.
  * Must honor repeatable reads, which means that if a lookup is executed multiple times the same result set
@@ -48,8 +50,10 @@ public interface IndexReader extends Resource
         }
 
         @Override
-        public void sampleIndex( ValueSampler sampler )
+        public long sampleIndex( DoubleLong.Out result )
         {
+            result.write( 0l, 0l );
+            return 0;
         }
 
         @Override
@@ -65,8 +69,8 @@ public interface IndexReader extends Resource
 
     /**
      * Sample this index (on the current thread)
-     * @param sampler to use for reporting values
-     *
+     * @param result contains the unique values and the sampled size
+     * @return the index size
      */
-    public void sampleIndex( ValueSampler sampler );
+    public long sampleIndex( DoubleLong.Out result );
 }

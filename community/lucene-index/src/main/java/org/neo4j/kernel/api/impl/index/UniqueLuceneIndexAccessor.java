@@ -39,7 +39,7 @@ class UniqueLuceneIndexAccessor extends LuceneIndexAccessor
                                       LuceneIndexWriterFactory indexWriterFactory, IndexWriterStatus writerStatus,
                                       DirectoryFactory dirFactory, File dirFile ) throws IOException
     {
-        super( documentStructure, indexWriterFactory, writerStatus, dirFactory, dirFile );
+        super( documentStructure, indexWriterFactory, writerStatus, dirFactory, dirFile, -1 /* unused */ );
     }
 
     @Override

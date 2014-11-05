@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index.inmemory;
 
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
-
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,7 +28,9 @@ import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.kernel.api.index.ValueSampler;
+
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
+import static org.neo4j.register.Register.DoubleLong;
 
 class HashBasedIndex extends InMemoryIndexImplementation
 {
@@ -136,8 +136,9 @@ class HashBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
-    public void sampleIndex( final ValueSampler sampler )
+    public long sampleIndex( final DoubleLong.Out result )
     {
+        final long[] uniqueAndSize = {0, 0};
         try
         {
             iterateAll( new IndexEntryIterator()
@@ -145,16 +146,22 @@ class HashBasedIndex extends InMemoryIndexImplementation
                 @Override
                 public void visitEntry( Object value, Set<Long> nodeIds ) throws Exception
                 {
-                    for ( int i = nodeIds.size(); i > 0 ; i-- )
+                    int ids = nodeIds.size();
+                    if ( ids > 0 )
                     {
-                        sampler.include( value.toString() );
+                        uniqueAndSize[0] += 1;
+                        uniqueAndSize[1] += ids;
                     }
                 }
             });
         }
-        catch ( Exception e )
+        catch ( Exception ex )
         {
-            throw new RuntimeException( e );
+            throw new RuntimeException( ex );
         }
+
+        result.write( uniqueAndSize[0], uniqueAndSize[1] );
+        return uniqueAndSize[1];
     }
+
 }

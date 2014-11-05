@@ -54,13 +54,15 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     private final IndexWriterStatus writerStatus;
     private final Directory dir;
     private final File dirFile;
+    private final int bufferSizeLimit;
 
     LuceneIndexAccessor( LuceneDocumentStructure documentStructure, LuceneIndexWriterFactory indexWriterFactory,
-                         IndexWriterStatus writerStatus, DirectoryFactory dirFactory, File dirFile )
-            throws IOException
+                         IndexWriterStatus writerStatus, DirectoryFactory dirFactory, File dirFile,
+                         int bufferSizeLimit ) throws IOException
     {
         this.documentStructure = documentStructure;
         this.dirFile = dirFile;
+        this.bufferSizeLimit = bufferSizeLimit;
         this.dir = dirFactory.open( dirFile );
         this.writer = indexWriterFactory.create( dir );
         this.writerStatus = writerStatus;
@@ -126,7 +128,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
 
     protected IndexReader makeNewReader( IndexSearcher searcher, Closeable closeable )
     {
-        return new LuceneIndexAccessorReader( searcher, documentStructure, closeable );
+        return new LuceneIndexAccessorReader( searcher, documentStructure, closeable, bufferSizeLimit );
     }
 
     @Override

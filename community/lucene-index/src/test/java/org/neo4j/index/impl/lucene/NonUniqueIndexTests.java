@@ -19,12 +19,12 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.locks.LockSupport;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -39,18 +39,17 @@ import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 
 import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.index_sampling_buffer_size;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -123,9 +122,11 @@ public class NonUniqueIndexTests
 
     private List<Long> nodeIdsInIndex( int indexId, String value ) throws IOException
     {
-        Config config = new Config( singletonMap( store_dir.name(), directory.absolutePath() ) );
+        Config config = new Config( stringMap( store_dir.name(), directory.absolutePath() ) );
         SchemaIndexProvider indexProvider = new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, config );
-        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( indexId, new IndexConfiguration( false ) );
+        IndexConfiguration indexConfig = new IndexConfiguration( false );
+        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
+        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( indexId, indexConfig, samplingConfig );
               IndexReader reader = accessor.newReader() )
         {
             return IteratorUtil.asList( reader.lookup( value ) );

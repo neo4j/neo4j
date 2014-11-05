@@ -23,7 +23,6 @@ import org.neo4j.helpers.logging.DurationLogger;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
-import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -72,13 +71,8 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
             {
                 try ( IndexReader reader = indexProxy.newReader() )
                 {
-                    ValueSampler sampler = indexProxy.config().isUnique()
-                                           ? new UniqueIndexSampler()
-                                           : new NonUniqueIndexSampler( bufferSize );
-                    reader.sampleIndex( sampler );
-
                     Register.DoubleLongRegister sample = Registers.newDoubleLongRegister();
-                    final long indexSize = sampler.result( sample );
+                    final long indexSize = reader.sampleIndex( sample );
 
                     // check again if the index is online before saving the counts in the store
                     if ( indexProxy.getState() == ONLINE )

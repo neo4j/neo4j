@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import java.io.Closeable;
-import java.io.IOException;
-
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.search.BooleanClause;
@@ -30,12 +27,16 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 
+import java.io.Closeable;
+import java.io.IOException;
+
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.index.impl.lucene.Hits;
 import org.neo4j.kernel.api.index.IndexReader;
-import org.neo4j.kernel.api.index.ValueSampler;
+import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
 
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KEY;
+import static org.neo4j.register.Register.DoubleLong;
 
 class LuceneIndexAccessorReader implements IndexReader
 {
@@ -43,17 +44,21 @@ class LuceneIndexAccessorReader implements IndexReader
     private final IndexSearcher searcher;
     private final LuceneDocumentStructure documentLogic;
     private final Closeable onClose;
+    private final int bufferSizeLimit;
 
-    LuceneIndexAccessorReader( IndexSearcher searcher, LuceneDocumentStructure documentLogic, Closeable onClose )
+    LuceneIndexAccessorReader( IndexSearcher searcher, LuceneDocumentStructure documentLogic, Closeable onClose,
+                               int bufferSizeLimit )
     {
         this.searcher = searcher;
         this.documentLogic = documentLogic;
         this.onClose = onClose;
+        this.bufferSizeLimit = bufferSizeLimit;
     }
 
     @Override
-    public void sampleIndex( final ValueSampler sampler )
+    public long sampleIndex( DoubleLong.Out result )
     {
+        NonUniqueIndexSampler sampler = new NonUniqueIndexSampler( bufferSizeLimit );
         try ( TermEnum terms = searcher.getIndexReader().terms() )
         {
             while ( terms.next() )
@@ -70,6 +75,8 @@ class LuceneIndexAccessorReader implements IndexReader
         {
             throw new RuntimeException( e );
         }
+
+        return sampler.result( result );
     }
 
 

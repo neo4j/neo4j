@@ -27,26 +27,27 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.index.ValueSampler;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.register.Register;
 import org.neo4j.test.DoubleLatch;
 
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
-
+import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
 
 public class ControlledPopulationSchemaIndexProvider extends SchemaIndexProvider
 {
     private IndexPopulator mockedPopulator = new IndexPopulator.Adapter();
-    private final IndexAccessor mockedWriter = mock( IndexAccessor.class, RETURNS_MOCKS );
+    private final IndexAccessor mockedWriter = mock( IndexAccessor.class );
     private final CountDownLatch writerLatch = new CountDownLatch( 1 );
     private InternalIndexState initialIndexState = POPULATING;
     public final AtomicInteger populatorCallCount = new AtomicInteger();
     public final AtomicInteger writerCallCount = new AtomicInteger();
-    private String failure;
 
     public static final SchemaIndexProvider.Descriptor PROVIDER_DESCRIPTOR = new SchemaIndexProvider.Descriptor(
             "controlled-population", "1.0" );
@@ -55,6 +56,7 @@ public class ControlledPopulationSchemaIndexProvider extends SchemaIndexProvider
     {
         super( PROVIDER_DESCRIPTOR, 10 );
         setInitialIndexState( initialIndexState );
+        when( mockedWriter.newReader() ).thenReturn( IndexReader.EMPTY );
     }
 
     public DoubleLatch installPopulationJobCompletionLatch()
@@ -68,6 +70,13 @@ public class ControlledPopulationSchemaIndexProvider extends SchemaIndexProvider
                 populationCompletionLatch.startAndAwaitFinish();
                 super.create();
             }
+
+            @Override
+            public long sampleResult( Register.DoubleLong.Out result )
+            {
+                result.write( 0l, 0l );
+                return 0;
+            }
         };
         return populationCompletionLatch;
     }
@@ -78,14 +87,16 @@ public class ControlledPopulationSchemaIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexConfiguration config, ValueSampler sampler )
+    public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexConfiguration indexConfig,
+                                        IndexSamplingConfig samplingConfig )
     {
         populatorCallCount.incrementAndGet();
         return mockedPopulator;
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( long indexId, IndexConfiguration config )
+    public IndexAccessor getOnlineAccessor( long indexId, IndexConfiguration indexConfig,
+                                            IndexSamplingConfig samplingConfig )
     {
         writerCallCount.incrementAndGet();
         writerLatch.countDown();
@@ -106,11 +117,7 @@ public class ControlledPopulationSchemaIndexProvider extends SchemaIndexProvider
     @Override
     public String getPopulationFailure( long indexId ) throws IllegalStateException
     {
-        if ( this.failure == null )
-        {
-            throw new IllegalStateException();
-        }
-        return this.failure;
+        throw new IllegalStateException();
     }
 
     @Override

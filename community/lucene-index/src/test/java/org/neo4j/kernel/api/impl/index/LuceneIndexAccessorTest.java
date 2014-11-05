@@ -19,13 +19,14 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -33,7 +34,7 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
@@ -72,7 +73,7 @@ public class LuceneIndexAccessorTest
         firstReader.close();
         secondReader.close();
     }
-    
+
     @Test
     public void canAddNewData() throws Exception
     {
@@ -86,7 +87,7 @@ public class LuceneIndexAccessorTest
         assertEquals( asSet( nodeId ), asUniqueSet( reader.lookup( value ) ) );
         reader.close();
     }
-    
+
     @Test
     public void canChangeExistingData() throws Exception
     {
@@ -102,7 +103,7 @@ public class LuceneIndexAccessorTest
         assertEquals( emptySetOf( Long.class ), asUniqueSet( reader.lookup( value ) ) );
         reader.close();
     }
-    
+
     @Test
     public void canRemoveExistingData() throws Exception
     {
@@ -127,12 +128,12 @@ public class LuceneIndexAccessorTest
     private final File dir = new File( "dir" );
     private LuceneIndexAccessor accessor;
     private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
-    
+
     @Before
     public void before() throws Exception
     {
         dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
-        accessor = new NonUniqueLuceneIndexAccessor( documentLogic, standard(), writerLogic, dirFactory, dir );
+        accessor = new NonUniqueLuceneIndexAccessor( documentLogic, standard(), writerLogic, dirFactory, dir, 100_000 );
     }
 
     @After
@@ -145,7 +146,7 @@ public class LuceneIndexAccessorTest
     {
         return NodePropertyUpdate.add( nodeId, 0, value, new long[0] );
     }
-    
+
     private NodePropertyUpdate remove( long nodeId, Object value )
     {
         return NodePropertyUpdate.remove( nodeId, 0, value, new long[0] );

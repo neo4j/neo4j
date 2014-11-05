@@ -35,10 +35,10 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
+import static org.neo4j.register.Register.DoubleLong;
 
 class InMemoryIndex
 {
@@ -69,9 +69,9 @@ class InMemoryIndex
         }
     }
 
-    final IndexPopulator getPopulator( ValueSampler sampler )
+    final IndexPopulator getPopulator()
     {
-        return new Populator( sampler );
+        return new Populator();
     }
 
     final IndexAccessor getOnlineAccessor()
@@ -107,11 +107,8 @@ class InMemoryIndex
 
     private class Populator implements IndexPopulator
     {
-        private final ValueSampler sampler;
-
-        private Populator( ValueSampler sampler )
+        private Populator()
         {
-            this.sampler = sampler;
         }
 
         @Override
@@ -123,11 +120,7 @@ class InMemoryIndex
         @Override
         public void add( long nodeId, Object propertyValue ) throws IndexEntryConflictException, IOException
         {
-            boolean added = InMemoryIndex.this.add( nodeId, propertyValue, false );
-            if ( added )
-            {
-                sampler.include( encodeAsString( propertyValue ) );
-            }
+            InMemoryIndex.this.add( nodeId, propertyValue, false );
         }
 
         @Override
@@ -162,6 +155,12 @@ class InMemoryIndex
         {
             failure = failureString;
             state = InternalIndexState.FAILED;
+        }
+
+        @Override
+        public long sampleResult( DoubleLong.Out result )
+        {
+            return indexData.sampleIndex( result );
         }
     }
 

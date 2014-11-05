@@ -33,7 +33,9 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
@@ -73,12 +75,12 @@ public class UniqueIndexAccessorCompatibility extends IndexProviderCompatibility
     @Before
     public void before() throws IOException
     {
-        IndexConfiguration config = new IndexConfiguration( true );
-        ValueSampler sampler = new UniqueIndexSampler();
-        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, sampler );
+        IndexConfiguration indexConfig = new IndexConfiguration( true );
+        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( new Config() );
+        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexConfig, indexSamplingConfig );
         populator.create();
         populator.close( true );
-        accessor = indexProvider.getOnlineAccessor( 17, config );
+        accessor = indexProvider.getOnlineAccessor( 17, indexConfig, indexSamplingConfig );
     }
 
     @After

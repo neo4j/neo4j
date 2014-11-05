@@ -26,9 +26,9 @@ class NonUniqueLuceneIndexAccessor extends LuceneIndexAccessor
 {
     NonUniqueLuceneIndexAccessor( LuceneDocumentStructure documentStructure,
                                   LuceneIndexWriterFactory indexWriterFactory, IndexWriterStatus writerStatus,
-                                  DirectoryFactory dirFactory, File dirFile ) throws IOException
+                                  DirectoryFactory dirFactory, File dirFile, int bufferSizeLimit ) throws IOException
     {
-        super( documentStructure, indexWriterFactory, writerStatus, dirFactory, dirFile );
+        super( documentStructure, indexWriterFactory, writerStatus, dirFactory, dirFile, bufferSizeLimit );
     }
 
 }

@@ -28,7 +28,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
-import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.logging.DevNullLoggingService;
@@ -41,6 +40,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
 import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
+import static org.neo4j.register.Register.DoubleLong;
 
 public class OnlineIndexSamplingJobTest
 {
@@ -91,27 +91,20 @@ public class OnlineIndexSamplingJobTest
         when( indexProxy.config() ).thenReturn( new IndexConfiguration( false ) );
         when( indexProxy.newReader() ).thenReturn( indexReader );
         doAnswer( answerWith( indexUniqueValues, indexSize ) ).when( indexReader )
-                .sampleIndex( any( ValueSampler.class ) );
+                                                              .sampleIndex( any( DoubleLong.Out.class ) );
 
     }
 
-    private Answer<Void> answerWith( final long indexUniqueValues, final long indexSize )
+    private Answer<Long> answerWith( final long indexUniqueValues, final long indexSize )
     {
-        return new Answer<Void>()
+        return new Answer<Long>()
         {
             @Override
-            public Void answer( InvocationOnMock invocationOnMock ) throws Throwable
+            public Long answer( InvocationOnMock invocationOnMock ) throws Throwable
             {
-                final ValueSampler sampler = (ValueSampler) invocationOnMock.getArguments()[0];
-                for ( long i = indexUniqueValues - 1; i > 0 ; i--)
-                {
-                    sampler.include( "" + i );
-                }
-                for ( long i = (indexSize - indexUniqueValues) + 1; i > 0 ; i--)
-                {
-                    sampler.include( "same value" );
-                }
-                return null;
+                final DoubleLong.Out result = (DoubleLong.Out) invocationOnMock.getArguments()[0];
+                result.write( indexUniqueValues, indexSize );
+                return indexSize;
             }
         };
     }

@@ -19,6 +19,19 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.search.IndexSearcher;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.io.Closeable;
+import java.io.IOException;
+
+import org.neo4j.register.Register.DoubleLongRegister;
+import org.neo4j.register.Registers;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
@@ -26,22 +39,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KEY;
 
-import java.io.Closeable;
-import java.io.IOException;
-
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
-import org.apache.lucene.search.IndexSearcher;
-import org.junit.Before;
-import org.junit.Test;
-import org.neo4j.kernel.api.index.ValueSampler;
-import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
-import org.neo4j.register.Register.DoubleLongRegister;
-import org.neo4j.register.Registers;
-
 public class LuceneIndexAccessorReaderTest
 {
+    private static final int BUFFER_SIZE_LIMIT = 100_000;
+
     private final Closeable closeable = mock( Closeable.class );
     private final LuceneDocumentStructure documentLogic = mock( LuceneDocumentStructure.class );
     private final IndexSearcher searcher = mock( IndexSearcher.class );
@@ -59,7 +60,8 @@ public class LuceneIndexAccessorReaderTest
     public void shouldProvideTheIndexUniqueValuesForAnEmptyIndex()
     {
         // Given
-        final LuceneIndexAccessorReader accessor = new LuceneIndexAccessorReader( searcher, documentLogic, closeable );
+        final LuceneIndexAccessorReader accessor =
+                new LuceneIndexAccessorReader( searcher, documentLogic, closeable, BUFFER_SIZE_LIMIT );
 
         // When
         final DoubleLongRegister output = Registers.newDoubleLongRegister();
@@ -82,7 +84,8 @@ public class LuceneIndexAccessorReaderTest
                 new Term( "string", "ccc" )
         );
 
-        final LuceneIndexAccessorReader accessor = new LuceneIndexAccessorReader( searcher, documentLogic, closeable );
+        final LuceneIndexAccessorReader accessor =
+                new LuceneIndexAccessorReader( searcher, documentLogic, closeable, BUFFER_SIZE_LIMIT );
 
         // When
         final DoubleLongRegister output = Registers.newDoubleLongRegister();
@@ -105,7 +108,8 @@ public class LuceneIndexAccessorReaderTest
                 new Term( "string", "bbb" )
         );
 
-        final LuceneIndexAccessorReader accessor = new LuceneIndexAccessorReader( searcher, documentLogic, closeable );
+        final LuceneIndexAccessorReader accessor =
+                new LuceneIndexAccessorReader( searcher, documentLogic, closeable, BUFFER_SIZE_LIMIT );
 
         // When
 
@@ -124,7 +128,8 @@ public class LuceneIndexAccessorReaderTest
         // Given
         final IOException ioex = new IOException();
         when( terms.next() ).thenThrow( ioex );
-        final LuceneIndexAccessorReader accessor = new LuceneIndexAccessorReader( searcher, documentLogic, closeable );
+        final LuceneIndexAccessorReader accessor =
+                new LuceneIndexAccessorReader( searcher, documentLogic, closeable, BUFFER_SIZE_LIMIT );
 
         // When
         try
@@ -139,10 +144,8 @@ public class LuceneIndexAccessorReaderTest
         }
     }
 
-    private long sampleAccessor( LuceneIndexAccessorReader accessor, DoubleLongRegister output )
+    private long sampleAccessor( LuceneIndexAccessorReader reader, DoubleLongRegister output )
     {
-        ValueSampler sampler = new NonUniqueIndexSampler( 10_000 );
-        accessor.sampleIndex( sampler );
-        return sampler.result( output );
+        return reader.sampleIndex( output );
     }
 }

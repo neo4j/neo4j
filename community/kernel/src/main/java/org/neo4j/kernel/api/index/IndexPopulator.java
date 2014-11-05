@@ -21,8 +21,10 @@ package org.neo4j.kernel.api.index;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.api.index.UpdateMode;
 import org.neo4j.kernel.impl.api.index.SwallowingIndexUpdater;
+import org.neo4j.kernel.impl.api.index.UpdateMode;
+
+import static org.neo4j.register.Register.DoubleLong;
 
 /**
  * Used for initial population of an index.
@@ -103,6 +105,8 @@ public interface IndexPopulator
      */
     void markAsFailed( String failure ) throws IOException;
 
+    long sampleResult( DoubleLong.Out result );
+
     class Adapter implements IndexPopulator
     {
         @Override
@@ -139,6 +143,13 @@ public interface IndexPopulator
         @Override
         public void markAsFailed( String failure )
         {
+        }
+
+        @Override
+        public long sampleResult( DoubleLong.Out result )
+        {
+            result.write( 0l, 0l );
+            return 0;
         }
     }
 }

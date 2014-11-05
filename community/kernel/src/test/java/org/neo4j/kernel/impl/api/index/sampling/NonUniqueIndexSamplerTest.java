@@ -118,21 +118,6 @@ public class NonUniqueIndexSamplerTest
         assertSampledValues( sampler, 1, 1, 1 );
     }
 
-    @Test
-    public void shouldTrackIgnoresRowsWithoutAffectingSamplingOutcome()
-    {
-        // given
-        NonUniqueIndexSampler sampler = new NonUniqueIndexSampler( 10 );
-
-        // when
-        sampler.include( value );
-        sampler.ignore( 19 );
-
-        // then
-        assertSampledValues( sampler, 20, 1, 1 );
-    }
-
-
     private void assertSampledValues( NonUniqueIndexSampler sampler, long expectedIndexSize, long expectedUniqueValues, long expectedSampledSize )
     {
         final DoubleLongRegister register = Registers.newDoubleLongRegister();

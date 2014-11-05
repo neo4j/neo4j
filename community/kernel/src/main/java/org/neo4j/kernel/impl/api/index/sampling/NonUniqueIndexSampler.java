@@ -20,12 +20,10 @@
 package org.neo4j.kernel.impl.api.index.sampling;
 
 import org.neo4j.helpers.collection.MultiSet;
-import org.neo4j.kernel.api.index.ValueSampler;
-import org.neo4j.register.Register;
 
 import static org.neo4j.register.Register.DoubleLong;
 
-public class NonUniqueIndexSampler implements ValueSampler
+public class NonUniqueIndexSampler
 {
     private static final int INITIAL_SIZE = 1 << 16;
 
@@ -38,7 +36,6 @@ public class NonUniqueIndexSampler implements ValueSampler
 
     private long accumulatedUniqueValues = 0;
     private long accumulatedSampledSize = 0;
-    private long ignoredRows = 0;
     private long bufferSize = 0;
 
     public NonUniqueIndexSampler( int bufferSizeLimit )
@@ -47,13 +44,6 @@ public class NonUniqueIndexSampler implements ValueSampler
         this.values = new MultiSet<>( INITIAL_SIZE );
     }
 
-    @Override
-    public void ignore( int numRows )
-    {
-        ignoredRows += numRows;
-    }
-
-    @Override
     public void include( String value )
     {
         if ( bufferSize >= bufferSizeLimit )
@@ -67,7 +57,6 @@ public class NonUniqueIndexSampler implements ValueSampler
         }
     }
 
-    @Override
     public void exclude( String value )
     {
         if ( values.remove( value ) == 0 )
@@ -76,7 +65,6 @@ public class NonUniqueIndexSampler implements ValueSampler
         }
     }
 
-    @Override
     public long result( DoubleLong.Out register )
     {
         if ( !values.isEmpty() )
@@ -88,7 +76,7 @@ public class NonUniqueIndexSampler implements ValueSampler
         long sampledSize = sampledSteps != 0 ? accumulatedSampledSize / sampledSteps : 0;
         register.write( uniqueValues, sampledSize );
 
-        return accumulatedSampledSize + ignoredRows;
+        return accumulatedSampledSize;
     }
 
     private void nextStep()

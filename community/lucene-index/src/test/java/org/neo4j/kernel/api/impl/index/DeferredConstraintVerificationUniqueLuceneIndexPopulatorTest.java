@@ -410,12 +410,10 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
     private static final int PROPERTY_KEY_ID = 2;
 
     private final FailureStorage failureStorage = mock( FailureStorage.class );
-    private final long indexId = 1;
     private final DirectoryFactory.InMemoryDirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
     private final IndexDescriptor descriptor = new IndexDescriptor( LABEL_ID, PROPERTY_KEY_ID );
 
     private File indexDirectory;
-    private LuceneDocumentStructure documentLogic;
     private PropertyAccessor propertyAccessor;
     private DeferredConstraintVerificationUniqueLuceneIndexPopulator populator;
     public final @Rule CleanupRule cleanup = new CleanupRule();
@@ -424,13 +422,12 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
     public void setUp() throws Exception
     {
         indexDirectory = new File( "target/whatever" );
-        documentLogic = new LuceneDocumentStructure();
+        LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
         propertyAccessor = mock( PropertyAccessor.class );
-        populator = new
-                DeferredConstraintVerificationUniqueLuceneIndexPopulator(
-                documentLogic, standard(),
-                new IndexWriterStatus(), directoryFactory, indexDirectory,
-                failureStorage, indexId, descriptor, new UniqueIndexSampler() );
+        long indexId = 1;
+        populator = new DeferredConstraintVerificationUniqueLuceneIndexPopulator(
+                documentLogic, standard(), new IndexWriterStatus(), directoryFactory, indexDirectory,
+                failureStorage, indexId, descriptor );
         populator.create();
     }
 }

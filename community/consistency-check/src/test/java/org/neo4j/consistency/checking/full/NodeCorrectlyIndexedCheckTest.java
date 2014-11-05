@@ -39,12 +39,12 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
-import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
+import org.neo4j.register.Register;
 
 import static java.util.Arrays.asList;
 
@@ -239,7 +239,7 @@ public class NodeCorrectlyIndexedCheckTest
                 }
 
                 @Override
-                public void sampleIndex( ValueSampler sampler )
+                public long sampleIndex( Register.DoubleLong.Out sampler )
                 {
                     throw new UnsupportedOperationException();
                 }

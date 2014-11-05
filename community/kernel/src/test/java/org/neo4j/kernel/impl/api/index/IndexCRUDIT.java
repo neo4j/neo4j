@@ -19,17 +19,18 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -46,10 +47,11 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+import org.neo4j.register.Register;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -59,7 +61,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.Neo4jMatchers.createIndex;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -172,11 +173,15 @@ public class IndexCRUDIT
     {
         GatheringIndexWriter writer = new GatheringIndexWriter( propertyKey );
         when( mockedIndexProvider.getPopulator(
-                anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ), any( ValueSampler.class) )
+                        anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ),
+                        any( IndexSamplingConfig.class ) )
         ).thenReturn( writer );
         when( mockedIndexProvider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
-        when( mockedIndexProvider.getOnlineAccessor( anyLong(), any( IndexConfiguration.class ) ) ).thenReturn( writer );
-        when( mockedIndexProvider.compareTo( any( SchemaIndexProvider.class ) ) ).thenReturn( 1 ); // always pretend to have highest priority
+        when( mockedIndexProvider.getOnlineAccessor(
+                anyLong(), any( IndexConfiguration.class ), any( IndexSamplingConfig.class )
+        ) ).thenReturn( writer );
+        when( mockedIndexProvider.compareTo( any( SchemaIndexProvider.class ) ) )
+                .thenReturn( 1 ); // always pretend to have highest priority
         return writer;
     }
 
@@ -190,6 +195,7 @@ public class IndexCRUDIT
     {
         private final Set<NodePropertyUpdate> updatesCommitted = new HashSet<>();
         private final String propertyKey;
+        private final Map<Object,Set<Long>> indexSamples = new HashMap<>();
 
         public GatheringIndexWriter( String propertyKey )
         {
@@ -208,6 +214,7 @@ public class IndexCRUDIT
             updatesCommitted.add( NodePropertyUpdate.add(
                     nodeId, statement.propertyKeyGetForName( propertyKey ),
                     propertyValue, new long[]{statement.labelGetForName( myLabel.name() )} ) );
+            addValueToSample( nodeId, propertyValue );
         }
 
         @Override
@@ -251,6 +258,30 @@ public class IndexCRUDIT
         @Override
         public void markAsFailed( String failure )
         {
+        }
+
+        @Override
+        public long sampleResult( Register.DoubleLong.Out result )
+        {
+            long indexSize = 0;
+            for ( Set<Long> nodeIds : indexSamples.values() )
+            {
+                indexSize += nodeIds.size();
+            }
+
+            result.write( indexSamples.size(), indexSize );
+            return indexSize;
+        }
+
+        private void addValueToSample( long nodeId, Object propertyValue )
+        {
+            Set<Long> nodeIds = indexSamples.get( propertyValue );
+            if ( nodeIds == null )
+            {
+                nodeIds = new HashSet<>();
+                indexSamples.put( propertyValue, nodeIds );
+            }
+            nodeIds.add( nodeId );
         }
     }
 }

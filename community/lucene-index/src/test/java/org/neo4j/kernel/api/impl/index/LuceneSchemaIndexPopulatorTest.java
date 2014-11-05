@@ -19,18 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import static java.lang.Long.parseLong;
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
@@ -40,6 +28,11 @@ import org.apache.lucene.store.RAMDirectory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
@@ -48,10 +41,19 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
+
+import static java.lang.Long.parseLong;
+import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.index_sampling_buffer_size;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class LuceneSchemaIndexPopulatorTest
 {
@@ -239,13 +241,13 @@ public class LuceneSchemaIndexPopulatorTest
         directory = new RAMDirectory();
         DirectoryFactory directoryFactory = new DirectoryFactory.Single(
                 new DirectoryFactory.UncloseableDirectory( directory ) );
-        provider = new LuceneSchemaIndexProvider( directoryFactory,
-                new Config( stringMap( store_dir.name(), "target/whatever" ) ) );
+        Config config = new Config( stringMap( store_dir.name(), "target/whatever" ) );
+        provider = new LuceneSchemaIndexProvider( directoryFactory, config );
         indexDescriptor = new IndexDescriptor( 42, propertyKeyId );
         indexStoreView = mock( IndexStoreView.class );
-        IndexConfiguration config = new IndexConfiguration( false );
-        ValueSampler sampler = new NonUniqueIndexSampler( 10_000 );
-        index = provider.getPopulator( indexId, indexDescriptor, config, sampler );
+        IndexConfiguration indexConfig = new IndexConfiguration( false );
+        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
+        index = provider.getPopulator( indexId, indexDescriptor, indexConfig, samplingConfig );
         index.create();
     }
 

@@ -28,16 +28,12 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
-import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.logging.Logging;
 
 import static java.lang.String.format;
-
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 public class IndexProxySetup
@@ -78,9 +74,8 @@ public class IndexProxySetup
         // TODO: This is here because there is a circular dependency from PopulatingIndexProxy to FlippableIndexProxy
         final String indexUserDescription = indexUserDescription( descriptor, providerDescriptor );
         final IndexConfiguration config = new IndexConfiguration( constraint );
-        ValueSampler sampler = constraint ? new UniqueIndexSampler()
-                                          : new NonUniqueIndexSampler( samplingConfig.bufferSize() );
-        IndexPopulator populator = populatorFromProvider( providerDescriptor, ruleId, descriptor, config, sampler );
+        IndexPopulator populator = populatorFromProvider( providerDescriptor, ruleId, descriptor, config,
+                samplingConfig );
 
         FailedIndexProxyFactory failureDelegateFactory = new FailedPopulatingIndexProxyFactory(
                 descriptor,
@@ -93,7 +88,7 @@ public class IndexProxySetup
 
         PopulatingIndexProxy populatingIndex =
                 new PopulatingIndexProxy( scheduler, descriptor, config, failureDelegateFactory, populator, flipper,
-                        storeView, sampler, updateableSchemaState, logging, indexUserDescription, providerDescriptor );
+                        storeView, updateableSchemaState, logging, indexUserDescription, providerDescriptor );
         flipper.flipTo( populatingIndex );
 
         // Prepare for flipping to online mode
@@ -107,7 +102,7 @@ public class IndexProxySetup
                     monitor.populationCompleteOn( descriptor );
                     OnlineIndexProxy onlineProxy = new OnlineIndexProxy(
                             descriptor, config, onlineAccessorFromProvider( providerDescriptor, ruleId,
-                            config ), storeView, providerDescriptor
+                            config, samplingConfig ), storeView, providerDescriptor
                     );
                     if ( constraint )
                     {
@@ -145,7 +140,8 @@ public class IndexProxySetup
         try
         {
             IndexConfiguration config = new IndexConfiguration( unique );
-            IndexAccessor onlineAccessor = onlineAccessorFromProvider( providerDescriptor, ruleId, config );
+            IndexAccessor onlineAccessor =
+                    onlineAccessorFromProvider( providerDescriptor, ruleId, config, samplingConfig );
             IndexProxy proxy;
             proxy = new OnlineIndexProxy( descriptor, config, onlineAccessor, storeView, providerDescriptor );
             proxy = new ContractCheckingIndexProxy( proxy, true );
@@ -164,10 +160,8 @@ public class IndexProxySetup
                                               IndexPopulationFailure populationFailure )
     {
         IndexConfiguration config = new IndexConfiguration( unique );
-        ValueSampler sampler = unique ? new UniqueIndexSampler()
-                                      : new NonUniqueIndexSampler( samplingConfig.bufferSize() );
         IndexPopulator indexPopulator =
-                populatorFromProvider( providerDescriptor, ruleId, descriptor, config, sampler );
+                populatorFromProvider( providerDescriptor, ruleId, descriptor, config, samplingConfig );
         String indexUserDescription = indexUserDescription(descriptor, providerDescriptor);
         IndexProxy proxy;
         proxy = new FailedIndexProxy(
@@ -200,17 +194,18 @@ public class IndexProxySetup
     }
 
     private IndexPopulator populatorFromProvider( SchemaIndexProvider.Descriptor providerDescriptor, long ruleId,
-                                                  IndexDescriptor descriptor, IndexConfiguration config,
-                                                  ValueSampler sampler )
+                                                  IndexDescriptor descriptor, IndexConfiguration indexConfig,
+                                                  IndexSamplingConfig samplingConfig )
     {
         SchemaIndexProvider indexProvider = providerMap.apply( providerDescriptor );
-        return indexProvider.getPopulator( ruleId, descriptor, config, sampler );
+        return indexProvider.getPopulator( ruleId, descriptor, indexConfig, samplingConfig );
     }
 
     private IndexAccessor onlineAccessorFromProvider( SchemaIndexProvider.Descriptor providerDescriptor,
-                                                      long ruleId, IndexConfiguration config ) throws IOException
+                                                      long ruleId, IndexConfiguration indexConfig,
+                                                      IndexSamplingConfig samplingConfig ) throws IOException
     {
         SchemaIndexProvider indexProvider = providerMap.apply( providerDescriptor );
-        return indexProvider.getOnlineAccessor( ruleId, config );
+        return indexProvider.getOnlineAccessor( ruleId, indexConfig, samplingConfig );
     }
 }

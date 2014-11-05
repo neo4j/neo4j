@@ -19,18 +19,18 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.concurrent.CountDownLatch;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.concurrent.CountDownLatch;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.ArrayIterator;
@@ -45,7 +45,6 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -59,10 +58,10 @@ import org.neo4j.kernel.impl.util.TestLogger;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.register.Register;
 import org.neo4j.register.Register.DoubleLongRegister;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -79,7 +78,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asResourceIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
@@ -209,6 +207,7 @@ public class IndexingServiceTest
         order.verify( populator ).newPopulatingUpdater( storeView );
         order.verify( updater ).close();
         order.verify( populator ).verifyDeferredConstraints( storeView );
+        order.verify( populator ).sampleResult( any( Register.DoubleLong.Out.class ) );
         order.verify( populator ).close( true );
         verifyNoMoreInteractions( updater );
         verifyNoMoreInteractions( populator );
@@ -492,13 +491,24 @@ public class IndexingServiceTest
 
         when( indexProvider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         when( indexProvider.getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ),
-                any( ValueSampler.class ) ) ).thenReturn( populator );
+                any( IndexSamplingConfig.class ) ) ).thenReturn( populator );
         data.getsProcessedByStoreScanFrom( storeView );
-        when( indexProvider.getOnlineAccessor( anyLong(), any( IndexConfiguration.class ) ) ).thenReturn( accessor );
+        when( indexProvider.getOnlineAccessor(
+                        anyLong(), any( IndexConfiguration.class ), any( IndexSamplingConfig.class ) )
+        ).thenReturn( accessor );
         when( indexProvider.snapshotMetaFiles() ).thenReturn( IteratorUtil.<File>emptyIterator() );
         when( indexProvider.storeMigrationParticipant() ).thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
 
-        return life.add( IndexingService.create( new IndexSamplingConfig( new Config() ), life.add( new Neo4jJobScheduler() ), new DefaultSchemaIndexProviderMap( indexProvider ), storeView, mock( TokenNameLookup.class ), schemaState, loop( iterator( rules ) ), mockLogging( logger ), IndexingService.NO_MONITOR ) );
+        return life.add( IndexingService.create( new IndexSamplingConfig( new Config() ),
+                        life.add( new Neo4jJobScheduler() ),
+                        new DefaultSchemaIndexProviderMap( indexProvider ),
+                        storeView,
+                        mock( TokenNameLookup.class ),
+                        schemaState,
+                        loop( iterator( rules ) ),
+                        mockLogging( logger ),
+                        IndexingService.NO_MONITOR )
+        );
     }
 
     private DataUpdates withData( NodePropertyUpdate... updates )

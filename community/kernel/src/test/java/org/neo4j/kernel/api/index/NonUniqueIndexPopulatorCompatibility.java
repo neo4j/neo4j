@@ -19,18 +19,22 @@
  */
 package org.neo4j.kernel.api.index;
 
+import org.junit.Ignore;
+import org.junit.Test;
+
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
+import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
-
-import org.junit.Ignore;
-import org.junit.Test;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
-import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " SchemaIndexProvider implementations. Each index provider that is to be tested by this suite" +
@@ -49,15 +53,15 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     {
         // when
         IndexConfiguration config = new IndexConfiguration( false );
-        ValueSampler sampler = new NonUniqueIndexSampler( 10_000 );
-        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, sampler );
+        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( new Config() );
+        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, indexSamplingConfig );
         populator.create();
         populator.add( 1, "value1" );
         populator.add( 2, "value1" );
         populator.close( true );
 
         // then
-        IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, config );
+        IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, config, indexSamplingConfig );
         try ( IndexReader reader = accessor.newReader() )
         {
             PrimitiveLongIterator nodes = reader.lookup( "value1" );
@@ -71,8 +75,8 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     {
         // GIVEN
         IndexConfiguration config = new IndexConfiguration( false );
-        ValueSampler sampler = new NonUniqueIndexSampler( 10_000 );
-        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, sampler );
+        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( new Config() );
+        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, indexSamplingConfig );
         String failure = "The contrived failure";
 
         // WHEN
@@ -87,8 +91,8 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     {
         // GIVEN
         IndexConfiguration config = new IndexConfiguration( false );
-        ValueSampler sampler = new NonUniqueIndexSampler( 10_000 );
-        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, sampler );
+        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( new Config() );
+        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, indexSamplingConfig );
         String failure = "The contrived failure";
 
         // WHEN
@@ -103,8 +107,8 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     {
         // GIVEN
         IndexConfiguration config = new IndexConfiguration( false );
-        ValueSampler sampler = new NonUniqueIndexSampler( 10_000 );
-        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, sampler );
+        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( new Config() );
+        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, indexSamplingConfig );
         populator.close( false );
 
         // WHEN
@@ -118,8 +122,8 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     {
         // GIVEN
         IndexConfiguration config = new IndexConfiguration( false );
-        ValueSampler sampler = new NonUniqueIndexSampler( 10_000 );
-        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, sampler );
+        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( new Config() );
+        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, indexSamplingConfig );
         populator.create();
         long nodeId = 1;
         int propertyKeyId = 10, labelId = 11; // Can we just use arbitrary ids here?
@@ -146,7 +150,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
 
 
         // then
-        IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, new IndexConfiguration( false ) );
+        IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, new IndexConfiguration( false ), indexSamplingConfig );
         try ( IndexReader reader = accessor.newReader() )
         {
             PrimitiveLongIterator nodes = reader.lookup( propertyValue );

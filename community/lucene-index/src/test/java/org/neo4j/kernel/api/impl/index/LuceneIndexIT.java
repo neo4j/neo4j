@@ -19,16 +19,17 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -38,7 +39,7 @@ import org.neo4j.test.TargetDirectory;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
@@ -97,7 +98,9 @@ public class LuceneIndexIT
     public void before() throws Exception
     {
         dirFactory = DirectoryFactory.PERSISTENT;
-        accessor = new NonUniqueLuceneIndexAccessor( documentLogic, standard(), writerLogic, dirFactory, testDir.directory() );
+        accessor = new NonUniqueLuceneIndexAccessor(
+                documentLogic, standard(), writerLogic, dirFactory, testDir.directory(), 100_000
+        );
     }
 
     @After

@@ -32,6 +32,8 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -42,10 +44,13 @@ public class IndexAccessors implements Closeable
 {
     private final Map<Long,IndexAccessor> accessors = new HashMap<>();
     private final List<IndexRule> indexRules = new ArrayList<>();
+    private final IndexSamplingConfig samplingConfig;
 
-    public IndexAccessors( SchemaIndexProvider provider, RecordStore<DynamicRecord> schemaStore )
-            throws IOException, MalformedSchemaRuleException
+    public IndexAccessors( SchemaIndexProvider provider,
+                           RecordStore<DynamicRecord> schemaStore,
+                           IndexSamplingConfig samplingConfig ) throws IOException, MalformedSchemaRuleException
     {
+        this.samplingConfig = samplingConfig;
         Iterator<IndexRule> rules = loadAllIndexRules( schemaStore ).iterator();
         for (; ; )
         {
@@ -75,8 +80,9 @@ public class IndexAccessors implements Closeable
 
         for ( IndexRule indexRule : indexRules )
         {
-            accessors.put(indexRule.getId(), provider.getOnlineAccessor(
-                    indexRule.getId(), new IndexConfiguration( indexRule.isConstraintIndex() ) ) );
+            long indexId = indexRule.getId();
+            IndexConfiguration indexConfig = new IndexConfiguration( indexRule.isConstraintIndex() );
+            accessors.put( indexId, provider.getOnlineAccessor( indexId, indexConfig, samplingConfig ) );
         }
     }
 

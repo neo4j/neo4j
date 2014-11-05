@@ -36,6 +36,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -52,6 +53,7 @@ public class FullCheck
     private final TaskExecutionOrder order;
     private final ProgressMonitorFactory progressFactory;
     private final Long totalMappedMemory;
+    private final IndexSamplingConfig samplingConfig;
 
     public FullCheck( Config tuningConfiguration, ProgressMonitorFactory progressFactory )
     {
@@ -60,6 +62,7 @@ public class FullCheck
         this.checkIndexes = tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_indexes );
         this.order = tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_execution_order );
         this.totalMappedMemory = tuningConfiguration.get( GraphDatabaseSettings.mapped_memory_total_size );
+        this.samplingConfig = new IndexSamplingConfig( tuningConfiguration );
         this.progressFactory = progressFactory;
     }
 
@@ -90,7 +93,8 @@ public class FullCheck
         ProgressMonitorFactory.MultiPartBuilder progress = progressFactory.multipleParts( "Full consistency check" );
 
         final StoreAccess nativeStores = directStoreAccess.nativeStores();
-        try ( IndexAccessors indexes = new IndexAccessors( directStoreAccess.indexes(), nativeStores.getSchemaStore() ) )
+        try ( IndexAccessors indexes =
+                      new IndexAccessors( directStoreAccess.indexes(), nativeStores.getSchemaStore(), samplingConfig ) )
         {
             MultiPassStore.Factory multiPass = new MultiPassStore.Factory(
                     decorator, totalMappedMemory, nativeStores, recordAccess, report );

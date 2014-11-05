@@ -50,12 +50,11 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.PreAllocatedRecords;
@@ -385,10 +384,10 @@ public class FullCheckIntegrationTest
         {
             IndexRule rule = rules.next();
             IndexDescriptor descriptor = new IndexDescriptor( rule.getLabel(), rule.getPropertyKey() );
-            IndexConfiguration config = new IndexConfiguration( false );
-            ValueSampler sampler = new NonUniqueIndexSampler( 10_000 );
+            IndexConfiguration indexConfig = new IndexConfiguration( false );
+            IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
             IndexPopulator populator =
-                storeAccess.indexes().getPopulator( rule.getId(), descriptor, config, sampler );
+                storeAccess.indexes().getPopulator( rule.getId(), descriptor, indexConfig, samplingConfig );
             populator.markAsFailed( "Oh noes! I was a shiny index and then I was failed" );
             populator.close( false );
 
@@ -482,10 +481,11 @@ public class FullCheckIntegrationTest
     public void shouldReportNodesThatAreNotIndexed() throws Exception
     {
         // given
+        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
         for ( IndexRule indexRule : loadAllIndexRules( fixture.directStoreAccess().nativeStores().getSchemaStore() ) )
         {
-            IndexAccessor accessor = fixture.directStoreAccess().indexes().getOnlineAccessor( indexRule.getId(),
-                    new IndexConfiguration( indexRule.isConstraintIndex() ) );
+            IndexAccessor accessor = fixture.directStoreAccess().indexes().getOnlineAccessor(
+                    indexRule.getId(), new IndexConfiguration( indexRule.isConstraintIndex() ), samplingConfig );
             IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE );
             updater.remove( indexedNodes );
             updater.close();
@@ -503,10 +503,13 @@ public class FullCheckIntegrationTest
     public void shouldReportNodesWithDuplicatePropertyValueInUniqueIndex() throws Exception
     {
         // given
+        IndexConfiguration indexConfig = new IndexConfiguration( false );
+        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
         for ( IndexRule indexRule : loadAllIndexRules( fixture.directStoreAccess().nativeStores().getSchemaStore() ) )
         {
-            IndexAccessor accessor = fixture.directStoreAccess().indexes().getOnlineAccessor( indexRule.getId(),
-                    new IndexConfiguration( false ) );
+            IndexAccessor accessor = fixture.directStoreAccess()
+                                            .indexes()
+                                            .getOnlineAccessor( indexRule.getId(), indexConfig, samplingConfig );
             IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE );
             updater.process( NodePropertyUpdate.add( 42, 0, "value", new long[]{3} ) );
             updater.close();

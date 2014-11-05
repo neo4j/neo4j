@@ -19,36 +19,38 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import org.apache.lucene.document.Fieldable;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.apache.lucene.document.Fieldable;
-
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.kernel.api.index.util.FailureStorage;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
+import org.neo4j.register.Register;
 
 class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
 {
     static final int DEFAULT_QUEUE_THRESHOLD = 10000;
     private final int queueThreshold;
-    private final ValueSampler sampler;
+    private final NonUniqueIndexSampler sampler;
     private final List<NodePropertyUpdate> updates = new ArrayList<>();
 
     NonUniqueLuceneIndexPopulator( int queueThreshold, LuceneDocumentStructure documentStructure,
                                    LuceneIndexWriterFactory indexWriterFactory,
                                    IndexWriterStatus writerStatus, DirectoryFactory dirFactory, File dirFile,
-                                   FailureStorage failureStorage, long indexId, ValueSampler sampler )
+                                   FailureStorage failureStorage, long indexId, IndexSamplingConfig samplingConfig )
     {
         super( documentStructure, indexWriterFactory, writerStatus, dirFactory, dirFile, failureStorage, indexId );
         this.queueThreshold = queueThreshold;
-        this.sampler = sampler;
+        this.sampler = new NonUniqueIndexSampler( samplingConfig.bufferSize() );
     }
 
     @Override
@@ -115,6 +117,12 @@ class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
                 throw new UnsupportedOperationException( "Should not remove() from populating index." );
             }
         };
+    }
+
+    @Override
+    public long sampleResult( Register.DoubleLong.Out result )
+    {
+        return sampler.result( result );
     }
 
     @Override

@@ -27,6 +27,9 @@ import static org.neo4j.kernel.api.properties.Property.stringProperty;
 
 import org.junit.Ignore;
 import org.junit.Test;
+
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
@@ -52,9 +55,9 @@ public class UniqueIndexPopulatorCompatibility extends IndexProviderCompatibilit
         int nodeId1 = 1;
         int nodeId2 = 2;
 
-        IndexConfiguration config = new IndexConfiguration( true );
-        UniqueIndexSampler sampler = new UniqueIndexSampler();
-        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, sampler );
+        IndexConfiguration indexConfig = new IndexConfiguration( true );
+        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( new Config() );
+        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexConfig, indexSamplingConfig );
         populator.create();
         populator.add( nodeId1, value );
         populator.add( nodeId2, value );

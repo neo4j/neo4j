@@ -35,7 +35,6 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.index.ValueSampler;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
@@ -65,7 +64,6 @@ public class IndexPopulationJob implements Runnable
     private final IndexPopulator populator;
     private final FlippableIndexProxy flipper;
     private final IndexStoreView storeView;
-    private final ValueSampler populatingSampler;
     private final UpdateableSchemaState updateableSchemaState;
     private final String indexUserDescription;
     private final FailedIndexProxyFactory failureDelegate;
@@ -84,7 +82,6 @@ public class IndexPopulationJob implements Runnable
                               IndexPopulator populator,
                               FlippableIndexProxy flipper,
                               IndexStoreView storeView,
-                              ValueSampler populatingSampler,
                               UpdateableSchemaState updateableSchemaState,
                               Logging logging)
     {
@@ -94,7 +91,6 @@ public class IndexPopulationJob implements Runnable
         this.populator = populator;
         this.flipper = flipper;
         this.storeView = storeView;
-        this.populatingSampler = populatingSampler;
         this.updateableSchemaState = updateableSchemaState;
         this.indexUserDescription = indexUserDescription;
         this.failureDelegate = failureDelegateFactory;
@@ -136,7 +132,7 @@ public class IndexPopulationJob implements Runnable
                         populateFromQueueIfAvailable( Long.MAX_VALUE );
 
                         DoubleLongRegister result = Registers.newDoubleLongRegister();
-                        long indexSize = populatingSampler.result( result );
+                        long indexSize = populator.sampleResult( result );
                         storeView.replaceIndexCounts( descriptor, result.readFirst(), result.readSecond(),
                                 indexSize );
 

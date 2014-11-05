@@ -19,11 +19,14 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import java.io.Closeable;
-
 import org.apache.lucene.search.IndexSearcher;
 
-import org.neo4j.kernel.api.index.ValueSampler;
+import java.io.Closeable;
+
+import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
+
+import static org.neo4j.register.Register.DoubleLong;
+
 
 class LuceneUniqueIndexAccessorReader extends LuceneIndexAccessorReader
 {
@@ -31,13 +34,15 @@ class LuceneUniqueIndexAccessorReader extends LuceneIndexAccessorReader
 
     LuceneUniqueIndexAccessorReader( IndexSearcher searcher, LuceneDocumentStructure documentLogic, Closeable onClose )
     {
-        super( searcher, documentLogic, onClose );
+        super( searcher, documentLogic, onClose, -1 /* unused */ );
         this.searcher = searcher;
     }
 
     @Override
-    public void sampleIndex( ValueSampler sampler )
+    public long sampleIndex( DoubleLong.Out result )
     {
-        sampler.ignore( searcher.getIndexReader().numDocs() );
+        UniqueIndexSampler sampler = new UniqueIndexSampler();
+        sampler.increment( searcher.getIndexReader().numDocs() );
+        return sampler.result( result );
     }
 }
