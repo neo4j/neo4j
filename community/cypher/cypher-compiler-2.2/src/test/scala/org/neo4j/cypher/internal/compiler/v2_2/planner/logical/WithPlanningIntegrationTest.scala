@@ -47,150 +47,66 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should build plans that contain multiple WITH") {
-    val rel = PatternRelationship("r1", ("a", "b"), Direction.OUTGOING, Seq(), SimplePatternLength)
-
     val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r1]->(b) WITH a, b, r1 LIMIT 1 RETURN b as `b`").plan
-    val expected =
-      planRegularProjection(
-        planStarProjection(
-          planLimit(
-            planExpand(
-              planStarProjection(
-                planLimit(
-                  planAllNodesScan("a", Set.empty),
-                  UnsignedDecimalIntegerLiteral("1") _
-                ),
-                Map[String, Expression]("a" -> ident("a"))
-              ),
-              "a", Direction.OUTGOING, Direction.OUTGOING, Seq(), "b", "r1", SimplePatternLength, rel
-            ),
-            UnsignedDecimalIntegerLiteral("1") _
-          ),
-          Map[String, Expression]("a" -> ident("a"), "b" -> ident("b"), "r1" -> ident("r1"))
-        ),
-        Map[String, Expression]("b" -> ident("b"))
-      )
 
-    result should equal(expected)
+    result.toString should equal(
+    // oh perty where art thou!?
+      "Projection(Limit(Expand(Apply(Limit(AllNodesScan(IdName(a),Set()),UnsignedDecimalIntegerLiteral(1)),SingleRow(Set(IdName(a)))),IdName(a),OUTGOING,OUTGOING,List(),IdName(b),IdName(r1),SimplePatternLength,Vector()),UnsignedDecimalIntegerLiteral(1)),Map(b -> Identifier(b)))")
   }
 
   test("should build plans with WITH and selections") {
-    val rel = PatternRelationship("r1", ("a", "b"), Direction.OUTGOING, Seq(), SimplePatternLength)
     val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r1]->(b) WHERE r1.prop = 42 RETURN r1").plan
-    val expected =
-      planRegularProjection(
-        planSelection(
-          Seq(In(Property(Identifier("r1") _, PropertyKeyName("prop") _) _, Collection(Seq(SignedDecimalIntegerLiteral("42") _)) _) _),
-          planExpand(
-            planStarProjection(
-              planLimit(
-                planAllNodesScan("a", Set.empty),
-                UnsignedDecimalIntegerLiteral("1") _
-              ),
-              Map[String, Expression]("a" -> ident("a"))
-            ),
-            "a", Direction.OUTGOING, Direction.OUTGOING, Seq(), "b", "r1", SimplePatternLength, rel)
-        ),
-        Map[String, Expression]("r1" -> ident("r1"))
-      )
 
-    result should equal(expected)
+    result.toString should equal(
+      "Projection(Selection(Vector(In(Property(Identifier(r1),PropertyKeyName(prop)),Collection(List(SignedDecimalIntegerLiteral(42))))),Apply(Limit(AllNodesScan(IdName(a),Set()),UnsignedDecimalIntegerLiteral(1)),Expand(SingleRow(Set(IdName(a))),IdName(a),OUTGOING,OUTGOING,List(),IdName(b),IdName(r1),SimplePatternLength,Vector()))),Map(r1 -> Identifier(r1)))" )
   }
 
   test("should build plans for two matches separated by WITH") {
-    val rel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq(), SimplePatternLength)
-
     val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r]->(b) RETURN b").plan
-    val expected =
-      planRegularProjection(
-        planExpand(
-          planStarProjection(
-            planLimit(
-              planAllNodesScan("a", Set.empty),
-              UnsignedDecimalIntegerLiteral("1") _
-            ),
-            Map[String, Expression]("a" -> ident("a"))
-          ),
-          "a", Direction.OUTGOING, Direction.OUTGOING, Seq(), "b", "r", SimplePatternLength, rel
-        ),
-        Map[String, Expression]("b" -> ident("b"))
-      )
 
-    result should equal(expected)
+    result.toString should equal(
+      "Projection(Expand(Apply(Limit(AllNodesScan(IdName(a),Set()),UnsignedDecimalIntegerLiteral(1)),SingleRow(Set(IdName(a)))),IdName(a),OUTGOING,OUTGOING,List(),IdName(b),IdName(r),SimplePatternLength,Vector()),Map(b -> Identifier(b)))")
   }
 
   test("should build plans that project endpoints of re-matched directed relationship arguments") {
     val plan = planFor("MATCH (a)-[r]->(b) WITH r LIMIT 1 MATCH (u)-[r]->(v) RETURN r").plan
 
-    plan match {
-      case Projection(Apply(_, Selection(_, ProjectEndpoints(
-        AllNodesScan(IdName("u"), args), IdName("r"), IdName("u$$$_"), IdName("v"), true, SimplePatternLength
-      ))), _) =>
-        args should equal(Set(IdName("r")))
-    }
+    plan.toString should equal(
+      "Projection(Selection(List(Equals(Identifier(u),Identifier(u$$$_))),Apply(Limit(Expand(AllNodesScan(IdName(b),Set()),IdName(b),INCOMING,OUTGOING,List(),IdName(a),IdName(r),SimplePatternLength,Vector()),UnsignedDecimalIntegerLiteral(1)),ProjectEndpoints(AllNodesScan(IdName(u),Set(IdName(r))),IdName(r),IdName(u$$$_),IdName(v),true,SimplePatternLength))),Map(r -> Identifier(r)))")
   }
 
   test("should build plans that project endpoints of re-matched reversed directed relationship arguments") {
     val plan = planFor("MATCH (a)-[r]->(b) WITH r AS r, a AS a LIMIT 1 MATCH (b2)<-[r]-(a) RETURN r").plan
 
-    plan match {
-      case Projection(
-            Selection(Seq(Equals(Identifier("a"), Identifier("a$$$_"))),
-              ProjectEndpoints(_, IdName("r"), IdName("a$$$_"), IdName("b2"), true, SimplePatternLength)
-        ), _
-      ) =>
-    }
+    plan.toString should equal(
+      "Projection(Selection(List(Equals(Identifier(a),Identifier(a$$$_))),Apply(Limit(Expand(AllNodesScan(IdName(b),Set()),IdName(b),INCOMING,OUTGOING,List(),IdName(a),IdName(r),SimplePatternLength,Vector()),UnsignedDecimalIntegerLiteral(1)),ProjectEndpoints(SingleRow(Set(IdName(a), IdName(r))),IdName(r),IdName(a$$$_),IdName(b2),true,SimplePatternLength))),Map(r -> Identifier(r)))")
   }
 
   test("should build plans that verify endpoints of re-matched directed relationship arguments") {
     val plan = planFor("MATCH (a)-[r]->(b) WITH * LIMIT 1 MATCH (a)-[r]->(b) RETURN r").plan
 
-    plan match {
-      case Projection(
-            Selection(
-              Seq(Equals(Identifier("a"), Identifier("a$$$_")), Equals(Identifier("b"), Identifier("b$$$_"))),
-              ProjectEndpoints(_, IdName("r"), IdName("a$$$_"), IdName("b$$$_"), true, SimplePatternLength)
-            ), _
-          ) =>
-    }
+    plan.toString should equal(
+      "Projection(Selection(List(Equals(Identifier(a),Identifier(a$$$_)), Equals(Identifier(b),Identifier(b$$$_))),Apply(Limit(Expand(AllNodesScan(IdName(b),Set()),IdName(b),INCOMING,OUTGOING,List(),IdName(a),IdName(r),SimplePatternLength,Vector()),UnsignedDecimalIntegerLiteral(1)),ProjectEndpoints(SingleRow(Set(IdName(a), IdName(b), IdName(r))),IdName(r),IdName(a$$$_),IdName(b$$$_),true,SimplePatternLength))),Map(r -> Identifier(r)))")
   }
 
   test("should build plans that project and verify endpoints of re-matched directed relationship arguments") {
     val plan = planFor("MATCH (a)-[r]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r]->(b2) RETURN r").plan
 
-    plan match {
-      case Projection(
-            Selection(
-              Seq(Equals(Identifier("a"), Identifier("a$$$_"))),
-              ProjectEndpoints(_, IdName("r"), IdName("a$$$_"), IdName("b2"), true, SimplePatternLength)
-            ), _
-           ) =>
-    }
+    plan.toString should equal(
+      "Projection(Selection(List(Equals(Identifier(a),Identifier(a$$$_))),Apply(Limit(Expand(AllNodesScan(IdName(b),Set()),IdName(b),INCOMING,OUTGOING,List(),IdName(a),IdName(r),SimplePatternLength,Vector()),UnsignedDecimalIntegerLiteral(1)),ProjectEndpoints(SingleRow(Set(IdName(a), IdName(r))),IdName(r),IdName(a$$$_),IdName(b2),true,SimplePatternLength))),Map(r -> Identifier(r)))")
   }
 
   test("should build plans that project and verify endpoints of re-matched undirected relationship arguments") {
     val plan = planFor("MATCH (a)-[r]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r]-(b2) RETURN r").plan
 
-    plan match {
-      case Projection(
-            Selection(
-              Seq(Equals(Identifier("a"), Identifier("a$$$_"))),
-              ProjectEndpoints(_, IdName("r"), IdName("a$$$_"), IdName("b2"), false, SimplePatternLength)
-            ), _
-           ) =>
-    }
+    plan.toString should equal(
+      "Projection(Selection(List(Equals(Identifier(a),Identifier(a$$$_))),Apply(Limit(Expand(AllNodesScan(IdName(b),Set()),IdName(b),INCOMING,OUTGOING,List(),IdName(a),IdName(r),SimplePatternLength,Vector()),UnsignedDecimalIntegerLiteral(1)),ProjectEndpoints(SingleRow(Set(IdName(a), IdName(r))),IdName(r),IdName(a$$$_),IdName(b2),false,SimplePatternLength))),Map(r -> Identifier(r)))")
   }
 
   test("should build plans that project and verify endpoints of re-matched directed var length relationship arguments") {
     val plan = planFor("MATCH (a)-[r*]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r*]->(b2) RETURN r").plan
 
-    plan match {
-      case Projection(
-            Selection(
-              Seq(Equals(Identifier("a"), Identifier("a$$$_"))),
-              ProjectEndpoints(_, IdName("r"), IdName("a$$$_"), IdName("b2"), true, VarPatternLength(1, None))
-            ), _
-          ) =>
-    }
+    plan.toString should equal(
+      "Projection(Selection(List(Equals(Identifier(a),Identifier(a$$$_))),Apply(Limit(Expand(AllNodesScan(IdName(b),Set()),IdName(b),INCOMING,OUTGOING,List(),IdName(a),IdName(r),VarPatternLength(1,None),Vector()),UnsignedDecimalIntegerLiteral(1)),ProjectEndpoints(SingleRow(Set(IdName(a), IdName(r))),IdName(r),IdName(a$$$_),IdName(b2),true,VarPatternLength(1,None)))),Map(r -> Identifier(r)))")
   }
 }
