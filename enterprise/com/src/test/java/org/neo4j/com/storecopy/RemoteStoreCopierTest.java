@@ -63,7 +63,6 @@ import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.ReflectionUtil;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
@@ -79,8 +78,8 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.com.ResourceReleaser.NO_OP;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
-import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.IteratorUtil.asList;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.fs.FileUtils.getMostCanonicalFile;
 import static org.neo4j.io.fs.FileUtils.relativePath;
@@ -201,10 +200,9 @@ public class RemoteStoreCopierTest
 
         try ( Transaction tx = copy.beginTx() )
         {
-            GlobalGraphOperations globalOps = GlobalGraphOperations.at( copy );
-            assertThat( single( globalOps.getAllNodesWithLabel( label( "BeforeCopyBegins" ) ) ).getId(),
+            assertThat( single( copy.findNodes( label( "BeforeCopyBegins" ) ) ).getId(),
                     equalTo( 0l ) );
-            assertThat( single( globalOps.getAllNodesWithLabel( label( "AfterCopy" ) ) ).getId(), equalTo( 1l ) );
+            assertThat( single( copy.findNodes( label( "AfterCopy" ) ) ).getId(), equalTo( 1l ) );
             tx.success();
         }
         finally

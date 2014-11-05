@@ -23,6 +23,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableCollection;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
 /**
  * Test convenience: all the methods on GraphDatabaseService, callable using generic interface
@@ -84,7 +85,7 @@ public class GraphDatabaseServiceFacadeMethods
 
     static final FacadeMethod<GraphDatabaseService> FIND_NODES_BY_LABEL_AND_PROPERTY =
         new FacadeMethod<GraphDatabaseService>(
-                "ResourceIterable<Node> findNodesByLabelAndProperty( Label label, String key, Object value )" )
+                "ResourceIterator<Node> findNodes( Label label, String key, Object value )" )
     {
         @Override
         public void call( GraphDatabaseService graphDatabaseService )
@@ -95,6 +96,34 @@ public class GraphDatabaseServiceFacadeMethods
             }
         }
     };
+
+    static final FacadeMethod<GraphDatabaseService> FIND_NODES_BY_LABEL_AND_PROPERTY_DEPRECATED =
+        new FacadeMethod<GraphDatabaseService>(
+                "ResourceIterator<Node> findNodeByLabelAndProperty( Label label, String key, Object value )" )
+    {
+        @Override
+        public void call( GraphDatabaseService graphDatabaseService )
+        {
+            for ( Node node : loop( graphDatabaseService.findNodes( label( "bar" ), "baz", 23 ) ) )
+            {
+
+            }
+        }
+    };
+
+    static final FacadeMethod<GraphDatabaseService> FIND_NODES_BY_LABEL =
+            new FacadeMethod<GraphDatabaseService>(
+                    "ResourceIterator<Node> findNodes( Label label )" )
+            {
+                @Override
+                public void call( GraphDatabaseService graphDatabaseService )
+                {
+                    for ( Node node : loop( graphDatabaseService.findNodes( label( "bar" ) ) ) )
+                    {
+
+                    }
+                }
+            };
 
     static final FacadeMethod<GraphDatabaseService> GET_RELATIONSHIP_TYPES =
             new FacadeMethod<GraphDatabaseService>( "Iterable<RelationshipType> getRelationshipTypes()" )
@@ -124,6 +153,8 @@ public class GraphDatabaseServiceFacadeMethods
             GET_RELATIONSHIP_BY_ID,
             GET_ALL_NODES,
             FIND_NODES_BY_LABEL_AND_PROPERTY,
+            FIND_NODES_BY_LABEL_AND_PROPERTY_DEPRECATED,
+            FIND_NODES_BY_LABEL,
             GET_RELATIONSHIP_TYPES,
             SCHEMA
             // TODO: INDEX

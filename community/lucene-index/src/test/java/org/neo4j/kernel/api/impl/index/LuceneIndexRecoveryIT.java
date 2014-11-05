@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.index;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipOutputStream;
@@ -291,7 +292,7 @@ public class LuceneIndexRecoveryIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Iterable<Node> iter = db.findNodesByLabelAndProperty( myLabel, NUM_BANANAS_KEY, value );
+            Iterator<Node> iter = db.findNodes( myLabel, NUM_BANANAS_KEY, value );
             Set<Node> nodes = asUniqueSet( iter );
             tx.success();
             return nodes;

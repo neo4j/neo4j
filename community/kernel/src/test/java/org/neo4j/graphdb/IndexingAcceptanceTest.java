@@ -38,9 +38,9 @@ import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.graphdb.Neo4jMatchers.isEmpty;
 import static org.neo4j.graphdb.Neo4jMatchers.waitForIndex;
-import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class IndexingAcceptanceTest
@@ -276,9 +276,9 @@ public class IndexingAcceptanceTest
         Transaction tx = beansAPI.beginTx();
 
         Node firstNode = createNode( beansAPI, map( "name", "Mattias" ), LABEL1 );
-        long sizeBeforeDelete = count( beansAPI.findNodesByLabelAndProperty( LABEL1, "name", "Mattias" ) );
+        long sizeBeforeDelete = count( beansAPI.findNodes( LABEL1, "name", "Mattias" ) );
         firstNode.delete();
-        long sizeAfterDelete = count( beansAPI.findNodesByLabelAndProperty( LABEL1, "name", "Mattias" ) );
+        long sizeAfterDelete = count( beansAPI.findNodes( LABEL1, "name", "Mattias" ) );
 
         tx.close();
 
@@ -298,9 +298,9 @@ public class IndexingAcceptanceTest
         // WHEN
         Transaction tx = beansAPI.beginTx();
 
-        long sizeBeforeDelete = count( beansAPI.findNodesByLabelAndProperty( LABEL1, "name", "Mattias" ) );
+        long sizeBeforeDelete = count( beansAPI.findNodes( LABEL1, "name", "Mattias" ) );
         firstNode.delete();
-        long sizeAfterDelete = count( beansAPI.findNodesByLabelAndProperty( LABEL1, "name", "Mattias" ) );
+        long sizeAfterDelete = count( beansAPI.findNodes( LABEL1, "name", "Mattias" ) );
 
         tx.close();
 
@@ -320,9 +320,9 @@ public class IndexingAcceptanceTest
         // WHEN
         Transaction tx = beansAPI.beginTx();
 
-        long sizeBeforeDelete = count( beansAPI.findNodesByLabelAndProperty( LABEL1, "name", "Mattias" ) );
+        long sizeBeforeDelete = count( beansAPI.findNodes( LABEL1, "name", "Mattias" ) );
         createNode( beansAPI, map( "name", "Mattias" ), LABEL1 );
-        long sizeAfterDelete = count( beansAPI.findNodesByLabelAndProperty( LABEL1, "name", "Mattias" ) );
+        long sizeAfterDelete = count( beansAPI.findNodes( LABEL1, "name", "Mattias" ) );
 
         tx.close();
 
@@ -392,10 +392,35 @@ public class IndexingAcceptanceTest
 
         try ( Transaction tx = graph.beginTx() )
         {
-            ResourceIterable<Node> result = graph.findNodesByLabelAndProperty( LABEL1, "name",  "Stefan" );
+            ResourceIterator<Node> result = graph.findNodes( LABEL1, "name", "Stefan" );
             assertEquals( asSet( node1, node2 ), asSet( result ) );
 
             tx.success();
+        }
+    }
+
+
+    @Test( expected = MultipleFoundException.class )
+    public void shouldThrowWhenMulitpleResultsForSingleNode() throws Exception
+    {
+        // given
+        GraphDatabaseService graph = dbRule.getGraphDatabaseService();
+        createIndex( graph, LABEL1, "name" );
+
+        Node node1, node2;
+        try ( Transaction tx = graph.beginTx() )
+        {
+            node1 = graph.createNode( LABEL1 );
+            node1.setProperty( "name", "Stefan" );
+
+            node2 = graph.createNode( LABEL1 );
+            node2.setProperty( "name", "Stefan" );
+            tx.success();
+        }
+
+        try ( Transaction tx = graph.beginTx() )
+        {
+            graph.findNode( LABEL1, "name", "Stefan" );
         }
     }
 
@@ -405,7 +430,7 @@ public class IndexingAcceptanceTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            Node found = single( db.findNodesByLabelAndProperty( label, propertyKey, value ) );
+            Node found = db.findNode( label, propertyKey, value );
             assertThat( found, equalTo( created ) );
             found.delete();
             tx.success();

@@ -307,10 +307,10 @@ public class CypherSql
             RelationshipType type = DynamicRelationshipType.withName( relationshipType );
             for ( Object[] relationship : relationships )
             {
-                Node sourceNode = graphdb.findNodesByLabelAndProperty( DynamicLabel.label( sourceEntity ),
-                        sourceMatchAttribute, relationship[0] ).iterator().next();
-                Node targetNode = graphdb.findNodesByLabelAndProperty( DynamicLabel.label( targetEntity ),
-                        targetMatchAttribute, relationship[1] ).iterator().next();
+                Node sourceNode = graphdb.findNode( DynamicLabel.label( sourceEntity ),
+                        sourceMatchAttribute, relationship[0] );
+                Node targetNode = graphdb.findNode( DynamicLabel.label( targetEntity ),
+                        targetMatchAttribute, relationship[1] );
                 sourceNode.createRelationshipTo( targetNode, type );
             }
             tx.success();

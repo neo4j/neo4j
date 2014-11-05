@@ -230,7 +230,9 @@ public class GlobalGraphOperations
      *
      * @param label the {@link Label} to return nodes for.
      * @return {@link Iterable} containing nodes with a specific label.
+     * @deprecated Use {@link GraphDatabaseService#findNodes(Label)} instead
      */
+    @Deprecated
     public ResourceIterable<Node> getAllNodesWithLabel( final Label label )
     {
         assertInUnterminatedTransaction();

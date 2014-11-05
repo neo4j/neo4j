@@ -44,6 +44,7 @@ import static org.neo4j.graphdb.Neo4jMatchers.haveState;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.graphdb.Neo4jMatchers.isEmpty;
 import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class SchemaIndexAcceptanceTest
@@ -200,8 +201,7 @@ public class SchemaIndexAcceptanceTest
         Transaction tx = db.beginTx();
         try
         {
-            Iterable<Node> nodes = db.findNodesByLabelAndProperty( label, propertyKey, 3323 );
-            for ( Node node : nodes )
+            for ( Node node : loop( db.findNodes( label, propertyKey, 3323 ) ) )
             {
                 count( node.getLabels() );
             }
