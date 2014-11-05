@@ -19,15 +19,15 @@
  */
 package org.neo4j.server.web.logging;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.util.Scanner;
-import java.util.UUID;
-
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.UUID;
+
+import org.neo4j.kernel.impl.util.Charsets;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.ServerStartupException;
 import org.neo4j.server.configuration.Configurator;
@@ -40,6 +40,7 @@ import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.server.ExclusiveServerTestBase;
+import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
@@ -47,10 +48,11 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.Settings.osIsWindows;
+import static org.neo4j.io.fs.FileUtils.readTextFile;
 import static org.neo4j.test.AssertEventually.Condition;
 import static org.neo4j.test.AssertEventually.assertEventually;
+import static org.neo4j.test.server.HTTP.RawPayload.rawPayload;
 
 public class HTTPLoggingDocIT extends ExclusiveServerTestBase
 {
@@ -130,13 +132,48 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
             response.close();
 
             // then
-            assertEventually( "request appears in log", 5, new Condition()
-            {
-                public boolean evaluate()
-                {
-                    return occursIn( query, new File( logDirectory, "http.log" ) );
-                }
-            } );
+            assertEventually( "request appears in log", 5, logContains( logDirectory, query ) );
+        }
+        finally
+        {
+            server.stop();
+        }
+    }
+
+    @Test
+    public void givenDebugContentLoggingEnabledShouldLogContent() throws Exception
+    {
+        // given
+        final File logDirectory = TargetDirectory.forTest( this.getClass() ).cleanDirectory(
+                "givenDebugContentLoggingEnabledShouldLogContent-logdir" );
+        FileUtils.forceMkdir( logDirectory );
+        final File confDir = TargetDirectory.forTest( this.getClass() ).cleanDirectory(
+                "givenDebugContentLoggingEnabledShouldLogContent-confdir" );
+        FileUtils.forceMkdir( confDir );
+
+        final File configFile = HTTPLoggingPreparednessRuleTest.createConfigFile(
+                HTTPLoggingPreparednessRuleTest.createLogbackConfigXml( logDirectory, "$requestContent\n%responseContent" ), confDir );
+
+        NeoServer server = CommunityServerBuilder.server().withDefaultDatabaseTuning()
+                .withProperty( Configurator.HTTP_LOGGING, "true" )
+                .withProperty( Configurator.HTTP_CONTENT_LOGGING, "true" )
+                .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath() )
+                .usingDatabaseDir( TargetDirectory.forTest( this.getClass() ).cleanDirectory(
+                        "givenDebugContentLoggingEnabledShouldLogContent-dbdir"
+                ).getAbsolutePath() )
+                .build();
+
+        try
+        {
+            server.start();
+
+            // when
+            HTTP.Response req = HTTP.POST( server.baseUri().resolve( "/db/data/node" ).toString(), rawPayload( "{\"name\":\"Hello, world!\"}" ) );
+            assertEquals( 201, req.status() );
+
+            // then
+            assertEventually( "request appears in log", 5, logContains( logDirectory, "Hello, world!" ) );
+            assertEventually( "request appears in log", 5, logContains( logDirectory, "metadata" ) );
         }
         finally
         {
@@ -184,6 +221,17 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
         }
     }
 
+    private Condition logContains( final File logDirectory, final String query )
+    {
+        return new Condition()
+        {
+            public boolean evaluate()
+            {
+                return occursIn( query, new File( logDirectory, "http.log" ) );
+            }
+        };
+    }
+
     private File createUnwritableDirectory()
     {
         File file;
@@ -210,29 +258,17 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
             return false;
         }
 
-        Scanner scanner = null;
         try
         {
-            scanner = new Scanner( file );
-            while ( scanner.hasNext() )
-            {
-                if ( scanner.next().contains( lookFor ) )
-                {
-                    return true;
-                }
-            }
-            return false;
+            String s = readTextFile( file, Charsets.UTF_8 );
+            System.out.println(s);
+            System.out.println();
+            System.out.println("Does not contain: " + lookFor);
+            return s.contains( lookFor );
         }
-        catch ( FileNotFoundException e )
+        catch ( IOException e )
         {
             throw new RuntimeException( e );
-        }
-        finally
-        {
-            if ( scanner != null )
-            {
-                scanner.close();
-            }
         }
     }
 }
