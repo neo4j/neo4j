@@ -21,19 +21,19 @@
 #Remember where we started from so that working dir is set correctly
 RUN_FROM=`pwd`
 
-BACKUP_SCRIPT="$0"
+SCRIPT_LOCATION="$0"
 
-cd "`dirname "$BACKUP_SCRIPT"`"
-BACKUP_SCRIPT=`basename "$BACKUP_SCRIPT"`
+cd "`dirname "$SCRIPT_LOCATION"`"
+SCRIPT_LOCATION=`basename "$SCRIPT_LOCATION"`
 
-while [ -L "$BACKUP_SCRIPT" ]
+while [ -L "$SCRIPT_LOCATION" ]
 do
-  BACKUP_SCRIPT=$( readlink $BACKUP_SCRIPT )
-  cd "`dirname "$BACKUP_SCRIPT"`"
-  BACKUP_SCRIPT="`basename "$BACKUP_SCRIPT"`"
+  SCRIPT_LOCATION=$( readlink $SCRIPT_LOCATION )
+  cd "`dirname "$SCRIPT_LOCATION"`"
+  SCRIPT_LOCATION="`basename "$SCRIPT_LOCATION"`"
 done
 
-BASEDIR=`cd "$( dirname $BACKUP_SCRIPT )"/.. && dirs -l +0`
+BASEDIR=`cd "$( dirname $SCRIPT_LOCATION )"/.. && dirs -l +0`
 
 # OS specific support.  $var _must_ be set to either true or false.
 cygwin=false;
@@ -102,7 +102,7 @@ done
 
 CLASSPATH=$CLASSPATH_PREFIX${LIBRARY_JARS}
 
-EXTRA_JVM_ARGUMENTS=""
+EXTRA_JVM_ARGUMENTS="-Dfile.encoding=UTF-8"
 
 # For Cygwin, switch paths to Windows format before running java
 if $cygwin; then

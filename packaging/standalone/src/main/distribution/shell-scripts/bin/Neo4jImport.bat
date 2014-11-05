@@ -89,7 +89,7 @@ goto :EOF
 
 set CLASSPATH=%LIBPATH%
 
-set EXTRA_JVM_ARGUMENTS=
+set EXTRA_JVM_ARGUMENTS=-Dfile.encoding=UTF-8
 goto endInit
 
 @REM Reaching here means variables are defined and arguments have been captured
