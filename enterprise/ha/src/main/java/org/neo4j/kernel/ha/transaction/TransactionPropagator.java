@@ -58,6 +58,20 @@ public class TransactionPropagator implements Lifecycle
         SlavePriority getReplicationStrategy();
     }
 
+    private static class ReplicationContext
+    {
+        final Future<Void> future;
+        final Slave slave;
+
+        Throwable throwable;
+
+        ReplicationContext( Future<Void> future, Slave slave )
+        {
+            this.future = future;
+            this.slave = slave;
+        }
+    }
+
     public static Configuration from( final Config config )
     {
         return new Configuration()
@@ -123,17 +137,19 @@ public class TransactionPropagator implements Lifecycle
     private final Configuration config;
     private final Slaves slaves;
     private final CommitPusher pusher;
-    private final CappedOperation<Throwable> slaveCommitFailureLogger = new CappedOperation<Throwable>(
-            CappedOperation.time( 5, TimeUnit.SECONDS ),
-            CappedOperation.differentItemClasses() )
-    {
-        @Override
-        protected void triggered( Throwable failure )
-        {
-            log.error( "Slave commit threw " + (failure instanceof ComException ? "communication" : "" )
-                    + " exception", failure );
-        }
-    };
+    private final CappedOperation<ReplicationContext> slaveCommitFailureLogger =
+            new CappedOperation<ReplicationContext>(
+                    CappedOperation.time( 5, TimeUnit.SECONDS ),
+                    CappedOperation.differentItemClasses() )
+            {
+                @Override
+                protected void triggered( ReplicationContext context )
+                {
+                    log.error( "Slave " + context.slave.getServerId() + ": Replication commit threw" +
+                               (context.throwable instanceof ComException ? " communication" : "") +
+                               " exception:", context.throwable );
+                }
+            };
 
     public TransactionPropagator( Configuration config, StringLogger log, Slaves slaves, CommitPusher pusher )
     {
@@ -181,7 +197,7 @@ public class TransactionPropagator implements Lifecycle
         {
             return;
         }
-        Collection<Future<Void>> committers = new HashSet<>();
+        Collection<ReplicationContext> committers = new HashSet<>();
         try
         {
             // TODO: Move this logic into {@link CommitPusher}
@@ -194,25 +210,27 @@ public class TransactionPropagator implements Lifecycle
             // Start as many initial committers as needed
             for ( int i = 0; i < replicationFactor && slaveList.hasNext(); i++ )
             {
-                committers.add( slaveCommitters.submit( slaveCommitter( slaveList.next(), txId, notifier ) ) );
+                Slave slave = slaveList.next();
+                Callable<Void> slaveCommitter = slaveCommitter( slave, txId, notifier );
+                committers.add( new ReplicationContext( slaveCommitters.submit( slaveCommitter ), slave ) );
             }
 
             // Wait for them and perhaps spawn new ones for failing committers until we're done
             // or until we have no more slaves to try out.
-            Collection<Future<Void>> toAdd = new ArrayList<>();
-            Collection<Future<Void>> toRemove = new ArrayList<>();
+            Collection<ReplicationContext> toAdd = new ArrayList<>();
+            Collection<ReplicationContext> toRemove = new ArrayList<>();
             while ( !committers.isEmpty() && successfulReplications < replicationFactor )
             {
                 toAdd.clear();
                 toRemove.clear();
-                for ( Future<Void> committer : committers )
+                for ( ReplicationContext context : committers )
                 {
-                    if ( !committer.isDone() )
+                    if ( !context.future.isDone() )
                     {
                         continue;
                     }
 
-                    if ( isSuccessful( committer ) )
+                    if ( isSuccessful( context ) )
                     // This committer was successful, increment counter
                     {
                         successfulReplications++;
@@ -220,9 +238,11 @@ public class TransactionPropagator implements Lifecycle
                     else if ( slaveList.hasNext() )
                     // This committer failed, spawn another one
                     {
-                        toAdd.add( slaveCommitters.submit( slaveCommitter( slaveList.next(), txId, notifier ) ) );
+                        Slave newSlave = slaveList.next();
+                        Callable<Void> slaveCommitter = slaveCommitter( newSlave, txId, notifier );
+                        toAdd.add( new ReplicationContext( slaveCommitters.submit( slaveCommitter ), newSlave ) );
                     }
-                    toRemove.add( committer );
+                    toRemove.add( context );
                 }
 
                 // Incorporate the results into committers collection
@@ -247,8 +267,8 @@ public class TransactionPropagator implements Lifecycle
             // We did the best we could, have we committed successfully on enough slaves?
             if ( !(successfulReplications >= replicationFactor) )
             {
-                log.logMessage( "Transaction " + txId + " couldn't commit on enough slaves, desired "
-                        + replicationFactor + ", but could only commit at " + successfulReplications );
+                log.logMessage( "Transaction " + txId + " couldn't commit on enough slaves, desired " +
+                                replicationFactor + ", but could only commit at " + successfulReplications );
             }
         }
         catch ( Throwable t )
@@ -258,30 +278,30 @@ public class TransactionPropagator implements Lifecycle
         finally
         {
             // Cancel all ongoing committers in the executor
-            for ( Future<Void> committer : committers )
+            for ( ReplicationContext context : committers )
             {
-                committer.cancel( false );
+                context.future.cancel( false );
             }
         }
     }
 
     private Iterator<Slave> filter( Iterator<Slave> slaves, final Integer externalAuthorServerId )
     {
-        return externalAuthorServerId == null ? slaves : new FilteringIterator<Slave>( slaves, new Predicate<Slave>()
+        return externalAuthorServerId == null ? slaves : new FilteringIterator<>( slaves, new Predicate<Slave>()
         {
             @Override
             public boolean accept( Slave item )
             {
-                return item.getServerId() != externalAuthorServerId.intValue();
+                return item.getServerId() != externalAuthorServerId;
             }
         } );
     }
 
-    private boolean isSuccessful( Future<Void> committer )
+    private boolean isSuccessful( ReplicationContext context )
     {
         try
         {
-            committer.get();
+            context.future.get();
             return true;
         }
         catch ( InterruptedException e )
@@ -290,7 +310,8 @@ public class TransactionPropagator implements Lifecycle
         }
         catch ( ExecutionException e )
         {
-            slaveCommitFailureLogger.event( e.getCause() );
+            context.throwable = e.getCause();
+            slaveCommitFailureLogger.event( context );
             return false;
         }
         catch ( CancellationException e )
@@ -339,9 +360,7 @@ public class TransactionPropagator implements Lifecycle
         @Override
         public String toString()
         {
-            return "CompletionNotifier{id=" + System.identityHashCode( this ) +
-                    ",notified=" + notified +
-                    '}';
+            return "CompletionNotifier{id=" + System.identityHashCode( this ) + ",notified=" + notified + "}";
         }
     }
 
