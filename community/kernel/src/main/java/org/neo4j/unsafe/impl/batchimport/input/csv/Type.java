@@ -29,8 +29,8 @@ public enum Type
     ID,
     PROPERTY,
     LABEL,
-    RELATIONSHIP_TYPE,
-    START_NODE,
-    END_NODE,
+    TYPE,
+    START_ID,
+    END_ID,
     IGNORE;
 }

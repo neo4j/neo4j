@@ -110,7 +110,12 @@ public class Header
                 return false;
             }
             Entry other = (Entry) obj;
-            return name.equals( other.name ) && type == other.type && extractorEquals( extractor, other.extractor );
+            return nullSafeEquals( name, other.name ) && type == other.type && extractorEquals( extractor, other.extractor );
+        }
+
+        private boolean nullSafeEquals( Object o1, Object o2 )
+        {
+            return o1 == null || o2 == null ? o1 == o2 : o1.equals( o2 );
         }
 
         private boolean extractorEquals( Extractor<?> first, Extractor<?> other )
