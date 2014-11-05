@@ -24,6 +24,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.channels.ClosedChannelException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -57,6 +58,7 @@ import org.jboss.netty.util.ThreadRenamingRunnable;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageSender;
 import org.neo4j.cluster.com.message.MessageType;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -292,7 +294,14 @@ public class NetworkSender
                 }
                 catch ( Exception e )
                 {
-                    msgLog.warn( "Could not send message", e );
+                    if( Exceptions.contains(e, ClosedChannelException.class ))
+                    {
+                        msgLog.warn( "Could not send message, because the connection has been closed." );
+                    }
+                    else
+                    {
+                        msgLog.warn( "Could not send message", e );
+                    }
                     channel.close();
                 }
             }
