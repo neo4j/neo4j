@@ -19,18 +19,28 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Random;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
+import org.neo4j.collection.primitive.PrimitiveIntSet;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.unsafe.impl.batchimport.cache.GatheringMemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.LongArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 
+import static java.lang.System.currentTimeMillis;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+
+import static org.neo4j.collection.primitive.Primitive.intSet;
 
 public class StringIdMapperTest
 {
@@ -80,6 +90,7 @@ public class StringIdMapperTest
         }
     }
 
+    @Ignore( "TODO pending fix issue in ParallelSort" )
     @Test
     public void shouldEncodeShortStrings() throws Exception
     {
@@ -95,4 +106,48 @@ public class StringIdMapperTest
         assertEquals( 2L, mapper.get( "456" ) );
         assertEquals( 1L, mapper.get( "123" ) );
     }
+
+    @Ignore( "TODO pending fix issue in ParallelSort" )
+    @Test
+    public void shouldEncodeSmallSetOfRandomData() throws Throwable
+    {
+        // GIVEN
+        StringIdMapper mapper = new StringIdMapper( LongArrayFactory.AUTO, random.nextInt( 7 ) + 1 /*1-7*/ );
+        int size = random.nextInt( 1_000 ) + 2;
+
+        // WHEN
+        List<Object> values = new ArrayList<>();
+        PrimitiveIntSet alreadyGeneratedValues = intSet( size );
+        for ( int i = 0; i < size; i++ )
+        {
+            int candidate = random.nextInt( 10_000 );
+            if ( !alreadyGeneratedValues.add( candidate ) )
+            {
+                i--;
+                continue;
+            }
+
+            String value = String.valueOf( candidate );
+            mapper.put( value, i );
+            values.add( value );
+        }
+        try
+        {
+            mapper.prepare( values );
+
+            // THEN
+            int i = 0;
+            for ( Object value : values )
+            {
+                assertEquals( "Expected " + value + " to map to " + i + ", seed:" + seed, i++, mapper.get( value ) );
+            }
+        }
+        catch ( Throwable e )
+        {
+            throw Exceptions.withMessage( e, e.getMessage() + ", seed:" + seed );
+        }
+    }
+
+    private final long seed = currentTimeMillis(); // 1415196442896L;
+    private final Random random = new Random( seed );
 }

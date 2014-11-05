@@ -26,6 +26,8 @@ import org.neo4j.unsafe.impl.batchimport.Utils.CompareType;
 import org.neo4j.unsafe.impl.batchimport.cache.IntArray;
 import org.neo4j.unsafe.impl.batchimport.cache.LongArray;
 
+import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.StringIdMapper.radixOf;
+
 /**
  * Sorts input data by dividing up into chunks and sort each chunk in parallel. Each chunk is sorted
  * using a quick sort method, whereas the dividing of the data is first sorted using radix sort.
@@ -90,13 +92,6 @@ public class ParallelSort
         return iterations;
     }
 
-    private int getRadix( long val )
-    {
-        int index = (int) (val >>> (64 - RADIX_BITS));
-        index = (((index & LENGTH_MASK) >>> 1) | (index & HASHCODE_MASK));
-        return index;
-    }
-
     private int[][] sortRadix( int[] radixIndexCount, LongArray dataCache, IntArray tracker, int threads )
     {
         int[][] rangeParams = new int[threads][2];
@@ -136,7 +131,7 @@ public class ParallelSort
         }
         for ( long i = 0; i < dataCacheSize; i++ )
         {
-            int rIndex = getRadix( dataCache.get( i ) );
+            int rIndex = radixOf( dataCache.get( i ) );
             for ( int k = 0; k < threads; k++ )
             {
                 //if ( rangeParams[k][0] >= rIndex )
@@ -177,7 +172,7 @@ public class ParallelSort
             int index = tracker.get( start + i );
             if ( index != -1 )
             {
-                vals[i] = getRadix( dataCache.get( index ) );
+                vals[i] = radixOf( dataCache.get( index ) );
             }
             else
             {

@@ -56,6 +56,7 @@ public class StringIdMapper implements IdMapper
     private final IntArray trackerCache;
     private final LongArray dataCache;
     private final StringEncoder strEncoder;
+    private final int processorsForSorting;
 
     private final LongArray collisionCache;
     private final IntArray collisionStringIndex;
@@ -68,6 +69,12 @@ public class StringIdMapper implements IdMapper
 
     public StringIdMapper( LongArrayFactory cacheFactory )
     {
+        this( cacheFactory, Runtime.getRuntime().availableProcessors() - 1 );
+    }
+
+    public StringIdMapper( LongArrayFactory cacheFactory, int processorsForSorting )
+    {
+        this.processorsForSorting = processorsForSorting;
         this.dataCache = newLongArray( cacheFactory );
         this.trackerCache = newIntArray( cacheFactory );
         this.strEncoder = new StringEncoder( 2 );
@@ -104,7 +111,7 @@ public class StringIdMapper implements IdMapper
         size++;
     }
 
-    private static int radixOf( long val )
+    static int radixOf( long val )
     {
         int index = (int) (val >>> (64 - RADIX_BITS));
         index = (((index & LENGTH_MASK) >>> 1) | (index & HASHCODE_MASK));
@@ -120,8 +127,7 @@ public class StringIdMapper implements IdMapper
     @Override
     public void prepare( Iterable<Object> ids )
     {
-        sortBuckets = new ParallelSort( radixIndexCount, dataCache, trackerCache,
-                Runtime.getRuntime().availableProcessors()-1 ).run();
+        sortBuckets = new ParallelSort( radixIndexCount, dataCache, trackerCache, processorsForSorting ).run();
 
         if ( detectAndMarkCollisions() > 0 )
         {
