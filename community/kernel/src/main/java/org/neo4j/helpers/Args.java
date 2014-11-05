@@ -31,7 +31,6 @@ import org.neo4j.function.Function;
 import org.neo4j.kernel.impl.util.Validator;
 
 import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
 
 /**
  * Parses a String[] argument from a main-method. It expects values to be either
@@ -121,7 +120,7 @@ public class Args
         {
             throw new IllegalArgumentException( "There are multiple values for '" + key + "'" );
         }
-        return single( values );
+        return values.get( 0 );
     }
 
     public String get( String key )

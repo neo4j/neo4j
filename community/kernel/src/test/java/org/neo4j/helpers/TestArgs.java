@@ -19,21 +19,10 @@
  */
 package org.neo4j.helpers;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.util.Converters;
-import org.neo4j.kernel.impl.util.Validator;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.*;
 
 public class TestArgs
 {
@@ -49,7 +38,7 @@ public class TestArgs
         assertTrue( args.has( "v" ) );
         assertTrue( args.orphans().isEmpty() );
     }
-
+    
     @Test
     public void testInterleavedEqualsArgsAndSplitKeyValue()
     {
@@ -59,12 +48,12 @@ public class TestArgs
         assertTrue( args.has( "v" ) );
         assertEquals( 1234, args.getNumber( "port", null ).intValue() );
         assertEquals( "Something", args.get( "name", null ) );
-
+        
         assertEquals( 2, args.orphans().size() );
         assertEquals( "param1", args.orphans().get( 0 ) );
         assertEquals( "param2", args.orphans().get( 1 ) );
     }
-
+    
     @Test
     public void testParameterWithDashValue()
     {
@@ -74,7 +63,7 @@ public class TestArgs
         assertEquals( "-", args.get ( "file", null ) );
         assertTrue( args.orphans().isEmpty() );
     }
-
+    
     @Test
     public void testEnum()
     {
@@ -83,7 +72,7 @@ public class TestArgs
         Enum<MyEnum> result = args.getEnum( MyEnum.class, "enum", MyEnum.first );
         assertEquals( MyEnum.second, result );
     }
-
+        
     @Test
     public void testEnumWithDefault()
     {
@@ -92,7 +81,7 @@ public class TestArgs
         MyEnum result = args.getEnum( MyEnum.class, "enum", MyEnum.third );
         assertEquals( MyEnum.third, result );
     }
-
+    
     @Test( expected = IllegalArgumentException.class )
     public void testEnumWithInvalidValue() throws Exception
     {
@@ -102,70 +91,23 @@ public class TestArgs
     }
 
     @Test
-    public void shouldInterpretOption() throws Exception
+    public void testBooleanWithDefault() throws Exception
     {
-        // GIVEN
-        int expectedValue = 42;
-        Args args = new Args( "--arg", String.valueOf( expectedValue ) );
-        @SuppressWarnings( "unchecked" )
-        Validator<Integer> validator = mock( Validator.class );
+        // Given
+        Args args = new Args( "--no_value" );
 
-        // WHEN
-        int value = args.interpretOption( "arg", Converters.<Integer>mandatory(), Converters.toInt(), validator );
+        // When & then
+        assertThat(args.getBoolean( "not_set", true, true ), equalTo(true));
+        assertThat(args.getBoolean( "not_set", false, true ), equalTo(false));
+        assertThat(args.getBoolean( "not_set", false, false ), equalTo(false));
+        assertThat(args.getBoolean( "not_set", true, false ), equalTo(true));
 
-        // THEN
-        assertEquals( expectedValue, value );
-        verify( validator ).validate( expectedValue );
+        assertThat(args.getBoolean( "no_value", true, true ), equalTo(true));
+        assertThat(args.getBoolean( "no_value", false, true ), equalTo(true));
+        assertThat(args.getBoolean( "no_value", false, false ), equalTo(false));
+        assertThat(args.getBoolean( "no_value", true, false ), equalTo(false));
     }
-
-    @Test
-    public void shouldInterpretOrphan() throws Exception
-    {
-        // GIVEN
-        int expectedValue = 42;
-        Args args = new Args( String.valueOf( expectedValue ) );
-        @SuppressWarnings( "unchecked" )
-        Validator<Integer> validator = mock( Validator.class );
-
-        // WHEN
-        int value = args.interpretOrphan( 0, Converters.<Integer>mandatory(), Converters.toInt(), validator );
-
-        // THEN
-        assertEquals( expectedValue, value );
-        verify( validator ).validate( expectedValue );
-    }
-
-    @Test
-    public void shouldInterpretMultipleOptionValues() throws Exception
-    {
-        // GIVEN
-        Collection<Integer> expectedValues = Arrays.asList( 12, 34, 56 );
-        List<String> argList = new ArrayList<>();
-        String key = "number";
-        for ( int value : expectedValues )
-        {
-            argList.add( "--" + key );
-            argList.add( String.valueOf( value ) );
-        }
-        Args args = new Args( argList.toArray( new String[argList.size()] ) );
-
-        // WHEN
-        try
-        {
-            args.get( key );
-            fail( "Should have failed" );
-        }
-        catch ( IllegalArgumentException e )
-        {   // Good
-        }
-
-        Collection<Integer> numbers = args.interpretOptions( key, Converters.<Integer>optional(),
-                                                             Converters.toInt() );
-
-        // THEN
-        assertEquals( expectedValues, numbers );
-    }
-
+    
     private static enum MyEnum
     {
         first,
