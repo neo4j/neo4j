@@ -23,15 +23,22 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.Test;
+
 import org.neo4j.kernel.impl.util.Converters;
 import org.neo4j.kernel.impl.util.Validator;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class TestArgs
 {
@@ -47,7 +54,7 @@ public class TestArgs
         assertTrue( args.has( "v" ) );
         assertTrue( args.orphans().isEmpty() );
     }
-    
+
     @Test
     public void testInterleavedEqualsArgsAndSplitKeyValue()
     {
@@ -57,12 +64,12 @@ public class TestArgs
         assertTrue( args.has( "v" ) );
         assertEquals( 1234, args.getNumber( "port", null ).intValue() );
         assertEquals( "Something", args.get( "name", null ) );
-        
+
         assertEquals( 2, args.orphans().size() );
         assertEquals( "param1", args.orphans().get( 0 ) );
         assertEquals( "param2", args.orphans().get( 1 ) );
     }
-    
+
     @Test
     public void testParameterWithDashValue()
     {
@@ -72,7 +79,7 @@ public class TestArgs
         assertEquals( "-", args.get ( "file", null ) );
         assertTrue( args.orphans().isEmpty() );
     }
-    
+
     @Test
     public void testEnum()
     {
@@ -81,7 +88,7 @@ public class TestArgs
         Enum<MyEnum> result = args.getEnum( MyEnum.class, "enum", MyEnum.first );
         assertEquals( MyEnum.second, result );
     }
-        
+
     @Test
     public void testEnumWithDefault()
     {
@@ -90,7 +97,7 @@ public class TestArgs
         MyEnum result = args.getEnum( MyEnum.class, "enum", MyEnum.third );
         assertEquals( MyEnum.third, result );
     }
-    
+
     @Test( expected = IllegalArgumentException.class )
     public void testEnumWithInvalidValue() throws Exception
     {
@@ -181,7 +188,20 @@ public class TestArgs
         assertThat(args.getBoolean( "no_value", false, false ), equalTo(false));
         assertThat(args.getBoolean( "no_value", true, false ), equalTo(false));
     }
-    
+
+    @Test
+    public void shouldGetAsMap() throws Exception
+    {
+        // GIVEN
+        Args args = new Args( "--with-value", "value", "--without-value" );
+
+        // WHEN
+        Map<String,String> map = args.asMap();
+
+        // THEN
+        assertEquals( stringMap( "with-value", "value", "without-value", null ), map );
+    }
+
     private static enum MyEnum
     {
         first,

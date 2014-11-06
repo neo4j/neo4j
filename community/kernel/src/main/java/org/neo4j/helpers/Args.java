@@ -30,7 +30,7 @@ import java.util.Map.Entry;
 import org.neo4j.function.Function;
 import org.neo4j.kernel.impl.util.Validator;
 
-import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.helpers.collection.IteratorUtil.firstOrNull;
 
 /**
  * Parses a String[] argument from a main-method. It expects values to be either
@@ -93,7 +93,7 @@ public class Args
         Map<String,String> result = new HashMap<>();
         for ( Map.Entry<String,List<String>> entry : map.entrySet() )
         {
-            result.put( entry.getKey(), first( entry.getValue() ) );
+            result.put( entry.getKey(), firstOrNull( entry.getValue() ) );
         }
         return result;
     }
