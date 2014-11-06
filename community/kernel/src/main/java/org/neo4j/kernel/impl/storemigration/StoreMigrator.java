@@ -31,11 +31,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.core.Token;
@@ -63,6 +66,7 @@ import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
+import org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydeduplication.PropertyDeduplicator;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
@@ -116,25 +120,29 @@ public class StoreMigrator implements StoreMigrationParticipant
     private final UpgradableDatabase upgradableDatabase;
     private final Config config;
     private final Logging logging;
+    private final DependencyResolver dependencyResolver;
     private final LegacyLogs legacyLogs;
     private String versionToUpgradeFrom;
 
     // TODO progress meter should be an aspect of StoreUpgrader, not specific to this participant.
 
-    public StoreMigrator( MigrationProgressMonitor progressMonitor, FileSystemAbstraction fileSystem, Logging logging )
+    public StoreMigrator( MigrationProgressMonitor progressMonitor, FileSystemAbstraction fileSystem,
+                          Logging logging, DependencyResolver dependencyResolver )
     {
         this( progressMonitor, fileSystem, new UpgradableDatabase( new StoreVersionCheck( fileSystem ) ),
-                new Config(), logging );
+                new Config(), logging, dependencyResolver );
     }
 
     public StoreMigrator( MigrationProgressMonitor progressMonitor, FileSystemAbstraction fileSystem,
-                          UpgradableDatabase upgradableDatabase, Config config, Logging logging )
+                          UpgradableDatabase upgradableDatabase, Config config, Logging logging,
+                          DependencyResolver dependencyResolver )
     {
         this.progressMonitor = progressMonitor;
         this.fileSystem = fileSystem;
         this.upgradableDatabase = upgradableDatabase;
         this.config = config;
         this.logging = logging;
+        this.dependencyResolver = dependencyResolver;
         this.legacyLogs = new LegacyLogs( fileSystem );
     }
 
@@ -179,8 +187,19 @@ public class StoreMigrator implements StoreMigrationParticipant
             // ensure the stores have the new versions set before reading them to create a counts store
             ensureStoreVersions( storeDir );
 
-            // create counters from scratch
-            rebuildCountsFromScratch( storeDir, migrationDir, lastTxId );
+            final LifeSupport life = new LifeSupport();
+            PageCache pageCache = createPageCache( fileSystem, "migration-pagecache", life );
+            try
+            {
+                removeDuplicateEntityProperties( storeDir, migrationDir, pageCache );
+
+                // create counters from scratch
+                rebuildCountsFromScratch( storeDir, migrationDir, lastTxId, pageCache );
+            }
+            finally
+            {
+                life.shutdown();
+            }
         }
         else
         {
@@ -196,31 +215,54 @@ public class StoreMigrator implements StoreMigrationParticipant
         progressMonitor.finished();
     }
 
-    private void rebuildCountsFromScratch( File storeDir, File migrationDir, long lastTxId ) throws IOException
-    {
-        final LifeSupport life = new LifeSupport();
-        life.start();
-        try
-        {
-            final PageCache pageCache = createPageCache( fileSystem, "build-counts", life );
-            final File storeFileBase = new File( migrationDir, NeoStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE );
-            CountsTracker.createEmptyCountsStore( pageCache, storeFileBase,
-                    buildTypeDescriptorAndVersion( CountsTracker.STORE_DESCRIPTOR ) );
-
-            final StoreFactory storeFactory =
-                    new StoreFactory( fileSystem, storeDir, pageCache, DEV_NULL, new Monitors() );
-            try ( NodeStore nodeStore = storeFactory.newNodeStore();
-                  RelationshipStore relationshipStore = storeFactory.newRelationshipStore();
-                  CountsTracker tracker = new CountsTracker( fileSystem, pageCache, storeFileBase, BASE_TX_ID ) )
-            {
-                CountsComputer.computeCounts( nodeStore, relationshipStore ).
-                        accept( new CountsAccessor.Initializer( tracker ) );
-                tracker.rotate( lastTxId );
-            }
+    private void copyStores( File storeDir, File migrationDir, String... suffixes ) throws IOException {
+        for (String suffix: suffixes) {
+            FileUtils.copyFile(
+                    new File( storeDir, NeoStore.DEFAULT_NAME + suffix ),
+                    new File( migrationDir, NeoStore.DEFAULT_NAME + suffix )
+            );
         }
-        finally
+    }
+
+    private void removeDuplicateEntityProperties( File storeDir, File migrationDir, PageCache pageCache ) throws IOException
+    {
+        copyStores( storeDir, migrationDir,
+                StoreFactory.PROPERTY_STORE_NAME,
+                StoreFactory.PROPERTY_STORE_NAME + ".id",
+                StoreFactory.PROPERTY_KEY_TOKEN_NAMES_STORE_NAME,
+                StoreFactory.PROPERTY_KEY_TOKEN_NAMES_STORE_NAME + ".id",
+                StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME,
+                StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME + ".id",
+                StoreFactory.PROPERTY_STRINGS_STORE_NAME,
+                StoreFactory.PROPERTY_ARRAYS_STORE_NAME,
+                StoreFactory.NODE_STORE_NAME,
+                StoreFactory.NODE_LABELS_STORE_NAME,
+                StoreFactory.SCHEMA_STORE_NAME
+        );
+
+        SchemaIndexProvider schemaIndexProvider = dependencyResolver.resolveDependency( SchemaIndexProvider.class,
+                SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE );
+
+        PropertyDeduplicator deduplicator = new PropertyDeduplicator(
+                fileSystem, migrationDir, pageCache, schemaIndexProvider );
+        deduplicator.deduplicateProperties();
+    }
+
+    private void rebuildCountsFromScratch( File storeDir, File migrationDir, long lastTxId, PageCache pageCache ) throws IOException
+    {
+        final File storeFileBase = new File( migrationDir, NeoStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE );
+        CountsTracker.createEmptyCountsStore( pageCache, storeFileBase,
+                buildTypeDescriptorAndVersion( CountsTracker.STORE_DESCRIPTOR ) );
+
+        final StoreFactory storeFactory =
+                new StoreFactory( fileSystem, storeDir, pageCache, DEV_NULL, new Monitors() );
+        try ( NodeStore nodeStore = storeFactory.newNodeStore();
+              RelationshipStore relationshipStore = storeFactory.newRelationshipStore();
+              CountsTracker tracker = new CountsTracker( fileSystem, pageCache, storeFileBase, BASE_TX_ID ) )
         {
-            life.shutdown();
+            CountsComputer.computeCounts( nodeStore, relationshipStore ).
+                    accept( new CountsAccessor.Initializer( tracker ) );
+            tracker.rotate( lastTxId );
         }
     }
 
@@ -541,7 +583,10 @@ public class StoreMigrator implements StoreMigrationParticipant
             case Legacy21Store.LEGACY_VERSION:
                 filesToMove = Arrays.asList(
                         StoreFile.COUNTS_STORE_ALPHA,
-                        StoreFile.COUNTS_STORE_BETA );
+                        StoreFile.COUNTS_STORE_BETA,
+                        StoreFile.PROPERTY_STORE,
+                        StoreFile.PROPERTY_KEY_TOKEN_STORE,
+                        StoreFile.PROPERTY_KEY_TOKEN_NAMES_STORE );
                 idFilesToDelete = new StoreFile[]{};
                 break;
             default:

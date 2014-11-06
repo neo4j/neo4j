@@ -27,9 +27,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
@@ -39,10 +41,10 @@ import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.CloneableInPublic;
 import org.neo4j.helpers.Function;
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
 
 import static java.util.EnumSet.allOf;
-
 import static org.neo4j.helpers.collection.Iterables.map;
 
 /**
@@ -592,6 +594,15 @@ public abstract class IteratorUtil
             out.add(iterator.next());
         }
         return out;
+    }
+
+    public static <T, U> Map<T, U> asMap( Iterable<Pair<T, U>> pairs )
+    {
+        Map<T, U> map = new HashMap<>();
+        for (Pair<T, U> pair: pairs) {
+            map.put(pair.first(), pair.other());
+        }
+        return map;
     }
 
     /**

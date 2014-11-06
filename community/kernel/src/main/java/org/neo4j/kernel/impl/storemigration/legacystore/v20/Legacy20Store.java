@@ -29,7 +29,6 @@ import java.util.Collection;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
@@ -148,17 +147,5 @@ public class Legacy20Store implements LegacyStore
             throw new RuntimeException( e );
         }
         buffer.flip();
-    }
-
-    @Override
-    public void copyLegacyIndexStoreFile( File toDirectory ) throws IOException
-    {
-        File legacyDirectory = storageFileName.getParentFile();
-        File fromFile = new File( legacyDirectory, IndexConfigStore.INDEX_DB_FILE_NAME );
-        if ( fromFile.exists() )
-        {
-            File toFile = new File( toDirectory, IndexConfigStore.INDEX_DB_FILE_NAME );
-            fs.copyFile( fromFile, toFile );
-        }
     }
 }

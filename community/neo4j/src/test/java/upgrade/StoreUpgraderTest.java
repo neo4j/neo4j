@@ -19,13 +19,6 @@
  */
 package upgrade;
 
-import java.io.File;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -33,10 +26,19 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.mockito.Mockito;
 
+import java.io.File;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
@@ -55,11 +57,11 @@ import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.test.FixedDependencyResolver;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-
 import static org.hamcrest.Matchers.emptyCollectionOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
@@ -76,7 +78,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
@@ -95,6 +96,7 @@ import static org.neo4j.kernel.logging.DevNullLoggingService.DEV_NULL;
 public class StoreUpgraderTest
 {
     private final String version;
+    private DependencyResolver dependencyResolver = new FixedDependencyResolver( new InMemoryIndexProvider() );
 
     public StoreUpgraderTest( String version )
     {
@@ -321,7 +323,8 @@ public class StoreUpgraderTest
         fileSystem.mkdir( new File( dbDirectory, StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY + "_42" ) );
 
         // When
-        StoreMigrator migrator = spy( new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem, DEV_NULL ) );
+        StoreMigrator migrator = spy( new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem, DEV_NULL,
+                dependencyResolver ) );
         when( migrator.needsMigration( dbDirectory ) ).thenReturn( false );
         newUpgrader( ALLOW_UPGRADE, migrator, StoreUpgrader.NO_MONITOR ).migrateIfNeeded( dbDirectory );
 
@@ -369,17 +372,17 @@ public class StoreUpgraderTest
 
     private StoreUpgrader newUpgrader( UpgradeConfiguration upgradeConfig )
     {
-        StoreMigrator defaultMigrator = new StoreMigrator( new
-                SilentMigrationProgressMonitor(), fileSystem,
-                DEV_NULL );
+        StoreMigrator defaultMigrator = new StoreMigrator(
+                new SilentMigrationProgressMonitor(), fileSystem,
+                DEV_NULL, dependencyResolver );
         return newUpgrader( upgradeConfig, defaultMigrator, StoreUpgrader.NO_MONITOR );
     }
 
     private StoreUpgrader newUpgrader( Monitor monitor )
     {
-        StoreMigrator defaultMigrator = new StoreMigrator( new
-                SilentMigrationProgressMonitor(), fileSystem,
-                DEV_NULL );
+        StoreMigrator defaultMigrator = new StoreMigrator(
+                new SilentMigrationProgressMonitor(), fileSystem,
+                DEV_NULL, dependencyResolver );
         return newUpgrader( ALLOW_UPGRADE, defaultMigrator, monitor );
     }
 

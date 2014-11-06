@@ -366,6 +366,8 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
         storeMigrationProcess.addParticipant( indexProvider.storeMigrationParticipant() );
         // TODO: Build a real provider map
         final DefaultSchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( indexProvider );
+
+
         storeMigrationProcess.migrateIfNeeded( store.getParentFile() );
         neoStore = dependencies.satisfyDependency( storeFactory.newNeoStore( false, true ) );
         dependencies.satisfyDependency( neoStore );

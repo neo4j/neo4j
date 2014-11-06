@@ -17,20 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration.legacystore;
+package org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydeduplication;
 
-import java.io.Closeable;
-import java.io.File;
-import java.io.IOException;
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 
-public interface LegacyStore extends Closeable
+class DuplicateCluster
 {
-    File getStorageFileName();
+    final int propertyKeyId;
+    final PrimitiveLongSet propertyRecordIds;
 
-    @Override
-    void close() throws IOException;
+    DuplicateCluster(int propertyKeyId)
+    {
+        this.propertyKeyId = propertyKeyId;
+        this.propertyRecordIds = Primitive.longSet();
+    }
 
-    LegacyNodeStoreReader getNodeStoreReader();
-
-    LegacyRelationshipStoreReader getRelStoreReader();
+    public void add(long record)
+    {
+        this.propertyRecordIds.add(record);
+    }
 }

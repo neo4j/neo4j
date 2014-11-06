@@ -19,15 +19,16 @@
  */
 package upgrade;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
+
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -35,6 +36,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
@@ -45,13 +47,12 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.CleanupRule;
+import org.neo4j.test.FixedDependencyResolver;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static upgrade.StoreMigratorTestUtil.buildClusterWithMasterDirIn;
-
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
@@ -59,14 +60,17 @@ import static org.neo4j.kernel.impl.store.NeoStore.versionLongToString;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.find20FormatStoreDirectory;
 import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UPGRADE;
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
+import static upgrade.StoreMigratorTestUtil.buildClusterWithMasterDirIn;
 
 public class StoreMigratorFrom20IT
 {
+    private DependencyResolver dependencyResolver = new FixedDependencyResolver( new InMemoryIndexProvider() );
+
     @Test
     public void shouldMigrate() throws IOException, ConsistencyCheckIncompleteException
     {
         // WHEN
-        upgrader( new StoreMigrator( monitor, fs, DevNullLoggingService.DEV_NULL ) )
+        upgrader( new StoreMigrator( monitor, fs, DevNullLoggingService.DEV_NULL, dependencyResolver ) )
                 .migrateIfNeeded(
                 find20FormatStoreDirectory( storeDir.directory() )
         );
@@ -103,7 +107,7 @@ public class StoreMigratorFrom20IT
         File legacyStoreDir = find20FormatStoreDirectory( storeDir.directory() );
 
         // When
-        upgrader( new StoreMigrator( monitor, fs, DevNullLoggingService.DEV_NULL ) ).migrateIfNeeded( legacyStoreDir );
+        upgrader( new StoreMigrator( monitor, fs, DevNullLoggingService.DEV_NULL, dependencyResolver ) ).migrateIfNeeded( legacyStoreDir );
         ClusterManager.ManagedCluster cluster =
                 cleanup.add( buildClusterWithMasterDirIn( fs, legacyStoreDir, cleanup ) );
         cluster.await( allSeesAllAsAvailable() );

@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
@@ -337,6 +338,49 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
         record.setNextProp( longFromIntAndMod( nextProp, propModifier ) );
         record.setInUse( inUse );
         record.setLabelField( labels, Collections.<DynamicRecord>emptyList() );
+    }
+
+    /**
+     * Scan the given range of records both inclusive, and pass all the in-use ones to the given processor, one by one.
+     */
+    public void processRecords( long fromRecordId, long toRecordId, NodeRecordProcessor processor ) throws IOException
+    {
+        long startPageId = pageIdForRecord( fromRecordId );
+        long currentPageId = startPageId;
+        long endPageId = pageIdForRecord( toRecordId );
+        long currentRecordId = fromRecordId;
+        NodeRecord record = new NodeRecord( 0 );
+        int recordsPerPage = storeFile.pageSize() / getRecordSize();
+
+        try ( PageCursor cursor = storeFile.io( startPageId, PF_SHARED_LOCK | PF_READ_AHEAD ) )
+        {
+            while ( currentPageId <= endPageId && cursor.next() )
+            {
+                for ( int i = 0; i < recordsPerPage; i++ )
+                {
+                    record.setId( currentRecordId );
+                    int offset = offsetForId( currentRecordId );
+                    do {
+                        cursor.setOffset( offset );
+                        byte inUseByte = cursor.getByte();
+                        boolean isInUse = isInUse( inUseByte );
+                        readIntoRecord( cursor, record, inUseByte, isInUse );
+                    } while ( cursor.shouldRetry() );
+
+                    if ( record.inUse() )
+                    {
+                        processor.process( record );
+                    }
+                    currentRecordId++;
+                }
+                currentPageId++;
+            }
+        }
+    }
+
+    public interface NodeRecordProcessor
+    {
+        void process( NodeRecord record ) throws IOException;
     }
 
     public DynamicArrayStore getDynamicLabelStore()
