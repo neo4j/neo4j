@@ -57,11 +57,11 @@ public class SpectrumExecutionMonitor extends PollingExecutionMonitor
     private final PrintStream out;
     private final int width;
 
-    public SpectrumExecutionMonitor( long interval, TimeUnit unit, PrintStream out, int tapeWidth )
+    public SpectrumExecutionMonitor( long interval, TimeUnit unit, PrintStream out, int width )
     {
         super( interval, unit );
         this.out = out;
-        this.width = tapeWidth;
+        this.width = width;
     }
 
     @Override
@@ -154,7 +154,9 @@ public class SpectrumExecutionMonitor extends PollingExecutionMonitor
             }
             lastDoneBatches = step.stat( Keys.done_batches ).asLong();
         }
-        builder.append( "]" ).append( fitInFour( lastDoneBatches ) );
+
+        long progress = lastDoneBatches * execution.getConfig().batchSize();
+        builder.append( "]" ).append( fitInFour( progress ) );
         return true;
     }
 
@@ -164,7 +166,7 @@ public class SpectrumExecutionMonitor extends PollingExecutionMonitor
 
         String result = weight == 0
                 ? String.valueOf( value )
-                : format( "%.1f%s", value / pow( 1000, weight ), WEIGHTS[weight] );
+                : format( "%d%s", (long)(value / pow( 1000, weight )), WEIGHTS[weight] );
         return pad( result, 4, ' ' );
     }
 
