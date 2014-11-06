@@ -26,9 +26,11 @@ import org.neo4j.kernel.impl.api.CountsRecordState;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.register.Register;
+import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.register.Registers.newDoubleLongRegister;
 
 public class CountsOracle
 {
@@ -55,9 +57,9 @@ public class CountsOracle
         state.addRelationship( start.labels, type, end.labels );
     }
 
-    public void indexSize( int labelId, int propertyKeyId, long size )
+    public void indexUpdatesAndSize( int labelId, int propertyKeyId, long updates, long size )
     {
-        state.replaceIndexSize( labelId, propertyKeyId, size );
+        state.replaceIndexUpdateAndSize( labelId, propertyKeyId, updates, size );
     }
 
     public void indexSampling( int labelId, int propertyKeyId, long unique, long size )
@@ -103,18 +105,18 @@ public class CountsOracle
                     @Override
                     public void visitIndexCounts( int labelId, int propertyKeyId, long updates, long size )
                     {
-                        assertEquals( "Should be able to read visited state.",
-                                tracker.indexSize( labelId, propertyKeyId ), size );
-                        assertEquals( "Should be able to read visited state.",
-                                tracker.indexUpdates( labelId, propertyKeyId ), updates );
+                        DoubleLongRegister output =
+                            tracker.indexUpdatesAndSize( labelId, propertyKeyId, newDoubleLongRegister() );
+                        assertEquals( "Should be able to read visited state.", output.readFirst(), updates );
+                        assertEquals( "Should be able to read visited state.", output.readSecond() , size );
                         verifier.visitIndexCounts( labelId, propertyKeyId, updates, size );
                     }
 
                     @Override
                     public void visitIndexSample( int labelId, int propertyKeyId, long unique, long size )
                     {
-                        Register.DoubleLongRegister output = Registers.newDoubleLongRegister();
-                        tracker.indexSample( labelId, propertyKeyId, output );
+                        DoubleLongRegister output =
+                            tracker.indexSample( labelId, propertyKeyId, newDoubleLongRegister() );
                         assertEquals( "Should be able to read visited state.", output.readFirst(), unique );
                         assertEquals( "Should be able to read visited state.", output.readSecond(), size );
                         verifier.visitIndexSample( labelId, propertyKeyId, unique, size );

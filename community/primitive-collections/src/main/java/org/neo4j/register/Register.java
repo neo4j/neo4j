@@ -39,9 +39,6 @@ public interface Register
         {
             void write( long first, long second );
             void increment( long firstDelta, long secondDelta );
-
-            void writeFirst( long value );
-            void writeSecond( long value );
         }
     }
 

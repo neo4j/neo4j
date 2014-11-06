@@ -118,34 +118,6 @@ public class ConcurrentRegisters
                 }
 
                 @Override
-                public void writeFirst( long value )
-                {
-                    long stamp = lock.writeLock();
-                    try
-                    {
-                        this.first = value;
-                    }
-                    finally
-                    {
-                        lock.unlock( stamp );
-                    }
-                }
-
-                @Override
-                public void writeSecond( long value )
-                {
-                    long stamp = lock.writeLock();
-                    try
-                    {
-                        this.second = value;
-                    }
-                    finally
-                    {
-                        lock.unlock( stamp );
-                    }
-                }
-
-                @Override
                 public void increment( long firstDelta, long secondDelta )
                 {
                     long stamp = lock.writeLock();

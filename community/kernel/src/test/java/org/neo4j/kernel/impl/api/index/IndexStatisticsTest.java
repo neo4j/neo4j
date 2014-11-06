@@ -130,14 +130,15 @@ public class IndexStatisticsTest
         }
         catch ( IndexNotFoundKernelException e )
         {
-            DoubleLongRegister register = Registers.newDoubleLongRegister();
-            getTracker().indexSample( index.getLabelId(), index.getPropertyKeyId(), register );
-            assertDoubleLongEquals( 0l, 0l, register );
+            DoubleLongRegister actual = getTracker()
+                    .indexSample( index.getLabelId(), index.getPropertyKeyId(), Registers.newDoubleLongRegister() );
+            assertDoubleLongEquals( 0l, 0l, actual );
         }
 
         // and then index size and index updates are zero on disk
-        assertEquals( 0l, getTracker().indexSize( index.getLabelId(), index.getPropertyKeyId() ) );
-        assertEquals( 0l, getTracker().indexUpdates( index.getLabelId(), index.getPropertyKeyId() ) );
+        DoubleLongRegister actual = getTracker()
+                .indexUpdatesAndSize( index.getLabelId(), index.getPropertyKeyId(), Registers.newDoubleLongRegister() );
+        assertDoubleLongEquals( 0l, 0l, actual );
     }
 
     @Test
@@ -331,7 +332,7 @@ public class IndexStatisticsTest
         return ((GraphDatabaseAPI) db).getDependencyResolver()
                                       .resolveDependency( NeoStoreDataSource.class )
                                       .getIndexService()
-                                      .indexSize( indexId( descriptor ) );
+                                      .indexUpdatesAndSize( indexId( descriptor ) ).readSecond();
     }
 
     private long indexUpdates( IndexDescriptor descriptor ) throws KernelException
@@ -339,7 +340,7 @@ public class IndexStatisticsTest
         return ((GraphDatabaseAPI) db).getDependencyResolver()
                                       .resolveDependency( NeoStoreDataSource.class )
                                       .getIndexService()
-                                      .indexUpdates( indexId( descriptor ) );
+                                      .indexUpdatesAndSize( indexId( descriptor ) ).readFirst();
     }
 
     private long indexId( IndexDescriptor descriptor )

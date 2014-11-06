@@ -78,8 +78,10 @@ public class IndexStatisticsIT
 
         // then we should have re-sampled the index
         CountsTracker tracker = neoStore().getCounts();
-        assertEquals( 0, tracker.indexUpdates( labelId, pkId ) );
-        assertEquals( 32, tracker.indexSize( labelId, pkId ) );
+        assertEqualRegisters(
+                "Unexpected updates and size for the index",
+                newDoubleLongRegister( 0, 32 ),
+                tracker.indexUpdatesAndSize( labelId, pkId, newDoubleLongRegister() ) );
         assertEqualRegisters(
             "Unexpected sampling result",
             newDoubleLongRegister( 16, 32 ),
@@ -151,8 +153,7 @@ public class IndexStatisticsIT
     {
         CountsTracker tracker = neoStore().getCounts();
         tracker.replaceIndexSample( labelId, pkId, 0, 0 );
-        tracker.replaceIndexSize( labelId, pkId, 0 );
-        tracker.replaceIndexUpdates( labelId, pkId, 0 );
+        tracker.replaceIndexUpdateAndSize( labelId, pkId, 0, 0 );
     }
 
     private NeoStore neoStore()

@@ -34,7 +34,6 @@ import org.neo4j.kernel.impl.store.counts.CountsKey.IndexCountsKey;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
 import org.neo4j.register.Register.DoubleLongRegister;
-import org.neo4j.register.Registers;
 
 import static org.neo4j.kernel.impl.store.counts.CountsKey.indexCountsKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.indexSampleKey;
@@ -221,15 +220,10 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     }
 
     @Override
-    public long indexSize( int labelId, int propertyKeyId )
+    public DoubleLongRegister indexUpdatesAndSize( int labelId, int propertyKeyId, DoubleLongRegister target )
     {
-        return state.indexSize( indexCountsKey( labelId, propertyKeyId ) );
-    }
-
-    @Override
-    public long indexUpdates( int labelId, int propertyKeyId )
-    {
-        return state.indexUpdates( indexCountsKey( labelId, propertyKeyId ) );
+        state.indexUpdatesAndSize( indexCountsKey( labelId, propertyKeyId ), target );
+        return target;
     }
 
     @Override
@@ -240,13 +234,14 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     }
 
     @Override
-    public void replaceIndexSize( int labelId, int propertyKeyId, long total )
+    public void replaceIndexUpdateAndSize( int labelId, int propertyKeyId, long updates, long size )
     {
         try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
         {
             IndexCountsKey key = indexCountsKey( labelId, propertyKeyId );
-            assert total >= 0 : String.format( "replaceIndexSize(key=%s, total=%d)", key, total );
-            state.replaceIndexSize( key, total );
+            assert updates >= 0 && size >= 0 :
+                    String.format( "replaceIndexSize(key=%s, updates=%d, size=%d)", key, updates, size );
+            state.replaceIndexUpdatesAndSize( key, updates, size );
         }
     }
 
@@ -258,17 +253,6 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
             IndexCountsKey key = indexCountsKey( labelId, propertyKeyId );
             assert delta >= 0 : String.format( "incrementIndexUpdates(key=%s, delta=%d)", key, delta );
             state.incrementIndexUpdates( key, delta );
-        }
-    }
-
-    @Override
-    public void replaceIndexUpdates( int labelId, int propertyKeyId, long total )
-    {
-        try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
-        {
-            IndexCountsKey key = indexCountsKey( labelId, propertyKeyId );
-            assert total >= 0 : String.format( "replaceIndexUpdates(key=%s, total=%d)", key, total );
-            state.replaceIndexUpdates( key, total );
         }
     }
 

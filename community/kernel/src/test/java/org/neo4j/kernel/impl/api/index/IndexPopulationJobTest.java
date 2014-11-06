@@ -56,7 +56,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
@@ -66,7 +65,6 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.TestLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.SingleLoggingService;
-import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.DoubleLatch;
@@ -279,7 +277,7 @@ public class IndexPopulationJobTest
         verify( index, times( 0 ) ).flip( Matchers.<Callable<Void>>any(), Matchers.<FailedIndexProxyFactory>any() );
 
         // AND ALSO
-        assertEquals( 0, indexCount( FIRST, name ) );
+        assertDoubleLongEquals( 0, 0, indexUpdatesAndSize( FIRST, name ) );
 
         // AND ALSO
         assertDoubleLongEquals( 0, 0, indexSample( FIRST, name ) );
@@ -346,7 +344,7 @@ public class IndexPopulationJobTest
         verify( failureDelegateFactory ).create( any( Throwable.class ) );
 
         // AND ALSO
-        assertEquals( 0, indexCount( FIRST, name ) );
+        assertDoubleLongEquals( 0, 0, indexUpdatesAndSize( FIRST, name ) );
 
         // AND ALSO
         assertDoubleLongEquals( 0, 0, indexSample( FIRST, name ) );
@@ -372,7 +370,7 @@ public class IndexPopulationJobTest
         verify( populator ).markAsFailed( Matchers.contains( failureMessage ) );
 
         // AND ALSO
-        assertEquals( 0, indexCount( FIRST, name ) );
+        assertDoubleLongEquals( 0, 0, indexUpdatesAndSize( FIRST, name ) );
 
         // AND ALSO
         assertDoubleLongEquals( 0, 0, indexSample( FIRST, name ) );
@@ -397,7 +395,7 @@ public class IndexPopulationJobTest
         verify( populator ).markAsFailed( Matchers.contains( "duplicate value" ) );
 
         // AND ALSO
-        assertEquals( 0, indexCount( FIRST, name ) );
+        assertDoubleLongEquals( 0, 0, indexUpdatesAndSize( FIRST, name ) );
 
         // AND ALSO
         assertDoubleLongEquals( 0, 0, indexSample( FIRST, name ) );
@@ -653,13 +651,15 @@ public class IndexPopulationJobTest
         return descriptor;
     }
 
-    private long indexCount( Label label, String propertyKey )
+    private DoubleLongRegister indexUpdatesAndSize( Label label, String propertyKey )
     {
         try ( Transaction tx = db.beginTx() )
         {
             ReadOperations statement = ctxProvider.instance().readOperations();
-            long result = counts.indexSize( statement.labelGetForName( label.name() ), statement.propertyKeyGetForName(
-                    propertyKey ) );
+            int labelId = statement.labelGetForName( label.name() );
+            int propertyKeyId = statement.propertyKeyGetForName( propertyKey );
+            DoubleLongRegister result =
+                    counts.indexUpdatesAndSize( labelId, propertyKeyId, Registers.newDoubleLongRegister() );
             tx.success();
             return result;
         }

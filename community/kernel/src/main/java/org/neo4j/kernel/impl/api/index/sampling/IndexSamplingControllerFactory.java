@@ -26,6 +26,8 @@ import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.register.Register;
+import org.neo4j.register.Register.DoubleLongRegister;
 
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 
@@ -65,14 +67,15 @@ public class IndexSamplingControllerFactory
     {
         return new Predicate<IndexDescriptor>()
         {
+            private final DoubleLongRegister output = newDoubleLongRegister();
+
             @Override
             public boolean accept( IndexDescriptor descriptor )
             {
-                long updates = storeView.indexUpdates( descriptor );
-
-                long size = storeView.indexSize( descriptor );
+                storeView.indexUpdatesAndSize( descriptor, output );
+                long updates = output.readFirst();
+                long size = output.readSecond();
                 long threshold = Math.round( config.updateRatio() * size );
-
                 return updates > threshold;
             }
         };
@@ -82,10 +85,12 @@ public class IndexSamplingControllerFactory
     {
         return new Predicate<IndexDescriptor>()
         {
+            private final DoubleLongRegister register = newDoubleLongRegister();
+
             @Override
             public boolean accept( IndexDescriptor descriptor )
             {
-                return storeView.indexSample( descriptor, newDoubleLongRegister() ).readSecond() == 0;
+                return storeView.indexSample( descriptor, register ).readSecond() == 0;
             }
         };
     }

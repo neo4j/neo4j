@@ -298,16 +298,12 @@ public class IndexingService extends LifecycleAdapter
         closeAllIndexes();
     }
 
-    public long indexSize( long indexId ) throws IndexNotFoundKernelException
+    public DoubleLongRegister indexUpdatesAndSize( long indexId ) throws IndexNotFoundKernelException
     {
         final IndexProxy indexProxy = indexMapRef.getOnlineIndexProxy( indexId );
-        return storeView.indexSize( indexProxy.getDescriptor() );
-    }
-
-    public long indexUpdates( long indexId ) throws IndexNotFoundKernelException
-    {
-        final IndexProxy indexProxy = indexMapRef.getOnlineIndexProxy( indexId );
-        return storeView.indexUpdates( indexProxy.getDescriptor() );
+        final DoubleLongRegister output = Registers.newDoubleLongRegister();
+        storeView.indexUpdatesAndSize( indexProxy.getDescriptor(), output );
+        return output;
     }
 
     public double indexUniqueValuesPercentage( long indexId ) throws IndexNotFoundKernelException

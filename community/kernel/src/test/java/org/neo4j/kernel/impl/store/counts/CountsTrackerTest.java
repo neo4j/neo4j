@@ -37,8 +37,6 @@ import org.neo4j.kernel.impl.store.CountsOracle;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader;
-import org.neo4j.register.Register;
-import org.neo4j.register.Registers;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
@@ -295,7 +293,7 @@ public class CountsTrackerTest
         oracle.relationship( n1, 1, n3 );
         oracle.relationship( n1, 1, n2 );
         oracle.relationship( n0, 1, n3 );
-        oracle.indexSize( 1, 2, 50l );
+        oracle.indexUpdatesAndSize( 1, 2, 0l, 50l );
         oracle.indexSampling( 1, 2, 25l, 50l );
         return oracle;
     }

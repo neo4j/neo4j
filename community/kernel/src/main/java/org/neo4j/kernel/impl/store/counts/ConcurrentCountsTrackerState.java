@@ -95,33 +95,21 @@ class ConcurrentCountsTrackerState implements CountsTrackerState
     }
 
     @Override
-    public long indexSize( IndexCountsKey indexCountsKey )
+    public void replaceIndexUpdatesAndSize( IndexCountsKey indexCountsKey, long updates, long size )
     {
-        return readRegister( indexCountsKey ).readSecond();
+        writeRegister( indexCountsKey ).write( updates, size );
     }
 
     @Override
-    public void replaceIndexSize( IndexCountsKey indexCountsKey, long total )
+    public void indexUpdatesAndSize( IndexCountsKey indexCountsKey, DoubleLongRegister target )
     {
-        writeRegister( indexCountsKey ).writeSecond( total );
-    }
-
-    @Override
-    public long indexUpdates( IndexCountsKey indexCountsKey )
-    {
-        return readRegister( indexCountsKey ).readFirst();
+        readIntoRegister( indexCountsKey, target );
     }
 
     @Override
     public void incrementIndexUpdates( IndexCountsKey indexCountsKey, long delta )
     {
         writeRegister( indexCountsKey ).increment( delta, 0l );
-    }
-
-    @Override
-    public void replaceIndexUpdates( IndexCountsKey indexCountsKey, long total )
-    {
-        writeRegister( indexCountsKey ).writeFirst( total );
     }
 
     @Override
@@ -169,17 +157,6 @@ class ConcurrentCountsTrackerState implements CountsTrackerState
             }
         }
         return count.addAndGet( delta );
-    }
-
-    private DoubleLong.In readRegister( CountsKey key )
-    {
-        DoubleLongRegister sample = samples.get( key );
-        if ( sample == null )
-        {
-            sample = Registers.newDoubleLongRegister();
-            store.get( key, sample );
-        }
-        return sample;
     }
 
     private void readIntoRegister( CountsKey key, DoubleLongRegister target )

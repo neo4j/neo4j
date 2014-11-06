@@ -79,15 +79,9 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     }
 
     @Override
-    public long indexSize( IndexDescriptor descriptor )
+    public DoubleLongRegister indexUpdatesAndSize( IndexDescriptor descriptor, DoubleLongRegister output )
     {
-        return counts.indexSize( descriptor.getLabelId(), descriptor.getPropertyKeyId() );
-    }
-
-    @Override
-    public long indexUpdates( IndexDescriptor descriptor )
-    {
-        return counts.indexUpdates( descriptor.getLabelId(), descriptor.getPropertyKeyId() );
+        return counts.indexUpdatesAndSize( descriptor.getLabelId(), descriptor.getPropertyKeyId(), output );
     }
 
     @Override
@@ -97,8 +91,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         int labelId = descriptor.getLabelId();
         int propertyKeyId = descriptor.getPropertyKeyId();
         counts.replaceIndexSample( labelId, propertyKeyId, uniqueElements, maxUniqueElements );
-        counts.replaceIndexSize( labelId, propertyKeyId, indexSize );
-        counts.replaceIndexUpdates( labelId, propertyKeyId, 0l );
+        counts.replaceIndexUpdateAndSize( labelId, propertyKeyId, 0l, indexSize );
     }
 
     @Override

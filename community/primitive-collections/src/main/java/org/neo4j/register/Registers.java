@@ -55,23 +55,10 @@ public class Registers
             }
 
             @Override
-            public void writeFirst( long value )
-            {
-                first = value;
-            }
-
-            @Override
-            public void writeSecond( long value )
-            {
-                second = value;
-            }
-
-            @Override
             public void increment( long firstDelta, long secondDelta )
             {
                 this.first += firstDelta;
                 this.second += secondDelta;
-
             }
         };
     }

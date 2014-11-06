@@ -51,9 +51,7 @@ public interface IndexStoreView extends PropertyAccessor
 
     Iterable<NodePropertyUpdate> nodeAsUpdates( long nodeId );
 
-    long indexSize( IndexDescriptor descriptor );
-
-    long indexUpdates( IndexDescriptor descriptor );
+    DoubleLongRegister indexUpdatesAndSize( IndexDescriptor descriptor, DoubleLongRegister output );
 
     DoubleLongRegister indexSample( IndexDescriptor descriptor, DoubleLongRegister output );
 
