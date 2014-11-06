@@ -19,18 +19,43 @@
  */
 package org.neo4j.csv.reader;
 
+import java.io.DataInputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.CharBuffer;
+import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.Iterator;
+import java.util.List;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+
+import org.neo4j.collection.RawIterator;
+import org.neo4j.function.RawFunction;
 
 /**
  * Means of instantiating common {@link Readable} instances.
+ *
+ * There are support for compressed files as well for those methods accepting a {@link File} argument.
+ * <ol>
+ * <li>ZIP: is both an archive and a compression format. In many cases the order of files
+ * is important and for a ZIP archive with multiple files, the order of the files are whatever the order
+ * set by the tool that created the ZIP archive. Therefore only single-file-zip files are supported.
+ * The single file in the given ZIP archive will be decompressed on the fly, while reading.</li>
+ * <li>GZIP: is only a compression format and so will be decompressed on the fly, while reading.</li>
+ * </ol>
  */
 public class Readables
 {
+    /** First 4 bytes of a ZIP file have this signature. */
+    private static final int ZIP_MAGIC = 0x504b0304;
+    /** First 2 bytes of a GZIP file have this signature. */
+    private static final int GZIP_MAGIC = 0x1f8b;
+
     private Readables()
     {
         throw new AssertionError( "No instances allowed" );
@@ -45,28 +70,81 @@ public class Readables
         }
     };
 
-    private interface Function<IN,OUT>
-    {
-        OUT apply( IN in );
-    }
-
-    private static final Function<File,Readable> FROM_FILE = new Function<File,Readable>()
+    private static final RawFunction<File,Readable,IOException> FROM_FILE = new RawFunction<File,Readable,IOException>()
     {
         @Override
-        public Readable apply( File in )
+        public Readable apply( File file ) throws IOException
         {
-            try
-            {
-                return new FileReader( in );
+            int magic = magic( file );
+            if ( magic == ZIP_MAGIC )
+            {   // ZIP file
+                ZipFile zipFile = new ZipFile( file );
+                ZipEntry entry = getSingleSuitableEntry( zipFile );
+                return new InputStreamReader( zipFile.getInputStream( entry ) );
             }
-            catch ( FileNotFoundException e )
+            else if ( (magic >>> 16) == GZIP_MAGIC )
+            {   // GZIP file. GZIP isn't an archive like ZIP, so this is purely data that is compressed.
+                // Although a very common way of compressing with GZIP is to use TAR which can combine many
+                // files into one blob, which is then compressed. If that's the case then
+                // the data will look like garbage and the reader will fail for whatever it will be used for.
+                // TODO add tar support
+                GZIPInputStream zipStream = new GZIPInputStream( new FileInputStream( file ) );
+                return new InputStreamReader( zipStream );
+            }
+
+            return new FileReader( file );
+        }
+
+        private ZipEntry getSingleSuitableEntry( ZipFile zipFile ) throws IOException
+        {
+            List<String> unsuitableEntries = new ArrayList<>();
+            Enumeration<? extends ZipEntry> enumeration = zipFile.entries();
+            ZipEntry found = null;
+            while ( enumeration.hasMoreElements() )
             {
-                throw new RuntimeException( e );
+                ZipEntry entry = enumeration.nextElement();
+                if ( entry.isDirectory() || invalidZipEntry( entry.getName() ) )
+                {
+                    unsuitableEntries.add( entry.getName() );
+                    continue;
+                }
+
+                if ( found != null )
+                {
+                    throw new IOException( "Multiple suitable files found in zip file " + zipFile.getName() +
+                            ", at least " + found.getName() + " and " + entry.getName() +
+                            ". Only a single file per zip file is supported" );
+                }
+                found = entry;
+            }
+
+            if ( found == null )
+            {
+                throw new IOException( "No suitable file found in zip file " + zipFile.getName() + "." +
+                        (!unsuitableEntries.isEmpty() ?
+                                " Although found these unsuitable entries " + unsuitableEntries : "" ) );
+            }
+            return found;
+        }
+
+        private int magic( File file ) throws IOException
+        {
+            try ( DataInputStream in = new DataInputStream( new FileInputStream( file ) ) )
+            {
+                return in.readInt();
             }
         }
     };
 
-    private static final Function<Readable,Readable> IDENTITY = new Function<Readable,Readable>()
+    private static boolean invalidZipEntry( String name )
+    {
+        return name.contains( "__MACOSX" ) ||
+               name.startsWith( "." ) ||
+               name.contains( "/." );
+    }
+
+    private static final RawFunction<Readable,Readable,IOException> IDENTITY =
+            new RawFunction<Readable,Readable,IOException>()
     {
         @Override
         public Readable apply( Readable in )
@@ -75,9 +153,9 @@ public class Readables
         }
     };
 
-    public static Readable file( File file ) throws FileNotFoundException
+    public static Readable file( File file ) throws IOException
     {
-        return new FileReader( file );
+        return FROM_FILE.apply( file );
     }
 
     public static Readable multipleFiles( File... files )
@@ -95,14 +173,15 @@ public class Readables
         return new MultiReadable( iterator( files, FROM_FILE ) );
     }
 
-    public static Readable multipleSources( Iterator<Readable> sources )
+    public static Readable multipleSources( RawIterator<Readable,IOException> sources )
     {
         return new MultiReadable( sources );
     }
 
-    private static <IN,OUT> Iterator<OUT> iterator( final Iterator<IN> items, final Function<IN,OUT> converter )
+    private static <IN,OUT> RawIterator<OUT,IOException> iterator( final Iterator<IN> items,
+            final RawFunction<IN,OUT,IOException> converter )
     {
-        return new Iterator<OUT>()
+        return new RawIterator<OUT,IOException>()
         {
             @Override
             public boolean hasNext()
@@ -111,7 +190,7 @@ public class Readables
             }
 
             @Override
-            public OUT next()
+            public OUT next() throws IOException
             {
                 return converter.apply( items.next() );
             }
@@ -124,9 +203,10 @@ public class Readables
         };
     }
 
-    private static <IN,OUT> Iterator<OUT> iterator( final IN[] items, final Function<IN,OUT> converter )
+    private static <IN,OUT> RawIterator<OUT,IOException> iterator( final IN[] items,
+            final RawFunction<IN,OUT,IOException> converter )
     {
-        return new Iterator<OUT>()
+        return new RawIterator<OUT,IOException>()
         {
             private int cursor;
 
@@ -137,7 +217,7 @@ public class Readables
             }
 
             @Override
-            public OUT next()
+            public OUT next() throws IOException
             {
                 if ( !hasNext() )
                 {
