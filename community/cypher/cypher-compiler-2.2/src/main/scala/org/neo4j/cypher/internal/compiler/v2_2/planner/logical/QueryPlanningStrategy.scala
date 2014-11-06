@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
+import org.neo4j.cypher.internal.compiler.v2_2.Rewriter
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter.LogicalPlanRewriter
@@ -26,13 +27,13 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps._
 
 class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default,
-                            rewriter: LogicalPlanRewriter = new LogicalPlanRewriter)
+                            rewriter: Rewriter = LogicalPlanRewriter)
   extends PlanningStrategy {
 
   def plan(unionQuery: UnionQuery)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan = unionQuery match {
     case UnionQuery(queries, distinct) =>
       val plan = planQuery(queries, distinct)
-      rewriter.rewrite(plan)
+      plan.endoRewrite(rewriter)
 
     case _ => throw new CantHandleQueryException
   }

@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assumeIndependence
 
+import org.neo4j.cypher.internal.compiler.v2_2.ast.LabelName
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityModel
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, Selectivity}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryGraph, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
@@ -32,10 +34,12 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics,
   private val expressionSelectivityEstimator = ExpressionSelectivityCalculator(stats, combiner)
   private val patternSelectivityEstimator = PatternSelectivityCalculator(stats, combiner)
 
-  def apply(queryGraph: QueryGraph): Cardinality = {
-    findQueryGraphCombinations(queryGraph, semanticTable)
-      .map(cardinalityForQueryGraph(_)(semanticTable))
-      .foldLeft(Cardinality(0))((acc, curr) => if (curr > acc) curr else acc)
+  def apply(queryGraph: QueryGraph, labels: Map[IdName, Seq[LabelName]]): Cardinality = {
+    val combinations: Seq[QueryGraph] = findQueryGraphCombinations(queryGraph, semanticTable)
+    val cardinalities = combinations.map(cardinalityForQueryGraph(_, labels)(semanticTable))
+    cardinalities.foldLeft(Cardinality(0)) {
+      case (acc, curr) => if (curr > acc) curr else acc
+    }
   }
 
   /**
@@ -52,20 +56,19 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics,
       .map(queryGraph.withOptionalMatches(Seq.empty) ++ _)
   }
 
-  private def cardinalityForQueryGraph(qg: QueryGraph)(implicit semanticTable: SemanticTable): Cardinality = {
-    val selectivity = calculateSelectivity(qg)
+  private def cardinalityForQueryGraph(qg: QueryGraph, labels: Map[IdName, Seq[LabelName]])(implicit semanticTable: SemanticTable): Cardinality = {
+    val selectivity = calculateSelectivity(qg, labels)
     val numberOfPatternNodes = qg.patternNodes.count(!qg.argumentIds.contains(_))
     val numberOfGraphNodes = stats.nodesWithLabelCardinality(None)
 
     (numberOfGraphNodes ^ numberOfPatternNodes) * selectivity
   }
 
-  private def calculateSelectivity(qg: QueryGraph)(implicit semanticTable: SemanticTable) = {
+  private def calculateSelectivity(qg: QueryGraph, labels: Map[IdName, Seq[LabelName]])(implicit semanticTable: SemanticTable) = {
     implicit val selections = qg.selections
 
     val expressionSelectivities = selections.flatPredicates.map(expressionSelectivityEstimator(_))
-    val patternSelectivities = qg.patternRelationships.toSeq.map(patternSelectivityEstimator(_))
-
+    val patternSelectivities = qg.patternRelationships.toSeq.map(patternSelectivityEstimator(_, labels))
 
     val selectivity: Option[Selectivity] = combiner.andTogetherSelectivities(expressionSelectivities ++ patternSelectivities)
 

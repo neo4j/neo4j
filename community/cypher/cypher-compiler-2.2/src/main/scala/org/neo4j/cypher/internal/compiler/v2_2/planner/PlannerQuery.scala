@@ -24,6 +24,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.Hint
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, PatternRelationship}
 
+import scala.annotation.tailrec
+
 case class UnionQuery(queries: Seq[PlannerQuery], distinct: Boolean)
 
 case class PlannerQuery(graph: QueryGraph = QueryGraph.empty,
@@ -111,6 +113,21 @@ case class PlannerQuery(graph: QueryGraph = QueryGraph.empty,
       val mappedTail = oldTail.reverseFoldMap(f)
       val newTail = f(this, mappedTail)
       copy(tail = Some(newTail))
+  }
+
+  def fold[A](in: A)(f: (A, PlannerQuery) => A): A = {
+
+    @tailrec
+    def recurse(acc: A, pq: PlannerQuery): A = {
+      val nextAcc = f(acc, pq)
+
+      pq.tail match {
+        case Some(tailPQ) => recurse(nextAcc, tailPQ)
+        case None         => nextAcc
+      }
+    }
+
+    recurse(in, this)
   }
 }
 

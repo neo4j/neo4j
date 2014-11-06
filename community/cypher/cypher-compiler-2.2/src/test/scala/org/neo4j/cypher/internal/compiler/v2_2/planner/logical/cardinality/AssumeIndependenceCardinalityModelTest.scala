@@ -30,14 +30,14 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
   test("all nodes is gotten from stats") {
     givenPattern("MATCH (n)").
       withGraphNodes(425).
-      shouldHaveCardinality(425)
+      shouldHaveQueryGraphCardinality(425)
   }
 
   test("all nodes of given label") {
     givenPattern("MATCH (n:A)").
       withGraphNodes(425).
       withLabel('A -> 42).
-      shouldHaveCardinality(42)
+      shouldHaveQueryGraphCardinality(42)
   }
 
   test("cross product of all nodes of two labels") {
@@ -45,26 +45,26 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
       withGraphNodes(425).
       withLabel('A -> 42).
       withLabel('B -> 10).
-      shouldHaveCardinality(42 * 10)
+      shouldHaveQueryGraphCardinality(42 * 10)
   }
 
   test("cross product of all nodes") {
     givenPattern("MATCH a, b").
       withGraphNodes(425).
-      shouldHaveCardinality(425 * 425)
+      shouldHaveQueryGraphCardinality(425 * 425)
   }
 
   test("empty pattern yields single result") {
     givenPattern("").
       withGraphNodes(425).
-      shouldHaveCardinality(1)
+      shouldHaveQueryGraphCardinality(1)
   }
 
   test("cross product of all nodes and a label scan") {
     givenPattern("MATCH a, (b:B)").
       withGraphNodes(40).
       withLabel('B -> 30).
-      shouldHaveCardinality(40 * 30)
+      shouldHaveQueryGraphCardinality(40 * 30)
   }
 
   test("node cardinality given multiple labels") {
@@ -72,7 +72,7 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
       withGraphNodes(40).
       withLabel('A -> 20).
       withLabel('B -> 30).
-      shouldHaveCardinality(40.0 * (20.0 / 40 ) * (30.0 / 40))
+      shouldHaveQueryGraphCardinality(40.0 * (20.0 / 40 ) * (30.0 / 40))
   }
 
   test("node cardinality given multiple labels 2") {
@@ -80,20 +80,20 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
       withGraphNodes(40).
       withLabel('A -> 30).
       withLabel('B -> 20).
-      shouldHaveCardinality(40.0 * (30.0 / 40) *  (20.0 / 40))
+      shouldHaveQueryGraphCardinality(40.0 * (30.0 / 40) *  (20.0 / 40))
   }
 
   test("node cardinality when label is missing from store") {
     givenPattern("MATCH (a:A)").
       withGraphNodes(40).
-      shouldHaveCardinality(0)
+      shouldHaveQueryGraphCardinality(0)
   }
 
   test("node cardinality when label is missing from store 2") {
     givenPattern("MATCH (a:A:B)").
       withGraphNodes(40).
       withLabel('B -> 30).
-      shouldHaveCardinality(0)
+      shouldHaveQueryGraphCardinality(0)
   }
 
   test("node cardinality when one label is missing empty") {
@@ -101,7 +101,7 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
       withGraphNodes(40).
       withLabel('A -> 0).
       withLabel('B -> 30).
-      shouldHaveCardinality(0)
+      shouldHaveQueryGraphCardinality(0)
   }
 
   test("cardinality for label and property equality when index is present") {
@@ -109,7 +109,7 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
       withGraphNodes(40).
       withLabel('A -> 30).
       withIndexSelectivity(('A, 'prop) -> .05).
-      shouldHaveCardinality(30 * .05)
+      shouldHaveQueryGraphCardinality(30 * .05)
   }
 
   test("cardinality for label and property equality when index is not present") {
@@ -117,7 +117,7 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
       withGraphNodes(40).
       withKnownProperty('prop).
       withLabel('A -> 10).
-      shouldHaveCardinality(40.0 * (10.0 / 40) * DEFAULT_EQUALITY_SELECTIVITY)
+      shouldHaveQueryGraphCardinality(40.0 * (10.0 / 40) * DEFAULT_EQUALITY_SELECTIVITY)
   }
 
   test("cardinality for label and property equality when index is not present 2") {
@@ -125,7 +125,7 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
       withGraphNodes(40).
       withKnownProperty('prop).
       withLabel('A -> 40).
-      shouldHaveCardinality(40 * DEFAULT_EQUALITY_SELECTIVITY)
+      shouldHaveQueryGraphCardinality(40 * DEFAULT_EQUALITY_SELECTIVITY)
   }
 
   test("cardinality for label and property NOT-equality when index is present") {
@@ -133,7 +133,7 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
       withGraphNodes(40).
       withLabel('A -> 30).
       withIndexSelectivity(('A, 'prop) -> .3).
-      shouldHaveCardinality(30 * (1 - .3))
+      shouldHaveQueryGraphCardinality(30 * (1 - .3))
   }
 
   test("cardinality for multiple OR:ed equality predicates on a single index") {
@@ -141,7 +141,7 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
       withGraphNodes(40).
       withLabel('A -> 30).
       withIndexSelectivity(('A, 'prop) -> .01).
-      shouldHaveCardinality(40 * (30.0 / 40) * (1 - (1 - .01) * (1 - .01)))
+      shouldHaveQueryGraphCardinality(40 * (30.0 / 40) * (1 - (1 - .01) * (1 - .01)))
   }
 
   test("cardinality for multiple OR:ed equality predicates on two indexes") {
@@ -150,7 +150,7 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
       withLabel('A -> 30).
       withIndexSelectivity(('A, 'prop) -> .3).
       withIndexSelectivity(('A, 'bar) -> .4).
-      shouldHaveCardinality(40.0 * (30.0 / 40) * (1 - (1 - .3) * (1 - .4)))
+      shouldHaveQueryGraphCardinality(40.0 * (30.0 / 40) * (1 - (1 - .3) * (1 - .4)))
   }
 
   test("cardinality for multiple OR:ed equality predicates where one is backed by index and one is not") {
@@ -159,19 +159,19 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
       withLabel('A -> 30).
       withIndexSelectivity(('A, 'prop) -> .3).
       withKnownProperty('bar).
-      shouldHaveCardinality(40.0 * (30.0 / 40) * (1 - (1 - DEFAULT_EQUALITY_SELECTIVITY) * (1 - .3)))
+      shouldHaveQueryGraphCardinality(40.0 * (30.0 / 40) * (1 - (1 - DEFAULT_EQUALITY_SELECTIVITY) * (1 - .3)))
   }
 
   ignore("cardinality for property equality predicate when property name is unknown") { // We can get away with not doing this
     givenPattern("MATCH (a) WHERE a.prop = 42").
       withGraphNodes(40).
-      shouldHaveCardinality(0)
+      shouldHaveQueryGraphCardinality(0)
   }
 
   test("cardinality for hardcoded false") {
     givenPattern("MATCH (a) WHERE false").
       withGraphNodes(40).
-      shouldHaveCardinality(0)
+      shouldHaveQueryGraphCardinality(0)
   }
 
   test("cardinality for multiple AND:ed equality predicates on two indexes") {
@@ -180,7 +180,7 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
       withLabel('A -> 30).
       withIndexSelectivity(('A, 'prop) -> .03).
       withIndexSelectivity(('A, 'bar) -> .04).
-      shouldHaveCardinality(30 * .03 * .04)
+      shouldHaveQueryGraphCardinality(30 * .03 * .04)
   }
 
   test("cardinality for multiple AND:ed equality predicates where one is backed by index and one is not") {
@@ -189,7 +189,7 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
       withLabel('A -> 30).
       withIndexSelectivity(('A, 'prop) -> .03).
       withKnownProperty('bar).
-      shouldHaveCardinality(30 * .03 * DEFAULT_EQUALITY_SELECTIVITY)
+      shouldHaveQueryGraphCardinality(30 * .03 * DEFAULT_EQUALITY_SELECTIVITY)
   }
 
   test("cardinality for label and property equality when no index is present") {
@@ -197,7 +197,7 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
       withGraphNodes(40).
       withLabel('A -> 30).
       withKnownProperty('prop).
-      shouldHaveCardinality(40.0 * (30.0 / 40) * DEFAULT_EQUALITY_SELECTIVITY)
+      shouldHaveQueryGraphCardinality(40.0 * (30.0 / 40) * DEFAULT_EQUALITY_SELECTIVITY)
   }
 
   test("relationship cardinality given no labels or types") {
@@ -207,7 +207,7 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
       withLabel('B -> 20).
       withRelationshipCardinality('A -> 'TYPE -> 'B -> 10).
       withRelationshipCardinality('B -> 'TYPE -> 'A -> 10).
-      shouldHaveCardinality(40 * 40 * (20.0 / (40.0 * 40)))
+      shouldHaveQueryGraphCardinality(40 * 40 * (20.0 / (40.0 * 40)))
   }
 
   test("relationship cardinality given labels on both sides") {
@@ -216,7 +216,7 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
       withLabel('A -> 30).
       withLabel('B -> 20).
       withRelationshipCardinality('A -> 'TYPE -> 'B -> 50).
-      shouldHaveCardinality(50)
+      shouldHaveQueryGraphCardinality(50)
   }
 
   test("relationship cardinality given labels on both sides for incoming pattern") {
@@ -225,7 +225,7 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
       withLabel('A -> 30).
       withLabel('B -> 20).
       withRelationshipCardinality('A -> 'TYPE -> 'B -> 50).
-      shouldHaveCardinality(50)
+      shouldHaveQueryGraphCardinality(50)
   }
 
   test("relationship cardinality given labels on both sides bidirectional") {
@@ -241,7 +241,7 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
       withLabel('B -> 20).
       withRelationshipCardinality('A -> 'TYPE -> 'B -> 10).
       withRelationshipCardinality('B -> 'TYPE -> 'A -> 20).
-      shouldHaveCardinality(patternNodeCrossProduct * labelSelectivity * relSelectivity)
+      shouldHaveQueryGraphCardinality(patternNodeCrossProduct * labelSelectivity * relSelectivity)
   }
 
   test("relationship cardinality given a label on one side") {
@@ -257,7 +257,7 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
       withLabel('C -> 40).
       withRelationshipCardinality('A -> 'TYPE -> 'B -> 50).
       withRelationshipCardinality('A -> 'TYPE -> 'C -> 50).
-      shouldHaveCardinality(N * N * labelSelectivity * relSelectivity)
+      shouldHaveQueryGraphCardinality(N * N * labelSelectivity * relSelectivity)
   }
 
   test("relationship cardinality given a label on one side bidirectional") {
@@ -267,7 +267,7 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
       withLabel('B -> 200).
       withRelationshipCardinality('A -> 'TYPE -> 'B -> 80).
       withRelationshipCardinality('B -> 'TYPE -> 'A -> 50).
-      shouldHaveCardinality(50 + 80) //Assume independence
+      shouldHaveQueryGraphCardinality(50 + 80) //Assume independence
   }
 
   test("cardinality for rel-patterns with multiple labels on one end") {
@@ -282,7 +282,7 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
       withLabel('B -> 20).
       withRelationshipCardinality('A -> 'TYPE -> 'B -> 50).
       withRelationshipCardinality('B -> 'TYPE -> 'B -> 30).
-      shouldHaveCardinality(patternNodeCrossProduct * labelSelectivity * relSelectivity)
+      shouldHaveQueryGraphCardinality(patternNodeCrossProduct * labelSelectivity * relSelectivity)
   }
 
   test("cardinality for rel-patterns with multiple rel types") {
@@ -297,7 +297,7 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
       withLabel('B -> 20).
       withRelationshipCardinality('A -> 'T1 -> 'B -> 10).
       withRelationshipCardinality('A -> 'T2 -> 'B -> 30).
-      shouldHaveCardinality(patternNodeCrossProduct * labelSelectivity * relSelectivity)
+      shouldHaveQueryGraphCardinality(patternNodeCrossProduct * labelSelectivity * relSelectivity)
   }
 
   test("cardinality for rel-patterns with multiple rel types and multiple labels on one side - test 1") {
@@ -315,7 +315,7 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
       withRelationshipCardinality('A -> 'T1 -> 'B -> 10).
       withRelationshipCardinality('B -> 'T2 -> 'B -> 30).
       withRelationshipCardinality('A -> 'T2 -> 'B -> 15).
-      shouldHaveCardinality(patternNodeCrossProduct * labelSelectivity * relSelectivity)
+      shouldHaveQueryGraphCardinality(patternNodeCrossProduct * labelSelectivity * relSelectivity)
   }
 
   test("cardinality for rel-patterns with multiple rel types and multiple labels on one side - test 2") {
@@ -336,7 +336,7 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
       withRelationshipCardinality('B -> 'T1 -> 'B -> 3).
       withRelationshipCardinality('A -> 'T2 -> 'B -> 30).
       withRelationshipCardinality('B -> 'T2 -> 'B -> 15).
-      shouldHaveCardinality(patternNodeCrossProduct * labelSelectivity * relSelectivity)
+      shouldHaveQueryGraphCardinality(patternNodeCrossProduct * labelSelectivity * relSelectivity)
   }
 
   test("cardinality for rel-patterns with multiple rel types and multiple labels on both sides") {
@@ -360,14 +360,14 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
       withRelationshipCardinality('B -> 'T1 -> 'D -> 6).
       withRelationshipCardinality('A -> 'T2 -> 'D -> 7).
       withRelationshipCardinality('B -> 'T2 -> 'D -> 8).
-      shouldHaveCardinality(patternNodeCrossProduct * labelSelectivity * relSelectivity)
+      shouldHaveQueryGraphCardinality(patternNodeCrossProduct * labelSelectivity * relSelectivity)
   }
 
   test("given empty database, all predicates should return 0 cardinality") {
     givenPattern("MATCH a WHERE a.prop = 10").
       withGraphNodes(0).
       withKnownProperty('prop).
-      shouldHaveCardinality(0)
+      shouldHaveQueryGraphCardinality(0)
   }
 
   test("optional match from an unknown known label") {
@@ -377,7 +377,7 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
       withLabel('BAR -> 1000).
       withRelationshipCardinality('FOO -> 'TYPE -> 'BAR -> 1000).
       withRelationshipCardinality('BAZ -> 'TYPE -> 'BAR -> 300).
-      shouldHaveCardinality(10000)
+      shouldHaveQueryGraphCardinality(10000)
   }
 
   test("optional match from a known label") {
@@ -386,7 +386,7 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
       withLabel('FOO -> 1).
       withLabel('BAR -> 1000).
       withRelationshipCardinality('FOO -> 'TYPE -> 'BAR -> 100).
-      shouldHaveCardinality(100)
+      shouldHaveQueryGraphCardinality(100)
   }
 
   test("predicates in optional match do not decrease the cardinality matches") {
@@ -395,7 +395,7 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
       withLabel('FOO -> 500).
       withLabel('BAR -> 0).
       withRelationshipCardinality('FOO -> 'TYPE -> 'BAR -> 0).
-      shouldHaveCardinality(500)
+      shouldHaveQueryGraphCardinality(500)
   }
 
   test("honours bound arguments") {
@@ -405,13 +405,13 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
       withLabel('FOO -> 100).
       withLabel('BAR -> 400).
       withRelationshipCardinality('FOO -> 'TYPE -> 'BAR -> 1000).
-      shouldHaveCardinality( 1000 / 500)
+      shouldHaveQueryGraphCardinality( 1000 / 500)
   }
 
   test("optional match will in worst case be a cartesian product") {
     givenPattern("MATCH (a) OPTIONAL MATCH (b)").
       withGraphNodes(1000).
-      shouldHaveCardinality(1000 * 1000)
+      shouldHaveQueryGraphCardinality(1000 * 1000)
   }
 
   test("multiple optional matches - multiple cross joins") {
@@ -422,14 +422,14 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
       withRelationshipCardinality('FOO -> 'TYPE -> 'BAR -> 0).
       withRelationshipCardinality('FOO -> 'TYPE -> 'BAZ -> 1).
       withIndexSelectivity(('FOO, 'prop) -> .3).
-      shouldHaveCardinality(100 * 200)
+      shouldHaveQueryGraphCardinality(100 * 200)
   }
 
   test("node by id should be recognized as such") {
     givenPattern("MATCH (a:FOO) WHERE id(a) IN [1,2,3]").
       withGraphNodes(1000).
       withLabel('FOO -> 500).
-      shouldHaveCardinality(1000.0 * (500.0 / 1000) * (3.0 / 1000))
+      shouldHaveQueryGraphCardinality(1000.0 * (500.0 / 1000) * (3.0 / 1000))
   }
 
   test("two relationships with property") {
@@ -445,7 +445,7 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
       withRelationshipCardinality('Track -> 'APPEARS_ON -> 'Album -> 5000).
       withRelationshipCardinality('Artist -> 'CREATED -> 'Album -> 1000).
       withIndexSelectivity(('Track, 'duration) -> .005).
-      shouldHaveCardinality(patternNodeCrossProduct * createdSelectivity * appearsOnSelectivity * indexSelectivity)
+      shouldHaveQueryGraphCardinality(patternNodeCrossProduct * createdSelectivity * appearsOnSelectivity * indexSelectivity)
   }
 
   def createCardinalityModel(stats: GraphStatistics, semanticTable: SemanticTable): QueryGraphCardinalityModel =

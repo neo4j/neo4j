@@ -19,82 +19,57 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{IntegerLiteral, LabelName}
+import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 
 object GuessingEstimation {
-  val LABEL_NOT_FOUND_SELECTIVITY: Selectivity = 0.0
-  val PREDICATE_SELECTIVITY: Selectivity = 0.2
-  val INDEX_SEEK_SELECTIVITY: Selectivity = 0.02
-  val DEFAULT_EXPAND_RELATIONSHIP_DEGREE: Multiplier = 2.0
-  val DEFAULT_CONNECTIVITY_CHANCE: Multiplier = 1.0
+  val LABEL_NOT_FOUND_SELECTIVITY       : Selectivity = 0.0
+  val PREDICATE_SELECTIVITY             : Selectivity = 0.2
+  val INDEX_SEEK_SELECTIVITY            : Selectivity = 0.02
+  val DEFAULT_EXPAND_RELATIONSHIP_DEGREE: Multiplier  = 2.0
+  val DEFAULT_CONNECTIVITY_CHANCE       : Multiplier  = 1.0
 }
 
 class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel)
   extends Metrics.CardinalityModel {
-  def apply(plan: LogicalPlan): Cardinality = plan match {
-    case
-      _: AllNodesScan | _: NodeByLabelScan | _: NodeByIdSeek | _: NodeIndexUniqueSeek | _: NodeHashJoin |
-      _: Expand | _: OuterHashJoin | _: OptionalExpand | _: FindShortestPaths | _: Selection | _: Apply |
-      _: SemiApply | _: LetSemiApply | _: LetAntiSemiApply | _: SelectOrSemiApply | _: LetSelectOrSemiApply |
-      _: SelectOrAntiSemiApply | _: LetSelectOrAntiSemiApply | _: DirectedRelationshipByIdSeek |
-      _: UndirectedRelationshipByIdSeek | _: DirectedRelationshipByIdSeek | _: Optional | _: NodeIndexSeek  |
-      _: AntiSemiApply | _: LegacyIndexSeek =>
+  def apply(plan: LogicalPlan): Cardinality = computeCardinality(plan.solved)
 
-      queryGraphCardinalityModel(plan.solved.lastQueryGraph)
-
-    case CartesianProduct(left, right) =>
-      cardinality(left) * cardinality(right)
-
-    case Projection(left, _) =>
-      cardinality(left)
-
-    case ProjectEndpoints(left, _, _, _, directed, _) =>
-      if (directed) cardinality(left) else cardinality(left) * Multiplier(2)
-
-    case SingleRow(_) =>
-      1.0
-
-    case Sort(input, _) =>
-      cardinality(input)
-
-    case Skip(input, skip: ast.NumberLiteral) =>
-      Math.max(
-          0.0,
-          cardinality(input).amount - skip.value.asInstanceOf[Number].doubleValue()
-        )
-
-
-    case Skip(input, _) =>
-      cardinality(input)
-
-    case Limit(input, limit: ast.NumberLiteral) =>
-      Math.min(
-        cardinality(input).amount,
-        limit.value.asInstanceOf[Number].doubleValue()
-      )
-
-    case Limit(input, _) =>
-      cardinality(input)
-
-    case SortedLimit(input, limit: ast.NumberLiteral, _) =>
-      Math.min(
-        cardinality(input).amount,
-        limit.value.asInstanceOf[Number].doubleValue()
-      )
-
-    case _: Aggregation =>
-      1.0
-    case _: UnwindCollection =>
-      1.0
-
-    case SortedLimit(input, _, _) =>
-      cardinality(input)
-
-    case Union(l, r) =>
-      cardinality(l) + cardinality(r)
+  private def computeCardinality(query: PlannerQuery): Cardinality = {
+    val (cardinality, _) = query.fold[(Cardinality, Map[IdName, Seq[LabelName]])]((Cardinality(1), Map.empty)) {
+      case ((acc, labels), PlannerQuery(graph, horizon, _)) =>
+        val (graphCardinality, newLabels) = calculateCardinalityForQueryGraph(graph, labels)
+        val horizonCardinality = calculateCardinalityForQueryHorizon(graphCardinality * acc, horizon)
+        (horizonCardinality, newLabels)
+    }
+    cardinality
   }
 
-  private def cardinality(plan: LogicalPlan): Cardinality = apply(plan)
+  private def calculateCardinalityForQueryHorizon(in: Cardinality, horizon: QueryHorizon): Cardinality = horizon match {
+    case RegularQueryProjection(_, QueryShuffle(_, None, Some(limit: IntegerLiteral))) =>
+      Cardinality(Math.min(in.amount.toLong, limit.value))
+
+    case _: AggregatingQueryProjection =>
+      Cardinality(Math.sqrt(in.amount))
+
+    case _: RegularQueryProjection =>
+      in
+  }
+
+  private def calculateCardinalityForQueryGraph(graph: QueryGraph, labels: Map[IdName, Seq[LabelName]]): (Cardinality, Map[IdName, Seq[LabelName]]) = {
+    val cardinality = queryGraphCardinalityModel(graph, labels)
+    val graphLabels = graph.patternNodeLabels.mapValues(_.toSeq)
+    val newLabels = labels.fuse(graphLabels)(_ ++ _)
+    (cardinality, newLabels)
+  }
+
+  implicit class PowerMap[A, B](m: Map[A, B]) {
+    def fuse(other: Map[A, B])(f: (B, B) => B): Map[A, B] = {
+      other.foldLeft(m) {
+        case (acc, (k, v)) if acc.contains(k) => acc + (k -> f(acc(k), v))
+        case (acc, entry)                     => acc + entry
+      }
+    }
+  }
 }

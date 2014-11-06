@@ -19,8 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assumeDependence
 
+import org.neo4j.cypher.internal.compiler.v2_2.ast.LabelName
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityModel
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, Selectivity}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 
@@ -30,7 +32,8 @@ case class AssumeDependenceQueryGraphCardinalityModel(statistics: GraphStatistic
                                                       selectivityCombiner: Set[(PredicateCombination, Selectivity)] => (Set[Predicate], Selectivity))
   extends QueryGraphCardinalityModel {
 
-  def apply(queryGraph: QueryGraph): Cardinality = {
+  // TODO: Use labels?
+  def apply(queryGraph: QueryGraph, labels: Map[IdName, Seq[LabelName]]): Cardinality = {
     findQueryGraphCombinations(queryGraph)
       .map(cardinalityForQueryGraph)
       .foldLeft(Cardinality(0))((acc, curr) => if (curr > acc) curr else acc)
