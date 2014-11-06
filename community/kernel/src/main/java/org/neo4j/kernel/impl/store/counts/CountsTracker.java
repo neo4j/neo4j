@@ -33,7 +33,9 @@ import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.CountsKey.IndexCountsKey;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
+import org.neo4j.register.Register.CopyableDoubleLongRegister;
 import org.neo4j.register.Register.DoubleLongRegister;
+import org.neo4j.register.Registers;
 
 import static org.neo4j.kernel.impl.store.counts.CountsKey.indexCountsKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.indexSampleKey;
@@ -269,12 +271,15 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
 
     public void accept( final CountsVisitor visitor )
     {
-        state.accept( new KeyValueRecordVisitor<CountsKey, DoubleLongRegister>()
+        state.accept( new KeyValueRecordVisitor<CountsKey,CopyableDoubleLongRegister>()
         {
+            private final DoubleLongRegister target = Registers.newDoubleLongRegister();
+
             @Override
-            public void visit( CountsKey key, DoubleLongRegister register )
+            public void visit( CountsKey key, CopyableDoubleLongRegister register )
             {
-                key.accept( visitor, register );
+                register.copyTo( target );
+                key.accept( visitor, target.readFirst(), target.readSecond() );
             }
         } );
     }
@@ -303,7 +308,7 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
             if ( state.hasChanges() || state.lastTxId() != lastCommittedTxId )
             {
                 // select the next file, and create a writer for it
-                try ( CountsStore.Writer<CountsKey, DoubleLongRegister> writer =
+                try ( CountsStore.Writer<CountsKey,CopyableDoubleLongRegister> writer =
                               nextWriter( state, lastCommittedTxId ) )
                 {
                     state.accept( writer );
@@ -316,16 +321,16 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
         }
     }
 
-    CountsStore.Writer<CountsKey, DoubleLongRegister> nextWriter( CountsTrackerState state, long lastCommittedTxId )
+    CountsStore.Writer<CountsKey,CopyableDoubleLongRegister> nextWriter( CountsTrackerState state, long lastTxId )
             throws IOException
     {
         if ( alphaFile.equals( state.storeFile() ) )
         {
-            return state.newWriter( betaFile, lastCommittedTxId );
+            return state.newWriter( betaFile, lastTxId );
         }
         else
         {
-            return state.newWriter( alphaFile, lastCommittedTxId );
+            return state.newWriter( alphaFile, lastTxId );
         }
     }
 

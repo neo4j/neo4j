@@ -119,7 +119,7 @@ public class CountsStoreWriterTest
                             assertEquals( 24, unique );
                             assertEquals( 84, size );
                         }
-                    }, valueRegister );
+                    }, valueRegister.readFirst(), valueRegister.readSecond() );
                 }
             }, Registers.newDoubleLongRegister() );
 

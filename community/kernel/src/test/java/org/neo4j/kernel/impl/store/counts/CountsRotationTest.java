@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
 import org.neo4j.register.Register;
+import org.neo4j.register.Register.CopyableDoubleLongRegister;
 import org.neo4j.register.Registers;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
@@ -204,15 +205,19 @@ public class CountsRotationTest
     }
 
 
-    private Collection<Pair<CountsKey, Long>> allRecords( SortedKeyValueStore<CountsKey, DoubleLongRegister> store )
+    private Collection<Pair<CountsKey, Long>> allRecords(
+            SortedKeyValueStore<CountsKey, CopyableDoubleLongRegister>  store )
     {
         final Collection<Pair<CountsKey, Long>> records = new ArrayList<>();
-        store.accept( new KeyValueRecordVisitor<CountsKey, DoubleLongRegister>()
+        store.accept( new KeyValueRecordVisitor<CountsKey, CopyableDoubleLongRegister>()
         {
             @Override
-            public void visit( CountsKey key, DoubleLongRegister valueRegister  )
+            public void visit( CountsKey key, CopyableDoubleLongRegister valueRegister  )
             {
-                records.add( Pair.of( key, valueRegister.readSecond() ) );
+                // read out atomically in case count is a concurrent register
+                DoubleLongRegister register = Registers.newDoubleLongRegister();
+                valueRegister.copyTo( register );
+                records.add( Pair.of( key, register.readSecond() ) );
             }
 
         }, Registers.newDoubleLongRegister() );

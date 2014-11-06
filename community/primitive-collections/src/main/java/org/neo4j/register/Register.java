@@ -24,15 +24,20 @@ package org.neo4j.register;
  */
 public interface Register
 {
-    interface DoubleLongRegister extends DoubleLong.In, DoubleLong.Out {}
+    interface CopyableDoubleLongRegister extends DoubleLong.Copyable, DoubleLong.Out {}
+    interface DoubleLongRegister extends DoubleLong.In, CopyableDoubleLongRegister {}
     interface DoubleLong
     {
         interface In
         {
             long readFirst();
             long readSecond();
+        }
 
-            void copyTo( Out target );
+        interface Copyable
+        {
+            void copyTo( DoubleLong.Out target );
+            boolean hasValues( long first, long second );
         }
 
         interface Out

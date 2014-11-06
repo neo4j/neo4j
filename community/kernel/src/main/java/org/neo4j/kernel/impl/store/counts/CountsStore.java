@@ -29,12 +29,14 @@ import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader;
+import org.neo4j.register.Register;
+import org.neo4j.register.Register.CopyableDoubleLongRegister;
 import org.neo4j.register.Registers;
 
 import static org.neo4j.register.Register.DoubleLongRegister;
 import static org.neo4j.register.Register.LongRegister;
 
-public class CountsStore extends SortedKeyValueStore<CountsKey,DoubleLongRegister>
+public class CountsStore extends SortedKeyValueStore<CountsKey, CopyableDoubleLongRegister>
 {
     static final int RECORD_SIZE /*bytes*/ = 16 /*key*/ + 16 /*value*/;
     static final CountsRecordSerializer RECORD_SERIALIZER = CountsRecordSerializer.INSTANCE;
@@ -77,12 +79,12 @@ public class CountsStore extends SortedKeyValueStore<CountsKey,DoubleLongRegiste
             CountsStore countsStore = new CountsStore( fs, pageCache, storeFile, pages, header );
 
             final LongRegister keys = Registers.newLongRegister( 0 );
-            countsStore.accept( new KeyValueRecordVisitor<CountsKey,DoubleLongRegister>()
+            countsStore.accept( new KeyValueRecordVisitor<CountsKey,CopyableDoubleLongRegister>()
             {
                 @Override
-                public void visit( CountsKey key, DoubleLongRegister register )
+                public void visit( CountsKey key, CopyableDoubleLongRegister register )
                 {
-                    if ( register.readFirst() == 0 && register.readSecond() == 0 )
+                    if ( register.hasValues( 0, 0 ) )
                     {
                         throw new UnderlyingStorageException( "Counts store contains corrupted values" );
                     }

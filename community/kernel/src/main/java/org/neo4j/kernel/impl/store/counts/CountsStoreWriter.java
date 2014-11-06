@@ -30,8 +30,11 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
+import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore.Writer;
+import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore.WriterFactory;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader;
 import org.neo4j.register.Register;
+import org.neo4j.register.Register.CopyableDoubleLongRegister;
 import org.neo4j.register.Registers;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
@@ -43,9 +46,9 @@ import static org.neo4j.kernel.impl.store.counts.CountsKeyType.INDEX_SAMPLE;
 import static org.neo4j.kernel.impl.store.counts.CountsStore.RECORD_SIZE;
 import static org.neo4j.register.Register.DoubleLongRegister;
 
-public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, DoubleLongRegister>, CountsVisitor
+public class CountsStoreWriter implements Writer<CountsKey, CopyableDoubleLongRegister>, CountsVisitor
 {
-    public static class Factory implements SortedKeyValueStore.WriterFactory<CountsKey, DoubleLongRegister>
+    public static class Factory implements WriterFactory<CountsKey, CopyableDoubleLongRegister>
     {
         @Override
         public CountsStoreWriter create( FileSystemAbstraction fs, PageCache pageCache,
@@ -64,6 +67,9 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
     private final File targetFile;
     private final long txId;
     private final long minorVersion;
+
+    // register used to extract values while visiting keys, see visit(...)
+    private final DoubleLongRegister visitTargetRegister = Registers.newDoubleLongRegister( 0l, 0l );
 
     private int totalRecords;
     private PageCursor page;
@@ -91,13 +97,14 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
     }
 
     @Override
-    public void visit( CountsKey key, DoubleLongRegister register )
+    public void visit( CountsKey key, CopyableDoubleLongRegister register )
     {
         // only writeToBuffer values that count
-        if ( register.readFirst() != 0 || register.readSecond() != 0 )
+        if ( !register.hasValues( 0, 0 ) )
         {
+            register.copyTo( visitTargetRegister );
             totalRecords++;
-            key.accept( this, register );
+            key.accept( this, visitTargetRegister.readFirst(), visitTargetRegister.readSecond() );
         }
     }
 

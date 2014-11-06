@@ -37,6 +37,8 @@ import org.neo4j.kernel.impl.store.CountsOracle;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader;
+import org.neo4j.register.Register;
+import org.neo4j.register.Register.CopyableDoubleLongRegister;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
@@ -339,15 +341,15 @@ public class CountsTrackerTest
         }
 
         @Override
-        CountsStore.Writer<CountsKey, DoubleLongRegister> nextWriter( CountsTrackerState state, long lastCommittedTxId )
+        CountsStore.Writer<CountsKey, CopyableDoubleLongRegister> nextWriter( CountsTrackerState state, long lastTxId )
                 throws IOException
         {
-            final CountsStoreWriter writer = (CountsStoreWriter) super.nextWriter( state, lastCommittedTxId );
-            return new CountsStore.Writer<CountsKey, DoubleLongRegister>()
+            final CountsStoreWriter writer = (CountsStoreWriter) super.nextWriter( state, lastTxId );
+            return new CountsStore.Writer<CountsKey, CopyableDoubleLongRegister>()
             {
 
                 @Override
-                public SortedKeyValueStore<CountsKey, DoubleLongRegister> openForReading() throws IOException
+                public SortedKeyValueStore<CountsKey, CopyableDoubleLongRegister> openForReading() throws IOException
                 {
                     barrier.reached();
                     return writer.openForReading();
@@ -360,7 +362,7 @@ public class CountsTrackerTest
                 }
 
                 @Override
-                public void visit( CountsKey key, DoubleLongRegister valueRegister )
+                public void visit( CountsKey key, CopyableDoubleLongRegister valueRegister )
                 {
                     writer.visit( key, valueRegister );
                 }

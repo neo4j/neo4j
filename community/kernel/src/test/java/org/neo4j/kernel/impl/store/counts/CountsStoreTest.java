@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader;
 import org.neo4j.register.Register;
+import org.neo4j.register.Register.CopyableDoubleLongRegister;
 import org.neo4j.register.Registers;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
@@ -74,10 +75,10 @@ public class CountsStoreTest
             assertEquals( BASE_MINOR_VERSION, counts.minorVersion() );
             assertEquals( 0, counts.totalRecordsStored() );
             assertEquals( alpha, counts.file() );
-            counts.accept( new KeyValueRecordVisitor<CountsKey, DoubleLongRegister>()
+            counts.accept( new KeyValueRecordVisitor<CountsKey, CopyableDoubleLongRegister>()
             {
                 @Override
-                public void visit( CountsKey key, DoubleLongRegister valueRegister )
+                public void visit( CountsKey key, CopyableDoubleLongRegister valueRegister )
                 {
                     fail( "should not have been called" );
                 }
@@ -95,7 +96,8 @@ public class CountsStoreTest
             // when
             long initialMinorVersion = counts.minorVersion();
 
-            SortedKeyValueStore.Writer<CountsKey, DoubleLongRegister> writer = counts.newWriter( beta, counts.lastTxId() );
+            SortedKeyValueStore.Writer<CountsKey, CopyableDoubleLongRegister> writer =
+                    counts.newWriter( beta, counts.lastTxId() );
             writer.close();
 
             try ( CountsStore updated = (CountsStore) writer.openForReading() )
@@ -110,7 +112,7 @@ public class CountsStoreTest
     {
         // given
         CountsStore.createEmpty( pageCache, alpha, header );
-        SortedKeyValueStore.Writer<CountsKey, DoubleLongRegister> writer;
+        SortedKeyValueStore.Writer<CountsKey, CopyableDoubleLongRegister> writer;
         try ( CountsStore counts = CountsStore.open( fs, pageCache, alpha ) )
         {
             // when
@@ -136,11 +138,13 @@ public class CountsStoreTest
             assertEquals( BASE_MINOR_VERSION, updated.minorVersion() );
             assertEquals( 4, updated.totalRecordsStored() );
             assertEquals( beta, updated.file() );
-            updated.accept( new KeyValueRecordVisitor<CountsKey, DoubleLongRegister>()
+            updated.accept( new KeyValueRecordVisitor<CountsKey, CopyableDoubleLongRegister>()
             {
+                private final DoubleLongRegister target = Registers.newDoubleLongRegister();
                 @Override
-                public void visit( CountsKey key, DoubleLongRegister valueRegister )
+                public void visit( CountsKey key, CopyableDoubleLongRegister valueRegister )
                 {
+                    valueRegister.copyTo( target );
                     key.accept( new CountsVisitor()
                     {
                         @Override
@@ -176,7 +180,7 @@ public class CountsStoreTest
                             assertEquals( 24, unique );
                             assertEquals( 84, size );
                         }
-                    }, valueRegister );
+                    }, target.readFirst(), target.readSecond() );
                 }
             }, Registers.newDoubleLongRegister() );
         }

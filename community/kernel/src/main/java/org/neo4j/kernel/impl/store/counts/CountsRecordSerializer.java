@@ -25,6 +25,8 @@ import java.nio.ByteBuffer;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordSerializer;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
+import org.neo4j.register.Register;
+import org.neo4j.register.Register.CopyableDoubleLongRegister;
 import org.neo4j.register.Register.DoubleLongRegister;
 
 import static org.neo4j.kernel.impl.store.counts.CountsKey.indexCountsKey;
@@ -87,7 +89,7 @@ import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipKey;
  *
  * 'entry type' - see {@link org.neo4j.kernel.impl.store.counts.CountsKeyType}
  */
-public final class CountsRecordSerializer implements KeyValueRecordSerializer<CountsKey, DoubleLongRegister>
+public final class CountsRecordSerializer implements KeyValueRecordSerializer<CountsKey, CopyableDoubleLongRegister>
 {
     public static final CountsRecordSerializer INSTANCE = new CountsRecordSerializer();
 
@@ -100,8 +102,8 @@ public final class CountsRecordSerializer implements KeyValueRecordSerializer<Co
 
     @Override
     public boolean visitRecord( ByteBuffer buffer,
-                                KeyValueRecordVisitor<CountsKey, DoubleLongRegister> visitor,
-                                DoubleLongRegister valueRegister )
+                                KeyValueRecordVisitor<CountsKey, CopyableDoubleLongRegister> visitor,
+                                CopyableDoubleLongRegister valueRegister )
     {
         // read type
         byte type = buffer.get();
@@ -160,7 +162,7 @@ public final class CountsRecordSerializer implements KeyValueRecordSerializer<Co
     }
 
     @Override
-    public CountsKey readRecord( PageCursor cursor, int offset, DoubleLongRegister value ) throws IOException
+    public CountsKey readRecord( PageCursor cursor, int offset, CopyableDoubleLongRegister value ) throws IOException
     {
         byte type;
         int one, two, three;
@@ -222,7 +224,7 @@ public final class CountsRecordSerializer implements KeyValueRecordSerializer<Co
     }
 
     @Override
-    public void writeDefaultValue( DoubleLongRegister valueRegister )
+    public void writeDefaultValue( CopyableDoubleLongRegister valueRegister )
     {
         valueRegister.write( DEFAULT_FIRST_VALUE, DEFAULT_SECOND_VALUE );
     }

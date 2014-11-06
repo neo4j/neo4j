@@ -29,6 +29,8 @@ import org.neo4j.kernel.impl.store.counts.CountsKey.NodeKey;
 import org.neo4j.kernel.impl.store.counts.CountsKey.RelationshipKey;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
+import org.neo4j.register.Register;
+import org.neo4j.register.Register.CopyableDoubleLongRegister;
 import org.neo4j.register.Register.DoubleLongRegister;
 
 interface CountsTrackerState extends Closeable
@@ -57,8 +59,8 @@ interface CountsTrackerState extends Closeable
 
     File storeFile();
 
-    SortedKeyValueStore.Writer<CountsKey, DoubleLongRegister> newWriter( File file, long lastCommittedTxId )
+    SortedKeyValueStore.Writer<CountsKey, CopyableDoubleLongRegister> newWriter( File file, long lastCommittedTxId )
             throws IOException;
 
-    void accept( KeyValueRecordVisitor<CountsKey, DoubleLongRegister> visitor );
+    void accept( KeyValueRecordVisitor<CountsKey, CopyableDoubleLongRegister> visitor );
 }

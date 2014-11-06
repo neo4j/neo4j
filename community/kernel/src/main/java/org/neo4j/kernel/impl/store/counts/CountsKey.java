@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.store.counts;
 
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.impl.api.CountsVisitor;
+import org.neo4j.register.Register;
+import org.neo4j.register.Register.CopyableDoubleLongRegister;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 
@@ -67,7 +69,7 @@ public abstract class CountsKey implements Comparable<CountsKey>
     @Override
     public abstract String toString();
 
-    public abstract void accept( CountsVisitor visitor, DoubleLongRegister count );
+    public abstract void accept( CountsVisitor visitor, long first, long second );
 
     public static final class NodeKey extends CountsKey
     {
@@ -90,9 +92,9 @@ public abstract class CountsKey implements Comparable<CountsKey>
         }
 
         @Override
-        public void accept( CountsVisitor visitor, DoubleLongRegister count )
+        public void accept( CountsVisitor visitor, long ignored, long count )
         {
-            visitor.visitNodeCount( labelId, count.readSecond() );
+            visitor.visitNodeCount( labelId, count );
         }
 
         @Override
@@ -166,9 +168,9 @@ public abstract class CountsKey implements Comparable<CountsKey>
         }
 
         @Override
-        public void accept( CountsVisitor visitor, DoubleLongRegister count )
+        public void accept( CountsVisitor visitor, long ignored, long count )
         {
-            visitor.visitRelationshipCount( startLabelId, typeId, endLabelId, count.readSecond() );
+            visitor.visitRelationshipCount( startLabelId, typeId, endLabelId, count );
         }
 
         @Override
@@ -311,9 +313,9 @@ public abstract class CountsKey implements Comparable<CountsKey>
         }
 
         @Override
-        public void accept( CountsVisitor visitor, DoubleLongRegister count )
+        public void accept( CountsVisitor visitor, long updates, long size )
         {
-            visitor.visitIndexCounts( labelId(), propertyKeyId(), count.readFirst(), count.readSecond() );
+            visitor.visitIndexCounts( labelId(), propertyKeyId(), updates, size );
         }
 
         @Override
@@ -344,12 +346,9 @@ public abstract class CountsKey implements Comparable<CountsKey>
         }
 
         @Override
-        public void accept( CountsVisitor visitor, DoubleLongRegister count )
+        public void accept( CountsVisitor visitor, long unique, long size )
         {
-            // read out atomically in case count is a concurrent register
-            DoubleLongRegister register = Registers.newDoubleLongRegister();
-            count.copyTo( register );
-            visitor.visitIndexSample( labelId(), propertyKeyId(), count.readFirst(), count.readSecond() );
+            visitor.visitIndexSample( labelId(), propertyKeyId(), unique, size );
         }
 
         @Override

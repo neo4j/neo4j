@@ -108,7 +108,8 @@ public class CountsRecordState implements CountsVisitor.Visitable, CountsAccesso
     {
         for ( Map.Entry<CountsKey, DoubleLongRegister> entry : counts.entrySet() )
         {
-            entry.getKey().accept( visitor, entry.getValue() );
+            DoubleLongRegister register = entry.getValue();
+            entry.getKey().accept( visitor, register.readFirst(), register.readSecond() );
         }
     }
 
