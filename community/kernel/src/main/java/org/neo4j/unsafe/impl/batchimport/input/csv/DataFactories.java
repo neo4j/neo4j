@@ -273,10 +273,6 @@ public class DataFactories
                     if ( typeIndex != -1 )
                     {   // Specific type given
                         name = entryString.substring( 0, typeIndex );
-                        if ( name.length() == 0 )
-                        {
-                            name = null;
-                        }
                         typeSpec = entryString.substring( typeIndex+1 );
                     }
                     else
@@ -284,7 +280,19 @@ public class DataFactories
                         name = entryString;
                         typeSpec = null;
                     }
-                    columns.add( entry( i, name, typeSpec, extractors, idExtractor ) );
+                    if ( name.length() == 0 )
+                    {
+                        name = null;
+                    }
+
+                    if ( name == null && typeSpec == null )
+                    {
+                        columns.add( new Header.Entry( null, Type.IGNORE, null ) );
+                    }
+                    else
+                    {
+                        columns.add( entry( i, name, typeSpec, extractors, idExtractor ) );
+                    }
                 }
                 Entry[] entries = columns.toArray( new Header.Entry[columns.size()] );
                 validateHeader( entries );
@@ -363,11 +371,7 @@ public class DataFactories
             // like 'int' or 'string_array' or similar, or empty for 'string' property.
             Type type = null;
             Extractor<?> extractor = null;
-            if ( name.trim().length() == 0 )
-            {
-                type = Type.IGNORE;
-            }
-            else if ( typeSpec == null )
+            if ( typeSpec == null )
             {
                 type = Type.PROPERTY;
                 extractor = extractors.string();

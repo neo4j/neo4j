@@ -106,7 +106,7 @@ public class DataFactoriesTest
         assertArrayEquals( array(
                 entry( "one", Type.ID, extractors.long_() ),
                 entry( "two", Type.PROPERTY, extractors.string() ),
-                entry( "", Type.IGNORE, null ),
+                entry( null, Type.IGNORE, null ),
                 entry( "date", Type.PROPERTY, extractors.long_() ) ), header.entries() );
         seeker.close();
     }
