@@ -242,7 +242,7 @@ case class CompatibilityPlanDescription(inner: InternalPlanDescription, version:
   }
 
   override def toString: String = exceptionHandlerFor2_2.runSafely {
-    s"Compiler CYPHER ${version.name}\n\n$inner.toString"
+    s"Compiler CYPHER ${version.name}\n\n$inner"
   }
 
   def asJava(in: PlanDescription): javacompat.PlanDescription = new javacompat.PlanDescription {
