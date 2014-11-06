@@ -421,6 +421,9 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
                     record.setCreated();
                 }
             }
+
+            channel.getLong(); // txId - ignored
+
             SchemaRule rule = first( recordsAfter ).inUse() ? readSchemaRule( recordsAfter )
                                                             : readSchemaRule( recordsBefore );
             command.init( recordsBefore, recordsAfter, rule );
@@ -505,7 +508,7 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
         {
             int numberOfRecords = channel.getInt();
             assert numberOfRecords >= 0;
-            while ( numberOfRecords > 0 )
+            for  ( int i = numberOfRecords; i > 0; i-- )
             {
                 DynamicRecord read = readDynamicRecord();
                 if ( read == null )
@@ -513,7 +516,6 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
                     return -1;
                 }
                 adder.add( target, read );
-                numberOfRecords--;
             }
             return numberOfRecords;
         }
