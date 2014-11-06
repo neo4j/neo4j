@@ -45,7 +45,6 @@ import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asList;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
 
 @Ignore( "This test is for an index format change between 2.0.0 and 2.0.x so not applicable for later versions" )
 public class IndexFormatCompatibilityTest

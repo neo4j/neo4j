@@ -21,8 +21,6 @@ package org.neo4j.examples;
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
