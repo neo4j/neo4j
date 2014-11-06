@@ -25,5 +25,5 @@
         a.icon-remove(ng-click='editor.showMessage = null')
     .message-bar.info(ng-if='unauthorized', ng-class="editor.errorCode")
       span 
-        | Neo4j needs to make sure you are you.
-        | Type <code click-to-code="':help server'">:help server</code> for a list of available authentication commands.
+        | Data access not available. Please use <code click-to-code="':server connect'">:server connect</code>
+        | to connect to database. There's a graph waiting for you.

@@ -77,9 +77,6 @@ angular.module('neo4jApp.services')
                 @response = null
                 result = result[0] if Array.isArray result
                 result = result.data?.errors[0] || result.errors?[0] || result
-
-                if result.code is 'Neo.ClientError.Security.AuthorizationFailed' and !@hide_connect_frame
-                  frames.createOne {input: "#{Settings.cmdchar}server connect"}
                 @errorText = result.message or "Unknown error"
                 if result.length > 0 and result[0].code
                   @errorText = result[0].code
@@ -91,7 +88,6 @@ angular.module('neo4jApp.services')
           setProperties: (intr) ->
             # FIXME: Make exportable a setting in commandInterperters.
             @exportable     = @type in ['cypher', 'http']
-            @hide_connect_frame = intr.hide_connect_frame
             @fullscreenable = if intr.fullscreenable is yes or typeof intr.fullscreenable is 'undefined' or intr.fullscreenable is null then yes else @fullscreenable
 
 

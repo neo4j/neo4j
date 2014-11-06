@@ -34,6 +34,19 @@
         height: auto
         background: #F8F9FB
         z-index: 10
+        &.fade
+          transition: .6s all linear
+          opacity: 1
+          &.ng-hide-add, &.ng-hide-remove
+            display: block !important
+          &.ng-hide-remove, &.ng-hide-add.ng-hide-add-active
+            opacity: 0
+          &.ng-hide-remove.ng-hide-remove-active, &.ng-hide-add
+            opacity: 1
+     
+
+        .form-info
+          font-size: 12px
 
         .center-tbl-left-col
           width: 175px

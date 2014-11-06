@@ -38,6 +38,18 @@ angular.module('neo4jApp.controllers')
           $scope.server = Server.info()
           $scope.host = $window.location.host
 
+          # gather info from jmx
+          Server.jmx(
+            [
+              "org.neo4j:instance=kernel#0,name=Configuration"
+              "org.neo4j:instance=kernel#0,name=Kernel"
+              "org.neo4j:instance=kernel#0,name=Store file sizes"
+            ]).success((response) ->
+              for r in response
+                for a in r.attributes
+                  $scope.kernel[a.name] = a.value
+          ).error((r)-> $scope.kernel = {})
+
         $scope.motd = motdService
         $scope.auth_service = AuthService
         
@@ -51,24 +63,8 @@ angular.module('neo4jApp.controllers')
         $scope.$on 'db:changed:labels', refresh
 
         $scope.today = Date.now()
-
         $scope.cmdchar = Settings.cmdchar
-
         $scope.goodBrowser = (navigator.appName != 'Microsoft Internet Explorer' && navigator.userAgent.indexOf('Trident') == -1)
-
-        # gather info from jmx
-        Server.jmx(
-          [
-            "org.neo4j:instance=kernel#0,name=Configuration"
-            "org.neo4j:instance=kernel#0,name=Kernel"
-            "org.neo4j:instance=kernel#0,name=Store file sizes"
-          ]
-        ).success((response) ->
-          $scope.kernel = {}
-          for r in response
-            for a in r.attributes
-              $scope.kernel[a.name] = a.value
-        )
 
         $scope.$watch 'offline', (serverIsOffline) ->
           if not serverIsOffline
@@ -76,9 +72,8 @@ angular.module('neo4jApp.controllers')
           else $scope.errorMessage = motdService.disconnected
 
         $scope.$watch 'unauthorized', (isUnauthorized) ->
-          if not isUnauthorized
-            refresh()
-          else 
+          refresh()
+          if isUnauthorized
             AuthService.forget()
 
         $scope.$on 'auth:status_updated', () ->

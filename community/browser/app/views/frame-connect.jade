@@ -7,13 +7,9 @@ div(ng-controller="AuthCtrl")
           div
             .row(ng-show="!static_is_authenticated")
               .span4
-                h3 Welcome to Neo4j!
+                h3 Connect to Neo4j
                 p.lead
-                  | Before we start, please provide your username and password.
-                  | The default values for username and password are 
-                  b neo4j
-                  /
-                  b neo4j
+                  | Data access requires an authenticated connection to the database.
               .span1
               .span5(ng-hide="static_is_authenticated")
                 .form
@@ -25,6 +21,11 @@ div(ng-controller="AuthCtrl")
                     | Password
                     br
                     input(id="connect_password", on-enter="click", on-enter-target-id="connect_button", type='password', ng-model="password", style="margin: 0")
+                  p.form-info
+                    | Default username/password: 
+                    b neo4j
+                    /
+                    b neo4j
                   p
                     button.btn(id="connect_button", ng-click="authenticate()", style="margin: 0") Connect
             .row(ng-if="static_is_authenticated && !password_change_required && !static_user")
@@ -54,7 +55,7 @@ div(ng-controller="AuthCtrl")
                       | Authorization token: 
                     code
                       | {{static_user.authorization_token}}
-      .view-result(ng-show="password_change_required")
+      .view-result.fade(ng-show="password_change_required")
         include partials/frame-change-password
       .status-bar(ng-class='{error: error_text, loading: frame.isLoading}')
         div(ng-show="error_text")
