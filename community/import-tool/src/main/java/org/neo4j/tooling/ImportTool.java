@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.tooling.batchimport;
+package org.neo4j.tooling;
 
 import java.io.File;
 import java.io.IOException;
@@ -56,7 +56,7 @@ import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultF
 /**
  * User-facing command line tool around a {@link BatchImporter}.
  */
-public class BatchImporterTool
+public class ImportTool
 {
     private static final Function<String,IdType> TO_ID_TYPE = new Function<String,IdType>()
     {

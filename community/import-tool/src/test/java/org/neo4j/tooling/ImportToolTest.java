@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.tooling.batchimport;
+package org.neo4j.tooling;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -39,6 +39,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
+import org.neo4j.tooling.ImportTool;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
 
@@ -48,9 +49,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.alwaysTrue;
-import static org.neo4j.tooling.batchimport.BatchImporterTool.MULTI_DELIMITER;
+import static org.neo4j.tooling.ImportTool.MULTI_DELIMITER;
 
-public class BatchImporterToolTest
+public class ImportToolTest
 {
     @Test
     public void shouldImportWithAsManyDefaultsAsAvailable() throws Exception
@@ -60,7 +61,7 @@ public class BatchImporterToolTest
         Configuration config = Configuration.COMMAS;
 
         // WHEN
-        BatchImporterTool.main( arguments(
+        ImportTool.main( arguments(
                 "--into",          directory.absolutePath(),
                 "--nodes",         nodeData( true, config, nodeIds, alwaysTrue() ).getAbsolutePath(),
                 "--relationships", relationshipData( true, config, nodeIds, alwaysTrue() ).getAbsolutePath() ) );
@@ -77,7 +78,7 @@ public class BatchImporterToolTest
         Configuration config = Configuration.COMMAS;
 
         // WHEN
-        BatchImporterTool.main( arguments(
+        ImportTool.main( arguments(
                 "--into", directory.absolutePath(),
                 "--nodes",
                     nodeHeader( config ).getAbsolutePath() + MULTI_DELIMITER +
@@ -98,7 +99,7 @@ public class BatchImporterToolTest
         Configuration config = Configuration.COMMAS;
 
         // WHEN
-        BatchImporterTool.main( arguments(
+        ImportTool.main( arguments(
                 "--into", directory.absolutePath(),
                 "--nodes", // One group with one header file and one data file
                     nodeHeader( config ).getAbsolutePath() + MULTI_DELIMITER +
