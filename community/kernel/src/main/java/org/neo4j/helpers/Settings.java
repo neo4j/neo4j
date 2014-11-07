@@ -366,38 +366,6 @@ public final class Settings
         }
     };
 
-    public static final Function<String, Integer> BYTES_AS_INT = new Function<String, Integer>()
-    {
-        @Override
-        public Integer apply( String value )
-        {
-            Long bytes = BYTES.apply( value );
-            if ( null == bytes )
-            {
-                return null;
-            }
-
-            if ( bytes < 0 )
-            {
-                throw new IllegalArgumentException( value + " is not a valid number of bytes. Must be positive or zero." );
-            }
-
-            if ( bytes > Integer.MAX_VALUE )
-            {
-                throw new IllegalArgumentException( value + " is not a valid number of bytes here. Must fit into a 32 bit integer." );
-            }
-
-            return bytes.intValue();
-        }
-
-        @Override
-        public String toString()
-        {
-            return "a byte size (valid multipliers are `" + SIZE_UNITS.replace( ", ", "`, `" ) + "`) not bigger than " +
-                   Integer.MAX_VALUE;
-        }
-    };
-
     public static final Function<String, Long> BYTES = new Function<String, Long>()
     {
         @Override
@@ -423,7 +391,13 @@ public final class Settings
                     mem = mem.substring( 0, mem.length() - 1 );
                 }
 
-                return Long.parseLong( mem.trim() ) * multiplier;
+                long bytes = Long.parseLong( mem.trim() ) * multiplier;
+                if ( bytes < 0 )
+                {
+                    throw new IllegalArgumentException(
+                            value + " is not a valid number of bytes. Must be positive or zero." );
+                }
+                return bytes;
             }
             catch ( NumberFormatException e )
             {
