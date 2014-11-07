@@ -21,7 +21,6 @@ package org.neo4j.graphdb;
 
 import java.util.Map;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 

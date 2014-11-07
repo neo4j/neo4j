@@ -23,17 +23,14 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
-import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore.Writer;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore.WriterFactory;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader;
-import org.neo4j.register.Register;
 import org.neo4j.register.Register.CopyableDoubleLongRegister;
 import org.neo4j.register.Registers;
 

@@ -34,7 +34,6 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.register.Register;
 import org.neo4j.test.DoubleLatch;
 
-import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;

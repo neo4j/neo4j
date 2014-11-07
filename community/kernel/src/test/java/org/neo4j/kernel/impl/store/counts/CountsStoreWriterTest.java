@@ -33,7 +33,6 @@ import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader;
-import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;

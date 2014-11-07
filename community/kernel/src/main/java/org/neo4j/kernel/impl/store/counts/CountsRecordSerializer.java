@@ -25,10 +25,7 @@ import java.nio.ByteBuffer;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordSerializer;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
-import org.neo4j.register.Register;
 import org.neo4j.register.Register.CopyableDoubleLongRegister;
-import org.neo4j.register.Register.DoubleLongRegister;
-
 import static org.neo4j.kernel.impl.store.counts.CountsKey.indexCountsKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.indexSampleKey;
 import static org.neo4j.kernel.impl.store.counts.CountsKey.nodeKey;

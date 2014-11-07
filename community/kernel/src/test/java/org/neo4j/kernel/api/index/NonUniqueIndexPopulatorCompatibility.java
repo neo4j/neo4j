@@ -23,8 +23,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.properties.Property;

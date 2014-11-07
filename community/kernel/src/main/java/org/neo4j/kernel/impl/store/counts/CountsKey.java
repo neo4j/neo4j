@@ -21,11 +21,6 @@ package org.neo4j.kernel.impl.store.counts;
 
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.impl.api.CountsVisitor;
-import org.neo4j.register.Register;
-import org.neo4j.register.Register.CopyableDoubleLongRegister;
-import org.neo4j.register.Register.DoubleLongRegister;
-import org.neo4j.register.Registers;
-
 import static org.neo4j.kernel.impl.store.counts.CountsKeyType.ENTITY_NODE;
 import static org.neo4j.kernel.impl.store.counts.CountsKeyType.ENTITY_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.counts.CountsKeyType.INDEX_COUNTS;

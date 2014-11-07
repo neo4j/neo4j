@@ -29,9 +29,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Test;
-import org.mockito.Matchers;
-
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -46,8 +43,6 @@ import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static org.junit.Assert.assertFalse;
-import static org.mockito.Matchers.anyBoolean;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;

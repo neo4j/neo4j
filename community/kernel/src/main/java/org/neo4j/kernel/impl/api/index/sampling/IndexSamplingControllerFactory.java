@@ -26,7 +26,6 @@ import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.register.Register;
 import org.neo4j.register.Register.DoubleLongRegister;
 
 import static org.neo4j.register.Registers.newDoubleLongRegister;

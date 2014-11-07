@@ -71,7 +71,6 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePullerClient;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.register.Register;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;

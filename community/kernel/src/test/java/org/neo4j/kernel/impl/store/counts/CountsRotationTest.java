@@ -43,7 +43,6 @@ import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
-import org.neo4j.register.Register;
 import org.neo4j.register.Register.CopyableDoubleLongRegister;
 import org.neo4j.register.Registers;
 import org.neo4j.test.EphemeralFileSystemRule;

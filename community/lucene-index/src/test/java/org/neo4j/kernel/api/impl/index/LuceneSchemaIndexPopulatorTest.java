@@ -44,13 +44,10 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
-
 import static java.lang.Long.parseLong;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.index_sampling_buffer_size;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;

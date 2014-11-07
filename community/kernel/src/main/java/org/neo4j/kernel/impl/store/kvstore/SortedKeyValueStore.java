@@ -30,9 +30,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
-import org.neo4j.register.Register;
-import org.neo4j.register.Registers;
-
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 
 /*

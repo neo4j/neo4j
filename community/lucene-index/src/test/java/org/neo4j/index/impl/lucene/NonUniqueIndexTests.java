@@ -49,7 +49,6 @@ import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.index_sampling_buffer_size;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 

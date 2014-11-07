@@ -30,7 +30,6 @@ import org.junit.Test;
 
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " SchemaIndexProvider implementations. Each index provider that is to be tested by this suite" +

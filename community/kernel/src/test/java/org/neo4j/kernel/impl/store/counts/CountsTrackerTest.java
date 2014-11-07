@@ -37,7 +37,6 @@ import org.neo4j.kernel.impl.store.CountsOracle;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader;
-import org.neo4j.register.Register;
 import org.neo4j.register.Register.CopyableDoubleLongRegister;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -53,7 +52,6 @@ import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.BASE
 import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.META_HEADER_SIZE;
 import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.with;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
-import static org.neo4j.register.Register.DoubleLongRegister;
 
 public class CountsTrackerTest
 {
