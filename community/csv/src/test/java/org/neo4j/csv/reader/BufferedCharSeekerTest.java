@@ -243,13 +243,13 @@ public class BufferedCharSeekerTest
         assertNextValue( seeker, mark, COMMA, "one" );
         assertNextValue( seeker, mark, COMMA, "two" );
         assertNextValue( seeker, mark, COMMA, "three" );
-        assertNextValue( seeker, mark, COMMA, "" );
+        assertNextValue( seeker, mark, COMMA, null );
         assertTrue( mark.isEndOfLine() );
 
         assertNextValue( seeker, mark, COMMA, "uno" );
         assertNextValue( seeker, mark, COMMA, "dos" );
         assertNextValue( seeker, mark, COMMA, "tres" );
-        assertNextValue( seeker, mark, COMMA, "" );
+        assertNextValue( seeker, mark, COMMA, null );
         assertTrue( mark.isEndOfLine() );
 
         // THEN

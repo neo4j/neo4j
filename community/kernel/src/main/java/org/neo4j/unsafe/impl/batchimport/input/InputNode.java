@@ -29,7 +29,7 @@ import org.neo4j.helpers.Pair;
  */
 public class InputNode extends InputEntity
 {
-    private final String[] labels;
+    private String[] labels;
     private final Long labelField;
     private final Object id;
 
@@ -79,5 +79,10 @@ public class InputNode extends InputEntity
         {
             fields.add( Pair.of( "labels", Arrays.toString( labels ) ) );
         }
+    }
+
+    public void setLabels( String[] labels )
+    {
+        this.labels = labels;
     }
 }

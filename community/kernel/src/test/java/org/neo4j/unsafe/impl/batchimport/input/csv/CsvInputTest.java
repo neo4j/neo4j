@@ -21,6 +21,7 @@ package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import java.io.StringReader;
 import java.util.Iterator;
+import java.util.Set;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,6 +30,8 @@ import org.neo4j.csv.reader.BufferedCharSeeker;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
+import org.neo4j.function.Function;
+import org.neo4j.function.Functions;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.TargetDirectory;
@@ -45,9 +48,14 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_LABELS;
+import static org.neo4j.helpers.ArrayUtil.union;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
+import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.additiveLabels;
+import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.defaultRelationshipType;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
 
 public class CsvInputTest
 {
@@ -56,8 +64,9 @@ public class CsvInputTest
     {
         // GIVEN
         IdType idType = IdType.ACTUAL;
+        Iterable<DataFactory<InputNode>> data = dataIterable( data( "123,Mattias Persson,HACKER" ) );
         Input input = new CsvInput(
-                dataIterable( data( "123,Mattias Persson,HACKER" ) ),
+                data,
                 header( entry( "id", Type.ID, idType.extractor( extractors ) ),
                         entry( "name", Type.PROPERTY, extractors.string() ),
                         entry( "labels", Type.LABEL, extractors.string() ) ),
@@ -74,9 +83,11 @@ public class CsvInputTest
     {
         // GIVEN
         IdType idType = IdType.STRING;
+        Iterable<DataFactory<InputRelationship>> data = dataIterable( data(
+              "node1,node2,KNOWS,1234567\n" +
+              "node2,node10,HACKS,987654" ) );
         Input input = new CsvInput( null, null,
-                dataIterable( data( "node1,node2,KNOWS,1234567\n" +
-                      "node2,node10,HACKS,987654" ) ),
+                data,
                 header( entry( "from", Type.START_ID, idType.extractor( extractors ) ),
                         entry( "to", Type.END_ID, idType.extractor( extractors ) ),
                         entry( "type", Type.TYPE, extractors.string() ),
@@ -95,9 +106,11 @@ public class CsvInputTest
         CharSeeker nodeData = spy( charSeeker( "test" ) );
         CharSeeker relationshipData = spy( charSeeker( "test" ) );
         IdType idType = IdType.STRING;
+        Iterable<DataFactory<InputNode>> nodeDataIterable = dataIterable( given( nodeData ) );
+        Iterable<DataFactory<InputRelationship>> relationshipDataIterable = dataIterable( given( relationshipData ) );
         Input input = new CsvInput(
-                dataIterable( given( nodeData ) ), header( entry( "single", Type.IGNORE, idType.extractor( extractors ) ) ),
-                dataIterable( given( relationshipData ) ), header( entry( "single", Type.IGNORE, idType.extractor( extractors ) ) ),
+                nodeDataIterable, header( entry( "single", Type.IGNORE, idType.extractor( extractors ) ) ),
+                relationshipDataIterable, header( entry( "single", Type.IGNORE, idType.extractor( extractors ) ) ),
                 idType, COMMAS );
 
         // WHEN
@@ -119,10 +132,11 @@ public class CsvInputTest
     public void shouldCopeWithLinesThatHasTooFewValuesButStillValidates() throws Exception
     {
         // GIVEN
+        Iterable<DataFactory<InputNode>> data = dataIterable( data( "1,ultralisk,ZERG,10\n" +
+                                                                    "2,corruptor,ZERG\n" +
+                                                                    "3,mutalisk,ZERG,3" ) );
         Input input = new CsvInput(
-                dataIterable( data( "1,ultralisk,ZERG,10\n" +
-                                "2,corruptor,ZERG\n" +
-                                "3,mutalisk,ZERG,3" ) ),
+                data,
                 header(
                       entry( "id", Type.ID, extractors.long_() ),
                       entry( "unit", Type.PROPERTY, extractors.string() ),
@@ -134,9 +148,9 @@ public class CsvInputTest
         try ( ResourceIterator<InputNode> nodes = input.nodes().iterator() )
         {
             // THEN
-            assertNode( nodes.next(), 1L, new Object[] { "unit", "ultralisk", "kills", 10 }, new String[] { "ZERG" } );
-            assertNode( nodes.next(), 2L, new Object[] { "unit", "corruptor" }, new String[] { "ZERG" } );
-            assertNode( nodes.next(), 3L, new Object[] { "unit", "mutalisk", "kills", 3 }, new String[] { "ZERG" } );
+            assertNode( nodes.next(), 1L, new Object[] { "unit", "ultralisk", "kills", 10 }, labels( "ZERG" ) );
+            assertNode( nodes.next(), 2L, new Object[] { "unit", "corruptor" }, labels( "ZERG" ) );
+            assertNode( nodes.next(), 3L, new Object[] { "unit", "mutalisk", "kills", 3 }, labels( "ZERG" ) );
             assertFalse( nodes.hasNext() );
         }
     }
@@ -145,9 +159,10 @@ public class CsvInputTest
     public void shouldIgnoreValuesAfterHeaderEntries() throws Exception
     {
         // GIVEN
+        Iterable<DataFactory<InputNode>> data = dataIterable( data( "1,zergling,bubble,bobble\n" +
+                                                                    "2,scv,pun,intended" ) );
         Input input = new CsvInput(
-                dataIterable( data( "1,zergling,bubble,bobble\n" +
-                                "2,scv,pun,intended" ) ),
+                data,
                 header(
                       entry( "id", Type.ID, extractors.long_() ),
                       entry( "name", Type.PROPERTY, extractors.string() ) ),
@@ -157,8 +172,8 @@ public class CsvInputTest
         try ( ResourceIterator<InputNode> nodes = input.nodes().iterator() )
         {
             // THEN
-            assertNode( nodes.next(), 1L, new Object[] { "name", "zergling" }, InputEntity.NO_LABELS );
-            assertNode( nodes.next(), 2L, new Object[] { "name", "scv" }, InputEntity.NO_LABELS );
+            assertNode( nodes.next(), 1L, new Object[] { "name", "zergling" }, labels() );
+            assertNode( nodes.next(), 2L, new Object[] { "name", "scv" }, labels() );
             assertFalse( nodes.hasNext() );
         }
     }
@@ -167,33 +182,105 @@ public class CsvInputTest
     public void shouldHandleMultipleInputGroups() throws Exception
     {
         // GIVEN multiple input groups, each with their own, specific, header
-        DataFactory group1 = data( "id:ID,name,kills:int,health:int\n" +
-                                   "1,Jim,10,100\n" +
-                                   "2,Abathur,0,200\n" );
-        DataFactory group2 = data( "id:ID,type\n" +
-                                   "3,zergling\n" +
-                                   "4,csv\n" );
-        Input input = new CsvInput( dataIterable( group1, group2 ), defaultFormatNodeFileHeader(),
+        DataFactory<InputNode> group1 = data( "id:ID,name,kills:int,health:int\n" +
+                                              "1,Jim,10,100\n" +
+                                              "2,Abathur,0,200\n" );
+        DataFactory<InputNode> group2 = data( "id:ID,type\n" +
+                                              "3,zergling\n" +
+                                              "4,csv\n" );
+        Iterable<DataFactory<InputNode>> data = dataIterable( group1, group2 );
+        Input input = new CsvInput( data, defaultFormatNodeFileHeader(),
                                     null, null,
                                     IdType.STRING, Configuration.COMMAS );
 
         // WHEN iterating over them, THEN the expected data should come out
         ResourceIterator<InputNode> nodes = input.nodes().iterator();
-        assertNode( nodes.next(), "1", properties( "name", "Jim", "kills", 10, "health", 100 ), NO_LABELS );
-        assertNode( nodes.next(), "2", properties( "name", "Abathur", "kills", 0, "health", 200 ), NO_LABELS );
-        assertNode( nodes.next(), "3", properties( "type", "zergling" ), NO_LABELS );
-        assertNode( nodes.next(), "4", properties( "type", "csv" ), NO_LABELS );
+        assertNode( nodes.next(), "1", properties( "name", "Jim", "kills", 10, "health", 100 ), labels() );
+        assertNode( nodes.next(), "2", properties( "name", "Abathur", "kills", 0, "health", 200 ), labels() );
+        assertNode( nodes.next(), "3", properties( "type", "zergling" ), labels() );
+        assertNode( nodes.next(), "4", properties( "type", "csv" ), labels() );
         assertFalse( nodes.hasNext() );
     }
 
-    private DataFactory given( final CharSeeker data )
+    @Test
+    public void shouldProvideAdditiveLabels() throws Exception
     {
-        return new DataFactory()
+        // GIVEN
+        String[] addedLabels = {"Two", "AddTwo"};
+        DataFactory<InputNode> data = data( ":ID,name,:LABEL\n" +
+                                            "0,First,\n" +
+                                            "1,Second,One\n" +
+                                            "2,Third,One;Two",
+                                            additiveLabels( addedLabels ) );
+        Iterable<DataFactory<InputNode>> dataIterable = dataIterable( data );
+        Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(),
+                null, null, IdType.ACTUAL, Configuration.COMMAS );
+
+        // WHEN/THEN
+        try ( ResourceIterator<InputNode> nodes = input.nodes().iterator() )
+        {
+            assertNode( nodes.next(), 0L, properties( "name", "First" ),
+                    labels( addedLabels ) );
+            assertNode( nodes.next(), 1L, properties( "name", "Second" ),
+                    labels( union( new String[] {"One"}, addedLabels ) ) );
+            assertNode( nodes.next(), 2L, properties( "name", "Third" ),
+                    labels( union( new String[] {"One"}, addedLabels ) ) );
+            assertFalse( nodes.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldProvideDefaultRelationshipType() throws Exception
+    {
+        // GIVEN
+        String defaultType = "DEFAULT";
+        String customType = "CUSTOM";
+        DataFactory<InputRelationship> data = data( ":START_ID,:END_ID,:TYPE\n" +
+                                                    "0,1,\n" +
+                                                    "1,2," + customType + "\n" +
+                                                    "2,1," + defaultType,
+                                                    defaultRelationshipType( defaultType ) );
+        Iterable<DataFactory<InputRelationship>> dataIterable = dataIterable( data );
+        Input input = new CsvInput( null, null,
+                dataIterable, defaultFormatRelationshipFileHeader(), IdType.ACTUAL, Configuration.COMMAS );
+
+        // WHEN/THEN
+        try ( ResourceIterator<InputRelationship> relationships = input.relationships().iterator() )
+        {
+            assertRelationship( relationships.next(), 0L, 0L, 1L, defaultType, NO_PROPERTIES );
+            assertRelationship( relationships.next(), 1L, 1L, 2L, customType, NO_PROPERTIES );
+            assertRelationship( relationships.next(), 2L, 2L, 1L, defaultType, NO_PROPERTIES );
+            assertFalse( relationships.hasNext() );
+        }
+    }
+
+    private <ENTITY extends InputEntity> DataFactory<ENTITY> given( final CharSeeker data )
+    {
+        return new DataFactory<ENTITY>()
         {
             @Override
-            public CharSeeker create( Configuration config )
+            public Data<ENTITY> create( Configuration config )
+            {
+                return noDecoratorData( data, Functions.<ENTITY>identity() );
+            }
+        };
+    }
+
+    private <ENTITY extends InputEntity> Data<ENTITY> noDecoratorData( final CharSeeker data,
+            final Function<ENTITY,ENTITY> decorator )
+    {
+        return new Data<ENTITY>()
+        {
+            @Override
+            public CharSeeker stream()
             {
                 return data;
+            }
+
+            @Override
+            public Function<ENTITY,ENTITY> decorator()
+            {
+                return decorator;
             }
         };
     }
@@ -208,11 +295,11 @@ public class CsvInputTest
         assertArrayEquals( properties, relationship.properties() );
     }
 
-    private void assertNode( InputNode node, Object id, Object[] properties, String[] labels )
+    private void assertNode( InputNode node, Object id, Object[] properties, Set<String> labels )
     {
         assertEquals( id, node.id() );
         assertArrayEquals( properties, node.properties() );
-        assertArrayEquals( labels, node.labels() );
+        assertEquals( labels, asSet( node.labels() ) );
     }
 
     private Object[] properties( Object... keysAndValues )
@@ -220,9 +307,9 @@ public class CsvInputTest
         return keysAndValues;
     }
 
-    private String[] labels( String... labels )
+    private Set<String> labels( String... labels )
     {
-        return labels;
+        return asSet( labels );
     }
 
     private Header.Factory header( final Header.Entry... entries )
@@ -242,14 +329,20 @@ public class CsvInputTest
         return new Header.Entry( name, type, extractor );
     }
 
-    private DataFactory data( final String data )
+    private <ENTITY extends InputEntity> DataFactory<ENTITY> data( final String data )
     {
-        return new DataFactory()
+        return data( data, Functions.<ENTITY>identity() );
+    }
+
+    private <ENTITY extends InputEntity> DataFactory<ENTITY> data( final String data,
+            final Function<ENTITY,ENTITY> decorator )
+    {
+        return new DataFactory<ENTITY>()
         {
             @Override
-            public CharSeeker create( Configuration config )
+            public Data<ENTITY> create( Configuration config )
             {
-                return charSeeker( data );
+                return noDecoratorData( charSeeker( data ), decorator );
             }
         };
     }
@@ -259,9 +352,10 @@ public class CsvInputTest
         return new BufferedCharSeeker( new StringReader( data ) );
     }
 
-    private Iterable<DataFactory> dataIterable( DataFactory... data )
+    @SuppressWarnings( { "rawtypes", "unchecked" } )
+    private <ENTITY extends InputEntity> Iterable<DataFactory<ENTITY>> dataIterable( DataFactory... data )
     {
-        return Iterables.<DataFactory,DataFactory>iterable( data );
+        return Iterables.<DataFactory<ENTITY>,DataFactory<ENTITY>>iterable( data );
     }
 
     public final @Rule TestDirectory directory = TargetDirectory.testDirForTest( getClass() );

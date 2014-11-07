@@ -21,6 +21,7 @@ package org.neo4j.unsafe.impl.batchimport.input;
 
 import java.io.File;
 
+import org.neo4j.function.Functions;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapping;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
@@ -64,8 +65,10 @@ public class Inputs
     public static Input csv( File nodes, File relationships, IdType idType,
             Configuration configuration )
     {
-        Iterable<DataFactory> nodeData = iterable( DataFactories.data( nodes ) );
-        Iterable<DataFactory> relationshipData = iterable( DataFactories.data( relationships ) );
+        Iterable<DataFactory<InputNode>> nodeData =
+                iterable( DataFactories.data( Functions.<InputNode>identity(), nodes ) );
+        Iterable<DataFactory<InputRelationship>> relationshipData =
+                iterable( DataFactories.data( Functions.<InputRelationship>identity(), relationships ) );
         return new CsvInput(
                 nodeData, DataFactories.defaultFormatNodeFileHeader(),
                 relationshipData, DataFactories.defaultFormatRelationshipFileHeader(),

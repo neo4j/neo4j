@@ -26,7 +26,10 @@ import java.util.Collection;
 import java.util.Map.Entry;
 
 import org.neo4j.function.Function;
+import org.neo4j.function.Functions;
 import org.neo4j.helpers.Args;
+import org.neo4j.helpers.Args.Option;
+import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -42,19 +45,22 @@ import org.neo4j.kernel.logging.Logging;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
+import org.neo4j.unsafe.impl.batchimport.input.InputNode;
+import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.CsvInput;
-import org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories;
+import org.neo4j.unsafe.impl.batchimport.input.csv.DataFactory;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
-
-import static java.io.File.pathSeparator;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.util.Converters.withDefault;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
+import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.additiveLabels;
+import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.defaultRelationshipType;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.data;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
 
@@ -94,17 +100,18 @@ public class ImportTool
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         File storeDir;
         // The input groups
-        Collection<File[]> nodesFiles, relationshipsFiles;
+        Collection<Option<File[]>> nodesFiles, relationshipsFiles;
         try
         {
             storeDir = args.interpretOption( STORE_DIR, Converters.<File>mandatory(), Converters.toFile(),
                     Validators.DIRECTORY_IS_WRITABLE, Validators.CONTAINS_NO_EXISTING_DATABASE );
-            nodesFiles = args.interpretOptions( NODE_DATA, Converters.<File[]>mandatory(),
-                                                Converters.toFiles( MULTI_DELIMITER ),
-                                                Validators.FILES_EXISTS, Validators.<File>atLeast( 1 ) );
-            relationshipsFiles = args.interpretOptions( RELATIONSHIP_DATA, Converters.<File[]>mandatory(),
-                                                        Converters.toFiles( MULTI_DELIMITER ), Validators.FILES_EXISTS,
-                                                        Validators.<File>atLeast( 1 ) );
+            nodesFiles = args.interpretOptionsWithMetadata( NODE_DATA, Converters.<File[]>mandatory(),
+                                                            Converters.toFiles( MULTI_DELIMITER ),
+                                                            Validators.FILES_EXISTS, Validators.<File>atLeast( 1 ) );
+            relationshipsFiles = args.interpretOptionsWithMetadata( RELATIONSHIP_DATA, Converters.<File[]>mandatory(),
+                                                                    Converters.toFiles( MULTI_DELIMITER ),
+                                                                    Validators.FILES_EXISTS,
+                                                                    Validators.<File>atLeast( 1 ) );
         }
         catch ( IllegalArgumentException e )
         {
@@ -122,11 +129,9 @@ public class ImportTool
                 logging,
                 ExecutionMonitors.defaultVisible() );
         Input input = new CsvInput(
-                // TODO Ability to specify multiple files?
-                DataFactories.data( nodesFiles ),
+                nodeData( nodesFiles ),
                 defaultFormatNodeFileHeader(),
-                // TODO Ability to specify multiple files?
-                DataFactories.data( relationshipsFiles ),
+                relationshipData( relationshipsFiles ),
                 defaultFormatRelationshipFileHeader(),
                 args.interpretOption( ID_TYPE, withDefault( IdType.STRING ), TO_ID_TYPE ),
                 csvConfiguration( args ) );
@@ -159,16 +164,44 @@ public class ImportTool
         }
     }
 
+    private static Iterable<DataFactory<InputRelationship>>
+            relationshipData( Collection<Option<File[]>> relationshipsFiles )
+    {
+        return new IterableWrapper<DataFactory<InputRelationship>,Option<File[]>>( relationshipsFiles )
+        {
+            @Override
+            protected DataFactory<InputRelationship> underlyingObjectToObject( Option<File[]> group )
+            {
+                return data( defaultRelationshipType( group.metadata() ), group.value() );
+            }
+        };
+    }
+
+    private static Iterable<DataFactory<InputNode>> nodeData( Collection<Option<File[]>> files )
+    {
+        return new IterableWrapper<DataFactory<InputNode>,Option<File[]>>( files )
+        {
+            @Override
+            protected DataFactory<InputNode> underlyingObjectToObject( Option<File[]> group )
+            {
+                Function<InputNode,InputNode> decorator = group.metadata() != null
+                        ? additiveLabels( group.metadata().split( ":" ) )
+                        : Functions.<InputNode>identity();
+                return data( decorator, group.value() );
+            }
+        };
+    }
+
     private static void printUsage()
     {
         System.out.println( "Usage:" );
         printArgumentUsage( "--into <store-dir>", "database directory to import into. " +
                 "Must not contain existing database." );
-        printArgumentUsage( "--nodes <file1>" + pathSeparator + "<file2>" + pathSeparator + "...",
+        printArgumentUsage( "--nodes:<group-labels> <file1>" + MULTI_DELIMITER + "<file2>" + MULTI_DELIMITER + "...",
                 "Node CSV header and data. Multiple files will be logically seen as one big file " +
                 "from the perspective of the importer. First line must contain the header. " +
                 "Multiple input groups like these can be specified in one import, where each group has its own header." );
-        printArgumentUsage( "--relationships <file1>" + pathSeparator + "<file2>" + pathSeparator + "...",
+        printArgumentUsage( "--relationships:<default-type> <file1>" + MULTI_DELIMITER + "<file2>" + MULTI_DELIMITER + "...",
                 "Relationship CSV header and data. Multiple files will be logically seen as one big file " +
                 "from the perspective of the importer. First line must contain the header. " +
                 "Multiple input groups like these can be specified in one import, where each group has its own header." );

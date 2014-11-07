@@ -206,6 +206,11 @@ public class Readables
     private static <IN,OUT> RawIterator<OUT,IOException> iterator( final IN[] items,
             final RawFunction<IN,OUT,IOException> converter )
     {
+        if ( items.length == 0 )
+        {
+            throw new IllegalStateException( "No source items specified" );
+        }
+
         return new RawIterator<OUT,IOException>()
         {
             private int cursor;
