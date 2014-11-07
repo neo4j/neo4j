@@ -42,13 +42,13 @@ import org.neo4j.tooling.GlobalGraphOperations;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
 
-import static java.io.File.pathSeparator;
 import static java.lang.System.currentTimeMillis;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.alwaysTrue;
+import static org.neo4j.tooling.batchimport.BatchImporterTool.MULTI_DELIMITER;
 
 public class BatchImporterToolTest
 {
@@ -80,10 +80,10 @@ public class BatchImporterToolTest
         BatchImporterTool.main( arguments(
                 "--into", directory.absolutePath(),
                 "--nodes",
-                    nodeHeader( config ).getAbsolutePath() + pathSeparator +
+                    nodeHeader( config ).getAbsolutePath() + MULTI_DELIMITER +
                     nodeData( false, config, nodeIds, alwaysTrue() ).getAbsolutePath(),
                 "--relationships",
-                    relationshipHeader( config ).getAbsolutePath() + pathSeparator +
+                    relationshipHeader( config ).getAbsolutePath() + MULTI_DELIMITER +
                     relationshipData( false, config, nodeIds, alwaysTrue() ).getAbsolutePath() ) );
 
         // THEN
@@ -101,14 +101,14 @@ public class BatchImporterToolTest
         BatchImporterTool.main( arguments(
                 "--into", directory.absolutePath(),
                 "--nodes", // One group with one header file and one data file
-                    nodeHeader( config ).getAbsolutePath() + pathSeparator +
+                    nodeHeader( config ).getAbsolutePath() + MULTI_DELIMITER +
                     nodeData( false, config, nodeIds, lines( 0, NODE_COUNT/2 ) ).getAbsolutePath(),
                 "--nodes", // One group with two data files, where the header sits in the first file
                     nodeData( true, config, nodeIds,
-                              lines( NODE_COUNT/2, NODE_COUNT*3/4 ) ).getAbsolutePath() + pathSeparator +
+                              lines( NODE_COUNT/2, NODE_COUNT*3/4 ) ).getAbsolutePath() + MULTI_DELIMITER +
                     nodeData( false, config, nodeIds, lines( NODE_COUNT*3/4, NODE_COUNT ) ).getAbsolutePath(),
                 "--relationships",
-                    relationshipHeader( config ).getAbsolutePath() + pathSeparator +
+                    relationshipHeader( config ).getAbsolutePath() + MULTI_DELIMITER +
                     relationshipData( false, config, nodeIds, alwaysTrue() ).getAbsolutePath() ) );
 
         // THEN
@@ -191,7 +191,6 @@ public class BatchImporterToolTest
         {
             if ( linePredicate.accept( i ) )
             {
-                System.out.println( "writing " + i + " (" + nodeIds.get( i ) + ") into " + writer );
                 writer.println( nodeIds.get( i ) + delimiter + randomName() +
                                 delimiter + randomLabels( arrayDelimiter ) );
             }

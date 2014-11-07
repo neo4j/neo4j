@@ -73,14 +73,14 @@ public class Converters
         };
     }
 
-    public static Function<String,File[]> toFiles()
+    public static Function<String,File[]> toFiles( final String delimiter )
     {
         return new Function<String,File[]>()
         {
             @Override
             public File[] apply( String from )
             {
-                String[] names = from.split( File.pathSeparator );
+                String[] names = from.split( delimiter );
                 File[] file = new File[names.length];
                 for ( int i = 0; i < names.length; i++ )
                 {

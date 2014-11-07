@@ -75,6 +75,8 @@ public class BatchImporterTool
     private static final String QUOTE = "quote";
     private static final String ID_TYPE = "id-type";
 
+    static final String MULTI_DELIMITER = ",";
+
     public static void main( String[] incomingArguments )
     {
         Args args = new Args( incomingArguments );
@@ -92,10 +94,12 @@ public class BatchImporterTool
         {
             storeDir = args.interpretOption( STORE_DIR, Converters.<File>mandatory(), Converters.toFile(),
                     Validators.DIRECTORY_IS_WRITABLE, Validators.CONTAINS_NO_EXISTING_DATABASE );
-            nodesFiles = args.interpretOptions( NODE_DATA, Converters.<File[]>mandatory(), Converters.toFiles(),
-                    Validators.FILES_EXISTS, Validators.<File>atLeast( 1 ) );
+            nodesFiles = args.interpretOptions( NODE_DATA, Converters.<File[]>mandatory(),
+                                                Converters.toFiles( MULTI_DELIMITER ),
+                                                Validators.FILES_EXISTS, Validators.<File>atLeast( 1 ) );
             relationshipsFiles = args.interpretOptions( RELATIONSHIP_DATA, Converters.<File[]>mandatory(),
-                    Converters.toFiles(), Validators.FILES_EXISTS, Validators.<File>atLeast( 1 ) );
+                                                        Converters.toFiles( MULTI_DELIMITER ), Validators.FILES_EXISTS,
+                                                        Validators.<File>atLeast( 1 ) );
         }
         catch ( IllegalArgumentException e )
         {
