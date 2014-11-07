@@ -30,6 +30,7 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
+import static org.neo4j.register.Register.DoubleLong;
 
 class HashBasedIndex extends InMemoryIndexImplementation
 {
@@ -55,7 +56,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
-    void doAdd( Object propertyValue, long nodeId, boolean applyIdempotently )
+    boolean doAdd( Object propertyValue, long nodeId, boolean applyIdempotently )
     {
         Set<Long> nodes = data.get( propertyValue );
         if ( nodes == null )
@@ -63,7 +64,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
             data.put( propertyValue, nodes = new HashSet<>() );
         }
         // In this implementation we don't care about idempotency.
-        nodes.add( nodeId );
+        return nodes.add( nodeId );
     }
 
     @Override
@@ -130,7 +131,37 @@ class HashBasedIndex extends InMemoryIndexImplementation
     @Override
     public int getIndexedCount( long nodeId, Object propertyValue )
     {
-        Set<Long> canditates = data.get( propertyValue );
-        return canditates != null && canditates.contains( nodeId ) ? 1 : 0;
+        Set<Long> candidates = data.get( propertyValue );
+        return candidates != null && candidates.contains( nodeId ) ? 1 : 0;
     }
+
+    @Override
+    public long sampleIndex( final DoubleLong.Out result )
+    {
+        final long[] uniqueAndSize = {0, 0};
+        try
+        {
+            iterateAll( new IndexEntryIterator()
+            {
+                @Override
+                public void visitEntry( Object value, Set<Long> nodeIds ) throws Exception
+                {
+                    int ids = nodeIds.size();
+                    if ( ids > 0 )
+                    {
+                        uniqueAndSize[0] += 1;
+                        uniqueAndSize[1] += ids;
+                    }
+                }
+            });
+        }
+        catch ( Exception ex )
+        {
+            throw new RuntimeException( ex );
+        }
+
+        result.write( uniqueAndSize[0], uniqueAndSize[1] );
+        return uniqueAndSize[1];
+    }
+
 }

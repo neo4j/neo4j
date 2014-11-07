@@ -114,7 +114,7 @@ public class ConstraintIndexCreator
     {
         try
         {
-            indexingService.getProxyForRule( indexId ).awaitStoreScanCompleted();
+            indexingService.getIndexProxy( indexId ).awaitStoreScanCompleted();
         }
         catch ( IndexNotFoundKernelException e )
         {

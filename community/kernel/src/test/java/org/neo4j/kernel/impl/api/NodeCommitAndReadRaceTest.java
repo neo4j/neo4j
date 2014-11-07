@@ -154,7 +154,7 @@ public class NodeCommitAndReadRaceTest
         Monitors monitors = new Monitors();
         StoreFactory storeFactory = new StoreFactory( config, idGeneratorFactory, pageCache, fsr.get(),
                 DEV_NULL, monitors );
-        neoStore = storeFactory.newNeoStore( true );
+        neoStore = storeFactory.newNeoStore( true, false );
         IndexingService indexingService = mock( IndexingService.class );
         PropertyKeyTokenHolder propertyKeyTokenHolder = new PropertyKeyTokenHolder( mock( TokenCreator.class ) );
         LabelTokenHolder labelTokenHolder = new LabelTokenHolder( mock( TokenCreator.class ) );

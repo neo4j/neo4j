@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
+import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -37,17 +41,9 @@ import org.neo4j.kernel.impl.core.IteratingPropertyReceiver;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.Mode;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
-
-import static java.util.Arrays.binarySearch;
-import static java.util.Arrays.copyOf;
-
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
-import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
 public class LazyIndexUpdates implements IndexUpdates
 {
@@ -101,16 +97,9 @@ public class LazyIndexUpdates implements IndexUpdates
     private void gatherUpdatesFromPropertyCommands( Collection<NodePropertyUpdate> updates,
                                                     Map<Pair<Long, Integer>, NodePropertyUpdate> propertyLookup )
     {
-        for ( List<PropertyCommand> propertyCommands : propCommands.values() )
+        for ( Map.Entry<Long, List<PropertyCommand>> entry : propCommands.entrySet() )
         {
-            // Let after state of first command here be representative of the whole group
-            PropertyRecord representative = propertyCommands.get( 0 ).getAfter();
-            if ( !representative.isNodeSet() )
-            {   // These changes wasn't for a node, skip them
-                continue;
-            }
-
-            long nodeId = representative.getNodeId();
+            long nodeId = entry.getKey();
             long[] nodeLabelsBefore, nodeLabelsAfter;
             NodeCommand nodeChanges = nodeCommands.get( nodeId );
             if ( nodeChanges != null )
@@ -140,7 +129,7 @@ public class LazyIndexUpdates implements IndexUpdates
             }
 
             propertyStore.toLogicalUpdates( updates,
-                    Iterables.<PropertyRecordChange, PropertyCommand>cast( propertyCommands ),
+                    Iterables.<PropertyRecordChange, PropertyCommand>cast( entry.getValue() ),
                     nodeLabelsBefore, nodeLabelsAfter );
         }
 
@@ -162,9 +151,9 @@ public class LazyIndexUpdates implements IndexUpdates
             long[] labelsBefore = parseLabelsField( nodeCommand.getBefore() ).get( nodeStore );
             long[] labelsAfter = parseLabelsField( nodeCommand.getAfter() ).get( nodeStore );
 
-            if ( nodeCommand.getMode() != Mode.UPDATE )
+            if ( nodeCommand.getMode() == Mode.DELETE )
             {
-                // For created and deleted nodes rely on the updates from the perspective of properties to cover it all
+                // For deleted nodes rely on the updates from the perspective of properties to cover it all
                 // otherwise we'll get duplicate update during recovery, or cannot load properties if deleted.
                 continue;
             }
@@ -195,69 +184,6 @@ public class LazyIndexUpdates implements IndexUpdates
         IteratingPropertyReceiver receiver = new IteratingPropertyReceiver();
         propertyLoader.nodeLoadProperties( nodeId, receiver );
         return receiver;
-    }
-
-    static class LabelChangeSummary
-    {
-        private static final long[] NO_LABELS = new long[0];
-
-        private final long[] addedLabels;
-        private final long[] removedLabels;
-
-        LabelChangeSummary( long[] labelsBefore, long[] labelsAfter )
-        {
-            // Ids are sorted in the store
-            long[] addedLabels = new long[labelsAfter.length];
-            long[] removedLabels = new long[labelsBefore.length];
-            int addedLabelsCursor = 0, removedLabelsCursor = 0;
-            for ( long labelAfter : labelsAfter )
-            {
-                if ( binarySearch( labelsBefore, labelAfter ) < 0 )
-                {
-                    addedLabels[addedLabelsCursor++] = labelAfter;
-                }
-            }
-            for ( long labelBefore : labelsBefore )
-            {
-                if ( binarySearch( labelsAfter, labelBefore ) < 0 )
-                {
-                    removedLabels[removedLabelsCursor++] = labelBefore;
-                }
-            }
-
-            // For each property on the node, produce one update for added labels and one for removed labels.
-            this.addedLabels = shrink( addedLabels, addedLabelsCursor );
-            this.removedLabels = shrink( removedLabels, removedLabelsCursor );
-        }
-
-        private long[] shrink( long[] array, int toLength )
-        {
-            if ( toLength == 0 )
-            {
-                return NO_LABELS;
-            }
-            return array.length == toLength ? array : copyOf( array, toLength );
-        }
-
-        public boolean hasAddedLabels()
-        {
-            return addedLabels.length > 0;
-        }
-
-        public boolean hasRemovedLabels()
-        {
-            return removedLabels.length > 0;
-        }
-
-        public long[] getAddedLabels()
-        {
-            return addedLabels;
-        }
-
-        public long[] getRemovedLabels()
-        {
-            return removedLabels;
-        }
     }
 
     @Override

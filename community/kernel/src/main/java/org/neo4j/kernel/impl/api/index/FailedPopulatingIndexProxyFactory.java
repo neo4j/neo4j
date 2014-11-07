@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -28,19 +29,25 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 public class FailedPopulatingIndexProxyFactory implements FailedIndexProxyFactory
 {
     private final IndexDescriptor descriptor;
+    private final IndexConfiguration configuration;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
     private final IndexPopulator populator;
     private final String indexUserDescription;
+    private final IndexCountsRemover indexCountsRemover;
 
     FailedPopulatingIndexProxyFactory( IndexDescriptor descriptor,
+                                       IndexConfiguration configuration,
                                        SchemaIndexProvider.Descriptor providerDescriptor,
                                        IndexPopulator populator,
-                                       String indexUserDescription )
+                                       String indexUserDescription,
+                                       IndexCountsRemover indexCountsRemover )
     {
         this.descriptor = descriptor;
+        this.configuration = configuration;
         this.providerDescriptor = providerDescriptor;
         this.populator = populator;
         this.indexUserDescription = indexUserDescription;
+        this.indexCountsRemover = indexCountsRemover;
     }
 
     @Override
@@ -48,7 +55,7 @@ public class FailedPopulatingIndexProxyFactory implements FailedIndexProxyFactor
     {
         return
             new FailedIndexProxy(
-                descriptor, providerDescriptor,
-                indexUserDescription, populator, failure( failure ) );
+                descriptor, configuration, providerDescriptor,
+                indexUserDescription, populator, failure( failure ), indexCountsRemover );
     }
 }

@@ -118,7 +118,7 @@ public class ContractCheckingIndexProxyTest
         IndexProxy outer = newContractCheckingIndexProxy( inner );
 
         // WHEN
-        try (IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE ))
+        try (IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE ) )
         {
             updater.process( null );
         }
@@ -318,12 +318,12 @@ public class ContractCheckingIndexProxyTest
             latch.finish();
         }
     }
-    
+
     private interface ThrowingRunnable
     {
         void run() throws IOException;
     }
-    
+
     private void runInSeparateThread( final ThrowingRunnable action )
     {
         new Thread( new Runnable()

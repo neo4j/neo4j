@@ -39,7 +39,6 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -195,7 +194,7 @@ public class TestGraphProperties
                 fs.get(),
                 StringLogger.DEV_NULL,
                 monitors );
-        NeoStore neoStore = storeFactory.newNeoStore( false );
+        NeoStore neoStore = storeFactory.newNeoStore( false, false );
         long prop = neoStore.getGraphNextProp();
         assertTrue( prop != 0 );
         neoStore.close();

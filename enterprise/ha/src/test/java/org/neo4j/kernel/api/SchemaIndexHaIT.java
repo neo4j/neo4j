@@ -28,6 +28,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
+import static org.neo4j.register.Register.DoubleLong;
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 
@@ -68,7 +69,9 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePullerClient;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.register.Register;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
@@ -134,12 +137,12 @@ public class SchemaIndexHaIT
 
         // WHEN we shut down the master
         cluster.shutdown( firstMaster );
-        
+
         dbFactory.triggerFinish( aSlave );
         cluster.await( masterAvailable( firstMaster ) );
         // get the new master, which should be the slave we pulled from above
         HighlyAvailableGraphDatabase newMaster = cluster.getMaster();
-        
+
         // THEN
         assertEquals( "Unexpected new master", aSlave, newMaster );
         try ( Transaction tx = newMaster.beginTx() )
@@ -405,7 +408,7 @@ public class SchemaIndexHaIT
             return false;
         }
     }
-    
+
     private static class ControlledIndexPopulator implements IndexPopulator
     {
         private final DoubleLatch latch;
@@ -461,6 +464,12 @@ public class SchemaIndexHaIT
         {
             delegate.markAsFailed( failure );
         }
+
+        @Override
+        public long sampleResult( DoubleLong.Out result )
+        {
+            return delegate.sampleResult( result );
+        }
     }
 
     public static final SchemaIndexProvider.Descriptor CONTROLLED_PROVIDER_DESCRIPTOR =
@@ -471,23 +480,26 @@ public class SchemaIndexHaIT
     {
         private final SchemaIndexProvider delegate;
         private final DoubleLatch latch = new DoubleLatch();
-        
+
         public ControlledSchemaIndexProvider(SchemaIndexProvider delegate)
         {
             super( CONTROLLED_PROVIDER_DESCRIPTOR, 100 /*we want it to always win*/ );
             this.delegate = delegate;
         }
-        
+
         @Override
-        public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexConfiguration config )
+        public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexConfiguration config,
+                                            IndexSamplingConfig samplingConfig )
         {
-            return new ControlledIndexPopulator( delegate.getPopulator( indexId, descriptor, config ), latch );
+            IndexPopulator populator = delegate.getPopulator( indexId, descriptor, config, samplingConfig );
+            return new ControlledIndexPopulator( populator, latch );
         }
 
         @Override
-        public IndexAccessor getOnlineAccessor( long indexId, IndexConfiguration config ) throws IOException
+        public IndexAccessor getOnlineAccessor( long indexId, IndexConfiguration config,
+                                                IndexSamplingConfig samplingConfig  ) throws IOException
         {
-            return delegate.getOnlineAccessor(indexId, config);
+            return delegate.getOnlineAccessor(indexId, config, samplingConfig );
         }
 
         @Override
@@ -561,7 +573,7 @@ public class SchemaIndexHaIT
             getCurrentState().addKernelExtensions( Arrays.<KernelExtensionFactory<?>>asList( factory ) );
             return super.newHighlyAvailableDatabaseBuilder( path );
         }
-        
+
         void awaitPopulationStarted( GraphDatabaseService db )
         {
             ControlledSchemaIndexProvider provider = (ControlledSchemaIndexProvider) perDbIndexProvider.get( db );

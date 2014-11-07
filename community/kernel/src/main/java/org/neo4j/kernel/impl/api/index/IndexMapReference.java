@@ -19,18 +19,39 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-public class IndexMapReference
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+
+public class IndexMapReference implements IndexMapSnapshotProvider
 {
     private volatile IndexMap indexMap = new IndexMap();
 
-    public IndexMap getIndexMapCopy()
+    @Override
+    public IndexMap indexMapSnapshot()
     {
         return indexMap.clone();
     }
 
-    public IndexProxy getIndexProxy( long indexId )
+    public IndexProxy getIndexProxy( long indexId ) throws IndexNotFoundKernelException
     {
-        return indexMap.getIndexProxy( indexId );
+        IndexProxy proxy = indexMap.getIndexProxy( indexId );
+        if ( proxy == null )
+        {
+            throw new IndexNotFoundKernelException( "No index for index id " + indexId + " exists." );
+        }
+        return proxy;
+    }
+
+    public IndexProxy getOnlineIndexProxy( long indexId ) throws IndexNotFoundKernelException
+    {
+        IndexProxy proxy = getIndexProxy( indexId );
+        switch ( proxy.getState() )
+        {
+            case ONLINE:
+                return proxy;
+
+            default:
+                throw new IndexNotFoundKernelException( "Expected index with id " + indexId + " to be online.");
+        }
     }
 
     public Iterable<IndexProxy> getAllIndexProxies()
@@ -47,7 +68,7 @@ public class IndexMapReference
     public IndexProxy removeIndexProxy( long indexId )
     {
         // ASSUMPTION: Only called at shutdown or during commit (single-threaded in each case)
-        IndexMap newIndexMap = getIndexMapCopy();
+        IndexMap newIndexMap = indexMapSnapshot();
         IndexProxy indexProxy = newIndexMap.removeIndexProxy( indexId );
         setIndexMap( newIndexMap );
         return indexProxy;
@@ -61,8 +82,8 @@ public class IndexMapReference
         return oldIndexMap.getAllIndexProxies();
     }
 
-    public IndexUpdaterMap getIndexUpdaterMap( IndexUpdateMode mode )
+    public IndexUpdaterMap createIndexUpdaterMap( IndexUpdateMode mode )
     {
-        return new IndexUpdaterMap( mode, indexMap );
+        return new IndexUpdaterMap( indexMap, mode );
     }
 }

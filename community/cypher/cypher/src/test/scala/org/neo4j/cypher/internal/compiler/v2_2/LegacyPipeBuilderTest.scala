@@ -23,12 +23,13 @@ import java.util.concurrent._
 
 import org.junit.Assert._
 import org.mockito.Mockito._
+import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.Normal
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
-import org.neo4j.cypher.internal.compiler.v2_2.commands.{ReturnItem, _}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Identifier, Literal}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.values.TokenType.{Label, PropertyKey}
+import org.neo4j.cypher.internal.compiler.v2_2.commands.{ReturnItem, _}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{ExecutionPlanInProgress, _}
 import org.neo4j.cypher.internal.compiler.v2_2.mutation.{CreateNode, DeletePropertyAction}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes._
@@ -38,7 +39,6 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.{Planner, PlanningMonitor
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.spi.v2_2.TransactionBoundQueryContext
-import org.neo4j.cypher.{GraphDatabaseTestSupport}
 import org.neo4j.graphdb.DynamicLabel
 import org.scalatest.mock.MockitoSugar
 

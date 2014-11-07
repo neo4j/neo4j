@@ -19,22 +19,17 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
-import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.CountsKey;
 import org.neo4j.kernel.impl.api.CountsVisitor;
-import org.neo4j.kernel.impl.store.AbstractStore;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader;
@@ -42,6 +37,18 @@ import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
+
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
+import static org.neo4j.kernel.impl.store.counts.CountsKey.indexCountsKey;
+import static org.neo4j.kernel.impl.store.counts.CountsKey.indexSampleKey;
+import static org.neo4j.kernel.impl.store.counts.CountsKey.nodeKey;
+import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipKey;
+import static org.neo4j.kernel.impl.store.counts.CountsStore.RECORD_SIZE;
+import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.BASE_MINOR_VERSION;
+import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.with;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
+import static org.neo4j.register.Register.DoubleLongRegister;
 
 public class CountsStoreWriterTest
 {
@@ -52,10 +59,15 @@ public class CountsStoreWriterTest
         final CountsStoreWriter writer = new CountsStoreWriter( fs, pageCache, emptyHeader, file, lastTxId );
 
         // when
-        writer.valueRegister().write( 42 );
-        writer.visit( nodeKey( 0 ) );
-        writer.valueRegister().write( 24 );
-        writer.visit( relationshipKey( 1, 2, 3 ) );
+        DoubleLongRegister valueRegister = Registers.newDoubleLongRegister();
+        valueRegister.write( 0, 42 );
+        writer.visit( nodeKey( 0 ), valueRegister );
+        valueRegister.write( 0, 24 );
+        writer.visit( relationshipKey( 1, 2, 3 ), valueRegister );
+        valueRegister.write( 9, 11 );
+        writer.visit( indexCountsKey( 4, 5 ), valueRegister );
+        valueRegister.write( 24, 84 );
+        writer.visit( indexSampleKey( 4, 5 ), valueRegister );
         writer.close();
 
         // then
@@ -64,20 +76,12 @@ public class CountsStoreWriterTest
             final SortedKeyValueStore counts = writer.openForReading();
 
             assertEquals( lastTxId, counts.lastTxId() );
-            assertEquals( 2, counts.totalRecordsStored() );
+            assertEquals( 4, counts.totalRecordsStored() );
             assertEquals( file, counts.file() );
-            counts.accept( new KeyValueRecordVisitor<CountsKey, Register.LongRegister>()
+            counts.accept( new KeyValueRecordVisitor<CountsKey, DoubleLongRegister>()
             {
-                private final Register.LongRegister valueRegister = Registers.newLongRegister();
-
                 @Override
-                public Register.LongRegister valueRegister()
-                {
-                    return valueRegister;
-                }
-
-                @Override
-                public void visit( CountsKey key )
+                public void visit( CountsKey key, DoubleLongRegister valueRegister )
                 {
                     key.accept( new CountsVisitor()
                     {
@@ -96,9 +100,28 @@ public class CountsStoreWriterTest
                             assertEquals( 3, endLabelId );
                             assertEquals( 24, count );
                         }
-                    }, valueRegister );
+
+                        @Override
+                        public void visitIndexCounts( int labelId, int propertyKeyId, long updates, long size )
+                        {
+                            assertEquals( 4, labelId );
+                            assertEquals( 5, propertyKeyId );
+                            assertEquals( 9, updates );
+                            assertEquals( 11, size );
+                        }
+
+
+                        @Override
+                        public void visitIndexSample( int labelId, int propertyKeyId, long unique, long size )
+                        {
+                            assertEquals( 4, labelId );
+                            assertEquals( 5, propertyKeyId );
+                            assertEquals( 24, unique );
+                            assertEquals( 84, size );
+                        }
+                    }, valueRegister.readFirst(), valueRegister.readSecond() );
                 }
-            } );
+            }, Registers.newDoubleLongRegister() );
 
         }
         finally
@@ -113,8 +136,8 @@ public class CountsStoreWriterTest
     @Rule
     public PageCacheRule pageCacheRule = new PageCacheRule();
 
-    private final SortedKeyValueStoreHeader emptyHeader = SortedKeyValueStoreHeader.empty( AbstractStore
-            .ALL_STORES_VERSION );
+    private final SortedKeyValueStoreHeader emptyHeader =
+            with( RECORD_SIZE, ALL_STORES_VERSION, BASE_TX_ID, BASE_MINOR_VERSION );
     private final File file = new File( "file" );
     private final long lastTxId = 100;
     private FileSystemAbstraction fs;

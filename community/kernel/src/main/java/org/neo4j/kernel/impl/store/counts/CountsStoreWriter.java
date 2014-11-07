@@ -19,28 +19,36 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
-import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
-import static org.neo4j.kernel.impl.store.counts.CountsRecordSerializer.NODE_KEY;
-import static org.neo4j.kernel.impl.store.counts.CountsRecordSerializer.RELATIONSHIP_KEY;
-
 import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.kernel.impl.api.CountsKey;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
+import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore.Writer;
+import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore.WriterFactory;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader;
 import org.neo4j.register.Register;
+import org.neo4j.register.Register.CopyableDoubleLongRegister;
 import org.neo4j.register.Registers;
 
-public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, Register.LongRegister>, CountsVisitor
+import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
+import static org.neo4j.kernel.impl.store.counts.CountsKeyType.EMPTY;
+import static org.neo4j.kernel.impl.store.counts.CountsKeyType.ENTITY_NODE;
+import static org.neo4j.kernel.impl.store.counts.CountsKeyType.ENTITY_RELATIONSHIP;
+import static org.neo4j.kernel.impl.store.counts.CountsKeyType.INDEX_COUNTS;
+import static org.neo4j.kernel.impl.store.counts.CountsKeyType.INDEX_SAMPLE;
+import static org.neo4j.kernel.impl.store.counts.CountsStore.RECORD_SIZE;
+import static org.neo4j.register.Register.DoubleLongRegister;
+
+public class CountsStoreWriter implements Writer<CountsKey, CopyableDoubleLongRegister>, CountsVisitor
 {
-    public static class Factory implements SortedKeyValueStore.WriterFactory<CountsKey, Register.LongRegister>
+    public static class Factory implements WriterFactory<CountsKey, CopyableDoubleLongRegister>
     {
         @Override
         public CountsStoreWriter create( FileSystemAbstraction fs, PageCache pageCache,
@@ -52,51 +60,51 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
         }
     }
 
-    private final Register.LongRegister valueRegister = Registers.newLongRegister();
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
-    private final SortedKeyValueStoreHeader header;
+    private final SortedKeyValueStoreHeader oldHeader;
     private final PagedFile pagedFile;
     private final File targetFile;
     private final long txId;
+    private final long minorVersion;
+
+    // register used to extract values while visiting keys, see visit(...)
+    private final DoubleLongRegister visitTargetRegister = Registers.newDoubleLongRegister( 0l, 0l );
 
     private int totalRecords;
     private PageCursor page;
 
-    CountsStoreWriter( FileSystemAbstraction fs, PageCache pageCache, SortedKeyValueStoreHeader header,
+    CountsStoreWriter( FileSystemAbstraction fs, PageCache pageCache, SortedKeyValueStoreHeader oldHeader,
                        File targetFile, long lastCommittedTxId ) throws IOException
     {
         this.fs = fs;
         this.pageCache = pageCache;
         int pageSize = pageCache.pageSize();
-        if ( pageSize % SortedKeyValueStore.RECORD_SIZE != 0 )
+        if ( pageSize % RECORD_SIZE != 0 )
         {
             throw new IllegalStateException( "page size must a multiple of the record size" );
         }
         this.pagedFile = pageCache.map( targetFile, pageSize );
-        this.header = header;
+        this.oldHeader = oldHeader;
         this.targetFile = targetFile;
         this.txId = lastCommittedTxId;
+        this.minorVersion = txId == oldHeader.lastTxId() ? oldHeader.minorVersion() + 1 : SortedKeyValueStoreHeader.BASE_MINOR_VERSION;
         if ( !(this.page = pagedFile.io( 0, PF_EXCLUSIVE_LOCK )).next() )
         {
             throw new IOException( "Could not acquire page." );
         }
-        page.setOffset( this.header.headerRecords() * SortedKeyValueStore.RECORD_SIZE );
+        page.setOffset( this.oldHeader.headerRecords() * RECORD_SIZE );
     }
 
     @Override
-    public Register.LongRegister valueRegister()
+    public void visit( CountsKey key, CopyableDoubleLongRegister register )
     {
-        return valueRegister;
-    }
-
-    @Override
-    public void visit( CountsKey key )
-    {
-        if ( valueRegister.read() != 0 /* only writeToBuffer values that count */ )
+        // only writeToBuffer values that count
+        if ( !register.hasValues( 0, 0 ) )
         {
+            register.copyTo( visitTargetRegister );
             totalRecords++;
-            key.accept( this, valueRegister );
+            key.accept( this, visitTargetRegister.readFirst(), visitTargetRegister.readSecond() );
         }
     }
 
@@ -105,7 +113,7 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
     {
         assert count > 0 :
                 String.format( "visitNodeCount(labelId=%d, count=%d) - count must be positive", labelId, count );
-        write( NODE_KEY, 0, 0, labelId, count );
+        write( ENTITY_NODE, 0, 0, labelId, 0, count );
     }
 
     @Override
@@ -114,58 +122,65 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
         assert count > 0 :
                 String.format( "visitRelationshipCount(startLabelId=%d, typeId=%d, endLabelId=%d, count=%d)" +
                         " - count must be positive", startLabelId, typeId, endLabelId, count );
-        write( RELATIONSHIP_KEY, startLabelId, typeId, endLabelId, count );
+        write( ENTITY_RELATIONSHIP, startLabelId, typeId, endLabelId, 0, count );
     }
 
-    /**
-     * Node Key:
-     * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
-     * [x, , , , , , , , , , , ,x,x,x,x]
-     * _                       _ _ _ _
-     * |                          |
-     * entry                      label
-     * type                        id
-     * <p/>
-     * Relationship Key:
-     * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
-     * [x, ,x,x,x,x, ,x,x,x,x, ,x,x,x,x]
-     * _   _ _ _ _   _ _ _ _   _ _ _ _
-     * |      |         |         |
-     * entry  label      rel      label
-     * type    id        type      id
-     * id
-     * <p/>
-     * Count value:
-     * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
-     * [ , , , , , , , ,x,x,x,x,x,x,x,x]
-     * _ _ _ _ _ _ _ _
-     * |
-     * value
-     */
-    private void write( byte keyType, int startLabelId, int relTypeId, int endLabelId, long count )
+    @Override
+    public void visitIndexCounts( int labelId, int propertyKeyId, long updates, long size )
+    {
+        assert updates >= 0 :
+                String.format( "visitIndexSizeCount(labelId=%d, propertyKeyId=%d, updates=%d, size=%d)" +
+                        " - updates must be positive or zero", labelId, propertyKeyId, updates, size );
+        assert size >= 0 :
+                String.format( "visitIndexSizeCount(labelId=%d, propertyKeyId=%d, updates=%d, size=%d)" +
+                               " - size must be positive or zero", labelId, propertyKeyId, updates, size );
+        write( INDEX_COUNTS, 0, propertyKeyId, labelId, updates, size );
+    }
+
+    @Override
+    public void visitIndexSample( int labelId, int propertyKeyId, long unique, long size )
+    {
+        assert unique >= 0 :
+                String.format( "visitIndexSampleCount(labelId=%d, propertyKeyId=%d, unique=%d, size=%d)" +
+                        " - unique must be zero or positive", labelId, propertyKeyId, unique, size );
+        assert size >= 0 :
+                String.format( "visitIndexSampleCount(labelId=%d, propertyKeyId=%d, unique=%d, size=%d)" +
+                        " - size must be zero or positive", labelId, propertyKeyId, unique, size );
+        assert unique <= size :
+                String.format( "visitIndexSampleCount(labelId=%d, propertyKeyId=%d, unique=%d, size=%d)" +
+                        " - unique must be less than or equal to size", labelId, propertyKeyId, unique, size );
+        write( INDEX_SAMPLE, 0, propertyKeyId, labelId, unique, size );
+    }
+
+
+    // See CountsRecordSerializer for format
+    private void write( CountsKeyType keyType, int firstId, int secondId, int thirdId, long first, long second )
     {
         try
         {
             int offset = page.getOffset();
             if ( offset >= pagedFile.pageSize() )
             { // we've reached the end of this page
-                page.next();
+                if ( !page.next() )
+                {
+                    throw new IOException( "Could not acquire next page." );
+                }
                 offset = 0;
             }
             do
             {
                 page.setOffset( offset );
 
-                page.putByte( keyType );
+                page.putByte( keyType.code );
                 page.putByte( (byte) 0 );
-                page.putInt( startLabelId );
+                page.putInt( firstId );
                 page.putByte( (byte) 0 );
-                page.putInt( relTypeId );
+                page.putInt( secondId );
                 page.putByte( (byte) 0 );
-                page.putInt( endLabelId );
+                page.putInt( thirdId );
 
-                page.putLong( 0 );
-                page.putLong( count );
+                page.putLong( first );
+                page.putLong( second );
             } while ( page.shouldRetry() );
         }
         catch ( IOException e )
@@ -183,6 +198,7 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
     @Override
     public void close() throws IOException
     {
+        zeroPadding( pagedFile, page );
         if ( !page.next( 0 ) )
         {
             throw new IOException( "Could not update header." );
@@ -193,8 +209,18 @@ public class CountsStoreWriter implements SortedKeyValueStore.Writer<CountsKey, 
         pagedFile.flush();
     }
 
+    private void zeroPadding( PagedFile pagedFile, PageCursor page ) throws IOException
+    {
+        final long lastPageId = pagedFile.getLastPageId();
+        final int pageSize = pagedFile.pageSize();
+        while ( page.getCurrentPageId() < lastPageId || page.getOffset() < pageSize )
+        {
+           write( EMPTY, 0, 0, 0, 0, 0 );
+        }
+    }
+
     private SortedKeyValueStoreHeader newHeader()
     {
-        return header.update( totalRecords, txId );
+        return oldHeader.update( totalRecords, txId, minorVersion );
     }
 }

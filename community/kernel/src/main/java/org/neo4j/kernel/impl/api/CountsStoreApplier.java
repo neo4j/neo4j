@@ -41,17 +41,17 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
 public class CountsStoreApplier extends NeoCommandHandler.Adapter
 {
-    private final CountsAcceptor countsStore;
+    private final CountsAccessor countsAccessor;
     private final NodeStore nodeStore;
-    private final Map<Integer/*labelId*/,IntCounter> labelDelta = new HashMap<>();
-    private final Map<Integer/*typeId*/,IntCounter> relationshipTypeDelta = new HashMap<>();
+    private final Map<Integer/*labelId*/, IntCounter> labelDelta = new HashMap<>();
+    private final Map<Integer/*typeId*/, IntCounter> relationshipTypeDelta = new HashMap<>();
 
     private int nodesDelta;
     private int relsDelta;
 
-    public CountsStoreApplier( CountsAcceptor countsStore, NodeStore nodeStore )
+    public CountsStoreApplier( CountsAccessor countsAccessor, NodeStore nodeStore )
     {
-        this.countsStore = countsStore;
+        this.countsAccessor = countsAccessor;
         this.nodeStore = nodeStore;
     }
 
@@ -153,7 +153,7 @@ public class CountsStoreApplier extends NeoCommandHandler.Adapter
     public boolean visitUpdateCountsCommand( Command.CountsCommand command ) throws IOException
     {
         long delta = command.delta();
-        countsStore.updateCountsForRelationship(
+        countsAccessor.incrementRelationshipCount(
                 command.startLabelId(), command.typeId(), command.endLabelId(), delta );
         return false;
     }
@@ -167,18 +167,17 @@ public class CountsStoreApplier extends NeoCommandHandler.Adapter
     public void apply()
     {
         // nodes
-        countsStore.updateCountsForNode( ANY_LABEL, nodesDelta );
-        for ( Map.Entry<Integer, IntCounter> label : labelDelta.entrySet() )
+        countsAccessor.incrementNodeCount( ANY_LABEL, nodesDelta );
+        for ( Map.Entry<Integer,IntCounter> label : labelDelta.entrySet() )
         {
-            final int count = label.getValue().value();
-            countsStore.updateCountsForNode( label.getKey(), count );
+            countsAccessor.incrementNodeCount( label.getKey(), label.getValue().value() );
         }
+
         // relationships
-        countsStore.updateCountsForRelationship( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, relsDelta );
-        for ( Map.Entry<Integer,IntCounter> type : relationshipTypeDelta.entrySet() )
+        countsAccessor.incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, relsDelta );
+        for ( Map.Entry<Integer, IntCounter> type : relationshipTypeDelta.entrySet() )
         {
-            final int count = type.getValue().value();
-            countsStore.updateCountsForRelationship( ANY_LABEL, type.getKey(), ANY_LABEL, count );
+            countsAccessor.incrementRelationshipCount( ANY_LABEL, type.getKey(), ANY_LABEL, type.getValue().value() );
         }
     }
 

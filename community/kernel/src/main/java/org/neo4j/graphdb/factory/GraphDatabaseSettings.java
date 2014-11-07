@@ -39,6 +39,8 @@ import org.neo4j.kernel.impl.cache.MonitorGc;
 import static org.neo4j.helpers.Settings.ANY;
 import static org.neo4j.helpers.Settings.BOOLEAN;
 import static org.neo4j.helpers.Settings.BYTES;
+import static org.neo4j.helpers.Settings.BYTES_AS_INT;
+import static org.neo4j.helpers.Settings.DirectMemoryUsage.directMemoryUsage;
 import static org.neo4j.helpers.Settings.FALSE;
 import static org.neo4j.helpers.Settings.INTEGER;
 import static org.neo4j.helpers.Settings.NO_DEFAULT;
@@ -52,7 +54,6 @@ import static org.neo4j.helpers.Settings.min;
 import static org.neo4j.helpers.Settings.options;
 import static org.neo4j.helpers.Settings.port;
 import static org.neo4j.helpers.Settings.setting;
-import static org.neo4j.helpers.Settings.DirectMemoryUsage.directMemoryUsage;
 
 /**
  * Settings for Neo4j. Use this with {@link GraphDatabaseBuilder}.
@@ -145,6 +146,19 @@ public abstract class GraphDatabaseSettings
     @Description("A list of property names (comma separated) that will be indexed by default. This applies to " +
             "_relationships_ only." )
     public static final Setting<String> relationship_keys_indexable = setting("relationship_keys_indexable", STRING, NO_DEFAULT, illegalValueMessage( "must be a comma-separated list of keys to be indexed", matches( ANY ) ) );
+
+    // Index sampling
+    @Description("Enable or disable background index sampling")
+    public static final Setting<Boolean> index_background_sampling_enabled =
+            setting("index_background_sampling_enabled", BOOLEAN, TRUE );
+
+    @Description("Size of buffer used by index sampling")
+    public static final Setting<Integer> index_sampling_buffer_size =
+            setting("index_sampling_buffer_size", BYTES_AS_INT, "64m", min( /* 1m */ 1048576 ) );
+
+    @Description("Percentage of index updates of total index size required before sampling of a given index is triggered")
+    public static final Setting<Integer> index_sampling_update_percentage =
+            setting("index_sampling_update_percentage", INTEGER, "5", min( 0 ) );
 
     // Lucene settings
     @Description( "The maximum number of open Lucene index searchers." )
@@ -303,7 +317,7 @@ public abstract class GraphDatabaseSettings
 
     @Description( "Relationship count threshold for considering a node to be dense" )
     public static final Setting<Integer> dense_node_threshold = setting( "dense_node_threshold", INTEGER, "50", min(1) );
-    
+
     @Description("Whether or not transactions are appended to the log in batches")
     public static final Setting<Boolean> batched_writes = setting( "batched_writes", BOOLEAN, Boolean.TRUE.toString() );
 

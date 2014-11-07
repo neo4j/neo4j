@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.NodeIndexSeekPipe
 
 class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport{
   test("should be able to use indexes") {
@@ -31,7 +31,7 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTe
     val result = executeWithNewPlanner("MATCH (n:Crew) WHERE n.name = 'Neo' RETURN n")
 
     // Then
-    result.executionPlanDescription.toString should include("NodeIndexSeek")
+    result.executionPlanDescription().toString should include("NodeIndexSeek")
   }
 
   test("should not forget predicates") {
@@ -45,7 +45,7 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTe
 
     // Then
     result shouldBe empty
-    result.executionPlanDescription.toString should include("NodeIndexSeek")
+    result.executionPlanDescription().toString should include("NodeIndexSeek")
   }
 
   test("should use index when there are multiple labels on the node") {
@@ -57,7 +57,7 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTe
     val result = executeWithNewPlanner("MATCH (n:Matrix:Crew) WHERE n.name = 'Neo' RETURN n")
 
     // Then
-    result.executionPlanDescription.toString should include("NodeIndexSeek")
+    result.executionPlanDescription().toString should include("NodeIndexSeek")
   }
 
   test("should be able to use value coming from UNWIND for index seek") {
@@ -69,6 +69,37 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTe
 
     // Then
     result shouldBe empty
-    result.executionPlanDescription.toString should include("NodeByLabelScan")
+    result.executionPlanDescription().toString should include("NodeByLabelScan")
+  }
+
+  // enable when the we have numbers for indexed entries in a lucene index
+  ignore("should use index selectivity when planning") {
+    // Given
+    graph.createIndex("L", "l")
+    graph.createIndex("R", "r")
+
+    graph.inTx{
+      val ls = (1 to 100).map { i =>
+        createLabeledNode(Map("l" -> i), "L")
+      }
+
+      val rs = (1 to 100).map { i =>
+        createLabeledNode(Map("r" -> 23), "R")
+      }
+
+      for (l <- ls ; r <- rs) {
+        relate(l, r, "REL")
+      }
+    }
+
+    val result = executeWithNewPlanner("MATCH (l:L {l: 9})-[:REL]->(r:R {r: 23}) RETURN l, r")
+    result.toList should have size 100
+    val found = result.executionPlanDescription().pipe.exists {
+      case p: NodeIndexSeekPipe =>
+        p.ident == "l"
+      case _ =>
+        false
+    }
+    found shouldBe true
   }
 }

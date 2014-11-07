@@ -25,7 +25,6 @@ import java.io.IOException;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
-
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.util.FailureStorage;
 
@@ -72,7 +71,7 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
         {
             writerStatus.close( writer );
         }
-        
+
         try
         {
             DirectorySupport.deleteDirectoryContents( directory = directory == null ? dirFactory.open( dirFile ) : directory );
@@ -114,7 +113,7 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
             }
         }
     }
-    
+
     @Override
     public void markAsFailed( String failure ) throws IOException
     {

@@ -49,7 +49,7 @@ public class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
     private final IndexMap indexMap;
     private final Map<IndexDescriptor, IndexUpdater> updaterMap;
 
-    public IndexUpdaterMap( IndexUpdateMode indexUpdateMode, IndexMap indexMap )
+    public IndexUpdaterMap( IndexMap indexMap, IndexUpdateMode indexUpdateMode )
     {
         this.indexUpdateMode = indexUpdateMode;
         this.indexMap = indexMap;

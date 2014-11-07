@@ -17,33 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.impl.api.index;
 
-public interface CountsAcceptor
+import org.neo4j.kernel.api.index.IndexDescriptor;
+
+public interface IndexCountsRemover
 {
-    void updateCountsForNode( int labelId, long delta );
+    /**
+     * Remove the associated index counts
+     */
+    void remove();
 
-    void updateCountsForRelationship( int startLabelId, int typeId, int endLabelId, long delta );
-
-    final class Initializer implements CountsVisitor
+    public static class Factory
     {
-        private final CountsAcceptor target;
-
-        public Initializer( CountsAcceptor target )
+        public static IndexCountsRemover create( final IndexStoreView storeView, final IndexDescriptor descriptor )
         {
-            this.target = target;
-        }
-
-        @Override
-        public void visitNodeCount( int labelId, long count )
-        {
-            target.updateCountsForNode( labelId, count );
-        }
-
-        @Override
-        public void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count )
-        {
-            target.updateCountsForRelationship( startLabelId, typeId, endLabelId, count );
+            return new IndexCountsRemover()
+            {
+                @Override
+                public void remove()
+                {
+                    storeView.replaceIndexCounts( descriptor, 0, 0, 0 );
+                }
+            };
         }
     }
 }

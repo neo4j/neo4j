@@ -19,11 +19,14 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.io.IOException;
+
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.register.Register.DoubleLongRegister;
 
 /** The indexing services view of the universe. */
 public interface IndexStoreView extends PropertyAccessor
@@ -47,4 +50,14 @@ public interface IndexStoreView extends PropertyAccessor
             Visitor<NodeLabelUpdate, FAILURE> labelUpdateVisitor );
 
     Iterable<NodePropertyUpdate> nodeAsUpdates( long nodeId );
+
+    DoubleLongRegister indexUpdatesAndSize( IndexDescriptor descriptor, DoubleLongRegister output );
+
+    DoubleLongRegister indexSample( IndexDescriptor descriptor, DoubleLongRegister output );
+
+    void replaceIndexCounts( IndexDescriptor descriptor, long uniqueElements, long maxUniqueElements, long indexSize );
+
+    void incrementIndexUpdates( IndexDescriptor descriptor, long updatesDelta );
+
+    void flushIndexCounts() throws IOException;
 }

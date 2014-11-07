@@ -19,9 +19,12 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SearcherFactory;
@@ -51,13 +54,15 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     private final IndexWriterStatus writerStatus;
     private final Directory dir;
     private final File dirFile;
+    private final int bufferSizeLimit;
 
     LuceneIndexAccessor( LuceneDocumentStructure documentStructure, LuceneIndexWriterFactory indexWriterFactory,
-                         IndexWriterStatus writerStatus, DirectoryFactory dirFactory, File dirFile )
-            throws IOException
+                         IndexWriterStatus writerStatus, DirectoryFactory dirFactory, File dirFile,
+                         int bufferSizeLimit ) throws IOException
     {
         this.documentStructure = documentStructure;
         this.dirFile = dirFile;
+        this.bufferSizeLimit = bufferSizeLimit;
         this.dir = dirFactory.open( dirFile );
         this.writer = indexWriterFactory.create( dir );
         this.writerStatus = writerStatus;
@@ -109,7 +114,21 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     @Override
     public IndexReader newReader()
     {
-        return new LuceneIndexAccessorReader( searcherManager, documentStructure );
+        final IndexSearcher searcher = searcherManager.acquire();
+        final Closeable closeable = new Closeable()
+        {
+            @Override
+            public void close() throws IOException
+            {
+                searcherManager.release( searcher );
+            }
+        };
+        return makeNewReader( searcher, closeable );
+    }
+
+    protected IndexReader makeNewReader( IndexSearcher searcher, Closeable closeable )
+    {
+        return new LuceneIndexAccessorReader( searcher, documentStructure, closeable, bufferSizeLimit );
     }
 
     @Override
@@ -132,8 +151,9 @@ abstract class LuceneIndexAccessor implements IndexAccessor
             TopDocs hits = searcher.search( new TermQuery( documentStructure.newQueryForChangeOrRemove( nodeId ) ), 1 );
             if ( hits.totalHits > 0 )
             {
+                Fieldable encodedValue = documentStructure.encodeAsFieldable( value );
                 writer.updateDocument( documentStructure.newQueryForChangeOrRemove( nodeId ),
-                        documentStructure.newDocumentRepresentingProperty( nodeId, value ) );
+                        documentStructure.newDocumentRepresentingProperty( nodeId, encodedValue ) );
             }
             else
             {
@@ -148,13 +168,15 @@ abstract class LuceneIndexAccessor implements IndexAccessor
 
     protected void add( long nodeId, Object value ) throws IOException
     {
-        writer.addDocument( documentStructure.newDocumentRepresentingProperty( nodeId, value ) );
+        Fieldable encodedValue = documentStructure.encodeAsFieldable( value );
+        writer.addDocument( documentStructure.newDocumentRepresentingProperty( nodeId, encodedValue ) );
     }
 
-    protected void change( long nodeId, Object valueAfter ) throws IOException
+    protected void change( long nodeId, Object value ) throws IOException
     {
+        Fieldable encodedValue = documentStructure.encodeAsFieldable( value );
         writer.updateDocument( documentStructure.newQueryForChangeOrRemove( nodeId ),
-                documentStructure.newDocumentRepresentingProperty( nodeId, valueAfter ) );
+                documentStructure.newDocumentRepresentingProperty( nodeId, encodedValue ) );
     }
 
     protected void remove( long nodeId ) throws IOException
@@ -206,7 +228,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
         }
 
         @Override
-        public void remove( Iterable<Long> nodeIds ) throws IOException
+        public void remove( Collection<Long> nodeIds ) throws IOException
         {
             for ( long nodeId : nodeIds )
             {

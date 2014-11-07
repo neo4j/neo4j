@@ -19,15 +19,12 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
-import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,17 +37,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Pair;
@@ -76,7 +66,6 @@ import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
-import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStore;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
@@ -106,6 +95,7 @@ import org.neo4j.kernel.impl.transaction.state.RelationshipChainLoader;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState.PropertyReceiver;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -115,6 +105,16 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
+import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;
 
 public class TestNeoStore
 {
@@ -210,14 +210,13 @@ public class TestNeoStore
 
         Locks locks = mock( Locks.class );
         Locks.Client lockClient = mock(Locks.Client.class);
-        TransactionHeaderInformation headerInformation = new TransactionHeaderInformation( -1, 1, new byte[0] );
         when(locks.newClient()).thenReturn( lockClient );
         DefaultCaches caches = new DefaultCaches( StringLogger.DEV_NULL, new Monitors() );
         caches.configure( new NoCacheProvider(), config );
         NodeManager nodeManager = new NodeManager( null, null, new ThreadToStatementContextBridge() );
         ds = new NeoStoreDataSource(config, sf, StringLogger.DEV_NULL,
-                null, DevNullLoggingService.DEV_NULL,
-                new KernelSchemaStateStore(),
+                mock( JobScheduler.class ), DevNullLoggingService.DEV_NULL,
+                new KernelSchemaStateStore( DevNullLoggingService.DEV_NULL ),
                 mock(TokenNameLookup.class),
                 dependencyResolverForNoIndexProvider(),
                 mock( PropertyKeyTokenHolder.class ), mock(LabelTokenHolder.class),
@@ -1226,7 +1225,7 @@ public class TestNeoStore
                 StringLogger.DEV_NULL,
                 monitors );
 
-        NeoStore neoStore = sf.newNeoStore( false );
+        NeoStore neoStore = sf.newNeoStore( false, false );
         assertEquals( 12, neoStore.getCurrentLogVersion() );
         neoStore.close();
     }
@@ -1235,7 +1234,6 @@ public class TestNeoStore
     public void testSetLatestConstraintTx() throws Exception
     {
         // given
-        new GraphDatabaseFactory().newEmbeddedDatabase( dir.graphDbDir().getAbsolutePath() ).shutdown();
         Monitors monitors = new Monitors();
         Config config = new Config( new HashMap<String, String>(), GraphDatabaseSettings.class );
         LifeSupport life = new LifeSupport();
@@ -1249,7 +1247,7 @@ public class TestNeoStore
                 monitors );
 
         // when
-        NeoStore neoStore = sf.newNeoStore( true );
+        NeoStore neoStore = sf.newNeoStore( true, false );
 
         // then the default is 0
         assertEquals( 0l, neoStore.getLatestConstraintIntroducingTx() );
@@ -1263,7 +1261,7 @@ public class TestNeoStore
         // when
         neoStore.flush();
         neoStore.close();
-        neoStore = sf.newNeoStore( false );
+        neoStore = sf.newNeoStore( false, false );
 
         // then the value should have been stored
         assertEquals( 10l, neoStore.getLatestConstraintIntroducingTx() );
@@ -1278,10 +1276,10 @@ public class TestNeoStore
                 new StoreFactory( fs.get(), new File( "graph.db/neostore" ), pageCache, StringLogger.DEV_NULL,
                         new Monitors() );
 
-        NeoStore neoStore = factory.newNeoStore( true );
+        NeoStore neoStore = factory.newNeoStore( true, false );
         neoStore.close();
 
-        neoStore = factory.newNeoStore( false );
+        neoStore = factory.newNeoStore( false, false );
         long lastCommittedTransactionId = neoStore.getLastCommittedTransactionId();
         neoStore.close();
 
@@ -1295,7 +1293,7 @@ public class TestNeoStore
         File neoStoreDir = new File( "/tmp/graph.db/neostore" ).getAbsoluteFile();
         StoreFactory factory =
                 new StoreFactory( fileSystem, neoStoreDir, pageCache, StringLogger.DEV_NULL, new Monitors() );
-        NeoStore neoStore = factory.newNeoStore( true );
+        NeoStore neoStore = factory.newNeoStore( true, false );
         neoStore.setCreationTime( 3 );
         neoStore.setRandomNumber( 4 );
         neoStore.setCurrentLogVersion( 5 );
@@ -1322,7 +1320,7 @@ public class TestNeoStore
         NeoStore.setOrAddUpgradeIdOnMigration( fileSystem, file, 10 );
         NeoStore.setOrAddUpgradeTimeOnMigration( fileSystem, file, 11 );
 
-        neoStore = factory.newNeoStore( false );
+        neoStore = factory.newNeoStore( false, false );
         assertEquals( 3, neoStore.getCreationTime() );
         assertEquals( 4, neoStore.getRandomNumber() );
         assertEquals( 5, neoStore.getCurrentLogVersion() );

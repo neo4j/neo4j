@@ -172,6 +172,15 @@ public abstract class DatabaseRule extends ExternalResource
     public static interface RestartAction
     {
         void run( FileSystemAbstraction fs, File storeDirectory );
+
+        public static RestartAction EMPTY = new RestartAction()
+        {
+            @Override
+            public void run( FileSystemAbstraction fs, File storeDirectory )
+            {
+                // duh
+            }
+        };
     }
 
     public void restartDatabase( RestartAction action )

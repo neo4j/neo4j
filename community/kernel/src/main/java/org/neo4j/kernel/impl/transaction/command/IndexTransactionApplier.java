@@ -76,11 +76,12 @@ public class IndexTransactionApplier extends NeoCommandHandler.Adapter
     private final LabelScanStore labelScanStore;
     private final CacheAccessBackDoor cacheAccess;
     private final PropertyLoader propertyLoader;
+    private final long transactionId;
     private final TransactionApplicationMode mode;
 
     public IndexTransactionApplier( IndexingService indexingService, LabelScanStore labelScanStore,
                                     NodeStore nodeStore, PropertyStore propertyStore, CacheAccessBackDoor cacheAccess,
-                                    PropertyLoader propertyLoader, TransactionApplicationMode mode )
+                                    PropertyLoader propertyLoader, long transactionId, TransactionApplicationMode mode )
     {
         this.indexingService = indexingService;
         this.labelScanStore = labelScanStore;
@@ -88,6 +89,7 @@ public class IndexTransactionApplier extends NeoCommandHandler.Adapter
         this.propertyStore = propertyStore;
         this.cacheAccess = cacheAccess;
         this.propertyLoader = propertyLoader;
+        this.transactionId = transactionId;
         this.mode = mode;
     }
 
@@ -114,7 +116,7 @@ public class IndexTransactionApplier extends NeoCommandHandler.Adapter
         // We only allow a single writer at the time to update the schema index stores
         synchronized ( indexingService )
         {
-            indexingService.updateIndexes( updates, mode.needsIdempotencyChecks() );
+            indexingService.updateIndexes( updates, transactionId, mode.needsIdempotencyChecks() );
         }
     }
 
@@ -201,8 +203,8 @@ public class IndexTransactionApplier extends NeoCommandHandler.Adapter
                     catch ( IndexNotFoundKernelException | IndexActivationFailedKernelException |
                             IndexPopulationFailedKernelException e )
                     {
-                        throw new IllegalStateException( "Unable to enable constraint, backing index is not online.",
-                                e );
+                        throw new IllegalStateException(
+                                "Unable to enable constraint, backing index is not online.", e );
                     }
                 }
                 break;

@@ -19,31 +19,58 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
-import static org.neo4j.kernel.impl.store.CommonAbstractStore.buildTypeDescriptorAndVersion;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestName;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Future;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Function;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.CountsKey;
 import org.neo4j.kernel.impl.store.CountsOracle;
+import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
+import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader;
 import org.neo4j.register.Register;
-import org.neo4j.register.Registers;
+import org.neo4j.register.Register.CopyableDoubleLongRegister;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.ThreadingRule;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.neo4j.kernel.impl.store.CommonAbstractStore.buildTypeDescriptorAndVersion;
+import static org.neo4j.kernel.impl.store.counts.CountsStore.RECORD_SIZE;
+import static org.neo4j.kernel.impl.store.counts.CountsStore.WRITER_FACTORY;
+import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.BASE_MINOR_VERSION;
+import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.META_HEADER_SIZE;
+import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.with;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
+import static org.neo4j.register.Register.DoubleLongRegister;
+
 public class CountsTrackerTest
 {
+    @Test
+    public void shouldCreateBothAlphaAndBetaOnCreation() throws IOException
+    {
+        // given
+        CountsTracker.createEmptyCountsStore( pageCache(), storeFile(), VERSION );
+
+        // when
+        CountsStore.open( fs.get(), pageCache(), alphaStoreFile() ).close();
+        CountsStore.open( fs.get(), pageCache(), betaStoreFile() ).close();
+
+        // then
+        // it does not blow up
+    }
+
     @Test
     public void shouldStoreCounts() throws Exception
     {
@@ -52,14 +79,14 @@ public class CountsTrackerTest
         CountsOracle oracle = oracle();
 
         // when
-        try ( CountsTracker tracker = new CountsTracker( fs.get(), pageCache(), storeFile() ) )
+        try ( CountsTracker tracker = new CountsTracker( fs.get(), pageCache(), storeFile(), BASE_TX_ID ) )
         {
             oracle.update( tracker );
             tracker.rotate( 1 );
         }
 
         // then
-        try ( CountsTracker tracker = new CountsTracker( fs.get(), pageCache(), storeFile() ) )
+        try ( CountsTracker tracker = new CountsTracker( fs.get(), pageCache(), storeFile(), BASE_TX_ID ) )
         {
             oracle.verify( tracker );
         }
@@ -71,7 +98,8 @@ public class CountsTrackerTest
         // given
         CountsTracker.createEmptyCountsStore( pageCache(), storeFile(), VERSION );
         CountsOracle oracle = oracle();
-        try ( CountsTracker tracker = new CountsTracker( fs.get(), pageCache(), storeFile() ) )
+        int newTxId = 2;
+        try ( CountsTracker tracker = new CountsTracker( fs.get(), pageCache(), storeFile(), BASE_TX_ID ) )
         {
             oracle.update( tracker );
             tracker.rotate( 1 );
@@ -93,11 +121,11 @@ public class CountsTrackerTest
             oracle.verify( tracker );
 
             // when
-            tracker.rotate( 2 );
+            tracker.rotate( newTxId );
         }
 
         // then
-        try ( CountsTracker tracker = new CountsTracker( fs.get(), pageCache(), storeFile() ) )
+        try ( CountsTracker tracker = new CountsTracker( fs.get(), pageCache(), storeFile(), newTxId ) )
         {
             oracle.verify( tracker );
         }
@@ -109,10 +137,11 @@ public class CountsTrackerTest
         // given
         CountsTracker.createEmptyCountsStore( pageCache(), storeFile(), VERSION );
         CountsOracle oracle = oracle();
-        try ( CountsTracker tracker = new CountsTracker( fs.get(), pageCache(), storeFile() ) )
+        int newTxId = 2;
+        try ( CountsTracker tracker = new CountsTracker( fs.get(), pageCache(), storeFile(), BASE_TX_ID ) )
         {
             oracle.update( tracker );
-            tracker.rotate( 1 );
+            tracker.rotate( newTxId );
         }
 
         // when
@@ -126,7 +155,8 @@ public class CountsTrackerTest
         delta.update( oracle );
 
         Barrier.Control barrier = new Barrier.Control();
-        try ( CountsTracker tracker = new InstrumentedCountsTracker( fs.get(), pageCache(), storeFile(), barrier ) )
+        try ( CountsTracker tracker =
+                      new InstrumentedCountsTracker( fs.get(), pageCache(), storeFile(), newTxId, barrier ) )
         {
             Future<Void> task = threading.execute( new Function<CountsTracker, Void>()
             {
@@ -155,6 +185,98 @@ public class CountsTrackerTest
         }
     }
 
+    @Test
+    public void shouldPickStoreFileWithLargerTxId() throws IOException
+    {
+        EphemeralFileSystemAbstraction fs = this.fs.get();
+        File alphaFile = alphaStoreFile();
+        File betaFile = betaStoreFile();
+        PageCache pageCache = pageCache();
+
+        {
+            createStoreFile( fs, pageCache, alphaFile, BASE_TX_ID );
+            createStoreFile( fs, pageCache, betaFile, BASE_TX_ID + 1 );
+
+            CountsTracker tracker = new CountsTracker( fs, pageCache, storeFile(), BASE_TX_ID + 1 );
+            assertEquals( betaFile, tracker.storeFile() );
+            tracker.close();
+        }
+
+        {
+            createStoreFile( fs, pageCache, alphaFile, BASE_TX_ID + 1 );
+            createStoreFile( fs, pageCache, betaFile, BASE_TX_ID );
+
+            CountsTracker tracker = new CountsTracker( fs, pageCache, storeFile(), BASE_TX_ID + 1 );
+            assertEquals( alphaFile, tracker.storeFile() );
+            tracker.close();
+        }
+    }
+
+    @Test
+    public void shouldPickStoreFileWithLargerMinorVersion() throws IOException
+    {
+        EphemeralFileSystemAbstraction fs = this.fs.get();
+        File alphaFile = alphaStoreFile();
+        File betaFile = betaStoreFile();
+        PageCache pageCache = pageCache();
+
+        createStoreFile( fs, pageCache, alphaFile, BASE_TX_ID + 1);
+        createStoreFile( fs, pageCache, betaFile, BASE_TX_ID );
+
+        {
+            CountsTracker tracker = new CountsTracker( fs, pageCache, storeFile(), BASE_TX_ID + 1 );
+            assertEquals( alphaFile, tracker.storeFile() );
+            tracker.incrementNodeCount( 1, 1l );
+            tracker.rotate( BASE_TX_ID + 1 );
+            assertEquals( betaFile, tracker.storeFile() );
+            tracker.close();
+        }
+
+        {
+            CountsTracker tracker = new CountsTracker( fs, pageCache, storeFile(), BASE_TX_ID + 1 );
+            assertEquals( betaFile, tracker.storeFile() );
+            tracker.close();
+        }
+    }
+
+    @Test
+    public void shouldPickTheUncorruptedCountsStoreFile() throws IOException
+    {
+        // given
+        EphemeralFileSystemAbstraction fs = this.fs.get();
+        PageCache pageCache = pageCache();
+        createStoreFile( fs, pageCache, alphaStoreFile(), BASE_TX_ID + 1 );
+        createStoreFile( fs, pageCache, betaStoreFile(), BASE_TX_ID + 1 + 1 );
+
+        try ( StoreChannel channel = fs.open( betaStoreFile(), "rw" ) )
+        {
+            channel.truncate( META_HEADER_SIZE / 2 );
+            channel.force( false );
+        }
+
+        // when
+        try ( CountsTracker tracker = new CountsTracker( fs, pageCache, storeFile(), BASE_TX_ID + 1 ) )
+        {
+            assertEquals( alphaStoreFile(), tracker.storeFile() );
+        }
+    }
+
+    @Test(expected = UnderlyingStorageException.class)
+    public void shouldFailToConstructACountsTrackerIfStoreIsTooOld() throws IOException
+    {
+        // given
+        EphemeralFileSystemAbstraction fs = this.fs.get();
+        PageCache pageCache = pageCache();
+        createStoreFile( fs, pageCache, alphaStoreFile(), BASE_TX_ID );
+        createStoreFile( fs, pageCache, betaStoreFile(), BASE_TX_ID + 1 );
+
+        // when
+        try ( CountsTracker tracker = new CountsTracker( fs, pageCache, storeFile(), BASE_TX_ID + 42 ) )
+        {
+            fail( "should have thrown" );
+        }
+    }
+
     private static final String VERSION = buildTypeDescriptorAndVersion( CountsTracker.STORE_DESCRIPTOR );
     public final @Rule EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     public final @Rule TestName testName = new TestName();
@@ -173,7 +295,20 @@ public class CountsTrackerTest
         oracle.relationship( n1, 1, n3 );
         oracle.relationship( n1, 1, n2 );
         oracle.relationship( n0, 1, n3 );
+        oracle.indexUpdatesAndSize( 1, 2, 0l, 50l );
+        oracle.indexSampling( 1, 2, 25l, 50l );
         return oracle;
+    }
+
+
+    private File alphaStoreFile()
+    {
+        return new File( testName.getMethodName() + CountsTracker.ALPHA );
+    }
+
+    private File betaStoreFile()
+    {
+        return new File( testName.getMethodName() + CountsTracker.BETA );
     }
 
     private File storeFile()
@@ -186,28 +321,35 @@ public class CountsTrackerTest
         return pageCache.getPageCache( fs.get(), config );
     }
 
+    private void createStoreFile( EphemeralFileSystemAbstraction fs, PageCache pageCache, File file, long lastTxId ) throws IOException
+    {
+        SortedKeyValueStoreHeader header = with( RECORD_SIZE, VERSION, BASE_TX_ID, BASE_MINOR_VERSION );
+        CountsStoreWriter writer = WRITER_FACTORY.create( fs, pageCache, header, file, lastTxId );
+        writer.close();
+        writer.openForReading().close();
+    }
+
     private static class InstrumentedCountsTracker extends CountsTracker
     {
         private final Barrier barrier;
 
-        InstrumentedCountsTracker( FileSystemAbstraction fs, PageCache pageCache, File storeFileBase,
+        InstrumentedCountsTracker( FileSystemAbstraction fs, PageCache pageCache, File storeFileBase, long txId,
                                    Barrier barrier )
         {
-            super( fs, pageCache, storeFileBase );
+            super( fs, pageCache, storeFileBase, txId );
             this.barrier = barrier;
         }
 
         @Override
-        CountsStore.Writer<CountsKey, Register.LongRegister> nextWriter( State state, long lastCommittedTxId )
+        CountsStore.Writer<CountsKey, CopyableDoubleLongRegister> nextWriter( CountsTrackerState state, long lastTxId )
                 throws IOException
         {
-            final CountsStoreWriter writer = (CountsStoreWriter) super.nextWriter( state, lastCommittedTxId );
-            return new CountsStore.Writer<CountsKey, Register.LongRegister>()
+            final CountsStoreWriter writer = (CountsStoreWriter) super.nextWriter( state, lastTxId );
+            return new CountsStore.Writer<CountsKey, CopyableDoubleLongRegister>()
             {
-                private final Register.LongRegister valueRegister = Registers.newLongRegister();
 
                 @Override
-                public SortedKeyValueStore<CountsKey, Register.LongRegister> openForReading() throws IOException
+                public SortedKeyValueStore<CountsKey, CopyableDoubleLongRegister> openForReading() throws IOException
                 {
                     barrier.reached();
                     return writer.openForReading();
@@ -220,16 +362,9 @@ public class CountsTrackerTest
                 }
 
                 @Override
-                public void visit( CountsKey key )
+                public void visit( CountsKey key, CopyableDoubleLongRegister valueRegister )
                 {
-                    writer.valueRegister().write( valueRegister.read() );
-                    writer.visit( key );
-                }
-
-                @Override
-                public Register.LongRegister valueRegister()
-                {
-                    return valueRegister;
+                    writer.visit( key, valueRegister );
                 }
             };
         }

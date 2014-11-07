@@ -135,7 +135,7 @@ public class TransactionRecordStateTest
         fsr.get().mkdirs( storeDir );
         StoreFactory storeFactory = new StoreFactory( fsr.get(), storeDir,
                 pageCacheRule.getPageCache( fsr.get(), new Config() ), StringLogger.DEV_NULL, new Monitors() );
-        return cleanup.add( storeFactory.newNeoStore( true ) );
+        return cleanup.add( storeFactory.newNeoStore( true, false ) );
     }
 
     private TransactionRecordState nodeWithDynamicLabelRecord( NeoStore store,

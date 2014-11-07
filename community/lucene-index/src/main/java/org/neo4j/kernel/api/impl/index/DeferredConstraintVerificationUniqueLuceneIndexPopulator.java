@@ -19,12 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
@@ -35,6 +31,12 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.TermQuery;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.StatementConstants;
@@ -47,12 +49,16 @@ import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.util.FailureStorage;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KEY;
+import static org.neo4j.register.Register.DoubleLong;
 
 class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneIndexPopulator
 {
     private final IndexDescriptor descriptor;
+    private final UniqueIndexSampler sampler;
+
     private SearcherManager searcherManager;
 
     DeferredConstraintVerificationUniqueLuceneIndexPopulator( LuceneDocumentStructure documentStructure,
@@ -64,6 +70,7 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
     {
         super( documentStructure, indexWriterFactory, writerStatus, dirFactory, dirFile, failureStorage, indexId );
         this.descriptor = descriptor;
+        this.sampler = new UniqueIndexSampler();
     }
 
     @Override
@@ -87,7 +94,10 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
     @Override
     public void add( long nodeId, Object propertyValue ) throws IndexEntryConflictException, IOException
     {
-        writer.addDocument( documentStructure.newDocumentRepresentingProperty( nodeId, propertyValue ) );
+        sampler.increment( 1 );
+        Fieldable encodedValue = documentStructure.encodeAsFieldable( propertyValue );
+        Document doc = documentStructure.newDocumentRepresentingProperty( nodeId, encodedValue );
+        writer.addDocument( doc );
     }
 
     @Override
@@ -95,7 +105,7 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
     {
         searcherManager.maybeRefresh();
         IndexSearcher searcher = searcherManager.acquire();
-        
+
         try
         {
             DuplicateCheckingCollector collector = duplicateCheckingCollector( accessor );
@@ -145,14 +155,27 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
                 switch ( update.getUpdateMode() )
                 {
                     case ADDED:
-                    case CHANGED:
+                        sampler.increment( 1 ); // add new value
+
                         // We don't look at the "before" value, so adding and changing idempotently is done the same way.
+                        Fieldable encodedValue = documentStructure.encodeAsFieldable( update.getValueAfter() );
                         writer.updateDocument( documentStructure.newQueryForChangeOrRemove( nodeId ),
-                                documentStructure.newDocumentRepresentingProperty( nodeId,
-                                        update.getValueAfter() ) );
+                                documentStructure.newDocumentRepresentingProperty( nodeId, encodedValue ) );
+                        updatedPropertyValues.add( update.getValueAfter() );
+                        break;
+                    case CHANGED:
+                        // do nothing on the sampler, since it would be something like:
+                        // sampler.increment( -1 ); // remove old vale
+                        // sampler.increment( 1 ); // add new value
+
+                        // We don't look at the "before" value, so adding and changing idempotently is done the same way.
+                        Fieldable encodedValueAfter = documentStructure.encodeAsFieldable( update.getValueAfter() );
+                        writer.updateDocument( documentStructure.newQueryForChangeOrRemove( nodeId ),
+                                documentStructure.newDocumentRepresentingProperty( nodeId, encodedValueAfter ) );
                         updatedPropertyValues.add( update.getValueAfter() );
                         break;
                     case REMOVED:
+                        sampler.increment( -1 ); // remove old value
                         writer.deleteDocuments( documentStructure.newQueryForChangeOrRemove( nodeId ) );
                         break;
                     default:
@@ -191,11 +214,17 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
             }
 
             @Override
-            public void remove( Iterable<Long> nodeIds )
+            public void remove( Collection<Long> nodeIds )
             {
                 throw new UnsupportedOperationException( "should not remove() from populating index" );
             }
         };
+    }
+
+    @Override
+    public long sampleResult( DoubleLong.Out result )
+    {
+        return sampler.result( result );
     }
 
     private static class DuplicateCheckingCollector extends Collector

@@ -33,9 +33,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.NotCurrentStoreVersionException;
-import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.StoreVersionMismatchHandler;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -62,7 +59,7 @@ public class StoreVersionTest
                 fs.get(),
                 StringLogger.DEV_NULL,
                 monitors );
-        NeoStore neoStore = sf.newNeoStore( true );
+        NeoStore neoStore = sf.newNeoStore( true, false );
 
         CommonAbstractStore[] stores = {
                 neoStore.getNodeStore(),
@@ -120,7 +117,7 @@ public class StoreVersionTest
                 fs.get(),
                 StringLogger.DEV_NULL,
                 monitors );
-        NeoStore neoStore = sf.newNeoStore( true );
+        NeoStore neoStore = sf.newNeoStore( true, false );
 
         // The first checks the instance method, the other the public one
         assertEquals( CommonAbstractStore.ALL_STORES_VERSION,

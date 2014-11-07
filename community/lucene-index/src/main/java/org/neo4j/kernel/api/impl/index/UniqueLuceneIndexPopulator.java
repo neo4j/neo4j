@@ -19,16 +19,18 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.TopDocs;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -36,6 +38,7 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.util.FailureStorage;
+import org.neo4j.register.Register;
 
 /**
  * @deprecated Use {@link DeferredConstraintVerificationUniqueLuceneIndexPopulator} instead.
@@ -43,7 +46,6 @@ import org.neo4j.kernel.api.index.util.FailureStorage;
 @Deprecated
 class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
 {
-    static final int DEFAULT_BATCH_SIZE = 1024;
     private static final float LOAD_FACTOR = 0.75f;
     private final int batchSize;
     private SearcherManager searcherManager;
@@ -113,7 +115,8 @@ class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
         else
         {
             currentBatch.put( propertyValue, nodeId );
-            writer.addDocument( documentStructure.newDocumentRepresentingProperty( nodeId, propertyValue ) );
+            Fieldable encodedValue = documentStructure.encodeAsFieldable( propertyValue );
+            writer.addDocument( documentStructure.newDocumentRepresentingProperty( nodeId, encodedValue ) );
             if ( currentBatch.size() >= batchSize )
             {
                 startNewBatch();
@@ -144,11 +147,17 @@ class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
             }
 
             @Override
-            public void remove( Iterable<Long> nodeIds )
+            public void remove( Collection<Long> nodeIds )
             {
                 throw new UnsupportedOperationException( "should not remove() from populating index" );
             }
         };
+    }
+
+    @Override
+    public long sampleResult( Register.DoubleLong.Out result )
+    {
+        throw new UnsupportedOperationException();
     }
 
     private void startNewBatch() throws IOException

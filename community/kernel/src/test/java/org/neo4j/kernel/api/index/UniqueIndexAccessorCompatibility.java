@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.api.index;
 
+import static java.util.Arrays.asList;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertThat;
+
 import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -28,14 +32,11 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-
-import static java.util.Arrays.asList;
-
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " SchemaIndexProvider implementations. Each index provider that is to be tested by this suite" +
@@ -74,11 +75,12 @@ public class UniqueIndexAccessorCompatibility extends IndexProviderCompatibility
     @Before
     public void before() throws IOException
     {
-        IndexConfiguration config = new IndexConfiguration( true );
-        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config );
+        IndexConfiguration indexConfig = new IndexConfiguration( true );
+        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( new Config() );
+        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexConfig, indexSamplingConfig );
         populator.create();
         populator.close( true );
-        accessor = indexProvider.getOnlineAccessor( 17, config );
+        accessor = indexProvider.getOnlineAccessor( 17, indexConfig, indexSamplingConfig );
     }
 
     @After

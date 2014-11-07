@@ -731,7 +731,7 @@ public class StateHandlingStatementOperations implements
         {
             legacyPropertyTrackers.relationshipRemoveStoreProperty( relationshipId, (DefinedProperty)
                     existingProperty );
-            state.txState().relationshipDoRemoveProperty( relationshipId, (DefinedProperty)existingProperty );
+            state.txState().relationshipDoRemoveProperty( relationshipId, (DefinedProperty) existingProperty );
         }
         return existingProperty;
     }
@@ -742,7 +742,7 @@ public class StateHandlingStatementOperations implements
         Property existingProperty = graphGetProperty( state, propertyKeyId );
         if(existingProperty.isDefined())
         {
-            state.txState().graphDoRemoveProperty( (DefinedProperty)existingProperty );
+            state.txState().graphDoRemoveProperty( (DefinedProperty) existingProperty );
         }
         return existingProperty;
     }
@@ -918,51 +918,20 @@ public class StateHandlingStatementOperations implements
     @Override
     public long countsForNode( KernelStatement statement, int labelId )
     {
-        long count = storeLayer.countsForNode( labelId );
-        // TODO: figure out how to read proper numbers from the txState
-//        if ( statement.hasTxState() )
-//        {
-//            if ( labelId != ReadOperations.ANY_LABEL )
-//            {
-//                throw new UnsupportedOperationException( "not implemented" );
-//            }
-//            count += statement.txState().addedAndRemovedNodes().delta();
-//        }
-        return count;
+        return storeLayer.countsForNode( labelId );
     }
 
     @Override
     public long countsForRelationship( KernelStatement statement, int startLabelId, int typeId, int endLabelId )
     {
-        long count = storeLayer.countsForRelationship( startLabelId, typeId, endLabelId );
-        // TODO: figure out how to read proper numbers from the txState
-//        if ( statement.hasTxState() )
-//        {
-//            if ( startLabelId == ReadOperations.ANY_LABEL && endLabelId == ReadOperations.ANY_LABEL )
-//            {
-//                if ( typeId == ReadOperations.ANY_RELATIONSHIP_TYPE )
-//                {
-//                    count += statement.txState().addedAndRemovedRels().delta();
-//                }
-//                else
-//                {
-//                    throw new UnsupportedOperationException( "not implemented" );
-//                }
-//            }
-//            else if ( startLabelId == ReadOperations.ANY_LABEL )
-//            {
-//                throw new UnsupportedOperationException( "not implemented" );
-//            }
-//            else if ( endLabelId == ReadOperations.ANY_LABEL )
-//            {
-//                throw new UnsupportedOperationException( "not implemented" );
-//            }
-//            else
-//            {
-//                throw new UnsupportedOperationException( "not implemented" );
-//            }
-//        }
-        return count;
+        return storeLayer.countsForRelationship( startLabelId, typeId, endLabelId );
+    }
+
+    @Override
+    public double indexUniqueValuesPercentage( KernelStatement statement, IndexDescriptor descriptor )
+            throws IndexNotFoundKernelException
+    {
+        return storeLayer.indexUniqueValuesPercentage( descriptor );
     }
 
     @Override
@@ -1200,7 +1169,7 @@ public class StateHandlingStatementOperations implements
     public void labelCreateForName( KernelStatement state, String labelName,
                                     int id ) throws IllegalTokenNameException, TooManyLabelsException
     {
-        state.txState().labelCreateForName(labelName, id);
+        state.txState().labelCreateForName( labelName, id );
     }
 
     @Override
@@ -1341,7 +1310,7 @@ public class StateHandlingStatementOperations implements
     @Override
     public void nodeLegacyIndexCreate( KernelStatement statement, String indexName, Map<String, String> customConfig )
     {
-        statement.txState().nodeLegacyIndexDoCreate(indexName, customConfig);
+        statement.txState().nodeLegacyIndexDoCreate( indexName, customConfig );
     }
 
     @Override
@@ -1354,7 +1323,7 @@ public class StateHandlingStatementOperations implements
     @Override
     public void relationshipLegacyIndexCreate( KernelStatement statement, String indexName, Map<String, String> customConfig )
     {
-        statement.txState().relationshipLegacyIndexDoCreate(indexName, customConfig);
+        statement.txState().relationshipLegacyIndexDoCreate( indexName, customConfig );
     }
 
     @Override

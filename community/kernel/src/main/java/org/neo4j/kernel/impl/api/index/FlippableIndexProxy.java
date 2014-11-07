@@ -33,6 +33,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexProxyAlreadyClosedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
+import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -40,7 +42,6 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 
 public class FlippableIndexProxy implements IndexProxy
 {
@@ -258,7 +259,7 @@ public class FlippableIndexProxy implements IndexProxy
             lock.readLock().unlock();
         }
     }
-    
+
     public void setFlipTarget( IndexProxyFactory flipTarget )
     {
         lock.writeLock().lock();
@@ -306,6 +307,20 @@ public class FlippableIndexProxy implements IndexProxy
         finally
         {
             lock.writeLock().unlock();
+        }
+    }
+
+    @Override
+    public IndexConfiguration config()
+    {
+        lock.readLock().lock();
+        try
+        {
+            return delegate.config();
+        }
+        finally
+        {
+            lock.readLock().unlock();
         }
     }
 

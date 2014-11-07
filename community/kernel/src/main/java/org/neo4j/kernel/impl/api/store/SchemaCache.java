@@ -29,6 +29,7 @@ import java.util.Map;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.NestingIterable;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -217,7 +218,7 @@ public class SchemaCache
         }
     }
 
-    public long indexId( IndexDescriptor index )
+    public long indexId( IndexDescriptor index ) throws IndexNotFoundKernelException
     {
         Map<Integer, CommittedIndexDescriptor> byLabel = indexDescriptors.get( index.getLabelId() );
         if ( byLabel != null )
@@ -228,8 +229,10 @@ public class SchemaCache
                 return committed.getId();
             }
         }
-        throw new IllegalStateException( "Couldn't resolve index id for " + index +
-                " at this point. Schema rule not committed yet?" );
+
+        throw new IndexNotFoundKernelException(
+            "Couldn't resolve index id for " + index + " at this point. Schema rule not committed yet?"
+        );
     }
 
     private UniquenessConstraint ruleToConstraint( UniquenessConstraintRule constraintRule )

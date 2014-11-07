@@ -281,7 +281,7 @@ public class StoreUpgraderTest
         try
         {
             NeoStore neoStore = new StoreFactory( fileSystem, dbDirectory, pageCache,
-                    StringLogger.DEV_NULL, mock( Monitors.class ) ).newNeoStore( false );
+                    StringLogger.DEV_NULL, mock( Monitors.class ) ).newNeoStore( false, false );
 
             assertThat( neoStore.getUpgradeId(), not( equalTo( NeoStore.FIELD_NOT_INITIALIZED ) ) );
             assertThat( neoStore.getUpgradeTime(), not( equalTo( NeoStore.FIELD_NOT_INITIALIZED ) ) );

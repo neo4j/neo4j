@@ -52,6 +52,7 @@ import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
@@ -61,7 +62,6 @@ import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -117,7 +117,7 @@ public class DiskLayer implements StoreReadLayer
     private final PropertyStore propertyStore;
     private final SchemaStorage schemaStorage;
     private final Provider<PropertyStore> propertyStoreProvider;
-    private final CountsTracker counts;
+    private final CountsAccessor counts;
 
     private static class PropertyStoreProvider implements Provider<PropertyStore>
     {
@@ -432,13 +432,19 @@ public class DiskLayer implements StoreReadLayer
     public InternalIndexState indexGetState( IndexDescriptor descriptor )
             throws IndexNotFoundKernelException
     {
-        return indexService.getProxyForRule( indexId( descriptor ) ).getState();
+        return indexService.getIndexProxy( indexId( descriptor ) ).getState();
+    }
+
+    @Override
+    public double indexUniqueValuesPercentage( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    {
+        return indexService.indexUniqueValuesPercentage( indexId( descriptor ) );
     }
 
     @Override
     public String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        return indexService.getProxyForRule( indexId( descriptor ) ).getPopulationFailure().asString();
+        return indexService.getIndexProxy( indexId( descriptor ) ).getPopulationFailure().asString();
     }
 
     private long indexId( IndexDescriptor descriptor )
@@ -806,7 +812,7 @@ public class DiskLayer implements StoreReadLayer
     @Override
     public long countsForNode( int labelId )
     {
-        return counts.countsForNode( labelId );
+        return counts.nodeCount( labelId );
     }
 
     @Override
@@ -816,6 +822,6 @@ public class DiskLayer implements StoreReadLayer
         {
             throw new UnsupportedOperationException( "not implemented" );
         }
-        return counts.countsForRelationship( startLabelId, typeId, endLabelId );
+        return counts.relationshipCount( startLabelId, typeId, endLabelId );
     }
 }

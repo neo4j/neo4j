@@ -37,7 +37,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.CountsAcceptor;
+import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.CountsComputer;
@@ -89,6 +89,7 @@ import static org.neo4j.kernel.impl.store.StoreFactory.buildTypeDescriptorAndVer
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 import static org.neo4j.unsafe.impl.batchimport.WriterFactories.parallel;
 
@@ -210,10 +211,10 @@ public class StoreMigrator implements StoreMigrationParticipant
                     new StoreFactory( fileSystem, storeDir, pageCache, DEV_NULL, new Monitors() );
             try ( NodeStore nodeStore = storeFactory.newNodeStore();
                   RelationshipStore relationshipStore = storeFactory.newRelationshipStore();
-                  CountsTracker tracker = new CountsTracker( fileSystem, pageCache, storeFileBase ) )
+                  CountsTracker tracker = new CountsTracker( fileSystem, pageCache, storeFileBase, BASE_TX_ID ) )
             {
                 CountsComputer.computeCounts( nodeStore, relationshipStore ).
-                        accept( new CountsAcceptor.Initializer( tracker ) );
+                        accept( new CountsAccessor.Initializer( tracker ) );
                 tracker.rotate( lastTxId );
             }
         }

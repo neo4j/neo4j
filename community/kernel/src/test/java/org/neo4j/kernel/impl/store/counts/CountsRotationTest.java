@@ -19,18 +19,15 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -41,19 +38,24 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.CountsKey;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.register.Register;
+import org.neo4j.register.Register.CopyableDoubleLongRegister;
 import org.neo4j.register.Registers;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.BASE_MINOR_VERSION;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
+import static org.neo4j.register.Register.DoubleLongRegister;
 
 public class CountsRotationTest
 {
@@ -68,11 +70,20 @@ public class CountsRotationTest
 
         // THEN
         assertTrue( fs.fileExists( alphaStoreFile() ) );
-        assertFalse( fs.fileExists( betaStoreFile() ) );
+        assertTrue( fs.fileExists( betaStoreFile() ) );
 
         try ( CountsStore store = CountsStore.open( fs, pageCache, alphaStoreFile() ) )
         {
-            assertEquals( TransactionIdStore.BASE_TX_ID, store.lastTxId() );
+            assertEquals( BASE_TX_ID, store.lastTxId() );
+//            assertEquals( BASE_MINOR_VERSION + 1, store.minorVersion() );
+            assertEquals( 0, store.totalRecordsStored() );
+            assertEquals( 0, allRecords( store ).size() );
+        }
+
+        try ( CountsStore store = CountsStore.open( fs, pageCache, betaStoreFile() ) )
+        {
+            assertEquals( BASE_TX_ID, store.lastTxId() );
+            assertEquals( BASE_MINOR_VERSION, store.minorVersion() );
             assertEquals( 0, store.totalRecordsStored() );
             assertEquals( 0, allRecords( store ).size() );
         }
@@ -99,7 +110,8 @@ public class CountsRotationTest
         try ( CountsStore store = CountsStore.open( fs, pageCache, betaStoreFile() ) )
         {
             // a transaction for creating the label and a transaction for the node
-            assertEquals( TransactionIdStore.BASE_TX_ID + 1 + 1, store.lastTxId() );
+            assertEquals( BASE_TX_ID + 1 + 1, store.lastTxId() );
+            assertEquals( BASE_MINOR_VERSION, store.minorVersion() );
             // one for all nodes and one for the created "A" label
             assertEquals( 1 + 1, store.totalRecordsStored() );
             assertEquals( 1 + 1, allRecords( store ).size() );
@@ -131,12 +143,13 @@ public class CountsRotationTest
         assertTrue( fs.fileExists( betaStoreFile() ) );
 
         final PageCache pageCache = db.getDependencyResolver().resolveDependency( PageCache.class );
-        try ( CountsStore store = CountsStore.open( fs, pageCache, betaStoreFile() ) )
+        try ( CountsStore store = CountsStore.open( fs, pageCache, alphaStoreFile() ) )
         {
             // NOTE since the rotation happens before the second transaction is committed we do not see those changes
             // in the stats
             // a transaction for creating the label and a transaction for the node
-            assertEquals( TransactionIdStore.BASE_TX_ID + 1 + 1, store.lastTxId() );
+            assertEquals( BASE_TX_ID + 1 + 1, store.lastTxId() );
+            assertEquals( BASE_MINOR_VERSION, store.minorVersion() );
             // one for all nodes and one for the created "B" label
             assertEquals( 1 + 1, store.totalRecordsStored() );
             assertEquals( 1 + 1, allRecords( store ).size() );
@@ -144,11 +157,11 @@ public class CountsRotationTest
 
         // on the other hand the tracker should read the correct value by merging data on disk and data in memory
         final CountsTracker tracker = db.getDependencyResolver().resolveDependency( NeoStore.class ).getCounts();
-        assertEquals( 1 + 1, tracker.countsForNode( -1 ) );
+        assertEquals( 1 + 1, tracker.nodeCount( -1 ) );
 
         final LabelTokenHolder holder = db.getDependencyResolver().resolveDependency( LabelTokenHolder.class );
         int labelId = holder.getIdByName( C.name() );
-        assertEquals( 1, tracker.countsForNode( labelId ) );
+        assertEquals( 1, tracker.nodeCount( labelId ) );
 
         db.shutdown();
     }
@@ -192,25 +205,22 @@ public class CountsRotationTest
     }
 
 
-    private Collection<Pair<CountsKey, Long>> allRecords( SortedKeyValueStore<CountsKey, Register.LongRegister> store )
+    private Collection<Pair<CountsKey, Long>> allRecords(
+            SortedKeyValueStore<CountsKey, CopyableDoubleLongRegister>  store )
     {
         final Collection<Pair<CountsKey, Long>> records = new ArrayList<>();
-        store.accept( new KeyValueRecordVisitor<CountsKey, Register.LongRegister>()
+        store.accept( new KeyValueRecordVisitor<CountsKey, CopyableDoubleLongRegister>()
         {
-            private final Register.LongRegister valueRegister = Registers.newLongRegister();
-
             @Override
-            public void visit( CountsKey key  )
+            public void visit( CountsKey key, CopyableDoubleLongRegister valueRegister  )
             {
-                records.add( Pair.of( key, valueRegister.read() ) );
+                // read out atomically in case count is a concurrent register
+                DoubleLongRegister register = Registers.newDoubleLongRegister();
+                valueRegister.copyTo( register );
+                records.add( Pair.of( key, register.readSecond() ) );
             }
 
-            @Override
-            public Register.LongRegister valueRegister()
-            {
-                return valueRegister;
-            }
-        } );
+        }, Registers.newDoubleLongRegister() );
         return records;
     }
 }

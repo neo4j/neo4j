@@ -19,50 +19,91 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
-import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
-import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.impl.api.CountsKey;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordSerializer;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
 import org.neo4j.register.Register;
+import org.neo4j.register.Register.CopyableDoubleLongRegister;
+import org.neo4j.register.Register.DoubleLongRegister;
+
+import static org.neo4j.kernel.impl.store.counts.CountsKey.indexCountsKey;
+import static org.neo4j.kernel.impl.store.counts.CountsKey.indexSampleKey;
+import static org.neo4j.kernel.impl.store.counts.CountsKey.nodeKey;
+import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipKey;
 
 /**
  * Node Key:
- *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
+ *  0 1 2 3 4 5 6 7 8 9 A B C D E F
  * [x, , , , , , , , , , , ,x,x,x,x]
  *  _                       _ _ _ _
  *  |                          |
- * entry                      label
- * type                        id
+ *  entry                      label
+ *  type                        id
+ * <p/>
  *
  * Relationship Key:
- *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
+ *  0 1 2 3 4 5 6 7 8 9 A B C D E F
  * [x, ,x,x,x,x, ,x,x,x,x, ,x,x,x,x]
  *  _   _ _ _ _   _ _ _ _   _ _ _ _
  *  |      |         |         |
- * entry  label      rel      label
- * type    id        type      id
+ *  entry  label      rel      label
+ *  type    id        type      id
+ *  id
+ * <p/>
+ *
+ * Index Key:
+ *  0 1 2 3 4 5 6 7 8 9 A B C D E F
+ * [x, , , , , , ,x,x,x,x, ,x,x,x,x]
+ *  _             _ _ _ _   _ _ _ _
+ *  |                |         |
+ *  entry       property key   label
+ *  type id          id        id
+ * <p/>
  *
  * Count value:
- *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
+ *  0 1 2 3 4 5 6 7 8 9 A B C D E F
  * [ , , , , , , , ,x,x,x,x,x,x,x,x]
  *                  _ _ _ _ _ _ _ _
- *                         |
- *                       value
+ *                   |
+ *                  value
+ * <p/>
+ *
+ * Index count:
+ *  0 1 2 3 4 5 6 7 8 9 A B C D E F
+ * [u,u,u,u,u,u,u,u,s,s,s,s,s,s,s,s]
+ *  _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+ *  |               |
+ *  updates seen    index size
+ * <p/>
+ *
+ * Index sample:
+ *  0 1 2 3 4 5 6 7 8 9 A B C D E F
+ * [u,u,u,u,u,u,u,u,s,s,s,s,s,s,s,s]
+ *  _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+ *  |               |
+ *  unique count    sample size
+ * <p/>
+ *
+ * 'entry type' - see {@link org.neo4j.kernel.impl.store.counts.CountsKeyType}
  */
-public class CountsRecordSerializer implements KeyValueRecordSerializer<CountsKey, Register.LongRegister>
+public final class CountsRecordSerializer implements KeyValueRecordSerializer<CountsKey, CopyableDoubleLongRegister>
 {
-    static final byte EMPTY_RECORD_KEY = 0;
-    static final byte NODE_KEY = 1;
-    static final byte RELATIONSHIP_KEY = 2;
+    public static final CountsRecordSerializer INSTANCE = new CountsRecordSerializer();
+
+    public static final long DEFAULT_FIRST_VALUE = 0l;
+    public static final long DEFAULT_SECOND_VALUE = 0l;
+
+    private CountsRecordSerializer()
+    {
+    }
 
     @Override
-    public boolean visitRecord(ByteBuffer buffer, KeyValueRecordVisitor<CountsKey, Register.LongRegister> visitor)
+    public boolean visitRecord( ByteBuffer buffer,
+                                KeyValueRecordVisitor<CountsKey, CopyableDoubleLongRegister> visitor,
+                                CopyableDoubleLongRegister valueRegister )
     {
         // read type
         byte type = buffer.get();
@@ -76,43 +117,56 @@ public class CountsRecordSerializer implements KeyValueRecordSerializer<CountsKe
         int three = buffer.getInt();
 
         // read value
-        buffer.getLong(); // skip unused long
-        long count = buffer.getLong();
-        visitor.valueRegister().write( count );
+        long first = buffer.getLong();
+        long second = buffer.getLong();
+        valueRegister.write( first, second );
 
         CountsKey key;
-        switch ( type )
+        switch ( CountsKeyType.fromCode( type ) )
         {
-            case EMPTY_RECORD_KEY:
+            case EMPTY:
                 assert one == 0;
                 assert two == 0;
                 assert three == 0;
-                assert count == 0;
+                assert first == 0;
+                assert second == 0;
                 return false;
 
-            case NODE_KEY:
+            case ENTITY_NODE:
                 assert one == 0;
                 assert two == 0;
+                assert first == 0;
                 key = nodeKey( three /* label id*/ );
                 break;
 
-            case RELATIONSHIP_KEY:
+            case ENTITY_RELATIONSHIP:
+                assert first == 0;
                 key = relationshipKey( one /* start label id */, two /* rel type id */, three /* end label id */ );
+                break;
+
+            case INDEX_COUNTS:
+                assert one == 0;
+                key = indexCountsKey( three /* label id */, two /* pk id */ );
+                break;
+
+            case INDEX_SAMPLE:
+                assert one == 0;
+                key = indexSampleKey( three /* label id */, two /* pk id */ );
                 break;
 
             default:
                 throw new IllegalStateException( "Unknown counts key type: " + type );
         }
-        visitor.visit( key );
+        visitor.visit( key, valueRegister );
         return true;
     }
 
     @Override
-    public CountsKey readRecord( PageCursor cursor, int offset, Register.LongRegister value ) throws IOException
+    public CountsKey readRecord( PageCursor cursor, int offset, CopyableDoubleLongRegister value ) throws IOException
     {
         byte type;
         int one, two, three;
-        long count;
+        long first, second;
 
         do
         {
@@ -130,34 +184,48 @@ public class CountsRecordSerializer implements KeyValueRecordSerializer<CountsKe
             three = cursor.getInt();
 
             // read value
-            cursor.getLong(); // skip unused long
-            count =  cursor.getLong();
+            first = cursor.getLong();
+            second = cursor.getLong();
         } while ( cursor.shouldRetry() );
 
+        value.write(first, second );
+
         CountsKey key;
-        switch ( type )
+        switch ( CountsKeyType.fromCode( type ) )
         {
-            case EMPTY_RECORD_KEY:
+            case EMPTY:
                 throw new IllegalStateException( "Reading empty record" );
-            case NODE_KEY:
+
+            case ENTITY_NODE:
                 assert one == 0;
                 assert two == 0;
                 key = nodeKey( three /* label id*/ );
-                value.write( count );
                 break;
-            case RELATIONSHIP_KEY:
+
+            case ENTITY_RELATIONSHIP:
                 key = relationshipKey( one /* start label id */, two /* rel type id */, three /* end label id */ );
-                value.write( count );
                 break;
+
+            case INDEX_COUNTS:
+                assert one == 0;
+                key = indexCountsKey( three /* label id */, two /* pk id */ );
+                break;
+
+            case INDEX_SAMPLE:
+                assert one == 0;
+                key = indexSampleKey( three /* label id */, two /* pk id */ );
+                break;
+
             default:
                 throw new IllegalStateException( "Unknown counts key type: " + type );
         }
+
         return key;
     }
 
     @Override
-    public void writeDefaultValue( Register.LongRegister valueRegister )
+    public void writeDefaultValue( CopyableDoubleLongRegister valueRegister )
     {
-        valueRegister.write( 0 );
+        valueRegister.write( DEFAULT_FIRST_VALUE, DEFAULT_SECOND_VALUE );
     }
 }

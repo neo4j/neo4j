@@ -26,6 +26,7 @@ import java.util.concurrent.Future;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -38,16 +39,22 @@ public class OnlineIndexProxy implements IndexProxy
 {
     private final IndexDescriptor descriptor;
     final IndexAccessor accessor;
+    private final IndexStoreView storeView;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
+    private final IndexConfiguration configuration;
+    private final IndexCountsRemover indexCountsRemover;
 
-    public OnlineIndexProxy( IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
-                             IndexAccessor accessor )
+    public OnlineIndexProxy( IndexDescriptor descriptor, IndexConfiguration configuration, IndexAccessor accessor,
+                             IndexStoreView storeView, SchemaIndexProvider.Descriptor providerDescriptor )
     {
         this.descriptor = descriptor;
+        this.storeView = storeView;
         this.providerDescriptor = providerDescriptor;
         this.accessor = accessor;
+        this.configuration = configuration;
+        this.indexCountsRemover = IndexCountsRemover.Factory.create( storeView, descriptor );
     }
-    
+
     @Override
     public void start()
     {
@@ -56,13 +63,18 @@ public class OnlineIndexProxy implements IndexProxy
     @Override
     public IndexUpdater newUpdater( final IndexUpdateMode mode )
     {
-        return accessor.newUpdater( mode );
+        return updateCountingUpdater( accessor.newUpdater( mode ) );
     }
 
+    private IndexUpdater updateCountingUpdater( final IndexUpdater indexUpdater )
+    {
+        return new UpdateCountingIndexUpdater( storeView, descriptor, indexUpdater );
+    }
 
     @Override
     public Future<Void> drop() throws IOException
     {
+        indexCountsRemover.remove();
         accessor.drop();
         return VOID;
     }
@@ -84,7 +96,7 @@ public class OnlineIndexProxy implements IndexProxy
     {
         return InternalIndexState.ONLINE;
     }
-    
+
     @Override
     public void force() throws IOException
     {
@@ -97,7 +109,7 @@ public class OnlineIndexProxy implements IndexProxy
         accessor.close();
         return VOID;
     }
-    
+
     @Override
     public IndexReader newReader()
     {
@@ -121,7 +133,7 @@ public class OnlineIndexProxy implements IndexProxy
     {
         // ok, it's online so it's valid
     }
-    
+
     @Override
     public IndexPopulationFailure getPopulationFailure() throws IllegalStateException
     {
@@ -135,8 +147,15 @@ public class OnlineIndexProxy implements IndexProxy
     }
 
     @Override
+    public IndexConfiguration config()
+    {
+        return configuration;
+    }
+
+    @Override
     public String toString()
     {
         return getClass().getSimpleName() + "[accessor:" + accessor + ", descriptor:" + descriptor + "]";
     }
+
 }

@@ -22,13 +22,28 @@ package org.neo4j.cypher.internal.spi.v2_2
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, Selectivity}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 import org.neo4j.cypher.internal.compiler.v2_2.{LabelId, NameId, PropertyKeyId, RelTypeId}
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException
+import org.neo4j.kernel.api.index.IndexDescriptor
 import org.neo4j.kernel.api.{Statement => KernelStatement}
 
 class TransactionBoundGraphStatistics(statement: KernelStatement) extends GraphStatistics {
-  import TransactionBoundGraphStatistics.toKernelEncode
+  import org.neo4j.cypher.internal.spi.v2_2.TransactionBoundGraphStatistics.{WILDCARD, toKernelEncode}
 
   def indexSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] =
-    HardcodedGraphStatistics.indexSelectivity(label, property)
+   try {
+      val indexDescriptor = new IndexDescriptor( label, property )
+      val labeledNodes = statement.readOperations().countsForNode( label ).toDouble
+
+      // approximation of number of unique values / index size (between 0 and 1)
+      val indexEntrySelectivity = statement.readOperations( ).indexUniqueValuesSelectivity( indexDescriptor )
+      val frequencyOfNodesWithSameValue = 1.0 / indexEntrySelectivity
+      val indexSelectivity = frequencyOfNodesWithSameValue / labeledNodes
+
+      Some(Selectivity(indexSelectivity))
+    }
+    catch {
+      case e: IndexNotFoundKernelException => None
+    }
 
   def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
     statement.readOperations().countsForNode(labelId)
@@ -36,7 +51,6 @@ class TransactionBoundGraphStatistics(statement: KernelStatement) extends GraphS
   def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
     (fromLabel, toLabel) match {
       case (Some(_), Some(_)) =>
-        import TransactionBoundGraphStatistics.WILDCARD
         // TODO: read real counts from readOperations when they are gonna be properly computed and updated
         Math.min(
           statement.readOperations().countsForRelationship(fromLabel, relTypeId, WILDCARD ),
@@ -50,7 +64,9 @@ class TransactionBoundGraphStatistics(statement: KernelStatement) extends GraphS
 object TransactionBoundGraphStatistics {
   val WILDCARD: Int = -1
 
-  implicit def toKernelEncode(nameId: Option[NameId]): Int = {
-    nameId.map(_.id).getOrElse(WILDCARD)
-  }
+  private implicit def toKernelEncode(nameId: NameId): Int =
+    nameId.id
+
+  private implicit def toKernelEncode(nameId: Option[NameId]): Int =
+    nameId.map(toKernelEncode).getOrElse(WILDCARD)
 }

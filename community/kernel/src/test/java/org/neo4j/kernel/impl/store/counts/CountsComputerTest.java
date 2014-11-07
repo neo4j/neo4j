@@ -19,18 +19,13 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.impl.api.CountsKey.nodeKey;
-import static org.neo4j.kernel.impl.api.CountsKey.relationshipKey;
-import static org.neo4j.kernel.impl.store.StoreFactory.buildTypeDescriptorAndVersion;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
@@ -42,9 +37,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.CountsAcceptor;
-import org.neo4j.kernel.impl.api.CountsKey;
-import org.neo4j.kernel.impl.api.CountsState;
+import org.neo4j.kernel.impl.api.CountsAccessor;
+import org.neo4j.kernel.impl.api.CountsRecordState;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -55,13 +49,19 @@ import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.kernel.impl.store.StoreFactory.buildTypeDescriptorAndVersion;
+import static org.neo4j.kernel.impl.store.counts.CountsKey.nodeKey;
+import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipKey;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
+
 public class CountsComputerTest
 {
     @Test
     public void shouldCreateAnEmptyCountsStoreFromAnEmptyDatabase() throws IOException
     {
         final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
-        final CountsState countsState = CountsComputer.computeCounts( db );
+        final CountsRecordState countsState = CountsComputer.computeCounts( db );
         long lastCommittedTransactionId = getLastTxId( db );
         db.shutdown();
 
@@ -89,7 +89,7 @@ public class CountsComputerTest
             db.createNode();
             tx.success();
         }
-        final CountsState countsState = CountsComputer.computeCounts( db );
+        final CountsRecordState countsState = CountsComputer.computeCounts( db );
         long lastCommittedTransactionId = getLastTxId( db );
         db.shutdown();
 
@@ -122,7 +122,7 @@ public class CountsComputerTest
             node.delete();
             tx.success();
         }
-        final CountsState countsState = CountsComputer.computeCounts( db );
+        final CountsRecordState countsState = CountsComputer.computeCounts( db );
         long lastCommittedTransactionId = getLastTxId( db );
         db.shutdown();
 
@@ -155,7 +155,7 @@ public class CountsComputerTest
             rel.delete();
             tx.success();
         }
-        final CountsState countsState = CountsComputer.computeCounts( db );
+        final CountsRecordState countsState = CountsComputer.computeCounts( db );
         long lastCommittedTransactionId = getLastTxId( db );
         db.shutdown();
 
@@ -192,7 +192,7 @@ public class CountsComputerTest
             node.createRelationshipTo( nodeC, DynamicRelationshipType.withName( "TYPE2" ) );
             tx.success();
         }
-        final CountsState countsState = CountsComputer.computeCounts( db );
+        final CountsRecordState countsState = CountsComputer.computeCounts( db );
         long lastCommittedTransactionId = getLastTxId( db );
         db.shutdown();
 
@@ -236,7 +236,7 @@ public class CountsComputerTest
             nodeD.createRelationshipTo( nodeC, DynamicRelationshipType.withName( "TYPE4" ) );
             tx.success();
         }
-        final CountsState countsState = CountsComputer.computeCounts( db );
+        final CountsRecordState countsState = CountsComputer.computeCounts( db );
         long lastCommittedTransactionId = getLastTxId( db );
         db.shutdown();
 
@@ -316,18 +316,18 @@ public class CountsComputerTest
                 buildTypeDescriptorAndVersion( CountsTracker.STORE_DESCRIPTOR ) );
     }
 
-    private void rebuildCounts( CountsState countsState, long lastCommittedTransactionId ) throws IOException
+    private void rebuildCounts( CountsRecordState countsState, long lastCommittedTransactionId ) throws IOException
     {
-        final CountsTracker tracker = new CountsTracker( fs, pageCache, new File( dir, COUNTS_STORE_BASE ) );
-        countsState.accept( new CountsAcceptor.Initializer( tracker ) );
+        CountsTracker tracker = new CountsTracker( fs, pageCache, new File( dir, COUNTS_STORE_BASE ), BASE_TX_ID );
+        countsState.accept( new CountsAccessor.Initializer( tracker ) );
         tracker.rotate( lastCommittedTransactionId );
         tracker.close();
     }
 
     private long get( CountsStore store, CountsKey key )
     {
-        Register.LongRegister value = Registers.newLongRegister();
+        Register.DoubleLongRegister value = Registers.newDoubleLongRegister();
         store.get( key, value );
-        return value.read();
+        return value.readSecond();
     }
 }

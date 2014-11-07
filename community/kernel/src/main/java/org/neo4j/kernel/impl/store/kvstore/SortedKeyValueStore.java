@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.kvstore;
 
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
-
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -32,6 +30,10 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.register.Register;
+import org.neo4j.register.Registers;
+
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 
 /*
  * Implementation of  a key value store based on storing a sequence of records sorted
@@ -43,6 +45,7 @@ import org.neo4j.kernel.impl.store.UnderlyingStorageException;
  */
 public abstract class SortedKeyValueStore<K extends Comparable<K>, VR> implements Closeable
 {
+
     public interface Writer<K extends Comparable<K>, VR> extends KeyValueRecordVisitor<K, VR>, Closeable
     {
         SortedKeyValueStore<K, VR> openForReading() throws IOException;
@@ -54,7 +57,6 @@ public abstract class SortedKeyValueStore<K extends Comparable<K>, VR> implement
                               File targetFile, long lastCommittedTxId ) throws IOException;
     }
 
-    public static final int RECORD_SIZE /*bytes*/ = 16 /*key*/ + 16 /*value*/;
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
     private final File file;
@@ -62,11 +64,12 @@ public abstract class SortedKeyValueStore<K extends Comparable<K>, VR> implement
     private final SortedKeyValueStoreHeader header;
     private final int totalRecords;
     private final KeyValueRecordSerializer<K, VR> recordSerializer;
+    private final int recordSize;
     private final WriterFactory<K, VR> writerFactory;
 
     public SortedKeyValueStore( FileSystemAbstraction fs, PageCache pageCache, File file, PagedFile pages,
                                 SortedKeyValueStoreHeader header, KeyValueRecordSerializer<K, VR> recordSerializer,
-                                WriterFactory<K, VR> writerFactory )
+                                int recordSize, WriterFactory<K, VR> writerFactory )
     {
         this.fs = fs;
         this.pageCache = pageCache;
@@ -74,6 +77,7 @@ public abstract class SortedKeyValueStore<K extends Comparable<K>, VR> implement
         this.pages = pages;
         this.header = header;
         this.recordSerializer = recordSerializer;
+        this.recordSize = recordSize;
         this.writerFactory = writerFactory;
         this.totalRecords = header.dataRecords();
     }
@@ -118,8 +122,8 @@ public abstract class SortedKeyValueStore<K extends Comparable<K>, VR> implement
 
     private int compareKeyAndReadValue( PageCursor cursor, K target, int record, VR count ) throws IOException
     {
-        int pageId = (record * RECORD_SIZE) / pages.pageSize();
-        int offset = (record * RECORD_SIZE) % pages.pageSize();
+        int pageId = (record * recordSize) / pages.pageSize();
+        int offset = (record * recordSize) % pages.pageSize();
         if ( pageId == cursor.getCurrentPageId() || cursor.next( pageId ) )
         {
             K key = recordSerializer.readRecord( cursor, offset, count );
@@ -140,21 +144,33 @@ public abstract class SortedKeyValueStore<K extends Comparable<K>, VR> implement
     {
         return header.lastTxId();
     }
+
+    public long minorVersion()
+    {
+        return header.minorVersion();
+    }
+
     public long totalRecordsStored()
     {
         return header.dataRecords();
     }
 
-    public void accept( KeyValueRecordVisitor<K, VR> visitor )
+    public void accept( KeyValueRecordVisitor<K, VR> visitor, VR register )
     {
         try ( InputStream in = fs.openAsInputStream( file ) )
         {
             // skip the header
-            for ( long bytes = header.headerRecords() * RECORD_SIZE; bytes != 0; )
+            for ( long bytes = header.headerRecords() * recordSize; bytes > 0; bytes-- )
             {
-                bytes -= in.skip( bytes );
+                // if we reach the end of the file stop
+                // NOTE: we cannot use skip here since it does not detected EOF
+                int read = in.read();
+                if ( read == -1 )
+                {
+                    break;
+                }
             }
-            byte[] record = new byte[RECORD_SIZE];
+            byte[] record = new byte[recordSize];
             ByteBuffer buffer = ByteBuffer.wrap( record );
             boolean readNext = true;
             for ( int read, offset = 0; readNext && (read = in.read( record, offset, record.length - offset )) != -1; )
@@ -165,7 +181,7 @@ public abstract class SortedKeyValueStore<K extends Comparable<K>, VR> implement
                     continue;
                 }
                 buffer.position( 0 );
-                readNext = recordSerializer.visitRecord( buffer, visitor );
+                readNext = recordSerializer.visitRecord( buffer, visitor, register );
                 offset = 0;
             }
         }

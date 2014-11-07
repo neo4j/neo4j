@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index.inmemory;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -72,7 +73,7 @@ class UniqueInMemoryIndex extends InMemoryIndex
             }
 
             @Override
-            public void remove( Iterable<Long> nodeIds )
+            public void remove( Collection<Long> nodeIds )
             {
                 for ( long nodeId : nodeIds )
                 {

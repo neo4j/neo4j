@@ -572,7 +572,7 @@ public class NeoTransactionStoreApplierTest
         // given
         final NeoCommandHandler applier = newApplier( false );
         final NeoCommandHandler indexApplier = new IndexTransactionApplier( indexingService, labelScanStore,
-                nodeStore, propertyStore, cacheAccess, null, TransactionApplicationMode.INTERNAL );
+                nodeStore, propertyStore, cacheAccess, null, transactionId, TransactionApplicationMode.INTERNAL );
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         record.setCreated();
         final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
@@ -760,7 +760,7 @@ public class NeoTransactionStoreApplierTest
     private NeoCommandHandler newIndexApplier( TransactionApplicationMode mode )
     {
         return new IndexTransactionApplier( indexingService, labelScanStore, nodeStore, propertyStore,
-                cacheAccess, null, mode );
+                cacheAccess, null, transactionId, mode );
     }
 
     @Test

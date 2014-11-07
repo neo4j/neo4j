@@ -67,7 +67,7 @@ public class StoreMigratorTest
         {
             StoreFactory storeFactory = new StoreFactory( fs.get(), storeDirectory, pageCache,
                     logging.getMessagesLog( getClass() ), new Monitors() );
-            storeFactory.newNeoStore( false ).close();
+            storeFactory.newNeoStore( false, false ).close();
         }
         finally
         {

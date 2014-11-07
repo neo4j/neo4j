@@ -19,6 +19,10 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -28,9 +32,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
@@ -53,6 +54,7 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.PreAllocatedRecords;
@@ -78,7 +80,8 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.inUse;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.notInUse;
 import static org.neo4j.consistency.checking.full.ExecutionOrderIntegrationTest.config;
@@ -381,8 +384,10 @@ public class FullCheckIntegrationTest
         {
             IndexRule rule = rules.next();
             IndexDescriptor descriptor = new IndexDescriptor( rule.getLabel(), rule.getPropertyKey() );
+            IndexConfiguration indexConfig = new IndexConfiguration( false );
+            IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
             IndexPopulator populator =
-                storeAccess.indexes().getPopulator( rule.getId(), descriptor, new IndexConfiguration( false ) );
+                storeAccess.indexes().getPopulator( rule.getId(), descriptor, indexConfig, samplingConfig );
             populator.markAsFailed( "Oh noes! I was a shiny index and then I was failed" );
             populator.close( false );
 
@@ -476,10 +481,11 @@ public class FullCheckIntegrationTest
     public void shouldReportNodesThatAreNotIndexed() throws Exception
     {
         // given
+        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
         for ( IndexRule indexRule : loadAllIndexRules( fixture.directStoreAccess().nativeStores().getSchemaStore() ) )
         {
-            IndexAccessor accessor = fixture.directStoreAccess().indexes().getOnlineAccessor( indexRule.getId(),
-                    new IndexConfiguration( indexRule.isConstraintIndex() ) );
+            IndexAccessor accessor = fixture.directStoreAccess().indexes().getOnlineAccessor(
+                    indexRule.getId(), new IndexConfiguration( indexRule.isConstraintIndex() ), samplingConfig );
             IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE );
             updater.remove( indexedNodes );
             updater.close();
@@ -497,10 +503,13 @@ public class FullCheckIntegrationTest
     public void shouldReportNodesWithDuplicatePropertyValueInUniqueIndex() throws Exception
     {
         // given
+        IndexConfiguration indexConfig = new IndexConfiguration( false );
+        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
         for ( IndexRule indexRule : loadAllIndexRules( fixture.directStoreAccess().nativeStores().getSchemaStore() ) )
         {
-            IndexAccessor accessor = fixture.directStoreAccess().indexes().getOnlineAccessor( indexRule.getId(),
-                    new IndexConfiguration( false ) );
+            IndexAccessor accessor = fixture.directStoreAccess()
+                                            .indexes()
+                                            .getOnlineAccessor( indexRule.getId(), indexConfig, samplingConfig );
             IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE );
             updater.process( NodePropertyUpdate.add( 42, 0, "value", new long[]{3} ) );
             updater.close();

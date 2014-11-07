@@ -71,7 +71,7 @@ public class NodeCountsStep extends NodeStoreProcessorStep
     {
         for ( int i = 0; i < labelCounts.length; i++ )
         {
-            countsTracker.updateCountsForNode( i == anyLabel ? ReadOperations.ANY_LABEL : i, labelCounts[i] );
+            countsTracker.incrementNodeCount( i == anyLabel ? ReadOperations.ANY_LABEL : i, labelCounts[i] );
         }
     }
 }

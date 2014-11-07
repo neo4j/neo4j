@@ -118,7 +118,7 @@ public class ApplyRecoveredTransactionsTest
         Config config = configForStoreDir( new Config(), storeDir );
         StoreFactory storeFactory = new StoreFactory( config, new DefaultIdGeneratorFactory(),
                 pageCacheRule.getPageCache( fsr.get(), config ), fsr.get(), DEV_NULL, new Monitors() );
-        neoStore = storeFactory.newNeoStore( true );
+        neoStore = storeFactory.newNeoStore( true, false );
     }
 
     @After

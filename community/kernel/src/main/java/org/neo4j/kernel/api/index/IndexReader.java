@@ -23,6 +23,8 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Resource;
 
+import static org.neo4j.register.Register.DoubleLong;
+
 /**
  * Reader for an {@link IndexAccessor}.
  * Must honor repeatable reads, which means that if a lookup is executed multiple times the same result set
@@ -40,9 +42,17 @@ public interface IndexReader extends Resource
             return PrimitiveLongCollections.emptyIterator();
         }
 
+        // Used for checking index correctness
         @Override
         public int getIndexedCount( long nodeId, Object propertyValue )
         {
+            return 0;
+        }
+
+        @Override
+        public long sampleIndex( DoubleLong.Out result )
+        {
+            result.write( 0l, 0l );
             return 0;
         }
 
@@ -53,8 +63,14 @@ public interface IndexReader extends Resource
     };
 
     /**
-     * Verifies that the given nodeId is indexed with the given property value, and returns true if that's
-     * the case. Returns false otherwise.
+     * Number of nodes indexed by the given property
      */
     int getIndexedCount( long nodeId, Object propertyValue );
+
+    /**
+     * Sample this index (on the current thread)
+     * @param result contains the unique values and the sampled size
+     * @return the index size
+     */
+    public long sampleIndex( DoubleLong.Out result );
 }

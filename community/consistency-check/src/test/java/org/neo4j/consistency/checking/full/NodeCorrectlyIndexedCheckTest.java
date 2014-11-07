@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
+import org.neo4j.register.Register;
 
 import static java.util.Arrays.asList;
 
@@ -235,6 +236,12 @@ public class NodeCorrectlyIndexedCheckTest
                         }
                     }
                     return count;
+                }
+
+                @Override
+                public long sampleIndex( Register.DoubleLong.Out sampler )
+                {
+                    throw new UnsupportedOperationException();
                 }
 
                 @Override

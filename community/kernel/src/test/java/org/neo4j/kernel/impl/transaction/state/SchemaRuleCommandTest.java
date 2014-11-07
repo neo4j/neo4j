@@ -212,7 +212,7 @@ public class SchemaRuleCommandTest
             mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE, new LockGroup(), txId );
     private final IndexTransactionApplier indexApplier = new IndexTransactionApplier( indexes,
             labelScanStore, mock( NodeStore.class ), mock( PropertyStore.class ), mock( CacheAccessBackDoor.class ),
-            mock( PropertyLoader.class ), TransactionApplicationMode.INTERNAL );
+            mock( PropertyLoader.class ), txId, TransactionApplicationMode.INTERNAL );
     private final PhysicalLogNeoCommandReaderV2 reader = new PhysicalLogNeoCommandReaderV2();
     private final IndexRule rule = IndexRule.indexRule( id, labelId, propertyKey, PROVIDER_DESCRIPTOR );
 

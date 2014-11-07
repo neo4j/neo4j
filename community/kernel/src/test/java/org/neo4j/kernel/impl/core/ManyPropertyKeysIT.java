@@ -112,7 +112,7 @@ public class ManyPropertyKeysIT
         life.start();
         PageCache pageCache = createPageCache( fs, getClass().getName(), life );
         StoreFactory storeFactory = new StoreFactory( fs, storeDir, pageCache, StringLogger.DEV_NULL, new Monitors() );
-        NeoStore neoStore = storeFactory.newNeoStore( true );
+        NeoStore neoStore = storeFactory.newNeoStore( true, false );
         PropertyKeyTokenStore store = neoStore.getPropertyKeyTokenStore();
         for ( int i = 0; i < propertyKeyCount; i++ )
         {

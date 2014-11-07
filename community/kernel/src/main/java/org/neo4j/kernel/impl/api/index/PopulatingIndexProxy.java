@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.ResourceIterator;
@@ -28,6 +29,7 @@ import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
+import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -50,20 +52,25 @@ public class PopulatingIndexProxy implements IndexProxy
     private final IndexDescriptor descriptor;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
     private final IndexPopulationJob job;
+    private final IndexConfiguration configuration;
 
     public PopulatingIndexProxy( JobScheduler scheduler,
-                                 final IndexDescriptor descriptor,
-                                 final SchemaIndexProvider.Descriptor providerDescriptor,
-                                 final FailedIndexProxyFactory failureDelegateFactory,
-                                 final IndexPopulator writer,
+                                 IndexDescriptor descriptor,
+                                 IndexConfiguration configuration,
+                                 FailedIndexProxyFactory failureDelegateFactory,
+                                 IndexPopulator writer,
                                  FlippableIndexProxy flipper,
-                                 IndexStoreView storeView, final String indexUserDescription,
-                                 UpdateableSchemaState updateableSchemaState, Logging logging )
+                                 IndexStoreView storeView,
+                                 UpdateableSchemaState updateableSchemaState,
+                                 Logging logging,
+                                 String indexUserDescription,
+                                 SchemaIndexProvider.Descriptor providerDescriptor )
     {
-        this.scheduler  = scheduler;
+        this.scheduler = scheduler;
         this.descriptor = descriptor;
+        this.configuration = configuration;
         this.providerDescriptor = providerDescriptor;
-        this.job  = new IndexPopulationJob( descriptor, providerDescriptor,
+        this.job = new IndexPopulationJob( descriptor, configuration, providerDescriptor,
                 indexUserDescription, failureDelegateFactory, writer, flipper, storeView,
                 updateableSchemaState, logging );
     }
@@ -77,36 +84,39 @@ public class PopulatingIndexProxy implements IndexProxy
     @Override
     public IndexUpdater newUpdater( final IndexUpdateMode mode )
     {
-        return new IndexUpdater()
+        switch ( mode )
         {
-            @Override
-            public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
-            {
-                switch( mode )
+            case ONLINE:
+                return new PopulatingIndexUpdater()
                 {
-                    case ONLINE:
+                    @Override
+                    public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+                    {
                         job.update( update );
-                        break;
+                    }
+                };
 
-                    case RECOVERY:
+            case RECOVERY:
+                return new PopulatingIndexUpdater()
+                {
+                    @Override
+                    public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+                    {
                         throw new UnsupportedOperationException( "Recovered updates shouldn't reach this place" );
+                    }
+                };
 
-                    default:
+
+            default:
+                return new PopulatingIndexUpdater()
+                {
+                    @Override
+                    public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+                    {
                         throw new ThisShouldNotHappenError( "Stefan", "Unsupported IndexUpdateMode" );
-                }
-            }
-
-            @Override
-            public void close() throws IOException, IndexEntryConflictException
-            {
-            }
-
-            @Override
-            public void remove( Iterable<Long> nodeIds )
-            {
-                throw new UnsupportedOperationException( "Should not remove() from populating index." );
-            }
-        };
+                    }
+                };
+        }
     }
 
     @Override
@@ -132,7 +142,7 @@ public class PopulatingIndexProxy implements IndexProxy
     {
         return InternalIndexState.POPULATING;
     }
-    
+
     @Override
     public void force()
     {
@@ -144,7 +154,7 @@ public class PopulatingIndexProxy implements IndexProxy
     {
         return job.cancel();
     }
-    
+
     @Override
     public IndexReader newReader() throws IndexNotFoundKernelException
     {
@@ -183,8 +193,28 @@ public class PopulatingIndexProxy implements IndexProxy
     }
 
     @Override
+    public IndexConfiguration config()
+    {
+        return configuration;
+    }
+
+    @Override
     public String toString()
     {
         return getClass().getSimpleName() + "[job:" + job + "]";
+    }
+
+    private abstract class PopulatingIndexUpdater implements IndexUpdater
+    {
+        @Override
+        public void close() throws IOException, IndexEntryConflictException
+        {
+        }
+
+        @Override
+        public void remove( Collection<Long> nodeIds )
+        {
+            throw new UnsupportedOperationException( "Should not remove() from populating index." );
+        }
     }
 }

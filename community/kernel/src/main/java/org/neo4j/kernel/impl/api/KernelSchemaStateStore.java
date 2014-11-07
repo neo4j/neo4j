@@ -25,6 +25,8 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.neo4j.helpers.Function;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.Logging;
 
 /**
  * Used for the actual storage of "schema state".
@@ -34,16 +36,19 @@ import org.neo4j.helpers.Function;
 public class KernelSchemaStateStore implements UpdateableSchemaState
 {
     private Map<Object, Object> state;
-    private ReadWriteLock lock = new ReentrantReadWriteLock( true );
 
-    public KernelSchemaStateStore()
+    private final StringLogger logger;
+    private final ReadWriteLock lock = new ReentrantReadWriteLock( true );
+
+    public KernelSchemaStateStore( Logging logging )
     {
-        this(new HashMap<Object, Object>());
+        this( new HashMap<>(), logging );
     }
 
-    public KernelSchemaStateStore( Map<Object, Object> state )
+    public KernelSchemaStateStore( Map<Object, Object> state, Logging logging )
     {
         this.state = state;
+        this.logger = logging.getMessagesLog( KernelSchemaStateStore.class );
     }
 
     @SuppressWarnings("unchecked")
@@ -115,5 +120,6 @@ public class KernelSchemaStateStore implements UpdateableSchemaState
         finally {
             lock.writeLock().unlock();
         }
+        logger.info( "Schema state store has been cleared." );
     }
 }

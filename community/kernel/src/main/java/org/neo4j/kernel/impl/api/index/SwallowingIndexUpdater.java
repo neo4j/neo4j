@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.io.IOException;
+import java.util.Collection;
 
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -46,7 +47,7 @@ public final class SwallowingIndexUpdater implements IndexUpdater
     }
 
     @Override
-    public void remove( Iterable<Long> nodeIds )
+    public void remove( Collection<Long> nodeIds )
     {
         // intentionally swallow these removals
     }

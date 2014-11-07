@@ -29,4 +29,35 @@ public interface CountsVisitor
     void visitNodeCount( int labelId, long count );
 
     void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count );
+
+    void visitIndexCounts( int labelId, int propertyKeyId, long updates, long size );
+
+    void visitIndexSample( int labelId, int propertyKeyId, long unique, long size );
+
+    public static class Adapter implements CountsVisitor
+    {
+        @Override
+        public void visitNodeCount( int labelId, long count )
+        {
+            // override in subclasses
+        }
+
+        @Override
+        public void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count )
+        {
+            // override in subclasses
+        }
+
+        @Override
+        public void visitIndexCounts( int labelId, int propertyKeyId, long updates, long size )
+        {
+            // override in subclasses
+        }
+
+        @Override
+        public void visitIndexSample( int labelId, int propertyKeyId, long unique, long size )
+        {
+            // override in subclasses
+        }
+    }
 }

@@ -411,6 +411,13 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
+    public double indexUniqueValuesSelectivity( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    {
+        statement.assertOpen();
+        return schemaRead().indexUniqueValuesPercentage( statement, descriptor );
+    }
+
+    @Override
     public String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         statement.assertOpen();
@@ -952,5 +959,5 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         return counting().countsForRelationship( statement, startLabelId, typeId, endLabelId );
     }
 
-    // </Counts
+    // </Counts>
 }

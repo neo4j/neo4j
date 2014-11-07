@@ -47,9 +47,9 @@ import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
+import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
@@ -72,10 +72,11 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
-import org.neo4j.kernel.impl.api.CountsAcceptor;
+import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.index.StoreScan;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.core.Token;
@@ -132,7 +133,6 @@ import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.lang.Boolean.parseBoolean;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.map;
@@ -254,7 +254,7 @@ public class BatchInserterImpl implements BatchInserter
         }
         msgLog.logMessage( Thread.currentThread() + " Starting BatchInserter(" + this + ")" );
         life.start();
-        neoStore = sf.newNeoStore( true );
+        neoStore = sf.newNeoStore( true, false );
         if ( !neoStore.isStoreOk() )
         {
             throw new IllegalStateException( storeDir + " store is not cleanly shutdown." );
@@ -391,8 +391,12 @@ public class BatchInserterImpl implements BatchInserter
             propertyKeyIds[i] = propertyKeyId;
 
             IndexDescriptor descriptor = new IndexDescriptor( labelId, propertyKeyId );
-            populators[i] = schemaIndexProviders.apply( rule.getProviderDescriptor() ).getPopulator(
-                    rule.getId(), descriptor, new IndexConfiguration( rule.isConstraintIndex() ) );
+            boolean isConstraint = rule.isConstraintIndex();
+            populators[i] = schemaIndexProviders.apply( rule.getProviderDescriptor() )
+                                                .getPopulator( rule.getId(),
+                                                        descriptor,
+                                                        new IndexConfiguration( isConstraint ),
+                                                        new IndexSamplingConfig( config ) );
             populators[i].create();
         }
 
@@ -438,7 +442,7 @@ public class BatchInserterImpl implements BatchInserter
 
     private void rebuildCounts()
     {
-        CountsComputer.computeCounts( neoStore ).accept( new CountsAcceptor.Initializer( neoStore.getCounts() ) );
+        CountsComputer.computeCounts( neoStore ).accept( new CountsAccessor.Initializer( neoStore.getCounts() ) );
     }
 
     private class InitialNodeLabelCreationVisitor implements Visitor<NodeLabelUpdate, IOException>

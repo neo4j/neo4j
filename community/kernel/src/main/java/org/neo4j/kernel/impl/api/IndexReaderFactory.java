@@ -44,7 +44,7 @@ public interface IndexReaderFactory
         {
             this.indexingService = indexingService;
         }
-        
+
         @Override
         public IndexReader newReader( long indexId ) throws IndexNotFoundKernelException
         {
@@ -64,7 +64,7 @@ public interface IndexReaderFactory
 
         public IndexReader newUnCachedReader( long indexId ) throws IndexNotFoundKernelException
         {
-            IndexProxy index = indexingService.getProxyForRule( indexId );
+            IndexProxy index = indexingService.getIndexProxy( indexId );
             return index.newReader();
         }
 

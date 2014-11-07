@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.store.Directory;
+
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.store.Directory;
 
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.index.util.FailureStorage;
 import org.neo4j.kernel.api.index.util.FolderLayout;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 
 import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
 
@@ -61,7 +62,8 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexConfiguration config )
+    public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor,
+                                        IndexConfiguration config, IndexSamplingConfig samplingConfig )
     {
         if ( config.isUnique() )
         {
@@ -74,12 +76,13 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
         {
             return new NonUniqueLuceneIndexPopulator(
                     NonUniqueLuceneIndexPopulator.DEFAULT_QUEUE_THRESHOLD, documentStructure, standard(), writerStatus,
-                    directoryFactory, folderLayout.getFolder( indexId ), failureStorage, indexId );
+                    directoryFactory, folderLayout.getFolder( indexId ), failureStorage, indexId, samplingConfig );
         }
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( long indexId, IndexConfiguration config ) throws IOException
+    public IndexAccessor getOnlineAccessor( long indexId, IndexConfiguration config,
+                                            IndexSamplingConfig samplingConfig ) throws IOException
     {
         if ( config.isUnique() )
         {
@@ -89,7 +92,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
         else
         {
             return new NonUniqueLuceneIndexAccessor( documentStructure, standard(), writerStatus, directoryFactory,
-                    folderLayout.getFolder( indexId ) );
+                    folderLayout.getFolder( indexId ), samplingConfig.bufferSize() );
         }
     }
 

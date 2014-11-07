@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.io.IOException;
-
 import org.junit.Test;
+
+import java.io.IOException;
 
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -30,27 +30,25 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 
 public class CountsStoreApplierTest
 {
-    private final CountsAcceptor countsAcceptor = mock( CountsAcceptor.class );
+    private final CountsAccessor countsAccessor = mock( CountsAccessor.class );
     private final NodeStore nodeStore = mock( NodeStore.class );
 
     @Test
     public void shouldNotifyCacheAccessOnHowManyUpdatesOnCountsWeHadSoFar() throws IOException
     {
         // GIVEN
-
-        final CountsStoreApplier applier = new CountsStoreApplier( countsAcceptor, nodeStore );
+        final CountsStoreApplier applier = new CountsStoreApplier( countsAccessor, nodeStore );
 
         // WHEN
         applier.visitNodeCommand( addNodeCommand() );
         applier.apply();
 
         // THEN
-        verify( countsAcceptor, times( 1 ) ).updateCountsForNode( ANY_LABEL, 1 );
+        verify( countsAccessor, times( 1 ) ).incrementNodeCount( ANY_LABEL, 1 );
     }
 
     private Command.NodeCommand addNodeCommand()

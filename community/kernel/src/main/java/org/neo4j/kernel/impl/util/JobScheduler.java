@@ -58,7 +58,8 @@ public interface JobScheduler extends Lifecycle
         /**
          * Gathers approximated data about the underlying data store.
          */
-        heuristics,
+        indexSamplingController,
+        indexSampling,
         pageCacheEviction,
     }
 

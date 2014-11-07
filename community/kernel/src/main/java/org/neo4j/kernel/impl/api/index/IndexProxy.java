@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -78,14 +79,14 @@ public interface IndexProxy
     SchemaIndexProvider.Descriptor getProviderDescriptor();
 
     InternalIndexState getState();
-    
+
     /**
      * @return failure message. Expect a call to it if {@link #getState()} returns {@link InternalIndexState#FAILED}.
      */
     IndexPopulationFailure getPopulationFailure() throws IllegalStateException;
 
     void force() throws IOException;
-    
+
     /**
      * @throws IndexNotFoundKernelException if the index isn't online yet.
      */
@@ -101,4 +102,6 @@ public interface IndexProxy
     void validate() throws ConstraintVerificationFailedKernelException, IndexPopulationFailedKernelException;
 
     ResourceIterator<File> snapshotFiles() throws IOException;
+
+    IndexConfiguration config();
 }

@@ -125,7 +125,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final Pool<KernelTransactionImplementation> pool;
     // State
     private final TransactionRecordState recordState;
-    private final CountsState counts = new CountsState();
+    private final CountsRecordState counts = new CountsRecordState();
     // For committing
     private final TransactionHeaderInformationFactory headerInformationFactory;
     private final TransactionCommitProcess commitProcess;
@@ -615,14 +615,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 for ( PrimitiveIntIterator labels = labelsOf( startNode ); labels.hasNext(); )
                 {
                     int label = labels.next();
-                    counts.increment( label, ANY_RELATIONSHIP_TYPE, ANY_LABEL );
-                    counts.increment( label, type, ANY_LABEL );
+                    counts.incrementRelationshipCount( label, ANY_RELATIONSHIP_TYPE, ANY_LABEL, 1 );
+                    counts.incrementRelationshipCount( label, type, ANY_LABEL, 1 );
                 }
                 for ( PrimitiveIntIterator labels = labelsOf( endNode ); labels.hasNext(); )
                 {
                     int label = labels.next();
-                    counts.increment( ANY_LABEL, ANY_RELATIONSHIP_TYPE, label );
-                    counts.increment( ANY_LABEL, type, label );
+                    counts.incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, label, 1 );
+                    counts.incrementRelationshipCount( ANY_LABEL, type, label, 1 );
                 }
             }
             catch ( EntityNotFoundException e )
@@ -644,14 +644,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 for ( PrimitiveIntIterator labels = labelsOf( relationshipData.startNode() ); labels.hasNext(); )
                 {
                     int label = labels.next();
-                    counts.decrement( label, ANY_RELATIONSHIP_TYPE, ANY_LABEL );
-                    counts.decrement( label, relationshipData.type(), ANY_LABEL );
+                    counts.incrementRelationshipCount( label, ANY_RELATIONSHIP_TYPE, ANY_LABEL, -1 );
+                    counts.incrementRelationshipCount( label, relationshipData.type(), ANY_LABEL, -1 );
                 }
                 for ( PrimitiveIntIterator labels = labelsOf( relationshipData.endNode() ); labels.hasNext(); )
                 {
                     int label = labels.next();
-                    counts.decrement( ANY_LABEL, ANY_RELATIONSHIP_TYPE, label );
-                    counts.decrement( ANY_LABEL, relationshipData.type(), label );
+                    counts.incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, label, -1 );
+                    counts.incrementRelationshipCount( ANY_LABEL, relationshipData.type(), label, -1 );
                 }
             }
             catch ( EntityNotFoundException e )
@@ -747,20 +747,20 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                             for ( Integer label : added )
                             {
                                 // untyped
-                                counts.updateCountsForRelationship( label, -1, -1, outgoing );
-                                counts.updateCountsForRelationship( -1, -1, label, incoming );
+                                counts.incrementRelationshipCount( label, -1, -1, outgoing );
+                                counts.incrementRelationshipCount( -1, -1, label, incoming );
                                 // typed
-                                counts.updateCountsForRelationship( label, type, -1, outgoing );
-                                counts.updateCountsForRelationship( -1, type, label, incoming );
+                                counts.incrementRelationshipCount( label, type, -1, outgoing );
+                                counts.incrementRelationshipCount( -1, type, label, incoming );
                             }
                             for ( Integer label : removed )
                             {
                                 // untyped
-                                counts.updateCountsForRelationship( label, -1, -1, -outgoing );
-                                counts.updateCountsForRelationship( -1, -1, label, -incoming );
+                                counts.incrementRelationshipCount( label, -1, -1, -outgoing );
+                                counts.incrementRelationshipCount( -1, -1, label, -incoming );
                                 // typed
-                                counts.updateCountsForRelationship( label, type, -1, -outgoing );
-                                counts.updateCountsForRelationship( -1, type, label, -incoming );
+                                counts.incrementRelationshipCount( label, type, -1, -outgoing );
+                                counts.incrementRelationshipCount( -1, type, label, -incoming );
                             }
                         }
                     } );

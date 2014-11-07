@@ -280,7 +280,7 @@ public class CacheLayer implements StoreReadLayer
             throws EntityNotFoundException
     {
         return persistenceCache.relationshipGetProperty( relationshipId, propertyKeyId,
-                                                         relationshipPropertyLoader );
+                relationshipPropertyLoader );
     }
 
     @Override
@@ -359,7 +359,13 @@ public class CacheLayer implements StoreReadLayer
     public InternalIndexState indexGetState( IndexDescriptor descriptor )
             throws IndexNotFoundKernelException
     {
-        return indexingService.getProxyForRule( schemaCache.indexId( descriptor ) ).getState();
+        return indexingService.getIndexProxy( schemaCache.indexId( descriptor ) ).getState();
+    }
+
+    @Override
+    public double indexUniqueValuesPercentage( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    {
+        return indexingService.indexUniqueValuesPercentage( schemaCache.indexId( descriptor ) );
     }
 
     @Override
