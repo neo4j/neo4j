@@ -21,25 +21,28 @@ package org.neo4j.kernel.impl.util;
 
 import static java.lang.Thread.sleep;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.lessThan;
+import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.kernel.impl.util.JobScheduler.Group.indexPopulation;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class Neo4jJobSchedulerTest
 {
     private Neo4jJobScheduler scheduler;
-    private AtomicInteger invocations = new AtomicInteger( 0 );
+    private AtomicInteger invocations;
 
     private Runnable countInvocationsJob = new Runnable()
     {
+        @Override
         public void run()
         {
             try
@@ -54,6 +57,12 @@ public class Neo4jJobSchedulerTest
         }
     };
 
+    @Before
+    public void initInvocation()
+    {
+        invocations = new AtomicInteger( 0 );
+    }
+
     @After
     public void stopScheduler() throws Throwable
     {
@@ -64,20 +73,20 @@ public class Neo4jJobSchedulerTest
     public void shouldRunRecurringJob() throws Throwable
     {
         // Given
-        long period = 10;
+        long period = 1_000;
+        int count = 2;
         scheduler = new Neo4jJobScheduler();
 
         // When
         scheduler.init();
         scheduler.scheduleRecurring( indexPopulation, countInvocationsJob, period, MILLISECONDS );
         awaitFirstInvocation();
-        sleep( period*2 );
+        sleep( period * count - period / 2 );
         scheduler.shutdown();
 
         // Then
         int actualInvocations = invocations.get();
-        assertThat( actualInvocations, greaterThanOrEqualTo( 2 ) ); // <-- Dunno how to better assert that this works correctly :/
-        assertThat( actualInvocations, lessThan( 10 ) );
+        assertEquals( count, actualInvocations );
 
         sleep( period );
         assertThat( invocations.get(), equalTo(actualInvocations) );
