@@ -137,7 +137,24 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
             pageCacheFuture.cancel( true );
         }
         pageCache = createPageCache( fs, maxPages, pageSize, monitor );
-        pageCacheFuture = executor.submit( pageCache );
+        pageCacheFuture = executor.submit( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                Thread thread = Thread.currentThread();
+                String threadName = thread.getName();
+                thread.setName( "Eviction-Thread" );
+                try
+                {
+                    pageCache.run();
+                }
+                finally
+                {
+                    thread.setName( threadName );
+                }
+            }
+        } );
         return pageCache;
     }
 

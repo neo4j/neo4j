@@ -85,7 +85,7 @@ final class MuninnPage extends StampedLock implements Page
         this.memoryReleaser = memoryReleaser;
     }
 
-    private boolean checkBounds( int position )
+    private void checkBounds( int position )
     {
         if ( position > cachePageSize )
         {
@@ -93,24 +93,23 @@ final class MuninnPage extends StampedLock implements Page
                     "page size bound of " + cachePageSize;
             throw new IndexOutOfBoundsException( msg );
         }
-        return true;
     }
 
     public byte getByte( int offset )
     {
-        assert checkBounds( offset + 1 );
+        checkBounds( offset + 1 );
         return UnsafeUtil.getByte( pointer + offset );
     }
 
     public void putByte( byte value, int offset )
     {
-        assert checkBounds( offset + 1 );
+        checkBounds( offset + 1 );
         UnsafeUtil.putByte( pointer + offset, value );
     }
 
     public long getLong( int offset )
     {
-        assert checkBounds( offset + 8 );
+        checkBounds( offset + 8 );
         if ( allowUnalignedMemoryAccess )
         {
             long x = UnsafeUtil.getLong( pointer + offset );
@@ -135,7 +134,7 @@ final class MuninnPage extends StampedLock implements Page
 
     public void putLong( long value, int offset )
     {
-        assert checkBounds( offset + 8 );
+        checkBounds( offset + 8 );
         if ( allowUnalignedMemoryAccess )
         {
             long p = pointer + offset;
@@ -162,7 +161,7 @@ final class MuninnPage extends StampedLock implements Page
 
     public int getInt( int offset )
     {
-        assert checkBounds( offset + 4 );
+        checkBounds( offset + 4 );
         if ( allowUnalignedMemoryAccess )
         {
             int x = UnsafeUtil.getInt( pointer + offset );
@@ -183,7 +182,7 @@ final class MuninnPage extends StampedLock implements Page
 
     public void putInt( int value, int offset )
     {
-        assert checkBounds( offset + 4 );
+        checkBounds( offset + 4 );
         if ( allowUnalignedMemoryAccess )
         {
             long p = pointer + offset;
@@ -206,7 +205,7 @@ final class MuninnPage extends StampedLock implements Page
 
     public short getShort( int offset )
     {
-        assert checkBounds( offset + 2 );
+        checkBounds( offset + 2 );
         if ( allowUnalignedMemoryAccess )
         {
             short x = UnsafeUtil.getShort( pointer + offset );
@@ -225,7 +224,7 @@ final class MuninnPage extends StampedLock implements Page
 
     public void putShort( short value, int offset )
     {
-        assert checkBounds( offset + 2 );
+        checkBounds( offset + 2 );
         if ( allowUnalignedMemoryAccess )
         {
             long p = pointer + offset;
@@ -247,7 +246,7 @@ final class MuninnPage extends StampedLock implements Page
     @Override
     public void getBytes( byte[] data, int offset )
     {
-        assert checkBounds( offset + data.length );
+        checkBounds( offset + data.length );
         long address = pointer + offset;
         int length = data.length;
         for ( int i = 0; i < length; i++ )
@@ -260,7 +259,7 @@ final class MuninnPage extends StampedLock implements Page
     @Override
     public void putBytes( byte[] data, int offset )
     {
-        assert checkBounds( offset + data.length );
+        checkBounds( offset + data.length );
         long address = pointer + offset;
         int length = data.length;
         for ( int i = 0; i < length; i++ )
