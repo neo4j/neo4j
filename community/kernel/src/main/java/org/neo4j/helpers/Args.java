@@ -20,7 +20,6 @@
 package org.neo4j.helpers;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -57,29 +56,93 @@ import static org.neo4j.helpers.collection.IteratorUtil.firstOrNull;
  * Multiple values for an option is supported, however the only means of extracting all values is be
  * using {@link #interpretOptions(String, Function, Function, Validator...)}, all other methods revolve
  * around single value, i.e. will fail if there are multiple.
+ *
+ * Options can have metadata which can be extracted using
+ * {@link #interpretOptions(String, Function, Function, Validator...)}. Metadata looks like:
+ * <pre>
+ *   --my-option:Metadata my-value
+ * </pre>
+ *
+ * where {@code Metadata} would be the metadata of {@code my-value}.
  */
 public class Args
 {
+    private static final char OPTION_METADATA_DELIMITER = ':';
+
+    public static class Option<T>
+    {
+        private final T value;
+        private final String metadata;
+
+        private Option( T value, String metadata )
+        {
+            this.value = value;
+            this.metadata = metadata;
+        }
+
+        public T value()
+        {
+            return value;
+        }
+
+        public String metadata()
+        {
+            return metadata;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Option[" + value + (metadata != null ? ", " + metadata : "") + "]";
+        }
+    }
+
+    private static final Function<String,Option<String>> DEFAULT_OPTION_PARSER = new Function<String,Option<String>>()
+    {
+        @Override
+        public Option<String> apply( String from )
+        {
+            int metadataStartIndex = from.indexOf( OPTION_METADATA_DELIMITER );
+            return metadataStartIndex == -1
+                    ? new Option<>( from, null )
+                    : new Option<>( from.substring( 0, metadataStartIndex ), from.substring( metadataStartIndex + 1 ) );
+        }
+    };
+
     private final String[] args;
-    private final Map<String, List<String>> map = new HashMap<>();
+    private final Map<String, List<Option<String>>> map = new HashMap<>();
     private final List<String> orphans = new ArrayList<>();
 
     /**
      * Suitable for main( String[] args )
      * @param args the arguments to parse.
      */
-    public Args( String... args )
+    public <T> Args( String... args )
+    {
+        this( DEFAULT_OPTION_PARSER, args );
+    }
+
+    /**
+     * Suitable for main( String[] args )
+     * @param args the arguments to parse.
+     */
+    public Args( Function<String,Option<String>> optionParser, String... args )
     {
         this.args = args;
-        parseArgs( args );
+        parseArgs( optionParser, args );
     }
 
     public Args( Map<String, String> source )
     {
+        this( DEFAULT_OPTION_PARSER, source );
+    }
+
+    public Args( Function<String,Option<String>> optionParser, Map<String, String> source )
+    {
         this.args = null;
         for ( Entry<String,String> entry : source.entrySet() )
         {
-            map.put( entry.getKey(), new ArrayList<>( Arrays.asList( entry.getValue() ) ) );
+            put( optionParser, entry.getKey(), entry.getValue() );
         }
     }
 
@@ -91,9 +154,10 @@ public class Args
     public Map<String, String> asMap()
     {
         Map<String,String> result = new HashMap<>();
-        for ( Map.Entry<String,List<String>> entry : map.entrySet() )
+        for ( Map.Entry<String,List<Option<String>>> entry : map.entrySet() )
         {
-            result.put( entry.getKey(), firstOrNull( entry.getValue() ) );
+            Option<String> value = firstOrNull( entry.getValue() );
+            result.put( entry.getKey(), value != null ? value.value() : null );
         }
         return result;
     }
@@ -105,13 +169,13 @@ public class Args
 
     public boolean hasNonNull( String key )
     {
-        List<String> values = this.map.get( key );
+        List<Option<String>> values = this.map.get( key );
         return values != null && !values.isEmpty();
     }
 
     private String getSingleOptionOrNull( String key )
     {
-        List<String> values = this.map.get( key );
+        List<Option<String>> values = this.map.get( key );
         if ( values == null || values.isEmpty() )
         {
             return null;
@@ -120,7 +184,7 @@ public class Args
         {
             throw new IllegalArgumentException( "There are multiple values for '" + key + "'" );
         }
-        return values.get( 0 );
+        return values.get( 0 ).value();
     }
 
     public String get( String key )
@@ -204,13 +268,14 @@ public class Args
             String quote = orphan.contains( " " ) ? " " : "";
             list.add( quote + orphan + quote );
         }
-        for ( Map.Entry<String,List<String>> entry : map.entrySet() )
+        for ( Map.Entry<String,List<Option<String>>> entry : map.entrySet() )
         {
-            String key = entry.getKey();
-            List<String> values = entry.getValue();
-
-            for ( String value : values )
+            for ( Option<String> option : entry.getValue() )
             {
+                String key = option.metadata != null
+                        ? entry.getKey() + OPTION_METADATA_DELIMITER + option.metadata()
+                        : entry.getKey();
+                String value = option.value();
                 String quote = key.contains( " " ) || (value != null && value.contains( " " )) ? " " : "";
                 list.add( quote + (key.length() > 1 ? "--" : "-") + key + (value != null ? "=" + value + quote : "") );
             }
@@ -243,7 +308,7 @@ public class Args
         return arg;
     }
 
-    private void parseArgs( String[] args )
+    private void parseArgs( Function<String,Option<String>> optionParser, String[] args )
     {
         for ( int i = 0; i < args.length; i++ )
         {
@@ -258,7 +323,7 @@ public class Args
                     String value = arg.substring( equalIndex + 1 );
                     if ( !value.isEmpty() )
                     {
-                        put( key, value );
+                        put( optionParser, key, value );
                     }
                 }
                 else
@@ -271,7 +336,7 @@ public class Args
                     {
                         i = nextIndex;
                     }
-                    put( arg, value );
+                    put( optionParser, arg, value );
                 }
             }
             else
@@ -281,14 +346,15 @@ public class Args
         }
     }
 
-    private void put( String key, String value )
+    private void put( Function<String,Option<String>> optionParser, String key, String value )
     {
-        List<String> values = map.get( key );
+        Option<String> option = optionParser.apply( key );
+        List<Option<String>> values = map.get( option.value() );
         if ( values == null )
         {
-            map.put( key, values = new ArrayList<>() );
+            map.put( option.value(), values = new ArrayList<>() );
         }
-        values.add( value );
+        values.add( new Option<>( value, option.metadata() ) );
     }
 
     public static String jarUsage( Class<?> main, String... params )
@@ -382,22 +448,38 @@ public class Args
     public final <T> Collection<T> interpretOptions( String key, Function<String,T> defaultValue,
             Function<String,T> converter, Validator<T>... validators )
     {
-        Collection<T> values = new ArrayList<>();
+        Collection<Option<T>> options = interpretOptionsWithMetadata( key, defaultValue, converter, validators );
+        Collection<T> values = new ArrayList<>( options.size() );
+        for ( Option<T> option : options )
+        {
+            values.add( option.value() );
+        }
+        return values;
+    }
+
+    /**
+     * An option can be specified multiple times. This method will allow interpreting all values for
+     * the given key, returning a {@link Collection}. This is the only means of extracting multiple values
+     * for any given option. All other methods revolve around zero or one value for an option.
+     * This is also the only means of extracting metadata about a options. Metadata can be supplied as part
+     * of the option key, like --my-option:Metadata "my value".
+     */
+    @SafeVarargs
+    public final <T> Collection<Option<T>> interpretOptionsWithMetadata( String key, Function<String,T> defaultValue,
+            Function<String,T> converter, Validator<T>... validators )
+    {
+        Collection<Option<T>> values = new ArrayList<>();
         if ( !hasNonNull( key ) )
         {
-            values.add( defaultValue.apply( key ) );
+            values.add( new Option<>( validated( defaultValue.apply( key ), validators ), null ) );
         }
         else
         {
-            for ( String stringValue : map.get( key ) )
+            for ( Option<String> option : map.get( key ) )
             {
-                values.add( converter.apply( stringValue ) );
+                String stringValue = option.value();
+                values.add( new Option<>( validated( converter.apply( stringValue ), validators ), option.metadata() ) );
             }
-        }
-
-        for ( T value : values )
-        {
-            validated( value, validators );
         }
         return values;
     }

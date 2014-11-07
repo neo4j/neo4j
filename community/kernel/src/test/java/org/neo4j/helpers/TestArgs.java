@@ -22,11 +22,14 @@ package org.neo4j.helpers;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
 
+import org.neo4j.function.Functions;
+import org.neo4j.helpers.Args.Option;
 import org.neo4j.kernel.impl.util.Converters;
 import org.neo4j.kernel.impl.util.Validator;
 
@@ -200,6 +203,27 @@ public class TestArgs
 
         // THEN
         assertEquals( stringMap( "with-value", "value", "without-value", null ), map );
+    }
+
+    @Test
+    public void shouldInterpretOptionMetadata() throws Exception
+    {
+        // GIVEN
+        Args args = new Args( "--my-option:Meta", "my value", "--my-option:Other", "other value" );
+
+        // WHEN
+        Collection<Option<String>> options = args.interpretOptionsWithMetadata( "my-option",
+                Converters.<String>mandatory(), Functions.<String>identity() );
+
+        // THEN
+        assertEquals( 2, options.size() );
+        Iterator<Option<String>> optionIterator = options.iterator();
+        Option<String> first = optionIterator.next();
+        assertEquals( "my value", first.value() );
+        assertEquals( "Meta", first.metadata() );
+        Option<String> second = optionIterator.next();
+        assertEquals( "other value", second.value() );
+        assertEquals( "Other", second.metadata() );
     }
 
     private static enum MyEnum
