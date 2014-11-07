@@ -8,23 +8,23 @@
   </parent>
 
   <properties>
-    <short-name>batch-import-tool</short-name>
+    <short-name>import-tool</short-name>
     <bundle.namespace>org.neo4j.tooling.batchimport</bundle.namespace>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>neo4j-batch-import-tool</artifactId>
+  <artifactId>neo4j-import-tool</artifactId>
   <version>2.2-SNAPSHOT</version>
 
   <packaging>jar</packaging>
-  <name>Neo4j - Batch Import Command Line Tool</name>
-  <description>Command line tool for doing large batch imports quickly from command line.</description>
+  <name>Neo4j - Import Command Line Tool</name>
+  <description>Command line tool for importing data into Neo4j.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
-    <url>https://github.com/neo4j/neo4j/tree/master/community/batch-import-tool</url>
+    <url>https://github.com/neo4j/neo4j/tree/master/community/import-tool</url>
   </scm>
 
   <licenses>
