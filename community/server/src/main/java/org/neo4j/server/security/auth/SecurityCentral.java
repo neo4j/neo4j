@@ -162,8 +162,11 @@ public class SecurityCentral extends LifecycleAdapter
 
     public synchronized void setPassword( String name, String password ) throws IOException
     {
+        if(userForName( name ).passwordChangeRequired())
+        {
+            regenerateToken( name );
+        }
         authentication.setPassword( name, password );
-        regenerateToken( name );
     }
 
     private String newToken()

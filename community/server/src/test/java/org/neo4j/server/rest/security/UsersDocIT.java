@@ -48,7 +48,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.*;
 
-public class UsersDocTest extends ExclusiveServerTestBase
+public class UsersDocIT extends ExclusiveServerTestBase
 {
     public @Rule TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
     private CommunityNeoServer server;
@@ -119,7 +119,7 @@ public class UsersDocTest extends ExclusiveServerTestBase
         // Then
         JsonNode data = JsonHelper.jsonNode( response.entity() );
         String newToken = data.get( "authorization_token" ).asText();
-        assertThat( newToken, not( equalTo( originalToken ) ));
+        assertThat( newToken, equalTo( originalToken ));
         assertThat( newToken.length(), not( 0 ) );
 
         // And then the new password should work
