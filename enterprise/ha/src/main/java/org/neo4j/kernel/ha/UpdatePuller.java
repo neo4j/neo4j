@@ -49,10 +49,10 @@ import static java.lang.System.currentTimeMillis;
  * Able to pull updates from a master and apply onto this slave database.
  *
  * Updates are pulled and applied using a single and dedicated thread, created in here. No other threads are allowed to
- * pull and apply transactions on a slave. Calling one of the {@link #pullUpdates() pullUpdates}
- * {@link #fulfill(long) methods} will {@link UpdatePuller#poke() poke} that single thread, so that
+ * pull and apply transactions on a slave. Calling one of the {@link Master#pullUpdates(RequestContext) pullUpdates}
+ * {@link TransactionObligationFulfiller#fulfill(long) will {@link UpdatePuller#poke() poke} that single thread, so that
  * it gets going, if not already doing so, with its usual task of pulling updates and the caller which poked
- * the update thread will constantly poll to see if the transactions it is oglibed to await have been applied.
+ * the update thread will constantly poll to see if the transactions it is obliged to await have been applied.
  *
  * Here comes a diagram of how the classes making up this functionality hangs together:
  *
@@ -190,7 +190,7 @@ public class UpdatePuller implements Runnable, Lifecycle
     @Override
     public void stop()
     {
-        pause( true );
+        pause();
         memberStateMachine.removeHighAvailabilityMemberListener( listener );
     }
 
@@ -205,12 +205,16 @@ public class UpdatePuller implements Runnable, Lifecycle
         }
     }
 
-    public void pause( boolean paused )
+    public synchronized void pause()
     {
-        boolean wasPaused = this.paused;
-        this.paused = paused;
-        if ( wasPaused )
+        paused = true;
+    }
+
+    public synchronized void unpause()
+    {
+        if ( paused )
         {
+            paused = false;
             LockSupport.unpark( me );
         }
     }
@@ -278,9 +282,19 @@ public class UpdatePuller implements Runnable, Lifecycle
         public void masterIsElected( HighAvailabilityMemberChangeEvent event )
         {
             // A new master is elected, pause here until we know about its availability
-            pause( true );
+            pause();
         }
 
-        // We will be unpaused from the outside, from code that knows when we switch to slave
+        @Override
+        public void slaveIsAvailable( HighAvailabilityMemberChangeEvent event )
+        {
+            // If we are available as slave then make sure that update puller is running
+            // This is protection against masterIsElected event during TO_SLAVE-->SLAVE switch,
+            // which could result in update puller being paused on slave
+            if ( instanceId.equals( event.getInstanceId() ) )
+            {
+                unpause();
+            }
+        }
     }
 }
