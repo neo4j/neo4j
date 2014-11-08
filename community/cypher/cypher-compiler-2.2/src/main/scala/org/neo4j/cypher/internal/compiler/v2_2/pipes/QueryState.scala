@@ -19,11 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
+import java.util.UUID
+
 import org.neo4j.cypher.internal.compiler.v2_2._
+import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.PathValueBuilder
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.GraphDatabaseAPI
-import java.util.UUID
 
 case class QueryState(db: GraphDatabaseService,
                       query: QueryContext,
@@ -33,6 +35,17 @@ case class QueryState(db: GraphDatabaseService,
                       timeReader: TimeReader = new TimeReader,
                       var initialContext: Option[ExecutionContext] = None,
                       queryId: AnyRef = UUID.randomUUID().toString) {
+
+  private var _pathValueBuilder: PathValueBuilder = null
+
+  def clearPathValueBuilder = {
+    if (_pathValueBuilder == null )
+    {
+      _pathValueBuilder = new PathValueBuilder()
+    }
+    _pathValueBuilder.clear()
+  }
+
   def readTimeStamp(): Long = timeReader.getTime
 
   def graphDatabaseAPI: GraphDatabaseAPI = db match {

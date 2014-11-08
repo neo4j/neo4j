@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.commands.expressions
 
-import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
 import org.neo4j.cypher.internal.PathImpl
+import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 
-sealed class PathValueBuilder {
+final class PathValueBuilder {
   private val builder = Vector.newBuilder[PropertyContainer]
   private var nulled = false
 

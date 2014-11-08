@@ -33,8 +33,12 @@ case class PathImpl(pathEntities: PropertyContainer*)
   with Traversable[PropertyContainer]
   with CypherArray {
 
+  val sz = pathEntities.size
+
   val (nodeList,relList) = {
-    if (pathEntities.size % 2 == 0) throw new IllegalArgumentException("Tried to construct a path that is not built like a path: even number of elements.")
+    if (sz % 2 == 0)
+      throw new IllegalArgumentException(
+        s"Tried to construct a path that is not built like a path: even number of elements ($sz)")
     var x = 0
     val nodes = new Array[Node](pathEntities.size/2+1)
     val rels = new Array[Relationship](pathEntities.size/2)
@@ -45,12 +49,14 @@ case class PathImpl(pathEntities: PropertyContainer*)
         x+=1
       })
     } catch {
-      case e: ClassCastException => throw new IllegalArgumentException("Tried to construct a path that is not built like a path",e)
+      case e: ClassCastException =>
+        throw new IllegalArgumentException(
+          s"Tried to construct a path that is not built like a path: $pathEntities", e)
     }
     (new mutable.WrappedArray.ofRef(nodes),new mutable.WrappedArray.ofRef(rels))
   }
 
-  require(isProperPath, "Tried to construct a path that is not built like a path")
+  require(isProperPath, s"Tried to construct a path that is not built like a path: $pathEntities")
 
   def isProperPath: Boolean = {
     val atLeastOneNode = nodeList.length > 0
