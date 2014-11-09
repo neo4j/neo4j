@@ -78,13 +78,68 @@ public class ImportTool
         }
     };
 
-    private static final String NODE_DATA = "nodes";
-    private static final String RELATIONSHIP_DATA = "relationships";
-    private static final String STORE_DIR = "into";
-    private static final String DELIMITER = "delimiter";
-    private static final String ARRAY_DELIMITER = "array-delimiter";
-    private static final String QUOTE = "quote";
-    private static final String ID_TYPE = "id-type";
+    enum Options
+    {
+        STORE_DIR( "into", "<store-dir>", "Database directory to import into. " + "Must not contain existing database." ),
+        NODE_DATA(
+                "nodes",
+                "<file1>" + MULTI_FILE_DELIMITER + "<file2>" + MULTI_FILE_DELIMITER + "...",
+                "Node CSV header and data. "
+                        + "Multiple files will be logically seen as one big file "
+                        + "from the perspective of the importer. "
+                        + "The first line must contain the header. "
+                        + "Multiple input groups like these can be specified in one import, "
+                        + "where each group has its own header." ),
+        RELATIONSHIP_DATA(
+                "relationships",
+                "<file1>" + MULTI_FILE_DELIMITER + "<file2>" + MULTI_FILE_DELIMITER + "...",
+                "Relationship CSV header and data. "
+                + "Multiple files will be logically seen as one big file "
+                        + "from the perspective of the importer. "
+                        + "The first line must contain the header. "
+                        + "Multiple input groups like these can be specified in one import, "
+                        + "where each group has its own header." ),
+        DELIMITER( "delimiter", "<delimiter-character>", "Delimiter character between values in CSV data." ),
+        ARRAY_DELIMITER( "array-delimiter", "<array-delimiter-character>",
+                "Delimiter character between array elements within a value in CSV data." ),
+        QUOTE( "quote", "<quotation-character>", "Character to treat as quotation character in values in CSV data. "
+                                                 + "Quotes inside quotes like '\"\"' and '\\\"' are supported." ),
+        ID_TYPE( "id-type", "<id-type>", "One out of " + Arrays.toString( IdType.values() )
+                         + " and specifies how ids in node/relationship "
+                         + "input files are treated.\n" + IdType.STRING
+                         + ": arbitrary strings for identifying nodes.\n" + IdType.ACTUAL
+                         + ": (advanced) actual node ids, starting from 0." );
+
+        private final String key;
+        private final String usage;
+        private final String description;
+
+        Options( String key, String usage, String description )
+        {
+            this.key = key;
+            this.usage = usage;
+            this.description = description;
+        }
+
+        String key()
+        {
+            return key;
+        }
+
+        void printUsage()
+        {
+            System.out.println( "--" + key + " " + usage );
+            for ( String line : Args.splitLongLine( description, 80 ) )
+            {
+                System.out.println( "\t" + line );
+            }
+        }
+
+        String manPageEntry()
+        {
+            return "*--" + key + " " + usage + "*::\n" + description + "\n\n";
+        }
+    }
 
     /**
      * Delimiter used between files in an input group.
@@ -106,15 +161,17 @@ public class ImportTool
         Collection<Option<File[]>> nodesFiles, relationshipsFiles;
         try
         {
-            storeDir = args.interpretOption( STORE_DIR, Converters.<File>mandatory(), Converters.toFile(),
-                    Validators.DIRECTORY_IS_WRITABLE, Validators.CONTAINS_NO_EXISTING_DATABASE );
-            nodesFiles = args.interpretOptionsWithMetadata( NODE_DATA, Converters.<File[]>mandatory(),
-                                                            Converters.toFiles( MULTI_FILE_DELIMITER ),
-                                                            Validators.FILES_EXISTS, Validators.<File>atLeast( 1 ) );
-            relationshipsFiles = args.interpretOptionsWithMetadata( RELATIONSHIP_DATA, Converters.<File[]>mandatory(),
-                                                                    Converters.toFiles( MULTI_FILE_DELIMITER ),
-                                                                    Validators.FILES_EXISTS,
-                                                                    Validators.<File>atLeast( 1 ) );
+            storeDir =
+                    args.interpretOption( Options.STORE_DIR.key(), Converters.<File> mandatory(), Converters.toFile(),
+                            Validators.DIRECTORY_IS_WRITABLE, Validators.CONTAINS_NO_EXISTING_DATABASE );
+            nodesFiles =
+                    args.interpretOptionsWithMetadata( Options.NODE_DATA.key(), Converters.<File[]> mandatory(),
+                            Converters.toFiles( MULTI_FILE_DELIMITER ), Validators.FILES_EXISTS,
+                            Validators.<File> atLeast( 1 ) );
+            relationshipsFiles =
+                    args.interpretOptionsWithMetadata( Options.RELATIONSHIP_DATA.key(),
+                            Converters.<File[]> mandatory(), Converters.toFiles( MULTI_FILE_DELIMITER ),
+                            Validators.FILES_EXISTS, Validators.<File> atLeast( 1 ) );
         }
         catch ( IllegalArgumentException e )
         {
@@ -136,7 +193,7 @@ public class ImportTool
                 defaultFormatNodeFileHeader(),
                 relationshipData( relationshipsFiles ),
                 defaultFormatRelationshipFileHeader(),
-                args.interpretOption( ID_TYPE, withDefault( IdType.STRING ), TO_ID_TYPE ),
+                args.interpretOption( Options.ID_TYPE.key(), withDefault( IdType.STRING ), TO_ID_TYPE ),
                 csvConfiguration( args ) );
         boolean success = false;
         try
@@ -198,36 +255,9 @@ public class ImportTool
     private static void printUsage()
     {
         System.out.println( "Usage:" );
-        printArgumentUsage( "--into <store-dir>", "database directory to import into. " +
-                "Must not contain existing database." );
-        printArgumentUsage( "--nodes:<group-labels> <file1>" + MULTI_FILE_DELIMITER + "<file2>" + MULTI_FILE_DELIMITER + "...",
-                "Node CSV header and data. Multiple files will be logically seen as one big file " +
-                "from the perspective of the importer. First line must contain the header. " +
-                "Multiple input groups like these can be specified in one import, where each group has its own header." );
-        printArgumentUsage( "--relationships:<default-type> <file1>" + MULTI_FILE_DELIMITER + "<file2>" + MULTI_FILE_DELIMITER + "...",
-                "Relationship CSV header and data. Multiple files will be logically seen as one big file " +
-                "from the perspective of the importer. First line must contain the header. " +
-                "Multiple input groups like these can be specified in one import, where each group has its own header." );
-        printArgumentUsage( "--delimiter <delimiter-character>",
-                "Delimiter character between values in CSV data." );
-        printArgumentUsage( "--array-delimiter <array-delimiter-character>",
-                "Delimiter character between array elements within a value in CSV data." );
-        printArgumentUsage( "--quote <quotation-character>",
-                "Character to treat as quotation character in values in CSV data. " +
-                "Quotes inside quotes like '\"\"' and '\\\"' are supported." );
-        printArgumentUsage( "--id-type <id-type>",
-                "One out of " + Arrays.toString( IdType.values() ) + " and specifies how ids in node/relationship " +
-                "input files are treated.\n" +
-                IdType.STRING + ": arbitrary strings for identifying nodes.\n" +
-                IdType.ACTUAL + ": (advanced) actual node ids, starting from 0." );
-    }
-
-    private static void printArgumentUsage( String usage, String description )
-    {
-        System.out.println( usage );
-        for ( String line : Args.splitLongLine( description, 80 ) )
+        for ( Options option : Options.values() )
         {
-            System.out.println( "\t" + line );
+            option.printUsage();
         }
     }
 
@@ -260,11 +290,11 @@ public class ImportTool
     {
         final Configuration defaultConfiguration = COMMAS;
         final Character specificDelimiter =
-                args.interpretOption( DELIMITER, Converters.<Character>optional(), Converters.toCharacter() );
+                args.interpretOption( Options.DELIMITER.key(), Converters.<Character>optional(), Converters.toCharacter() );
         final Character specificArrayDelimiter =
-                args.interpretOption( ARRAY_DELIMITER, Converters.<Character>optional(), Converters.toCharacter() );
+                args.interpretOption( Options.ARRAY_DELIMITER.key(), Converters.<Character>optional(), Converters.toCharacter() );
         final Character specificQuote =
-                args.interpretOption( QUOTE, Converters.<Character>optional(), Converters.toCharacter() );
+                args.interpretOption( Options.QUOTE.key(), Converters.<Character>optional(), Converters.toCharacter() );
         return new Configuration()
         {
             @Override

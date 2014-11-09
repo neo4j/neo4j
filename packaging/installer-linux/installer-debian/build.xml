@@ -48,6 +48,7 @@
                 <fileset dir="${project.build.outputDirectory}/@{name}">
                     <include name="**/server/bin/neo4j"/>
                     <include name="**/server/bin/neo4j-shell"/>
+                    <include name="**/server/bin/neo4j-import"/>
                     <include name="**/server/bin/utils"/>
                     <include name="**/server/bin/neo4j-backup"/>
                     <include name="**/server/bin/neo4j-arbiter"/>

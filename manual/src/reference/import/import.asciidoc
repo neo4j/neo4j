@@ -4,7 +4,6 @@ Data Import
 
 For importing data using Cypher and CSV, see <<cypherdoc-importing-csv-files-with-cypher>>.
 
-For importing data into Neo4j, see http://www.neo4j.org/develop/import.
+For high-performance data import, see <<import-tool>>.
 
-For high-performance data import, see <<batchinsert>>.
 

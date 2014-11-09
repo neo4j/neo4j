@@ -1,0 +1,111 @@
+[[import-tool]]
+= Import Tool
+
+The import tool is used to create a new Neo4j database from data in CSV files.
+
+This chapter will give the details on the format of the input data together with an example.
+_For the command line parameters of the tool, see <<neo4j-import-manpage, the manpage>>._
+
+* Fields default to be comma separated, but a different delimiter can be specified.
+* All files must use the same delimiter.
+* A header which provides information on the data format must be on the first row of each data source.
+* A data source can optionally be provided using multiple files.
+* Multiple data sources can be provided.
+* Data with no corresponding information in the header will not be read.
+* UTF-8 encoding is used.
+* Indexes are not created during the import.
+  Instead, add the indexes afterwards.
+
+[NOTE]
+Data cannot be imported into an existing database.
+If that is what you want to do, see <<batchinsert>>.
+
+[[import-too-header-format]]
+== Header format
+
+The header row of each data source specifies how the fields should be interpreted.
+The same delimiter is used for the header row as for the rest of the data.
+
+The header contains information for each field, with the format: `<name>:<field_type>`.
+The `<name>` is used as the property key for values, and ignored in other cases.
+The following `<field_type>` settings can be used for both nodes and relationships:
+
+Property value:: Use one of `int`, `long`, `float`, `double`, `boolean`, `byte`, `short`, `char`, `string` to designate the data type.
+  If no data type is given, this defaults to `string`.
+  To define an array type, append `[]` to the type.
+  Array values are by default delimited by a `;`, but a different delimiter can be specified.
+IGNORE::
+  Ignore this field completely.
+
+See below for the specifics of node and relationship data source headers.
+
+=== Nodes
+
+The following types of fields can be used for node data sources:
+
+ID::
+  Each node must have a unique id.
+  This id is used when connecting nodes through relationships.
+  Note that the id has to be unique across all nodes in the import, even nodes with different labels.
+LABEL::
+  Read one or more labels from this field.
+  For multiple labels, the values are separated by the array delimiter.
+
+=== Relationships
+
+For relationship data sources, there's three mandatory fields:
+
+TYPE::
+  The relationship type to use for the relationship.
+START_ID::
+  The id defined for the start node of the relationship.
+END_ID::
+  The id defined for the end node of the relationship.
+
+[[import-tool-example]]
+== Import Tool Example
+
+Let's look at an example.
+We'll use a tiny data set with movies, actors and roles.
+
+First off, let's look at the movies.
+Each movie has an id, which is used to refer to it in other data sources.
+Then it always has a title and a year.
+We also add labels to the nodes, in this case we use the labels `Movie` and `Sequel`.
+
+.movies.csv
+[source]
+----
+include::movies.csv[]
+----
+
+Next up are the actors.
+They have an id, a name and all have the `Actor` label.
+
+.actors.csv
+[source]
+----
+include::actors.csv[]
+----
+
+Finally we have the roles, which are represented by relationships in the database.
+Here we refer to the ids used in the other data sources, which happens in the `START_ID` and `END_ID` fields.
+At the end of each row, we have put the relationship type to use.
+
+.roles.csv
+[source]
+----
+include::roles.csv[]
+----
+
+With all data in place, we execute the following command:
+
+[source]
+----
+include::example-command.adoc[]
+----
+
+Now we're ready to start up a database from the target directory.
+With the database running, we could add indexes.
+See <<cypherdoc-labels-constraints-and-indexes>> for how to do that.
+

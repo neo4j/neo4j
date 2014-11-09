@@ -36,6 +36,7 @@
         <include>neo4j.*</include>
         <include>neo4j-installer.*</include>
         <include>neo4j-shell.*</include>
+        <include>neo4j-import.*</include>
       </includes>
     </fileSet>
   </fileSets>
