@@ -24,14 +24,11 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Map;
 
-import org.apache.commons.configuration.Configuration;
-
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.recovery.StoreRecoverer;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.NeoServerSettings;
-import org.neo4j.server.configuration.Configurator;
 
 public class PerformRecoveryIfNecessary implements PreflightTask
 {

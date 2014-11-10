@@ -32,7 +32,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.rest.repr.DiscoveryRepresentation;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.web.ServerInternalSettings;

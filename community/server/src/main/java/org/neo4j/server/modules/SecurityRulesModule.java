@@ -21,13 +21,10 @@ package org.neo4j.server.modules;
 
 import java.util.ArrayList;
 
-import org.apache.commons.configuration.Configuration;
-
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.security.SecurityFilter;
 import org.neo4j.server.rest.security.SecurityRule;

@@ -19,6 +19,18 @@
  */
 package org.neo4j.server.rest.discovery;
 
+import java.net.URI;
+
+import javax.ws.rs.core.Response;
+
+import org.junit.Ignore;
+import org.junit.Test;
+
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.server.rest.repr.formats.JsonFormat;
+import org.neo4j.server.web.ServerInternalSettings;
+import org.neo4j.test.server.EntityOutputFormat;
+
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
@@ -27,20 +39,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import java.net.URI;
-
-import javax.ws.rs.core.Response;
-
-import org.apache.commons.configuration.Configuration;
-import org.junit.Ignore;
-import org.junit.Test;
-
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.rest.repr.formats.JsonFormat;
-import org.neo4j.server.web.ServerInternalSettings;
-import org.neo4j.test.server.EntityOutputFormat;
 
 public class DiscoveryServiceTest
 {
