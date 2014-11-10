@@ -53,7 +53,6 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
-import static java.lang.String.format;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 
 import static org.neo4j.com.Protocol.addLengthFieldPipes;
@@ -130,8 +129,8 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     {
         String threadNameFormat = "%s-" + getClass().getSimpleName() + "@" + address;
         bootstrap = new ClientBootstrap( new NioClientSocketChannelFactory(
-                newCachedThreadPool( daemon( format( threadNameFormat, "Boss" ) ) ),
-                newCachedThreadPool( daemon( format( threadNameFormat, "Worker" ) ) ) ) );
+                newCachedThreadPool( daemon( getClass().getSimpleName() + "-boss@" + address ) ),
+                newCachedThreadPool( daemon( getClass().getSimpleName() + "-worker@" + address ) ) ) );
         bootstrap.setPipelineFactory( this );
 
         channelPool = new ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>>( maxUnusedChannels,
