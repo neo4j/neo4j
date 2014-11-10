@@ -23,7 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.io.pagecache.PageSwapper;
-import org.neo4j.io.pagecache.impl.muninn.jsr166e.StampedLock;
+import org.neo4j.jsr166e.StampedLock;
 
 final class MuninnReadPageCursor extends MuninnPageCursor
 {

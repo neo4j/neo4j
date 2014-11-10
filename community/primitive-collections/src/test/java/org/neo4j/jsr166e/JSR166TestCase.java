@@ -28,7 +28,7 @@
 
 // Based on revision 1.7: http://gee.cs.oswego.edu/cgi-bin/viewcvs.cgi/jsr166/src/test/tck-jsr166e/JSR166TestCase.java?revision=1.7&view=markup
 
-package org.neo4j.io.pagecache.impl.muninn.jsr166e;
+package org.neo4j.jsr166e;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
