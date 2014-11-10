@@ -19,6 +19,8 @@
  */
 package org.neo4j.register;
 
+import org.neo4j.function.Function2;
+
 public class Registers
 {
     public static Register.DoubleLongRegister newDoubleLongRegister() { return newDoubleLongRegister( -1l, -1l ); }
@@ -54,6 +56,12 @@ public class Registers
             }
 
             @Override
+            public boolean satisfies( Function2<Long, Long, Boolean> condition )
+            {
+                return condition.apply( first, second );
+            }
+
+            @Override
             public void write( long first, long second )
             {
                 this.first = first;
@@ -65,6 +73,12 @@ public class Registers
             {
                 this.first += firstDelta;
                 this.second += secondDelta;
+            }
+
+            @Override
+            public String toString()
+            {
+                return "DoubleLongRegister{first=" + first + ", second=" + second + "}";
             }
         };
     }
@@ -93,6 +107,12 @@ public class Registers
                 this.value += delta;
                 return this.value;
             }
+
+            @Override
+            public String toString()
+            {
+                return "LongRegister{value=" + value + "}";
+            }
         };
     }
 
@@ -120,6 +140,12 @@ public class Registers
                 this.value += delta;
                 return this.value;
             }
+
+            @Override
+            public String toString()
+            {
+                return "IntRegister{value=" + value + "}";
+            }
         };
     }
 
@@ -139,6 +165,12 @@ public class Registers
             public void write( T value )
             {
                 this.value = value;
+            }
+
+            @Override
+            public String toString()
+            {
+                return "ObjectRegister{value=" + value + "}";
             }
         };
     }

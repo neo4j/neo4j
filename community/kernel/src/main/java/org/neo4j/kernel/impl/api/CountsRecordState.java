@@ -46,9 +46,10 @@ public class CountsRecordState implements CountsVisitor.Visitable, CountsAccesso
     private final Map<CountsKey, DoubleLongRegister> counts = new HashMap<>();
 
     @Override
-    public long nodeCount( int labelId )
+    public DoubleLongRegister nodeCount( int labelId, DoubleLongRegister target )
     {
-        return counts( nodeKey( labelId ) ).readSecond();
+        counts( nodeKey( labelId ) ).copyTo( target );
+        return target;
     }
 
     @Override
@@ -58,9 +59,11 @@ public class CountsRecordState implements CountsVisitor.Visitable, CountsAccesso
     }
 
     @Override
-    public long relationshipCount( int startLabelId, int typeId, int endLabelId )
+    public DoubleLongRegister relationshipCount( int startLabelId, int typeId, int endLabelId,
+                                                 DoubleLongRegister target )
     {
-        return counts( relationshipKey( startLabelId, typeId, endLabelId ) ).readSecond();
+        counts( relationshipKey( startLabelId, typeId, endLabelId ) ).copyTo( target );
+        return target;
     }
 
     @Override

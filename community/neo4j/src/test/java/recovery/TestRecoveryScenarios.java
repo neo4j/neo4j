@@ -19,13 +19,13 @@
  */
 package recovery;
 
-import java.io.IOException;
-import java.util.Collections;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.Collections;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.DynamicLabel;
@@ -47,11 +47,10 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.test.EphemeralFileSystemRule.shutdownDb;
 
 /**
@@ -162,10 +161,10 @@ public class TestRecoveryScenarios
         try ( Transaction tx = db.beginTx() )
         {
             CountsTracker tracker = db.getDependencyResolver().resolveDependency( NeoStore.class ).getCounts();
-            assertEquals( 0, tracker.nodeCount( -1 ) );
+            assertEquals( 0, tracker.nodeCount( -1, newDoubleLongRegister() ).readSecond() );
             final LabelTokenHolder holder = db.getDependencyResolver().resolveDependency( LabelTokenHolder.class );
             int labelId = holder.getIdByName( label.name() );
-            assertEquals( 0, tracker.nodeCount( labelId ) );
+            assertEquals( 0, tracker.nodeCount( labelId, newDoubleLongRegister() ).readSecond() );
             tx.success();
         }
     }

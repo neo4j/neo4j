@@ -88,6 +88,7 @@ import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
+import static org.neo4j.register.Registers.newDoubleLongRegister;
 
 public class DiskLayer implements StoreReadLayer
 {
@@ -812,7 +813,7 @@ public class DiskLayer implements StoreReadLayer
     @Override
     public long countsForNode( int labelId )
     {
-        return counts.nodeCount( labelId );
+        return counts.nodeCount( labelId, newDoubleLongRegister() ).readSecond();
     }
 
     @Override
@@ -822,6 +823,6 @@ public class DiskLayer implements StoreReadLayer
         {
             throw new UnsupportedOperationException( "not implemented" );
         }
-        return counts.relationshipCount( startLabelId, typeId, endLabelId );
+        return counts.relationshipCount( startLabelId, typeId, endLabelId, newDoubleLongRegister() ).readSecond();
     }
 }

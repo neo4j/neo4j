@@ -39,13 +39,29 @@ interface CountsTrackerState extends Closeable
 
     boolean hasChanges();
 
-    long nodeCount( NodeKey nodeKey );
+    /**
+     * @param target a register to store the read values in
+     * @return the input register for convenience
+     */
+    DoubleLongRegister nodeCount( NodeKey nodeKey, DoubleLongRegister target );
 
-    long relationshipCount( RelationshipKey relationshipKey );
+    /**
+     * @param target a register to store the read values in
+     * @return the input register for convenience
+     */
+    DoubleLongRegister relationshipCount( RelationshipKey relationshipKey, DoubleLongRegister target );
 
-    void indexUpdatesAndSize( IndexCountsKey indexCountsKey, DoubleLongRegister target );
+    /**
+     * @param target a register to store the read values in
+     * @return the input register for convenience
+     */
+    DoubleLongRegister indexUpdatesAndSize( IndexCountsKey indexCountsKey, DoubleLongRegister target );
 
-    void indexSample( IndexSampleKey indexSampleKey, DoubleLongRegister target );
+    /**
+     * @param target a register to store the read values in
+     * @return the input register for convenience
+     */
+    DoubleLongRegister indexSample( IndexSampleKey indexSampleKey, DoubleLongRegister target );
 
     void incrementNodeCount( NodeKey nodeKey, long delta );
 

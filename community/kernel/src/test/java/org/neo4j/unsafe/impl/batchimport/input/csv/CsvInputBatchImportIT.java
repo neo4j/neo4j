@@ -19,6 +19,9 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
@@ -33,9 +36,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -67,14 +67,13 @@ import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
-
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.nested;
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.values;
+import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
 import static org.neo4j.unsafe.impl.batchimport.input.Inputs.csv;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
@@ -287,7 +286,9 @@ public class CsvInputBatchImportIT
             {
                 assertEquals( "Label count mismatch for label " + count.first(),
                         count.other().longValue(),
-                        neoStore.getCounts().nodeCount( count.first().intValue() ) );
+                        neoStore.getCounts()
+                                .nodeCount( count.first().intValue(), newDoubleLongRegister() )
+                                .readSecond() );
             }
 
             Function<String, Integer> relationshipTypeTranslationTable =
@@ -298,7 +299,9 @@ public class CsvInputBatchImportIT
                 RelationshipCountKey key = count.first();
                 assertEquals( "Label count mismatch for label " + key,
                         count.other().longValue(),
-                        neoStore.getCounts().relationshipCount( key.startLabel, key.type, key.endLabel ) );
+                        neoStore.getCounts()
+                                .relationshipCount( key.startLabel, key.type, key.endLabel, newDoubleLongRegister() )
+                                .readSecond() );
             }
 
             tx.success();

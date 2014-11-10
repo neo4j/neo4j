@@ -31,10 +31,6 @@ import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.locking.LockWrapper;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
-import org.neo4j.kernel.impl.store.counts.keys.IndexCountsKey;
-import org.neo4j.kernel.impl.store.counts.keys.IndexSampleKey;
-import org.neo4j.kernel.impl.store.counts.keys.NodeKey;
-import org.neo4j.kernel.impl.store.counts.keys.RelationshipKey;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
 import org.neo4j.register.Register.CopyableDoubleLongRegister;
@@ -189,9 +185,9 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     }
 
     @Override
-    public long nodeCount( int labelId )
+    public DoubleLongRegister nodeCount( int labelId, DoubleLongRegister target )
     {
-        return state.nodeCount( nodeKey( labelId ) );
+        return state.nodeCount( nodeKey( labelId ), target );
     }
 
     @Override
@@ -199,17 +195,15 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     {
         try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
         {
-            NodeKey key = nodeKey( labelId );
-            state.incrementNodeCount( key, delta );
-            long value = state.nodeCount( key );
-            assert value >= 0 : String.format( "incrementNodeCount(key=%s, delta=%d) -> value=%d", key, delta, value );
+            state.incrementNodeCount( nodeKey( labelId ), delta );
         }
     }
 
     @Override
-    public long relationshipCount( int startLabelId, int typeId, int endLabelId )
+    public DoubleLongRegister relationshipCount( int startLabelId, int relTypeId, int endLabelId,
+                                                 DoubleLongRegister target )
     {
-        return state.relationshipCount( relationshipKey( startLabelId, typeId, endLabelId ) );
+        return state.relationshipCount( relationshipKey( startLabelId, relTypeId, endLabelId ), target );
     }
 
     @Override
@@ -217,26 +211,20 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     {
             try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
             {
-                RelationshipKey key = relationshipKey( startLabelId, typeId, endLabelId );
-                state.incrementRelationshipCount( key, delta );
-                long value = state.relationshipCount( key );
-                assert value >= 0 :
-                        String.format( "incrementRelationshipCount(key=%s, delta=%d) -> value=%d", key, delta, value );
+                state.incrementRelationshipCount( relationshipKey( startLabelId, typeId, endLabelId ), delta );
             }
     }
 
     @Override
     public DoubleLongRegister indexUpdatesAndSize( int labelId, int propertyKeyId, DoubleLongRegister target )
     {
-        state.indexUpdatesAndSize( indexCountsKey( labelId, propertyKeyId ), target );
-        return target;
+        return state.indexUpdatesAndSize( indexCountsKey( labelId, propertyKeyId ), target );
     }
 
     @Override
     public DoubleLongRegister indexSample( int labelId, int propertyKeyId, DoubleLongRegister target )
     {
-        state.indexSample( indexSampleKey( labelId, propertyKeyId ), target );
-        return target;
+        return state.indexSample( indexSampleKey( labelId, propertyKeyId ), target );
     }
 
     @Override
@@ -244,10 +232,7 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     {
         try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
         {
-            IndexCountsKey key = indexCountsKey( labelId, propertyKeyId );
-            assert updates >= 0 && size >= 0 :
-                    String.format( "replaceIndexSize(key=%s, updates=%d, size=%d)", key, updates, size );
-            state.replaceIndexUpdatesAndSize( key, updates, size );
+            state.replaceIndexUpdatesAndSize( indexCountsKey( labelId, propertyKeyId ), updates, size );
         }
     }
 
@@ -256,9 +241,7 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     {
         try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
         {
-            IndexCountsKey key = indexCountsKey( labelId, propertyKeyId );
-            assert delta >= 0 : String.format( "incrementIndexUpdates(key=%s, delta=%d)", key, delta );
-            state.incrementIndexUpdates( key, delta );
+            state.incrementIndexUpdates( indexCountsKey( labelId, propertyKeyId ), delta );
         }
     }
 
@@ -267,9 +250,7 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     {
         try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
         {
-            IndexSampleKey key = indexSampleKey( labelId, propertyKeyId );
-            assert unique >= 0 && size >= 0 && unique <= size : String.format( "replaceIndexSample(key=%s, unique=%d, size=%d)", key, unique, size );
-            state.replaceIndexSample( key, unique, size );
+            state.replaceIndexSample( indexSampleKey( labelId, propertyKeyId ), unique, size );
         }
     }
 
