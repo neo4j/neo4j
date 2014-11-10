@@ -22,7 +22,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGrap
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assumeDependence._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{SemanticTable, LogicalPlanningTestSupport}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.CardinalityTestHelper
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, CardinalityTestHelper}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 
 class AssumeDependenceCardinalityModelTest extends CypherFunSuite with LogicalPlanningTestSupport with CardinalityTestHelper {
@@ -309,6 +309,6 @@ class AssumeDependenceCardinalityModelTest extends CypherFunSuite with LogicalPl
       shouldHaveQueryGraphCardinality(1000.0 * Math.min(500.0 / 1000 , 3.0 / 1000))
   }
 
-  def createCardinalityModel(stats: GraphStatistics, semanticTable: SemanticTable): QueryGraphCardinalityModel =
+  def createCardinalityModel(stats: GraphStatistics, inboundCardinality: Cardinality, semanticTable: SemanticTable): QueryGraphCardinalityModel =
     AssumeDependenceQueryGraphCardinalityModel(stats, producePredicates, groupPredicates(estimateSelectivity(stats, semanticTable)), combinePredicates.assumeDependence)
 }

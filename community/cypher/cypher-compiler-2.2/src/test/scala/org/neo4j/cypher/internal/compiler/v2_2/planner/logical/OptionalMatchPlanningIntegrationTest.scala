@@ -19,13 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
+import org.neo4j.cypher.internal.compiler.v2_2.ast._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.Limit
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.Limit
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter.unnestOptional
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{PlannerQuery, LogicalPlanningTestSupport2}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_2.ast
+import org.neo4j.cypher.internal.compiler.v2_2.{InputPosition, ast}
 
 class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -154,23 +156,16 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
                          |OPTIONAL MATCH n-[r]-(m)
                          |WHERE m.prop = 42
                          |RETURN m""".stripMargin).plan.endoRewrite(unnestOptional)
+    val s = PlannerQuery.empty
+    val allNodesN:LogicalPlan = AllNodesScan(IdName("n"),Set())(s)
+    val allNodesM:LogicalPlan = AllNodesScan(IdName("m"),Set())(s)
+    val predicate: Expression = In(Property(ident("m"), PropertyKeyName("prop") _) _, Collection(List(SignedDecimalIntegerLiteral("42") _)) _) _
+    val expand = Expand(Selection(Vector(predicate), allNodesM)(s), IdName("m"), Direction.BOTH, Direction.BOTH, List(), IdName("n"), IdName("r"), SimplePatternLength, Vector())(s)
     plan should equal(
       Projection(
-        OptionalExpand(
-          AllNodesScan(IdName("n"), Set.empty)(PlannerQuery.empty),
-          IdName("n"),
-          Direction.BOTH,
-          Seq.empty,
-          IdName("m"),
-          IdName("r"),
-          SimplePatternLength,
-          Seq(ast.In(
-            ast.Property(ident("m"), ast.PropertyKeyName("prop")_)_,
-            ast.Collection(Seq(ast.SignedDecimalIntegerLiteral("42")(null)))_
-          )_)
-        )(PlannerQuery.empty),
+        OuterHashJoin(Set(IdName("n")), allNodesN, expand)(s),
         Map("m" -> ident("m"))
-      )(PlannerQuery.empty)
+      )(s)
     )
   }
 }

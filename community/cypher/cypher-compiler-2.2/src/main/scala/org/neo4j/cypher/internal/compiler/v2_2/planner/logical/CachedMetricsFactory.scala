@@ -32,8 +32,8 @@ case class CachedMetricsFactory(metricsFactory: MetricsFactory) extends MetricsF
   def newCostModel(cardinality: CardinalityModel) =
     CachedFunction.byIdentity(metricsFactory.newCostModel(cardinality))
 
-  def newQueryGraphCardinalityModel(statistics: GraphStatistics, semanticTable: SemanticTable) =
-    CachedFunction.byIdentity(metricsFactory.newQueryGraphCardinalityModel(statistics, semanticTable))
+  def newQueryGraphCardinalityModel(statistics: GraphStatistics, inboundCardinality: Cardinality, semanticTable: SemanticTable) =
+    CachedFunction.byIdentity(metricsFactory.newQueryGraphCardinalityModel(statistics, inboundCardinality, semanticTable))
 
   def newCandidateListCreator(): (Seq[LogicalPlan]) => CandidateList =
     metricsFactory.newCandidateListCreator()

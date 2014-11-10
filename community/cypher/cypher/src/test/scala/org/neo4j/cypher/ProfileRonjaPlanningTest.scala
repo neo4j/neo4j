@@ -105,8 +105,9 @@ class ProfileRonjaPlanningTest extends ExecutionEngineFunSuite with QueryStatist
     }
   }
 
-  private def customMetrics(qgcmCreator: (GraphStatistics, SemanticTable) => QueryGraphCardinalityModel) = new MetricsFactory {
-    def newQueryGraphCardinalityModel(statistics: GraphStatistics, semanticTable: SemanticTable) = qgcmCreator(statistics, semanticTable)
+  private def customMetrics(qgcmCreator: (GraphStatistics, Cardinality, SemanticTable) => QueryGraphCardinalityModel) = new MetricsFactory {
+    def newQueryGraphCardinalityModel(statistics: GraphStatistics, inboundCardinality: Cardinality, semanticTable: SemanticTable) =
+      qgcmCreator(statistics, inboundCardinality, semanticTable)
 
     def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel) =
       SimpleMetricsFactory.newCardinalityEstimator(queryGraphCardinalityModel)
@@ -210,8 +211,8 @@ class ProfileRonjaPlanningTest extends ExecutionEngineFunSuite with QueryStatist
 
     def newCandidateListCreator(): (Seq[LogicalPlan]) => CandidateList = plans => new LoggingCandidateList(plans)
 
-    def newQueryGraphCardinalityModel(statistics: GraphStatistics, semanticTable: SemanticTable) =
-      inner.newQueryGraphCardinalityModel(statistics, semanticTable)
+    def newQueryGraphCardinalityModel(statistics: GraphStatistics, inboundCardinality: Cardinality, semanticTable: SemanticTable) =
+      inner.newQueryGraphCardinalityModel(statistics, inboundCardinality, semanticTable)
   }
 
 }

@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryGraph, SemanticTabl
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 
 case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics,
+                                                        inboundCardinality: Cardinality,
                                                         semanticTable: SemanticTable,
                                                         combiner: SelectivityCombiner)
   extends QueryGraphCardinalityModel  {
@@ -36,8 +37,8 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics,
 
   def apply(queryGraph: QueryGraph, labels: Map[IdName, Seq[LabelName]]): Cardinality = {
     val combinations: Seq[QueryGraph] = findQueryGraphCombinations(queryGraph, semanticTable)
-    val cardinalities = combinations.map(cardinalityForQueryGraph(_, labels)(semanticTable))
-    cardinalities.foldLeft(Cardinality(0)) {
+    val cardinalities = combinations.map(cardinalityForQueryGraph(_, inboundCardinality, labels)(semanticTable))
+    cardinalities.foldLeft(Cardinality.EMPTY) {
       case (acc, curr) => if (curr > acc) curr else acc
     }
   }
@@ -56,12 +57,17 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics,
       .map(queryGraph.withOptionalMatches(Seq.empty) ++ _)
   }
 
-  private def cardinalityForQueryGraph(qg: QueryGraph, labels: Map[IdName, Seq[LabelName]])(implicit semanticTable: SemanticTable): Cardinality = {
+  private def cardinalityForQueryGraph(qg: QueryGraph, inboundCardinality: Cardinality, labels: Map[IdName, Seq[LabelName]])(implicit semanticTable: SemanticTable): Cardinality = {
     val selectivity = calculateSelectivity(qg, labels)
     val numberOfPatternNodes = qg.patternNodes.count(!qg.argumentIds.contains(_))
     val numberOfGraphNodes = stats.nodesWithLabelCardinality(None)
 
-    (numberOfGraphNodes ^ numberOfPatternNodes) * selectivity
+    val c = if (qg.argumentIds.nonEmpty)
+      inboundCardinality
+    else
+      Cardinality(1)
+
+    c * (numberOfGraphNodes ^ numberOfPatternNodes) * selectivity
   }
 
   private def calculateSelectivity(qg: QueryGraph, labels: Map[IdName, Seq[LabelName]])(implicit semanticTable: SemanticTable) = {

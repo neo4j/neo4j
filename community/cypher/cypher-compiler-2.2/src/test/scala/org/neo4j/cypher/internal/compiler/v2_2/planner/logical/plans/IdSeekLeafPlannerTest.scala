@@ -60,7 +60,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     })
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(statistics, newMockedSemanticTable)
+      metrics = factory.newMetrics(statistics, Cardinality(1), newMockedSemanticTable)
     )
     when(context.semanticTable.isNode(identifier)).thenReturn(true)
 
@@ -100,7 +100,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     })
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(statistics, newMockedSemanticTable)
+      metrics = factory.newMetrics(statistics, Cardinality(1), newMockedSemanticTable)
     )
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
 
@@ -137,7 +137,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     })
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(statistics, newMockedSemanticTable)
+      metrics = factory.newMetrics(statistics, Cardinality(1), newMockedSemanticTable)
     )
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
 
@@ -180,7 +180,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     })
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(statistics, semanticTable)
+      metrics = factory.newMetrics(statistics, Cardinality(1), semanticTable)
     )
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
 
@@ -227,7 +227,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     })
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(statistics, semanticTable)
+      metrics = factory.newMetrics(statistics, Cardinality(1), semanticTable)
     )
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
 

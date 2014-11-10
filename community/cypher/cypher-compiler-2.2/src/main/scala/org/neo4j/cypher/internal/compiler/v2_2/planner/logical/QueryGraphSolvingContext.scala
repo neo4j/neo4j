@@ -27,8 +27,10 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 
 case class LogicalPlanningContext(planContext: PlanContext,
                                   metrics: Metrics,
+                                  metricsFactory: (Cardinality) => Metrics,
                                   semanticTable: SemanticTable,
                                   strategy: QueryGraphSolver) {
+  def relativeMetrics(cardinality: Cardinality): Metrics = metricsFactory(cardinality)
 
   def statistics = planContext.statistics
   def cost = metrics.cost

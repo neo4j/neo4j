@@ -71,7 +71,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
+      metrics = factory.newMetrics(hardcodedStatistics, Cardinality(1), newMockedSemanticTable)
     )
 
     val aPlan = newMockedLogicalPlan("a")
@@ -104,7 +104,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
+      metrics = factory.newMetrics(hardcodedStatistics, Cardinality(1), newMockedSemanticTable)
     )
 
     val aPlan = newMockedLogicalPlan("a")
@@ -137,7 +137,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
+      metrics = factory.newMetrics(hardcodedStatistics, Cardinality(1), newMockedSemanticTable)
     )
 
     val bPlan = newMockedLogicalPlan("b")
@@ -172,7 +172,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
+      metrics = factory.newMetrics(hardcodedStatistics, Cardinality(1), newMockedSemanticTable)
     )
 
     val aPlan = newMockedLogicalPlan("a")
@@ -210,7 +210,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
+      metrics = factory.newMetrics(hardcodedStatistics, Cardinality(1), newMockedSemanticTable)
     )
 
     val aPlan = newMockedLogicalPlan("a")
@@ -257,7 +257,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
+      metrics = factory.newMetrics(hardcodedStatistics, Cardinality(1), newMockedSemanticTable)
     )
 
     val aPlan = newMockedLogicalPlan("a")
@@ -304,7 +304,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
+      metrics = factory.newMetrics(hardcodedStatistics, Cardinality(1), newMockedSemanticTable)
     )
 
     val aPlan = newMockedLogicalPlan("a")
@@ -351,7 +351,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
+      metrics = factory.newMetrics(hardcodedStatistics, Cardinality(1), newMockedSemanticTable)
     )
 
     val aPlan = newMockedLogicalPlan("a")
@@ -403,7 +403,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
+      metrics = factory.newMetrics(hardcodedStatistics, Cardinality(1), newMockedSemanticTable)
     )
 
     val aPlan = newMockedLogicalPlan("a")
@@ -455,7 +455,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
+      metrics = factory.newMetrics(hardcodedStatistics, Cardinality(1), newMockedSemanticTable)
     )
 
     val aPlan = newMockedLogicalPlan("a")

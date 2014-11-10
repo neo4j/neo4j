@@ -24,6 +24,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGrap
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assumeIndependence.{AssumeIndependenceQueryGraphCardinalityModel, IndependenceCombiner}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport, SemanticTable}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{SemanticTable, LogicalPlanningTestSupport}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, CardinalityTestHelper}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 import org.neo4j.cypher.internal.helpers.testRandomizer
 
@@ -50,9 +52,9 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
 
   val Aprop = 0.5
   // Selectivity of index on :A(prop)
-  val Bprop = 0.3
+  val Bprop = 0.003
   // Selectivity of index on :B(prop)
-  val Abar = 0.2 // Selectivity of index on :A(bar)
+  val Abar = 0.002 // Selectivity of index on :A(bar)
 
   val A_T1_A_sel = 5 / A
   // Numbers of relationships of type T1 between A and B respectively labeled nodes
@@ -92,7 +94,7 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
   val D_T2_C_sel = 0.07
   val D_T2_C     = D * C * D_T2_C_sel
 
-  // Relationship count
+  // Relationship count: the total number of relationships in the system
   val R = A_T1_STAR + B_T1_STAR + A_T2_STAR + D_T1_C + D_T2_C
 
   test("all nodes is gotten from stats") {
@@ -145,8 +147,8 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
     shouldHaveQueryGraphCardinality(0)
   }
 
-  test("node cardinality when one label is empty") {
-    forQuery("MATCH (a:EMPTY:B)").
+  test("node cardinality when one label is missing") {
+    forQuery("MATCH (a:Z:B)").
     shouldHaveQueryGraphCardinality(0)
   }
 
@@ -180,13 +182,13 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
     shouldHaveQueryGraphCardinality(B * or(Bprop, DEFAULT_EQUALITY_SELECTIVITY))
   }
 
-  ignore("cardinality for property equality predicate when property name is unknown") {
+  ignore("cardinality for property equality predicate when property name is unknown (does not exist in the store)") {
     // This should work
     forQuery("MATCH (a) WHERE a.unknownProp = 42").
     shouldHaveQueryGraphCardinality(0)
   }
 
-  test("cardinality for hardcoded false") {
+  test("cardinality for literal false") {
     forQuery("MATCH (a) WHERE false").
     shouldHaveQueryGraphCardinality(0)
   }
@@ -211,7 +213,7 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
     shouldHaveQueryGraphCardinality(A_T1_B)
   }
 
-  test("relationship cardinality given labels on both sides for incoming pattern") {
+  test("relationship cardinality given labels on both sides for the reverse direction") {
     forQuery("MATCH (b:B)<-[r:T1]-(a:A)").
     shouldHaveQueryGraphCardinality(A_T1_B)
   }
@@ -234,8 +236,9 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
 
   test("cardinality for rel-patterns with multiple labels on one end") {
     val maxRelCount = N * N * Asel * Bsel
+    val B_T2_STAR = 0
     val A_relSelectivity = (A_T1_STAR + A_T2_STAR) / maxRelCount
-    val B_relSelectivity = B_T1_STAR / maxRelCount
+    val B_relSelectivity = (B_T1_STAR + B_T2_STAR) / maxRelCount
     val relSelectivity = A_relSelectivity * B_relSelectivity
     forQuery("MATCH (a:A:B)-->()").
     shouldHaveQueryGraphCardinality(A * B * relSelectivity)
@@ -319,11 +322,12 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
   test("honours bound arguments") {
     givenPattern("MATCH (a:FOO)-[:TYPE]->(b:BAR)").
     withQueryGraphArgumentIds(IdName("a")).
+    withInboundCardinality(13.0).
     withGraphNodes(500).
     withLabel('FOO -> 100).
     withLabel('BAR -> 400).
     withRelationshipCardinality('FOO -> 'TYPE -> 'BAR -> 1000).
-    shouldHaveQueryGraphCardinality(1000 / 500)
+    shouldHaveQueryGraphCardinality(1000.0 / 500.0 * 13.0)
   }
 
   test("optional match will in worst case be a cartesian product") {
@@ -341,14 +345,64 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
     shouldHaveQueryGraphCardinality(A * (3.0 / N))
   }
 
-  test("two relationships with property") {
-    val patternNodeCrossProduct = N * N * N
-    val createdSelectivity = (A_T1_STAR + A_T2_STAR) / (N * N)
-    val appearsOnSelectivity = (STAR_T1_B + STAR_T2_B) / (N * N)
-    val indexSelectivity = Aprop
+  test("two levels") {
+    val selA = .1
+    val selB = .2
+    val selC = .3
+    val _A = N * selA
+    val _B = N * selB
+    val _C = N * selC
+    val selT1 = .01
+    val selT2 = .02
+    givenPattern("MATCH (a:A)-[:T1]->(b:B)-[:T2]->(c:C)").
+    withGraphNodes(N).
+    withLabel('A, _A).
+    withLabel('B, _B).
+    withLabel('C, _C).
+    withRelationshipCardinality('A -> 'T1 -> 'B, _A * _B * selT1).
+    withRelationshipCardinality('B -> 'T2 -> 'C, _B * _C * selT2).
+    shouldHaveQueryGraphCardinality(_A * selT1 * _B * selT2 * _C)
+  }
 
+  test("three levels") {
+    val selA = .1
+    val selB = .2
+    val selC = .3
+    val selD = .4
+    val _A = N * selA
+    val _B = N * selB
+    val _C = N * selC
+    val _D = N * selD
+    val selT1 = .01
+    val selT2 = .02
+    val selT3 = .03
+    givenPattern("MATCH (a:A)-[:T1]->(b:B)-[:T2]->(c:C)-[:T3]->(d:D)").
+    withGraphNodes(N).
+    withLabel('A, _A).
+    withLabel('B, _B).
+    withLabel('C, _C).
+    withLabel('D, _D).
+    withRelationshipCardinality('A -> 'T1 -> 'B, _A * _B * selT1).
+    withRelationshipCardinality('B -> 'T2 -> 'C, _B * _C * selT2).
+    withRelationshipCardinality('C -> 'T3 -> 'D, _C * _D * selT3).
+    shouldHaveQueryGraphCardinality(_A * selT1 * _B * selT2 * _C * selT3 * _D)
+  }
+
+  test("four levels") {
+    val Esel = 0.12
+    val C_T3_E_sel = 0.04
+    val E = N * Esel
+    val C_T3_E = C * E * C_T3_E_sel
+    forQuery("MATCH (b:B)-[:T1]->(a:A)-[:T1]->(d:D)-[:T1]->(c:C)-[:T3]->(e:E)").
+      withLabel('E,E).
+      withRelationshipCardinality('C -> 'T3 -> 'E, C_T3_E).
+    shouldHaveQueryGraphCardinality(B * B_T1_A_sel * A * A_T1_D_sel * D * D_T1_C_sel * C * C_T3_E_sel * E / 8)
+  }
+
+  ignore("two relationships with property") {
+    val selectivity = R / (A * B * N)
     forQuery("MATCH (a:A)--()--(b:B) WHERE a.prop = 61").
-    shouldHaveQueryGraphCardinality(patternNodeCrossProduct * createdSelectivity * appearsOnSelectivity * indexSelectivity)
+    shouldHaveQueryGraphCardinality(A * N * B * selectivity * selectivity)
   }
 
   private def forQuery(q: String) =
@@ -379,6 +433,6 @@ class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with Logical
 
   implicit def toLong(d: Double): Long = d.toLong
 
-  def createCardinalityModel(stats: GraphStatistics, semanticTable: SemanticTable): QueryGraphCardinalityModel =
-    AssumeIndependenceQueryGraphCardinalityModel(stats, semanticTable, IndependenceCombiner)
+  def createCardinalityModel(stats: GraphStatistics, inboundCardinality: Cardinality, semanticTable: SemanticTable): QueryGraphCardinalityModel =
+    AssumeIndependenceQueryGraphCardinalityModel(stats, inboundCardinality, semanticTable, IndependenceCombiner)
 }
