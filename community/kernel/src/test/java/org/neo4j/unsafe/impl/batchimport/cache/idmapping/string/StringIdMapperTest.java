@@ -20,6 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
@@ -88,6 +89,20 @@ public class StringIdMapperTest
                 fail( "Couldn't find " + id + " even though I added it just previously" );
             }
         }
+    }
+
+    @Test
+    public void shouldReturnExpectedValueForNotFound() throws Exception
+    {
+        // GIVEN
+        IdMapper idMapper = new StringIdMapper( LongArrayFactory.AUTO );
+        idMapper.prepare( Arrays.asList() );
+
+        // WHEN
+        long id = idMapper.get( "missing" );
+
+        // THEN
+        assertEquals( -1L, id );
     }
 
     @Ignore( "TODO pending fix issue in ParallelSort" )

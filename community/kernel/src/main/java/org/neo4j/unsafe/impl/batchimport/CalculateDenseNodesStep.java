@@ -19,17 +19,18 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import static java.lang.Math.max;
-import static java.lang.Math.round;
-
 import java.util.List;
 
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
+import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
+
+import static java.lang.Math.max;
+import static java.lang.Math.round;
 
 /**
  * Runs through relationship input and counts relationships per node so that dense nodes can be designated.
@@ -57,6 +58,9 @@ public class CalculateDenseNodesStep extends ExecutorServiceStep<List<InputRelat
         {
             long startNode = idMapper.get( rel.startNode() );
             long endNode = idMapper.get( rel.endNode() );
+            ensureNodeFound( "start", rel, startNode );
+            ensureNodeFound( "end", rel, endNode );
+
             try
             {
                 nodeRelationshipLink.incrementCount( startNode );
@@ -82,6 +86,15 @@ public class CalculateDenseNodesStep extends ExecutorServiceStep<List<InputRelat
             highestSeenNodeId = max( highestSeenNodeId, max( startNode, endNode ) );
         }
         return null; // end of the line
+    }
+
+    private void ensureNodeFound( String nodeDescription, InputRelationship relationship, long actualNodeId )
+    {
+        if ( actualNodeId == -1 )
+        {
+            throw new InputException( relationship + " specified " + nodeDescription +
+                    " node that hasn't been imported" );
+        }
     }
 
     @Override

@@ -61,7 +61,7 @@ public interface IdMapper
      * @link #put(Object, long) being put}
      *
      * @param inputId the input id to get the actual node id for.
-     * @return the actual node id previously specified by {@link #put(Object, long)}.
+     * @return the actual node id previously specified by {@link #put(Object, long)}, or {@code -1} if not found.
      */
     long get( Object inputId );
 
