@@ -75,4 +75,21 @@ public class NodeLabelsField
         assert fieldPointsToDynamicRecordOfLabels( labelField );
         return parseLabelsBody( labelField );
     }
+
+    /**
+     * Checks so that a label id array is sane, i.e. that it's sorted and contains no duplicates.
+     */
+    public static boolean isSane( long[] labelIds )
+    {
+        long prev = -1;
+        for ( long labelId : labelIds )
+        {
+            if ( labelId <= prev )
+            {
+                return false;
+            }
+            prev = labelId;
+        }
+        return true;
+    }
 }
