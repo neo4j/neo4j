@@ -39,4 +39,9 @@ public class BatchingIdSequence implements IdSequence
         }
         return result;
     }
+
+    public void reset()
+    {
+        nextId = 0;
+    }
 }

@@ -20,6 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import org.neo4j.csv.reader.CharSeeker;
+import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 
 /**
@@ -28,15 +29,18 @@ import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
  */
 class InputRelationshipDeserializer extends InputEntityDeserializer<InputRelationship>
 {
+    private final IdSequence idSequence;
+
     // Additional data
     private long id;
     private String type;
     private Object startNode;
     private Object endNode;
 
-    InputRelationshipDeserializer( Header header, CharSeeker data, int[] delimiter )
+    InputRelationshipDeserializer( Header header, CharSeeker data, int[] delimiter, IdSequence idSequence )
     {
         super( header, data, delimiter );
+        this.idSequence = idSequence;
     }
 
     @Override
@@ -59,6 +63,6 @@ class InputRelationshipDeserializer extends InputEntityDeserializer<InputRelatio
     @Override
     protected InputRelationship convertToInputEntity( Object[] properties )
     {
-        return new InputRelationship( id++, properties, null, startNode, endNode, type, null );
+        return new InputRelationship( idSequence.nextId(), properties, null, startNode, endNode, type, null );
     }
 }
