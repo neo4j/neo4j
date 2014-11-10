@@ -20,21 +20,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 'use strict'
 
+angular.module('neo4jApp.controllers')
+  .controller 'DisconnectCtrl', [
+    '$scope'
+    'AuthService'
+    ($scope, AuthService) ->
+      AuthService.forget().then( ->
+        $scope.static_user = angular.copy(AuthService.getCurrentUser())
+        $scope.static_is_authenticated = AuthService.isAuthenticated()
+      )
 
-angular.module('neo4jApp.directives')
-.directive('frameStream', ['Frame','Editor','motdService',
-  (Frame, Editor, motdService) ->
-    restrict: 'A'
-    priority: 0
-    templateUrl: 'views/partials/stream.html'
-    replace: false
-    transclude: false
-    scope: false
-    controller: ['$scope', 'Frame', 'Editor', 'motdService', ($scope, Frame, Editor, motdService) ->
-      $scope.frames = Frame
-      $scope.motd = motdService
-      $scope.editor = Editor
-    ]
-    link: (scope, element, attrs) ->
-      #scope.frames.create({"input":":play welcome"})
-])
+      $scope.focusEditor()
+  ]

@@ -58,7 +58,7 @@ angular.module('neo4jApp.services')
             "Every graph starts with the first node."
           ],
           disconnected: [
-            "Please check if the cord is unplugged."
+            "Disconnected from Neo4j. Please check if the cord is unplugged."
           ],
           callToAction: [
             {
@@ -85,6 +85,7 @@ angular.module('neo4jApp.services')
           @emptiness = @pickRandomlyFrom(choices.emptiness)
           @disconnected = @pickRandomlyFrom(choices.disconnected)
           @callToAction = @pickRandomlyFrom(choices.callToAction)
+          
           rssFeedService.get().then (feed) =>
             if feed[0]
               @callToAction = feed[0]

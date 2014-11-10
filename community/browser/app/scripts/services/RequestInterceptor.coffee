@@ -18,23 +18,20 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-'use strict'
+'use strict';
 
+angular.module('neo4jApp.services')
+  .factory('RequestInterceptor', [
+    'AuthDataService'
+    (AuthDataService) ->
+      interceptor = 
+        request: (config) ->
+          header = AuthDataService.getAuthData()
+          if header then config.headers['Authorization'] = "Basic #{header}"
+          config
+      interceptor
+])
 
-angular.module('neo4jApp.directives')
-.directive('frameStream', ['Frame','Editor','motdService',
-  (Frame, Editor, motdService) ->
-    restrict: 'A'
-    priority: 0
-    templateUrl: 'views/partials/stream.html'
-    replace: false
-    transclude: false
-    scope: false
-    controller: ['$scope', 'Frame', 'Editor', 'motdService', ($scope, Frame, Editor, motdService) ->
-      $scope.frames = Frame
-      $scope.motd = motdService
-      $scope.editor = Editor
-    ]
-    link: (scope, element, attrs) ->
-      #scope.frames.create({"input":":play welcome"})
+angular.module('neo4jApp.services').config(['$httpProvider', ($httpProvider) ->
+  $httpProvider.interceptors.push 'RequestInterceptor'
 ])

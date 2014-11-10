@@ -18,23 +18,23 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-'use strict'
-
+'use strict';
 
 angular.module('neo4jApp.directives')
-.directive('frameStream', ['Frame','Editor','motdService',
-  (Frame, Editor, motdService) ->
-    restrict: 'A'
-    priority: 0
-    templateUrl: 'views/partials/stream.html'
-    replace: false
-    transclude: false
-    scope: false
-    controller: ['$scope', 'Frame', 'Editor', 'motdService', ($scope, Frame, Editor, motdService) ->
-      $scope.frames = Frame
-      $scope.motd = motdService
-      $scope.editor = Editor
-    ]
-    link: (scope, element, attrs) ->
-      #scope.frames.create({"input":":play welcome"})
-])
+  .directive('onEnter', [ 
+    ->
+      restrict: 'A',
+      link: (scope, elem, attr, ctrl) ->
+        elem.bind('keydown', (e)->
+          code = e.which || e.keyCode
+          return unless code is 13
+
+          if attr.onEnter is 'focus'
+            element = document.getElementById(attr.onEnterTargetId)
+            element.focus()
+          else if attr.onEnter is 'click'
+            element = document.getElementById(attr.onEnterTargetId)
+            angular.element(element).triggerHandler('click')
+            elem.select()
+        )
+  ])

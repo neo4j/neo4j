@@ -18,23 +18,24 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-'use strict'
+'use strict';
 
-
+# Requires jQuery
 angular.module('neo4jApp.directives')
-.directive('frameStream', ['Frame','Editor','motdService',
-  (Frame, Editor, motdService) ->
+  .directive('serverTopic', ['$rootScope', 'Frame','Settings', ($rootScope, Frame, Settings) ->
     restrict: 'A'
-    priority: 0
-    templateUrl: 'views/partials/stream.html'
-    replace: false
-    transclude: false
-    scope: false
-    controller: ['$scope', 'Frame', 'Editor', 'motdService', ($scope, Frame, Editor, motdService) ->
-      $scope.frames = Frame
-      $scope.motd = motdService
-      $scope.editor = Editor
-    ]
     link: (scope, element, attrs) ->
-      #scope.frames.create({"input":":play welcome"})
-])
+
+      topic = attrs.serverTopic
+      command = "server"
+
+      if topic
+        element.on 'click', (e) ->
+          e.preventDefault()
+
+          topic = topic.toLowerCase().trim()
+          Frame.create(input: "#{Settings.cmdchar}#{command} #{topic}")
+
+          $rootScope.$apply() unless $rootScope.$$phase
+
+  ])
