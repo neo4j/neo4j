@@ -23,10 +23,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
+
 import javax.servlet.ServletOutputStream;
-import javax.servlet.WriteListener;
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.servlet.WriteListener;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
@@ -37,7 +39,6 @@ import javax.ws.rs.core.UriInfo;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-
 import org.neo4j.server.rest.batch.BatchOperationResults;
 import org.neo4j.server.rest.batch.NonStreamingBatchOperations;
 import org.neo4j.server.rest.repr.OutputFormat;
@@ -68,16 +69,17 @@ public class BatchOperationService {
 
     @POST
     public Response performBatchOperations(@Context UriInfo uriInfo,
-            @Context HttpHeaders httpHeaders, InputStream body)
+            @Context HttpHeaders httpHeaders, @Context HttpServletRequest req, InputStream body)
     {
         if ( isStreaming( httpHeaders ) )
         {
-            return batchProcessAndStream( uriInfo, httpHeaders, body );
+            return batchProcessAndStream( uriInfo, httpHeaders, req, body );
         }
-        return batchProcess( uriInfo, httpHeaders, body );
+        return batchProcess( uriInfo, httpHeaders, req, body );
     }
 
-    private Response batchProcessAndStream( final UriInfo uriInfo, final HttpHeaders httpHeaders, final InputStream body )
+    private Response batchProcessAndStream( final UriInfo uriInfo, final HttpHeaders httpHeaders,
+                                            final HttpServletRequest req, final InputStream body )
     {
         try
         {
@@ -115,8 +117,8 @@ public class BatchOperationService {
                                 }
                             }
                         };
-                        new StreamingBatchOperations( webServer ).readAndExecuteOperations( uriInfo, httpHeaders, body,
-                                servletOutputStream );
+                        new StreamingBatchOperations( webServer ).readAndExecuteOperations( uriInfo, httpHeaders, req,
+                                body, servletOutputStream );
                         representationWriteHandler.onRepresentationWritten();
                     }
                     catch ( Exception e )
@@ -138,12 +140,12 @@ public class BatchOperationService {
         }
     }
 
-    private Response batchProcess( UriInfo uriInfo, HttpHeaders httpHeaders, InputStream body )
+    private Response batchProcess( UriInfo uriInfo, HttpHeaders httpHeaders, HttpServletRequest req, InputStream body )
     {
         try
         {
             NonStreamingBatchOperations batchOperations = new NonStreamingBatchOperations( webServer );
-            BatchOperationResults results = batchOperations.performBatchJobs( uriInfo, httpHeaders, body );
+            BatchOperationResults results = batchOperations.performBatchJobs( uriInfo, httpHeaders, req, body );
 
             Response res = Response.ok().entity(results.toJSON())
                     .type(HttpHeaderUtils.mediaTypeWithCharsetUtf8(MediaType.APPLICATION_JSON_TYPE)).build();
