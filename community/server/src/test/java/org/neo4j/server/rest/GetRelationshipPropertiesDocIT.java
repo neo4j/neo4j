@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.ws.rs.core.MediaType;
 
+import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -33,11 +34,14 @@ import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
+import org.neo4j.test.server.HTTP;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 public class GetRelationshipPropertiesDocIT extends AbstractRestFunctionalTestBase
 {
@@ -63,16 +67,6 @@ public class GetRelationshipPropertiesDocIT extends AbstractRestFunctionalTestBa
         map.put( "foo", "bar" );
         helper.setRelationshipProperties( relationship, map );
         baseRelationshipUri = functionalTestHelper.dataUri() + "relationship/" + relationship + "/properties/";
-    }
-
-    @Test
-    public void shouldGet204ForNoProperties()
-    {
-        long relId = helper.createRelationship( "LIKES" );
-        JaxRsResponse response = RestRequest.req().get( functionalTestHelper.dataUri() + "relationship/" + relId
-                + "/properties" );
-        assertEquals( 204, response.getStatus() );
-        response.close();
     }
 
     @Test
@@ -137,5 +131,20 @@ public class GetRelationshipPropertiesDocIT extends AbstractRestFunctionalTestBa
         assertThat( response.getType().toString(), containsString( MediaType.APPLICATION_JSON ) );
         assertNotNull( JsonHelper.createJsonFrom( response.getEntity() ) );
         response.close();
+    }
+
+    @Test
+    public void shouldReturnEmptyMapForEmptyProperties() throws Exception
+    {
+        // Given
+        String node = HTTP.POST( server().baseUri().resolve( "db/data/node" ).toString() ).location();
+        String rel = HTTP.POST( node + "/relationships", quotedJson( "{'to':'" + node + "', " +
+                "'type':'LOVES'}" ) ).location();
+
+        // When
+        HTTP.Response res = HTTP.GET( rel + "/properties" );
+
+        // Then
+        MatcherAssert.assertThat( res.rawContent(), equalTo( "{ }" ) );
     }
 }

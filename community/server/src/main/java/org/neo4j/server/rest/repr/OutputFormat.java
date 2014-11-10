@@ -86,7 +86,7 @@ public class OutputFormat
         return response( Response.created( uri( representation ) ), representation );
     }
 
-    public final Response response( Status status, Representation representation ) throws BadInputException
+    public final Response response( Status status, Representation representation )
     {
         return response( Response.status( status ), representation );
     }

@@ -21,23 +21,24 @@ package org.neo4j.server.rest;
 
 import java.io.IOException;
 import java.util.Collections;
+
 import javax.ws.rs.core.MediaType;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.formats.StreamingJsonFormat;
 import org.neo4j.server.rest.web.PropertyValueException;
+import org.neo4j.test.server.HTTP;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.*;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class GetNodePropertiesDocIT extends AbstractRestFunctionalTestBase
@@ -56,22 +57,6 @@ public class GetNodePropertiesDocIT extends AbstractRestFunctionalTestBase
     {
         cleanDatabase();
         req = RestRequest.req();
-    }
-
-
-    /**
-     * Get properties for node (empty result).
-     * 
-     * If there are no properties, there will be an HTTP 204 response.
-     */
-    @Documented
-    @Test
-    public void shouldGet204ForNoProperties() {
-        JaxRsResponse createResponse = req.post(functionalTestHelper.dataUri() + "node/", "");
-        gen.get()
-                .expectedStatus(204)
-                .get(createResponse.getLocation()
-                        .toString() + "/properties");
     }
 
     /**
@@ -189,6 +174,19 @@ public class GetNodePropertiesDocIT extends AbstractRestFunctionalTestBase
 
         createResponse.close();
         response.close();
+    }
+
+    @Test
+    public void shouldReturnEmptyMapForEmptyProperties() throws Exception
+    {
+        // Given
+        String location = HTTP.POST( server().baseUri().resolve( "db/data/node" ).toString() ).location();
+
+        // When
+        HTTP.Response res = HTTP.GET( location + "/properties" );
+
+        // Then
+        assertThat(res.rawContent(), equalTo("{ }"));
     }
 
     private String getPropertyUri( final String baseUri, final String key )
