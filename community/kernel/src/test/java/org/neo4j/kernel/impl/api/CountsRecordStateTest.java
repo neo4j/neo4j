@@ -19,17 +19,16 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.junit.Test;
+
 import java.util.List;
 import java.util.Set;
 
-import org.junit.Test;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.kernel.impl.store.counts.CountsKey.nodeKey;
-import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipKey;
+import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
+import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relationshipKey;
 
 public class CountsRecordStateTest
 {

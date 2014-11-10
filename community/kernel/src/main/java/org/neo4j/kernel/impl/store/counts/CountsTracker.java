@@ -30,18 +30,22 @@ import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.locking.LockWrapper;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
-import org.neo4j.kernel.impl.store.counts.CountsKey.IndexCountsKey;
+import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
+import org.neo4j.kernel.impl.store.counts.keys.IndexCountsKey;
+import org.neo4j.kernel.impl.store.counts.keys.IndexSampleKey;
+import org.neo4j.kernel.impl.store.counts.keys.NodeKey;
+import org.neo4j.kernel.impl.store.counts.keys.RelationshipKey;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
 import org.neo4j.register.Register.CopyableDoubleLongRegister;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 
-import static org.neo4j.kernel.impl.store.counts.CountsKey.indexCountsKey;
-import static org.neo4j.kernel.impl.store.counts.CountsKey.indexSampleKey;
-import static org.neo4j.kernel.impl.store.counts.CountsKey.nodeKey;
-import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipKey;
 import static org.neo4j.kernel.impl.store.counts.CountsStore.RECORD_SIZE;
+import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexCountsKey;
+import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexSampleKey;
+import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
+import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relationshipKey;
 import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.BASE_MINOR_VERSION;
 import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.with;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
@@ -195,7 +199,7 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     {
         try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
         {
-            CountsKey.NodeKey key = nodeKey( labelId );
+            NodeKey key = nodeKey( labelId );
             state.incrementNodeCount( key, delta );
             long value = state.nodeCount( key );
             assert value >= 0 : String.format( "incrementNodeCount(key=%s, delta=%d) -> value=%d", key, delta, value );
@@ -213,7 +217,7 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     {
             try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
             {
-                CountsKey.RelationshipKey key = relationshipKey( startLabelId, typeId, endLabelId );
+                RelationshipKey key = relationshipKey( startLabelId, typeId, endLabelId );
                 state.incrementRelationshipCount( key, delta );
                 long value = state.relationshipCount( key );
                 assert value >= 0 :
@@ -263,7 +267,7 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     {
         try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
         {
-            CountsKey.IndexSampleKey key = indexSampleKey( labelId, propertyKeyId );
+            IndexSampleKey key = indexSampleKey( labelId, propertyKeyId );
             assert unique >= 0 && size >= 0 && unique <= size : String.format( "replaceIndexSample(key=%s, unique=%d, size=%d)", key, unique, size );
             state.replaceIndexSample( key, unique, size );
         }

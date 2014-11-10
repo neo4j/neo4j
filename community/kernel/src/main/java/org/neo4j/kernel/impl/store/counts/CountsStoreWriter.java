@@ -28,6 +28,8 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
+import org.neo4j.kernel.impl.store.counts.keys.CountsKeyType;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore.Writer;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore.WriterFactory;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader;
@@ -35,12 +37,12 @@ import org.neo4j.register.Register.CopyableDoubleLongRegister;
 import org.neo4j.register.Registers;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
-import static org.neo4j.kernel.impl.store.counts.CountsKeyType.EMPTY;
-import static org.neo4j.kernel.impl.store.counts.CountsKeyType.ENTITY_NODE;
-import static org.neo4j.kernel.impl.store.counts.CountsKeyType.ENTITY_RELATIONSHIP;
-import static org.neo4j.kernel.impl.store.counts.CountsKeyType.INDEX_COUNTS;
-import static org.neo4j.kernel.impl.store.counts.CountsKeyType.INDEX_SAMPLE;
 import static org.neo4j.kernel.impl.store.counts.CountsStore.RECORD_SIZE;
+import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyType.EMPTY;
+import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyType.ENTITY_NODE;
+import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyType.ENTITY_RELATIONSHIP;
+import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyType.INDEX_COUNTS;
+import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyType.INDEX_SAMPLE;
 import static org.neo4j.register.Register.DoubleLongRegister;
 
 public class CountsStoreWriter implements Writer<CountsKey, CopyableDoubleLongRegister>, CountsVisitor

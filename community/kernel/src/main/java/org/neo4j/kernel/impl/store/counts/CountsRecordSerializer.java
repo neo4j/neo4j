@@ -23,13 +23,16 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
+import org.neo4j.kernel.impl.store.counts.keys.CountsKeyType;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordSerializer;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
 import org.neo4j.register.Register.CopyableDoubleLongRegister;
-import static org.neo4j.kernel.impl.store.counts.CountsKey.indexCountsKey;
-import static org.neo4j.kernel.impl.store.counts.CountsKey.indexSampleKey;
-import static org.neo4j.kernel.impl.store.counts.CountsKey.nodeKey;
-import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipKey;
+
+import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexCountsKey;
+import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexSampleKey;
+import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
+import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relationshipKey;
 
 /**
  * Node Key:
@@ -84,7 +87,7 @@ import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipKey;
  *  unique count    sample size
  * <p/>
  *
- * 'entry type' - see {@link org.neo4j.kernel.impl.store.counts.CountsKeyType}
+ * 'entry type' - see {@link org.neo4j.kernel.impl.store.counts.keys.CountsKeyType}
  */
 public final class CountsRecordSerializer implements KeyValueRecordSerializer<CountsKey, CopyableDoubleLongRegister>
 {

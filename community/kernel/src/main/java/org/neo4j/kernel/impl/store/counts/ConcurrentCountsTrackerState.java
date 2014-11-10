@@ -29,7 +29,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.kernel.impl.store.counts.CountsKey.IndexCountsKey;
+import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
+import org.neo4j.kernel.impl.store.counts.keys.IndexCountsKey;
+import org.neo4j.kernel.impl.store.counts.keys.IndexSampleKey;
+import org.neo4j.kernel.impl.store.counts.keys.NodeKey;
+import org.neo4j.kernel.impl.store.counts.keys.RelationshipKey;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
 import org.neo4j.register.ConcurrentRegisters;
@@ -37,10 +41,6 @@ import org.neo4j.register.Register.CopyableDoubleLongRegister;
 import org.neo4j.register.Register.DoubleLong;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
-
-import static org.neo4j.kernel.impl.store.counts.CountsKey.IndexSampleKey;
-import static org.neo4j.kernel.impl.store.counts.CountsKey.NodeKey;
-import static org.neo4j.kernel.impl.store.counts.CountsKey.RelationshipKey;
 
 class ConcurrentCountsTrackerState implements CountsTrackerState
 {

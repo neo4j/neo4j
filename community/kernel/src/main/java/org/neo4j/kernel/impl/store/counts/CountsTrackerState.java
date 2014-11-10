@@ -23,10 +23,11 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.store.counts.CountsKey.IndexCountsKey;
-import org.neo4j.kernel.impl.store.counts.CountsKey.IndexSampleKey;
-import org.neo4j.kernel.impl.store.counts.CountsKey.NodeKey;
-import org.neo4j.kernel.impl.store.counts.CountsKey.RelationshipKey;
+import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
+import org.neo4j.kernel.impl.store.counts.keys.IndexCountsKey;
+import org.neo4j.kernel.impl.store.counts.keys.IndexSampleKey;
+import org.neo4j.kernel.impl.store.counts.keys.NodeKey;
+import org.neo4j.kernel.impl.store.counts.keys.RelationshipKey;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
 import org.neo4j.register.Register.CopyableDoubleLongRegister;
