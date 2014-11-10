@@ -25,7 +25,7 @@ import java.lang.Override;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
-import org.neo4j.io.pagecache.impl.muninn.jsr166e.StampedLock;
+import org.neo4j.jsr166e.StampedLock;
 import org.neo4j.io.pagecache.monitoring.PageFaultEvent;
 import org.neo4j.io.pagecache.monitoring.PinEvent;
 

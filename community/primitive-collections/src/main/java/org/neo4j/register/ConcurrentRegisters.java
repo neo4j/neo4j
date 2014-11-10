@@ -19,7 +19,7 @@
  */
 package org.neo4j.register;
 
-import org.neo4j.io.pagecache.impl.muninn.jsr166e.StampedLock;
+import org.neo4j.jsr166e.StampedLock;
 import org.neo4j.register.Register.CopyableDoubleLongRegister;
 
 public class ConcurrentRegisters

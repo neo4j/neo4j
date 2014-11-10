@@ -31,7 +31,7 @@ import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.impl.muninn.jsr166e.StampedLock;
+import org.neo4j.jsr166e.StampedLock;
 import org.neo4j.io.pagecache.monitoring.PageFaultEvent;
 
 final class MuninnPagedFile implements PagedFile

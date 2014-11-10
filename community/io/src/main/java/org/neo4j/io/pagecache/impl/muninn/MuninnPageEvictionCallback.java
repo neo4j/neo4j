@@ -22,7 +22,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.io.pagecache.Page;
 import org.neo4j.io.pagecache.PageEvictionCallback;
-import org.neo4j.io.pagecache.impl.muninn.jsr166e.StampedLock;
+import org.neo4j.jsr166e.StampedLock;
 
 final class MuninnPageEvictionCallback implements PageEvictionCallback
 {

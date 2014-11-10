@@ -27,13 +27,14 @@
 
 // Based on revision 1.1: http://gee.cs.oswego.edu/cgi-bin/viewcvs.cgi/jsr166/src/test/tck-jsr166e/StampedLockTest.java?revision=1.1&view=markup
 
-package org.neo4j.io.pagecache.impl.muninn.jsr166e;
+package org.neo4j.jsr166e;
 
 import java.util.concurrent.CountDownLatch;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-public class StampedLockTest extends JSR166TestCase {
+public class StampedLockTest extends JSR166TestCase
+{
 
     /**
      * A runnable calling writeLockInterruptibly

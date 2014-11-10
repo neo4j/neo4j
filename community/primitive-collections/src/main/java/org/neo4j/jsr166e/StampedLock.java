@@ -25,7 +25,7 @@
  */
 
 // Based on backported StampedLock revision 1.38: http://gee.cs.oswego.edu/cgi-bin/viewcvs.cgi/jsr166/src/jsr166e/StampedLock.java?revision=1.38&view=markup
-package org.neo4j.io.pagecache.impl.muninn.jsr166e;
+package org.neo4j.jsr166e;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
