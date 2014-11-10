@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.stats.Keys;
 import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
@@ -37,7 +36,7 @@ public class StageTest
     {
         // GIVEN
         Configuration config = new Configuration.Default();
-        Stage stage = new Stage( new DevNullLoggingService(), "Test stage", config );
+        Stage stage = new Stage( "Test stage", config );
         int batchSize = 10;
         long batches = 1000;
         final long items = batches*batchSize;

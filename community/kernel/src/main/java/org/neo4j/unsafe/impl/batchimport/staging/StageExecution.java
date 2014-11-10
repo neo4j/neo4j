@@ -22,8 +22,6 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 import java.util.Collection;
 
 import org.neo4j.helpers.collection.IterableWrapper;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Logging;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
 
@@ -37,16 +35,14 @@ public class StageExecution implements StageControl
     private final String stageName;
     private final Configuration config;
     private final Collection<Step<?>> pipeline;
-    private final StringLogger logger;
     private volatile Throwable panicCause;
     private long startTime;
 
-    public StageExecution( Logging logging, String stageName, Configuration config, Collection<Step<?>> pipeline )
+    public StageExecution( String stageName, Configuration config, Collection<Step<?>> pipeline )
     {
         this.stageName = stageName;
         this.config = config;
         this.pipeline = pipeline;
-        this.logger = logging.getMessagesLog( getClass() );
     }
 
     public boolean stillExecuting()
@@ -106,9 +102,6 @@ public class StageExecution implements StageControl
     @Override
     public void panic( Throwable cause )
     {
-        cause.printStackTrace();
-        logger.error( "Panic", cause );
-
         panicCause = cause;
         for ( Step<?> step : pipeline )
         {

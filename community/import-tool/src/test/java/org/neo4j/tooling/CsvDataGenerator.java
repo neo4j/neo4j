@@ -236,6 +236,7 @@ public class CsvDataGenerator
     private static void writeData( String header, Iterator<String> iterator, File file,
             ProgressListener progress, int count ) throws IOException
     {
+        System.out.println( "Writing " + file.getAbsolutePath() );
         try ( Writer out = new BufferedWriter( new FileWriter( file ), 102*1024*10 ) )
         {
             out.write( header );
