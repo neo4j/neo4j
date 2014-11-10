@@ -215,6 +215,27 @@ public interface Status
         }
     }
 
+    enum Security implements Status
+    {
+        // client
+        AuthenticationFailed( ClientError, "The client provided an incorrect username and/or password." ),
+        AuthorizationFailed( ClientError, "The client provided an invalid authorization token, or does not have privileges to perform the operation requested." ),
+        AuthenticationRateLimit( ClientError, "The client has provided incorrect authentication details too many times in a row. You will be allowed to try again in a few seconds." );
+
+        private final Code code;
+
+        @Override
+        public Code code()
+        {
+            return code;
+        }
+
+        private Security( Classification classification, String description )
+        {
+            this.code = new Code( classification, this, description );
+        }
+    }
+
     enum General implements Status
     {
         ReadOnly( ClientError, "This is a read only database, writing or modifying the database is not allowed." ),
@@ -374,5 +395,10 @@ public interface Status
         {
             return rollbackTransaction;
         }
+    }
+
+    interface HasStatus
+    {
+        Status status();
     }
 }

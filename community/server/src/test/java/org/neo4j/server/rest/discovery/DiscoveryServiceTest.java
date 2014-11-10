@@ -19,15 +19,6 @@
  */
 package org.neo4j.server.rest.discovery;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import java.net.URI;
 
 import javax.ws.rs.core.Response;
@@ -35,10 +26,19 @@ import javax.ws.rs.core.Response;
 import org.apache.commons.configuration.Configuration;
 import org.junit.Ignore;
 import org.junit.Test;
-
+import org.neo4j.helpers.Clock;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
+import org.neo4j.server.security.auth.InMemoryUserRepository;
+import org.neo4j.server.security.auth.SecurityCentral;
 import org.neo4j.test.server.EntityOutputFormat;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 public class DiscoveryServiceTest
 {
@@ -50,14 +50,15 @@ public class DiscoveryServiceTest
         when(
                 mockConfig.getString( Configurator.MANAGEMENT_PATH_PROPERTY_KEY,
                         Configurator.DEFAULT_MANAGEMENT_API_PATH ) ).thenReturn( managementUri );
+        when(mockConfig.getBoolean( Configurator.AUTHORIZATION_ENABLED_PROPERTY_KEY )).thenReturn( false );
         String dataUri = "/data";
         when( mockConfig.getString( Configurator.REST_API_PATH_PROPERTY_KEY, Configurator.DEFAULT_DATA_API_PATH ) ).thenReturn(
                 dataUri );
 
         String baseUri = "http://www.example.com";
         DiscoveryService ds = new DiscoveryService( mockConfig, new EntityOutputFormat( new JsonFormat(), new URI(
-                baseUri ), null ) );
-        Response response = ds.getDiscoveryDocument();
+                baseUri ), null ), new SecurityCentral( Clock.SYSTEM_CLOCK, new InMemoryUserRepository() ));
+        Response response = ds.getDiscoveryDocument("");
 
         String json = new String( (byte[]) response.getEntity() );
 
@@ -86,8 +87,8 @@ public class DiscoveryServiceTest
 
         String baseUri = "http://www.example.com";
         DiscoveryService ds = new DiscoveryService( mockConfig, new EntityOutputFormat( new JsonFormat(), new URI(
-                baseUri ), null ) );
-        Response response = ds.getDiscoveryDocument();
+                baseUri ), null ), new SecurityCentral( Clock.SYSTEM_CLOCK, new InMemoryUserRepository() ));
+        Response response = ds.getDiscoveryDocument("");
 
         String json = new String( (byte[]) response.getEntity() );
 
@@ -108,7 +109,7 @@ public class DiscoveryServiceTest
 
         String baseUri = "http://www.example.com:5435";
         DiscoveryService ds = new DiscoveryService( mockConfig, new EntityOutputFormat( new JsonFormat(), new URI(
-                baseUri ), null ) );
+                baseUri ), null ), new SecurityCentral( Clock.SYSTEM_CLOCK, new InMemoryUserRepository() ));
 
         Response response = ds.redirectToBrowser();
 

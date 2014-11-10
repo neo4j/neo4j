@@ -19,18 +19,19 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import static java.nio.ByteBuffer.wrap;
-
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+
+import static java.nio.ByteBuffer.wrap;
 
 /**
  * Utility to convert and print binary data in a human readable way.
  */
 public class BytePrinter
 {
+    final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
 
     /**
      * Print a full byte array as nicely formatted groups of hex numbers.
@@ -194,6 +195,23 @@ public class BytePrinter
     public static String hex(byte[] bytes)
     {
         return hex( wrap( bytes ) );
+    }
+
+    /**
+     * Converts a byte array to a hexadecimal string. Unlike other methods in this utility class, it does not introduce
+     * newlines or spaces:
+     *
+     * 0102030405060708
+     */
+    public static String compactHex( byte[] bytes )
+    {
+        char[] hexChars = new char[bytes.length * 2];
+        for ( int j = 0; j < bytes.length; j++ ) {
+            int v = bytes[j] & 0xFF;
+            hexChars[j * 2] = hexArray[v >>> 4];
+            hexChars[j * 2 + 1] = hexArray[v & 0x0F];
+        }
+        return new String(hexChars);
     }
 
 }

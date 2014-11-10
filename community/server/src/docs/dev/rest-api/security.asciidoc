@@ -1,0 +1,50 @@
+[[rest-api-security]]
+== Neo4j Authentication and Authorization ==
+
+Note: This is a new feature, your feedback is encouraged.
+
+In order to prevent unauthorized access to Neo4j, the REST API supports authorization and authentication.
+When enabled, requests to the REST API must be authorized by an +Authorization Token+.
+The token is acquired by authenticating, and can then be used to gain access to Neo4j.
+
+In general, it is recommended that you give the authorization token, rather than your username and password, to your Neo4j Driver.
+This way the driver can access Neo4j, but is not allowed to change your password or invalidate the token.
+
+When Neo4j is first installed you can authenticate with the default user 'neo4j' and the default password 'neo4j'.
+However, the default password must be <<rest-api-required-password-changes,changed>> before an authorization token is granted.
+This can easily be done via the Neo4j Browser, or via direct HTTP calls.
+For automated deployments, you may also <<rest-api-security-copy-config,copy security configuration from another neo4j instance>>.
+
+The authorization token is local to each Neo4j instance.
+If you wish to have multiple instances, such as a set of cluster members, accept the same authorization token see <<rest-api-setting-authorization-token>>.
+Or, alternatively, see <<rest-api-security-copy-config>>.
+
+To determine if security is enabled and to check if an authorization token is valid, see <<rest-api-get-current-authorization-status>>.
+
+include::authenticate-to-obtain-authorization-token.asciidoc[]
+
+include::using-the-authorization-token.asciidoc[]
+
+include::required-password-changes.asciidoc[]
+
+include::changing-your-password.asciidoc[]
+
+include::get-current-authorization-status.asciidoc[]
+
+include::get-authorization-status-when-auth-is-disabled.asciidoc[]
+
+include::invalidating-the-authorization-token.asciidoc[]
+
+include::setting-authorization-token.asciidoc[]
+
+include::attempting-to-get-authorization-status-while-unauthorized.asciidoc[]
+
+include::incorrect-username-or-password.asciidoc[]
+
+[[rest-api-security-copy-config]]
+=== Copying security configuration from one instance to another ===
+
+In many cases, such as automated deployments, you may want to start a Neo4j instance with pre-configured authentication and authorization.
+This is possible by copying the authentication database file from a pre-existing Neo4j instance to your new instance.
+
+By default, this file is located at `data/dbms/auth.db`, and simply copying that file into a new neo4j instance will transfer your password and authorization token.
