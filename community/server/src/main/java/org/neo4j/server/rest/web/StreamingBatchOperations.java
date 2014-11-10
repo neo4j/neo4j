@@ -28,6 +28,7 @@ import java.util.Map;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.UriInfo;
 
@@ -51,10 +52,11 @@ public class StreamingBatchOperations extends BatchOperations
         super( webServer );
     }
 
-    public void readAndExecuteOperations( UriInfo uriInfo, HttpHeaders httpHeaders, InputStream body, ServletOutputStream output ) throws IOException, ServletException {
+    public void readAndExecuteOperations( UriInfo uriInfo, HttpHeaders httpHeaders, HttpServletRequest req,
+                                          InputStream body, ServletOutputStream output ) throws IOException, ServletException {
         results = new StreamingBatchOperationResults(jsonFactory.createJsonGenerator(output),output);
         Map<Integer, String> locations = results.getLocations();
-        parseAndPerform( uriInfo, httpHeaders, body, locations );
+        parseAndPerform( uriInfo, httpHeaders, req, body, locations );
         results.close();
     }
 /*

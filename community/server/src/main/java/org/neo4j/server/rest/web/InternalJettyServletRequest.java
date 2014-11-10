@@ -32,6 +32,7 @@ import java.util.Map;
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.MediaType;
 
 import org.eclipse.jetty.http.HttpURI;
@@ -40,7 +41,6 @@ import org.eclipse.jetty.server.Response;
 
 public class InternalJettyServletRequest extends Request
 {
-
     private class Input extends ServletInputStream
     {
 
@@ -85,9 +85,18 @@ public class InternalJettyServletRequest extends Request
     private final String method;
     private final InternalJettyServletResponse response;
 
+    /** Optional, another HttpServletRequest to use to pull metadata, like remote address and port, out of. */
+    private HttpServletRequest outerRequest;
+
     public InternalJettyServletRequest( String method, String uri, String body, InternalJettyServletResponse res ) throws UnsupportedEncodingException
     {
         this( method, new HttpURI( uri ), body, new Cookie[] {}, MediaType.APPLICATION_JSON, "UTF-8", res );
+    }
+
+    public InternalJettyServletRequest( String method, String uri, String body, InternalJettyServletResponse res, HttpServletRequest outerReq ) throws UnsupportedEncodingException
+    {
+        this( method, new HttpURI( uri ), body, new Cookie[] {}, MediaType.APPLICATION_JSON, "UTF-8", res);
+        this.outerRequest = outerReq;
     }
 
     public InternalJettyServletRequest( String method, HttpURI uri, String body, Cookie[] cookies, String contentType, String encoding, InternalJettyServletResponse res )
@@ -157,49 +166,49 @@ public class InternalJettyServletRequest extends Request
     @Override
     public String getRemoteAddr()
     {
-        return null;
+        return outerRequest == null ? null : outerRequest.getRemoteAddr();
     }
 
     @Override
     public String getRemoteHost()
     {
-        return null;
+        return outerRequest == null ? null : outerRequest.getRemoteHost();
     }
 
     @Override
     public boolean isSecure()
     {
-        return false;
+        return outerRequest != null && outerRequest.isSecure();
     }
 
     @Override
     public int getRemotePort()
     {
-        return 0;
+        return outerRequest == null ? -1 : outerRequest.getRemotePort();
     }
 
     @Override
     public String getLocalName()
     {
-        return null;
+        return outerRequest == null ? null : outerRequest.getLocalName();
     }
 
     @Override
     public String getLocalAddr()
     {
-        return null;
+        return outerRequest == null ? null : outerRequest.getLocalAddr();
     }
 
     @Override
     public int getLocalPort()
     {
-        return 0;
+        return outerRequest == null ? -1 : outerRequest.getLocalPort();
     }
 
     @Override
     public String getAuthType()
     {
-        return null;
+        return outerRequest == null ? null : outerRequest.getAuthType();
     }
 
     @Override
