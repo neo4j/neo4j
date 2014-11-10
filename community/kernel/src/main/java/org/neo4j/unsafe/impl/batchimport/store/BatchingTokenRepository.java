@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.store;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
@@ -70,14 +71,39 @@ public abstract class BatchingTokenRepository<T extends TokenRecord>
         return id;
     }
 
+    /**
+     * Converts label names into label ids. Also sorts and deduplicates.
+     */
     public long[] getOrCreateIds( String[] labels )
     {
         long[] result = new long[labels.length];
-        for ( int i = 0; i < labels.length; i++ )
+        int from, to;
+        for ( from = 0, to = 0; from < labels.length; from++ )
         {
-            result[i] = getOrCreateId( labels[i] );
+            int id = getOrCreateId( labels[from] );
+            if ( !contains( result, id, to ) )
+            {
+                result[to++] = id;
+            }
         }
+        if ( to < from )
+        {
+            result = Arrays.copyOf( result, to );
+        }
+        Arrays.sort( result );
         return result;
+    }
+
+    private boolean contains( long[] array, long id, int arrayLength )
+    {
+        for ( int i = 0; i < arrayLength; i++ )
+        {
+            if ( array[i] == id )
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     public int getHighId()

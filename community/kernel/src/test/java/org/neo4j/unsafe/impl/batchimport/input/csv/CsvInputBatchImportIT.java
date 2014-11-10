@@ -25,9 +25,11 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -67,10 +69,10 @@ import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.nested;
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.values;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
@@ -247,7 +249,7 @@ public class CsvInputBatchImportIT
             {
                 String name = (String) node.getProperty( "name" );
                 String[] labels = expectedNodeNames.remove( name );
-                assertArrayEquals( labels, names( node.getLabels() ) );
+                assertEquals( asSet( labels ), names( node.getLabels() ) );
             }
             assertEquals( 0, expectedNodeNames.size() );
 
@@ -379,14 +381,14 @@ public class CsvInputBatchImportIT
         };
     }
 
-    private String[] names( Iterable<Label> labels )
+    private Set<String> names( Iterable<Label> labels )
     {
-        List<String> names = new ArrayList<>();
+        Set<String> names = new HashSet<>();
         for ( Label label : labels )
         {
             names.add( label.name() );
         }
-        return names.toArray( new String[names.size()] );
+        return names;
     }
 
     private void buildUpExpectedData(
@@ -420,19 +422,19 @@ public class CsvInputBatchImportIT
             // Let's do what CountsState#addRelationship does, roughly
             relationshipCounts.get( null ).get( null ).get( null ).incrementAndGet();
             relationshipCounts.get( null ).get( relationship.type() ).get( null ).incrementAndGet();
-            for ( String startNodeLabelName : startNode.labels() )
+            for ( String startNodeLabelName : asSet( startNode.labels() ) )
             {
                 Map<String, Map<String, AtomicLong>> startLabelCounts = relationshipCounts.get( startNodeLabelName );
                 startLabelCounts.get( null ).get( null ).incrementAndGet();
                 Map<String, AtomicLong> typeCounts = startLabelCounts.get( relationship.type() );
                 typeCounts.get( null ).incrementAndGet();
-                for ( String endNodeLabelName : endNode.labels() )
+                for ( String endNodeLabelName : asSet( endNode.labels() ) )
                 {
                     startLabelCounts.get( null ).get( endNodeLabelName ).incrementAndGet();
                     typeCounts.get( endNodeLabelName ).incrementAndGet();
                 }
             }
-            for ( String endNodeLabelName : endNode.labels() )
+            for ( String endNodeLabelName : asSet( endNode.labels() ) )
             {
                 relationshipCounts.get( null ).get( null ).get( endNodeLabelName ).incrementAndGet();
                 relationshipCounts.get( null ).get( relationship.type() ).get( endNodeLabelName ).incrementAndGet();
@@ -442,9 +444,13 @@ public class CsvInputBatchImportIT
 
     private void countNodeLabels( Map<String, AtomicLong> nodeCounts, String[] labels )
     {
+        Set<String> seen = new HashSet<>();
         for ( String labelName : labels )
         {
-            nodeCounts.get( labelName ).incrementAndGet();
+            if ( seen.add( labelName ) )
+            {
+                nodeCounts.get( labelName ).incrementAndGet();
+            }
         }
     }
 
