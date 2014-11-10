@@ -55,7 +55,6 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
-
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.server.ServerTestUtils.asOneLine;
 import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
@@ -215,6 +214,8 @@ public class CommunityServerBuilder
                 properties.put( Configurator.WEBSERVER_HTTPS_ENABLED_PROPERTY_KEY, "false" );
             }
         }
+
+        properties.put( Configurator.AUTHORIZATION_FILE_LOCATION_KEY, "neo4j-home/data/dbms/authorization" );
 
         for ( Object key : arbitraryProperties.keySet() )
         {

@@ -110,6 +110,16 @@ public class HTTP
         return BUILDER.GET( uri );
     }
 
+    public static Response request( String method, String uri )
+    {
+        return BUILDER.request( method, uri );
+    }
+
+    public static Response request( String method, String uri, Object payload )
+    {
+        return BUILDER.request( method, uri, payload );
+    }
+
     public static class Builder
     {
         private final Map<String, String> headers;
@@ -146,51 +156,55 @@ public class HTTP
 
         public Response POST( String uri )
         {
-            return exec( "POST", uri );
+            return request( "POST", uri );
         }
 
         public Response POST( String uri, Object payload )
         {
-            return exec( "POST", uri, payload );
+            return request( "POST", uri, payload );
         }
 
         public Response POST( String uri, RawPayload payload )
         {
-            return exec( "POST", uri, payload );
+            return request( "POST", uri, payload );
         }
 
         public Response PUT( String uri )
         {
-            return exec( "PUT", uri );
+            return request( "PUT", uri );
         }
 
         public Response PUT( String uri, Object payload )
         {
-            return exec( "PUT", uri, payload );
+            return request( "PUT", uri, payload );
         }
 
         public Response PUT( String uri, RawPayload payload )
         {
-            return exec( "PUT", uri, payload );
+            return request( "PUT", uri, payload );
         }
 
         public Response DELETE( String uri )
         {
-            return exec( "DELETE", uri );
+            return request( "DELETE", uri );
         }
 
         public Response GET( String uri )
         {
-            return exec( "GET", uri );
+            return request( "GET", uri );
         }
 
-        public Response exec( String method, String uri )
+        public Response request( String method, String uri )
         {
             return new Response( CLIENT.handle( build().build( buildUri( uri ), method ) ) );
         }
 
-        public Response exec( String method, String uri, Object payload )
+        public Response request( String method, String uri, Object payload )
         {
+            if(payload == null)
+            {
+                return request(method, uri);
+            }
             String jsonPayload = payload instanceof RawPayload ? ((RawPayload) payload).get() : createJsonFrom(
                     payload );
             ClientRequest.Builder lastBuilder = build().entity( jsonPayload, MediaType.APPLICATION_JSON_TYPE );
@@ -295,6 +309,11 @@ public class HTTP
         public JsonNode get(String fieldName) throws JsonParseException
         {
             return JsonHelper.jsonNode( entity ).get( fieldName );
+        }
+
+        public String header( String name )
+        {
+            return response.getHeaders().getFirst( name );
         }
 
         @Override

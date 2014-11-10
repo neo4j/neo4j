@@ -1,0 +1,33 @@
+[[rest-api-security]]
+== Neo4j Authentication and Authorization ==
+
+In order to prevent unauthorized access to Neo4j, the REST API supports authorization and authentication.
+When enabled, requests to the REST API must be authorized by an +Authorization Token+.
+The token is acquired by authenticating, and can then be used to gain access to Neo4j.
+
+When Neo4j is first installed you can authenticate with the default user 'neo4j' and the default password 'neo4j'.
+However, the default password must be <<rest-api-required-password-changes,changed>> before an authorization token is granted.
+This can easily be done via the Neo4j Browser, or via direct HTTP calls.
+
+The authorization token is local to each Neo4j instance.
+If you wish to have multiple instances, such as a set of cluster members, accept the same authorization token see <<rest-api-setting-authorization-token>>.
+
+include::authenticate-to-obtain-authorization-token.asciidoc[]
+
+include::using-the-authorization-token.asciidoc[]
+
+include::required-password-changes.asciidoc[]
+
+include::changing-your-password.asciidoc[]
+
+include::get-current-authorization-status.asciidoc[]
+
+include::getting-authorization-status-when-auth-is-disabled.asciidoc[]
+
+include::invalidating-the-authorization-token.asciidoc[]
+
+include::setting-authorization-token.asciidoc[]
+
+include::attempting-to-get-authorization-status-while-unauthorized.asciidoc[]
+
+include::incorrect-username-or-password.asciidoc[]

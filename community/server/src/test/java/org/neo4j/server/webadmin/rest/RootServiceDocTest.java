@@ -48,7 +48,7 @@ public class RootServiceDocTest
         URI uri = new URI( "http://example.org:7474/" );
         when( uriInfo.getBaseUri() ).thenReturn( uri );
 
-        RootService svc = new RootService( new CommunityNeoServer( mock( Configurator.class ),
+        RootService svc = new RootService( new CommunityNeoServer( Configurator.EMPTY,
                 DevNullLoggingService.DEV_NULL ) );
         EntityOutputFormat output = new EntityOutputFormat( new JsonFormat(), null, null );
         Response serviceDefinition = svc.getServiceDefinition( uriInfo, output );

@@ -44,6 +44,9 @@ import org.neo4j.server.web.WebServer;
 import static org.neo4j.server.JAXRSHelper.listFrom;
 import static org.neo4j.server.configuration.Configurator.WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY;
 
+/**
+ * Mounts the database REST API.
+ */
 public class RESTApiModule implements ServerModule
 {
     private PluginManager plugins;
