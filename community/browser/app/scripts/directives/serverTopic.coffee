@@ -18,28 +18,24 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-'use strict'
+'use strict';
 
-angular.module('neo4jApp.controllers', ['neo4jApp.utils'])
-angular.module('neo4jApp.directives', ['ui.bootstrap.dialog'])
-angular.module('neo4jApp.filters', [])
-angular.module('neo4jApp.services', ['LocalStorageModule', 'neo4jApp.settings', 'neo4jApp.utils', 'base64'])
+# Requires jQuery
+angular.module('neo4jApp.directives')
+  .directive('serverTopic', ['$rootScope', 'Frame','Settings', ($rootScope, Frame, Settings) ->
+    restrict: 'A'
+    link: (scope, element, attrs) ->
 
-app = angular.module('neo4jApp', [
-  'ngAnimate'
-  'neo4jApp.controllers'
-  'neo4jApp.directives'
-  'neo4jApp.filters'
-  'neo4jApp.services'
-  'neo4jApp.animations'
-  'ui.bootstrap.dropdownToggle'
-  'ui.bootstrap.position'
-  'ui.bootstrap.tooltip'
-  'ui.bootstrap.popover'
-  'ui.bootstrap.tabs'
-  'ui.bootstrap.carousel'
-  'ui.codemirror'
-  'ui.sortable'
-  'angularMoment'
-  'ngSanitize'
-])
+      topic = attrs.serverTopic
+      command = "server"
+
+      if topic
+        element.on 'click', (e) ->
+          e.preventDefault()
+
+          topic = topic.toLowerCase().trim()
+          Frame.create(input: "#{Settings.cmdchar}#{command} #{topic}")
+
+          $rootScope.$apply() unless $rootScope.$$phase
+
+  ])
