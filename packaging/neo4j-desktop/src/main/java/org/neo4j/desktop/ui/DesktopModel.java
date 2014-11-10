@@ -33,8 +33,7 @@ import java.util.List;
 import org.neo4j.desktop.config.Installation;
 import org.neo4j.desktop.runtime.DesktopConfigurator;
 import org.neo4j.kernel.Version;
-import org.neo4j.server.configuration.Configurator;
-
+import org.neo4j.server.configuration.ConfigurationBuilder;
 import static java.lang.String.format;
 
 public class DesktopModel
@@ -48,11 +47,10 @@ public class DesktopModel
         this.installation = installation;
         this.serverConfigurator = new DesktopConfigurator( installation );
 
-
         serverConfigurator.setDatabaseDirectory( installation.getDatabaseDirectory() );
     }
 
-    public Configurator getServerConfigurator() {
+    public ConfigurationBuilder getServerConfigurator() {
         serverConfigurator.refresh();
         for(DesktopModelListener listener : listeners) {
             listener.desktopModelChanged(this);

@@ -25,18 +25,19 @@ import java.io.IOException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import org.apache.commons.configuration.Configuration;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.server.configuration.ServerSettings;
+
 import org.apache.commons.io.FileUtils;
-import org.neo4j.server.configuration.Configurator;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
 public class EnsurePreparedForHttpLogging implements PreflightTask
 {
     private String failureMessage = "";
-	private Configuration config;
+	private Config config;
 
-    public EnsurePreparedForHttpLogging(Configuration config)
+    public EnsurePreparedForHttpLogging( Config config )
     {
     	this.config = config;
     }
@@ -44,15 +45,14 @@ public class EnsurePreparedForHttpLogging implements PreflightTask
     @Override
     public boolean run()
     {
-        boolean enabled = config.getBoolean( Configurator.HTTP_LOGGING, Configurator.DEFAULT_HTTP_LOGGING );
-
+        boolean enabled = config.get( ServerSettings.http_logging_enabled );
+        
         if ( !enabled )
         {
             return true;
         }
 
-        File logLocation = extractLogLocationFromConfig(config.getString( Configurator.HTTP_LOG_CONFIG_LOCATION ) );
-
+        File logLocation = extractLogLocationFromConfig( config.get( ServerSettings.http_log_config_File ).getAbsolutePath() );
 
         if ( logLocation != null )
         {

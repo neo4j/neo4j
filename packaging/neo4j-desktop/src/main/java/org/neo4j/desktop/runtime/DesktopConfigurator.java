@@ -22,28 +22,25 @@ package org.neo4j.desktop.runtime;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import org.apache.commons.configuration.CompositeConfiguration;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.MapConfiguration;
 
 import org.neo4j.desktop.config.Installation;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
-import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
-
+import org.neo4j.server.configuration.ServerSettings;
 import static org.neo4j.helpers.collection.MapUtil.load;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class DesktopConfigurator implements Configurator
+public class DesktopConfigurator implements ConfigurationBuilder
 {
-    private final CompositeConfiguration compositeConfig = new CompositeConfiguration();
+    private final Config compositeConfig = new Config();
 
     private final Map<String, String> map = new HashMap<>();
     private final Installation installation;
 
-    private Configurator propertyFileConfig;
+    private ConfigurationBuilder propertyFileConfig;
 
     public DesktopConfigurator( Installation installation )
     {
@@ -51,18 +48,19 @@ public class DesktopConfigurator implements Configurator
         refresh();
     }
 
-    public void refresh() {
-        compositeConfig.clear();
-
-        compositeConfig.addConfiguration(new MapConfiguration( map ));
+    public void refresh()
+    {
+        Map<String,String> newMap = new HashMap( map );
 
         // re-read server properties, then add to config
         propertyFileConfig = new PropertyFileConfigurator( installation.getServerConfigurationsFile() );
-        compositeConfig.addConfiguration( propertyFileConfig.configuration() );
+        newMap.putAll( propertyFileConfig.configuration().getParams() );
+
+        this.compositeConfig.applyChanges( newMap );
     }
 
     @Override
-    public Configuration configuration()
+    public Config configuration()
     {
         return compositeConfig;
     }
@@ -80,18 +78,6 @@ public class DesktopConfigurator implements Configurator
         }
     }
 
-    @Override
-    public List<ThirdPartyJaxRsPackage> getThirdpartyJaxRsClasses()
-    {
-        return propertyFileConfig.getThirdpartyJaxRsClasses();
-    }
-
-    @Override
-    public List<ThirdPartyJaxRsPackage> getThirdpartyJaxRsPackages()
-    {
-        return propertyFileConfig.getThirdpartyJaxRsPackages();
-    }
-
     public void setDatabaseDirectory( File directory ) {
         File neo4jProperties = new File( directory, Installation.NEO4J_PROPERTIES_FILENAME );
 
@@ -104,7 +90,7 @@ public class DesktopConfigurator implements Configurator
     }
 
     public int getServerPort() {
-        return configuration().getInt( Configurator.WEBSERVER_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_PORT );
+        return configuration().get( ServerSettings.webserver_port );
     }
 
     public File getDatabaseConfigurationFile() {

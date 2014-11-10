@@ -93,8 +93,8 @@ public class ExecutionTimeLimitTest
         };
 
         ServerConfigurator config = new ServerConfigurator( db );
-        config.configuration().setProperty( Configurator.WEBSERVER_PORT_PROPERTY_KEY, 7476 );
-        config.configuration().setProperty( Configurator.WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY, 1000 );
+        config.setProperty( Configurator.WEBSERVER_PORT_PROPERTY_KEY, "7476" );
+        config.setProperty( Configurator.WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY, "1000s" );
         testBootstrapper = new WrappingNeoServerBootstrapper( db, config );
         testBootstrapper.start();
     }

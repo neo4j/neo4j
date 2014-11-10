@@ -30,7 +30,6 @@ import org.junit.rules.TemporaryFolder;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.logging.BufferingConsoleLogger;
-import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.test.Mute;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -98,7 +97,7 @@ public class PropertyFileConfiguratorTest
                 .build();
 
         BufferingConsoleLogger logger = new BufferingConsoleLogger();
-        new PropertyFileConfigurator( Validator.NO_VALIDATION, emptyPropertyFile, logger );
+        new PropertyFileConfigurator( emptyPropertyFile, logger );
 
         assertThat( logger.toString(), containsString( String.format(
                 "No database tuning file explicitly set, defaulting to [%s]",
@@ -115,7 +114,7 @@ public class PropertyFileConfiguratorTest
                 .build();
         PropertyFileConfigurator propertyFileConfigurator = new PropertyFileConfigurator( propertyFile );
 
-        List<ThirdPartyJaxRsPackage> thirdpartyJaxRsPackages = propertyFileConfigurator.getThirdpartyJaxRsPackages();
+        List<ThirdPartyJaxRsPackage> thirdpartyJaxRsPackages = propertyFileConfigurator.configuration().get( ServerSettings.third_party_packages );
 
         assertEquals( 3, thirdpartyJaxRsPackages.size() );
         assertEquals( "/extension1", thirdpartyJaxRsPackages.get( 0 ).getMountPoint() );

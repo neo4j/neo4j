@@ -42,16 +42,16 @@ import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.ServerTestUtils;
+import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
-import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecifiedRule;
-import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.LifecycleManagingDatabase;
 import org.neo4j.server.preflight.PreFlightTasks;
 import org.neo4j.server.preflight.PreflightTask;
 import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.web.DatabaseActions;
+import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
 import static java.lang.Boolean.FALSE;
@@ -123,15 +123,14 @@ public class CommunityServerBuilder
         final File configFile = buildBefore();
 
         BufferingConsoleLogger console = new BufferingConsoleLogger();
-        Validator validator = new Validator( new DatabaseLocationMustBeSpecifiedRule() );
-        Configurator configurator = new PropertyFileConfigurator( validator, configFile, console );
+        ConfigurationBuilder configurator = new PropertyFileConfigurator( configFile, console );
         Monitors monitors = new Monitors();
         Logging logging = loggingFactory().create( configurator, monitors );
         console.replayInto( logging.getConsoleLog( getClass() ) );
         return build( configFile, configurator, GraphDatabaseDependencies.newDependencies().logging(logging).monitors(monitors) );
     }
 
-    protected CommunityNeoServer build( File configFile, Configurator configurator, Dependencies dependencies )
+    protected CommunityNeoServer build( File configFile, ConfigurationBuilder configurator, Dependencies dependencies )
     {
         return new TestCommunityNeoServer( configurator, configFile, dependencies );
     }
@@ -454,15 +453,13 @@ public class CommunityServerBuilder
         return persistent ? LoggingFactory.DEFAULT_LOGGING : LoggingFactory.IMPERMANENT_LOGGING;
     }
 
-    protected DatabaseActions createDatabaseActionsObject( Database database, Configurator configurator )
+    protected DatabaseActions createDatabaseActionsObject( Database database, ConfigurationBuilder configurator )
     {
         Clock clockToUse = (clock != null) ? clock : SYSTEM_CLOCK;
 
         return new DatabaseActions(
                 new LeaseManager( clockToUse ),
-                configurator.configuration().getBoolean(
-                        Configurator.SCRIPT_SANDBOXING_ENABLED_KEY,
-                        Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED ), database.getGraph() );
+                configurator.configuration().get( ServerInternalSettings.script_sandboxing_enabled ), database.getGraph() );
     }
 
     protected File buildBefore() throws IOException
@@ -487,7 +484,7 @@ public class CommunityServerBuilder
     {
         private final File configFile;
 
-        private TestCommunityNeoServer( Configurator propertyFileConfigurator, File configFile, Dependencies dependencies )
+        private TestCommunityNeoServer( ConfigurationBuilder propertyFileConfigurator, File configFile, Dependencies dependencies )
         {
             super( propertyFileConfigurator, lifecycleManagingDatabase( persistent ? EMBEDDED : IN_MEMORY_DB ), dependencies );
             this.configFile = configFile;

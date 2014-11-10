@@ -22,12 +22,11 @@ package org.neo4j.server.webadmin.rest;
 import java.net.URI;
 import java.util.List;
 
-import org.apache.commons.configuration.Configuration;
-
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.modules.ServerModule;
+import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.server.web.WebServer;
 
 import static org.neo4j.server.JAXRSHelper.listFrom;
@@ -35,10 +34,10 @@ import static org.neo4j.server.JAXRSHelper.listFrom;
 public class MasterInfoServerModule implements ServerModule
 {
     private final WebServer server;
-    private final Configuration config;
+    private final Config config;
     private final ConsoleLogger log;
 
-    public MasterInfoServerModule( WebServer server, Configuration config, Logging logging )
+    public MasterInfoServerModule( WebServer server, Config config, Logging logging )
     {
         this.server = server;
         this.config = config;
@@ -68,7 +67,6 @@ public class MasterInfoServerModule implements ServerModule
 
     private URI managementApiUri()
     {
-        return URI.create( config.getString( Configurator.MANAGEMENT_PATH_PROPERTY_KEY,
-                Configurator.DEFAULT_MANAGEMENT_API_PATH ) );
+        return config.get( ServerInternalSettings.management_api_path );
     }
 }

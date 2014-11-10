@@ -22,11 +22,10 @@ package org.neo4j.server.modules;
 import java.net.URI;
 import java.util.List;
 
-import org.apache.commons.configuration.Configuration;
-
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.server.webadmin.rest.JmxService;
 import org.neo4j.server.webadmin.rest.MonitorService;
@@ -38,11 +37,11 @@ import static org.neo4j.server.JAXRSHelper.listFrom;
 
 public class ManagementApiModule implements ServerModule
 {
-	private final Configuration config;
+	private final Config config;
 	private final WebServer webServer;
     private final ConsoleLogger log;
 
-    public ManagementApiModule(WebServer webServer, Configuration config, Logging logging)
+    public ManagementApiModule(WebServer webServer, Config config, Logging logging)
     {
     	this.webServer = webServer;
     	this.config = config;
@@ -53,7 +52,7 @@ public class ManagementApiModule implements ServerModule
 	public void start()
     {
         String serverMountPoint = managementApiUri().toString();
-        webServer.addJAXRSClasses( getClassNames(), serverMountPoint, null);
+        webServer.addJAXRSClasses( getClassNames(), serverMountPoint, null );
         log.log( "Mounted management API at [%s]", serverMountPoint );
     }
 
@@ -76,7 +75,6 @@ public class ManagementApiModule implements ServerModule
 
     private URI managementApiUri( )
     {
-        return URI.create( config.getString( Configurator.MANAGEMENT_PATH_PROPERTY_KEY,
-                Configurator.DEFAULT_MANAGEMENT_API_PATH ) );
+        return config.get( ServerInternalSettings.management_api_path );
     }
 }

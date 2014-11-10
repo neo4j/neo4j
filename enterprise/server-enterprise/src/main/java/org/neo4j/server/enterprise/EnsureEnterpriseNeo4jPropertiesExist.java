@@ -25,28 +25,27 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
-import org.apache.commons.configuration.Configuration;
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.server.configuration.Configurator;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.server.NeoServerSettings;
 import org.neo4j.server.preflight.EnsureNeo4jPropertiesExist;
+import org.neo4j.server.web.ServerInternalSettings;
 
 public class EnsureEnterpriseNeo4jPropertiesExist extends EnsureNeo4jPropertiesExist
 {
     public static final String CONFIG_KEY_OLD_SERVER_ID = "ha.machine_id";
 
-    public EnsureEnterpriseNeo4jPropertiesExist( Configuration config )
+    public EnsureEnterpriseNeo4jPropertiesExist( Config config )
     {
         super( config );
     }
 
-    // TODO: This validation should be done by the settings classes in HA 
-    // and by the enterprise server settings, once we have refactored them 
+    // TODO: This validation should be done by the settings classes in HA, once we have refactored them
     // to use the new config scheme.
     @Override
-    protected boolean validateProperties( Properties configProperties )
+    protected boolean validateProperties( Config config )
     {
-        String dbMode = configProperties.getProperty( Configurator.DB_MODE_KEY,
-                EnterpriseNeoServer.SINGLE );
+        String dbMode = config.get( NeoServerSettings.legacy_db_mode );
         dbMode = dbMode.toUpperCase();
         if ( dbMode.equals( EnterpriseNeoServer.SINGLE ) )
         {
@@ -54,70 +53,61 @@ public class EnsureEnterpriseNeo4jPropertiesExist extends EnsureNeo4jPropertiesE
         }
         if ( !dbMode.equals( EnterpriseNeoServer.HA ) )
         {
-            failureMessage = String.format( "Illegal value for %s \"%s\" in %s", Configurator.DB_MODE_KEY, dbMode,
-                    Configurator.NEO_SERVER_CONFIG_FILE_KEY );
+            failureMessage = String.format( "Illegal value for %s \"%s\" in %s", NeoServerSettings.legacy_db_mode.name(), dbMode,
+                    ServerInternalSettings.SERVER_CONFIG_FILE_KEY );
             return false;
         }
 
-        String dbTuningFilename = configProperties.getProperty( Configurator.DB_TUNING_PROPERTY_FILE_KEY );
-        if ( dbTuningFilename == null )
+        final File dbTuningFile = config.get( NeoServerSettings.legacy_db_config );
+        if ( !dbTuningFile.exists() )
         {
-            failureMessage = String.format( "High-Availability mode requires %s to be set in %s",
-                    Configurator.DB_TUNING_PROPERTY_FILE_KEY, Configurator.NEO_SERVER_CONFIG_FILE_KEY );
+            failureMessage = String.format( "No database tuning file at [%s]", dbTuningFile.getAbsoluteFile() );
             return false;
         }
         else
         {
-            File dbTuningFile = new File( dbTuningFilename );
-            if ( !dbTuningFile.exists() )
+            final Properties dbTuning = new Properties();
+            try
             {
-                failureMessage = String.format( "No database tuning file at [%s]", dbTuningFile.getAbsoluteFile() );
+                final InputStream tuningStream = new FileInputStream( dbTuningFile );
+                try
+                {
+                    dbTuning.load( tuningStream );
+                }
+                finally
+                {
+                    tuningStream.close();
+                }
+            }
+            catch ( IOException e )
+            {
+                // Shouldn't happen, we already covered those cases
+                failureMessage = e.getMessage();
                 return false;
             }
-            else
+            String machineId = null;
+            try
             {
-                Properties dbTuning = new Properties();
-                try
+                machineId = getSinglePropertyFromCandidates( dbTuning, ClusterSettings.server_id.name(),
+                        CONFIG_KEY_OLD_SERVER_ID, "<not set>" );
+                if ( Integer.parseInt( machineId ) < 0 )
                 {
-                    InputStream tuningStream = new FileInputStream( dbTuningFile );
-                    try
-                    {
-                        dbTuning.load( tuningStream );
-                    }
-                    finally
-                    {
-                        tuningStream.close();
-                    }
-                }
-                catch ( IOException e )
-                {
-                    // Shouldn't happen, we already covered those cases
-                    failureMessage = e.getMessage();
-                    return false;
-                }
-                String machineId = null;
-                try
-                {
-                    machineId = getSinglePropertyFromCandidates( dbTuning, ClusterSettings.server_id.name(),
-                            CONFIG_KEY_OLD_SERVER_ID, "<not set>" );
-                    if ( Integer.parseInt( machineId ) < 0 )
-                    {
-                        throw new NumberFormatException();
-                    }
-                }
-                catch ( NumberFormatException e )
-                {
-                    failureMessage = String.format( "%s in %s needs to be a non-negative integer, not %s",
-                            ClusterSettings.server_id.name(), dbTuningFilename, machineId );
-                    return false;
-                }
-                catch ( IllegalArgumentException e )
-                {
-                    failureMessage = String.format( "%s in %s", e.getMessage(), dbTuningFilename );
-                    return false;
+                    throw new NumberFormatException();
                 }
             }
+            catch ( NumberFormatException e )
+            {
+                failureMessage = String.format( "%s in %s needs to be a non-negative integer, not %s",
+                        ClusterSettings.server_id.name(), dbTuningFile.getAbsolutePath(), machineId );
+                return false;
+            }
+            catch ( IllegalArgumentException e )
+            {
+                failureMessage = String.format( "%s in %s", e.getMessage(), dbTuningFile.getAbsolutePath() );
+                return false;
+            }
         }
+
         return true;
     }
 

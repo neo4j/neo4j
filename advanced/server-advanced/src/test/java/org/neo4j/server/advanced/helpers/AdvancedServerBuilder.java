@@ -26,7 +26,7 @@ import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.advanced.AdvancedNeoServer;
-import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.preflight.PreFlightTasks;
 import org.neo4j.server.rest.web.DatabaseActions;
@@ -60,7 +60,7 @@ public class AdvancedServerBuilder extends CommunityServerBuilder
 
 
     @Override
-    protected CommunityNeoServer build(File configFile, Configurator configurator, InternalAbstractGraphDatabase.Dependencies dependencies)
+    protected CommunityNeoServer build(File configFile, ConfigurationBuilder configurator, InternalAbstractGraphDatabase.Dependencies dependencies)
     {
         return new TestAdvancedNeoServer( configurator, configFile, dependencies );
     }
@@ -69,7 +69,7 @@ public class AdvancedServerBuilder extends CommunityServerBuilder
     {
         private final File configFile;
 
-        public TestAdvancedNeoServer( Configurator propertyFileConfigurator, File configFile, InternalAbstractGraphDatabase.Dependencies dependencies )
+        public TestAdvancedNeoServer( ConfigurationBuilder propertyFileConfigurator, File configFile, InternalAbstractGraphDatabase.Dependencies dependencies )
         {
             super( propertyFileConfigurator, lifecycleManagingDatabase( persistent ? EMBEDDED : IN_MEMORY_DB ), dependencies );
             this.configFile = configFile;

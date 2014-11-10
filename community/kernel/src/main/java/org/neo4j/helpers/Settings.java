@@ -68,9 +68,12 @@ public final class Settings
     // It's an explicitly allocated string so identity equality checks work
     public static final String MANDATORY = new String( "mandatory" );
     public static final String NO_DEFAULT = null;
+    public static final String EMPTY = "";
 
     public static final String TRUE = "true";
     public static final String FALSE = "false";
+    
+    public static final String SEPARATOR = ",";
 
     public static final String DURATION_FORMAT = "\\d+(ms|s|m)";
     public static final String SIZE_FORMAT = "\\d+[kmgKMG]?";
@@ -309,6 +312,29 @@ public final class Settings
             return "a string";
         }
     };
+    
+    public static final Function<String, List<String>> STRING_LIST = new Function<String, List<String>>()
+    {
+        @Override
+        public List<String> apply( String value )
+        {
+            String[] list = value.split( SEPARATOR );
+            List<String> result = new ArrayList();
+            for( String item : list) 
+            {
+                item = item.trim();
+                if( !item.equals( "" ) )
+                    result.add( item );
+            }
+            return result;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "a comma-seperated string";
+        }
+    };
 
     public static final Function<String, HostnamePort> HOSTNAME_PORT = new Function<String, HostnamePort>()
     {
@@ -533,6 +559,34 @@ public final class Settings
                     return "a URI";
                 }
             };
+            
+    public static final Function<String, URI> NORMALIZED_RELATIVE_URI = new Function<String, URI>()
+    {
+        @Override
+        public URI apply( String value )
+        {
+            try
+            {
+                String normalizedUri = new URI( value ).normalize().getPath();
+                if ( normalizedUri.endsWith( "/" ) )
+                {
+                    // Force the string end without "/"
+                    normalizedUri = normalizedUri.substring( 0, normalizedUri.length() - 1 );
+                }
+                return new URI( normalizedUri );
+            }
+            catch ( URISyntaxException e )
+            {
+                throw new IllegalArgumentException( "not a valid URI" );
+            }
+        }
+
+        @Override
+        public String toString()
+        {
+            return "a URI";
+        }
+    };
 
     public static final Function<String, File> PATH = new Function<String, File>()
     {

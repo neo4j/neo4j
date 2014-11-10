@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -37,6 +38,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.helpers.Transactor;
@@ -57,7 +59,7 @@ public class StartupTimeoutDocIT
     public void shouldTimeoutIfStartupTakesLongerThanTimeout() throws IOException
     {
         // GIVEN
-        Configurator configurator = buildProperties().withStartupTimeout( 1 ).atPort( 7480 ).build();
+        ConfigurationBuilder configurator = buildProperties().withStartupTimeout( 1 ).atPort( 7480 ).build();
         server = createSlowServer( configurator, true );
 
         // WHEN
@@ -73,11 +75,12 @@ public class StartupTimeoutDocIT
         }
     }
 
-	@Test
-	public void shouldNotFailIfStartupTakesLessTimeThanTimeout() throws IOException
-	{
-		Configurator configurator = buildProperties().withStartupTimeout( 100 ).atPort( 7480 ).build();
-        server = new CommunityNeoServer( configurator, GraphDatabaseDependencies.newDependencies().logging(DevNullLoggingService.DEV_NULL) )
+    @Test
+    public void shouldNotFailIfStartupTakesLessTimeThanTimeout() throws IOException
+    {
+        ConfigurationBuilder configurator = buildProperties().withStartupTimeout( 100 ).atPort( 7480 ).build();
+        server = new CommunityNeoServer( configurator, GraphDatabaseDependencies.newDependencies().logging(
+                DevNullLoggingService.DEV_NULL ) )
         {
             @Override
             protected Iterable<ServerModule> createServerModules()
@@ -100,12 +103,12 @@ public class StartupTimeoutDocIT
         InterruptThreadTimer timer = server.getDependencyResolver().resolveDependency( InterruptThreadTimer.class );
 
         assertThat( timer.getState(), is( InterruptThreadTimer.State.IDLE ) );
-	}
+    }
 
-	@Test
-	public void shouldNotTimeOutIfTimeoutDisabled() throws IOException
-	{
-		Configurator configurator = buildProperties().withStartupTimeout( 0 ).atPort( 7480 ).build();
+    @Test
+    public void shouldNotTimeOutIfTimeoutDisabled() throws IOException
+    {
+        ConfigurationBuilder configurator = buildProperties().withStartupTimeout( 0 ).atPort( 7480 ).build();
         server = createSlowServer( configurator, false );
 
         // When
@@ -113,12 +116,14 @@ public class StartupTimeoutDocIT
 
         // Then
         // No exceptions should have been thrown
-	}
+    }
 
-    private CommunityNeoServer createSlowServer( Configurator configurator, final boolean preventMovingFurtherThanStartingModules )
+    private CommunityNeoServer createSlowServer( ConfigurationBuilder configurator,
+            final boolean preventMovingFurtherThanStartingModules )
     {
         final AtomicReference<Runnable> timerStartSignal = new AtomicReference<>();
-        CommunityNeoServer server = new CommunityNeoServer( configurator, GraphDatabaseDependencies.newDependencies().logging(DevNullLoggingService.DEV_NULL) )
+        CommunityNeoServer server = new CommunityNeoServer( configurator, GraphDatabaseDependencies.newDependencies()
+                .logging( DevNullLoggingService.DEV_NULL ) )
         {
             @Override
             protected InterruptThreadTimer createInterruptStartupTimer()
@@ -210,7 +215,7 @@ public class StartupTimeoutDocIT
             }
         };
         return server;
-	}
+    }
 
     private ConfiguratorBuilder buildProperties() throws IOException
     {
@@ -234,15 +239,14 @@ public class StartupTimeoutDocIT
         return new ConfiguratorBuilder( new PropertyFileConfigurator( new File( serverPropertiesFilename ) ) );
     }
 
-    public @Rule
-    ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
-
+    @Rule
+    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
     TargetDirectory target = TargetDirectory.forTest( StartupTimeoutDocIT.class );
     private static final String DIRSEP = File.separator;
 
     @Rule
     public TargetDirectory.TestDirectory test = target.testDirectory();
-
+    
     public CommunityNeoServer server;
     public @Rule TestName testName = new TestName();
 
@@ -264,13 +268,13 @@ public class StartupTimeoutDocIT
             public void doWork()
             {
                 deleteAllNodesAndRelationships( dbRule.getGraphDatabaseService() );
-
+                
                 deleteAllIndexes( dbRule.getGraphDatabaseService() );
             }
 
             private void deleteAllNodesAndRelationships( final GraphDatabaseService db )
             {
-                Iterable<Node> allNodes = GlobalGraphOperations.at(db).getAllNodes();
+                Iterable<Node> allNodes = GlobalGraphOperations.at( db ).getAllNodes();
                 for ( Node n : allNodes )
                 {
                     Iterable<Relationship> relationships = n.getRelationships();
@@ -280,7 +284,7 @@ public class StartupTimeoutDocIT
                     }
                     if ( n.getId() != 0 )
                     { // Don't delete the reference node - tests depend on it
-                        // :-(
+                      // :-(
                         n.delete();
                     }
                     else
@@ -296,7 +300,7 @@ public class StartupTimeoutDocIT
             private void deleteAllIndexes( final GraphDatabaseService db )
             {
                 IndexManager indexManager = db.index();
-
+                
                 for ( String indexName : indexManager.nodeIndexNames() )
                 {
                     try
@@ -308,7 +312,7 @@ public class StartupTimeoutDocIT
                         // Encountered a read-only index.
                     }
                 }
-
+                
                 for ( String indexName : indexManager.relationshipIndexNames() )
                 {
                     try
@@ -320,13 +324,13 @@ public class StartupTimeoutDocIT
                         // Encountered a read-only index.
                     }
                 }
-
+                
                 for ( String k : indexManager.getNodeAutoIndexer().getAutoIndexedProperties() )
                 {
                     indexManager.getNodeAutoIndexer().stopAutoIndexingProperty( k );
                 }
                 indexManager.getNodeAutoIndexer().setEnabled( false );
-
+                
                 for ( String k : indexManager.getRelationshipAutoIndexer().getAutoIndexedProperties() )
                 {
                     indexManager.getRelationshipAutoIndexer().stopAutoIndexingProperty( k );
@@ -338,31 +342,42 @@ public class StartupTimeoutDocIT
 
     /**
      * Produces more readable and understandable test code where this builder is used compared to raw Configurator.
+     *
+     * This is not a good way to add new properties as we should not allow adding properties once the configuration is created.
+     * It might be okay if we just use this for testing.
      */
-	private static class ConfiguratorBuilder
-	{
-	    private final Configurator configurator;
+    @Deprecated
+    private static class ConfiguratorBuilder
+    {
+        private final ConfigurationBuilder configurator;
 
-        public ConfiguratorBuilder( Configurator initialConfigurator )
+        public ConfiguratorBuilder( ConfigurationBuilder initialConfigurator )
         {
             this.configurator = initialConfigurator;
         }
 
         public ConfiguratorBuilder atPort( int port )
         {
-            configurator.configuration().setProperty( Configurator.WEBSERVER_PORT_PROPERTY_KEY, port );
+            setProperty( Configurator.WEBSERVER_PORT_PROPERTY_KEY, String.valueOf( port ) );
             return this;
         }
 
-        public ConfiguratorBuilder withStartupTimeout( int seconds )
+        public ConfiguratorBuilder withStartupTimeout( long seconds )
         {
-            configurator.configuration().setProperty( Configurator.STARTUP_TIMEOUT, seconds );
+            setProperty( Configurator.STARTUP_TIMEOUT, String.valueOf( seconds ) );
             return this;
         }
 
-        public Configurator build()
+        public ConfigurationBuilder build()
         {
             return configurator;
         }
-	}
+
+        private void setProperty( String key, String value )
+        {
+            Map<String,String> params = configurator.configuration().getParams();
+            params.put( key, value );
+            configurator.configuration().applyChanges( params );
+        }
+    }
 }

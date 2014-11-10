@@ -24,17 +24,18 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.UUID;
 
-import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.junit.Test;
 
+import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.configuration.MapBasedConfiguration;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.helpers.Settings.osIsMacOS;
 import static org.neo4j.helpers.Settings.osIsWindows;
 
@@ -44,12 +45,11 @@ public class HTTPLoggingPreparednessRuleTest
     public void shouldPassWhenExplicitlyDisabled()
     {
         // given
-    	Configuration config = new MapBasedConfiguration();
-        config.setProperty( Configurator.HTTP_LOGGING, "false" );
-        EnsurePreparedForHttpLogging rule = new EnsurePreparedForHttpLogging(config);
+        Config config = new Config( MapUtil.stringMap( Configurator.HTTP_LOGGING, "false" ) );
+        EnsurePreparedForHttpLogging rule = new EnsurePreparedForHttpLogging( config );
 
         // when
-        boolean result = rule.run( );
+        boolean result = rule.run();
 
         // then
         assertTrue( result );
@@ -60,11 +60,11 @@ public class HTTPLoggingPreparednessRuleTest
     public void shouldPassWhenImplicitlyDisabled()
     {
         // given
-    	Configuration config = new MapBasedConfiguration();
-        EnsurePreparedForHttpLogging rule = new EnsurePreparedForHttpLogging(config);
+        Config config = new Config();
+        EnsurePreparedForHttpLogging rule = new EnsurePreparedForHttpLogging( config );
 
         // when
-        boolean result = rule.run( );
+        boolean result = rule.run();
 
         // then
         assertTrue( result );
@@ -75,18 +75,15 @@ public class HTTPLoggingPreparednessRuleTest
     public void shouldPassWhenEnabledWithGoodConfigSpecified() throws Exception
     {
         // given
-        final File logDir = TargetDirectory.forTest( this.getClass() ).cleanDirectory( "logDir" );
-        final File confDir = TargetDirectory.forTest( this.getClass() ).cleanDirectory( "confDir" );
-
-        Configuration config = new MapBasedConfiguration();
-        config.setProperty( Configurator.HTTP_LOGGING, "true" );
-        config.setProperty( Configurator.HTTP_LOG_CONFIG_LOCATION,
-                createConfigFile( createLogbackConfigXml( logDir ), confDir ).getAbsolutePath() );
-        EnsurePreparedForHttpLogging rule = new EnsurePreparedForHttpLogging(config);
+        File logDir = TargetDirectory.forTest( this.getClass() ).cleanDirectory( "logDir" );
+        File confDir = TargetDirectory.forTest( this.getClass() ).cleanDirectory( "confDir" );
+        Config config = new Config( MapUtil.stringMap( Configurator.HTTP_LOGGING, "true",
+                Configurator.HTTP_LOG_CONFIG_LOCATION, createConfigFile( createLogbackConfigXml( logDir ), confDir )
+                        .getAbsolutePath() ) );
+        EnsurePreparedForHttpLogging rule = new EnsurePreparedForHttpLogging( config );
 
         // when
-        boolean result = rule.run( );
-
+        boolean result = rule.run();
         // then
         assertTrue( result );
         assertEquals( StringUtils.EMPTY, rule.getFailureMessage() );
@@ -96,23 +93,20 @@ public class HTTPLoggingPreparednessRuleTest
     public void shouldFailWhenEnabledWithUnwritableLogDirSpecifiedInConfig() throws Exception
     {
         // given
-        final File confDir = TargetDirectory.forTest( this.getClass() ).cleanDirectory( "confDir" );
-
-        Configuration config = new MapBasedConfiguration();
-        config.setProperty( Configurator.HTTP_LOGGING, "true" );
-        final File unwritableDirectory = createUnwritableDirectory();
-        config.setProperty( Configurator.HTTP_LOG_CONFIG_LOCATION,
-            createConfigFile( createLogbackConfigXml( unwritableDirectory ), confDir ).getAbsolutePath() );
-        EnsurePreparedForHttpLogging rule = new EnsurePreparedForHttpLogging(config);
+        File confDir = TargetDirectory.forTest( this.getClass() ).cleanDirectory( "confDir" );
+        File unwritableDirectory = createUnwritableDirectory();
+        Config config = new Config( MapUtil.stringMap( Configurator.HTTP_LOGGING, "true",
+                Configurator.HTTP_LOG_CONFIG_LOCATION,
+                createConfigFile( createLogbackConfigXml( unwritableDirectory ), confDir ).getAbsolutePath() ) );
+        EnsurePreparedForHttpLogging rule = new EnsurePreparedForHttpLogging( config );
 
         // when
-        boolean result = rule.run( );
+        boolean result = rule.run();
 
         // then
         assertFalse( result );
-        assertEquals(
-            String.format( "HTTP log directory [%s] does not exist", unwritableDirectory  ),
-            rule.getFailureMessage() );
+        assertEquals( String.format( "HTTP log directory [%s] does not exist", unwritableDirectory ),
+                rule.getFailureMessage() );
     }
 
     public static File createUnwritableDirectory()
@@ -128,20 +122,17 @@ public class HTTPLoggingPreparednessRuleTest
         }
         else
         {
-            file = new File( "/proc/" + UUID.randomUUID().toString() + "/random");
+            file = new File( "/proc/" + UUID.randomUUID().toString() + "/random" );
         }
-
         return file;
     }
 
     public static File createConfigFile( String configXml, File location ) throws IOException
     {
-        final File configFile = new File( location.getAbsolutePath() + File.separator + "neo4j-logback-config.xml" );
-
+        File configFile = new File( location.getAbsolutePath() + File.separator + "neo4j-logback-config.xml" );
         FileOutputStream fos = new FileOutputStream( configFile );
         fos.write( configXml.getBytes() );
         fos.close();
-
         return configFile;
     }
 

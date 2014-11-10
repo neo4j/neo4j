@@ -51,7 +51,7 @@ public class InProcessServerBuilder implements TestServerBuilder
     /**
      * Config options for both database and server.
      */
-    private final Map<String, Object> config = new HashMap<>();
+    private final Map<String, String> config = new HashMap<>();
 
     public InProcessServerBuilder( File workingDir )
     {

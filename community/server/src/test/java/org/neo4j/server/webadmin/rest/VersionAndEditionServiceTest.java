@@ -32,7 +32,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.server.AbstractNeoServer;
 import org.neo4j.server.CommunityNeoServer;
-import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.preflight.PreFlightTasks;
@@ -153,7 +153,7 @@ public class VersionAndEditionServiceTest
 
     private class FakeAdvancedNeoServer extends AbstractNeoServer
     {
-        public FakeAdvancedNeoServer( Configurator configurator, Database.Factory dbFactory )
+        public FakeAdvancedNeoServer( ConfigurationBuilder configurator, Database.Factory dbFactory )
         {
             super( configurator, dbFactory, GraphDatabaseDependencies.newDependencies().logging(DevNullLoggingService.DEV_NULL ));
         }
@@ -185,7 +185,7 @@ public class VersionAndEditionServiceTest
 
     private class FakeEnterpriseNeoServer extends FakeAdvancedNeoServer
     {
-        public FakeEnterpriseNeoServer( Configurator configurator, Database.Factory dbFactory )
+        public FakeEnterpriseNeoServer( ConfigurationBuilder configurator, Database.Factory dbFactory )
         {
             super( configurator, dbFactory );
         }

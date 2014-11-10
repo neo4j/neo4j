@@ -20,14 +20,17 @@
 package org.neo4j.server.rrd;
 
 import static java.lang.Double.NaN;
+
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.test.Mute.muteAll;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.MapConfiguration;
@@ -35,8 +38,11 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
@@ -45,6 +51,7 @@ import org.neo4j.server.database.WrappedDatabase;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.Mute;
 import org.neo4j.test.TargetDirectory;
+
 import org.rrd4j.ConsolFun;
 import org.rrd4j.DsType;
 import org.rrd4j.core.RrdDb;
@@ -52,7 +59,7 @@ import org.rrd4j.core.RrdDef;
 
 public class RrdFactoryTest
 {
-    private Configuration config;
+    private Config config;
     private Database db;
 
     TargetDirectory target = TargetDirectory.forTest( RrdFactoryTest.class );
@@ -65,9 +72,9 @@ public class RrdFactoryTest
     @Before
     public void setUp() throws IOException
     {
-        config = new MapConfiguration( new HashMap<String, String>() );
         db = new WrappedDatabase( new ImpermanentGraphDatabase(
                 TargetDirectory.forTest( getClass() ).cleanDirectory( "rrd" ).getAbsolutePath()) );
+        config = new Config();
     }
 
     @After
@@ -80,7 +87,7 @@ public class RrdFactoryTest
     public void shouldTakeDirectoryLocationFromConfig() throws Exception
     {
         String expected = testDirectory.directory().getAbsolutePath();
-        config.addProperty( Configurator.RRDB_LOCATION_PROPERTY_KEY, expected );
+        addProperty( Configurator.RRDB_LOCATION_PROPERTY_KEY, expected );
         TestableRrdFactory factory = createRrdFactory();
 
         factory.createRrdDbAndSampler( db, new NullJobScheduler() );
@@ -88,12 +95,19 @@ public class RrdFactoryTest
         assertThat( factory.directoryUsed, is( expected ) );
     }
 
+    private void addProperty( String rrdbLocationPropertyKey, String expected )
+    {
+        Map<String, String> params = config.getParams();
+        params.put( rrdbLocationPropertyKey, expected );
+        config.applyChanges( params );
+    }
+
     @Test
     public void recreateDatabaseIfWrongStepsize() throws Exception
     {
         String expected = testDirectory.directory().getAbsolutePath();
 
-        config.addProperty( Configurator.RRDB_LOCATION_PROPERTY_KEY, expected );
+        addProperty( Configurator.RRDB_LOCATION_PROPERTY_KEY, expected );
         TestableRrdFactory factory = createRrdFactory();
 
         factory.createRrdDbAndSampler( db, new NullJobScheduler() );
@@ -106,7 +120,7 @@ public class RrdFactoryTest
     {
         //Given
         String expected = new File( testDirectory.directory(), "rrd-test").getAbsolutePath();
-        config.addProperty( Configurator.RRDB_LOCATION_PROPERTY_KEY, expected );
+        addProperty( Configurator.RRDB_LOCATION_PROPERTY_KEY, expected );
 
         TestableRrdFactory factory = createRrdFactory();
         createInvalidRrdFile( expected );
@@ -196,7 +210,7 @@ public class RrdFactoryTest
         public String directoryUsed;
         private final String tempRrdFile;
 
-        public TestableRrdFactory( Configuration config, String tempRrdFile )
+        public TestableRrdFactory( Config config, String tempRrdFile )
         {
             super( config, DevNullLoggingService.DEV_NULL );
             this.tempRrdFile = tempRrdFile;
@@ -209,9 +223,9 @@ public class RrdFactoryTest
         }
 
         @Override
-        protected RrdDbWrapper createRrdb( String inDirectory, boolean ephemeral, Sampleable... sampleables )
+        protected RrdDbWrapper createRrdb( File inDirectory, boolean ephemeral, Sampleable... sampleables )
         {
-            directoryUsed = inDirectory;
+            directoryUsed = inDirectory.getAbsolutePath();
             return super.createRrdb( inDirectory, ephemeral, sampleables );
         }
     }

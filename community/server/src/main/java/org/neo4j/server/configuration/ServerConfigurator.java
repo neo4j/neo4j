@@ -19,13 +19,13 @@
  */
 package org.neo4j.server.configuration;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.commons.configuration.Configuration;
-
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.server.NeoServerSettings;
 import org.neo4j.server.WrappingNeoServerBootstrapper;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -40,27 +40,28 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
  * <p/>
  * <pre>
  * {
- *     &#064;code EmbeddedServerConfigurator conf = new EmbeddedServerConfigurator( myDb );
- *     conf.configuration()
- *             .addProperty( WEBSERVER_PORT_PROPERTY_KEY, 8080 );
+ *     &#064;code ServerConfigurator conf = new ServerConfigurator( myDb );
+ *     conf.setProperty( ServerSettings.webserver_port.name(), "8080" );
  * }
  * </pre>
  * <p/>
  * See the neo4j manual for information about what configuration directives the
- * server takes, or take a look at the static strings in {@link Configurator}.
+ * server takes, or take a look at the settings in {@link ServerSettings}.
  */
-public class ServerConfigurator extends Configurator.Adapter
+public class ServerConfigurator implements ConfigurationBuilder
 {
-    private final MapBasedConfiguration config = new MapBasedConfiguration();
-    private final List<ThirdPartyJaxRsPackage> jaxRsPackages = new ArrayList<>();
+    private final Map<String, String> configParams = new HashMap();
+    private final Config config;
 
     public ServerConfigurator( GraphDatabaseAPI db )
     {
-        config.addProperty( DATABASE_LOCATION_PROPERTY_KEY, db.getStoreDir() );
+        configParams.put( NeoServerSettings.legacy_db_location.name(), db.getStoreDir() );
+        config = new Config( configParams );
+        PropertyFileConfigurator.setServerSettingsClasses( config );
     }
 
     @Override
-    public Configuration configuration()
+    public Config configuration()
     {
         return config;
     }
@@ -71,9 +72,14 @@ public class ServerConfigurator extends Configurator.Adapter
         return stringMap();
     }
 
-    @Override
-    public List<ThirdPartyJaxRsPackage> getThirdpartyJaxRsPackages()
+    /**
+     * @param key
+     * @param value
+     * @return the configurator itself with configuration property updated.
+     */
+    public ServerConfigurator setProperty( String key, String value )
     {
-        return jaxRsPackages;
+        config.applyChanges( MapUtil.stringMap( config.getParams(), key, value ) );
+        return this;
     }
 }

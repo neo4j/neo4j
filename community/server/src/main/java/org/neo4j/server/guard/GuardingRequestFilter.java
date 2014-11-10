@@ -34,10 +34,10 @@ public class GuardingRequestFilter implements Filter
 {
 
     private final Guard guard;
-    private final int timeout;
+    private final long timeout; // in milliSeconds
     private final Timer timer = new Timer();
 
-    public GuardingRequestFilter( final Guard guard, final int timeout )
+    public GuardingRequestFilter( final Guard guard, final long timeout )
     {
         this.guard = guard;
         this.timeout = timeout;
@@ -55,7 +55,7 @@ public class GuardingRequestFilter implements Filter
             HttpServletRequest request = (HttpServletRequest) req;
             HttpServletResponse response = (HttpServletResponse) res;
 
-            int timeLimit = getTimeLimit( request );
+            long timeLimit = getTimeLimit( request );
             if ( timeLimit <= 0 )
             {
                 chain.doFilter( req, res );
@@ -85,14 +85,14 @@ public class GuardingRequestFilter implements Filter
         timer.cancel();
     }
 
-    private int getTimeLimit( HttpServletRequest request )
+    private long getTimeLimit( HttpServletRequest request )
     {
-        int timeLimit = timeout;
+        long timeLimit = timeout;
         String headerValue = request.getHeader( "max-execution-time" );
         if ( headerValue != null )
         {
-            int maxHeader = Integer.parseInt( headerValue );
-            if ( timeLimit < 0 || (maxHeader > 0 && maxHeader < timeLimit) )
+            long maxHeader = Long.parseLong( headerValue );
+            if ( timeLimit < 0 || (maxHeader > 0 && maxHeader < timeLimit ) )
             {
                 return maxHeader;
             }

@@ -31,7 +31,7 @@ import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.server.CommunityNeoServer;
-import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.test.server.EntityOutputFormat;
 
@@ -50,7 +50,7 @@ public class RootServiceDocTest
         URI uri = new URI( "http://example.org:7474/" );
         when( uriInfo.getBaseUri() ).thenReturn( uri );
 
-        RootService svc = new RootService( new CommunityNeoServer( mock( Configurator.class ),
+        RootService svc = new RootService( new CommunityNeoServer( mock( ConfigurationBuilder.class ),
                 GraphDatabaseDependencies.newDependencies().logging(DevNullLoggingService.DEV_NULL).monitors(new Monitors())) );
         EntityOutputFormat output = new EntityOutputFormat( new JsonFormat(), null, null );
         Response serviceDefinition = svc.getServiceDefinition( uriInfo, output );

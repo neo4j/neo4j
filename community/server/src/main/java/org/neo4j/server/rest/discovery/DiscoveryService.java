@@ -19,8 +19,8 @@
  */
 package org.neo4j.server.rest.discovery;
 
-import java.net.URI;
 import java.net.URISyntaxException;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -28,13 +28,14 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import org.apache.commons.configuration.Configuration;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.rest.repr.DiscoveryRepresentation;
 import org.neo4j.server.rest.repr.OutputFormat;
+import org.neo4j.server.web.ServerInternalSettings;
 
 /**
  * Used to discover the rest of the server URIs through a HTTP GET request to
@@ -45,10 +46,10 @@ public class DiscoveryService
 {
 
     private static final Logger LOGGER = Log.getLogger(DiscoveryService.class);
-    private final Configuration configuration;
+    private final Config configuration;
     private final OutputFormat outputFormat;
 
-    public DiscoveryService( @Context Configuration configuration, @Context OutputFormat outputFormat )
+    public DiscoveryService( @Context Config configuration, @Context OutputFormat outputFormat )
     {
         this.configuration = configuration;
         this.outputFormat = outputFormat;
@@ -58,10 +59,8 @@ public class DiscoveryService
     @Produces( MediaType.APPLICATION_JSON )
     public Response getDiscoveryDocument() throws URISyntaxException
     {
-        String webAdminManagementUri = configuration.getString( Configurator.MANAGEMENT_PATH_PROPERTY_KEY,
-                Configurator.DEFAULT_MANAGEMENT_API_PATH );
-        String dataUri = configuration.getString( Configurator.REST_API_PATH_PROPERTY_KEY,
-                Configurator.DEFAULT_DATA_API_PATH );
+        String webAdminManagementUri = configuration.get( ServerInternalSettings.management_api_path ).getPath();
+        String dataUri = configuration.get( ServerInternalSettings.rest_api_path ).getPath();
 
         DiscoveryRepresentation dr = new DiscoveryRepresentation( webAdminManagementUri, dataUri );
         return outputFormat.ok( dr );
@@ -71,15 +70,7 @@ public class DiscoveryService
     @Produces( MediaType.WILDCARD )
     public Response redirectToBrowser()
     {
-        try
-        {
-            return outputFormat.seeOther( new URI( Configurator.BROWSER_PATH ) );
-        }
-        catch ( URISyntaxException e )
-        {
-            LOGGER.warn( e.getMessage() );
-            return Response.serverError()
-                    .build();
-        }
+        return outputFormat.seeOther( configuration.get( ServerInternalSettings.browser_path ) );
+
     }
 }

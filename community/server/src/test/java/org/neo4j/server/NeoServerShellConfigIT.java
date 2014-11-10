@@ -21,14 +21,14 @@ package org.neo4j.server;
 
 import java.util.Map;
 
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.MapConfiguration;
 import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellLobby;
@@ -48,12 +48,12 @@ public class NeoServerShellConfigIT extends ExclusiveServerTestBase
     {
         final int customPort = findFreeShellPortToUse( 8881 );
         // Given
-        CommunityNeoServer server = new CommunityNeoServer( new Configurator.Adapter()
+        CommunityNeoServer server = new CommunityNeoServer( new ConfigurationBuilder()
         {
             @Override
-            public Configuration configuration()
+            public Config configuration()
             {
-                return new MapConfiguration( stringMap(
+                return new Config( stringMap(
                         Configurator.DATABASE_LOCATION_PROPERTY_KEY, testDir.absolutePath() ) );
             }
 
@@ -82,12 +82,12 @@ public class NeoServerShellConfigIT extends ExclusiveServerTestBase
     public void connectWithShellOnDefaultPortWhenNoShellConfigSupplied() throws Throwable
     {
         // Given
-        CommunityNeoServer server = new CommunityNeoServer( new Configurator.Adapter()
+        CommunityNeoServer server = new CommunityNeoServer( new ConfigurationBuilder()
         {
             @Override
-            public Configuration configuration()
+            public Config configuration()
             {
-                return new MapConfiguration( stringMap(
+                return new Config( stringMap(
                         Configurator.DATABASE_LOCATION_PROPERTY_KEY, testDir.absolutePath() ) );
             }
 

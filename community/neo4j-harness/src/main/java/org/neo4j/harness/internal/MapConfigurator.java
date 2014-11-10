@@ -23,17 +23,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.configuration.Configuration;
-import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.configuration.MapBasedConfiguration;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.server.configuration.ConfigurationBuilder;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
 
-public class MapConfigurator extends Configurator.Adapter
+public class MapConfigurator implements ConfigurationBuilder
 {
-    private final Map<String, Object> config;
+    private final Map<String, String> config;
     private final List<ThirdPartyJaxRsPackage> extensions;
 
-    public MapConfigurator( Map<String, Object> config, List<ThirdPartyJaxRsPackage> extensions )
+    public MapConfigurator( Map<String, String> config, List<ThirdPartyJaxRsPackage> extensions )
     {
         this.config = config;
         this.extensions = extensions;
@@ -42,34 +42,18 @@ public class MapConfigurator extends Configurator.Adapter
     @Override
     public Map<String, String> getDatabaseTuningProperties()
     {
-        return toStringStringMap(config);
-    }
-
-    private Map<String, String> toStringStringMap( Map<String, Object> config )
-    {
-        Map<String, String> converted = new HashMap<>();
-        for ( Map.Entry<String, Object> entry : config.entrySet() )
-        {
-            converted.put( entry.getKey(), entry.getValue().toString() );
-        }
-        return converted;
+        return config;
     }
 
     @Override
-    public Configuration configuration()
+    public Config configuration()
     {
-        return new MapBasedConfiguration(config);
+        Map<String, String> serverConfigParams = new HashMap();
+        serverConfigParams.putAll( config );
+        serverConfigParams.put( ServerSettings.third_party_packages.name(),
+                ConfiguratorWrappingConfigurationBuilder.toStringForThirdPartyPackageProperty( extensions ) );
+        return new Config( serverConfigParams );
     }
 
-    @Override
-    public List<ThirdPartyJaxRsPackage> getThirdpartyJaxRsClasses()
-    {
-        return extensions;
-    }
 
-    @Override
-    public List<ThirdPartyJaxRsPackage> getThirdpartyJaxRsPackages()
-    {
-        return extensions;
-    }
 }

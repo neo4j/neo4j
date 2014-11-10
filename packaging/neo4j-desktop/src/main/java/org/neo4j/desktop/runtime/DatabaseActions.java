@@ -34,8 +34,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.server.AbstractNeoServer;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.ServerStartupException;
-import org.neo4j.server.configuration.Configurator;
-
+import org.neo4j.server.configuration.ConfigurationBuilder;
 import static org.neo4j.kernel.logging.DefaultLogging.createDefaultLogging;
 
 /**
@@ -61,7 +60,7 @@ public class DatabaseActions
             throw new UnableToStartServerException( "Already started" );
         }
 
-        Configurator configurator = model.getServerConfigurator();
+        ConfigurationBuilder configurator = model.getServerConfigurator();
         Monitors monitors = new Monitors();
         logging = life.add( createDefaultLogging( configurator.getDatabaseTuningProperties(), monitors ) );
         life.start();

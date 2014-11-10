@@ -30,6 +30,7 @@ import org.apache.commons.configuration.Configuration;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.rest.repr.BadInputException;
@@ -41,12 +42,12 @@ public final class PluginManager implements ExtensionInjector, PluginInvocator
 {
     private final Map<String/*name*/, ServerExtender> extensions = new HashMap<String, ServerExtender>();
 
-    public PluginManager( Configuration serverConfig, Logging logging )
+    public PluginManager( Config serverConfig, Logging logging )
     {
         this( serverConfig, ServerPlugin.load(), logging );
     }
 
-    PluginManager( Configuration serverConfig, Iterable<ServerPlugin> plugins, Logging logging )
+    PluginManager( Config serverConfig, Iterable<ServerPlugin> plugins, Logging logging )
     {
         Map<String, Pair<ServerPlugin, ServerExtender>> extensions = new HashMap<String, Pair<ServerPlugin, ServerExtender>>();
         ConsoleLogger log = logging.getConsoleLog( getClass() );

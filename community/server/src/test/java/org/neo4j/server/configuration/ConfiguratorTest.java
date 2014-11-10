@@ -26,11 +26,11 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.configuration.Configuration;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.ServerTestUtils;
 
 import static org.junit.Assert.assertEquals;
@@ -46,7 +46,7 @@ public class ConfiguratorTest
     {
         File configFile = PropertyFileBuilder.builder( folder.getRoot() )
                 .build();
-        Configuration config = new PropertyFileConfigurator( configFile ).configuration();
+        Config config = new PropertyFileConfigurator( configFile ).configuration();
         assertNotNull( config );
     }
 
@@ -57,10 +57,10 @@ public class ConfiguratorTest
                 .withNameValue( "foo", "bar" )
                 .build();
 
-        Configuration testConf = new PropertyFileConfigurator( configFile ).configuration();
+        Config testConf = new PropertyFileConfigurator( configFile ).configuration();
 
         final String EXPECTED_VALUE = "bar";
-        assertEquals( EXPECTED_VALUE, testConf.getString( "foo" ) );
+        assertEquals( EXPECTED_VALUE, testConf.getParams().get( "foo" ) );
     }
 
     @Test
@@ -71,12 +71,12 @@ public class ConfiguratorTest
                 .withNameValue( "foo", "bar" )
                 .build();
 
-        Configurator configurator = new PropertyFileConfigurator( configFile );
-        Configuration testConf = configurator.configuration();
+        ConfigurationBuilder configurator = new PropertyFileConfigurator( configFile );
+        Config testConf = configurator.configuration();
 
         assertNotNull( testConf );
         final String EXPECTED_VALUE = "bar";
-        assertEquals( EXPECTED_VALUE, testConf.getString( "foo" ) );
+        assertEquals( EXPECTED_VALUE, testConf.getParams().get( "foo" ) );
     }
 
     @Test
@@ -89,7 +89,7 @@ public class ConfiguratorTest
                 .withDbTuningPropertyFile( databaseTuningPropertyFile )
                 .build();
 
-        Configurator configurator = new PropertyFileConfigurator( propertyFileWithDbTuningProperty );
+        ConfigurationBuilder configurator = new PropertyFileConfigurator( propertyFileWithDbTuningProperty );
 
         Map<String, String> databaseTuningProperties = configurator.getDatabaseTuningProperties();
         assertNotNull( databaseTuningProperties );
@@ -111,9 +111,9 @@ public class ConfiguratorTest
         out.write( System.getProperty( "line.separator" ) );
         out.close();
 
-        Configurator configurator = new PropertyFileConfigurator( file );
+        ConfigurationBuilder configurator = new PropertyFileConfigurator( file );
 
-        List<ThirdPartyJaxRsPackage> thirdpartyJaxRsPackages = configurator.getThirdpartyJaxRsPackages();
+        List<ThirdPartyJaxRsPackage> thirdpartyJaxRsPackages = configurator.configuration().get( ServerSettings.third_party_packages );
         assertNotNull( thirdpartyJaxRsPackages );
         assertEquals( 3, thirdpartyJaxRsPackages.size() );
     }

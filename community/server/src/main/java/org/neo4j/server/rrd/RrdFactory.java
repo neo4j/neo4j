@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.configuration.Configuration;
 
@@ -35,6 +36,7 @@ import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.RrdDbWrapper;
 import org.neo4j.server.rrd.sampler.NodeIdsInUseSampleable;
@@ -65,10 +67,10 @@ public class RrdFactory
     public static final int STEP_SIZE = 1;
     private static final String RRD_THREAD_NAME = "Statistics Gatherer";
 
-    private final Configuration config;
+    private final Config config;
     private final ConsoleLogger log;
 
-    public RrdFactory( Configuration config, Logging logging )
+    public RrdFactory( Config config, Logging logging )
     {
         this.config = config;
         this.log = logging.getConsoleLog( getClass() );
@@ -86,9 +88,16 @@ public class RrdFactory
 
         Sampleable[] usage = {};
 
-        final String rrdPath = config.getString( RRDB_LOCATION_PROPERTY_KEY,
-                getDefaultRrdFile( db.getGraph() ) );
-        final RrdDbWrapper rrdb = createRrdb( rrdPath, isEphemereal( db.getGraph() ), join( primitives, usage ) );
+        File rrdFile = config.get( ServerSettings.rrdb_location );
+        if( rrdFile == null || !rrdFile.exists() )
+        {
+            Map<String, String> params = config.getParams();
+            params.put( ServerSettings.rrdb_location.name(), getDefaultRrdFile( db.getGraph() ) );
+            config.applyChanges( params );
+            rrdFile = config.get( ServerSettings.rrdb_location );
+        }
+        
+        final RrdDbWrapper rrdb = createRrdb( rrdFile, isEphemereal( db.getGraph() ), join( primitives, usage ) );
 
         scheduler.scheduleAtFixedRate(
                 new RrdJob( new RrdSamplerImpl( rrdb.get(), primitives ) ),
@@ -155,9 +164,8 @@ public class RrdFactory
         }
     }
 
-    protected RrdDbWrapper createRrdb( String rrdPathx, boolean ephemeral, Sampleable... sampleables )
+    protected RrdDbWrapper createRrdb( File rrdFile, boolean ephemeral, Sampleable... sampleables )
     {
-        File rrdFile = new File( rrdPathx );
         if ( rrdFile.exists() )
         {
             try
@@ -259,7 +267,7 @@ public class RrdFactory
         if ( rrdFile.renameTo( file ) )
         {
             log.error( "current RRDB is invalid, renamed it to %s", file.getAbsolutePath() );
-            return createRrdb( rrdFile.getAbsolutePath(), ephemeral, sampleables );
+            return createRrdb( rrdFile, ephemeral, sampleables );
         }
 
         throw new RuntimeException( "RRD file ['" + rrdFile.getAbsolutePath()
