@@ -26,12 +26,15 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
 
 import org.junit.Test;
 import org.neo4j.server.rest.web.InternalJettyServletRequest;
 import org.neo4j.server.rest.web.InternalJettyServletResponse;
 
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class BatchOperationsTest {
 
@@ -69,5 +72,32 @@ public class BatchOperationsTest {
 
         // then
         assertEquals("https",req.getScheme());
+    }
+
+    @Test
+    public void shouldForwardMetadataFromOuterRequest() throws Exception
+    {
+        // Given
+        HttpServletRequest mock = mock( HttpServletRequest.class );
+
+        when(mock.getAuthType()).thenReturn( "auth" );
+        when(mock.getRemoteAddr()).thenReturn( "127.0.0.1" );
+        when(mock.getRemoteHost()).thenReturn( "localhost" );
+        when(mock.getRemotePort()).thenReturn( 1 );
+        when(mock.getLocalAddr()).thenReturn( "129.0.0.1" );
+        when(mock.getLocalPort()).thenReturn( 2 );
+
+        InternalJettyServletRequest req = new InternalJettyServletRequest( "POST",
+                "https://localhost:7473/db/data/node", "", new InternalJettyServletResponse(),
+                mock );
+
+        // When & then
+        assertEquals( "auth", req.getAuthType());
+        assertEquals( "127.0.0.1", req.getRemoteAddr());
+        assertEquals( "localhost", req.getRemoteHost());
+        assertEquals( 1, req.getRemotePort());
+        assertEquals( 2, req.getLocalPort());
+        assertEquals( "129.0.0.1", req.getLocalAddr());
+
     }
 }

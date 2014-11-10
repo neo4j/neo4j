@@ -29,6 +29,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.UriInfo;
 
@@ -137,7 +138,8 @@ public abstract class BatchOperations
         return statusCode >= 200 && statusCode < 300;
     }
 
-    protected void parseAndPerform( UriInfo uriInfo, HttpHeaders httpHeaders, InputStream body, Map<Integer, String> locations ) throws IOException, ServletException
+    protected void parseAndPerform( UriInfo uriInfo, HttpHeaders httpHeaders, HttpServletRequest req,
+                                    InputStream body, Map<Integer, String> locations ) throws IOException, ServletException
     {
         JsonParser jp = jsonFactory.createJsonParser(body);
         JsonToken token;
@@ -169,7 +171,7 @@ public abstract class BatchOperations
                 }
                 // Read one job description. Execute it.
                 performRequest( uriInfo, jobMethod, jobPath, jobBody,
-                        jobId, httpHeaders, locations );
+                        jobId, httpHeaders, locations, req );
             }
         }
     }
@@ -186,14 +188,16 @@ public abstract class BatchOperations
         return out.toString();
     }
 
-    protected void performRequest( UriInfo uriInfo, String method, String path, String body, Integer id, HttpHeaders httpHeaders, Map<Integer, String> locations ) throws IOException, ServletException
+    protected void performRequest( UriInfo uriInfo, String method, String path, String body, Integer id,
+                                   HttpHeaders httpHeaders, Map<Integer, String> locations,
+                                   HttpServletRequest outerReq ) throws IOException, ServletException
     {
         path = replaceLocationPlaceholders(path, locations);
         body = replaceLocationPlaceholders(body, locations);
         URI targetUri = calculateTargetUri(uriInfo, path);
 
         InternalJettyServletResponse res = new InternalJettyServletResponse();
-        InternalJettyServletRequest req = new InternalJettyServletRequest( method, targetUri.toString(), body, res);
+        InternalJettyServletRequest req = new InternalJettyServletRequest( method, targetUri.toString(), body, res, outerReq );
         req.setScheme( targetUri.getScheme() );
         addHeaders( req, httpHeaders );
 
