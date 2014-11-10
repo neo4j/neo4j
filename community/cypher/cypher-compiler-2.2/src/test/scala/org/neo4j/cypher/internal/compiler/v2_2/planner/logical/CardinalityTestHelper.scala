@@ -24,10 +24,10 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{Query, Statement}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityModel
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityModel}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assumeDependence._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport, Planner, QueryGraph, SemanticTable}
+import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 import org.scalatest.mock.MockitoSugar
 import org.scalautils.Equality
@@ -37,7 +37,8 @@ import scala.collection.mutable
 trait QueryGraphProducer extends MockitoSugar {
   self: LogicalPlanningTestSupport =>
 
-  def produceQueryGraphForPattern(query: String): QueryGraph = {
+
+  def producePlannerQueryForPattern(query: String): PlannerQuery = {
     val q = query + " RETURN 1"
     val ast = parser.parse(q)
     val semanticChecker = new SemanticChecker(mock[SemanticCheckMonitor])
@@ -47,9 +48,11 @@ trait QueryGraphProducer extends MockitoSugar {
     val firstRewriteStep = astRewriter.rewrite(query, cleanedStatement, semanticState)._1
     val rewrittenAst: Statement =
       Planner.rewriteStatement(firstRewriteStep, semanticState.scopeTree)
-
-    rewrittenAst.asInstanceOf[Query].asUnionQuery.queries.head.graph
+    rewrittenAst.asInstanceOf[Query].asUnionQuery.queries.head
   }
+
+  def produceQueryGraphForPattern(query: String): QueryGraph =
+    producePlannerQueryForPattern(query).lastQueryGraph
 }
 
 trait CardinalityTestHelper extends QueryGraphProducer {
@@ -62,21 +65,26 @@ trait CardinalityTestHelper extends QueryGraphProducer {
   def givenPredicate(pattern: String) = TestUnit("MATCH " + pattern)
 
   case class TestUnit(query: String,
-                      allNodes: Option[Int] = None,
-                      knownLabelCardinality: Map[String, Int] = Map.empty,
+                      allNodes: Option[Long] = None,
+                      knownLabelCardinality: Map[String, Long] = Map.empty,
                       knownIndexSelectivity: Map[(String, String), Double] = Map.empty,
                       knownProperties: Set[String] = Set.empty,
-                      knownRelationshipCardinality: Map[(String, String, String), Int] = Map.empty,
+                      knownRelationshipCardinality: Map[(String, String, String), Long] = Map.empty,
                       queryGraphArgumentIds: Set[IdName] = Set.empty) {
 
-    def withLabel(tuple: (Symbol, Int)): TestUnit = copy(knownLabelCardinality = knownLabelCardinality + (tuple._1.name -> tuple._2))
+    def withLabel(tuple: (Symbol, Long)): TestUnit = copy(knownLabelCardinality = knownLabelCardinality + (tuple._1.name -> tuple._2))
+    def withLabel(label: Symbol, cardinality: Double): TestUnit = copy(knownLabelCardinality = knownLabelCardinality + (label.name -> cardinality.toLong))
 
     def withQueryGraphArgumentIds(idNames: IdName*): TestUnit =
       copy(queryGraphArgumentIds = Set(idNames: _*))
 
-    def withGraphNodes(number: Int): TestUnit = copy(allNodes = Some(number))
+    def withGraphNodes(number: Long): TestUnit = copy(allNodes = Some(number))
+    def withGraphNodes(number: Double): TestUnit = copy(allNodes = Some(number.toLong))
 
-    def withRelationshipCardinality(relationship: (((Symbol, Symbol), Symbol), Int)) = {
+    def withRelationshipCardinality(relationship: ((Symbol, Symbol), Symbol), cardinality: Double): TestUnit =
+      withRelationshipCardinality(relationship -> cardinality.toLong)
+
+    def withRelationshipCardinality(relationship: (((Symbol, Symbol), Symbol), Long)): TestUnit = {
       val (((lhs, relType), rhs), cardinality) = relationship
       copy (
         knownRelationshipCardinality = knownRelationshipCardinality + ((lhs.name, relType.name, rhs.name) -> cardinality)
@@ -112,7 +120,7 @@ trait CardinalityTestHelper extends QueryGraphProducer {
         def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
           Cardinality({
             labelId.map(
-              id => getLabelName(id).map(knownLabelCardinality).getOrElse(0)
+              id => getLabelName(id).map(knownLabelCardinality).getOrElse(0L)
             ).getOrElse(nodesCardinality)
           }.toDouble)
 
@@ -128,6 +136,9 @@ trait CardinalityTestHelper extends QueryGraphProducer {
           }
         }
 
+        def getCardinality(fromLabel:String, typ:String, toLabel:String): Long =
+          knownRelationshipCardinality.getOrElse((fromLabel, typ, toLabel), 0)
+
         def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
           (fromLabel, relTypeId, toLabel) match {
             case (_, Some(id), _) if getRelationshipName(id).isEmpty => Cardinality(0)
@@ -135,7 +146,7 @@ trait CardinalityTestHelper extends QueryGraphProducer {
             val lhsName = getLabelName(lhsId).get
               val rhsName = getLabelName(rhsId).get
               getRelationshipName(id)
-                .map(relName => Cardinality(knownRelationshipCardinality((lhsName, relName, rhsName))))
+                .map(relName => Cardinality(getCardinality(lhsName, relName, rhsName)))
                 .getOrElse(Cardinality(0))
             case (Some(lhsId), Some(id), None) =>
               val lhsName = getLabelName(lhsId).get
@@ -199,29 +210,40 @@ trait CardinalityTestHelper extends QueryGraphProducer {
 
     private def fill[T](destination: mutable.Map[String, T], source: Iterable[(String, Int)], f: Int => T) {
       source.foreach {
-        case (name: String, id: Int) => destination += name -> f(id)
+        case (name, id) => destination += name -> f(id)
       }
     }
 
     implicit val cardinalityEq = new Equality[Cardinality] {
       def areEqual(a: Cardinality, b: Any): Boolean = b match {
-        case b: Cardinality => a.amount === b.amount +- 0.01
+        case b: Cardinality =>
+          val tolerance = Math.max(0.01, a.amount * 0.01) // One percent off is acceptable
+          a.amount === b.amount +- tolerance
         case _ => false
       }
     }
 
-    def shouldHaveCardinality(number: Double) {
+    def shouldHaveQueryGraphCardinality(number: Double) {
       val (statistics, semanticTable) = prepareTestContext
-      val queryGraph = createQueryGraphAndSemanticStableTable()
+      val queryGraph = createQueryGraph()
       val cardinalityModel = createCardinalityModel(statistics, semanticTable)
-      val result = cardinalityModel(queryGraph)
+      val result = cardinalityModel(queryGraph, Map.empty)
       result should equal(Cardinality(number))
+    }
+
+    def shouldHavePlannerQueryCardinality(f: QueryGraphCardinalityModel => Metrics.CardinalityModel)(number: Double) {
+      val (statistics, semanticTable) = prepareTestContext
+      val graphCardinalityModel = createCardinalityModel(statistics, semanticTable)
+      val cardinalityModelUnderTest = f(graphCardinalityModel)
+      val plannerQuery: PlannerQuery = producePlannerQueryForPattern(query)
+      val plan = newMockedLogicalPlanWithSolved(Set.empty, plannerQuery)
+      cardinalityModelUnderTest(plan) should equal(Cardinality(number))
     }
 
     // TODO: Still hard coded to use assumeDependence. Refactor!
     def shouldHaveSelectivity(number: Double): Unit = {
       val (statistics, semanticTable) = prepareTestContext
-      val queryGraph = createQueryGraphAndSemanticStableTable()
+      val queryGraph = createQueryGraph()
       val predicates = producePredicates(queryGraph)
       val selectivityEstimator = estimateSelectivity( statistics, semanticTable )
       val result: List[(PredicateCombination, Selectivity)] = groupPredicates(selectivityEstimator)(predicates).toList
@@ -229,7 +251,7 @@ trait CardinalityTestHelper extends QueryGraphProducer {
       mostSelective should equal(Selectivity(number))
     }
 
-    def createQueryGraphAndSemanticStableTable(): QueryGraph = {
+    def createQueryGraph(): QueryGraph = {
       produceQueryGraphForPattern(query)
         .withArgumentIds(queryGraphArgumentIds)
     }

@@ -151,9 +151,9 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
 
   test("should solve optional matches with arguments and predicates") {
     val plan = planFor("""MATCH (n)
-                         |  OPTIONAL MATCH n-[r]-(m)
-                         |  WHERE m.prop = 42
-                         |  RETURN m""".stripMargin).plan.endoRewrite(unnestOptional)
+                         |OPTIONAL MATCH n-[r]-(m)
+                         |WHERE m.prop = 42
+                         |RETURN m""".stripMargin).plan.endoRewrite(unnestOptional)
     plan should equal(
       Projection(
         OptionalExpand(

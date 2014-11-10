@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
+import org.neo4j.cypher.internal.compiler.v2_2.ast.LabelName
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryGraph, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 
@@ -34,7 +35,7 @@ object Metrics {
   // (e.g. by asking the database for statistics)
   type CardinalityModel = LogicalPlan => Cardinality
 
-  type QueryGraphCardinalityModel = QueryGraph => Cardinality
+  type QueryGraphCardinalityModel = (QueryGraph, Map[IdName, Seq[LabelName]]) => Cardinality
 }
 
 case class Metrics(cost: CostModel,

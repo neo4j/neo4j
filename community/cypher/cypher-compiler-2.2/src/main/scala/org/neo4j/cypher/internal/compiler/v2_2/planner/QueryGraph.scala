@@ -134,6 +134,9 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
 
   def hasOptionalPatterns = optionalMatches.nonEmpty
 
+  def patternNodeLabels: Map[IdName, Set[LabelName]] =
+    patternNodes.collect { case node: IdName => node -> selections.labelsOnNode(node) }.toMap
+
   // This is here to stop usage of copy from the outside
   private def copy(patternRelationships: Set[PatternRelationship] = patternRelationships,
                    patternNodes: Set[IdName] = patternNodes,

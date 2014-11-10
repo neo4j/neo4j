@@ -36,8 +36,6 @@ case class CardinalityCostModel(cardinality: CardinalityModel) extends CostModel
 
     case _: NodeHashJoin |
       _: Aggregation |
-      _: Apply |
-      _: CartesianProduct |
       _: AbstractLetSemiApply |
       _: Limit |
       _: Optional |
@@ -70,9 +68,10 @@ case class CardinalityCostModel(cardinality: CardinalityModel) extends CostModel
       apply(lhs) + cardinality(lhs) * apply(rhs)
 
     case _ =>
-      val totalCost = cardinalityForPlan(plan) * costPerRow(plan) +
-      plan.lhs.map(this).getOrElse(Cost(0)) +
-      plan.rhs.map(this).getOrElse(Cost(0))
+      val lhsCost = plan.lhs.map(apply).getOrElse(Cost(0))
+      val rhsCost = plan.rhs.map(apply).getOrElse(Cost(0))
+      val costForThisPlan = cardinalityForPlan(plan) * costPerRow(plan)
+      val totalCost = costForThisPlan + lhsCost + rhsCost
       totalCost
   }
 }

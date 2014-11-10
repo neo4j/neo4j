@@ -17,436 +17,367 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityModel
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assumeIndependence.{IndependenceCombiner, AssumeIndependenceQueryGraphCardinalityModel}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{SemanticTable, LogicalPlanningTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.CardinalityTestHelper
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityModel
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assumeIndependence.{AssumeIndependenceQueryGraphCardinalityModel, IndependenceCombiner}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
+import org.neo4j.cypher.internal.helpers.testRandomizer
 
 class AssumeIndependenceCardinalityModelTest extends CypherFunSuite with LogicalPlanningTestSupport with CardinalityTestHelper {
 
+  // Glossary:
+  val N: Long = testRandomizer.nextDouble() * 1E6 // Graph node count - the god number.
+  println("N: " + N)
+  val Asel = .2
+  // How selective a :A predicate is
+  val Bsel = .1
+  // How selective a :B predicate is
+  val Csel = .01
+  // How selective a :C predicate is
+  val Dsel = .001
+  // How selective a :D predicate is
+  val A: Long = N * Asel
+  // Nodes with label A
+  val B: Long = N * Bsel
+  // Nodes with label B
+  val C: Long = N * Csel
+  // Nodes with label C
+  val D: Long = N * Dsel // Nodes with label D
+
+  val Aprop = 0.5
+  // Selectivity of index on :A(prop)
+  val Bprop = 0.3
+  // Selectivity of index on :B(prop)
+  val Abar = 0.2 // Selectivity of index on :A(bar)
+
+  val A_T1_A_sel = 5 / A
+  // Numbers of relationships of type T1 between A and B respectively labeled nodes
+  val A_T1_B_sel = 0.5
+  val A_T1_C_sel = 0.05
+  val A_T1_D_sel = 0.005
+
+  val A_T1_A    = A * A * A_T1_A_sel
+  val A_T1_B    = A * B * A_T1_B_sel
+  val A_T1_C    = A * C * A_T1_C_sel
+  val A_T1_D    = A * D * A_T1_D_sel
+  val A_T1_STAR = A_T1_A + A_T1_B + A_T1_C + A_T1_D
+
+  val B_T1_B_sel = 10 / B
+  val B_T1_C_sel = 0.1
+  val B_T1_A_sel = 0.01
+  val B_T1_D_sel = 0.001
+
+  val B_T1_B    = B * B * B_T1_B_sel
+  val B_T1_C    = B * C * B_T1_C_sel
+  val B_T1_A    = B * A * B_T1_A_sel
+  val B_T1_D    = B * D * B_T1_D_sel
+  val B_T1_STAR = B_T1_A + B_T1_B + B_T1_C + B_T1_D
+  val STAR_T1_B = B_T1_B + A_T1_B
+
+  val D_T1_C_sel = 0.3
+  val D_T1_C     = D * C * D_T1_C_sel
+
+  val A_T2_A_sel = 0
+  val A_T2_B_sel = 5
+
+  val A_T2_A    = A * A * A_T2_A_sel
+  val A_T2_B    = A * B * A_T2_B_sel
+  val A_T2_STAR = A_T2_A + A_T2_B
+  val STAR_T2_B = A_T2_B + 0 // B_T2_B
+
+  val D_T2_C_sel = 0.07
+  val D_T2_C     = D * C * D_T2_C_sel
+
+  // Relationship count
+  val R = A_T1_STAR + B_T1_STAR + A_T2_STAR + D_T1_C + D_T2_C
+
   test("all nodes is gotten from stats") {
-    givenPattern("MATCH (n)").
-      withGraphNodes(425).
-      shouldHaveCardinality(425)
+    forQuery("MATCH (n)").
+    shouldHaveQueryGraphCardinality(N)
   }
 
   test("all nodes of given label") {
-    givenPattern("MATCH (n:A)").
-      withGraphNodes(425).
-      withLabel('A -> 42).
-      shouldHaveCardinality(42)
+    forQuery("MATCH (n:A)").
+    shouldHaveQueryGraphCardinality(A)
   }
 
   test("cross product of all nodes of two labels") {
-    givenPattern("MATCH (n:A) MATCH (m:B)").
-      withGraphNodes(425).
-      withLabel('A -> 42).
-      withLabel('B -> 10).
-      shouldHaveCardinality(42 * 10)
+    forQuery("MATCH (n:A) MATCH (m:B)").
+    shouldHaveQueryGraphCardinality(A * B)
   }
 
   test("cross product of all nodes") {
-    givenPattern("MATCH a, b").
-      withGraphNodes(425).
-      shouldHaveCardinality(425 * 425)
+    forQuery("MATCH a, b").
+    shouldHaveQueryGraphCardinality(N * N)
   }
 
   test("empty pattern yields single result") {
-    givenPattern("").
-      withGraphNodes(425).
-      shouldHaveCardinality(1)
+    forQuery("").
+    shouldHaveQueryGraphCardinality(1)
   }
 
   test("cross product of all nodes and a label scan") {
-    givenPattern("MATCH a, (b:B)").
-      withGraphNodes(40).
-      withLabel('B -> 30).
-      shouldHaveCardinality(40 * 30)
+    forQuery("MATCH a, (b:B)").
+    shouldHaveQueryGraphCardinality(N * B)
   }
 
   test("node cardinality given multiple labels") {
-    givenPattern("MATCH (a:A:B)").
-      withGraphNodes(40).
-      withLabel('A -> 20).
-      withLabel('B -> 30).
-      shouldHaveCardinality(40.0 * (20.0 / 40 ) * (30.0 / 40))
+    forQuery("MATCH (a:A:B)").
+    shouldHaveQueryGraphCardinality(N * Asel * Bsel)
   }
 
   test("node cardinality given multiple labels 2") {
-    givenPattern("MATCH (a:A:B)").
-      withGraphNodes(40).
-      withLabel('A -> 30).
-      withLabel('B -> 20).
-      shouldHaveCardinality(40.0 * (30.0 / 40) *  (20.0 / 40))
+    forQuery("MATCH (a:B:A)").
+    shouldHaveQueryGraphCardinality(N * Asel * Bsel)
   }
 
   test("node cardinality when label is missing from store") {
-    givenPattern("MATCH (a:A)").
-      withGraphNodes(40).
-      shouldHaveCardinality(0)
+    forQuery("MATCH (a:Z)").
+    shouldHaveQueryGraphCardinality(0)
   }
 
   test("node cardinality when label is missing from store 2") {
-    givenPattern("MATCH (a:A:B)").
-      withGraphNodes(40).
-      withLabel('B -> 30).
-      shouldHaveCardinality(0)
+    forQuery("MATCH (a:A:Z)").
+    shouldHaveQueryGraphCardinality(0)
   }
 
-  test("node cardinality when one label is missing empty") {
-    givenPattern("MATCH (a:A:B)").
-      withGraphNodes(40).
-      withLabel('A -> 0).
-      withLabel('B -> 30).
-      shouldHaveCardinality(0)
+  test("node cardinality when one label is empty") {
+    forQuery("MATCH (a:EMPTY:B)").
+    shouldHaveQueryGraphCardinality(0)
   }
 
   test("cardinality for label and property equality when index is present") {
-    givenPattern("MATCH (a:A) WHERE a.prop = 42").
-      withGraphNodes(40).
-      withLabel('A -> 30).
-      withIndexSelectivity(('A, 'prop) -> .05).
-      shouldHaveCardinality(30 * .05)
+    forQuery("MATCH (a:A) WHERE a.prop = 42").
+    shouldHaveQueryGraphCardinality(A * Aprop)
   }
 
   test("cardinality for label and property equality when index is not present") {
-    givenPattern("MATCH (a:A) WHERE a.prop = 42").
-      withGraphNodes(40).
-      withKnownProperty('prop).
-      withLabel('A -> 10).
-      shouldHaveCardinality(40.0 * (10.0 / 40) * DEFAULT_EQUALITY_SELECTIVITY)
-  }
-
-  test("cardinality for label and property equality when index is not present 2") {
-    givenPattern("MATCH (a:A) WHERE a.prop = 42").
-      withGraphNodes(40).
-      withKnownProperty('prop).
-      withLabel('A -> 40).
-      shouldHaveCardinality(40 * DEFAULT_EQUALITY_SELECTIVITY)
+    forQuery("MATCH (a:B) WHERE a.bar = 42").
+    shouldHaveQueryGraphCardinality(B * DEFAULT_EQUALITY_SELECTIVITY)
   }
 
   test("cardinality for label and property NOT-equality when index is present") {
-    givenPattern("MATCH (a:A) WHERE NOT a.prop = 42").
-      withGraphNodes(40).
-      withLabel('A -> 30).
-      withIndexSelectivity(('A, 'prop) -> .3).
-      shouldHaveCardinality(30 * (1 - .3))
+    forQuery("MATCH (a:A) WHERE NOT a.prop = 42").
+    shouldHaveQueryGraphCardinality(A * (1 - Aprop))
   }
 
   test("cardinality for multiple OR:ed equality predicates on a single index") {
-    givenPattern("MATCH (a:A) WHERE a.prop = 42 OR a.prop = 43").
-      withGraphNodes(40).
-      withLabel('A -> 30).
-      withIndexSelectivity(('A, 'prop) -> .01).
-      shouldHaveCardinality(40 * (30.0 / 40) * (1 - (1 - .01) * (1 - .01)))
+    forQuery("MATCH (a:A) WHERE a.prop = 42 OR a.prop = 43").
+    shouldHaveQueryGraphCardinality(A * or(Aprop, Aprop))
   }
 
   test("cardinality for multiple OR:ed equality predicates on two indexes") {
-    givenPattern("MATCH (a:A) WHERE a.prop = 42 OR a.bar = 43").
-      withGraphNodes(40).
-      withLabel('A -> 30).
-      withIndexSelectivity(('A, 'prop) -> .3).
-      withIndexSelectivity(('A, 'bar) -> .4).
-      shouldHaveCardinality(40.0 * (30.0 / 40) * (1 - (1 - .3) * (1 - .4)))
+    forQuery("MATCH (a:A) WHERE a.prop = 42 OR a.bar = 43").
+    shouldHaveQueryGraphCardinality(A * or(Aprop, Abar))
   }
 
   test("cardinality for multiple OR:ed equality predicates where one is backed by index and one is not") {
-    givenPattern("MATCH (a:A) WHERE a.prop = 42 OR a.bar = 43").
-      withGraphNodes(40).
-      withLabel('A -> 30).
-      withIndexSelectivity(('A, 'prop) -> .3).
-      withKnownProperty('bar).
-      shouldHaveCardinality(40.0 * (30.0 / 40) * (1 - (1 - DEFAULT_EQUALITY_SELECTIVITY) * (1 - .3)))
+    forQuery("MATCH (a:B) WHERE a.prop = 42 OR a.bar = 43").
+    shouldHaveQueryGraphCardinality(B * or(Bprop, DEFAULT_EQUALITY_SELECTIVITY))
   }
 
-  ignore("cardinality for property equality predicate when property name is unknown") { // We can get away with not doing this
-    givenPattern("MATCH (a) WHERE a.prop = 42").
-      withGraphNodes(40).
-      shouldHaveCardinality(0)
+  ignore("cardinality for property equality predicate when property name is unknown") {
+    // This should work
+    forQuery("MATCH (a) WHERE a.unknownProp = 42").
+    shouldHaveQueryGraphCardinality(0)
   }
 
   test("cardinality for hardcoded false") {
-    givenPattern("MATCH (a) WHERE false").
-      withGraphNodes(40).
-      shouldHaveCardinality(0)
+    forQuery("MATCH (a) WHERE false").
+    shouldHaveQueryGraphCardinality(0)
   }
 
   test("cardinality for multiple AND:ed equality predicates on two indexes") {
-    givenPattern("MATCH (a:A) WHERE a.prop = 42 AND a.bar = 43").
-      withGraphNodes(40).
-      withLabel('A -> 30).
-      withIndexSelectivity(('A, 'prop) -> .03).
-      withIndexSelectivity(('A, 'bar) -> .04).
-      shouldHaveCardinality(30 * .03 * .04)
+    forQuery("MATCH (a:A) WHERE a.prop = 42 AND a.bar = 43").
+    shouldHaveQueryGraphCardinality(A * Aprop * Abar)
   }
 
   test("cardinality for multiple AND:ed equality predicates where one is backed by index and one is not") {
-    givenPattern("MATCH (a:A) WHERE a.prop = 42 AND a.bar = 43").
-      withGraphNodes(40).
-      withLabel('A -> 30).
-      withIndexSelectivity(('A, 'prop) -> .03).
-      withKnownProperty('bar).
-      shouldHaveCardinality(30 * .03 * DEFAULT_EQUALITY_SELECTIVITY)
-  }
-
-  test("cardinality for label and property equality when no index is present") {
-    givenPattern("MATCH (a:A) WHERE a.prop = 42").
-      withGraphNodes(40).
-      withLabel('A -> 30).
-      withKnownProperty('prop).
-      shouldHaveCardinality(40.0 * (30.0 / 40) * DEFAULT_EQUALITY_SELECTIVITY)
+    forQuery("MATCH (a:B) WHERE a.prop = 42 AND a.bar = 43").
+    shouldHaveQueryGraphCardinality(B * Bprop * DEFAULT_EQUALITY_SELECTIVITY)
   }
 
   test("relationship cardinality given no labels or types") {
-    givenPattern("MATCH (a)-->(b)").
-      withGraphNodes(40).
-      withLabel('A -> 30).
-      withLabel('B -> 20).
-      withRelationshipCardinality('A -> 'TYPE -> 'B -> 10).
-      withRelationshipCardinality('B -> 'TYPE -> 'A -> 10).
-      shouldHaveCardinality(40 * 40 * (20.0 / (40.0 * 40)))
+    forQuery("MATCH (a)-->(b)").
+    shouldHaveQueryGraphCardinality(R)
   }
 
   test("relationship cardinality given labels on both sides") {
-    givenPattern("MATCH (a:A)-[r:TYPE]->(b:B)").
-      withGraphNodes(40).
-      withLabel('A -> 30).
-      withLabel('B -> 20).
-      withRelationshipCardinality('A -> 'TYPE -> 'B -> 50).
-      shouldHaveCardinality(50)
+    forQuery("MATCH (a:A)-[r:T1]->(b:B)").
+    shouldHaveQueryGraphCardinality(A_T1_B)
   }
 
   test("relationship cardinality given labels on both sides for incoming pattern") {
-    givenPattern("MATCH (b:B)<-[r:TYPE]-(a:A)").
-      withGraphNodes(40).
-      withLabel('A -> 30).
-      withLabel('B -> 20).
-      withRelationshipCardinality('A -> 'TYPE -> 'B -> 50).
-      shouldHaveCardinality(50)
+    forQuery("MATCH (b:B)<-[r:T1]-(a:A)").
+    shouldHaveQueryGraphCardinality(A_T1_B)
   }
 
   test("relationship cardinality given labels on both sides bidirectional") {
-
-    val patternNodeCrossProduct = 40.0 * 40.0
-    val labelSelectivity = (30.0 / 40) * (20.0 / 40)
-    val maxRelCount = patternNodeCrossProduct * labelSelectivity
-    val relSelectivity = (10.0 + 20.0) / maxRelCount - (10.0 / maxRelCount) * (20.0 / maxRelCount)
-
-    givenPattern("MATCH (a:A)-[r:TYPE]-(b:B)").
-      withGraphNodes(40).
-      withLabel('A -> 30).
-      withLabel('B -> 20).
-      withRelationshipCardinality('A -> 'TYPE -> 'B -> 10).
-      withRelationshipCardinality('B -> 'TYPE -> 'A -> 20).
-      shouldHaveCardinality(patternNodeCrossProduct * labelSelectivity * relSelectivity)
+    forQuery("MATCH (a:A)-[r:T1]-(b:B)").
+    shouldHaveQueryGraphCardinality(A * B * or(A_T1_B_sel, B_T1_A_sel))
   }
 
   test("relationship cardinality given a label on one side") {
-    val N = 10000.0
-    val labelSelectivity = 30.0 / 10000.0
-    val maxRelCount = N * N * labelSelectivity
-    val relSelectivity = (50.0 + 50) / maxRelCount
-
-    givenPattern("MATCH (a:A)-[r:TYPE]->(b)").
-      withGraphNodes(10000).
-      withLabel('A -> 30).
-      withLabel('B -> 20).
-      withLabel('C -> 40).
-      withRelationshipCardinality('A -> 'TYPE -> 'B -> 50).
-      withRelationshipCardinality('A -> 'TYPE -> 'C -> 50).
-      shouldHaveCardinality(N * N * labelSelectivity * relSelectivity)
+    forQuery("MATCH (a:A)-[r:T1]->(b)").
+    shouldHaveQueryGraphCardinality(A_T1_STAR)
   }
 
   test("relationship cardinality given a label on one side bidirectional") {
-    givenPattern("MATCH (a:A)-[r:TYPE]-(b)").
-      withGraphNodes(10000).
-      withLabel('A -> 300).
-      withLabel('B -> 200).
-      withRelationshipCardinality('A -> 'TYPE -> 'B -> 80).
-      withRelationshipCardinality('B -> 'TYPE -> 'A -> 50).
-      shouldHaveCardinality(50 + 80) //Assume independence
+    val STAR_T1_A = B_T1_A
+    forQuery("MATCH (a:A)-[r:T1]-(b)").
+    shouldHaveQueryGraphCardinality(A_T1_STAR + STAR_T1_A)
   }
 
   test("cardinality for rel-patterns with multiple labels on one end") {
-    val patternNodeCrossProduct = 40.0 * 40.0
-    val labelSelectivity = (30.0 / 40) * (20.0 / 40)
-    val maxRelCount = patternNodeCrossProduct * labelSelectivity
-    val relSelectivity = (50.0 / maxRelCount) * (30 / maxRelCount)
-
-    givenPattern("MATCH (a:A:B)-->()").
-      withGraphNodes(40).
-      withLabel('A -> 30).
-      withLabel('B -> 20).
-      withRelationshipCardinality('A -> 'TYPE -> 'B -> 50).
-      withRelationshipCardinality('B -> 'TYPE -> 'B -> 30).
-      shouldHaveCardinality(patternNodeCrossProduct * labelSelectivity * relSelectivity)
+    val maxRelCount = N * N * Asel * Bsel
+    val A_relSelectivity = (A_T1_STAR + A_T2_STAR) / maxRelCount
+    val B_relSelectivity = B_T1_STAR / maxRelCount
+    val relSelectivity = A_relSelectivity * B_relSelectivity
+    forQuery("MATCH (a:A:B)-->()").
+    shouldHaveQueryGraphCardinality(A * B * relSelectivity)
   }
 
   test("cardinality for rel-patterns with multiple rel types") {
-    val patternNodeCrossProduct = 40.0 * 40.0
-    val labelSelectivity = (30.0 / 40) * (20.0 / 40)
+    val patternNodeCrossProduct = N * N
+    val labelSelectivity = Asel * Bsel
     val maxRelCount = patternNodeCrossProduct * labelSelectivity
-    val relSelectivity = (10.0 + 30) / maxRelCount - (10.0 / maxRelCount) * (30.0 / maxRelCount)
+    val relSelectivity = (A_T1_B + A_T2_B) / maxRelCount - (A_T1_B / maxRelCount) * (A_T2_B / maxRelCount)
 
-    givenPattern("MATCH (a:A)-[:T1|:T2]->(:B)").
-      withGraphNodes(40).
-      withLabel('A -> 30).
-      withLabel('B -> 20).
-      withRelationshipCardinality('A -> 'T1 -> 'B -> 10).
-      withRelationshipCardinality('A -> 'T2 -> 'B -> 30).
-      shouldHaveCardinality(patternNodeCrossProduct * labelSelectivity * relSelectivity)
+    forQuery("MATCH (a:A)-[:T1|:T2]->(:B)").
+    shouldHaveQueryGraphCardinality(patternNodeCrossProduct * labelSelectivity * relSelectivity)
   }
 
   test("cardinality for rel-patterns with multiple rel types and multiple labels on one side - test 1") {
-    val patternNodeCrossProduct = 40.0 * 40.0
-    val labelSelectivity = (30.0 / 40) * (20.0 / 40)
+    val B_T2_STAR = 0
+    val patternNodeCrossProduct = N * N
+    val labelSelectivity = Asel * Bsel
     val maxRelCount = patternNodeCrossProduct * labelSelectivity
-    val relSelectivityT1 = (10.0 / maxRelCount) * 0
-    val relSelectivityT2 = (15.0 / maxRelCount) * (30.0 / maxRelCount)
-    val relSelectivity = 1 - (1 - relSelectivityT1) * (1 - relSelectivityT2) // OR the two together
+    val relSelectivityT1 = (A_T1_STAR / maxRelCount) * (B_T1_STAR / maxRelCount)
+    val relSelectivityT2 = (A_T2_STAR / maxRelCount) * (B_T2_STAR / maxRelCount)
+    val relSelectivity = or(relSelectivityT1, relSelectivityT2)
 
-    givenPattern("MATCH (a:A:B)-[:T1|:T2]->()").
-      withGraphNodes(40).
-      withLabel('A -> 30).
-      withLabel('B -> 20).
-      withRelationshipCardinality('A -> 'T1 -> 'B -> 10).
-      withRelationshipCardinality('B -> 'T2 -> 'B -> 30).
-      withRelationshipCardinality('A -> 'T2 -> 'B -> 15).
-      shouldHaveCardinality(patternNodeCrossProduct * labelSelectivity * relSelectivity)
+    forQuery("MATCH (a:A:B)-[:T1|:T2]->()").
+    shouldHaveQueryGraphCardinality(patternNodeCrossProduct * labelSelectivity * relSelectivity)
   }
 
   test("cardinality for rel-patterns with multiple rel types and multiple labels on one side - test 2") {
-    val patternNodeCrossProduct = 40.0 * 40.0
-    val labelSelectivity = (30.0 / 40) * (20.0 / 40)
-
+    val D_T1_STAR = D_T1_C
+    val D_T2_STAR = D_T2_C
+    val patternNodeCrossProduct = N * N
+    val labelSelectivity = Asel * Dsel
     val maxRelCount = patternNodeCrossProduct * labelSelectivity
-    val relSelectivityT1 = (10.0 / maxRelCount) * (3.0 / maxRelCount)
-    val relSelectivityT2 = (30.0 / maxRelCount) * (15.0 / maxRelCount)
-    val relSelectivity = 1 - (1 - relSelectivityT1) * (1 - relSelectivityT2) // OR the two together
+    val relSelectivityT1 = (A_T1_STAR / maxRelCount) * (D_T1_STAR / maxRelCount)
+    val relSelectivityT2 = (A_T2_STAR / maxRelCount) * (D_T2_STAR / maxRelCount)
+    val relSelectivity = or(relSelectivityT1, relSelectivityT2)
 
-
-    givenPattern("MATCH (a:A:B)-[:T1|:T2]->()").
-      withGraphNodes(40).
-      withLabel('A -> 30).
-      withLabel('B -> 20).
-      withRelationshipCardinality('A -> 'T1 -> 'B -> 10).
-      withRelationshipCardinality('B -> 'T1 -> 'B -> 3).
-      withRelationshipCardinality('A -> 'T2 -> 'B -> 30).
-      withRelationshipCardinality('B -> 'T2 -> 'B -> 15).
-      shouldHaveCardinality(patternNodeCrossProduct * labelSelectivity * relSelectivity)
+    forQuery("MATCH (a:A:D)-[:T1|:T2]->()").
+    shouldHaveQueryGraphCardinality(patternNodeCrossProduct * labelSelectivity * relSelectivity)
   }
 
   test("cardinality for rel-patterns with multiple rel types and multiple labels on both sides") {
-    val patternNodeCrossProduct = 40.0 * 40.0
-    val labelSelectivity = (30.0 / 40) * (20.0 / 40)
+    val A_T2_C = 0
+    val A_T2_D = 0
+    val B_T2_C = 0
+    val B_T2_D = 0
+    val patternNodeCrossProduct = N * N
+    val labelSelectivity = Asel * Bsel * Csel * Dsel
     val maxRelCount = patternNodeCrossProduct * labelSelectivity
-    val relSelectivityT1 = (1.0 / maxRelCount) * (2.0 / maxRelCount) * (5.0 / maxRelCount) * (6.0 / maxRelCount)
-    val relSelectivityT2 = (3.0 / maxRelCount) * (4.0 / maxRelCount) * (7.0 / maxRelCount) * (8.0 / maxRelCount)
-    val relSelectivity = 1 - (1 - relSelectivityT1) * (1 - relSelectivityT2) // OR the two together
+    val relSelT1 = (A_T1_C / maxRelCount) * (A_T1_D / maxRelCount) * (B_T1_C / maxRelCount) * (B_T1_D / maxRelCount)
+    val relSelT2 = (A_T2_C / maxRelCount) * (A_T2_D / maxRelCount) * (B_T2_C / maxRelCount) * (B_T2_D / maxRelCount)
+    val relSelectivity = or(relSelT1, relSelT2)
 
-
-    givenPattern("MATCH (a:A:B)-[:T1|:T2]->(c:C:D)").
-      withGraphNodes(40).
-      withLabel('A -> 30).
-      withLabel('B -> 20).
-      withRelationshipCardinality('A -> 'T1 -> 'C -> 1).
-      withRelationshipCardinality('B -> 'T1 -> 'C -> 2).
-      withRelationshipCardinality('A -> 'T2 -> 'C -> 3).
-      withRelationshipCardinality('B -> 'T2 -> 'C -> 4).
-      withRelationshipCardinality('A -> 'T1 -> 'D -> 5).
-      withRelationshipCardinality('B -> 'T1 -> 'D -> 6).
-      withRelationshipCardinality('A -> 'T2 -> 'D -> 7).
-      withRelationshipCardinality('B -> 'T2 -> 'D -> 8).
-      shouldHaveCardinality(patternNodeCrossProduct * labelSelectivity * relSelectivity)
+    forQuery("MATCH (a:A:B)-[:T1|:T2]->(c:C:D)").
+    shouldHaveQueryGraphCardinality(patternNodeCrossProduct * labelSelectivity * relSelectivity)
   }
 
   test("given empty database, all predicates should return 0 cardinality") {
     givenPattern("MATCH a WHERE a.prop = 10").
-      withGraphNodes(0).
-      withKnownProperty('prop).
-      shouldHaveCardinality(0)
+    withGraphNodes(0).
+    withKnownProperty('prop).
+    shouldHaveQueryGraphCardinality(0)
   }
 
-  test("optional match from an unknown known label") {
-    givenPattern("MATCH (a) OPTIONAL MATCH (a)-[:TYPE]->(:BAR)").
-      withGraphNodes(10000).
-      withLabel('FOO -> 1).
-      withLabel('BAR -> 1000).
-      withRelationshipCardinality('FOO -> 'TYPE -> 'BAR -> 1000).
-      withRelationshipCardinality('BAZ -> 'TYPE -> 'BAR -> 300).
-      shouldHaveCardinality(10000)
+  test("optional match from a node with no label specified") {
+    forQuery("MATCH (a) OPTIONAL MATCH (a)-[:T1]->(:B)").
+    shouldHaveQueryGraphCardinality(A_T1_B + B_T1_B)
   }
 
   test("optional match from a known label") {
-    givenPattern("MATCH (a:FOO) OPTIONAL MATCH (a)-[:TYPE]->(:BAR)").
-      withGraphNodes(10000).
-      withLabel('FOO -> 1).
-      withLabel('BAR -> 1000).
-      withRelationshipCardinality('FOO -> 'TYPE -> 'BAR -> 100).
-      shouldHaveCardinality(100)
+    forQuery("MATCH (a:A) OPTIONAL MATCH (a)-[:T1]->(:B)").
+    shouldHaveQueryGraphCardinality(A_T1_B)
   }
 
   test("predicates in optional match do not decrease the cardinality matches") {
-    givenPattern("MATCH (a:FOO) OPTIONAL MATCH (a)-[:TYPE]->(:BAR)").
-      withGraphNodes(1000).
-      withLabel('FOO -> 500).
-      withLabel('BAR -> 0).
-      withRelationshipCardinality('FOO -> 'TYPE -> 'BAR -> 0).
-      shouldHaveCardinality(500)
+    forQuery("MATCH (a:A) OPTIONAL MATCH (a)-[:MISSING]->()").
+    shouldHaveQueryGraphCardinality(A)
   }
 
   test("honours bound arguments") {
     givenPattern("MATCH (a:FOO)-[:TYPE]->(b:BAR)").
-      withQueryGraphArgumentIds(IdName("a")).
-      withGraphNodes(500).
-      withLabel('FOO -> 100).
-      withLabel('BAR -> 400).
-      withRelationshipCardinality('FOO -> 'TYPE -> 'BAR -> 1000).
-      shouldHaveCardinality( 1000 / 500)
+    withQueryGraphArgumentIds(IdName("a")).
+    withGraphNodes(500).
+    withLabel('FOO -> 100).
+    withLabel('BAR -> 400).
+    withRelationshipCardinality('FOO -> 'TYPE -> 'BAR -> 1000).
+    shouldHaveQueryGraphCardinality(1000 / 500)
   }
 
   test("optional match will in worst case be a cartesian product") {
-    givenPattern("MATCH (a) OPTIONAL MATCH (b)").
-      withGraphNodes(1000).
-      shouldHaveCardinality(1000 * 1000)
+    forQuery("MATCH (a) OPTIONAL MATCH (b)").
+    shouldHaveQueryGraphCardinality(N * N)
   }
 
   test("multiple optional matches - multiple cross joins") {
-    givenPattern("MATCH (a:FOO) OPTIONAL MATCH (b:BAR) OPTIONAL MATCH (a) WHERE a.prop = 42").
-      withGraphNodes(10000).
-      withLabel('FOO -> 100).
-      withLabel('BAR -> 200).
-      withRelationshipCardinality('FOO -> 'TYPE -> 'BAR -> 0).
-      withRelationshipCardinality('FOO -> 'TYPE -> 'BAZ -> 1).
-      withIndexSelectivity(('FOO, 'prop) -> .3).
-      shouldHaveCardinality(100 * 200)
+    forQuery("MATCH (a:A) OPTIONAL MATCH (b:B) OPTIONAL MATCH (c:C)").
+    shouldHaveQueryGraphCardinality(A * B * C)
   }
 
   test("node by id should be recognized as such") {
-    givenPattern("MATCH (a:FOO) WHERE id(a) IN [1,2,3]").
-      withGraphNodes(1000).
-      withLabel('FOO -> 500).
-      shouldHaveCardinality(1000.0 * (500.0 / 1000) * (3.0 / 1000))
+    forQuery("MATCH (a:A) WHERE id(a) IN [1,2,3]").
+    shouldHaveQueryGraphCardinality(A * (3.0 / N))
   }
 
   test("two relationships with property") {
-    val patternNodeCrossProduct = 6200.0 * 6200.0 * 6200.0
-    val createdSelectivity = 1000.0 / (6200.0 * 6200.0)
-    val appearsOnSelectivity = 5000.0 / (6200.0 * 6200.0)
-    val indexSelectivity = 0.005
+    val patternNodeCrossProduct = N * N * N
+    val createdSelectivity = (A_T1_STAR + A_T2_STAR) / (N * N)
+    val appearsOnSelectivity = (STAR_T1_B + STAR_T2_B) / (N * N)
+    val indexSelectivity = Aprop
 
-    givenPattern("MATCH (t:Track)--(al)--(a:Artist) WHERE t.duration = 61").
-      withGraphNodes(6200).
-      withLabel('Track -> 5000).
-      withLabel('Artist -> 200).
-      withRelationshipCardinality('Track -> 'APPEARS_ON -> 'Album -> 5000).
-      withRelationshipCardinality('Artist -> 'CREATED -> 'Album -> 1000).
-      withIndexSelectivity(('Track, 'duration) -> .005).
-      shouldHaveCardinality(patternNodeCrossProduct * createdSelectivity * appearsOnSelectivity * indexSelectivity)
+    forQuery("MATCH (a:A)--()--(b:B) WHERE a.prop = 61").
+    shouldHaveQueryGraphCardinality(patternNodeCrossProduct * createdSelectivity * appearsOnSelectivity * indexSelectivity)
   }
+
+  private def forQuery(q: String) =
+    givenPattern(q).
+    withGraphNodes(N).
+    withLabel('A, A).
+    withLabel('B, B).
+    withLabel('C, C).
+    withLabel('D, D).
+    withLabel('EMPTY, 0).
+    withIndexSelectivity(('A, 'prop) -> Aprop).
+    withIndexSelectivity(('B, 'prop) -> Bprop).
+    withIndexSelectivity(('A, 'bar) -> Abar).
+    withRelationshipCardinality('A -> 'T1 -> 'A, A_T1_A).
+    withRelationshipCardinality('A -> 'T1 -> 'B, A_T1_B).
+    withRelationshipCardinality('A -> 'T1 -> 'C, A_T1_C).
+    withRelationshipCardinality('A -> 'T1 -> 'D, A_T1_D).
+    withRelationshipCardinality('B -> 'T1 -> 'B, B_T1_B).
+    withRelationshipCardinality('B -> 'T1 -> 'C, B_T1_C).
+    withRelationshipCardinality('B -> 'T1 -> 'A, B_T1_A).
+    withRelationshipCardinality('B -> 'T1 -> 'D, B_T1_D).
+    withRelationshipCardinality('A -> 'T2 -> 'A, A_T2_A).
+    withRelationshipCardinality('A -> 'T2 -> 'B, A_T2_B).
+    withRelationshipCardinality('D -> 'T1 -> 'C, D_T1_C).
+    withRelationshipCardinality('D -> 'T2 -> 'C, D_T2_C)
+
+  def or(numbers: Double*) = 1 - numbers.map(1 - _).reduce(_ * _)
+
+  implicit def toLong(d: Double): Long = d.toLong
 
   def createCardinalityModel(stats: GraphStatistics, semanticTable: SemanticTable): QueryGraphCardinalityModel =
     AssumeIndependenceQueryGraphCardinalityModel(stats, semanticTable, IndependenceCombiner)
