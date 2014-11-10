@@ -29,10 +29,8 @@ import java.io.File;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -45,13 +43,14 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.index_background_sampling_enabled;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.warn;
 
 public class RebuildCountsTest
 {
-    // Indexing counts are recovered/rebuild in IndexingService.start()
+    // Indexing counts are recovered/rebuild in IndexingService.start() and are not tested here
 
     @Test
     public void shouldRebuildMissingCountsStoreOnStart()
@@ -63,7 +62,7 @@ public class RebuildCountsTest
         deleteCountsAndRestart();
 
         // then
-        CountsTracker tracker = neoStore().getCounts();
+        CountsTracker tracker = counts();
         assertEquals( 32, tracker.nodeCount( -1 ) );
         assertEquals( 16, tracker.nodeCount( labelId( ALIEN ) ) );
         assertEquals( 16, tracker.nodeCount( labelId( HUMAN ) ) );
@@ -88,58 +87,18 @@ public class RebuildCountsTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            return statement().readOperations().labelGetForName( alien.name() );
+            return ((GraphDatabaseAPI) db).getDependencyResolver()
+                                          .resolveDependency( ThreadToStatementContextBridge.class )
+                                          .instance().readOperations().labelGetForName( alien.name() );
         }
     }
 
-    private Statement statement()
+    private CountsTracker counts()
     {
-        return ((GraphDatabaseAPI) db).getDependencyResolver()
-                                      .resolveDependency( ThreadToStatementContextBridge.class )
-                                      .instance();
+        return ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( NeoStore.class ).getCounts();
     }
 
-    private NeoStore neoStore()
-    {
-        return ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( NeoStore.class );
-    }
-
-    private TestLogger logger()
-    {
-        return logging.getMessagesLog( StoreFactory.class );
-    }
-
-    public static final Label ALIEN = label( "Alien" );
-    public static final Label HUMAN = label( "Human" );
-
-    @Rule
-    public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    private final InMemoryIndexProvider indexProvider = new InMemoryIndexProvider( 100 );
-    private final TestLogging logging = new TestLogging();
-
-    private TestGraphDatabaseFactory dbFactory;
-    private GraphDatabaseService db;
-    private final File storeDir = new File( "/store/" );
-
-    @Before
-    public void before()
-    {
-        setupDb( fsRule.get() );
-    }
-
-    private void setupDb( EphemeralFileSystemAbstraction fs )
-    {
-        dbFactory = new TestGraphDatabaseFactory();
-        dbFactory.setLogging( logging );
-        dbFactory.setFileSystem( fs );
-        dbFactory.addKernelExtension( new InMemoryIndexProviderFactory( indexProvider ) );
-        fs.mkdirs( storeDir );
-        GraphDatabaseBuilder builder = dbFactory.newImpermanentDatabaseBuilder( storeDir.getAbsolutePath() );
-        builder.setConfig( index_background_sampling_enabled, "false" );
-        db = builder.newGraphDatabase();
-    }
-
-    public void deleteCountsAndRestart()
+    private void deleteCountsAndRestart()
     {
         db.shutdown();
         EphemeralFileSystemAbstraction snapshot = fsRule.get().snapshot();
@@ -147,16 +106,43 @@ public class RebuildCountsTest
         final File storeFileBase = new File( storeDir, NeoStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE );
         File alpha = new File( storeFileBase + CountsTracker.ALPHA );
         File beta = new File( storeFileBase + CountsTracker.BETA );
-        if ( snapshot.fileExists( alpha ) )
-        {
-            snapshot.deleteFile( alpha );
-        }
-        if ( snapshot.fileExists( beta ) )
-        {
-            snapshot.deleteFile( beta );
-        }
-
+        assertTrue( snapshot.deleteFile( alpha ) );
+        assertTrue( snapshot.deleteFile( beta ) );
         setupDb( snapshot );
+    }
+
+    private void setupDb( EphemeralFileSystemAbstraction fs )
+    {
+        fs.mkdirs( storeDir );
+        TestGraphDatabaseFactory dbFactory = new TestGraphDatabaseFactory();
+        db = dbFactory.setLogging( logging )
+                      .setFileSystem( fs )
+                      .addKernelExtension( new InMemoryIndexProviderFactory( indexProvider ) )
+                      .newImpermanentDatabaseBuilder( storeDir.getAbsolutePath() )
+                      .setConfig( index_background_sampling_enabled, "false" )
+                      .newGraphDatabase();
+    }
+
+    private TestLogger logger()
+    {
+        return logging.getMessagesLog( StoreFactory.class );
+    }
+
+    private static final Label ALIEN = label( "Alien" );
+    private static final Label HUMAN = label( "Human" );
+
+    @Rule
+    public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    private final InMemoryIndexProvider indexProvider = new InMemoryIndexProvider( 100 );
+    private final TestLogging logging = new TestLogging();
+
+    private GraphDatabaseService db;
+    private final File storeDir = new File( "store" ).getAbsoluteFile();
+
+    @Before
+    public void before()
+    {
+        setupDb( fsRule.get() );
     }
 
     @After
