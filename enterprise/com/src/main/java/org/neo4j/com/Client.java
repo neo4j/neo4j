@@ -22,6 +22,7 @@ package org.neo4j.com;
 import static org.neo4j.com.Protocol.addLengthFieldPipes;
 import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
+import static org.neo4j.helpers.NamedThreadFactory.named;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -48,7 +49,6 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
@@ -76,7 +76,8 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
 
     private final SocketAddress address;
     private final StringLogger msgLog;
-    private ExecutorService executor;
+    private ExecutorService bossExecutor;
+    private ExecutorService workerExecutor;
     private ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>> channelPool;
     private final Protocol protocol;
     private final int frameLength;
@@ -115,9 +116,9 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     @Override
     public void start()
     {
-        executor = Executors.newCachedThreadPool( new NamedThreadFactory( getClass().getSimpleName() + "@" + address
-        ) );
-        bootstrap = new ClientBootstrap( new NioClientSocketChannelFactory( executor, executor ) );
+        bossExecutor = Executors.newCachedThreadPool( named( getClass().getSimpleName() + "-boss@" + address ) );
+        workerExecutor = Executors.newCachedThreadPool( named( getClass().getSimpleName() + "-worker@" + address ) );
+        bootstrap = new ClientBootstrap( new NioClientSocketChannelFactory( bossExecutor, workerExecutor ) );
         bootstrap.setPipelineFactory( this );
         channelPool = new ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>>( maxUnusedChannels,
                 new ResourcePool.CheckStrategy.TimeoutCheckStrategy( ResourcePool.DEFAULT_CHECK_INTERVAL, SYSTEM_CLOCK ),
@@ -187,7 +188,8 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     {
         channelPool.close( true );
         bootstrap.releaseExternalResources();
-        executor.shutdownNow();
+        bossExecutor.shutdownNow();
+        workerExecutor.shutdownNow();
         mismatchingVersionHandlers.clear();
         msgLog.logMessage( toString() + " shutdown", true );
     }
