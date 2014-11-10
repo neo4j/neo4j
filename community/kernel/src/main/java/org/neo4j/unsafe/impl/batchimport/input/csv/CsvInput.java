@@ -26,6 +26,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapping;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
+import org.neo4j.unsafe.impl.batchimport.store.BatchingIdSequence;
 
 /**
  * Provides {@link Input} from data contained in tabular/csv form. Expects factories for instantiating
@@ -42,6 +43,7 @@ public class CsvInput implements Input
     private final IdMapping idMapping;
     private final Configuration config;
     private final int[] delimiter;
+    private final BatchingIdSequence relationshipIds = new BatchingIdSequence();
 
     /**
      * @param nodeDataFactory multiple {@link DataFactory} instances providing data, each {@link DataFactory}
@@ -100,6 +102,7 @@ public class CsvInput implements Input
             @Override
             public ResourceIterator<InputRelationship> iterator()
             {
+                relationshipIds.reset();
                 return new InputGroupsDeserializer<InputRelationship>( relationshipDataFactory.iterator(),
                                                                        relationshipHeaderFactory, config, idType )
                 {
@@ -107,7 +110,7 @@ public class CsvInput implements Input
                     protected ResourceIterator<InputRelationship> entityDeserializer( CharSeeker dataStream,
                                                                                       Header dataHeader )
                     {
-                        return new InputRelationshipDeserializer( dataHeader, dataStream, delimiter );
+                        return new InputRelationshipDeserializer( dataHeader, dataStream, delimiter, relationshipIds );
                     }
                 };
             }
