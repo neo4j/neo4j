@@ -1,0 +1,14 @@
+{
+    "name": "angular-base64",
+    "version": "2.0.1",
+    "main": [
+        "angular-base64.js"
+    ],
+    "ignore": [
+        "package.json",
+        "Gruntfile.js"
+    ],
+    "dependencies": {
+        "angular": ">= 1.0.8"
+    }
+}

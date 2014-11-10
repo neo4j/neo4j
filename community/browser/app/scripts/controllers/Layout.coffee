@@ -31,7 +31,8 @@ angular.module('neo4jApp.controllers')
     'Frame'
     'GraphStyle'
     'Utils'
-    ($scope, $timeout, $dialog, Editor, Frame, GraphStyle, Utils) ->
+    'Settings'
+    ($scope, $timeout, $dialog, Editor, Frame, GraphStyle, Utils, Settings) ->
 
       _codeMirror = null
       dialog = null
