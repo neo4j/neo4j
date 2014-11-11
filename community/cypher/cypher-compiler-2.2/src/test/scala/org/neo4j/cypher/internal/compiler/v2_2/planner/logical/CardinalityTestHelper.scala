@@ -24,13 +24,14 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{Query, Statement}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityModel}
+import org.neo4j.cypher.internal.compiler.v2_2.planner._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assumeDependence._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 import org.scalatest.mock.MockitoSugar
 import org.scalautils.Equality
+
 import scala.Symbol
 import scala.collection.mutable
 
@@ -217,7 +218,7 @@ trait CardinalityTestHelper extends QueryGraphProducer {
     implicit val cardinalityEq = new Equality[Cardinality] {
       def areEqual(a: Cardinality, b: Any): Boolean = b match {
         case b: Cardinality =>
-          val tolerance = Math.max(0.01, a.amount * 0.01) // One percent off is acceptable
+          val tolerance = Math.max(0.05, a.amount * 0.05) // 5% off is acceptable
           a.amount === b.amount +- tolerance
         case _ => false
       }
@@ -241,7 +242,7 @@ trait CardinalityTestHelper extends QueryGraphProducer {
     }
 
     // TODO: Still hard coded to use assumeDependence. Refactor!
-    def shouldHaveSelectivity(number: Double): Unit = {
+    def shouldHaveSelectivity(number: Double) {
       val (statistics, semanticTable) = prepareTestContext
       val queryGraph = createQueryGraph()
       val predicates = producePredicates(queryGraph)
