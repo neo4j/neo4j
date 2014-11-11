@@ -92,9 +92,9 @@ public class BufferedCharSeeker implements CharSeeker
         {
             ch = nextChar( skippedChars );
             if ( quoteDepth == 0 )
-            {   //In normal mode, i.e. not within quotes
-                if ( ch == quoteChar )
-                {   // We found a quote, skip it and switch modes
+            {   // In normal mode, i.e. not within quotes
+                if ( ch == quoteChar && seekStartPos == bufferPos - 1/* -1 since we just advanced one */ )
+                {   // We found a quote, which was the first of the value, skip it and switch mode
                     quoteDepth++;
                     seekStartPos++;
                     continue;
