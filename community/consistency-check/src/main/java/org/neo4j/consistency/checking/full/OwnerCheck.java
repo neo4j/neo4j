@@ -31,7 +31,7 @@ import org.neo4j.consistency.checking.CheckDecorator;
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.ComparativeRecordChecker;
 import org.neo4j.consistency.checking.DynamicStore;
-import org.neo4j.consistency.checking.PrimitiveRecordCheck;
+import org.neo4j.consistency.checking.OwningRecordCheck;
 import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipGroupConsistencyReport;
@@ -55,7 +55,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 
 import static java.util.Collections.unmodifiableMap;
-
 import static org.neo4j.consistency.RecordType.ARRAY_PROPERTY;
 import static org.neo4j.consistency.RecordType.PROPERTY_KEY_NAME;
 import static org.neo4j.consistency.RecordType.RELATIONSHIP_TYPE_NAME;
@@ -131,8 +130,8 @@ class OwnerCheck implements CheckDecorator
     }
 
     @Override
-    public RecordCheck<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport> decorateNeoStoreChecker(
-            PrimitiveRecordCheck<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport> checker )
+    public OwningRecordCheck<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport> decorateNeoStoreChecker(
+            OwningRecordCheck<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport> checker )
     {
         if ( owners == null )
         {
@@ -149,8 +148,8 @@ class OwnerCheck implements CheckDecorator
     }
 
     @Override
-    public RecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> decorateNodeChecker(
-            PrimitiveRecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> checker )
+    public OwningRecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> decorateNodeChecker(
+            OwningRecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> checker )
     {
         if ( owners == null )
         {
@@ -167,8 +166,8 @@ class OwnerCheck implements CheckDecorator
     }
 
     @Override
-    public RecordCheck<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> decorateRelationshipChecker(
-            PrimitiveRecordCheck<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> checker )
+    public OwningRecordCheck<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> decorateRelationshipChecker(
+            OwningRecordCheck<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> checker )
     {
         if ( owners == null )
         {
@@ -389,11 +388,11 @@ class OwnerCheck implements CheckDecorator
 
     private abstract class PrimitiveCheckerDecorator<RECORD extends PrimitiveRecord,
             REPORT extends ConsistencyReport.PrimitiveConsistencyReport>
-            implements RecordCheck<RECORD, REPORT>
+            implements OwningRecordCheck<RECORD, REPORT>
     {
-        private final PrimitiveRecordCheck<RECORD, REPORT> checker;
+        private final OwningRecordCheck<RECORD, REPORT> checker;
 
-        PrimitiveCheckerDecorator( PrimitiveRecordCheck<RECORD, REPORT> checker )
+        PrimitiveCheckerDecorator( OwningRecordCheck<RECORD, REPORT> checker )
         {
             this.checker = checker;
         }
@@ -410,7 +409,7 @@ class OwnerCheck implements CheckDecorator
                     PropertyOwner previous = owners.put( prop, owner( record ) );
                     if ( previous != null )
                     {
-                        engine.comparativeCheck( previous.record( records ), checker.ownerCheck );
+                        engine.comparativeCheck( previous.record( records ), checker.ownerCheck() );
                     }
                 }
             }
@@ -422,6 +421,12 @@ class OwnerCheck implements CheckDecorator
                                  DiffRecordAccess records )
         {
             checker.checkChange( oldRecord, newRecord, engine, records );
+        }
+
+        @Override
+        public ComparativeRecordChecker<RECORD,PrimitiveRecord,REPORT> ownerCheck()
+        {
+            return checker.ownerCheck();
         }
 
         abstract PropertyOwner owner( RECORD record );

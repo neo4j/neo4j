@@ -33,10 +33,10 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 public abstract class PrimitiveRecordCheck
         <RECORD extends PrimitiveRecord, REPORT extends ConsistencyReport.PrimitiveConsistencyReport>
-        implements RecordCheck<RECORD, REPORT>
+        implements OwningRecordCheck<RECORD, REPORT>
 {
     private final RecordField<RECORD, REPORT>[] fields;
-    public final ComparativeRecordChecker<RECORD, PrimitiveRecord, REPORT> ownerCheck =
+    private final ComparativeRecordChecker<RECORD, PrimitiveRecord, REPORT> ownerCheck =
             new ComparativeRecordChecker<RECORD, PrimitiveRecord, REPORT>()
             {
                 @Override
@@ -148,5 +148,11 @@ public abstract class PrimitiveRecordCheck
                 field.checkChange( oldRecord, newRecord, engine, records );
             }
         }
+    }
+
+    @Override
+    public ComparativeRecordChecker<RECORD,PrimitiveRecord,REPORT> ownerCheck()
+    {
+        return ownerCheck;
     }
 }

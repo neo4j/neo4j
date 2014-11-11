@@ -22,6 +22,9 @@ package org.neo4j.consistency.checking.full;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -29,8 +32,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.GraphStoreFixture;
@@ -85,6 +90,7 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.inUse;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.notInUse;
 import static org.neo4j.consistency.checking.full.ExecutionOrderIntegrationTest.config;
+import static org.neo4j.consistency.checking.full.FullCheckIntegrationTest.ConsistencySummaryVerifier.on;
 import static org.neo4j.consistency.checking.schema.IndexRules.loadAllIndexRules;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
@@ -105,67 +111,6 @@ import static org.neo4j.test.Property.set;
 
 public class FullCheckIntegrationTest
 {
-    @Rule
-    public final GraphStoreFixture fixture = new GraphStoreFixture()
-    {
-        @Override
-        protected void generateInitialData( GraphDatabaseService graphDb )
-        {
-            try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx())
-            {
-                graphDb.schema().indexFor( label("label3") ).on( "key" ).create();
-                graphDb.schema().constraintFor( label( "label4" ) ).assertPropertyIsUnique( "key" ).create();
-                tx.success();
-            }
-
-            try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx())
-            {
-                Node node1 = set( graphDb.createNode( label( "label1" ) ) );
-                Node node2 = set( graphDb.createNode( label( "label2" ) ), property( "key", "value" ) );
-                node1.createRelationshipTo( node2, withName( "C" ) );
-                // Just to create one more rel type
-                graphDb.createNode().createRelationshipTo( graphDb.createNode(), withName( "T" ) );
-                indexedNodes.add( set( graphDb.createNode( label( "label3" ) ), property( "key", "value" ) ).getId() );
-                set( graphDb.createNode( label( "label4" ) ), property( "key", "value" ) );
-                tx.success();
-            }
-        }
-    };
-    private final StringWriter log = new StringWriter();
-    private final List<Long> indexedNodes = new ArrayList<>();
-
-    private ConsistencySummaryStatistics check() throws ConsistencyCheckIncompleteException
-    {
-        return check( fixture.directStoreAccess() );
-    }
-
-    private ConsistencySummaryStatistics check( DirectStoreAccess stores ) throws ConsistencyCheckIncompleteException
-    {
-        Config config = config( TaskExecutionOrder.MULTI_PASS );
-        FullCheck checker = new FullCheck( config, ProgressMonitorFactory.NONE );
-        return checker.execute( stores, StringLogger.wrap( log ) );
-    }
-
-    private void verifyInconsistency( ConsistencySummaryStatistics stats, RecordType... recordTypes )
-    {
-        verifyInconsistency( stats, 1, recordTypes );
-    }
-
-    private void verifyInconsistency( ConsistencySummaryStatistics stats, int expectedNumberOfInconsistencies,
-            RecordType... recordTypes )
-    {
-        int totalInconsistencyCount = 0;
-        for ( RecordType recordType : recordTypes )
-        {
-            int count = stats.getInconsistencyCountForRecordType( recordType );
-            assertTrue( "Expected inconsistencies for records of type " + recordType, count > 0 );
-            totalInconsistencyCount += count;
-        }
-        assertEquals( "Expected only inconsistencies of type " + Arrays.toString( recordTypes ) + ", got:\n" + log,
-                      totalInconsistencyCount, stats.getTotalInconsistencyCount() );
-        assertEquals( "Unexpected number of inconsistencies", expectedNumberOfInconsistencies, totalInconsistencyCount );
-    }
-
     @Test
     public void shouldCheckConsistencyOfAConsistentStore() throws Exception
     {
@@ -173,7 +118,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics result = check();
 
         // then
-        assertEquals( 0, result.getTotalInconsistencyCount() );
+        assertEquals( result.toString(), 0, result.getTotalInconsistencyCount() );
     }
 
     @Test
@@ -199,7 +144,8 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, RecordType.NEO_STORE );
+        on( stats ).verify( RecordType.NEO_STORE, 1 )
+                   .andThatsAllFolks();
     }
 
     @Test
@@ -220,7 +166,8 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, RecordType.NODE );
+        on( stats ).verify( RecordType.NODE, 1 )
+                   .andThatsAllFolks();
     }
 
     @Test
@@ -243,7 +190,8 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, 2, RecordType.NODE );
+        on( stats ).verify( RecordType.NODE, 2 )
+                   .andThatsAllFolks();
     }
 
     @Test
@@ -271,7 +219,8 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, 2, RecordType.NODE );
+        on( stats ).verify( RecordType.NODE, 2 )
+                   .andThatsAllFolks();
     }
 
     @Test
@@ -318,7 +267,8 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, RecordType.NODE_DYNAMIC_LABEL );
+        on( stats ).verify( RecordType.NODE_DYNAMIC_LABEL, 1 )
+                   .andThatsAllFolks();
     }
 
     @Test
@@ -336,10 +286,11 @@ public class FullCheckIntegrationTest
         write( labelScanStore, nodeLabelUpdates );
 
         // when
-        ConsistencySummaryStatistics result = check();
+        ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( result, RecordType.LABEL_SCAN_DOCUMENT );
+        on( stats ).verify( RecordType.LABEL_SCAN_DOCUMENT, 1 )
+                   .andThatsAllFolks();
     }
 
     private void write( LabelScanStore labelScanStore, Iterable<NodeLabelUpdate> nodeLabelUpdates ) throws IOException
@@ -359,14 +310,18 @@ public class FullCheckIntegrationTest
         // given
         for ( Long indexedNodeId : indexedNodes )
         {
-            fixture.directStoreAccess().nativeStores().getNodeStore().forceUpdateRecord( new NodeRecord( indexedNodeId, false, -1, -1 ) );
+            fixture.directStoreAccess().nativeStores().getNodeStore().forceUpdateRecord(
+                    notInUse( new NodeRecord( indexedNodeId, false, -1, -1 ) ) );
         }
 
         // when
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, 2, RecordType.INDEX, RecordType.LABEL_SCAN_DOCUMENT );
+        on( stats ).verify( RecordType.INDEX, 1 )
+                   .verify( RecordType.LABEL_SCAN_DOCUMENT, 1 )
+                   .verify( RecordType.COUNTS, 3 )
+                   .andThatsAllFolks();
     }
 
     @Test
@@ -395,14 +350,17 @@ public class FullCheckIntegrationTest
 
         for ( Long indexedNodeId : indexedNodes )
         {
-            storeAccess.nativeStores().getNodeStore().forceUpdateRecord( new NodeRecord( indexedNodeId, false, -1, -1 ) );
+            storeAccess.nativeStores().getNodeStore().forceUpdateRecord(
+                    notInUse( new NodeRecord( indexedNodeId, false, -1, -1 ) ) );
         }
 
         // when
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, RecordType.LABEL_SCAN_DOCUMENT );
+        on( stats ).verify( RecordType.LABEL_SCAN_DOCUMENT, 1 )
+                   .verify( RecordType.COUNTS, 3 )
+                   .andThatsAllFolks();
     }
 
     @Test
@@ -439,7 +397,8 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, RecordType.NODE );
+        on( stats ).verify( RecordType.NODE, 1 )
+                   .andThatsAllFolks();
     }
 
     private long[] asArray(List<Integer> in){
@@ -474,7 +433,8 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, RecordType.NODE );
+        on( stats ).verify( RecordType.NODE, 1 )
+                   .andThatsAllFolks();
     }
 
     @Test
@@ -496,7 +456,8 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, RecordType.NODE );
+        on( stats ).verify( RecordType.NODE, 1 )
+                   .andThatsAllFolks();
     }
 
     @Test
@@ -520,7 +481,9 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, 3, RecordType.NODE, RecordType.INDEX );
+        on( stats ).verify( RecordType.NODE, 1 )
+                   .verify( RecordType.INDEX, 2 )
+                   .andThatsAllFolks();
     }
 
     private long inlinedLabelsLongRepresentation( long... labelIds )
@@ -566,7 +529,9 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, 2, RecordType.NODE );
+        on( stats ).verify( RecordType.NODE, 2 )
+                   .verify( RecordType.COUNTS, 177 )
+                   .andThatsAllFolks();
     }
 
     private Pair<List<DynamicRecord>, List<Integer>> chainOfDynamicRecordsWithLabelsForANode( int labelCount ) throws TransactionFailureException
@@ -639,7 +604,9 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, 2, RecordType.NODE );
+        on( stats ).verify( RecordType.NODE, 2 )
+                   .verify( RecordType.COUNTS, 1 )
+                   .andThatsAllFolks();
     }
 
     @Test
@@ -669,7 +636,8 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, RecordType.NODE_DYNAMIC_LABEL );
+        on( stats ).verify( RecordType.NODE_DYNAMIC_LABEL, 1 )
+                   .andThatsAllFolks();
     }
 
     @Test
@@ -690,7 +658,9 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, 2, RecordType.RELATIONSHIP );
+        on( stats ).verify( RecordType.RELATIONSHIP, 2 )
+                   .verify( RecordType.COUNTS, 1 )
+                   .andThatsAllFolks();
     }
 
     @Test
@@ -716,7 +686,8 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, 4, RecordType.PROPERTY );
+        on( stats ).verify( RecordType.PROPERTY, 4 )
+                   .andThatsAllFolks();
     }
 
     @Test
@@ -751,7 +722,8 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, RecordType.STRING_PROPERTY );
+        on( stats ).verify( RecordType.STRING_PROPERTY, 1 )
+                   .andThatsAllFolks();
     }
 
     @Test
@@ -780,7 +752,8 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, 3, RecordType.SCHEMA );
+        on( stats ).verify( RecordType.SCHEMA, 3 )
+                   .andThatsAllFolks();
     }
 
     @Test
@@ -827,7 +800,8 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, 4, RecordType.SCHEMA );
+        on( stats ).verify( RecordType.SCHEMA, 4 )
+                   .andThatsAllFolks();
     }
 
     @Test
@@ -874,7 +848,8 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, 2, RecordType.SCHEMA );
+        on( stats ).verify( RecordType.SCHEMA, 2 )
+                   .andThatsAllFolks();
     }
 
     public static Collection<DynamicRecord> serializeRule( SchemaRule rule, DynamicRecord... records )
@@ -926,7 +901,8 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, RecordType.ARRAY_PROPERTY );
+        on( stats ).verify( RecordType.ARRAY_PROPERTY, 1 )
+                   .andThatsAllFolks();
     }
 
     @Test
@@ -953,7 +929,8 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check( fixture.directStoreAccess() );
 
         // then
-        verifyInconsistency( stats, RecordType.RELATIONSHIP_TYPE_NAME );
+        on( stats ).verify( RecordType.RELATIONSHIP_TYPE_NAME, 1 )
+                   .andThatsAllFolks();
     }
 
     @Test
@@ -980,7 +957,8 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check( fixture.directStoreAccess() );
 
         // then
-        verifyInconsistency( stats, RecordType.PROPERTY_KEY_NAME );
+        on( stats ).verify( RecordType.PROPERTY_KEY_NAME, 1 )
+                   .andThatsAllFolks();
     }
 
     @Test
@@ -999,7 +977,8 @@ public class FullCheckIntegrationTest
 
         // then
         access.close();
-        verifyInconsistency( stats, RecordType.RELATIONSHIP_TYPE );
+        on( stats ).verify( RecordType.RELATIONSHIP_TYPE, 1 )
+                   .andThatsAllFolks();
     }
 
     @Test
@@ -1016,7 +995,8 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check( fixture.directStoreAccess() );
 
         // then
-        verifyInconsistency( stats, RecordType.LABEL );
+        on( stats ).verify( RecordType.LABEL, 1 )
+                   .andThatsAllFolks();
     }
 
     @Test
@@ -1043,7 +1023,8 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check( fixture.directStoreAccess() );
 
         // then
-        verifyInconsistency( stats, RecordType.PROPERTY_KEY );
+        on( stats ).verify( RecordType.PROPERTY_KEY, 1 )
+                   .andThatsAllFolks();
     }
 
     @Test
@@ -1068,7 +1049,8 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, RecordType.RELATIONSHIP_GROUP );
+        on( stats ).verify( RecordType.RELATIONSHIP_GROUP, 1 )
+                   .andThatsAllFolks();
     }
 
     @Test
@@ -1094,7 +1076,8 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, RecordType.RELATIONSHIP_GROUP );
+        on( stats ).verify( RecordType.RELATIONSHIP_GROUP, 1 )
+                   .andThatsAllFolks();
     }
 
     @Test
@@ -1122,7 +1105,8 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, RecordType.RELATIONSHIP_GROUP );
+        on( stats ).verify( RecordType.RELATIONSHIP_GROUP, 1 )
+                   .andThatsAllFolks();
     }
 
     @Test
@@ -1149,7 +1133,8 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, 3, RecordType.RELATIONSHIP_GROUP );
+        on( stats ).verify( RecordType.RELATIONSHIP_GROUP, 3 )
+                   .andThatsAllFolks();
     }
 
     @Test
@@ -1186,7 +1171,8 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, 3, RecordType.RELATIONSHIP_GROUP );
+        on( stats ).verify( RecordType.RELATIONSHIP_GROUP, 3 )
+                   .andThatsAllFolks();
     }
 
     @Test
@@ -1217,7 +1203,8 @@ public class FullCheckIntegrationTest
         // then
         // - next group has other owner that its previous
         // - first group has other owner
-        verifyInconsistency( stats, 2, RecordType.NODE );
+        on( stats ).verify( RecordType.NODE, 2 )
+                   .andThatsAllFolks();
     }
 
     @Test
@@ -1254,7 +1241,8 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, 1, RecordType.RELATIONSHIP_GROUP );
+        on( stats ).verify( RecordType.RELATIONSHIP_GROUP, 1 )
+                   .andThatsAllFolks();
     }
 
     @Test
@@ -1279,7 +1267,8 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, 1, RecordType.RELATIONSHIP_GROUP );
+        on( stats ).verify( RecordType.RELATIONSHIP_GROUP, 1 )
+                   .andThatsAllFolks();
     }
 
     @Test
@@ -1303,7 +1292,8 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, 1, RecordType.RELATIONSHIP_GROUP );
+        on( stats ).verify( RecordType.RELATIONSHIP_GROUP, 1 )
+                   .andThatsAllFolks();
     }
 
     protected RelationshipRecord withNext( RelationshipRecord relationship, long next )
@@ -1355,7 +1345,8 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, 3, RecordType.RELATIONSHIP_GROUP );
+        on( stats ).verify( RecordType.RELATIONSHIP_GROUP, 3 )
+                   .andThatsAllFolks();
     }
 
     @Test
@@ -1399,6 +1390,159 @@ public class FullCheckIntegrationTest
 
         // then
         assertTrue( "should be consistent", stats.isConsistent() );
+    }
+
+    @Test
+    public void shouldReportWrongNodeCountsEntries() throws Exception
+    {
+        // given
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                                            GraphStoreFixture.IdGenerator next )
+            {
+                tx.incrementNodeCount( 0 /* label3 */, 1 );
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        on( stats ).verify( RecordType.COUNTS, 1 )
+                   .andThatsAllFolks();
+    }
+
+    @Test
+    public void shouldReportWrongRelationshipCountsEntries() throws Exception
+    {
+        // given
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                                            GraphStoreFixture.IdGenerator next )
+            {
+                tx.incrementRelationshipCount( 2 /* label1 */ , 0 /* T */, -1, 1 );
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        on( stats ).verify( RecordType.COUNTS, 1 )
+                   .andThatsAllFolks();
+    }
+
+    @Test
+    public void shouldReportIfSomeKeysAreMissing() throws Exception
+    {
+        // given
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                                            GraphStoreFixture.IdGenerator next )
+            {
+                tx.incrementNodeCount( 0 /* label3 */, -1 );
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        on( stats ).verify( RecordType.COUNTS, 1 )
+                   .andThatsAllFolks();
+    }
+
+    @Test
+    public void shouldReportIfThereAreExtraKeys() throws Exception
+    {
+        // given
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                                            GraphStoreFixture.IdGenerator next )
+            {
+                tx.incrementNodeCount( 1024 /* new label */, 1 );
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        on( stats ).verify( RecordType.COUNTS, 2 )
+                   .andThatsAllFolks();
+    }
+
+    @Rule
+    public final GraphStoreFixture fixture = new GraphStoreFixture()
+    {
+        @Override
+        protected void generateInitialData( GraphDatabaseService graphDb )
+        {
+            try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+            {
+                graphDb.schema().indexFor( label( "label3" ) ).on( "key" ).create();
+                graphDb.schema().constraintFor( label( "label4" ) ).assertPropertyIsUnique( "key" ).create();
+                tx.success();
+            }
+
+            try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+            {
+                Node node1 = set( graphDb.createNode( label( "label1" ) ) );
+                Node node2 = set( graphDb.createNode( label( "label2" ) ), property( "key", "value" ) );
+                node1.createRelationshipTo( node2, withName( "C" ) );
+                // Just to create one more rel type
+                graphDb.createNode().createRelationshipTo( graphDb.createNode(), withName( "T" ) );
+                indexedNodes.add( set( graphDb.createNode( label( "label3" ) ), property( "key", "value" ) ).getId() );
+                set( graphDb.createNode( label( "label4" ) ), property( "key", "value" ) );
+                tx.success();
+            }
+        }
+    };
+
+    private final StringWriter log = new StringWriter();
+    private final List<Long> indexedNodes = new ArrayList<>();
+    public final @Rule TestRule print_log_on_failure = new TestRule()
+    {
+        @Override
+        public Statement apply( final Statement base, Description description )
+        {
+            return new Statement()
+            {
+                @Override
+                public void evaluate() throws Throwable
+                {
+                    try
+                    {
+                        base.evaluate();
+                    }
+                    catch ( Throwable t )
+                    {
+                        System.out.println( log );
+                        throw t;
+                    }
+                }
+            };
+        }
+    };
+
+    private ConsistencySummaryStatistics check() throws ConsistencyCheckIncompleteException
+    {
+        return check( fixture.directStoreAccess() );
+    }
+
+    private ConsistencySummaryStatistics check( DirectStoreAccess stores ) throws ConsistencyCheckIncompleteException
+    {
+        Config config = config( TaskExecutionOrder.MULTI_PASS );
+        FullCheck checker = new FullCheck( config, ProgressMonitorFactory.NONE );
+        return checker.execute( stores, StringLogger.wrap( log ) );
     }
 
     protected static RelationshipGroupRecord withRelationships( RelationshipGroupRecord group, long out,
@@ -1469,6 +1613,41 @@ public class FullCheckIntegrationTest
         public String toString()
         {
             return String.valueOf( value );
+        }
+    }
+
+    public static final class ConsistencySummaryVerifier
+    {
+        private final ConsistencySummaryStatistics stats;
+        private final Set<RecordType> types = new HashSet<>();
+        private long total;
+
+        public static ConsistencySummaryVerifier on( ConsistencySummaryStatistics stats )
+        {
+            return new ConsistencySummaryVerifier( stats );
+        }
+
+
+        private ConsistencySummaryVerifier( ConsistencySummaryStatistics stats )
+        {
+            this.stats = stats;
+        }
+
+        public ConsistencySummaryVerifier verify( RecordType type, int inconsistencies )
+        {
+            if ( !types.add( type ) )
+            {
+                throw new IllegalStateException( "Tried to verify the same type twice: " + type );
+            }
+            assertEquals( "Inconsistencies of type: " + type, inconsistencies,
+                    stats.getInconsistencyCountForRecordType( type ) );
+            total += inconsistencies;
+            return this;
+        }
+
+        public void andThatsAllFolks()
+        {
+            assertEquals( "Total number of inconsistencies: " + stats, total, stats.getTotalInconsistencyCount() );
         }
     }
 }

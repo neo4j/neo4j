@@ -19,21 +19,23 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.CheckDecorator;
 import org.neo4j.consistency.checking.CheckerEngine;
+import org.neo4j.consistency.checking.ComparativeRecordChecker;
 import org.neo4j.consistency.checking.GraphStoreFixture;
-import org.neo4j.consistency.checking.PrimitiveRecordCheck;
+import org.neo4j.consistency.checking.OwningRecordCheck;
 import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipGroupConsistencyReport;
@@ -56,14 +58,18 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.withSettings;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
@@ -226,30 +232,29 @@ public class ExecutionOrderIntegrationTest
             this.log = log;
         }
 
-        <REC extends AbstractBaseRecord, REP extends ConsistencyReport> RecordCheck<REC, REP> logging(
+        <REC extends AbstractBaseRecord, REP extends ConsistencyReport> OwningRecordCheck<REC, REP> logging(
                 RecordCheck<REC, REP> checker )
         {
             return new LoggingChecker<>( checker, log );
         }
 
         @Override
-        public RecordCheck<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport> decorateNeoStoreChecker(
-                PrimitiveRecordCheck<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport> checker )
+        public OwningRecordCheck<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport> decorateNeoStoreChecker(
+                OwningRecordCheck<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport> checker )
         {
             return logging( checker );
         }
 
         @Override
-        public RecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> decorateNodeChecker(
-                PrimitiveRecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> checker )
+        public OwningRecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> decorateNodeChecker(
+                OwningRecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> checker )
         {
             return logging( checker );
         }
 
         @Override
-        public RecordCheck<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport>
-        decorateRelationshipChecker(
-                PrimitiveRecordCheck<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> checker )
+        public OwningRecordCheck<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> decorateRelationshipChecker(
+                OwningRecordCheck<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> checker )
         {
             return logging( checker );
         }
@@ -262,8 +267,7 @@ public class ExecutionOrderIntegrationTest
         }
 
         @Override
-        public RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport>
-        decoratePropertyKeyTokenChecker(
+        public RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> decoratePropertyKeyTokenChecker(
                 RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> checker )
         {
             return logging( checker );
@@ -299,7 +303,7 @@ public class ExecutionOrderIntegrationTest
     }
 
     private static class LoggingChecker<REC extends AbstractBaseRecord, REP extends ConsistencyReport>
-            implements RecordCheck<REC, REP>
+            implements OwningRecordCheck<REC, REP>
     {
         private final RecordCheck<REC, REP> checker;
         private final InvocationLog log;
@@ -321,6 +325,18 @@ public class ExecutionOrderIntegrationTest
                                  DiffRecordAccess records )
         {
             checker.checkChange( oldRecord, newRecord, engine, new ComparativeLogging( records, log ) );
+        }
+
+        @SuppressWarnings( "unchecked" )
+        @Override
+        public ComparativeRecordChecker<REC,PrimitiveRecord,REP> ownerCheck()
+        {
+            if ( checker instanceof OwningRecordCheck )
+            {
+                return ((OwningRecordCheck) checker).ownerCheck();
+            }
+
+            throw new UnsupportedOperationException();
         }
     }
 

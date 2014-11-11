@@ -31,6 +31,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -65,6 +66,7 @@ public class StoreAccess
     private final RecordStore<DynamicRecord> labelNameStore;
     private final RecordStore<DynamicRecord> propertyKeyNameStore;
     private final RecordStore<RelationshipGroupRecord> relGroupStore;
+    private final CountsAccessor counts;
     // internal state
     private boolean closeable;
     private NeoStore neoStore;
@@ -82,29 +84,22 @@ public class StoreAccess
 
     public StoreAccess( NeoStore store )
     {
-        this( store.getSchemaStore(), store.getNodeStore(), store.getRelationshipStore(), store.getPropertyStore(),
-                store.getRelationshipTypeTokenStore(), store.getLabelTokenStore(), store.getRelationshipGroupStore() );
         this.neoStore = store;
-    }
-
-    public StoreAccess( SchemaStore schemaStore, NodeStore nodeStore, RelationshipStore relStore, PropertyStore propStore,
-                        RelationshipTypeTokenStore typeStore, LabelTokenStore labelTokenStore,
-                        RelationshipGroupStore relGroupStore )
-    {
-        this.schemaStore = wrapStore( schemaStore );
-        this.nodeStore = wrapStore( nodeStore );
-        this.relStore = wrapStore( relStore );
-        this.propStore = wrapStore( propStore );
-        this.stringStore = wrapStore( propStore.getStringStore() );
-        this.arrayStore = wrapStore( propStore.getArrayStore() );
-        this.relationshipTypeTokenStore = wrapStore( typeStore );
-        this.labelTokenStore = wrapStore( labelTokenStore );
-        this.nodeDynamicLabelStore = wrapStore( wrapNodeDynamicLabelStore( nodeStore.getDynamicLabelStore() ) );
-        this.propertyKeyTokenStore = wrapStore( propStore.getPropertyKeyTokenStore() );
-        this.relationshipTypeNameStore = wrapStore( typeStore.getNameStore() );
-        this.labelNameStore = wrapStore( labelTokenStore.getNameStore() );
-        this.propertyKeyNameStore = wrapStore( propStore.getPropertyKeyTokenStore().getNameStore() );
-        this.relGroupStore = wrapStore( relGroupStore );
+        this.schemaStore = wrapStore( store.getSchemaStore() );
+        this.nodeStore = wrapStore( store.getNodeStore() );
+        this.relStore = wrapStore( store.getRelationshipStore() );
+        this.propStore = wrapStore( store.getPropertyStore() );
+        this.stringStore = wrapStore( store.getPropertyStore().getStringStore() );
+        this.arrayStore = wrapStore( store.getPropertyStore().getArrayStore() );
+        this.relationshipTypeTokenStore = wrapStore( store.getRelationshipTypeTokenStore() );
+        this.labelTokenStore = wrapStore( store.getLabelTokenStore() );
+        this.nodeDynamicLabelStore = wrapStore( wrapNodeDynamicLabelStore( store.getNodeStore().getDynamicLabelStore() ) );
+        this.propertyKeyTokenStore = wrapStore( store.getPropertyStore().getPropertyKeyTokenStore() );
+        this.relationshipTypeNameStore = wrapStore( store.getRelationshipTypeTokenStore().getNameStore() );
+        this.labelNameStore = wrapStore( store.getLabelTokenStore().getNameStore() );
+        this.propertyKeyNameStore = wrapStore( store.getPropertyStore().getPropertyKeyTokenStore().getNameStore() );
+        this.relGroupStore = wrapStore( store.getRelationshipGroupStore() );
+        this.counts = store.getCounts();
     }
 
     public StoreAccess( PageCache pageCache, String path )
@@ -202,6 +197,11 @@ public class StoreAccess
     public RecordStore<DynamicRecord> getPropertyKeyNameStore()
     {
         return propertyKeyNameStore;
+    }
+
+    public CountsAccessor getCounts()
+    {
+        return counts;
     }
 
     public final <F extends Exception, P extends RecordStore.Processor<F>> P applyToAll( P processor ) throws F

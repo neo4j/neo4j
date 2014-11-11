@@ -21,10 +21,11 @@ package org.neo4j.helpers.collection;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public class MultiSet<T>
 {
-    private final Map<T, Integer> inner;
+    private final Map<T, Long> inner;
     private int size = 0;
 
     public MultiSet()
@@ -42,46 +43,46 @@ public class MultiSet<T>
         return inner.containsKey( value );
     }
 
-    public int count( T value )
+    public long count( T value )
     {
         return unbox( inner.get( value ) );
     }
 
-    public int add( T value )
+    public long add( T value )
     {
         return increment( value, +1 );
     }
 
-    public int remove( T value )
+    public long remove( T value )
     {
        return increment( value, -1 );
     }
 
-    public int replace( T value, int newCount )
+    public long replace( T value, long newCount )
     {
         if ( newCount <= 0 )
         {
-            int previous = unbox( inner.remove( value ) );
+            long previous = unbox( inner.remove( value ) );
             size -= previous;
             return previous;
         }
         else
         {
-            int previous = unbox( inner.put( value, newCount ) );
+            long previous = unbox( inner.put( value, newCount ) );
             size += newCount - previous;
             return previous;
         }
     }
 
-    public int increment( T value, int amount )
+    public long increment( T value, long amount )
     {
-        int previous = count( value );
+        long previous = count( value );
         if ( amount == 0 )
         {
             return previous;
         }
 
-        int newCount = previous + amount;
+        long newCount = previous + amount;
         if ( newCount <= 0 )
         {
             inner.remove( value );
@@ -132,8 +133,13 @@ public class MultiSet<T>
         return inner.hashCode();
     }
 
-    private int unbox( Integer value )
+    private long unbox( Long value )
     {
         return value == null ? 0 : value;
+    }
+
+    public Set<Map.Entry<T,Long>> entrySet()
+    {
+        return inner.entrySet();
     }
 }

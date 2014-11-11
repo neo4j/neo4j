@@ -431,10 +431,13 @@ public class CsvInputBatchImportIT
                 startLabelCounts.get( null ).get( null ).incrementAndGet();
                 Map<String, AtomicLong> typeCounts = startLabelCounts.get( relationship.type() );
                 typeCounts.get( null ).incrementAndGet();
-                for ( String endNodeLabelName : asSet( endNode.labels() ) )
+                if ( COMPUTE_DOUBLE_SIDED_RELATIONSHIP_COUNTS )
                 {
-                    startLabelCounts.get( null ).get( endNodeLabelName ).incrementAndGet();
-                    typeCounts.get( endNodeLabelName ).incrementAndGet();
+                    for ( String endNodeLabelName : asSet( endNode.labels() ) )
+                    {
+                        startLabelCounts.get( null ).get( endNodeLabelName ).incrementAndGet();
+                        typeCounts.get( endNodeLabelName ).incrementAndGet();
+                    }
                 }
             }
             for ( String endNodeLabelName : asSet( endNode.labels() ) )
@@ -457,6 +460,8 @@ public class CsvInputBatchImportIT
         }
     }
 
+    /** Don't support these counts at the moment so don't compute them */
+    private static final boolean COMPUTE_DOUBLE_SIDED_RELATIONSHIP_COUNTS = false;
     private String nameOf( InputNode node )
     {
         return (String) node.properties()[1];

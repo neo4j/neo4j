@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.register.Register.DoubleLongRegister;
 
-public interface CountsAccessor
+public interface CountsAccessor extends CountsVisitor.Visitable
 {
     /**
      * @param target a register to store the read values in

@@ -23,6 +23,7 @@ import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipGroupConsistencyReport;
+import org.neo4j.consistency.store.synthetic.CountsEntry;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -163,6 +164,12 @@ public class NullReporter implements ConsistencyReport.Reporter
     @Override
     public void forRelationshipGroupChange( RelationshipGroupRecord oldRecord, RelationshipGroupRecord newRecord,
             RecordCheck<RelationshipGroupRecord, RelationshipGroupConsistencyReport> checker )
+    {
+    }
+
+    @Override
+    public void forCounts( CountsEntry countsEntry,
+                           RecordCheck<CountsEntry,ConsistencyReport.CountsConsistencyReport> checker )
     {
     }
 }

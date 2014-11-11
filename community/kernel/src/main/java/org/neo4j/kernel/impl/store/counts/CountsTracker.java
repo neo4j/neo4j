@@ -254,6 +254,7 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
         }
     }
 
+    @Override
     public void accept( final CountsVisitor visitor )
     {
         state.accept( new KeyValueRecordVisitor<CountsKey,CopyableDoubleLongRegister>()

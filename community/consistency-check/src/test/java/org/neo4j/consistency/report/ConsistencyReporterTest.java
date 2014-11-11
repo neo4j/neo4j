@@ -19,12 +19,6 @@
  */
 package org.neo4j.consistency.report;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
@@ -39,6 +33,12 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.ComparativeRecordChecker;
@@ -46,6 +46,7 @@ import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
+import org.neo4j.consistency.store.synthetic.CountsEntry;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
 import org.neo4j.kernel.api.impl.index.LuceneNodeLabelRange;
@@ -65,7 +66,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 
 import static java.lang.String.format;
-
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.doAnswer;
@@ -73,6 +73,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses({ConsistencyReporterTest.TestAllReportMessages.class,
@@ -316,6 +317,10 @@ public class ConsistencyReporterTest
             if ( type == IndexEntry.class )
             {
                 return new IndexEntry( 0 );
+            }
+            if ( type == CountsEntry.class )
+            {
+                return new CountsEntry( nodeKey( 7 ), 42 );
             }
             if ( type == SchemaRule.Kind.class )
             {
