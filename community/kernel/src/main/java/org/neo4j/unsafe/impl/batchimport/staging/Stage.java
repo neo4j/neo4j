@@ -22,7 +22,6 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.kernel.logging.Logging;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 
 /**
@@ -36,9 +35,9 @@ public class Stage
     private final List<Step<?>> pipeline = new ArrayList<>();
     private final StageExecution execution;
 
-    public Stage( Logging logging, String name, Configuration config )
+    public Stage( String name, Configuration config )
     {
-        this.execution = new StageExecution( logging, name, config, pipeline );
+        this.execution = new StageExecution( name, config, pipeline );
     }
 
     protected StageControl control()
@@ -51,7 +50,7 @@ public class Stage
         pipeline.add( step );
     }
 
-    public StageExecution execute() throws Exception
+    public StageExecution execute()
     {
         linkSteps();
         pipeline.get( 0 ).receive( 1 /*a ticket, ignored anyway*/, null /*serves only as a start signal anyway*/ );

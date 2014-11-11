@@ -209,7 +209,7 @@ public class ParallelBatchImporter implements BatchImporter
         logger.info( "Import completed" );
     }
 
-    private synchronized void executeStages( Stage... stages ) throws Exception
+    private synchronized void executeStages( Stage... stages )
     {
         try
         {
@@ -219,11 +219,6 @@ public class ParallelBatchImporter implements BatchImporter
                 executions[i] = stages[i].execute();
             }
             executionMonitor.monitor( executions );
-        }
-        catch ( Exception e )
-        {
-            logger.error( "Failure during import", e );
-            throw e;
         }
         finally
         {
@@ -239,7 +234,7 @@ public class ParallelBatchImporter implements BatchImporter
         public NodeStage( ResourceIterable<InputNode> nodes, IdMapper idMapper, IdGenerator idGenerator,
                           BatchingNeoStore neoStore )
         {
-            super( logging, "Nodes", config );
+            super( "Nodes", config );
             add( new IteratorBatcherStep<>( control(), "INPUT", config.batchSize(), nodes.iterator() ) );
 
             NodeStore nodeStore = neoStore.getNodeStore();
@@ -264,7 +259,7 @@ public class ParallelBatchImporter implements BatchImporter
         public CalculateDenseNodesStage( ResourceIterable<InputRelationship> relationships,
                 NodeRelationshipLink nodeRelationshipLink, IdMapper idMapper )
         {
-            super( logging, "Calculate dense nodes", config );
+            super( "Calculate dense nodes", config );
             add( new IteratorBatcherStep<>( control(), "INPUT", config.batchSize(), relationships.iterator() ) );
 
             add( new CalculateDenseNodesStep( control(), config.workAheadSize(), nodeRelationshipLink,
@@ -277,7 +272,7 @@ public class ParallelBatchImporter implements BatchImporter
         public RelationshipStage( ResourceIterable<InputRelationship> relationships, IdMapper idMapper,
                 BatchingNeoStore neoStore, NodeRelationshipLink nodeRelationshipLink )
         {
-            super( logging, "Relationships", config );
+            super( "Relationships", config );
             add( new IteratorBatcherStep<>( control(), "INPUT", config.batchSize(), relationships.iterator() ) );
 
             RelationshipStore relationshipStore = neoStore.getRelationshipStore();
@@ -293,7 +288,7 @@ public class ParallelBatchImporter implements BatchImporter
     {
         public NodeFirstRelationshipStage( BatchingNeoStore neoStore, NodeRelationshipLink nodeRelationshipLink )
         {
-            super( logging, "Node first rel", config );
+            super( "Node first rel", config );
             add( new NodeFirstRelationshipStep( control(), config.batchSize(),
                     neoStore.getNodeStore(), neoStore.getRelationshipGroupStore(), nodeRelationshipLink ) );
         }
@@ -303,7 +298,7 @@ public class ParallelBatchImporter implements BatchImporter
     {
         public RelationshipLinkbackStage( BatchingNeoStore neoStore, NodeRelationshipLink nodeRelationshipLink )
         {
-            super( logging, "Relationship back link", config );
+            super( "Relationship back link", config );
             add( new RelationshipLinkbackStep( control(), config.batchSize(),
                     neoStore.getRelationshipStore(), nodeRelationshipLink ) );
         }
@@ -313,7 +308,7 @@ public class ParallelBatchImporter implements BatchImporter
     {
         public NodeCountsStage( BatchingNeoStore neoStore, NodeLabelsCache cache )
         {
-            super( logging, "Node counts", config );
+            super( "Node counts", config );
             add( new NodeCountsStep( control(), config.batchSize(), neoStore.getNodeStore(), cache,
                     neoStore.getLabelRepository().getHighId(), neoStore.getCountsStore() ) );
         }
@@ -323,7 +318,7 @@ public class ParallelBatchImporter implements BatchImporter
     {
         public RelationshipCountsStage( BatchingNeoStore neoStore, NodeLabelsCache cache )
         {
-            super( logging, "Relationship counts", config );
+            super( "Relationship counts", config );
             add( new RelationshipCountsStep( control(), config.batchSize(), neoStore.getRelationshipStore(), cache,
                     neoStore.getLabelRepository().getHighId(), neoStore.getRelationshipTypeRepository().getHighId(),
                     neoStore.getCountsStore() ) );

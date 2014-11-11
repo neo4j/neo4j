@@ -30,12 +30,15 @@ import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.storemigration.FileOperation;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.util.Converters;
 import org.neo4j.kernel.impl.util.Validators;
-import org.neo4j.kernel.logging.SystemOutLogging;
+import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.logging.ClassicLoggingService;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
@@ -47,6 +50,8 @@ import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 
 import static java.io.File.pathSeparator;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.util.Converters.withDefault;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
@@ -107,11 +112,14 @@ public class ImportTool
             throw new RuntimeException( e ); // throw in order to have process exit with !0
         }
 
+        LifeSupport life = new LifeSupport();
+        Logging logging = life.add( new ClassicLoggingService(
+                new Config( stringMap( store_dir.name(), storeDir.getAbsolutePath() ) ) ) );
+        life.start();
         BatchImporter importer = new ParallelBatchImporter( storeDir.getPath(),
                 // TODO Ability to specify batch importer configuration as well?
                 DEFAULT,
-                // TODO Log to System.out, or to messages.log?
-                new SystemOutLogging(),
+                logging,
                 ExecutionMonitors.defaultVisible() );
         Input input = new CsvInput(
                 // TODO Ability to specify multiple files?
@@ -134,6 +142,7 @@ public class ImportTool
         }
         finally
         {
+            life.shutdown();
             if ( !success )
             {
                 try

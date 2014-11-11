@@ -240,6 +240,10 @@ public class StringIdMapper implements IdMapper
         {
             long mid = (low + high) / 2;
             int index = trackerCache.get( mid );
+            if ( index == -1 )
+            {
+                return -1;
+            }
             long midValue = dataCache.get( index );
             if ( unsignedCompare( clearCollision( midValue ), x, CompareType.EQ ) )
             {
