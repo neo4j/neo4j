@@ -19,9 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
+import org.junit.Test;
+
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.Test;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Predicates;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -31,8 +32,13 @@ import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.test.DoubleLatch;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.Predicates.TRUE;
 import static org.neo4j.helpers.Predicates.not;
 import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
@@ -149,11 +155,11 @@ public class IndexSamplingControllerTest
 
         // and finally exactly one job has run to completion
         assertEquals( 0, concurrentCount.get() );
-        // it might happen that the thread which does not acquire the lock read the index to the queue if it has
+        // it might happen that the thread which does not acquire the lock readd the index to the queue if it has
         // been removed, so the total count in the end might be either 1 or 2, for this test it is important to
         // not fail by having 2 threads calling IndexSamplingJobFactory.create()
         int expected = totalCount.get();
-        assertTrue( "Expected 1 or 2, got " + expected, 1 >= expected || expected <= 2 );
+        assertTrue( "Expected 1 or 2, got " + expected, 1 >= expected && expected <= 2 );
     }
 
     @Test
