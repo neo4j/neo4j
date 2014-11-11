@@ -127,7 +127,7 @@ public class PropertyFileConfiguratorTest
     public void shouldSetStoreDirSetting() throws Exception
     {
         // Given
-        String dbLocation = "/tmp/deosntmatter";
+        String dbLocation = new File( "/tmp/deosntmatter" ).getAbsolutePath();
         File propertyFile = PropertyFileBuilder.builder( folder.getRoot() ).withNameValue( Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbLocation ).build();
         PropertyFileConfigurator serverConfig = new PropertyFileConfigurator( propertyFile );
 
