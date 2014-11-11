@@ -24,17 +24,19 @@ import java.io.IOException;
 import java.nio.CharBuffer;
 import java.util.Iterator;
 
+import org.neo4j.collection.RawIterator;
+
 /**
  * Have multiple {@link Readable} instances look like one. The provided {@link Readable readables} should
  * be opened lazily, in {@link Iterator#next()}, and will be closed in here, if they implement {@link Closeable}.
  */
 public class MultiReadable implements Readable, Closeable
 {
-    private final Iterator<Readable> actual;
+    private final RawIterator<Readable,IOException> actual;
     private Readable current = Readables.EMPTY;
     private int readFromCurrent;
 
-    public MultiReadable( Iterator<Readable> actual )
+    public MultiReadable( RawIterator<Readable,IOException> actual )
     {
         this.actual = actual;
     }

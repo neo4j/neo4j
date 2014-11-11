@@ -20,7 +20,6 @@
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -42,7 +41,6 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
 import static org.neo4j.csv.reader.BufferedCharSeeker.DEFAULT_BUFFER_SIZE;
 import static org.neo4j.csv.reader.CharSeekers.charSeeker;
 import static org.neo4j.csv.reader.Readables.multipleFiles;
-
 
 /**
  * Provides common implementations of factories required by f.ex {@link CsvInput}.
@@ -66,7 +64,7 @@ public class DataFactories
                 {
                     return charSeeker( Readables.file( file ), DEFAULT_BUFFER_SIZE, true, config.quotationCharacter() );
                 }
-                catch ( FileNotFoundException e )
+                catch ( IOException e )
                 {
                     throw new InputException( e.getMessage(), e );
                 }

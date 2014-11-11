@@ -21,9 +21,11 @@ package org.neo4j.csv.reader;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.Iterator;
 
 import org.junit.Test;
+
+import org.neo4j.collection.RawIterator;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -39,7 +41,7 @@ public class MultiReadableTest
                 {"where this", "is the second line"},
                 {"and here comes", "the third line"}
         };
-        Iterator<Readable> readers = readerIteratorFromStrings( data, null );
+        RawIterator<Readable,IOException> readers = readerIteratorFromStrings( data, null );
         CharSeeker seeker = CharSeekers.charSeeker( new MultiReadable( readers ), 200, true, '"' );
 
         // WHEN/THEN
@@ -61,7 +63,7 @@ public class MultiReadableTest
         };
 
         // WHEN
-        Iterator<Readable> readers = readerIteratorFromStrings( data, '\n' );
+        RawIterator<Readable,IOException> readers = readerIteratorFromStrings( data, '\n' );
         CharSeeker seeker = CharSeekers.charSeeker( Readables.multipleSources( readers ), 200, true, '"' );
 
         // WHEN/THEN
@@ -83,9 +85,10 @@ public class MultiReadableTest
         assertTrue( mark.isEndOfLine() );
     }
 
-    private Iterator<Readable> readerIteratorFromStrings( final String[][] data, final Character lineEnding )
+    private RawIterator<Readable,IOException> readerIteratorFromStrings(
+            final String[][] data, final Character lineEnding )
     {
-        return new Iterator<Readable>()
+        return new RawIterator<Readable,IOException>()
         {
             private int cursor;
 

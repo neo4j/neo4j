@@ -48,6 +48,14 @@ the relevant Commercial Agreement.
   </licenses>
 
   <dependencies>
+    <!-- main dependencies -->
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-primitive-collections</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+  
+    <!-- test dependencies -->
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
