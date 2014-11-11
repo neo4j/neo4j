@@ -388,6 +388,26 @@ public class BufferedCharSeekerTest
         assertEquals( "va\"lue\" three", seeker.extract( mark, extractors.string() ).value() );
     }
 
+    @Test
+    public void shouldRecognizeStrayQuoteCharacters() throws Exception
+    {
+        // GIVEN
+        seeker = new BufferedCharSeeker( new StringReader(
+                "one,two\",th\"ree\n" +
+                "four,five,s\"ix" ) );
+
+        // THEN
+        assertNextValue( seeker, mark, COMMA, "one" );
+        assertNextValue( seeker, mark, COMMA, "two\"" );
+        assertNextValue( seeker, mark, COMMA, "th\"ree" );
+        assertTrue( mark.isEndOfLine() );
+        assertNextValue( seeker, mark, COMMA, "four" );
+        assertNextValue( seeker, mark, COMMA, "five" );
+        assertNextValue( seeker, mark, COMMA, "s\"ix" );
+        assertTrue( mark.isEndOfLine() );
+        assertFalse( seeker.seek( mark, COMMA ) );
+    }
+
     private String[][] randomWeirdValues( int cols, int rows, char... except )
     {
         String[][] data = new String[rows][cols];
