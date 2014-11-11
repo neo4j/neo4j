@@ -37,7 +37,7 @@ import org.neo4j.io.pagecache.monitoring.PageFaultEvent;
 final class MuninnPagedFile implements PagedFile
 {
     private static int stripeFactor = Integer.getInteger(
-            "org.neo4j.io.pagecache.impl.muninn.MuninnPagedFile.stripeFactor", 8 );
+            "org.neo4j.io.pagecache.impl.muninn.MuninnPagedFile.stripeFactor", 10 );
     static final int translationTableStripeLevel = 1 << stripeFactor;
     static final int translationTableStripeMask = translationTableStripeLevel - 1;
 
@@ -83,7 +83,7 @@ final class MuninnPagedFile implements PagedFile
         translationTableLocks = new StampedLock[translationTableStripeLevel];
         for ( int i = 0; i < translationTableStripeLevel; i++ )
         {
-            translationTables[i] = Primitive.longObjectMap( 32 );
+            translationTables[i] = Primitive.longObjectMap( 8 );
             translationTableLocks[i] = new StampedLock();
         }
         PageEvictionCallback onEviction = new MuninnPageEvictionCallback(
