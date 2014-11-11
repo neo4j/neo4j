@@ -19,14 +19,14 @@
  */
 package org.neo4j.server.configuration;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.logging.BufferingConsoleLogger;
@@ -35,17 +35,16 @@ import org.neo4j.test.Mute;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.test.Mute.muteAll;
 
 public class PropertyFileConfiguratorTest
 {
     @Rule
-    public Mute mute = muteAll();
+    public final Mute mute = muteAll();
     @Rule
-    public TemporaryFolder folder = new TemporaryFolder(  );
+    public final TemporaryFolder folder = new TemporaryFolder();
 
     @Test
     public void whenDatabaseTuningFilePresentInDefaultLocationShouldLoadItEvenIfNotSpecified() throws IOException
@@ -57,10 +56,8 @@ public class PropertyFileConfiguratorTest
 
         PropertyFileConfigurator configurator = new PropertyFileConfigurator( emptyPropertyFile );
 
-        assertNotNull( configurator.getDatabaseTuningProperties()
-                .get( "neostore.nodestore.db.mapped_memory" ) );
         assertEquals( "25M", configurator.getDatabaseTuningProperties()
-                .get( "neostore.nodestore.db.mapped_memory" ) );
+                .get( GraphDatabaseSettings.nodestore_mapped_memory_size.name() ) );
     }
 
     @Test
@@ -80,11 +77,9 @@ public class PropertyFileConfiguratorTest
 
         PropertyFileConfigurator configurator = new PropertyFileConfigurator( emptyPropertyFile );
 
-        assertNotNull( configurator.getDatabaseTuningProperties()
-                .get( "neostore.nodestore.db.mapped_memory" ) );
         assertEquals( String.valueOf( unlikelyDefaultMemoryMappedValue ) + "M",
                 configurator.getDatabaseTuningProperties()
-                        .get( "neostore.nodestore.db.mapped_memory" ) );
+                        .get( GraphDatabaseSettings.nodestore_mapped_memory_size.name() ) );
     }
 
     @Test
@@ -110,11 +105,12 @@ public class PropertyFileConfiguratorTest
         File propertyFile = PropertyFileBuilder.builder( folder.getRoot() )
                 .withNameValue( Configurator.THIRD_PARTY_PACKAGES_KEY,
                         "org.neo4j.extension.extension1=/extension1,org.neo4j.extension.extension2=/extension2," +
-                                "org.neo4j.extension.extension3=/extension3" )
+                        "org.neo4j.extension.extension3=/extension3" )
                 .build();
         PropertyFileConfigurator propertyFileConfigurator = new PropertyFileConfigurator( propertyFile );
 
-        List<ThirdPartyJaxRsPackage> thirdpartyJaxRsPackages = propertyFileConfigurator.configuration().get( ServerSettings.third_party_packages );
+        List<ThirdPartyJaxRsPackage> thirdpartyJaxRsPackages =
+                propertyFileConfigurator.configuration().get( ServerSettings.third_party_packages );
 
         assertEquals( 3, thirdpartyJaxRsPackages.size() );
         assertEquals( "/extension1", thirdpartyJaxRsPackages.get( 0 ).getMountPoint() );
@@ -127,14 +123,41 @@ public class PropertyFileConfiguratorTest
     public void shouldSetStoreDirSetting() throws Exception
     {
         // Given
-        String dbLocation = new File( "/tmp/deosntmatter" ).getAbsolutePath();
-        File propertyFile = PropertyFileBuilder.builder( folder.getRoot() ).withNameValue( Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbLocation ).build();
+        String dbLocation = new File( "/tmp/does_not_matter" ).getAbsolutePath();
+        File propertyFile = PropertyFileBuilder.builder( folder.getRoot() )
+                .withNameValue( Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbLocation ).build();
         PropertyFileConfigurator serverConfig = new PropertyFileConfigurator( propertyFile );
 
         // When
-        Map<String, String> properties = serverConfig.getDatabaseTuningProperties();
+        Map<String,String> properties = serverConfig.getDatabaseTuningProperties();
 
         // Then
-        assertThat(properties.get( GraphDatabaseSettings.store_dir.name()), equalTo(dbLocation) );
+        assertThat( properties.get( GraphDatabaseSettings.store_dir.name() ), equalTo( dbLocation ) );
+    }
+
+    @Test
+    public void shouldWorkFineWithNoPropertiesFile()
+    {
+        // Given
+        File propertiesFile = null;
+
+        // When
+        PropertyFileConfigurator configurator = new PropertyFileConfigurator( propertiesFile );
+
+        // Then
+        assertFalse( configurator.getDatabaseTuningProperties().isEmpty() );
+    }
+
+    @Test
+    public void shouldWorkFineWhenSpecifiedPropertiesFileDoesNotExist()
+    {
+        // Given
+        File nonExistentFilePropertiesFile = new File( "/tmp/" + System.currentTimeMillis() );
+
+        // When
+        PropertyFileConfigurator configurator = new PropertyFileConfigurator( nonExistentFilePropertiesFile );
+
+        // Then
+        assertFalse( configurator.getDatabaseTuningProperties().isEmpty() );
     }
 }

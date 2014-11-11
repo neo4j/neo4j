@@ -27,6 +27,7 @@ import java.util.Map;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.server.NeoServerSettings;
 import org.neo4j.server.web.ServerInternalSettings;
@@ -34,12 +35,15 @@ import org.neo4j.server.web.ServerInternalSettings;
 import static java.util.Arrays.asList;
 
 //TODO put the server and db configuration file into one file per database.
-// the configuration for each db could either be passed from the server or created locally if no server (server config) is specified.
+// the configuration for each db could either be passed from the server or created locally
+// if no server (server config) is specified.
 public class PropertyFileConfigurator implements ConfigurationBuilder
 {
     private final Config serverConfig;
-    private Map<String, String> databaseTuningProperties = null;
-    private Map<String, String> serverProperties = null;
+    private Map<String,String> databaseTuningProperties;
+    private Map<String,String> serverProperties;
+
+    // TODO two following constructors should be removed
 
     public PropertyFileConfigurator()
     {
@@ -60,6 +64,16 @@ public class PropertyFileConfigurator implements ConfigurationBuilder
 
     public PropertyFileConfigurator( File propertiesFile, ConsoleLogger log )
     {
+        if ( propertiesFile == null )
+        {
+            propertiesFile = new File( System.getProperty(
+                    ServerInternalSettings.SERVER_CONFIG_FILE_KEY, Configurator.DEFAULT_CONFIG_DIR ) );
+        }
+        if ( log == null )
+        {
+            log = new ConsoleLogger( StringLogger.SYSTEM );
+        }
+
         loadServerProperties( propertiesFile, log );
         loadDatabaseTuningProperties( propertiesFile, log );
 
@@ -67,12 +81,12 @@ public class PropertyFileConfigurator implements ConfigurationBuilder
         setServerSettingsClasses( serverConfig );
 
         overrideStoreDirPropertyFromServerToDatabase();
-
     }
 
     public static void setServerSettingsClasses( Config config )
     {
-        config.registerSettingsClasses( asList( ServerSettings.class, NeoServerSettings.class, ServerInternalSettings.class, GraphDatabaseSettings.class ) );
+        config.registerSettingsClasses( asList( ServerSettings.class, NeoServerSettings.class,
+                ServerInternalSettings.class, GraphDatabaseSettings.class ) );
     }
 
     @Override
@@ -82,19 +96,19 @@ public class PropertyFileConfigurator implements ConfigurationBuilder
     }
 
     @Override
-    public Map<String, String> getDatabaseTuningProperties()
+    public Map<String,String> getDatabaseTuningProperties()
     {
-        return databaseTuningProperties == null ? new HashMap<String, String>() : databaseTuningProperties;
+        return databaseTuningProperties == null ? new HashMap<String,String>() : databaseTuningProperties;
     }
 
     private void loadDatabaseTuningProperties( File configFile, ConsoleLogger log )
     {
-
         String databaseTuningPropertyPath = serverProperties.get( NeoServerSettings.legacy_db_config.name() );
-        if( databaseTuningPropertyPath == null )
+        if ( databaseTuningPropertyPath == null )
         {
             // try to find the db config file
-            databaseTuningPropertyPath = configFile.getParent() + File.separator + ServerInternalSettings.DB_TUNING_CONFIG_FILE_NAME;
+            databaseTuningPropertyPath =
+                    configFile.getParent() + File.separator + ServerInternalSettings.DB_TUNING_CONFIG_FILE_NAME;
             serverProperties.put( NeoServerSettings.legacy_db_config.name(), databaseTuningPropertyPath );
             log.warn( String.format( "No database tuning file explicitly set, defaulting to [%s]",
                     databaseTuningPropertyPath ) );
@@ -129,12 +143,14 @@ public class PropertyFileConfigurator implements ConfigurationBuilder
         if ( serverConfigFile == null )
         {
             // load the server config file from the default location.
-            serverConfigFile = new File( System.getProperty( ServerInternalSettings.SERVER_CONFIG_FILE_KEY, ServerInternalSettings.SERVER_CONFIG_FILE ) );
+            serverConfigFile = new File( System.getProperty(
+                    ServerInternalSettings.SERVER_CONFIG_FILE_KEY, ServerInternalSettings.SERVER_CONFIG_FILE ) );
         }
 
         if ( !serverConfigFile.exists() )
         {
-            log.warn( "The specified file for server configuration [%s] does not exist. Using the default non-user-defined server configuration.",
+            log.warn( "The specified file for server configuration [%s] does not exist. " +
+                      "Using the default non-user-defined server configuration.",
                     serverConfigFile.getAbsoluteFile() );
         }
         else
@@ -143,13 +159,13 @@ public class PropertyFileConfigurator implements ConfigurationBuilder
             {
                 serverProperties = MapUtil.load( serverConfigFile );
             }
-            catch( IOException e)
+            catch ( IOException e )
             {
                 log.warn( "Unable to load server configuration file: " + e.getMessage() );
             }
         }
         // Default to no user-defined config if no config was found
-        if( serverProperties == null )
+        if ( serverProperties == null )
         {
             serverProperties = new HashMap<>();
         }
@@ -161,7 +177,8 @@ public class PropertyFileConfigurator implements ConfigurationBuilder
         // use the user defined or rely on the default value
 
         // TODO Should use the same key if they represent the same thing.
-        // warning: db_location key used by GraphDatabaseSettings and store_dir key used by NeoServerSettings are different.
+        // warning: db_location key used by GraphDatabaseSettings and store_dir key used by NeoServerSettings are
+        // different.
         String db_location = serverConfig.get( NeoServerSettings.legacy_db_location ).getAbsolutePath();
         databaseTuningProperties.put( GraphDatabaseSettings.store_dir.name(), db_location );
     }

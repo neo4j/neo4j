@@ -17,67 +17,75 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.advanced;
+package org.neo4j.server.advanced.jmx;
 
-import java.io.File;
-import java.util.Map;
-
+import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.Map;
 
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.SingleLoggingService;
+import org.neo4j.server.NeoServer;
+import org.neo4j.server.advanced.AdvancedNeoServer;
 import org.neo4j.server.advanced.helpers.AdvancedServerBuilder;
-import org.neo4j.server.advanced.jmx.ServerManagement;
 import org.neo4j.server.configuration.ConfigurationBuilder;
-import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.configuration.PropertyFileConfigurator;
+import org.neo4j.test.CleanupRule;
 import org.neo4j.test.TargetDirectory;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-public class BootstrapperTest
+public class ServerManagementTest
 {
+    @Rule
+    public final CleanupRule cleanup = new CleanupRule();
+    @Rule
+    public final TargetDirectory.TestDirectory baseDir = TargetDirectory.testDirForTest( getClass() );
+
     @Test
     public void shouldBeAbleToRestartServer() throws Exception
     {
-        TargetDirectory target = TargetDirectory.forTest( getClass() );
-        String dbDir1 = target.cleanDirectory( "db1" ).getAbsolutePath();
+        // Given
+        String dbDirectory1 = baseDir.directory( "db1" ).getAbsolutePath();
+        String dbDirectory2 = baseDir.directory( "db2" ).getAbsolutePath();
+
         ConfigurationBuilder config = new PropertyFileConfigurator(
                 AdvancedServerBuilder
                         .server()
-                        .usingDatabaseDir( dbDir1 )
+                        .usingDatabaseDir( dbDirectory1 )
                         .createPropertiesFiles(), ConsoleLogger.DEV_NULL );
 
-        // TODO: This needs to be here because of a startuphealthcheck
-        // that requires this system property. Look into moving
-        // config file check into bootstrapper to avoid this.
-        File irrelevant = target.file( "irrelevant" );
-        irrelevant.createNewFile();
-
-        setProperty( config.configuration(), "org.neo4j.server.properties", irrelevant.getAbsolutePath() );
-
-        AdvancedNeoServer server = new AdvancedNeoServer( config, GraphDatabaseDependencies.newDependencies().logging(new SingleLoggingService( StringLogger.SYSTEM )));
-
-        server.start( );
+        // When
+        NeoServer server = cleanup.add( new AdvancedNeoServer( config, graphDbDependencies() ) );
+        server.start();
 
         assertNotNull( server.getDatabase().getGraph() );
+        assertEquals( dbDirectory1, server.getDatabase().getLocation() );
 
         // Change the database location
-        String dbDir2 = target.cleanDirectory( "db2" ).getAbsolutePath();
-
-        Config conf = config.configuration();
-        setProperty( conf, Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDir2 );
-
+        setProperty( config.configuration(), Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDirectory2 );
         ServerManagement bean = new ServerManagement( server );
         bean.restartServer();
 
+        // Then
+        assertNotNull( server.getDatabase().getGraph() );
+        assertEquals( dbDirectory2, server.getDatabase().getLocation() );
     }
 
-    private void setProperty( Config config, String key, String value ) {
-        Map<String, String> params = config.getParams();
+    private static GraphDatabaseDependencies graphDbDependencies()
+    {
+        return GraphDatabaseDependencies.newDependencies().logging( new SingleLoggingService( StringLogger.DEV_NULL ) );
+    }
+
+    private static void setProperty( Config config, String key, String value )
+    {
+        Map<String,String> params = config.getParams();
         params.put( key, value );
         config.applyChanges( params );
     }

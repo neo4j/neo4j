@@ -19,18 +19,20 @@
  */
 package org.neo4j.server.enterprise;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
-import org.junit.Test;
+import org.neo4j.server.BaseBootstrapperTest;
 import org.neo4j.server.Bootstrapper;
 
-public class EnterpriseNeoServerBootstrapperTest
+public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
 {
-    @Test
-    public void bootstrapperLoadsEnterpriseServerBootstrapper() throws Exception
+    @Override
+    protected Class<? extends Bootstrapper> bootstrapperClass()
     {
-        assertThat( Bootstrapper.loadMostDerivedBootstrapper(), is( instanceOf( EnterpriseBootstrapper.class ) ));
+        return EnterpriseBootstrapper.class;
+    }
+
+    @Override
+    protected Bootstrapper newBootstrapper()
+    {
+        return new EnterpriseBootstrapper();
     }
 }

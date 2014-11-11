@@ -19,33 +19,36 @@
  */
 package org.neo4j.server.advanced.jmx;
 
+import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.server.NeoServer;
 
 public final class ServerManagement implements ServerManagementMBean
 {
     private final NeoServer server;
 
-    public ServerManagement(NeoServer bs)
+    public ServerManagement( NeoServer server )
     {
-        this.server = bs;
+        this.server = server;
     }
-    
+
     @Override
-	public synchronized void restartServer()
+    public synchronized void restartServer()
     {
-        Thread thread = new Thread( "restart thread" )
+        final ConsoleLogger log = server.getDatabase().getLogging().getConsoleLog( getClass() );
+
+        Thread thread = new Thread( "Restart server thread" )
         {
             @Override
             public void run()
             {
+                log.log( "Restarting server" );
                 server.stop();
                 server.start();
             }
         };
         thread.setDaemon( false );
         thread.start();
-        // TODO What? sysout? Why?
-        System.out.println("restarting server");
+
         try
         {
             thread.join();

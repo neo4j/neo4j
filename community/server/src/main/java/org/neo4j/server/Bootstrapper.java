@@ -19,6 +19,8 @@
  */
 package org.neo4j.server;
 
+import java.io.File;
+
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.GraphDatabaseDependencies;
@@ -35,6 +37,7 @@ import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.configuration.ServerSettings;
+import org.neo4j.server.web.ServerInternalSettings;
 
 import static java.lang.String.format;
 
@@ -59,7 +62,7 @@ public abstract class Bootstrapper
     public static void main( String[] args )
     {
         Bootstrapper bootstrapper = loadMostDerivedBootstrapper();
-        Integer exit = bootstrapper.start( args );
+        Integer exit = bootstrapper.start();
         if ( exit != 0 )
         {
             System.exit( exit );
@@ -79,18 +82,19 @@ public abstract class Bootstrapper
         return winner;
     }
 
+    // TODO: method not used and WrapperListener interface does no exist. Check if it is safe to remove it
     public void controlEvent( int arg )
     {
         // Do nothing, required by the WrapperListener interface
     }
 
-    public Integer start()
+    // TODO: args are not used, check if it is safe to remove this method
+    public Integer start( String[] args )
     {
-        return start( new String[0] );
+        return start();
     }
 
-    // TODO: This does not use args, check if it is safe to remove them
-    public Integer start( String[] args )
+    public Integer start()
     {
         try
         {
@@ -148,12 +152,13 @@ public abstract class Bootstrapper
 
     protected abstract NeoServer createNeoServer();
 
-	public void stop()
+    // TODO: stopArg is not used, check if it is safe to remove this method
+	public void stop( int stopArg )
     {
-        stop( 0 );
+        stop();
     }
 
-    public int stop( int stopArg )
+    public int stop()
     {
         String location = "unknown location";
         try
@@ -221,7 +226,9 @@ public abstract class Bootstrapper
 
     protected ConfigurationBuilder createConfigurationBuilder( ConsoleLogger log )
     {
-        return new PropertyFileConfigurator( log );
+        File configFile = new File( System.getProperty(
+                ServerInternalSettings.SERVER_CONFIG_FILE_KEY, Configurator.DEFAULT_CONFIG_DIR ) );
+        return new PropertyFileConfigurator( configFile, log );
     }
 
     protected boolean isMoreDerivedThan( Bootstrapper other )
