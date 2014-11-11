@@ -175,10 +175,10 @@ public class RemoteStoreCopierTest
         RemoteStoreCopier copier = spy( new RemoteStoreCopier( config, loadKernelExtensions(), console, logging, fs ) );
         when( copier.logConfigFileName() ).thenReturn( "neo4j-logback.xml" );
 
-        Response response = when( mock( Response.class ).transactions() )
-                .thenReturn( TransactionStream.EMPTY ).getMock();
-        RemoteStoreCopier.StoreCopyRequester requester = when( mock( RemoteStoreCopier.StoreCopyRequester.class )
-                .copyStore( any( StoreWriter.class ) ) ).thenReturn( response ).getMock();
+        Response response = mock( Response.class );
+        when( response.transactions() ).thenReturn( TransactionStream.EMPTY ).getMock();
+        RemoteStoreCopier.StoreCopyRequester requester = mock( RemoteStoreCopier.StoreCopyRequester.class );
+        when( requester.copyStore( any( StoreWriter.class ) ) ).thenReturn( response );
 
         // When
         copier.copyStore( requester, CancellationRequest.NONE );
