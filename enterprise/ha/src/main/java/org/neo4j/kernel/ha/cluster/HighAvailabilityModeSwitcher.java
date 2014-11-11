@@ -37,8 +37,8 @@ import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.Functions;
 import org.neo4j.kernel.impl.nioneo.store.InconsistentlyUpgradedClusterException;
 import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
-import org.neo4j.kernel.impl.nioneo.store.UnableToCopyStoreFromOldMasterException;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.nioneo.store.UnableToCopyStoreFromOldMasterException;
 import org.neo4j.kernel.impl.nioneo.store.UnavailableMembersException;
 import org.neo4j.kernel.impl.transaction.xaframework.NoSuchLogVersionException;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -345,7 +345,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                          * null slave uri means the task was cancelled. The task then must simply terminate and
                          * have no side effects.
                          */
-                        msgLog.info( "Switch to slave resulted in null URI - that means it was effectively cancelled" );
+                        msgLog.info( "Switch to slave is effectively cancelled" );
                     }
                     else
                     {
