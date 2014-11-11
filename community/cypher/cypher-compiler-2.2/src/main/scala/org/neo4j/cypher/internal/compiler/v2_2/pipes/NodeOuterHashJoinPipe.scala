@@ -35,6 +35,9 @@ case class NodeOuterHashJoinPipe(nodeIdentifiers: Set[String], source: Pipe, inn
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
 
+    if(input.isEmpty)
+      return Iterator.empty
+
     val probeTable = buildProbeTableAndFindNullRows(input)
 
     val seenKeys = mutable.Set[Vector[Long]]()

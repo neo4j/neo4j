@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.commons.{TestableIterator, CypherFunSuite}
 import org.mockito.Mockito._
 import org.mockito.Matchers._
 import org.neo4j.graphdb.Node
@@ -77,21 +77,24 @@ class NodeOuterHashJoinPipeTest extends CypherFunSuite {
     ))
   }
 
-  test("empty lhs should give empty results") {
+  test("empty lhs should give empty results and not fetch anything from the rhs") {
     // given
     val queryState = QueryStateHelper.empty
 
     val left = newMockedPipe("b")
 
-    val right = newMockedPipe("b",
-      row("b" -> node2, "c" -> 30),
-      row("b" -> node2, "c" -> 40))
+    val right = mock[Pipe]
+    when(right.sources).thenReturn(Seq.empty)
+    when(right.symbols).thenReturn(SymbolTable(Map("b" -> CTNode)))
+    val rhsIterator = new TestableIterator(Iterator(row("b" -> newMockedNode(0))))
+    when(right.createResults(any())).thenReturn(rhsIterator)
 
     // when
     val result = NodeOuterHashJoinPipe(Set("b"), left, right, Set("c"))().createResults(queryState)
 
     // then
     result.toList shouldBe 'empty
+    rhsIterator.fetched should equal(0)
   }
 
   test("empty rhs should give null results") {

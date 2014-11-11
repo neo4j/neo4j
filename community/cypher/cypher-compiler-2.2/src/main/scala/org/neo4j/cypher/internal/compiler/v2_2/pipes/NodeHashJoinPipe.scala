@@ -33,8 +33,12 @@ case class NodeHashJoinPipe(nodeIdentifiers: Set[String], left: Pipe, right: Pip
   extends PipeWithSource(left, pipeMonitor) with RonjaPipe {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-
     if (input.isEmpty)
+      return Iterator.empty
+
+    val rhsIterator = right.createResults(state)
+
+    if (rhsIterator.isEmpty)
       return Iterator.empty
 
     val table = buildProbeTable(input)
@@ -42,7 +46,7 @@ case class NodeHashJoinPipe(nodeIdentifiers: Set[String], left: Pipe, right: Pip
     if (table.isEmpty)
       return Iterator.empty
 
-    val result = for {context: ExecutionContext <- right.createResults(state)
+    val result = for {context: ExecutionContext <- rhsIterator
                       joinKey <- computeKey(context)}
     yield {
       val seq = table.getOrElse(joinKey, mutable.MutableList.empty)

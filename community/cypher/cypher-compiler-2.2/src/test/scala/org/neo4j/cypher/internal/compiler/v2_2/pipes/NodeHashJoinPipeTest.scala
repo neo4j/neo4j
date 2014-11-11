@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.mockito.Matchers._
-import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.commons.{TestableIterator, CypherFunSuite}
 import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.graphdb.Node
@@ -174,15 +174,38 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
     when(left.createResults(queryState)).thenReturn(Iterator(row("b" -> null), row("b" -> null)))
 
     val right = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
+    val rhsIterator = new TestableIterator(Iterator(row("b" -> newMockedNode(0))))
+    when(left.createResults(queryState)).thenReturn(Iterator.empty)
 
     // when
     val result = NodeHashJoinPipe(Set("b"), left, right)().createResults(queryState)
 
     // then
     result shouldBe empty
-    verify(right, times(0)).createResults(any())
+    rhsIterator.fetched should equal(0)
   }
 
+  test("if RHS is empty, terminate building of the probe map early") {
+    // given
+    val queryState = QueryStateHelper.empty
+
+    val left = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
+    val node1 = newMockedNode(1)
+    val node2 = newMockedNode(2)
+
+    val lhsIterator = new TestableIterator(Iterator(row("b" -> node1), row("b" -> node2)))
+    when(left.createResults(queryState)).thenReturn(lhsIterator)
+
+    val right = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
+    when(right.createResults(queryState)).thenReturn(Iterator.empty)
+
+    // when
+    val result = NodeHashJoinPipe(Set("b"), left, right)().createResults(queryState)
+
+    // then
+    result shouldBe empty
+    lhsIterator.fetched should equal(0)
+  }
 
   private def row(values: (String, Any)*) = ExecutionContext.from(values: _*)
 
@@ -200,3 +223,4 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
     pipe
   }
 }
+
