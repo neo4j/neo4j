@@ -34,7 +34,13 @@ case class NodeHashJoinPipe(nodeIdentifiers: Set[String], left: Pipe, right: Pip
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
 
+    if (input.isEmpty)
+      return Iterator.empty
+
     val table = buildProbeTable(input)
+
+    if (table.isEmpty)
+      return Iterator.empty
 
     val result = for {context: ExecutionContext <- right.createResults(state)
                       joinKey <- computeKey(context)}

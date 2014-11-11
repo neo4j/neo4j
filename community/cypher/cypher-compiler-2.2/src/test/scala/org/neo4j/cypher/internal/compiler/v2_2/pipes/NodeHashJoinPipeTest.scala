@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
-import org.mockito.Mockito
+import org.mockito.Matchers._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
@@ -28,7 +28,7 @@ import org.neo4j.graphdb.Node
 class NodeHashJoinPipeTest extends CypherFunSuite {
 
   implicit val monitor = mock[PipeMonitor]
-  import org.mockito.Mockito.when
+  import org.mockito.Mockito._
 
   test("should support simple hash join over nodes") {
     // given
@@ -147,6 +147,40 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
     result.toList should equal(List(
       Map("a" -> 10, "b" -> node2, "c" -> 40)
     ))
+  }
+
+  test("should not fetch results from RHS if LHS is empty") {
+    // given
+    val queryState = QueryStateHelper.empty
+
+    val left = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
+    when(left.createResults(queryState)).thenReturn(Iterator.empty)
+
+    val right = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
+
+    // when
+    val result = NodeHashJoinPipe(Set("b"), left, right)().createResults(queryState)
+
+    // then
+    result shouldBe empty
+    verify(right, times(0)).createResults(any())
+  }
+
+  test("should not fetch results from RHS if no probe table was built") {
+    // given
+    val queryState = QueryStateHelper.empty
+
+    val left = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
+    when(left.createResults(queryState)).thenReturn(Iterator(row("b" -> null), row("b" -> null)))
+
+    val right = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
+
+    // when
+    val result = NodeHashJoinPipe(Set("b"), left, right)().createResults(queryState)
+
+    // then
+    result shouldBe empty
+    verify(right, times(0)).createResults(any())
   }
 
 
