@@ -22,7 +22,6 @@ package org.neo4j.unsafe.impl.batchimport.cache;
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
-import static org.neo4j.unsafe.impl.batchimport.cache.IntArray.intArray;
 import static org.neo4j.unsafe.impl.batchimport.cache.LongArrayFactory.HEAP;
 
 public class IntArrayTest
@@ -32,8 +31,7 @@ public class IntArrayTest
     {
         // GIVEN
         int defaultValue = 5;
-        IntArray array = intArray( HEAP.newDynamicLongArray( 1000 ) );
-        array.setAll( defaultValue );
+        IntArray array = new IntArray( HEAP, 1000, defaultValue );
 
         // WHEN/THEN
         for ( int i = 0; i < 100; i++ )
@@ -45,8 +43,8 @@ public class IntArrayTest
         assertEquals( defaultValue, array.get( 3 ) );
         assertEquals( Integer.MAX_VALUE-8, array.get( 2 ) );
 
-        array.set( defaultValue, Integer.MAX_VALUE-12 );
-        assertEquals( Integer.MAX_VALUE-12, array.get( defaultValue ) );
+        array.set( 5, Integer.MAX_VALUE-12 );
+        assertEquals( Integer.MAX_VALUE-12, array.get( 5 ) );
         assertEquals( defaultValue, array.get( 4 ) );
     }
 }

@@ -34,11 +34,6 @@ import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.StringIdM
  */
 public class ParallelSort
 {
-    private static final int PROGRESS_INTERVAL = 100;
-    private static final int RADIX_BITS = 24;
-    private static final int LENGTH_MASK = (int) (0xFE000000_00000000L >>> (64 - RADIX_BITS));
-    private static final int HASHCODE_MASK = (int) (0x00FFFF00_00000000L >>> (64 - RADIX_BITS));
-
     private final int[] radixIndexCount;
     private final LongArray dataCache;
     private final IntArray tracker;
@@ -97,8 +92,7 @@ public class ParallelSort
         int[][] rangeParams = new int[threads][2];
         int[] bucketRange = new int[threads];
         sortBuckets = new long[threads][2];
-        long dataCacheSize = dataCache.highestSetIndex()+1;
-        int bucketSize = (int) (dataCacheSize / threads);
+        int bucketSize = (int) (dataCache.size() / threads);
         int count = 0, fullCount = 0 + 0;
         rangeParams[0][0] = 0;
         bucketRange[0] = 0;
@@ -115,7 +109,7 @@ public class ParallelSort
             if ( threadIndex == threads - 1 )
             {
                 bucketRange[threadIndex] = radixIndexCount.length;
-                rangeParams[threadIndex][1] = (int) dataCacheSize - fullCount;
+                rangeParams[threadIndex][1] = (int) dataCache.size() - fullCount;
                 break;
             }
             else
@@ -129,7 +123,7 @@ public class ParallelSort
         {
             bucketIndex[i] = 0;
         }
-        for ( long i = 0; i < dataCacheSize; i++ )
+        for ( long i = 0; i < dataCache.size(); i++ )
         {
             int rIndex = radixOf( dataCache.get( i ) );
             for ( int k = 0; k < threads; k++ )
@@ -138,11 +132,7 @@ public class ParallelSort
                 if ( rIndex <= bucketRange[k] )
                 {
                     long temp = (rangeParams[k][0] + bucketIndex[k]++);
-                    long temp1 = tracker.get( temp );
-                    if ( temp1 != -1 )
-                    {
-                        System.out.println( "error in init of tracker" );
-                    }
+                    assert tracker.get( temp ) == -1;
                     tracker.set( temp, (int) i );
                     if ( bucketIndex[k] == rangeParams[k][1] )
                     {
@@ -238,10 +228,6 @@ public class ParallelSort
             {
                 stack.push( rightIndex + 1 );
                 stack.push( rightIndexOfSubset );
-            }
-            if ( iteration++ % PROGRESS_INTERVAL == 0 )
-            {
-                addIterations( PROGRESS_INTERVAL );
             }
         }
     }

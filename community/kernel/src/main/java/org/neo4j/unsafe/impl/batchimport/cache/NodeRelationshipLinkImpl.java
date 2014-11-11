@@ -36,7 +36,7 @@ public class NodeRelationshipLinkImpl implements NodeRelationshipLink
     public NodeRelationshipLinkImpl( LongArrayFactory arrayFactory, int denseNodeThreshold )
     {
         int chunkSize = 1_000_000;
-        this.array = arrayFactory.newDynamicLongArray( chunkSize ).setAll( IdFieldManipulator.emptyField() );
+        this.array = arrayFactory.newDynamicLongArray( chunkSize, IdFieldManipulator.emptyField() );
         this.denseNodeThreshold = denseNodeThreshold;
         this.relGroupCache = new RelGroupCache( arrayFactory, chunkSize );
     }
@@ -163,7 +163,7 @@ public class NodeRelationshipLinkImpl implements NodeRelationshipLink
         RelGroupCache( LongArrayFactory arrayFactory, long chunkSize )
         {
             assert chunkSize > 0;
-            this.array = arrayFactory.newDynamicLongArray( chunkSize ).setAll( -1 );
+            this.array = arrayFactory.newDynamicLongArray( chunkSize, -1 );
         }
 
         private void clearRelationships()

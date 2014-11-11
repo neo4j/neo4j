@@ -33,7 +33,6 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import static java.lang.Math.pow;
 
 import static org.neo4j.unsafe.impl.batchimport.Utils.unsignedCompare;
-import static org.neo4j.unsafe.impl.batchimport.cache.IntArray.intArray;
 
 /**
  * Maps arbitrary strings to ids. The strings can be {@link #put(Object, long) added} in any order,
@@ -85,12 +84,12 @@ public class StringIdMapper implements IdMapper
 
     private static IntArray newIntArray( LongArrayFactory cacheFactory )
     {
-        return intArray( cacheFactory.newDynamicLongArray( CACHE_CHUNK_SIZE ) ).setAll( -1 );
+        return new IntArray( cacheFactory, CACHE_CHUNK_SIZE, -1 );
     }
 
     private static LongArray newLongArray( LongArrayFactory cacheFactory )
     {
-        return cacheFactory.newDynamicLongArray( CACHE_CHUNK_SIZE ).setAll( -1 );
+        return cacheFactory.newDynamicLongArray( CACHE_CHUNK_SIZE, -1 );
     }
 
     @Override
@@ -139,8 +138,7 @@ public class StringIdMapper implements IdMapper
     private long binarySearch( String strValue )
     {
         long low = 0;
-        long highestSetTrackerIndex = trackerCache.highestSetIndex();
-        long high = highestSetTrackerIndex;
+        long high = trackerCache.highestSetIndex();
         long x = strEncoder.encode( strValue );
         int rIndex = radixOf( x );
         for ( int k = 0; k < sortBuckets.length; k++ )
@@ -148,7 +146,7 @@ public class StringIdMapper implements IdMapper
             if ( rIndex <= sortBuckets[k][0] )//bucketRange[k] > rIndex )
             {
                 low = sortBuckets[k][1];
-                high = (k == sortBuckets.length - 1) ? highestSetTrackerIndex : sortBuckets[k + 1][1];
+                high = (k == sortBuckets.length - 1) ? trackerCache.size() - 1 : sortBuckets[k + 1][1];
                 break;
             }
         }
@@ -157,7 +155,7 @@ public class StringIdMapper implements IdMapper
         if ( returnVal == -1 )
         {
             low = 0;
-            high = highestSetTrackerIndex;
+            high = trackerCache.size() - 1;
             returnVal = binarySearch( x, strValue, false, low, high );
         }
         return returnVal;
@@ -180,13 +178,13 @@ public class StringIdMapper implements IdMapper
 
     private int detectAndMarkCollisions()
     {
-        int numCollisions = 0 + 1 - 1;
-        for ( int i = 0; i <= trackerCache.highestSetIndex(); i++ )
+        int numCollisions = 0;
+        for ( int i = 0; i < trackerCache.size(); i++ )
         {
-            if ( i < trackerCache.highestSetIndex()
+            if ( i < trackerCache.size() - 1
                     && compareDataCache( dataCache, trackerCache, i, i + 1, CompareType.GE ) )
             {
-                if (!compareDataCache( dataCache, trackerCache, i, i + 1, CompareType.EQ ) )
+                if ( !compareDataCache( dataCache, trackerCache, i, i + 1, CompareType.EQ ) )
                 {
                     throw new IllegalStateException( "Failure:[" + i + "] " +
                             Long.toHexString( dataCache.get( trackerCache.get( i ) ) ) + ":" +
@@ -216,15 +214,14 @@ public class StringIdMapper implements IdMapper
     private void buildCollisionInfo( Iterator<Object> ids )
     {
         int collisionIndex = 0;
-        for ( int i = 0; ids.hasNext(); i++ )
+        for ( long i = 0; ids.hasNext(); i++ )
         {
             String id = (String) ids.next();
             long value = dataCache.get( i );
             if ( isCollision( value ) )
             {
                 long val = strEncoder.encode( id );
-                assert val != clearCollision( value );
-                assert val == value;
+                assert val == clearCollision( value );
                 int strIndex = collisionStrings.length();
                 collisionStrings.append( id );
                 collisionCache.set( collisionIndex, i );

@@ -28,18 +28,31 @@ public class HeapLongArray implements LongArray
 {
     private final long[][] shards;
     private final long length;
+    private final long defaultValue;
     private long highestSetIndex = -1;
+    private long size;
 
-    public HeapLongArray( long length )
+    public HeapLongArray( long length, long defaultValue )
     {
         this.length = length;
+        this.defaultValue = defaultValue;
         int numShards = (int) ((length-1) / Integer.MAX_VALUE) + 1;
         this.shards = new long[numShards][];
         for ( int i = 0; i < numShards-1; i++ )
         {
-            this.shards[i] = new long[Integer.MAX_VALUE];
+            this.shards[i] = newShard( Integer.MAX_VALUE );
         }
-        this.shards[numShards-1] = new long[(int) (length % Integer.MAX_VALUE)];
+        this.shards[numShards-1] = newShard( (int) (length % Integer.MAX_VALUE) );
+    }
+
+    private long[] newShard( int length )
+    {
+        long[] shard = new long[length];
+        if ( defaultValue != 0 )
+        {
+            Arrays.fill( shard, defaultValue );
+        }
+        return shard;
     }
 
     @Override
@@ -57,7 +70,13 @@ public class HeapLongArray implements LongArray
     @Override
     public void set( long index, long value )
     {
-        shard( index )[arrayIndex( index )] = value;
+        long[] shard = shard( index );
+        int arrayIndex = arrayIndex( index );
+        if ( shard[arrayIndex] == defaultValue )
+        {
+            size++;
+        }
+        shard[arrayIndex] = value;
         if ( index > highestSetIndex )
         {
             highestSetIndex = index;
@@ -70,19 +89,26 @@ public class HeapLongArray implements LongArray
         return highestSetIndex;
     }
 
+    @Override
+    public long size()
+    {
+        return size;
+    }
+
     private long[] shard( long index )
     {
         return shards[shardIndex( index )];
     }
 
     @Override
-    public LongArray setAll( long value )
+    public void clear()
     {
         for ( long[] shard : shards )
         {
-            Arrays.fill( shard, value );
+            Arrays.fill( shard, defaultValue );
         }
-        return this;
+        highestSetIndex = -1;
+        size = 0;
     }
 
     @Override

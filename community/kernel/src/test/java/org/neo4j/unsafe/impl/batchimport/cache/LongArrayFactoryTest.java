@@ -39,7 +39,7 @@ public class LongArrayFactoryTest
         LongArrayFactory factory = new LongArrayFactory.AutoLongArrayFactory( memory, 10*KILO );
 
         // WHEN
-        LongArray array = factory.newLongArray( 1*KILO );
+        LongArray array = factory.newLongArray( 1*KILO, 0 );
 
         // THEN
         assertTrue( array instanceof HeapLongArray );
@@ -55,7 +55,7 @@ public class LongArrayFactoryTest
         LongArrayFactory factory = new LongArrayFactory.AutoLongArrayFactory( memory, 10*KILO );
 
         // WHEN
-        LongArray array = factory.newLongArray( 1*MEGA );
+        LongArray array = factory.newLongArray( 1*MEGA, 0 );
 
         // THEN
         assertTrue( array instanceof OffHeapLongArray );
@@ -71,7 +71,7 @@ public class LongArrayFactoryTest
         LongArrayFactory factory = new LongArrayFactory.AutoLongArrayFactory( memory, 10*KILO );
 
         // WHEN
-        LongArray array = factory.newLongArray( 1*MEGA ); // i.e. 8 Mb
+        LongArray array = factory.newLongArray( 1*MEGA, 0 ); // i.e. 8 Mb
 
         // THEN
         assertTrue( array instanceof DynamicLongArray );

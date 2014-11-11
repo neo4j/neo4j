@@ -19,9 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
-import org.neo4j.unsafe.impl.batchimport.cache.LongArray;
-import org.neo4j.unsafe.impl.batchimport.cache.OffHeapLongArray;
-
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
@@ -32,8 +29,7 @@ public class OffHeapLongArrayTest
     {
         // GIVEN
         int size = 100;
-        LongArray array = new OffHeapLongArray( size );
-        array.setAll( -1 );
+        LongArray array = new OffHeapLongArray( size, -1 );
         for ( int i = 0; i < size; i++ )
         {
             assertEquals( -1L, array.get( i ) );

@@ -19,9 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
-import org.neo4j.unsafe.impl.batchimport.cache.LongArray;
-import org.neo4j.unsafe.impl.batchimport.cache.LongArrayFactory;
-
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
@@ -31,8 +28,7 @@ public class DynamicLongArrayTest
     public void shouldWorkOnSingleChunk() throws Exception
     {
         // GIVEN
-        LongArray array = LongArrayFactory.AUTO.newDynamicLongArray( 10 );
-        array.setAll( 0 );
+        LongArray array = LongArrayFactory.AUTO.newDynamicLongArray( 10, 0 );
         array.set( 4, 5 );
 
         // WHEN
@@ -46,7 +42,7 @@ public class DynamicLongArrayTest
     public void shouldAddManyChunks() throws Exception
     {
         // GIVEN
-        LongArray array = LongArrayFactory.AUTO.newDynamicLongArray( 10 );
+        LongArray array = LongArrayFactory.AUTO.newDynamicLongArray( 10, 0 );
 
         // WHEN
         long index = 243;

@@ -33,10 +33,18 @@ public class IntArray implements NumberArray
 {
     private static final LongBitsManipulator LONG_BITS = new LongBitsManipulator( Integer.SIZE, Integer.SIZE );
     private final LongArray longs;
+    private final int defaultValue;
+    private long highestSetIndex = -1;
+    private long size;
 
-    public IntArray( LongArray longs )
+    public IntArray( LongArrayFactory factory, long chunkSize, int defaultValue )
     {
-        this.longs = longs;
+        long defaultLongValue = 0;
+        defaultLongValue = LONG_BITS.set( defaultLongValue, 0, defaultValue );
+        defaultLongValue = LONG_BITS.set( defaultLongValue, 1, defaultValue );
+
+        this.longs = factory.newDynamicLongArray( chunkSize, defaultLongValue );
+        this.defaultValue = defaultValue;
     }
 
     @Override
@@ -57,17 +65,24 @@ public class IntArray implements NumberArray
         long longIndex = index >> 1;
         long longValue = longs.get( longIndex );
         int slot = (int)(index%2);
+        if ( LONG_BITS.get( longValue, slot ) == defaultValue )
+        {
+            size++;
+        }
         longValue = LONG_BITS.set( longValue, slot, value );
         longs.set( longIndex, longValue );
+        if ( index > highestSetIndex )
+        {
+            highestSetIndex = index;
+        }
     }
 
-    public IntArray setAll( int value )
+    @Override
+    public void clear()
     {
-        long longValue = 0;
-        longValue = LONG_BITS.set( longValue, 0, value );
-        longValue = LONG_BITS.set( longValue, 1, value );
-        longs.setAll( longValue );
-        return this;
+        longs.clear();
+        highestSetIndex = -1;
+        size = 0;
     }
 
     @Override
@@ -79,12 +94,13 @@ public class IntArray implements NumberArray
     @Override
     public long highestSetIndex()
     {
-        return (longs.highestSetIndex()+1) << 1; // off by one from time to time, but that's OK for the use cases at hand
+        return highestSetIndex;
     }
 
-    public static IntArray intArray( LongArray longs )
+    @Override
+    public long size()
     {
-        return new IntArray( longs );
+        return size;
     }
 
     @Override

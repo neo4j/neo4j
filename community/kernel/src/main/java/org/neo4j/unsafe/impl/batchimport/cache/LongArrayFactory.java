@@ -28,41 +28,41 @@ import static java.lang.String.format;
  */
 public interface LongArrayFactory
 {
-    LongArray newLongArray( long length );
+    LongArray newLongArray( long length, long defaultValue );
 
     /**
      * @param chunkSize the size of each array (number of items). Where new chunks are added when needed.
      * @param initialValue initial value to set all default values to, {@link LongArray#setAll(long)}.
      */
-    LongArray newDynamicLongArray( long chunkSize );
+    LongArray newDynamicLongArray( long chunkSize, long defaultValue );
 
     public static final LongArrayFactory HEAP = new LongArrayFactory()
     {
         @Override
-        public LongArray newLongArray( long length )
+        public LongArray newLongArray( long length, long defaultValue )
         {
-            return new HeapLongArray( length );
+            return new HeapLongArray( length, defaultValue );
         }
 
         @Override
-        public LongArray newDynamicLongArray( long chunkSize )
+        public LongArray newDynamicLongArray( long chunkSize, long defaultValue )
         {
-            return new DynamicLongArray( this, chunkSize );
+            return new DynamicLongArray( this, chunkSize, defaultValue );
         }
     };
 
     public static final LongArrayFactory OFF_HEAP = new LongArrayFactory()
     {
         @Override
-        public LongArray newLongArray( long length )
+        public LongArray newLongArray( long length, long defaultValue )
         {
-            return new OffHeapLongArray( length );
+            return new OffHeapLongArray( length, defaultValue );
         }
 
         @Override
-        public LongArray newDynamicLongArray( long chunkSize )
+        public LongArray newDynamicLongArray( long chunkSize, long defaultValue )
         {
-            return new DynamicLongArray( this, chunkSize );
+            return new DynamicLongArray( this, chunkSize, defaultValue );
         }
     };
 
@@ -78,7 +78,7 @@ public interface LongArrayFactory
         }
 
         @Override
-        public LongArray newLongArray( long length )
+        public LongArray newLongArray( long length, long defaultValue )
         {
             long bytesRequired = length * 8;
 
@@ -86,7 +86,7 @@ public interface LongArrayFactory
             long freeOffHeap = calculator.availableOffHeapMemory() - margin;
             if ( bytesRequired < freeOffHeap )
             {
-                return OFF_HEAP.newLongArray( length );
+                return OFF_HEAP.newLongArray( length, defaultValue );
             }
 
             // Otherwise, try to fit it in heap
@@ -95,7 +95,7 @@ public interface LongArrayFactory
             {
                 try
                 {
-                    return HEAP.newLongArray( length );
+                    return HEAP.newLongArray( length, defaultValue );
                 }
                 catch ( OutOfMemoryError e )
                 {   // It seems there wasn't room after all...
@@ -108,7 +108,7 @@ public interface LongArrayFactory
             {
                 // TODO Ideally return a chunk size that is roughly divisible by both on-heap and off-heap
                 // free memory size. But for now just take the requested length / 10
-                return newDynamicLongArray( length / 10 );
+                return newDynamicLongArray( length / 10, defaultValue );
             }
 
             throw new IllegalArgumentException( format( "Neither enough free heap (%d), nor off-heap (%d) space " +
@@ -116,9 +116,9 @@ public interface LongArrayFactory
         }
 
         @Override
-        public LongArray newDynamicLongArray( long chunkSize )
+        public LongArray newDynamicLongArray( long chunkSize, long defaultValue )
         {
-            return new DynamicLongArray( this, chunkSize );
+            return new DynamicLongArray( this, chunkSize, defaultValue );
         }
     }
 

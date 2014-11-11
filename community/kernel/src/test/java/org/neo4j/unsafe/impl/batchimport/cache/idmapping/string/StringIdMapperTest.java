@@ -26,11 +26,14 @@ import java.util.List;
 import java.util.Random;
 
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.test.RepeatRule;
+import org.neo4j.test.RepeatRule.Repeat;
 import org.neo4j.unsafe.impl.batchimport.cache.GatheringMemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.LongArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
@@ -105,7 +108,6 @@ public class StringIdMapperTest
         assertEquals( -1L, id );
     }
 
-    @Ignore( "TODO pending fix issue in ParallelSort" )
     @Test
     public void shouldEncodeShortStrings() throws Exception
     {
@@ -113,22 +115,24 @@ public class StringIdMapperTest
         StringIdMapper mapper = new StringIdMapper( LongArrayFactory.AUTO );
 
         // WHEN
-        mapper.put( "123", 1 );
-        mapper.put( "456", 2 );
+        mapper.put( "123", 0 );
+        mapper.put( "456", 1 );
         mapper.prepare( null );
 
         // THEN
-        assertEquals( 2L, mapper.get( "456" ) );
-        assertEquals( 1L, mapper.get( "123" ) );
+        assertEquals( 1L, mapper.get( "456" ) );
+        assertEquals( 0L, mapper.get( "123" ) );
     }
 
     @Ignore( "TODO pending fix issue in ParallelSort" )
+    @Repeat( times = 1000 )
     @Test
     public void shouldEncodeSmallSetOfRandomData() throws Throwable
     {
         // GIVEN
-        StringIdMapper mapper = new StringIdMapper( LongArrayFactory.AUTO, random.nextInt( 7 ) + 1 /*1-7*/ );
-        int size = random.nextInt( 1_000 ) + 2;
+        int processorsForSorting = random.nextInt( 7 ) + 1;
+        StringIdMapper mapper = new StringIdMapper( LongArrayFactory.AUTO, processorsForSorting /*1-7*/ );
+        int size = random.nextInt( 10 ) + 2;
 
         // WHEN
         List<Object> values = new ArrayList<>();
@@ -163,6 +167,7 @@ public class StringIdMapperTest
         }
     }
 
-    private final long seed = currentTimeMillis(); // 1415196442896L;
+    private final long seed = currentTimeMillis(); // 1415737558450L;
     private final Random random = new Random( seed );
+    public final @Rule RepeatRule repeater = new RepeatRule();
 }

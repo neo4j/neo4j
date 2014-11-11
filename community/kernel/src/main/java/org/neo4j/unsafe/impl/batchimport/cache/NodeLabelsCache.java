@@ -48,8 +48,8 @@ public class NodeLabelsCache
 
     public NodeLabelsCache( LongArrayFactory cacheFactory, int highLabelId, int chunkSize )
     {
-        this.cache = cacheFactory.newDynamicLongArray( chunkSize ).setAll( 0 );
-        this.spillOver = cacheFactory.newDynamicLongArray( chunkSize / 5 ).setAll( 0 ); // expect way less of these
+        this.cache = cacheFactory.newDynamicLongArray( chunkSize, 0 );
+        this.spillOver = cacheFactory.newDynamicLongArray( chunkSize / 5, 0 ); // expect way less of these
         this.bitsPerLabel = Integer.SIZE-numberOfLeadingZeros( highLabelId );
 
         int worstCaseLongsNeeded = ((bitsPerLabel * (highLabelId+1 /*length slot*/)) - 1) / Long.SIZE + 1;

@@ -29,7 +29,14 @@ public interface NumberArray
      */
     long length();
 
+    /**
+     * @return number of indexes occupied, i.e. setting the same index multiple times doesn't increment size.
+     */
+    long size();
+
     void swap( long fromIndex, long toIndex, int numberOfEntries );
+
+    void clear();
 
     /**
      * @return highest set index or -1 if no set.

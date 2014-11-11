@@ -31,12 +31,16 @@ public class OffHeapLongArray implements LongArray
 {
     private final long address;
     private final long length;
+    private final long defaultValue;
     private long highestSetIndex = -1;
+    private long size;
 
-    public OffHeapLongArray( long length )
+    public OffHeapLongArray( long length, long defaultValue )
     {
         this.length = length;
+        this.defaultValue = defaultValue;
         this.address = unsafe.allocateMemory( length << 3 );
+        clear();
     }
 
     @Override
@@ -63,7 +67,12 @@ public class OffHeapLongArray implements LongArray
     @Override
     public void set( long index, long value )
     {
-        unsafe.putLong( addressOf( index ), value );
+        long address = addressOf( index );
+        if ( unsafe.getLong( address ) == defaultValue )
+        {
+            size++;
+        }
+        unsafe.putLong( address, value );
         if ( index > highestSetIndex )
         {
             highestSetIndex = index;
@@ -77,20 +86,27 @@ public class OffHeapLongArray implements LongArray
     }
 
     @Override
-    public LongArray setAll( long value )
+    public long size()
     {
-        if ( isByteUniform( value ) )
+        return size;
+    }
+
+    @Override
+    public void clear()
+    {
+        if ( isByteUniform( defaultValue ) )
         {
-            unsafe.setMemory( address, length << 3, (byte)value );
+            unsafe.setMemory( address, length << 3, (byte)defaultValue );
         }
         else
         {
             for ( long i = 0, adr = address; i < length; i++, adr += 8 )
             {
-                unsafe.putLong( adr, value );
+                unsafe.putLong( adr, defaultValue );
             }
         }
-        return this;
+        highestSetIndex = -1;
+        size = 0;
     }
 
     private boolean isByteUniform( long value )

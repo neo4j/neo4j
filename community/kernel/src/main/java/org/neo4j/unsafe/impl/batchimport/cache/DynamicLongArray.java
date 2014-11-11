@@ -30,12 +30,13 @@ public class DynamicLongArray implements LongArray
     private final LongArrayFactory factory;
     private final long chunkSize;
     private LongArray[] chunks = new LongArray[0];
-    private Long setAllValue;
+    private final long defaultValue;
 
-    public DynamicLongArray( LongArrayFactory factory, long chunkSize )
+    public DynamicLongArray( LongArrayFactory factory, long chunkSize, long defaultValue )
     {
         this.factory = factory;
         this.chunkSize = chunkSize;
+        this.defaultValue = defaultValue;
     }
 
     /**
@@ -51,12 +52,7 @@ public class DynamicLongArray implements LongArray
     public long get( long index )
     {
         int chunkIndex = chunkIndex( index );
-        return chunkIndex < chunks.length ? chunks[chunkIndex].get( index( index ) ) : defaultValue();
-    }
-
-    private long defaultValue()
-    {
-        return setAllValue != null ? setAllValue.longValue() : 0;
+        return chunkIndex < chunks.length ? chunks[chunkIndex].get( index( index ) ) : defaultValue;
     }
 
     @Override
@@ -85,6 +81,17 @@ public class DynamicLongArray implements LongArray
         return -1;
     }
 
+    @Override
+    public long size()
+    {
+        long size = 0;
+        for ( int i = 0; i < chunks.length; i++ )
+        {
+            size += chunks[i].size();
+        }
+        return size;
+    }
+
     private long index( long index )
     {
         return index % chunkSize;
@@ -103,23 +110,17 @@ public class DynamicLongArray implements LongArray
     private void addChunk()
     {
         chunks = Arrays.copyOf( chunks, chunks.length+1 );
-        LongArray newLongArray = factory.newLongArray( chunkSize );
-        if ( setAllValue != null )
-        {
-            newLongArray.setAll( setAllValue );
-        }
+        LongArray newLongArray = factory.newLongArray( chunkSize, defaultValue );
         chunks[chunks.length-1] = newLongArray;
     }
 
     @Override
-    public LongArray setAll( long value )
+    public void clear()
     {
         for ( LongArray chunk : chunks )
         {
-            chunk.setAll( value );
+            chunk.clear();
         }
-        setAllValue = value;
-        return this;
     }
 
     @Override
