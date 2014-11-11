@@ -86,7 +86,10 @@ public class ImportTool
     private static final String QUOTE = "quote";
     private static final String ID_TYPE = "id-type";
 
-    static final String MULTI_DELIMITER = ",";
+    /**
+     * Delimiter used between files in an input group.
+     */
+    static final String MULTI_FILE_DELIMITER = " ";
 
     public static void main( String[] incomingArguments )
     {
@@ -106,10 +109,10 @@ public class ImportTool
             storeDir = args.interpretOption( STORE_DIR, Converters.<File>mandatory(), Converters.toFile(),
                     Validators.DIRECTORY_IS_WRITABLE, Validators.CONTAINS_NO_EXISTING_DATABASE );
             nodesFiles = args.interpretOptionsWithMetadata( NODE_DATA, Converters.<File[]>mandatory(),
-                                                            Converters.toFiles( MULTI_DELIMITER ),
+                                                            Converters.toFiles( MULTI_FILE_DELIMITER ),
                                                             Validators.FILES_EXISTS, Validators.<File>atLeast( 1 ) );
             relationshipsFiles = args.interpretOptionsWithMetadata( RELATIONSHIP_DATA, Converters.<File[]>mandatory(),
-                                                                    Converters.toFiles( MULTI_DELIMITER ),
+                                                                    Converters.toFiles( MULTI_FILE_DELIMITER ),
                                                                     Validators.FILES_EXISTS,
                                                                     Validators.<File>atLeast( 1 ) );
         }
@@ -197,11 +200,11 @@ public class ImportTool
         System.out.println( "Usage:" );
         printArgumentUsage( "--into <store-dir>", "database directory to import into. " +
                 "Must not contain existing database." );
-        printArgumentUsage( "--nodes:<group-labels> <file1>" + MULTI_DELIMITER + "<file2>" + MULTI_DELIMITER + "...",
+        printArgumentUsage( "--nodes:<group-labels> <file1>" + MULTI_FILE_DELIMITER + "<file2>" + MULTI_FILE_DELIMITER + "...",
                 "Node CSV header and data. Multiple files will be logically seen as one big file " +
                 "from the perspective of the importer. First line must contain the header. " +
                 "Multiple input groups like these can be specified in one import, where each group has its own header." );
-        printArgumentUsage( "--relationships:<default-type> <file1>" + MULTI_DELIMITER + "<file2>" + MULTI_DELIMITER + "...",
+        printArgumentUsage( "--relationships:<default-type> <file1>" + MULTI_FILE_DELIMITER + "<file2>" + MULTI_FILE_DELIMITER + "...",
                 "Relationship CSV header and data. Multiple files will be logically seen as one big file " +
                 "from the perspective of the importer. First line must contain the header. " +
                 "Multiple input groups like these can be specified in one import, where each group has its own header." );

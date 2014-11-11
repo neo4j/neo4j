@@ -51,7 +51,7 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.alwaysTrue;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.ArrayUtil.join;
-import static org.neo4j.tooling.ImportTool.MULTI_DELIMITER;
+import static org.neo4j.tooling.ImportTool.MULTI_FILE_DELIMITER;
 
 public class ImportToolTest
 {
@@ -83,10 +83,10 @@ public class ImportToolTest
         ImportTool.main( arguments(
                 "--into", directory.absolutePath(),
                 "--nodes",
-                    nodeHeader( config ).getAbsolutePath() + MULTI_DELIMITER +
+                    nodeHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
                     nodeData( false, config, nodeIds, alwaysTrue() ).getAbsolutePath(),
                 "--relationships",
-                    relationshipHeader( config ).getAbsolutePath() + MULTI_DELIMITER +
+                    relationshipHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
                     relationshipData( false, config, nodeIds, alwaysTrue() ).getAbsolutePath() ) );
 
         // THEN
@@ -104,14 +104,14 @@ public class ImportToolTest
         ImportTool.main( arguments(
                 "--into", directory.absolutePath(),
                 "--nodes", // One group with one header file and one data file
-                    nodeHeader( config ).getAbsolutePath() + MULTI_DELIMITER +
+                    nodeHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
                     nodeData( false, config, nodeIds, lines( 0, NODE_COUNT/2 ) ).getAbsolutePath(),
                 "--nodes", // One group with two data files, where the header sits in the first file
                     nodeData( true, config, nodeIds,
-                              lines( NODE_COUNT/2, NODE_COUNT*3/4 ) ).getAbsolutePath() + MULTI_DELIMITER +
+                              lines( NODE_COUNT/2, NODE_COUNT*3/4 ) ).getAbsolutePath() + MULTI_FILE_DELIMITER +
                     nodeData( false, config, nodeIds, lines( NODE_COUNT*3/4, NODE_COUNT ) ).getAbsolutePath(),
                 "--relationships",
-                    relationshipHeader( config ).getAbsolutePath() + MULTI_DELIMITER +
+                    relationshipHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
                     relationshipData( false, config, nodeIds, alwaysTrue() ).getAbsolutePath() ) );
 
         // THEN
