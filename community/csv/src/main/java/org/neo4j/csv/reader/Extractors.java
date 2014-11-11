@@ -252,11 +252,10 @@ public class Extractors
             super( String.class.getSimpleName() );
         }
 
-
         @Override
         public void extract( char[] data, int offset, int length )
         {
-            value = new String( data, offset, length );
+            value = length > 0 ? new String( data, offset, length ) : null;
         }
 
         @Override

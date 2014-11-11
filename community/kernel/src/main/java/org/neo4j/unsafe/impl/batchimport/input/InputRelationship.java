@@ -32,7 +32,7 @@ public class InputRelationship extends InputEntity
     private final long id;
     private final Object startNode;
     private final Object endNode;
-    private final String type;
+    private String type;
     private final Integer typeId;
 
     public InputRelationship( long id, Object[] properties, Long firstPropertyId, Object startNode, Object endNode,
@@ -84,6 +84,11 @@ public class InputRelationship extends InputEntity
     public int typeId()
     {
         return typeId.intValue();
+    }
+
+    public void setType( String type )
+    {
+        this.type = type;
     }
 
     @Override

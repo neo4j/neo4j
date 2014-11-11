@@ -96,4 +96,15 @@ public class Validators
             }
         };
     }
+
+    public static final <T> Validator<T> emptyValidator()
+    {
+        return new Validator<T>()
+        {
+            @Override
+            public void validate( T value )
+            {   // Do nothing
+            }
+        };
+    }
 }

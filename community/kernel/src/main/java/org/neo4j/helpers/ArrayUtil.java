@@ -22,6 +22,8 @@ package org.neo4j.helpers;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 
+import static java.util.Arrays.copyOf;
+
 /**
  * Methods "missing" from {@link Arrays} are provided here.
  */
@@ -182,6 +184,135 @@ public abstract class ArrayUtil
         }
 
         return true;
+    }
+
+    /**
+     * @return how many of the items in {@code contains} are missing from {@code array}.
+     * Order of items doesn't matter.
+     */
+    public static <T> int missing( T[] array, T[] contains )
+    {
+        int missing = 0;
+        for ( T check : contains )
+        {
+            if ( !contains( array, check ) )
+            {
+                missing++;
+            }
+        }
+        return missing;
+    }
+
+    /**
+     * @return {@code true} if all items in {@code contains} exists in {@code array}, otherwise {@code false}.
+     * Order of items doesn't matter.
+     */
+    public static <T> boolean containsAll( T[] array, T[] contains )
+    {
+        for ( T check : contains )
+        {
+            if ( !contains( array, check ) )
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * @return {@code true} if {@code contains} exists in {@code array}, otherwise {@code false}.
+     */
+    public static <T> boolean contains( T[] array, T contains )
+    {
+        for ( T item : array )
+        {
+            if ( nullSafeEquals( item, contains ) )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @return {@code true} if {@code first} and {@code other} are both null or are both equal.
+     */
+    public static <T> boolean nullSafeEquals( T first, T other )
+    {
+        return first == null ? first == other : first.equals( other );
+    }
+
+    /**
+     * @return an array containing the union of {@code first} and {@code other}. Items occuring in
+     * both {@code first} and {@code other} will only have of the two in the resulting union.
+     */
+    public static <T> T[] union( T[] first, T[] other )
+    {
+        if ( first == null || other == null )
+        {
+            return first == null ? other : first;
+        }
+
+        int missing = missing( first, other );
+        if ( missing == 0 )
+        {
+            return first;
+        }
+
+        // An attempt to add the labels as efficiently as possible
+        T[] union = copyOf( first, first.length + missing );
+        int cursor = first.length;
+        for ( T candidate : other )
+        {
+            if ( !contains( first, candidate ) )
+            {
+                union[cursor++] = candidate;
+                missing--;
+            }
+        }
+        assert missing == 0;
+        return union;
+    }
+
+    /**
+     * @return a {@link String} representation of {@code items} with a custom delimiter in between.
+     */
+    public static <T> String join( T[] items, String delimiter )
+    {
+        StringBuilder builder = new StringBuilder();
+        for ( int i = 0; i < items.length; i++ )
+        {
+            builder.append( i > 0 ? delimiter : "" ).append( items[i] );
+        }
+        return builder.toString();
+    }
+
+    /**
+     * @return a new array with all items from {@code from} converted into type {@code toClass}.
+     */
+    public static <FROM,TO> TO[] map( FROM[] from, org.neo4j.function.Function<FROM,TO> transformer,
+            Class<TO> toClass )
+    {
+        @SuppressWarnings( "unchecked" )
+        TO[] result = (TO[]) Array.newInstance( toClass, from.length );
+        for ( int i = 0; i < from.length; i++ )
+        {
+            result[i] = transformer.apply( from[i] );
+        }
+        return result;
+    }
+
+    /**
+     * @return a concatenated array where {@code first} as the item at index {@code 0} and the additional
+     * items following it.
+     */
+    public static <T> T[] concat( T first, T... additional )
+    {
+        @SuppressWarnings( "unchecked" )
+        T[] result = (T[]) Array.newInstance( additional.getClass().getComponentType(), additional.length+1 );
+        result[0] = first;
+        System.arraycopy( additional, 0, result, 1, additional.length );
+        return result;
     }
 
     private ArrayUtil()

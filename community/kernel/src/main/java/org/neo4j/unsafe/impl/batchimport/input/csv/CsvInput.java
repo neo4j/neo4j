@@ -20,6 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import org.neo4j.csv.reader.CharSeeker;
+import org.neo4j.function.Function;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapping;
@@ -35,9 +36,9 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingIdSequence;
  */
 public class CsvInput implements Input
 {
-    private final Iterable<DataFactory> nodeDataFactory;
+    private final Iterable<DataFactory<InputNode>> nodeDataFactory;
     private final Header.Factory nodeHeaderFactory;
-    private final Iterable<DataFactory> relationshipDataFactory;
+    private final Iterable<DataFactory<InputRelationship>> relationshipDataFactory;
     private final Header.Factory relationshipHeaderFactory;
     private final IdType idType;
     private final IdMapping idMapping;
@@ -58,8 +59,8 @@ public class CsvInput implements Input
      * @param config CSV configuration.
      */
     public CsvInput(
-            Iterable<DataFactory> nodeDataFactory, Header.Factory nodeHeaderFactory,
-            Iterable<DataFactory> relationshipDataFactory, Header.Factory relationshipHeaderFactory,
+            Iterable<DataFactory<InputNode>> nodeDataFactory, Header.Factory nodeHeaderFactory,
+            Iterable<DataFactory<InputRelationship>> relationshipDataFactory, Header.Factory relationshipHeaderFactory,
             IdType idType, Configuration config )
     {
         this.nodeDataFactory = nodeDataFactory;
@@ -85,9 +86,10 @@ public class CsvInput implements Input
                                                                nodeHeaderFactory, config, idType )
                 {
                     @Override
-                    protected ResourceIterator<InputNode> entityDeserializer( CharSeeker dataStream, Header dataHeader )
+                    protected ResourceIterator<InputNode> entityDeserializer( CharSeeker dataStream, Header dataHeader,
+                                                                              Function<InputNode,InputNode> decorator )
                     {
-                        return new InputNodeDeserializer( dataHeader, dataStream, delimiter );
+                        return new InputNodeDeserializer( dataHeader, dataStream, delimiter, decorator );
                     }
                 };
             }
@@ -108,9 +110,10 @@ public class CsvInput implements Input
                 {
                     @Override
                     protected ResourceIterator<InputRelationship> entityDeserializer( CharSeeker dataStream,
-                                                                                      Header dataHeader )
+                              Header dataHeader, Function<InputRelationship,InputRelationship> decorator )
                     {
-                        return new InputRelationshipDeserializer( dataHeader, dataStream, delimiter, relationshipIds );
+                        return new InputRelationshipDeserializer( dataHeader, dataStream, delimiter,
+                                relationshipIds, decorator );
                     }
                 };
             }

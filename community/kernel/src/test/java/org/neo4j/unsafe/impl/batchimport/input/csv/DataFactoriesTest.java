@@ -28,7 +28,9 @@ import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.function.Factory;
+import org.neo4j.function.Functions;
 import org.neo4j.unsafe.impl.batchimport.input.DuplicateHeaderException;
+import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.MissingHeaderException;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -204,7 +206,7 @@ public class DataFactoriesTest
         // GIVEN
         final Readable firstSource = new StringReader( "id:ID\tname:String\tbirth_date:long" );
         final Readable secondSource = new StringReader( "0\tThe node\t123456789" );
-        DataFactory dataFactory = data( new Factory<Readable>()
+        DataFactory<InputNode> dataFactory = data( Functions.<InputNode>identity(), new Factory<Readable>()
         {
             @Override
             public Readable newInstance()
@@ -216,7 +218,7 @@ public class DataFactoriesTest
         Extractors extractors = new Extractors( ';' );
 
         // WHEN
-        CharSeeker seeker = dataFactory.create( TABS );
+        CharSeeker seeker = dataFactory.create( TABS ).stream();
         Header header = headerFactory.create( seeker, TABS, IdType.ACTUAL );
 
         // THEN

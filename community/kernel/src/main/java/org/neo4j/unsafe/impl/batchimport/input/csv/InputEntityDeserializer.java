@@ -24,6 +24,7 @@ import java.util.Arrays;
 
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Mark;
+import org.neo4j.function.Function;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
@@ -41,17 +42,19 @@ abstract class InputEntityDeserializer<ENTITY extends InputEntity> extends Prefe
     private final CharSeeker data;
     private final Mark mark = new Mark();
     private final int[] delimiter;
+    private final Function<ENTITY,ENTITY> decorator;
 
     // Data
     // holder of properties, alternating key/value. Will grow with the entity having most properties.
     private Object[] properties = new Object[10*2];
     private int propertiesCursor;
 
-    InputEntityDeserializer( Header header, CharSeeker data, int[] delimiter )
+    InputEntityDeserializer( Header header, CharSeeker data, int[] delimiter, Function<ENTITY,ENTITY> decorator )
     {
         this.header = header;
         this.data = data;
         this.delimiter = delimiter;
+        this.decorator = decorator;
     }
 
     @Override
@@ -115,7 +118,7 @@ abstract class InputEntityDeserializer<ENTITY extends InputEntity> extends Prefe
                 data.seek( mark, delimiter );
             }
 
-            return entity;
+            return decorator.apply( entity );
         }
         catch ( IOException e )
         {

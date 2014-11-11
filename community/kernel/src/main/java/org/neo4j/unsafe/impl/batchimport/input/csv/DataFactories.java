@@ -32,8 +32,9 @@ import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Mark;
 import org.neo4j.csv.reader.Readables;
 import org.neo4j.function.Factory;
-import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.function.Function;
 import org.neo4j.unsafe.impl.batchimport.input.DuplicateHeaderException;
+import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.MissingHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
@@ -53,21 +54,36 @@ public class DataFactories
      *
      * @return {@link DataFactory} that returns a {@link CharSeeker} over the supplied {@code file}.
      */
-    public static DataFactory data( final File file )
+    public static <ENTITY extends InputEntity> DataFactory<ENTITY> data( final Function<ENTITY,ENTITY> decorator,
+                                                                         final File file )
     {
-        return new DataFactory()
+        return new DataFactory<ENTITY>()
         {
             @Override
-            public CharSeeker create( Configuration config )
+            public Data<ENTITY> create( final Configuration config )
             {
-                try
+                return new Data<ENTITY>()
                 {
-                    return charSeeker( Readables.file( file ), DEFAULT_BUFFER_SIZE, true, config.quotationCharacter() );
-                }
-                catch ( IOException e )
-                {
-                    throw new InputException( e.getMessage(), e );
-                }
+                    @Override
+                    public CharSeeker stream()
+                    {
+                        try
+                        {
+                            return charSeeker( Readables.file( file ), DEFAULT_BUFFER_SIZE,
+                                    true, config.quotationCharacter() );
+                        }
+                        catch ( IOException e )
+                        {
+                            throw new InputException( e.getMessage(), e );
+                        }
+                    }
+
+                    @Override
+                    public Function<ENTITY,ENTITY> decorator()
+                    {
+                        return decorator;
+                    }
+                };
             }
         };
     }
@@ -78,32 +94,34 @@ public class DataFactories
      *
      * @return {@link DataFactory} that returns a {@link CharSeeker} over all the supplied {@code files}.
      */
-    public static DataFactory data( final File... files )
+    public static <ENTITY extends InputEntity> DataFactory<ENTITY> data( final Function<ENTITY,ENTITY> decorator,
+                                                                         final File... files )
     {
-        return new DataFactory()
+        if ( files.length == 0 )
         {
-            @Override
-            public CharSeeker create( Configuration config )
-            {
-                return charSeeker( multipleFiles( files ), DEFAULT_BUFFER_SIZE, true, config.quotationCharacter() );
-            }
-        };
-    }
+            throw new IllegalArgumentException( "No files specified" );
+        }
 
-    /**
-     * Creates an {@link Iterable} of {@link DataFactory} instances where each {@link DataFactory} represents one
-     * input group, with its own header, normally extracted using {@link #defaultFormatNodeFileHeader()}.
-     *
-     * @return {@link DataFactory} that returns a {@link CharSeeker} over all the supplied {@code files}.
-     */
-    public static Iterable<DataFactory> data( Iterable<File[]> fileGroups )
-    {
-        return new IterableWrapper<DataFactory,File[]>( fileGroups )
+        return new DataFactory<ENTITY>()
         {
             @Override
-            protected DataFactory underlyingObjectToObject( File[] files )
+            public Data<ENTITY> create( final Configuration config )
             {
-                return data( files );
+                return new Data<ENTITY>()
+                {
+                    @Override
+                    public CharSeeker stream()
+                    {
+                        return charSeeker( multipleFiles( files ), DEFAULT_BUFFER_SIZE,
+                                           true, config.quotationCharacter() );
+                    }
+
+                    @Override
+                    public Function<ENTITY,ENTITY> decorator()
+                    {
+                        return decorator;
+                    }
+                };
             }
         };
     }
@@ -113,14 +131,29 @@ public class DataFactories
      * multiple times.
      * @return {@link DataFactory} that returns a {@link CharSeeker} over the supplied {@code readable}
      */
-    public static DataFactory data( final Factory<Readable> readable )
+    public static <ENTITY extends InputEntity> DataFactory<ENTITY> data( final Function<ENTITY,ENTITY> decorator,
+                                                                         final Factory<Readable> readable )
     {
-        return new DataFactory()
+        return new DataFactory<ENTITY>()
         {
             @Override
-            public CharSeeker create( Configuration config )
+            public Data<ENTITY> create( final Configuration config )
             {
-                return charSeeker( readable.newInstance(), DEFAULT_BUFFER_SIZE, true, config.quotationCharacter() );
+                return new Data<ENTITY>()
+                {
+                    @Override
+                    public CharSeeker stream()
+                    {
+                        return charSeeker( readable.newInstance(), DEFAULT_BUFFER_SIZE,
+                                           true, config.quotationCharacter() );
+                    }
+
+                    @Override
+                    public Function<ENTITY,ENTITY> decorator()
+                    {
+                        return decorator;
+                    }
+                };
             }
         };
     }
@@ -265,22 +298,18 @@ public class DataFactories
                 for ( int i = 0; !mark.isEndOfLine() && headerSeeker.seek( mark, delimiter ); i++ )
                 {
                     String entryString = headerSeeker.extract( mark, extractors.string() ).value();
-                    int typeIndex = entryString.lastIndexOf( ':' );
+                    int typeIndex = entryString != null ? entryString.lastIndexOf( ':' ) : -1;
                     String name;
                     String typeSpec;
                     if ( typeIndex != -1 )
                     {   // Specific type given
-                        name = entryString.substring( 0, typeIndex );
+                        name = typeIndex > 0 ? entryString.substring( 0, typeIndex ) : null;
                         typeSpec = entryString.substring( typeIndex+1 );
                     }
                     else
                     {
                         name = entryString;
                         typeSpec = null;
-                    }
-                    if ( name.length() == 0 )
-                    {
-                        name = null;
                     }
 
                     if ( name == null && typeSpec == null )

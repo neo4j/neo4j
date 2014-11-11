@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.input.csv;
 import java.util.Arrays;
 
 import org.neo4j.csv.reader.CharSeeker;
+import org.neo4j.function.Function;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 
@@ -39,9 +40,9 @@ class InputNodeDeserializer extends InputEntityDeserializer<InputNode>
     private String[] labels = new String[10];
     private int labelsCursor;
 
-    InputNodeDeserializer( Header header, CharSeeker data, int[] delimiter )
+    InputNodeDeserializer( Header header, CharSeeker data, int[] delimiter, Function<InputNode,InputNode> decorator )
     {
-        super( header, data, delimiter );
+        super( header, data, delimiter, decorator );
     }
 
     @Override
