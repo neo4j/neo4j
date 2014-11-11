@@ -122,7 +122,7 @@ public class UpdatePullerTest
         assertNotNull( scheduler.getJob() );
 
         puller.start();
-        updatePuller.pause( false );
+        updatePuller.unpause();
         scheduler.runJob();
 
         verify( lastUpdateTime, times( 1 ) ).setLastUpdateTime( anyLong() );
@@ -149,7 +149,7 @@ public class UpdatePullerTest
         // WHEN
         puller.init();
         puller.start();
-        updatePuller.pause( false );
+        updatePuller.unpause();
         scheduler.runJob();
 
         // THEN
@@ -178,7 +178,7 @@ public class UpdatePullerTest
         // WHEN
         puller.init();
         puller.start();
-        updatePuller.pause( false );
+        updatePuller.unpause();
         scheduler.runJob();
 
         // THEN
@@ -207,7 +207,7 @@ public class UpdatePullerTest
         // WHEN
         puller.init();
         puller.start();
-        updatePuller.pause( false );
+        updatePuller.unpause();
         scheduler.runJob();
 
         // THEN
@@ -220,7 +220,7 @@ public class UpdatePullerTest
         // This job should be ignored, since I'm now master
         scheduler.runJob();
 
-        updatePuller.pause( false );
+        updatePuller.unpause();
 
         scheduler.runJob();
 
@@ -241,7 +241,7 @@ public class UpdatePullerTest
 
         puller.init();
         puller.start();
-        updatePuller.pause( false );
+        updatePuller.unpause();
         scheduler.runJob();
 
         verify( lastUpdateTime, times( 1 ) ).setLastUpdateTime( anyLong() );

@@ -432,10 +432,9 @@ public class SwitchToSlave
         RequestContext catchUpRequestContext = requestContextFactory.newRequestContext();
         console.log( "Catching up with master. I'm at " + catchUpRequestContext );
 
-        // This is the only place we unpause the update puller, when we know that we are a slave
-        // and we just started our communication with our master.
+        // Unpause the update puller, because we know that we are a slave that just started communication with master.
         UpdatePuller updatePuller = resolver.resolveDependency( UpdatePuller.class );
-        updatePuller.pause( false );
+        updatePuller.unpause();
         updatePuller.await( UpdatePuller.NEXT_TICKET );
 
         console.log( "Now caught up with master" );

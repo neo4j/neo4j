@@ -75,6 +75,10 @@ public abstract class SlavePriorities
             public Iterable<Slave> prioritize( final Iterable<Slave> slaves )
             {
                 final List<Slave> slaveList = sortSlaves( slaves, true );
+                if ( slaveList.isEmpty() )
+                {
+                    return Iterables.empty();
+                }
                 return new Iterable<Slave>()
                 {
                     @Override
