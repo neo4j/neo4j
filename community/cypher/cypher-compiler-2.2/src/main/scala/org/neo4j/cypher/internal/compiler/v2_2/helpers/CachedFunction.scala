@@ -35,4 +35,7 @@ object CachedFunction {
 
   def byIdentity[A, B, C](f: (A, B) => C): (A, B) => C =
     Function.untupled(byIdentity(f.tupled))
+
+  def byIdentity[A, B, C, D](f: (A, B, C) => D): (A, B, C) => D =
+    Function.untupled(byIdentity(f.tupled))
 }

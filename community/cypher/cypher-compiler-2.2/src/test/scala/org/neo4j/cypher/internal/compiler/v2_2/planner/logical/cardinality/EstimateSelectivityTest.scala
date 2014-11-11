@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assumeDependence._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryGraph, SemanticTable, LogicalPlanningTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, PatternRelationship, SimplePatternLength}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{CardinalityTestHelper, QueryGraphProducer}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, CardinalityTestHelper, QueryGraphProducer}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 import org.neo4j.graphdb.Direction
 
@@ -137,6 +137,6 @@ class EstimateSelectivityTest extends CypherFunSuite with LogicalPlanningTestSup
     shouldHaveSelectivity( .75 )
   }
 
-  def createCardinalityModel(stats: GraphStatistics, semanticTable: SemanticTable): QueryGraphCardinalityModel =
+  def createCardinalityModel(stats: GraphStatistics, inboundCardinality: Cardinality, semanticTable: SemanticTable): QueryGraphCardinalityModel =
     AssumeDependenceQueryGraphCardinalityModel(stats, producePredicates, groupPredicates(estimateSelectivity(stats, semanticTable)), combinePredicates.assumeDependence)
 }

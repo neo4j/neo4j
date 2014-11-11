@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryGraph, LogicalPlanningTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.allNodesLeafPlanner
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Candidates
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, Candidates}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
 
@@ -37,7 +37,7 @@ class AllNodesLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     implicit val planContext = newMockedPlanContext
     implicit val context = newMockedLogicalPlanningContext(
       planContext = planContext,
-      metrics = newMockedMetricsFactory.newMetrics(hardcodedStatistics, newMockedSemanticTable))
+      metrics = newMockedMetricsFactory.newMetrics(hardcodedStatistics, Cardinality(1), newMockedSemanticTable))
 
     // when
     val resultPlans = allNodesLeafPlanner(queryGraph)

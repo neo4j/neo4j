@@ -56,8 +56,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       SimpleMetricsFactory.newCardinalityEstimator(queryGraphCardinalityModel)
     def newCostModel(cardinality: CardinalityModel) =
       SimpleMetricsFactory.newCostModel(cardinality)
-    def newQueryGraphCardinalityModel(statistics: GraphStatistics, semanticTable: SemanticTable): QueryGraphCardinalityModel =
-      SimpleMetricsFactory.newQueryGraphCardinalityModel(statistics, semanticTable)
+    def newQueryGraphCardinalityModel(statistics: GraphStatistics, inboundCardinality: Cardinality, semanticTable: SemanticTable): QueryGraphCardinalityModel =
+      SimpleMetricsFactory.newQueryGraphCardinalityModel(statistics, inboundCardinality, semanticTable)
 
     def newCandidateListCreator(): (Seq[LogicalPlan]) => CandidateList = SimpleMetricsFactory.newCandidateListCreator()
 
@@ -82,7 +82,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   def newMetricsFactory = SimpleMetricsFactory
 
   def newSimpleMetrics(stats: GraphStatistics = newMockedGraphStatistics, semanticTable: SemanticTable) =
-    newMetricsFactory.newMetrics(stats, semanticTable)
+    newMetricsFactory.newMetrics(stats, Cardinality(1), semanticTable)
 
   def newMockedGraphStatistics = mock[GraphStatistics]
 
@@ -110,7 +110,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
                                         metrics: Metrics = mockedMetrics,
                                         semanticTable: SemanticTable = newMockedSemanticTable,
                                         strategy: QueryGraphSolver = new GreedyQueryGraphSolver()): LogicalPlanningContext =
-    LogicalPlanningContext(planContext, metrics, semanticTable, strategy)
+    LogicalPlanningContext(planContext, metrics, (_) => metrics, semanticTable, strategy)
 
   implicit class RichLogicalPlan(plan: LogicalPlan) {
     def asTableEntry = plan.availableSymbols -> plan

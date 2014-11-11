@@ -63,12 +63,12 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       if func.function == Some(functions.Id) =>
       c.expressions.size / stats.nodesWithLabelCardinality(None)
 
-    case _ => Selectivity(1)
+    case _ => Selectivity(.5)
   }
 
   private def calculateSelectivityForLabel(label: Option[LabelId]): Selectivity = {
     val nodeCardinality: Cardinality = stats.nodesWithLabelCardinality(None)
-    if (nodeCardinality == Cardinality(0.0)) {
+    if (nodeCardinality == Cardinality.EMPTY) {
       return 1.0
     }
 

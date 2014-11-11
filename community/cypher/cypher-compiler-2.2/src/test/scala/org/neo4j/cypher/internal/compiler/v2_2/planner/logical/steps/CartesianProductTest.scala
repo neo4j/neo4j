@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.HardcodedGraphStatistics
 import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{CartesianProduct, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Candidates, Cost, PlanTable}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, Candidates, Cost, PlanTable}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport, QueryGraph}
 
 class CartesianProductTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -61,7 +61,7 @@ class CartesianProductTest extends CypherFunSuite with LogicalPlanningTestSuppor
     when(factory.newCostModel(any())).thenReturn(cost.andThen(Cost.apply))
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(HardcodedGraphStatistics, newMockedSemanticTable)
+      metrics = factory.newMetrics(HardcodedGraphStatistics, Cardinality(1), newMockedSemanticTable)
     )
 
     val table = PlanTable(plans.map(p => p.availableSymbols -> p).toMap)

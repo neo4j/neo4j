@@ -56,7 +56,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     implicit val context = newMockedLogicalPlanningContext(
       semanticTable = semanticTable,
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(statistics, newMockedSemanticTable)
+      metrics = factory.newMetrics(statistics, Cardinality(1), newMockedSemanticTable)
     )
 
     // when
@@ -87,7 +87,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     implicit val context = newMockedLogicalPlanningContext(
       semanticTable = semanticTable,
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(statistics, semanticTable)
+      metrics = factory.newMetrics(statistics, Cardinality(1), semanticTable)
     )
 
     // when

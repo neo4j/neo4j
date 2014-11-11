@@ -67,6 +67,17 @@ case class CardinalityCostModel(cardinality: CardinalityModel) extends CostModel
     case CartesianProduct(lhs, rhs) =>
       apply(lhs) + cardinality(lhs) * apply(rhs)
 
+    case Apply(lhs, rhs) =>
+      val lCost = apply(lhs)
+      val lCardinality = cardinality(lhs)
+      val rCost = apply(rhs)
+      lCost + lCardinality * rCost
+
+    case OuterHashJoin(_, lhs, rhs) =>
+      val lCost = apply(lhs)
+      val rCost = apply(rhs)
+      lCost + rCost
+
     case _ =>
       val lhsCost = plan.lhs.map(apply).getOrElse(Cost(0))
       val rhsCost = plan.rhs.map(apply).getOrElse(Cost(0))

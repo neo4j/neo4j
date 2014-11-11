@@ -46,7 +46,7 @@ case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: Select
     val maxRelCount = lhsCardinality * rhsCardinality
     val types = mapToRelTokenSpecs(pattern.types)
 
-    if (maxRelCount == Cardinality(0))
+    if (maxRelCount == Cardinality.EMPTY)
       Selectivity(1)
     else
       calculateRelSelectivity(types, labelsOnLhs, labelsOnRhs, pattern.dir, maxRelCount)

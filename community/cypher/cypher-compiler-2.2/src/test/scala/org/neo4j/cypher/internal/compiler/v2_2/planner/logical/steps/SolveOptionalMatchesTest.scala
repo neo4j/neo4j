@@ -67,7 +67,7 @@ class SolveOptionalMatchesTest extends CypherFunSuite with LogicalPlanningTestSu
 
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
+      metrics = factory.newMetrics(hardcodedStatistics, Cardinality(1), newMockedSemanticTable)
     )
     val planTable = PlanTable(Map(Set(IdName("a")) -> lhs))
 
@@ -286,7 +286,7 @@ class SolveOptionalMatchesTest extends CypherFunSuite with LogicalPlanningTestSu
 
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
+      metrics = factory.newMetrics(hardcodedStatistics, Cardinality(1), newMockedSemanticTable)
     )
     val lhs = newMockedLogicalPlan("a")
     val planTable = PlanTable(Map(Set(IdName("a")) -> lhs))
@@ -314,7 +314,7 @@ class SolveOptionalMatchesTest extends CypherFunSuite with LogicalPlanningTestSu
     val factory = newMockedMetricsFactory
     newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
+      metrics = factory.newMetrics(hardcodedStatistics, Cardinality(1), newMockedSemanticTable)
     )
   }
 }
