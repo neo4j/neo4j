@@ -40,7 +40,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 
 /**
- * Using the server settings from {@link ServerSettings} with {@link org.Configuration a configuration}.
+ * Using the server settings from {@link ServerSettings} with {@link Configuration a configuration}.
  */
 @Deprecated
 public interface Configurator
@@ -95,14 +95,14 @@ public interface Configurator
     String WEBSERVER_HTTPS_PORT_PROPERTY_KEY = ServerSettings.webserver_https_port.name();
     int DEFAULT_WEBSERVER_HTTPS_PORT = Integer.valueOf( ServerSettings.webserver_https_port.getDefaultValue() );
 
-    String WEBSERVER_KEYSTORE_PATH_PROPERTY_KEY = ServerSettings.webserver_https_key_path.name();
-    String DEFAULT_WEBSERVER_KEYSTORE_PATH = ServerSettings.webserver_https_key_path.getDefaultValue();
+    String WEBSERVER_KEYSTORE_PATH_PROPERTY_KEY = ServerSettings.webserver_keystore_path.name();
+    String DEFAULT_WEBSERVER_KEYSTORE_PATH = ServerSettings.webserver_keystore_path.getDefaultValue();
 
     String WEBSERVER_HTTPS_CERT_PATH_PROPERTY_KEY = ServerSettings.webserver_https_cert_path.name();
     String DEFAULT_WEBSERVER_HTTPS_CERT_PATH = ServerSettings.webserver_https_cert_path.getDefaultValue();
 
     String WEBSERVER_HTTPS_KEY_PATH_PROPERTY_KEY = ServerSettings.webserver_https_key_path.name();
-    String DEFAULT_WEBSERVER_HTTPS_KEY_PATH = ServerSettings.webserver_https_cert_path.getDefaultValue();
+    String DEFAULT_WEBSERVER_HTTPS_KEY_PATH = ServerSettings.webserver_https_key_path.getDefaultValue();
 
     String HTTP_LOGGING = ServerSettings.http_logging_enabled.name();
     boolean DEFAULT_HTTP_LOGGING = Boolean.valueOf( ServerSettings.http_logging_enabled.getDefaultValue() );

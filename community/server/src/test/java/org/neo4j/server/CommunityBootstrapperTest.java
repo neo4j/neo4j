@@ -19,13 +19,25 @@
  */
 package org.neo4j.server;
 
+import org.junit.Test;
+
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import org.junit.Test;
-
-public class BootstrapperTest
+public class CommunityBootstrapperTest extends BaseBootstrapperTest
 {
+    @Override
+    protected Class<? extends Bootstrapper> bootstrapperClass()
+    {
+        return CommunityBootstrapper.class;
+    }
+
+    @Override
+    protected Bootstrapper newBootstrapper()
+    {
+        return new CommunityBootstrapper();
+    }
+
     @Test
     public void shouldFindTheMostDerivedType() throws Exception
     {

@@ -87,7 +87,7 @@ public interface ServerSettings
                 public List<ThirdPartyJaxRsPackage> apply( String value )
                 {
                     String[] list = value.split( Settings.SEPARATOR );
-                    List<ThirdPartyJaxRsPackage> result = new ArrayList();
+                    List<ThirdPartyJaxRsPackage> result = new ArrayList<>();
                     for ( String item : list )
                     {
                         item = item.trim();

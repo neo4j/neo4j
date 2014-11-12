@@ -40,7 +40,7 @@ public class ServerInternalSettings
     /**
      * Key for the server configuration file. The file path should always be get/set using System.property.
      */
-    public static final String SERVER_CONFIG_FILE_KEY = "org.neo4j.server.propertie";
+    public static final String SERVER_CONFIG_FILE_KEY = "org.neo4j.server.properties";
 
     /**
      * Path to the server configuration file. The file path should always be get/set using System.property.
