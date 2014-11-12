@@ -68,7 +68,7 @@ public class InProcessServerControls implements ServerControls
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( "Failed to clean up test server directory." );
+            throw new RuntimeException( "Failed to clean up test server directory.", e );
         }
     }
 
