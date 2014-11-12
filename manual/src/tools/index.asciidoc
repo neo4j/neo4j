@@ -9,7 +9,13 @@ The Tools part describes available Neo4j tools and how to use them.
 
 :leveloffset: 1
 
+include::{importdir}/neo4j-import-tool-docs-jar/ops/import-tool.asciidoc[]
+
+:leveloffset: 1
+
 include::webadmin.asciidoc[]
+
+:leveloffset: 1
 
 include::{importdir}/neo4j-shell-docs-jar/dev/shell.asciidoc[]
 

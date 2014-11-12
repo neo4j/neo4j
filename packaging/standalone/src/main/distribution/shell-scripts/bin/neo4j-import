@@ -123,5 +123,5 @@ exec "$JAVACMD" $JAVA_OPTS \
   -Dapp.pid="$$" \
   -Dapp.repo="$REPO" \
   -Dbasedir="$BASEDIR" \
-  org.neo4j.tooling.batchimport.BatchImporterTool \
+  org.neo4j.tooling.ImportTool \
   "$@"

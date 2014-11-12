@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.StringUtils;
+
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle;
@@ -54,7 +55,7 @@ enum BlockType
             String title = block.lines.get( 0 )
                     .replace( "=", "" )
                     .trim();
-            String id = "cypherdoc-" + title.toLowerCase().replace( ' ', '-' );
+            String id = "cypherdoc-" + title.replace( ' ', '-' ).replaceAll( "[^\\w-]", "" ).toLowerCase();
             return "[[" + id + "]]" + CypherDoc.EOL + "= " + title + " ="
                    + CypherDoc.EOL;
         }

@@ -27,7 +27,7 @@
     <docs.tools>${project.build.directory}/tools</docs.tools>
     <docs.resources>${docs.tools}/main/resources</docs.resources>
     <neo4j.version>${project.version}</neo4j.version>
-    <doctools.version>23</doctools.version>
+    <doctools.version>24</doctools.version>
     <attach-docs-phase>none</attach-docs-phase>
   </properties>
 
@@ -223,6 +223,13 @@
       <artifactId>neo4j-server-examples</artifactId>
       <version>${neo4j.version}</version>
       <classifier>sources</classifier>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-import-tool</artifactId>
+      <version>${neo4j.version}</version>
+      <classifier>docs</classifier>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -566,6 +573,7 @@
               <gzip src="${project.build.directory}/docbkx/manpages/man1/neo4j-arbiter.1" destfile="${project.build.directory}/manpages/neo4j-arbiter.1.gz"/>
               <gzip src="${project.build.directory}/docbkx/manpages/man1/neo4j-coordinator.1" destfile="${project.build.directory}/manpages/neo4j-coordinator.1.gz"/>
               <gzip src="${project.build.directory}/docbkx/manpages/man1/neo4j-coordinator-shell.1" destfile="${project.build.directory}/manpages/neo4j-coordinator-shell.1.gz"/>
+              <gzip src="${project.build.directory}/docbkx/manpages/man1/neo4j-import.1" destfile="${project.build.directory}/manpages/neo4j-import.1.gz"/>
             </postProcess>
             </configuration>
           </execution>

@@ -30,6 +30,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
+
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExtendedExecutionResult;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -43,9 +44,9 @@ import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assume.assumeFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.junit.Assume.assumeFalse;
 
 public class BlockTest
 {
@@ -86,6 +87,16 @@ public class BlockTest
         String output = block.process( state );
         assertThat( output, containsString( "[[cypherdoc-title-here]]" ) );
         assertThat( output, containsString( "= Title here =" ) );
+    }
+
+    @Test
+    public void titleWithCharsToIgnore()
+    {
+        Block block = Block.getBlock( Arrays.asList( "= Title, here?! =" ) );
+        assertThat( block.type, sameInstance( BlockType.TITLE ) );
+        String output = block.process( state );
+        assertThat( output, containsString( "[[cypherdoc-title-here]]" ) );
+        assertThat( output, containsString( "= Title, here?! =" ) );
     }
 
     @Test
