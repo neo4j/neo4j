@@ -238,6 +238,11 @@ public final class Neo4jManager extends KernelProxy implements Kernel
         return getBean( LockManager.class );
     }
 
+    public IndexSamplingManager getIndexSamplingManagerBean()
+    {
+        return getBean( IndexSamplingManager.class );
+    }
+
     public MemoryMapping getMemoryMappingBean()
     {
         return getBean( MemoryMapping.class );

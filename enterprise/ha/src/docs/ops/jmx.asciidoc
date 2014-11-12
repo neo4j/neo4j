@@ -30,3 +30,5 @@ include::jmx-primitive-count.asciidoc[]
 include::jmx-store-file-sizes.asciidoc[]
 
 include::jmx-transactions.asciidoc[]
+
+include::jmx-index-sampler.asciidoc[]

@@ -30,6 +30,7 @@ import org.neo4j.jmx.impl.ManagementSupport;
 import org.neo4j.management.BranchedStore;
 import org.neo4j.management.Cache;
 import org.neo4j.management.HighAvailability;
+import org.neo4j.management.IndexSamplingManager;
 import org.neo4j.management.LockManager;
 import org.neo4j.management.MemoryMapping;
 import org.neo4j.management.TransactionManager;
@@ -83,6 +84,7 @@ public class CodeDuplicationValidationTest
         assertEqualBeanName( MemoryMapping.class );
         assertEqualBeanName( StoreFile.class );
         assertEqualBeanName( TransactionManager.class );
+        assertEqualBeanName( IndexSamplingManager.class );
     }
 
     private void assertEqualBeanName( Class<?> beanClass )

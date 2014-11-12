@@ -1,6 +1,6 @@
 org.neo4j.management.impl.CacheBean
-org.neo4j.management.impl.ConfigurationBean
 org.neo4j.management.impl.LockManagerBean
+org.neo4j.management.impl.IndexSamplingManagerBean
 org.neo4j.management.impl.MemoryMappingBean
 org.neo4j.management.impl.TransactionManagerBean
 org.neo4j.management.impl.PageCacheBean

@@ -21,7 +21,6 @@ package org.neo4j.jmx.impl;
 
 import java.util.Collection;
 import java.util.Collections;
-
 import javax.management.DynamicMBean;
 import javax.management.NotCompliantMBeanException;
 
