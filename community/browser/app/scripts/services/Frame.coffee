@@ -55,7 +55,7 @@ angular.module('neo4jApp.services')
             @type = intr.type
             intrFn = $injector.invoke(intr.exec)
 
-            @setProperties()
+            @setProperties intr
 
             @errorText = no
             @detailedErrorText = no
@@ -83,18 +83,21 @@ angular.module('neo4jApp.services')
                 @isLoading = no
                 @hasErrors = yes
                 @response = null
+                result = result[0] if Array.isArray result
+                result = result.data?.errors[0] || result.errors?[0] || result
                 @errorText = result.message or "Unknown error"
                 @detailedErrorText = " " # ABKTODO consider a friendly message here
                 if result.length > 0 and result[0].code
                   @errorText = result[0].code
                   @detailedErrorText = result[0].message if result[0].message
                 @runTime = timer.stop().time()
+
             )
             @
-          setProperties: ->
-            # FIXME: this should maybe be defined by the interpreters
+          setProperties: (intr) ->
+            # FIXME: Make exportable a setting in commandInterperters.
             @exportable     = @type in ['cypher', 'http']
-            @fullscreenable = yes
+            @fullscreenable = if intr.fullscreenable is yes or typeof intr.fullscreenable is 'undefined' or intr.fullscreenable is null then yes else @fullscreenable
 
 
         class Frames extends Collection
@@ -116,6 +119,11 @@ angular.module('neo4jApp.services')
           close: (frame) ->
             @remove(frame)
             frame.terminate()
+
+          createOne: (data = {}) ->
+            last = @last()
+            return if last?.input == data.input
+            @create data
 
           interpreterFor: (input = '') ->
             intr = null

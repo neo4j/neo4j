@@ -10,6 +10,7 @@
   top: 0
   bottom: 0
   overflow-y: auto
+  overflow-x: hidden
   transition: all 0.25s
 
   .frame
@@ -39,6 +40,23 @@
         minimum-height: middlebar-height
         background: #F8F9FB
         z-index: 10
+        &.fade
+          transition: .6s all linear
+          opacity: 1
+          &.ng-hide-remove
+            display: block !important
+          &.ng-hide-remove, &.ng-hide-add.ng-hide-add-active
+            opacity: 0
+          &.ng-hide-remove.ng-hide-remove-active, &.ng-hide-add
+            opacity: 1
+     
+
+        .form-info
+          font-size: 12px
+
+        .center-tbl-left-col
+          width: 175px
+          display: inline-block
 
         //a[class*="fa-"]
         //  color: color-default-text
@@ -130,6 +148,8 @@
   .label-help
     color: #D2A8E9
     border-color: #D2A8E9
+  .label-auth
+    background-color: #3498DB
 
   .mono
     font-family: mono-font-family
