@@ -371,11 +371,6 @@
       <!-- other -->
 
       <dependency>
-        <groupId>com.googlecode.concurrentlinkedhashmap</groupId>
-        <artifactId>concurrentlinkedhashmap-lru</artifactId>
-        <version>1.4</version>
-      </dependency>
-      <dependency>
         <groupId>org.parboiled</groupId>
         <artifactId>parboiled-scala_2.10</artifactId>
         <version>1.1.6</version>
