@@ -153,7 +153,7 @@ class LegacyPipeBuilderTest
         classOf[ExecuteUpdateCommandsPipe],
         classOf[EagerPipe],
         classOf[NodeStartPipe],
-        classOf[NullPipe]
+        classOf[SingleRowPipe]
       ))
     }
   }
@@ -178,7 +178,7 @@ class LegacyPipeBuilderTest
         classOf[EmptyResultPipe],
         classOf[ExecuteUpdateCommandsPipe],
         classOf[LoadCSVPipe],
-        classOf[NullPipe]
+        classOf[SingleRowPipe]
       ))
     }
   }

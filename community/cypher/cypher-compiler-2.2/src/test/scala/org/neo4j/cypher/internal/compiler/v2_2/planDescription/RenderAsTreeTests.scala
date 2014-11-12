@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planDescription
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.pipes.{NullPipe, Pipe, PipeMonitor}
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.{SingleRowPipe, Pipe, PipeMonitor}
 
 class RenderAsTreeTests extends CypherFunSuite {
 
-  val pipe = NullPipe()(mock[PipeMonitor])
+  val pipe = SingleRowPipe()(mock[PipeMonitor])
 
   test("single node is represented nicely") {
     renderAsTree(PlanDescriptionImpl(pipe, "NAME", NoChildren, Seq.empty, Set())) should equal(

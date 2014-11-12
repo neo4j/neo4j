@@ -41,7 +41,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
         Expand(
           Selection(List(HasLabels(Identifier("a")_, Seq(LabelName("Awesome")_))_),
             Expand(
-              SingleRow(Set("a"))(PlannerQuery.empty)(),
+              Argument(Set("a"))(PlannerQuery.empty)(),
                 "a",Direction.OUTGOING, Direction.OUTGOING, Seq.empty, "b", "r1", SimplePatternLength)(PlannerQuery.empty)
           )(PlannerQuery.empty),"a",Direction.OUTGOING, Direction.OUTGOING, Seq.empty, "b", "r1", SimplePatternLength)(PlannerQuery.empty)
         )(PlannerQuery.empty)

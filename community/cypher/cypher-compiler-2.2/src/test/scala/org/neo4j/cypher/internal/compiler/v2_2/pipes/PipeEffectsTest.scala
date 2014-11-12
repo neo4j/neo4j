@@ -35,45 +35,45 @@ class PipeEffectsTest extends CypherFunSuite with TableDrivenPropertyChecks {
   implicit val monitor = mock[PipeMonitor]
 
   val EFFECTS: Map[Pipe, Effects] = Map[Pipe, Effects](
-    NullPipe()
+    SingleRowPipe()
     -> Effects.NONE,
 
-    ExecuteUpdateCommandsPipe(NullPipe(), Seq(CreateNode("n", Map.empty, Seq.empty)))
+    ExecuteUpdateCommandsPipe(SingleRowPipe(), Seq(CreateNode("n", Map.empty, Seq.empty)))
     -> Effects.WRITES_NODES,
 
-    ExecuteUpdateCommandsPipe(NullPipe(), Seq(CreateRelationship("r", RelationshipEndpoint("a"), RelationshipEndpoint("b"), "TYPE", Map.empty)))
+    ExecuteUpdateCommandsPipe(SingleRowPipe(), Seq(CreateRelationship("r", RelationshipEndpoint("a"), RelationshipEndpoint("b"), "TYPE", Map.empty)))
     -> Effects.WRITES_RELATIONSHIPS,
 
-    ExecuteUpdateCommandsPipe(NullPipe(), Seq(
+    ExecuteUpdateCommandsPipe(SingleRowPipe(), Seq(
       CreateNode("n", Map.empty, Seq.empty),
       CreateRelationship("r", RelationshipEndpoint("a"), RelationshipEndpoint("b"), "TYPE", Map.empty)))
     -> Effects.WRITES_ENTITIES,
 
-    ExecuteUpdateCommandsPipe(NullPipe(), Seq(MergeNodeAction("n", Map.empty, Seq.empty, Seq.empty, Seq.empty, Seq.empty, None)))
+    ExecuteUpdateCommandsPipe(SingleRowPipe(), Seq(MergeNodeAction("n", Map.empty, Seq.empty, Seq.empty, Seq.empty, Seq.empty, None)))
       -> (Effects.READS_NODES | Effects.WRITES_NODES),
 
-    NodeStartPipe(NullPipe(), "n", mock[EntityProducer[Node]])()
+    NodeStartPipe(SingleRowPipe(), "n", mock[EntityProducer[Node]])()
       -> Effects.READS_NODES,
 
-    LoadCSVPipe(NullPipe(), null, Literal("apa"), "line", None)
+    LoadCSVPipe(SingleRowPipe(), null, Literal("apa"), "line", None)
       -> Effects.NONE,
 
-    EmptyResultPipe(NullPipe())
+    EmptyResultPipe(SingleRowPipe())
       -> Effects.NONE,
 
-    FilterPipe(NullPipe(), True())()
+    FilterPipe(SingleRowPipe(), True())()
       -> Effects.NONE,
 
-    FilterPipe(NullPipe(), HasLabel(Identifier("a"), UnresolvedLabel("Apa")))()
+    FilterPipe(SingleRowPipe(), HasLabel(Identifier("a"), UnresolvedLabel("Apa")))()
       -> Effects.READS_NODES,
 
-    ColumnFilterPipe(NullPipe(), Seq(ReturnItem(Literal(42), "a")))
+    ColumnFilterPipe(SingleRowPipe(), Seq(ReturnItem(Literal(42), "a")))
       -> Effects.NONE,
 
-    TraversalMatchPipe(NullPipe(), mock[TraversalMatcher], mock[Trail])
+    TraversalMatchPipe(SingleRowPipe(), mock[TraversalMatcher], mock[Trail])
       -> Effects.READS_ENTITIES,
 
-    SlicePipe(NullPipe(), Some(Literal(10)), None)
+    SlicePipe(SingleRowPipe(), Some(Literal(10)), None)
       -> Effects.NONE,
 
     MatchPipe(
@@ -82,19 +82,19 @@ class PipeEffectsTest extends CypherFunSuite with TableDrivenPropertyChecks {
       Set("x", "r", "z")
     ) -> Effects.READS_ENTITIES,
 
-    EmptyResultPipe(NullPipe())
+    EmptyResultPipe(SingleRowPipe())
       -> Effects.NONE,
 
-    EagerPipe(NodeStartPipe(NullPipe(), "n", mock[EntityProducer[Node]])())
+    EagerPipe(NodeStartPipe(SingleRowPipe(), "n", mock[EntityProducer[Node]])())
       -> Effects.NONE,
 
-    DistinctPipe(NodeStartPipe(NullPipe(), "n", mock[EntityProducer[Node]])(), Map.empty)()
+    DistinctPipe(NodeStartPipe(SingleRowPipe(), "n", mock[EntityProducer[Node]])(), Map.empty)()
       -> Effects.READS_NODES,
 
-    DistinctPipe(NullPipe(), Map.empty)()
+    DistinctPipe(SingleRowPipe(), Map.empty)()
       -> Effects.NONE,
 
-    OptionalMatchPipe(NullPipe(), NodeStartPipe(NullPipe(), "n", mock[EntityProducer[Node]])(), SymbolTable())
+    OptionalMatchPipe(SingleRowPipe(), NodeStartPipe(SingleRowPipe(), "n", mock[EntityProducer[Node]])(), SymbolTable())
       -> Effects.READS_NODES
   )
 

@@ -34,19 +34,20 @@ case object unnestApply extends Rewriter {
     Arg: Argument
     EXP: Expand
     LOJ: Left Outer Join
+    SR : SingleRow - operator that produces single row with no columns
    */
 
   private val instance: Rewriter = Rewriter.lift {
-    // Arg0 Ax R => R iff Arg0 introduces no arguments
-    case Apply(sr: SingleRow, rhs) if sr.argumentIds.isEmpty =>
+    // SR Ax R => R iff Arg0 introduces no arguments
+    case Apply(_: SingleRow, rhs) =>
       rhs
 
     // L Ax Arg => L
-    case Apply(lhs, _: SingleRow) =>
+    case Apply(lhs, _: Argument) =>
       lhs
 
     // L Ax (Arg Ax R) => L Ax R
-    case original@Apply(lhs, Apply(_: SingleRow, rhs)) =>
+    case original@Apply(lhs, Apply(_: Argument, rhs)) =>
       Apply(lhs, rhs)(original.solved)
 
     // L Ax (σ R) => σ(L Ax R)
@@ -64,7 +65,7 @@ case object unnestApply extends Rewriter {
       expand.copy(left = newApply)(apply.solved)
 
     // L Ax (Arg LOJ R) => L LOJ R
-    case apply@Apply(lhs, join@OuterHashJoin(_, _:SingleRow, rhs)) =>
+    case apply@Apply(lhs, join@OuterHashJoin(_, _:Argument, rhs)) =>
       join.copy(left = lhs)(apply.solved)
   }
 

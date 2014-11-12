@@ -35,7 +35,7 @@ class ProfilerTest extends CypherFunSuite {
 
   test("should report simplest case") {
     //GIVEN
-    val start = NullPipe()
+    val start = SingleRowPipe()
     val pipe = new ProfilerPipe(start, "foo", rows = 10, dbAccess = 20)
     val queryContext = mock[QueryContext]
     val profiler = new Profiler
@@ -51,7 +51,7 @@ class ProfilerTest extends CypherFunSuite {
 
   test("should report multiple pipes case") {
     //GIVEN
-    val start = NullPipe()
+    val start = SingleRowPipe()
     val pipe1 = new ProfilerPipe(start, "foo", rows = 10, dbAccess = 25)
     val pipe2 = new ProfilerPipe(pipe1, "bar", rows = 20, dbAccess = 40)
     val pipe3 = new ProfilerPipe(pipe2, "baz", rows = 1, dbAccess = 2)
@@ -71,7 +71,7 @@ class ProfilerTest extends CypherFunSuite {
 
   test("should ignore null pipe in profile") {
     // GIVEN
-    val pipes = UnionPipe(List(NullPipe(), NullPipe()), List())
+    val pipes = UnionPipe(List(SingleRowPipe(), SingleRowPipe()), List())
     val queryContext = mock[QueryContext]
     val profiler = new Profiler
     val queryState = QueryStateHelper.emptyWith(query = queryContext, decorator = profiler)
@@ -83,8 +83,8 @@ class ProfilerTest extends CypherFunSuite {
 
   test("should count stuff going through Apply multiple times") {
     // GIVEN
-    val lhs = new ProfilerPipe(NullPipe(), "lhs", rows = 10, dbAccess = 10)
-    val rhs = new ProfilerPipe(NullPipe(), "rhs", rows = 20, dbAccess = 30)
+    val lhs = new ProfilerPipe(SingleRowPipe(), "lhs", rows = 10, dbAccess = 10)
+    val rhs = new ProfilerPipe(SingleRowPipe(), "rhs", rows = 20, dbAccess = 30)
     val apply = new ApplyPipe(lhs, rhs)()
     val queryContext = mock[QueryContext]
     val profiler = new Profiler

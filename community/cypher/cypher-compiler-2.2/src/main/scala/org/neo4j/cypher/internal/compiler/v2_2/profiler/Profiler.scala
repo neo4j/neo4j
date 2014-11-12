@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.profiler
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.pipes.{NullPipe, Pipe, PipeDecorator, QueryState}
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.{SingleRowPipe, Pipe, PipeDecorator, QueryState}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{DelegatingOperations, DelegatingQueryContext, Operations, QueryContext}
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 

@@ -40,24 +40,24 @@ class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport  {
   }
 
   test("single row returns itself as the leafs") {
-    val singleRow = SingleRow(Set(IdName("a")))(solved)()
+    val singleRow = Argument(Set(IdName("a")))(solved)()
 
     singleRow.leafs should equal(Seq(singleRow))
   }
 
   test("apply with two singlerows should return them both") {
-    val singleRow1 = SingleRow(Set(IdName("a")))(solved)()
-    val singleRow2 = SingleRow(Set(IdName("b")))(solved)()
+    val singleRow1 = Argument(Set(IdName("a")))(solved)()
+    val singleRow2 = SingleRow()
     val apply = Apply(singleRow1, singleRow2)(solved)
 
     apply.leafs should equal(Seq(singleRow1, singleRow2))
   }
 
   test("apply pyramid should work multiple levels deep") {
-    val singleRow1 = SingleRow(Set(IdName("a")))(solved)()
-    val singleRow2 = SingleRow(Set(IdName("b")))(solved)()
-    val singleRow3 = SingleRow(Set(IdName("b")))(solved)()
-    val singleRow4 = SingleRow(Set(IdName("b")))(solved)()
+    val singleRow1 = Argument(Set(IdName("a")))(solved)()
+    val singleRow2 = SingleRow()
+    val singleRow3 = Argument(Set(IdName("b")))(solved)()
+    val singleRow4 = SingleRow()
     val apply1 = Apply(singleRow1, singleRow2)(solved)
     val apply2 = Apply(singleRow3, singleRow4)(solved)
     val metaApply = Apply(apply1, apply2)(solved)

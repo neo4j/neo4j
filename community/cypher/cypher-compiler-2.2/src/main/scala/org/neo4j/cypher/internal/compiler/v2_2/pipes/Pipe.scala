@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.mutation.Effectful
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{ArgumentPlanDescription, InternalPlanDescription}
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{SingleRowPlanDescription, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.helpers.ThisShouldNotHappenError
 
@@ -86,24 +86,16 @@ trait Pipe extends Effectful {
   def identifiers: immutable.Set[String] = symbols.identifiers.keySet.toSet
 }
 
-case class NullPipe(symbols: SymbolTable = SymbolTable())
-                   (implicit val monitor: PipeMonitor) extends Pipe with RonjaPipe {
+case class SingleRowPipe()(implicit val monitor: PipeMonitor) extends Pipe with RonjaPipe {
 
-  val typeAssertions =
-    SymbolTypeAssertionCompiler.compile(
-      symbols.identifiers.toSeq.collect { case entry @ (_, typ) if typ == CTNode || typ == CTRelationship => entry }
-    )
+  def symbols: SymbolTable = new SymbolTable()
 
-  def internalCreateResults(state: QueryState) = {
-    if (state.initialContext.isEmpty)
+  def internalCreateResults(state: QueryState) =
       Iterator(ExecutionContext.empty)
-    else
-      Iterator(typeAssertions(state.initialContext.get))
-  }
 
   def exists(pred: Pipe => Boolean) = pred(this)
 
-  def planDescription: InternalPlanDescription = new ArgumentPlanDescription(this, Seq.empty, identifiers)
+  def planDescription: InternalPlanDescription = new SingleRowPlanDescription(this, Seq.empty, identifiers)
 
   override def localEffects = Effects.NONE
 

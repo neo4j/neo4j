@@ -155,7 +155,7 @@ final case class PlanDescriptionImpl(pipe: Pipe,
   def render( builder: StringBuilder ) { ??? }
 }
 
-final case class ArgumentPlanDescription(pipe: Pipe, arguments: Seq[Argument] = Seq.empty, identifiers: Set[String]) extends InternalPlanDescription {
+final case class SingleRowPlanDescription(pipe: Pipe, arguments: Seq[Argument] = Seq.empty, identifiers: Set[String]) extends InternalPlanDescription {
   override def andThen(pipe: Pipe, name: String, identifiers: Set[String], newArguments: Argument*) =
     new PlanDescriptionImpl(pipe = pipe, name = name, children = NoChildren, _arguments = newArguments, identifiers = identifiers)
 

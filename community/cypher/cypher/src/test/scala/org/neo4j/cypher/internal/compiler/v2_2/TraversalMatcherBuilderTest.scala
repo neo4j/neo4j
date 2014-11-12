@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.builders.{BuilderTest, Solved, TraversalMatcherBuilder, Unsolved}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery}
 import org.neo4j.cypher.internal.compiler.v2_2.parser.{CypherParser, ParserMonitor}
-import org.neo4j.cypher.internal.compiler.v2_2.pipes.{NullPipe, PipeMonitor}
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.{SingleRowPipe, PipeMonitor}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
 import org.neo4j.cypher.internal.spi.v2_2.TransactionBoundPlanContext
 import org.neo4j.graphdb.Transaction
@@ -56,7 +56,7 @@ class TraversalMatcherBuilderTest extends GraphDatabaseFunSuite with BuilderTest
       copy(start = Seq(Unsolved(NodeByIndex("n", "index", Literal("key"), Literal("expression"))))
     )
 
-    builder.canWorkWith(plan(NullPipe(), q), ctx) should be(false)
+    builder.canWorkWith(plan(SingleRowPipe(), q), ctx) should be(false)
   }
 
   test("should_accept_variable_length_paths") {
@@ -64,7 +64,7 @@ class TraversalMatcherBuilderTest extends GraphDatabaseFunSuite with BuilderTest
                   "MATCH me-[:jane_knows*]->friend-[:has]->status " +
                   "RETURN me")
 
-    builder.canWorkWith(plan(NullPipe(), q), ctx) should be(true)
+    builder.canWorkWith(plan(SingleRowPipe(), q), ctx) should be(true)
   }
 
   test("should_not_accept_queries_with_varlength_paths") {
@@ -72,7 +72,7 @@ class TraversalMatcherBuilderTest extends GraphDatabaseFunSuite with BuilderTest
                   "MATCH me-[:LOVES*]->banana-[:LIKES*]->you " +
                   "RETURN me")
 
-    builder.canWorkWith(plan(NullPipe(), q), ctx) should be(true)
+    builder.canWorkWith(plan(SingleRowPipe(), q), ctx) should be(true)
   }
 
   test("should_handle_loops") {
@@ -80,15 +80,15 @@ class TraversalMatcherBuilderTest extends GraphDatabaseFunSuite with BuilderTest
                   "MATCH me-[:LIKES]->(u1)<-[:LIKES]->you, me-[:HATES]->(u2)<-[:HATES]->you " +
                   "RETURN me")
 
-    builder.canWorkWith(plan(NullPipe(), q), ctx) should be(true)
+    builder.canWorkWith(plan(SingleRowPipe(), q), ctx) should be(true)
   }
 
   test("should_not_take_on_path_expression_predicates") {
     val q = query("START a=node({self}) MATCH a-->b WHERE b-->() RETURN b")
 
-    builder.canWorkWith(plan(NullPipe(), q), ctx) should be(true)
+    builder.canWorkWith(plan(SingleRowPipe(), q), ctx) should be(true)
 
-    val testPlan = plan(NullPipe(), q)
+    val testPlan = plan(SingleRowPipe(), q)
     val newPlan = builder.apply(testPlan, ctx)
 
     assertQueryHasNotSolvedPathExpressions(newPlan)
@@ -97,7 +97,7 @@ class TraversalMatcherBuilderTest extends GraphDatabaseFunSuite with BuilderTest
   test("should_handle_global_queries") {
     val q = query("START a=node({self}), b = node(*) MATCH a-->b RETURN b")
 
-    val testPlan = plan(NullPipe(), q)
+    val testPlan = plan(SingleRowPipe(), q)
     builder.canWorkWith(testPlan, ctx) should be(true)
 
     val newPlan = builder.apply(testPlan, ctx)

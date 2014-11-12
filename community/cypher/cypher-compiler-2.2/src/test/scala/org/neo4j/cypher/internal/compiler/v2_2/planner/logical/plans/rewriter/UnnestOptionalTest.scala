@@ -28,7 +28,7 @@ import org.neo4j.graphdb.Direction
 
 class UnnestOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should rewrite Apply/Optional/Expand to OptionalExpand when lhs of expand is single row") {
-    val singleRow: LogicalPlan = SingleRow(Set(IdName("a")))(solved)(Map.empty)
+    val singleRow: LogicalPlan = Argument(Set(IdName("a")))(solved)(Map.empty)
     val rhs:LogicalPlan =
       Optional(
         Expand(singleRow, IdName("a"), Direction.OUTGOING, Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), SimplePatternLength
@@ -41,7 +41,7 @@ class UnnestOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport 
   }
 
   test("should rewrite Apply/Optional/Selection/Expand to OptionalExpand when lhs of expand is single row") {
-    val singleRow: LogicalPlan = SingleRow(Set(IdName("a")))(solved)(Map.empty)
+    val singleRow: LogicalPlan = Argument(Set(IdName("a")))(solved)(Map.empty)
     val expand = Expand(singleRow, IdName("a"), Direction.OUTGOING, Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), SimplePatternLength)(solved)
     val predicate: Equals = Equals(Property(ident("b"), PropertyKeyName("prop")(pos))(pos), SignedDecimalIntegerLiteral("1")(pos))(pos)
     val selection = Selection(Seq(predicate), expand)(solved)
@@ -54,7 +54,7 @@ class UnnestOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport 
   }
 
   test("should not rewrite Apply/Optional/Selection/Expand to OptionalExpand when expansion is variable length") {
-    val singleRow: LogicalPlan = SingleRow(Set(IdName("a")))(solved)(Map.empty)
+    val singleRow: LogicalPlan = Argument(Set(IdName("a")))(solved)(Map.empty)
     val expand = Expand(singleRow, IdName("a"), Direction.OUTGOING, Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), VarPatternLength(1, None))(solved)
     val predicate: Equals = Equals(Property(ident("b"), PropertyKeyName("prop")(pos))(pos), SignedDecimalIntegerLiteral("1")(pos))(pos)
     val selection = Selection(Seq(predicate), expand)(solved)

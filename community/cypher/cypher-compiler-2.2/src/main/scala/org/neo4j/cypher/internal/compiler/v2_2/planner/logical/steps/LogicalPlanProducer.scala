@@ -262,7 +262,7 @@ object LogicalPlanProducer {
     val typeInfo = typeInfoSeq.toMap
 
     val singleRowPlan =
-      SingleRow(coveredIds)(
+      Argument(coveredIds)(
         PlannerQuery(graph =
         QueryGraph(
           argumentIds = coveredIds,
@@ -275,7 +275,7 @@ object LogicalPlanProducer {
   }
 
   def planSingleRow() =
-    SingleRow(Set.empty)(PlannerQuery.empty)(Map.empty)
+    SingleRow()
 
   def planStarProjection(inner: LogicalPlan, expressions: Map[String, Expression]) =
     inner.updateSolved(

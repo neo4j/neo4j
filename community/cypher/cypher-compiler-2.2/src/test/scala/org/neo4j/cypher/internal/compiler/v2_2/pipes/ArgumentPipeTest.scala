@@ -23,11 +23,11 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.{CypherTypeException, ExecutionContext}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 
-class NullPipeTest extends CypherFunSuite {
+class ArgumentPipeTest extends CypherFunSuite {
   implicit val pipesMonitor = mock[PipeMonitor]
 
   test("should verify that node symbols are nodes in the initial context") {
-    val pipe = NullPipe(SymbolTable(Map("a" -> CTNode)))
+    val pipe = ArgumentPipe(SymbolTable(Map("a" -> CTNode)))()
     val state = newQueryState("a" -> 1)
 
     evaluating {
@@ -36,14 +36,14 @@ class NullPipeTest extends CypherFunSuite {
   }
 
   test("should not verify that nulls are nodes in the initial context") {
-    val pipe = NullPipe(SymbolTable(Map("a" -> CTNode)))
+    val pipe = ArgumentPipe(SymbolTable(Map("a" -> CTNode)))()
     val state = newQueryState("a" -> null)
 
     pipe.internalCreateResults(state)
   }
 
   test("should verify that relationship symbols are relationships in the initial context") {
-    val pipe = NullPipe(SymbolTable(Map("a" -> CTRelationship)))
+    val pipe = ArgumentPipe(SymbolTable(Map("a" -> CTRelationship)))()
     val state = newQueryState("a" -> 1)
 
     evaluating {
@@ -52,7 +52,7 @@ class NullPipeTest extends CypherFunSuite {
   }
 
   test("should not verify that nulls are relationships in the initial context") {
-    val pipe = NullPipe(SymbolTable(Map("a" -> CTRelationship)))
+    val pipe = ArgumentPipe(SymbolTable(Map("a" -> CTRelationship)))()
     val state = newQueryState("a" -> null)
 
     pipe.internalCreateResults(state)
