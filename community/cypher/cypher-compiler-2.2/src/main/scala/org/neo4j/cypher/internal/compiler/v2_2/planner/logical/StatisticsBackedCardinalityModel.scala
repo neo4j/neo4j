@@ -22,15 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{IntegerLiteral, LabelName}
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityModel
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
-
-object GuessingEstimation {
-  val LABEL_NOT_FOUND_SELECTIVITY       : Selectivity = 0.0
-  val PREDICATE_SELECTIVITY             : Selectivity = 0.2
-  val INDEX_SEEK_SELECTIVITY            : Selectivity = 0.02
-  val DEFAULT_EXPAND_RELATIONSHIP_DEGREE: Multiplier  = 2.0
-  val DEFAULT_CONNECTIVITY_CHANCE       : Multiplier  = 1.0
-}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, LogicalPlan}
 
 class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel)
   extends Metrics.CardinalityModel {
