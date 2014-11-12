@@ -66,7 +66,7 @@ END""",
         "default" -> "The expression to use if no match is found."
       ),
       text = "The expression is calculated, and compared in order with the +WHEN+ clauses until a match is found. " +
-        "If no match is found the expression in the +ELSE+ clause is used, or +null+, if no +ELSE+ case exists.",
+        "If no match is found the expression in the +ELSE+ clause is used, or null, if no +ELSE+ case exists.",
       queryText =
         """match n return CASE n.eyes
     WHEN 'blue'  THEN 1

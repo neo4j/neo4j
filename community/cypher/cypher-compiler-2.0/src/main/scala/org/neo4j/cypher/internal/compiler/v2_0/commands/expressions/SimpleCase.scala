@@ -21,22 +21,21 @@
 package org.neo4j.cypher.internal.compiler.v2_0.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
+import commands.AstNode
 import pipes.QueryState
 import symbols._
 
 case class SimpleCase(expression: Expression, alternatives: Seq[(Expression, Expression)], default: Option[Expression])
-  extends Expression {
+  extends NullInNullOutExpression(expression) {
 
-  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
-    val value = expression(ctx)
-
-    val matchingExpression: Option[Expression] = alternatives collectFirst {
-      case (exp, res) if exp(ctx) == value => res
-    }
+  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = {
+    val matchingExpression = alternatives find {
+      case (exp, res) => exp(m) == value
+    } map (_._2)
 
     matchingExpression match {
-      case Some(resultExpression) => resultExpression(ctx)
-      case None => default.getOrElse(Null()).apply(ctx)
+      case Some(result) => result(m)
+      case None         => default.getOrElse(Null()).apply(m)
     }
   }
 
