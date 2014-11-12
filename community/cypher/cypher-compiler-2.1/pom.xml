@@ -66,17 +66,6 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-kernel</artifactId>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-graphviz</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-lucene-index</artifactId>
         <scope>provided</scope>
     </dependency>
@@ -89,6 +78,20 @@
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-graph-algo</artifactId>
         <scope>provided</scope>
+    </dependency>
+
+    <!-- neo4j testing -->
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-kernel</artifactId>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-graphviz</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <!-- neo4j-cypher -->
