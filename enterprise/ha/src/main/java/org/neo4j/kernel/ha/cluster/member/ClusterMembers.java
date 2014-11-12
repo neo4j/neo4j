@@ -35,6 +35,8 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.Logging;
 
 /**
  * Keeps an up to date list of members, their roles and availability for
@@ -52,6 +54,7 @@ public class ClusterMembers
     };
 
     private final InstanceId me;
+    private final StringLogger log;
 
     public static Predicate<ClusterMember> inRole( final String role )
     {
@@ -67,9 +70,11 @@ public class ClusterMembers
 
     private final Map<InstanceId, ClusterMember> members = new CopyOnWriteHashMap<>();
 
-    public ClusterMembers( Cluster cluster, Heartbeat heartbeat, ClusterMemberEvents events, InstanceId me )
+    public ClusterMembers( Cluster cluster, Heartbeat heartbeat, ClusterMemberEvents events, InstanceId me,
+            Logging logging )
     {
         this.me = me;
+        this.log = logging.getMessagesLog( getClass() );
         cluster.addClusterListener( new HAMClusterListener() );
         heartbeat.addHeartbeatListener( new HAMHeartbeatListener() );
         events.addClusterMemberListener( new HAMClusterMemberListener() );
@@ -117,6 +122,8 @@ public class ClusterMembers
         @Override
         public void enteredCluster( ClusterConfiguration configuration )
         {
+            String oldMembers = members.values().toString();
+
             Map<InstanceId, ClusterMember> newMembers = new HashMap<>();
             for ( InstanceId memberClusterId : configuration.getMemberIds() )
             {
@@ -124,24 +131,41 @@ public class ClusterMembers
             }
             members.clear();
             members.putAll( newMembers );
+
+            log.debug( "Entered cluster. Configuration: " + configuration + ". OldMembers: " + oldMembers + ", " +
+                       "NewMembers: " + members.values() );
         }
 
         @Override
         public void leftCluster()
         {
+            String oldMembers = members.values().toString();
+
             members.clear();
+
+            log.debug( "Left cluster. OldMembers: " + oldMembers + ". NewMembers: " + members.values() );
         }
 
         @Override
         public void joinedCluster( InstanceId member, URI memberUri )
         {
+            String oldMembers = members.values().toString();
+
             members.put( member, new ClusterMember( member ) );
+
+            log.debug( "Joined cluster. Instance: " + member + ", URI: " + memberUri + ". OldMembers: " + oldMembers +
+                       ". NewMembers: " + members.values() );
         }
 
         @Override
         public void leftCluster( InstanceId instanceId, URI member )
         {
+            String oldMembers = members.values().toString();
+
             members.remove( instanceId );
+
+            log.debug( "Left cluster. Instance: " + instanceId + ", URI: " + member + ". OldMembers: " + oldMembers +
+                       ". NewMembers: " + members.values() );
         }
     }
 
@@ -152,6 +176,8 @@ public class ClusterMembers
         @Override
         public void coordinatorIsElected( InstanceId coordinatorId )
         {
+            String oldMembers = members.values().toString();
+
             if ( coordinatorId.equals( this.masterId ) )
             {
                 return;
@@ -165,18 +191,28 @@ public class ClusterMembers
             }
             members.clear();
             members.putAll( newMembers );
+
+            log.debug( "Coordinator is elected. Instance: " + coordinatorId + ". OldMembers: " + oldMembers + ". " +
+                       "NewMembers: " + members.values() );
         }
 
         @Override
         public void memberIsAvailable( String role, InstanceId instanceId, URI roleUri, StoreId storeId )
         {
+            String oldMembers = members.values().toString();
+
             members.put( instanceId, getMember( instanceId ).availableAs( role, roleUri, storeId ) );
             eventOccurred();
+
+            log.debug( "Member is available. Role: " + role + ", Instance: " + instanceId + ". OldMembers: " +
+                       oldMembers + ". NewMembers: " + members.values() );
         }
 
         @Override
         public void memberIsUnavailable( String role, InstanceId unavailableId )
         {
+            String oldMembers = members.values().toString();
+
             ClusterMember member;
             try
             {
@@ -187,11 +223,16 @@ public class ClusterMembers
             {
                 // Unknown member
             }
+
+            log.debug( "Member is available. Instance: " + unavailableId + ", Role: " + role + ". OldMembers: " +
+                       oldMembers + ". NewMembers: " + members.values() );
         }
 
         @Override
         public void memberIsFailed( InstanceId instanceId )
         {
+            String oldMembers = members.values().toString();
+
             // Make it unavailable for all its current roles
             ClusterMember member = getMember( instanceId );
             for ( String role : member.getRoles() )
@@ -199,6 +240,9 @@ public class ClusterMembers
                 member = member.unavailableAs( role ); // ClusterMember is copy-on-write
             }
             members.put( instanceId, member ); // replace with the new copy
+
+            log.debug( "Member is failed. Instance: " + instanceId + ". OldMembers: " + oldMembers + ". NewMembers: " +
+                       members.values() );
         }
     }
 
@@ -207,19 +251,29 @@ public class ClusterMembers
         @Override
         public void failed( InstanceId server )
         {
+            String oldMembers = members.values().toString();
+
             if ( members.containsKey( server ) )
             {
                 members.put( server, getMember( server ).failed() );
             }
+
+            log.debug( "Failed. Instance: " + server + ". OldMembers: " + oldMembers + ". NewMembers: " +
+                       members.values() );
         }
 
         @Override
         public void alive( InstanceId server )
         {
+            String oldMembers = members.values().toString();
+
             if ( members.containsKey( server ) )
             {
                 members.put( server, getMember( server ).alive() );
             }
+
+            log.debug( "Alive. Instance: " + server + ". OldMembers: " + oldMembers + ". NewMembers: " +
+                       members.values() );
         }
     }
 }

@@ -1028,7 +1028,7 @@ public class ClusterManager
                     {
                         // noop
                     }
-                }, clusterClient.getServerId() ) );
+                }, clusterClient.getServerId(), clientLogging ) );
 
                 life.add( new FutureLifecycleAdapter<>( clusterClient ) );
             }

@@ -369,7 +369,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         clusterMemberAvailabilityDelegateInvocationHandler.setDelegate( localClusterMemberAvailability );
 
         members = dependencies.satisfyDependency( new ClusterMembers( clusterClient, clusterClient, clusterEvents,
-                config.get( ClusterSettings.server_id ) ) );
+                config.get( ClusterSettings.server_id ), logging ) );
         memberStateMachine = new HighAvailabilityMemberStateMachine( memberContext, availabilityGuard, members,
                 clusterEvents,
                 clusterClient, logging.getMessagesLog( HighAvailabilityMemberStateMachine.class ) );
