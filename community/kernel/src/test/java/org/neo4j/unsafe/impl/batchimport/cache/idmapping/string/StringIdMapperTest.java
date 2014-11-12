@@ -21,15 +21,16 @@ package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.collection.primitive.PrimitiveIntSet;
+import org.neo4j.function.Factory;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.test.RepeatRule;
@@ -43,8 +44,6 @@ import static java.lang.System.currentTimeMillis;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-
-import static org.neo4j.collection.primitive.Primitive.intSet;
 
 public class StringIdMapperTest
 {
@@ -102,7 +101,7 @@ public class StringIdMapperTest
         idMapper.prepare( Arrays.asList() );
 
         // WHEN
-        long id = idMapper.get( "missing" );
+        long id = idMapper.get( "123" );
 
         // THEN
         assertEquals( -1L, id );
@@ -124,41 +123,36 @@ public class StringIdMapperTest
         assertEquals( 0L, mapper.get( "123" ) );
     }
 
-    @Ignore( "TODO pending fix issue in ParallelSort" )
-    @Repeat( times = 1000 )
+    @Repeat( times = 10 )
     @Test
     public void shouldEncodeSmallSetOfRandomData() throws Throwable
     {
         // GIVEN
         int processorsForSorting = random.nextInt( 7 ) + 1;
-        StringIdMapper mapper = new StringIdMapper( LongArrayFactory.AUTO, processorsForSorting /*1-7*/ );
-        int size = random.nextInt( 10 ) + 2;
+        int size = random.nextInt( 10_000 ) + 2;
+        StringIdMapper mapper = new StringIdMapper( LongArrayFactory.HEAP, size*2, processorsForSorting /*1-7*/ );
 
         // WHEN
-        List<Object> values = new ArrayList<>();
-        PrimitiveIntSet alreadyGeneratedValues = intSet( size );
-        for ( int i = 0; i < size; i++ )
+        Iterable<Object> values = new ValueGenerator( size, random.nextBoolean()
+                ? new LongValues()
+                : new StringValues() );
         {
-            int candidate = random.nextInt( 10_000 );
-            if ( !alreadyGeneratedValues.add( candidate ) )
+            int id = 0;
+            for ( Object value : values )
             {
-                i--;
-                continue;
+                mapper.put( value, id++ );
             }
-
-            String value = String.valueOf( candidate );
-            mapper.put( value, i );
-            values.add( value );
         }
+
         try
         {
             mapper.prepare( values );
 
             // THEN
-            int i = 0;
+            int id = 0;
             for ( Object value : values )
             {
-                assertEquals( "Expected " + value + " to map to " + i + ", seed:" + seed, i++, mapper.get( value ) );
+                assertEquals( "Expected " + value + " to map to " + id + ", seed:" + seed, id++, mapper.get( value ) );
             }
         }
         catch ( Throwable e )
@@ -167,7 +161,73 @@ public class StringIdMapperTest
         }
     }
 
-    private final long seed = currentTimeMillis(); // 1415737558450L;
+    private class LongValues implements Factory<Object>
+    {
+        @Override
+        public Object newInstance()
+        {
+            return String.valueOf( random.nextInt( 1_000_000 ) );
+        }
+    }
+
+    private class StringValues implements Factory<Object>
+    {
+        private final String chars = "abcdefghijklmnopqrstuvwxyz";
+
+        @Override
+        public Object newInstance()
+        {
+            return String.valueOf( random.nextInt( 1_000_000_000 ) ) + chars.charAt( random.nextInt( chars.length() ) );
+        }
+    }
+
+    private class ValueGenerator implements Iterable<Object>
+    {
+        private final int size;
+        private final Factory<Object> generator;
+        private final List<Object> values = new ArrayList<>();
+        private final Set<Object> deduper = new HashSet<>();
+
+        ValueGenerator( int size, Factory<Object> generator )
+        {
+            this.size = size;
+            this.generator = generator;
+        }
+
+        @Override
+        public Iterator<Object> iterator()
+        {
+            if ( !values.isEmpty() )
+            {
+                return values.iterator();
+            }
+            return new PrefetchingIterator<Object>()
+            {
+                private int cursor;
+
+                @Override
+                protected Object fetchNextOrNull()
+                {
+                    if ( cursor < size )
+                    {
+                        while ( true )
+                        {
+                            Object value = generator.newInstance();
+                            if ( deduper.add( value ) )
+                            {
+                                values.add( value );
+                                cursor++;
+                                return value;
+                            }
+                        }
+                    }
+                    return null;
+                }
+            };
+        }
+    }
+
+    private final long seed = currentTimeMillis();
     private final Random random = new Random( seed );
     public final @Rule RepeatRule repeater = new RepeatRule();
 }

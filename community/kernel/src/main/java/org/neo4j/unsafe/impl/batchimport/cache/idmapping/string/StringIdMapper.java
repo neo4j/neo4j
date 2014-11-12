@@ -19,8 +19,10 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 
 import org.neo4j.unsafe.impl.batchimport.Utils.CompareType;
 import org.neo4j.unsafe.impl.batchimport.cache.IntArray;
@@ -29,8 +31,6 @@ import org.neo4j.unsafe.impl.batchimport.cache.LongArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.LongBitsManipulator;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
-
-import static java.lang.Math.pow;
 
 import static org.neo4j.unsafe.impl.batchimport.Utils.unsignedCompare;
 
@@ -48,48 +48,54 @@ public class StringIdMapper implements IdMapper
 {
     private static LongBitsManipulator COLLISION_BIT = new LongBitsManipulator( 62, 1, 1 );
     private static int CACHE_CHUNK_SIZE = 1_000_000; // 8MB a piece
-    private static final int RADIX_BITS = 24;
-    private static final int LENGTH_MASK = (int) (0xFE000000_00000000L >>> (64 - RADIX_BITS));
-    private static final int HASHCODE_MASK = (int) (0x00FFFF00_00000000L >>> (64 - RADIX_BITS));
-
     private final IntArray trackerCache;
     private final LongArray dataCache;
-    private final StringEncoder strEncoder;
+    private Encoder encoder;
+    private Radix radix;
     private final int processorsForSorting;
-
     private final LongArray collisionCache;
     private final IntArray collisionStringIndex;
     private final StringBuilder collisionStrings;
-
-    private final int[] radixIndexCount = new int[(int) pow( 2, RADIX_BITS - 1 )];
     private boolean readyForUse;
     private long[][] sortBuckets;
     private long size;
 
+    /* OK, so this is a bit weird, but I made a decision to have auto-detection of whether or not the
+     * supplied Strings are actually longs or strings, right in here. It's done like that because users
+     * are probably oblivious to that fact and they perhaps don't care. We care because of the performance
+     * opportunity to skip string encoding, and instead basically just parse the string as a long.
+     *   This could of course be taken one step further, to skip the round-trip to String and go for
+     * letting the input parse the id as a long right away. Although that would require the auto detection
+     * to sit somewhere else. Look at this as a TODO to move this auto-detection closer to the input source. */
+    private List<String> testPhaseStrings = new ArrayList<>();
+    private final int testPhaseLimit = 200;
+    private boolean encodingDecisionMade;
+
     public StringIdMapper( LongArrayFactory cacheFactory )
     {
-        this( cacheFactory, Runtime.getRuntime().availableProcessors() - 1 );
+        this( cacheFactory, CACHE_CHUNK_SIZE, Runtime.getRuntime().availableProcessors() - 1 );
     }
 
-    public StringIdMapper( LongArrayFactory cacheFactory, int processorsForSorting )
+    public StringIdMapper( LongArrayFactory cacheFactory, int chunkSize, int processorsForSorting )
     {
         this.processorsForSorting = processorsForSorting;
-        this.dataCache = newLongArray( cacheFactory );
-        this.trackerCache = newIntArray( cacheFactory );
-        this.strEncoder = new StringEncoder( 2 );
-        this.collisionCache = newLongArray( cacheFactory );
-        this.collisionStringIndex = newIntArray( cacheFactory );
+        this.dataCache = newLongArray( cacheFactory, chunkSize );
+        this.trackerCache = newIntArray( cacheFactory, chunkSize );
+        this.encoder = new LongEncoder();
+        this.radix = new Radix.Long();
+        this.collisionCache = newLongArray( cacheFactory, chunkSize );
+        this.collisionStringIndex = newIntArray( cacheFactory, chunkSize );
         this.collisionStrings = new StringBuilder();
     }
 
-    private static IntArray newIntArray( LongArrayFactory cacheFactory )
+    private static IntArray newIntArray( LongArrayFactory cacheFactory, int chunkSize )
     {
-        return new IntArray( cacheFactory, CACHE_CHUNK_SIZE, -1 );
+        return new IntArray( cacheFactory, chunkSize, -1 );
     }
 
-    private static LongArray newLongArray( LongArrayFactory cacheFactory )
+    private static LongArray newLongArray( LongArrayFactory cacheFactory, int chunkSize )
     {
-        return cacheFactory.newDynamicLongArray( CACHE_CHUNK_SIZE, -1 );
+        return cacheFactory.newDynamicLongArray( chunkSize, -1 );
     }
 
     @Override
@@ -102,19 +108,58 @@ public class StringIdMapper implements IdMapper
     @Override
     public void put( Object stringValue, long id )
     {
-        // synchronize if/when node encoder stage gets multi threaded
-        long code = strEncoder.encode( (String) stringValue );
+        checkForStringValue( (String) stringValue );
+        long code = encoder.encode( (String) stringValue );
         dataCache.set( id, code );
-        int radix = radixOf( code );
-        radixIndexCount[radix]++;
+        radix.registerRadixOf( code );
         size++;
     }
 
-    static int radixOf( long val )
+    private void checkForStringValue( String s )
     {
-        int index = (int) (val >>> (64 - RADIX_BITS));
-        index = (((index & LENGTH_MASK) >>> 1) | (index & HASHCODE_MASK));
-        return index;
+        if ( encodingDecisionMade )
+        {
+            return;
+        }
+
+        try
+        {
+            Long.parseLong( s );
+            // alright, it still looks like we're dealing with long values
+            if ( testPhaseStrings.size() > testPhaseLimit )
+            {
+                // confirm long value and disable string check
+                encodingDecisionMade = true;
+            }
+            else
+            {
+                testPhaseStrings.add( s );
+            }
+        }
+        catch ( NumberFormatException e )
+        {
+            // so we're NOT dealing with long values, switch to string encoding
+            encodingDecisionMade = true;
+            radix = new Radix.String();
+            encoder = new StringEncoder( 2 );
+
+            // re-encode the previous test strings as strings
+            if ( !testPhaseStrings.isEmpty() )
+            {
+                for ( int index = 0; index < testPhaseStrings.size(); index++ )
+                {
+                    long code = encoder.encode( testPhaseStrings.get( index ) );
+                    dataCache.set( index, code );
+                }
+            }
+        }
+        finally
+        {
+            if ( encodingDecisionMade )
+            {   // no point keeping this around
+                testPhaseStrings = null;
+            }
+        }
     }
 
     @Override
@@ -126,8 +171,10 @@ public class StringIdMapper implements IdMapper
     @Override
     public void prepare( Iterable<Object> ids )
     {
-        sortBuckets = new ParallelSort( radixIndexCount, dataCache, trackerCache, processorsForSorting ).run();
-
+        synchronized ( this )
+        {
+            sortBuckets = new ParallelSort( radix, dataCache, trackerCache, processorsForSorting ).run();
+        }
         if ( detectAndMarkCollisions() > 0 )
         {
             buildCollisionInfo( ids.iterator() );
@@ -135,11 +182,17 @@ public class StringIdMapper implements IdMapper
         readyForUse = true;
     }
 
+    private int radixOf( long value )
+    {
+        return radix.calculator().radixOf( value );
+    }
+
     private long binarySearch( String strValue )
     {
         long low = 0;
-        long high = trackerCache.highestSetIndex();
-        long x = strEncoder.encode( strValue );
+        long highestSetTrackerIndex = trackerCache.highestSetIndex();
+        long high = highestSetTrackerIndex;
+        long x = encoder.encode( strValue );
         int rIndex = radixOf( x );
         for ( int k = 0; k < sortBuckets.length; k++ )
         {
@@ -166,7 +219,7 @@ public class StringIdMapper implements IdMapper
         return COLLISION_BIT.set( value, 1, 1 );
     }
 
-    private static long clearCollision( long value )
+    static long clearCollision( long value )
     {
         return COLLISION_BIT.clear( value, 1, false );
     }
@@ -189,8 +242,8 @@ public class StringIdMapper implements IdMapper
                     throw new IllegalStateException( "Failure:[" + i + "] " +
                             Long.toHexString( dataCache.get( trackerCache.get( i ) ) ) + ":" +
                             Long.toHexString( dataCache.get( trackerCache.get( i + 1 ) ) ) + " | " +
-                            radixOf( dataCache.get( trackerCache.get( i ) ) ) +
-                            ":" + radixOf( dataCache.get( trackerCache.get( i + 1 ) ) ) );
+                            radixOf( dataCache.get( trackerCache.get( i ) ) ) + ":" +
+                            radixOf( dataCache.get( trackerCache.get( i + 1 ) ) ) );
                 }
 
                 if ( trackerCache.get( i ) > trackerCache.get( i + 1 ) )
@@ -220,7 +273,7 @@ public class StringIdMapper implements IdMapper
             long value = dataCache.get( i );
             if ( isCollision( value ) )
             {
-                long val = strEncoder.encode( id );
+                long val = encoder.encode( id );
                 assert val == clearCollision( value );
                 int strIndex = collisionStrings.length();
                 collisionStrings.append( id );
@@ -235,7 +288,7 @@ public class StringIdMapper implements IdMapper
     {
         while ( low <= high )
         {
-            long mid = (low + high) / 2;
+            long mid = low + (high - low)/2;//(low + high) / 2;
             int index = trackerCache.get( mid );
             if ( index == -1 )
             {
@@ -303,7 +356,7 @@ public class StringIdMapper implements IdMapper
     {
         long index = strIndex;
         long val = dataCache.get( trackerCache.get( index ) );
-        assert val == strEncoder.encode( inString );
+        assert val == encoder.encode( inString );
         while ( unsignedCompare( val, dataCache.get( trackerCache.get( index - 1 ) ), CompareType.EQ ) )
         {
             index--;
