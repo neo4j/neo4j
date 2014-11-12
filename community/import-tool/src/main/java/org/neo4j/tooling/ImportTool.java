@@ -21,6 +21,7 @@ package org.neo4j.tooling;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map.Entry;
@@ -176,7 +177,14 @@ public class ImportTool
         catch ( IllegalArgumentException e )
         {
             printUsage();
-            throw new RuntimeException( e ); // throw in order to have process exit with !0
+            Thread.currentThread().setUncaughtExceptionHandler( new UncaughtExceptionHandler()
+            {
+                @Override
+                public void uncaughtException( Thread t, Throwable e )
+                {   // Shhhh
+                }
+            } );
+            throw e; // throw in order to have process exit with !0
         }
 
         LifeSupport life = new LifeSupport();
