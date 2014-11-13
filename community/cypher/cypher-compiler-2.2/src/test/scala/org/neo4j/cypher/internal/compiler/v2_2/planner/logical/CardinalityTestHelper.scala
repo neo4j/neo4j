@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{normalizeReturnCla
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{Query, Statement}
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityModel
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assumeDependence._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 import org.scalatest.mock.MockitoSugar
@@ -241,17 +240,6 @@ trait CardinalityTestHelper extends QueryGraphProducer {
       val plannerQuery: PlannerQuery = producePlannerQueryForPattern(query)
       val plan = newMockedLogicalPlanWithSolved(Set.empty, plannerQuery)
       cardinalityModelUnderTest(plan) should equal(Cardinality(number))
-    }
-
-    // TODO: Still hard coded to use assumeDependence. Refactor!
-    def shouldHaveSelectivity(number: Double) {
-      val (statistics, semanticTable) = prepareTestContext
-      val queryGraph = createQueryGraph()
-      val predicates = producePredicates(queryGraph)
-      val selectivityEstimator = estimateSelectivity( statistics, semanticTable )
-      val result: List[(PredicateCombination, Selectivity)] = groupPredicates(selectivityEstimator)(predicates).toList
-      val mostSelective = result.map(_._2).min
-      mostSelective should equal(Selectivity(number))
     }
 
     def createQueryGraph(): QueryGraph = {
