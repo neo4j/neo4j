@@ -33,7 +33,7 @@ object cartesianProduct extends CandidateGenerator[PlanTable] {
       if (cartesianProducts.isEmpty) {
         usablePlans
       } else {
-        val worstCartesianProduct = cartesianProducts.minBy(p => context.cost(p, context.cardinalityInput.inboundCardinality))
+        val worstCartesianProduct = cartesianProducts.minBy(p => context.cost(p, context.cardinalityInput))
         usablePlans - worstCartesianProduct.left - worstCartesianProduct.right + worstCartesianProduct
       }
     } (planTable.plans.filter(_.solved.graph.argumentIds.isEmpty).toSet)

@@ -389,6 +389,11 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
     shouldHaveQueryGraphCardinality(B * B_T1_A_sel * A * A_T1_D_sel * D * D_T1_C_sel * C * C_T3_E_sel * E / 8)
   }
 
+  ignore("varlength two steps out") {
+    forQuery("MATCH (a:A)-[r:T1*1..2]->(b:A)").
+      shouldHaveQueryGraphCardinality(???)
+  }
+
   ignore("two relationships with property") {
     val selectivity = R / (A * B * N)
     forQuery("MATCH (a:A)--()--(b:B) WHERE a.prop = 61").

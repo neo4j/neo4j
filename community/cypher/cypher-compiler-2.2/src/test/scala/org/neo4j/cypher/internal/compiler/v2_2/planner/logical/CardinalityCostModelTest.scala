@@ -21,14 +21,14 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{HasLabels, Identifier, LabelName}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.CardinalityModel
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.{QueryGraphCardinalityInput, CardinalityModel}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport, PlannerQuery}
 import org.neo4j.graphdb.Direction
 
 class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSupport {
   object cardinalityModel extends CardinalityModel {
-    def apply(lp: LogicalPlan, card: Cardinality): Cardinality = lp match {
+    def apply(lp: LogicalPlan, card: QueryGraphCardinalityInput): Cardinality = lp match {
       case e : Expand => Cardinality(100)
       case _          => Cardinality(10)
     }
@@ -48,6 +48,6 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
         )(PlannerQuery.empty)
 
 
-    costModel(plan, Cardinality(1)) should equal(Cost(221))
+    costModel(plan, QueryGraphCardinalityInput.empty) should equal(Cost(221))
   }
 }

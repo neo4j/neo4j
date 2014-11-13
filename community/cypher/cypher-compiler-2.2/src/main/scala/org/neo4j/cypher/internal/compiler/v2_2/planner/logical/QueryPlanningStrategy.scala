@@ -60,11 +60,11 @@ class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStra
   private def planWithTail(pred: LogicalPlan, remaining: Option[PlannerQuery])(implicit context: LogicalPlanningContext): LogicalPlan = remaining match {
     case Some(query) =>
       val lhs = pred
-      val lhsCardinality = context.cardinality(pred, context.cardinalityInput.inboundCardinality)
-      val rhs = planPart(query, Some(planQueryArgumentRow(query.graph)))
+      val newContext = context.recurse(lhs)
+      val rhs = planPart(query, Some(planQueryArgumentRow(query.graph)))(newContext)
       val applyPlan = planTailApply(lhs, rhs)
       val projectedPlan = planEventHorizon(query, applyPlan)(context)
-      planWithTail(projectedPlan, query.tail)(context.withCardinalityInput(pred.solved.lastQueryGraph.selections.labelInfo, lhsCardinality))
+      planWithTail(projectedPlan, query.tail)(newContext)
     case None =>
       pred
   }

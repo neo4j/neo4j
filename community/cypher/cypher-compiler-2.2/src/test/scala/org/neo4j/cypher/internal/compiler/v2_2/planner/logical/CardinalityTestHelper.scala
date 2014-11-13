@@ -239,7 +239,7 @@ trait CardinalityTestHelper extends QueryGraphProducer {
       val cardinalityModelUnderTest = f(graphCardinalityModel)
       val plannerQuery: PlannerQuery = producePlannerQueryForPattern(query)
       val plan = newMockedLogicalPlanWithSolved(Set.empty, plannerQuery)
-      cardinalityModelUnderTest(plan, Cardinality(1)) should equal(Cardinality(number))
+      cardinalityModelUnderTest(plan, QueryGraphCardinalityInput.empty) should equal(Cardinality(number))
     }
 
     def createQueryGraph(): QueryGraph = {

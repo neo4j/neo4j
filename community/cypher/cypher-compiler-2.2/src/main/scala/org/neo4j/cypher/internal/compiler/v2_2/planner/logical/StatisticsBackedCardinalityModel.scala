@@ -27,8 +27,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 
 class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel)
   extends Metrics.CardinalityModel {
-  def apply(plan: LogicalPlan, incomingCardinality: Cardinality): Cardinality =
-    computeCardinality(plan.solved, QueryGraphCardinalityInput(Map.empty, incomingCardinality))
+  def apply(plan: LogicalPlan, input: QueryGraphCardinalityInput): Cardinality =
+    computeCardinality(plan.solved, input)
 
   private def computeCardinality(query: PlannerQuery, input0: QueryGraphCardinalityInput): Cardinality = {
     val output = query.fold(input0) {

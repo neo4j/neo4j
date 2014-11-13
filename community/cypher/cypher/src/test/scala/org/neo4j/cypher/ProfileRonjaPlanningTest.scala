@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_2.parser.{CypherParser, ParserMonitor}
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.{QueryGraphCardinalityModel, CardinalityModel, CostModel}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.{QueryGraphCardinalityInput, QueryGraphCardinalityModel, CardinalityModel, CostModel}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
@@ -175,7 +175,7 @@ class ProfileRonjaPlanningTest extends ExecutionEngineFunSuite with QueryStatist
       new CardinalityModel {
         val innerCardinalityModel = inner.newCardinalityEstimator(queryGraphCardinalityModel)
 
-        def apply(in: LogicalPlan, c: Cardinality): Cardinality = {
+        def apply(in: LogicalPlan, c: QueryGraphCardinalityInput): Cardinality = {
           log.startCardinalityEstimation(in)
           val result = innerCardinalityModel(in, c)
           log.finishCardinalityEstimation(result)
@@ -186,7 +186,7 @@ class ProfileRonjaPlanningTest extends ExecutionEngineFunSuite with QueryStatist
     def newCostModel(cardinality: CardinalityModel): CostModel = new CostModel {
       val innerCostModel = inner.newCostModel(cardinality)
 
-      def apply(in: LogicalPlan, c: Cardinality): Cost = {
+      def apply(in: LogicalPlan, c: QueryGraphCardinalityInput): Cost = {
         log.startCostCalculation(in)
         val result = innerCostModel(in, c)
         log.finishCostCalculation(result)

@@ -102,13 +102,13 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, semanticTable: SemanticTable) = {
       val model = new StatisticsBackedCardinalityModel(queryGraphCardinalityModel)
       ({
-        case (plan: LogicalPlan, card: Cardinality) => model(plan, card)
+        case (plan: LogicalPlan, card: QueryGraphCardinalityInput) => model(plan, card)
       })
     }
     def costModel(cardinality: CardinalityModel): PartialFunction[LogicalPlan, Cost] = {
       val model = new CardinalityCostModel(cardinality)
       ({
-        case (plan: LogicalPlan) => model(plan, Cardinality(1))
+        case (plan: LogicalPlan) => model(plan, QueryGraphCardinalityInput.empty)
       })
     }
     def graphStatistics: GraphStatistics =
@@ -156,7 +156,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         .orElse(cardinality)
 //        .orElse(PartialFunction(parent.cardinalityModel(queryGraphCardinalityModel, semanticTable)))
 
-      (p: LogicalPlan, c: Cardinality) =>
+      (p: LogicalPlan, c: QueryGraphCardinalityInput) =>
         if(r.isDefinedAt(p)) r.apply(p) else parent.cardinalityModel(queryGraphCardinalityModel, semanticTable)(p, c)
     }
 
@@ -186,7 +186,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
     def metricsFactory = new MetricsFactory {
       def newCostModel(cardinality: Metrics.CardinalityModel) =
-        (plan: LogicalPlan, c: Cardinality) =>
+        (plan: LogicalPlan, c: QueryGraphCardinalityInput) =>
         config.costModel(cardinality)(plan)
 
       def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel) =

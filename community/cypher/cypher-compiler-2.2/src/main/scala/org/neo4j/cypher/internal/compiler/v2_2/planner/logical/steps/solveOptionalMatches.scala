@@ -84,12 +84,8 @@ object solveOptionalMatches extends LogicalPlanningFunction2[PlanTable, QueryGra
 }
 
 case object applyOptional extends OptionalSolver {
-  def apply(optionalQg: QueryGraph, lhs: LogicalPlan)(implicit context: LogicalPlanningContext) = {
-    val newCardinalityInput = context.cardinality(lhs, context.cardinalityInput.inboundCardinality)
-    val newContext = context.withCardinalityInput(lhs.solved.lastQueryGraph.selections.labelInfo, newCardinalityInput)
-
-    Some(planApply(lhs, planOptional(context.strategy.plan(optionalQg)(newContext), lhs.availableSymbols)))
-  }
+  def apply(optionalQg: QueryGraph, lhs: LogicalPlan)(implicit context: LogicalPlanningContext) =
+    Some(planApply(lhs, planOptional(context.strategy.plan(optionalQg)(context.recurse(lhs)), lhs.availableSymbols)))
 }
 
 case object outerHashJoin extends OptionalSolver {
