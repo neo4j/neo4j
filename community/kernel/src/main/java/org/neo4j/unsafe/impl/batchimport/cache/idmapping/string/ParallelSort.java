@@ -21,12 +21,12 @@ package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
 import java.util.concurrent.CountDownLatch;
 
-import org.neo4j.collection.primitive.PrimitiveIntStack;
+import org.neo4j.unsafe.impl.batchimport.Utils;
 import org.neo4j.unsafe.impl.batchimport.Utils.CompareType;
 import org.neo4j.unsafe.impl.batchimport.cache.IntArray;
 import org.neo4j.unsafe.impl.batchimport.cache.LongArray;
 
-import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.StringIdMapper.radixOf;
+import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.EncodingIdMapper.clearCollision;
 
 /**
  * Sorts input data by dividing up into chunks and sort each chunk in parallel. Each chunk is sorted
@@ -35,15 +35,16 @@ import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.StringIdM
 public class ParallelSort
 {
     private final int[] radixIndexCount;
+    private final RadixCalculator radixCalculator;
     private final LongArray dataCache;
     private final IntArray tracker;
     private final int threads;
     private long[][] sortBuckets;
-    private int iterations;
 
-    public ParallelSort( int[] radixIndexCount, LongArray dataCache, IntArray tracker, int threads )
+    public ParallelSort( Radix radix, LongArray dataCache, IntArray tracker, int threads )
     {
-        this.radixIndexCount = radixIndexCount;
+        this.radixIndexCount = radix.getRadixIndexCounts();
+        this.radixCalculator = radix.calculator();
         this.dataCache = dataCache;
         this.tracker = tracker;
         this.threads = threads;
@@ -51,14 +52,26 @@ public class ParallelSort
 
     public long[][] run()
     {
-        int[][] sortParams = sortRadix( radixIndexCount, dataCache, tracker, threads );
-        CountDownLatch waitSignal = new CountDownLatch( 1 );
-        CountDownLatch doneSignal = new CountDownLatch( threads );
-        SortWorker[] sortWorker = new SortWorker[threads];
+        int[][] sortParams = sortRadix();
+        int threadsNeeded = 0;
         for ( int i = 0; i < threads; i++ )
         {
-            sortWorker[i] = new SortWorker( i, sortParams[i][0], sortParams[i][1], dataCache, tracker, waitSignal,
-                    doneSignal );
+            if ( sortParams[i][1] == 0 )
+            {
+                break;
+            }
+            threadsNeeded++;
+        }
+        CountDownLatch waitSignal = new CountDownLatch( 1 );
+        CountDownLatch doneSignal = new CountDownLatch( threadsNeeded );
+        SortWorker[] sortWorker = new SortWorker[threadsNeeded];
+        for ( int i = 0; i < threadsNeeded; i++ )
+        {
+            if ( sortParams[i][1] == 0 )
+            {
+                break;
+            }
+            sortWorker[i] = new SortWorker( i, sortParams[i][0], sortParams[i][1], waitSignal, doneSignal );
             sortWorker[i].start();
         }
         waitSignal.countDown();
@@ -70,24 +83,10 @@ public class ParallelSort
         {
             throw new RuntimeException( e );
         }
-        addIterations( -1 );
         return sortBuckets;
     }
 
-    private synchronized int addIterations( int val )
-    {
-        if ( val >= 0 )
-        {
-            iterations += val;
-        }
-        else
-        {
-            iterations = 0;
-        }
-        return iterations;
-    }
-
-    private int[][] sortRadix( int[] radixIndexCount, LongArray dataCache, IntArray tracker, int threads )
+    private int[][] sortRadix()
     {
         int[][] rangeParams = new int[threads][2];
         int[] bucketRange = new int[threads];
@@ -100,22 +99,31 @@ public class ParallelSort
         {
             if ( (count + radixIndexCount[i]) > bucketSize )
             {
-                bucketRange[threadIndex] = i - 1;
-                rangeParams[threadIndex + 1][0] = fullCount;
-                rangeParams[threadIndex][1] = count;
-                count = 0;
+                bucketRange[threadIndex] = count == 0 ? i : i - 1;
+                rangeParams[threadIndex][0] = fullCount;
+                if ( count != 0 )
+                {
+                    rangeParams[threadIndex][1] = count;
+                    fullCount += count;
+                    count = radixIndexCount[i];
+                }
+                else
+                {
+                    rangeParams[threadIndex][1] = radixIndexCount[i];
+                    fullCount += radixIndexCount[i];
+                }
                 threadIndex++;
-            }
-            if ( threadIndex == threads - 1 )
-            {
-                bucketRange[threadIndex] = radixIndexCount.length;
-                rangeParams[threadIndex][1] = (int) dataCache.size() - fullCount;
-                break;
             }
             else
             {
                 count += radixIndexCount[i];
-                fullCount += radixIndexCount[i];
+            }
+            if ( threadIndex == threads - 1 || i == radixIndexCount.length -1 )
+            {
+                bucketRange[threadIndex] = radixIndexCount.length;
+                rangeParams[threadIndex][0] = fullCount;
+                rangeParams[threadIndex][1] = (int) dataCache.size() - fullCount;
+                break;
             }
         }
         int[] bucketIndex = new int[threads];
@@ -125,7 +133,7 @@ public class ParallelSort
         }
         for ( long i = 0; i < dataCache.size(); i++ )
         {
-            int rIndex = radixOf( dataCache.get( i ) );
+            int rIndex = radixCalculator.radixOf( dataCache.get( i ) );
             for ( int k = 0; k < threads; k++ )
             {
                 //if ( rangeParams[k][0] >= rIndex )
@@ -146,108 +154,70 @@ public class ParallelSort
         return rangeParams;
     }
 
-    private void qSort( int workerId, int start, int size, LongArray dataCache, IntArray tracker )
+    private int partition( int leftIndex, int rightIndex, int pivotIndex )
     {
-        PrimitiveIntStack stack = new PrimitiveIntStack( 100 );
-        int pivotIndex = start;//0;
-        int leftIndex = pivotIndex + 1;
-        int rightIndex = start + size - 1;//trackerCache.size() - 1;
-        stack.push( pivotIndex );//push always with left and right
-        stack.push( rightIndex );
-        int leftIndexOfSubSet, rightIndexOfSubset;
-        long iteration = 0, swaps = 0, compares = 0;
-        int[] vals = new int[size];
-        for ( int i = 0; i < size; i++ )
+        int li = leftIndex, ri = rightIndex - 2, pi = pivotIndex;
+        long pivot = clearCollision( dataCache.get( tracker.get( pi ) ) );
+        //save pivot in last index
+        swapElement( tracker, pi, rightIndex - 1 );
+        long left = 0, right = 0;
+        while ( li < ri )
         {
-            int index = tracker.get( start + i );
-            if ( index != -1 )
+            left = clearCollision( dataCache.get( tracker.get( li ) ) );
+            right = clearCollision( dataCache.get( tracker.get( ri ) ) );
+            if ( Utils.unsignedCompare( left, pivot, CompareType.LT ) )
             {
-                vals[i] = radixOf( dataCache.get( index ) );
+                //increment left to find the greater element than the pivot
+                li++;
+            }
+            else if ( Utils.unsignedCompare( right, pivot, CompareType.GE ) )
+            {
+                //decrement right to find the smaller element than the pivot
+                ri--;
             }
             else
             {
-                vals[i] = -1;
-            }
-        }
-        while ( !stack.isEmpty() )
-        {
-            //pop always with right and left
-            rightIndexOfSubset = stack.poll();
-            leftIndexOfSubSet = stack.poll();
-            leftIndex = leftIndexOfSubSet + 1;
-            pivotIndex = leftIndexOfSubSet;
-            rightIndex = rightIndexOfSubset;
-            if ( leftIndex > rightIndex )
-            {
-                continue;
-            }
-            while ( leftIndex < rightIndex )
-            {
-                //increment left to find the greater element than the pivot
-                compares++;
-                while ( (leftIndex <= rightIndex)
-                        && StringIdMapper.compareDataCache( dataCache, tracker, leftIndex, pivotIndex,
-                                CompareType.LE ) )
-                {
-                    compares++;
-                    leftIndex++;
-                }
-                //decrement right to find the smaller element than the pivot
-                compares++;
-                while ( (leftIndex <= rightIndex)
-                        && StringIdMapper.compareDataCache( dataCache, tracker, rightIndex, pivotIndex,
-                                CompareType.GE ) )
-                {
-                    compares++;
-                    rightIndex--;
-                }
                 //if right index is greater then only swap
-                if ( rightIndex >= leftIndex )
-                {
-                    swaps++;
-                    swapElement( tracker, leftIndex, rightIndex );
-                }
-            }
-            if ( pivotIndex <= rightIndex )
-            {
-                compares++;
-                if ( pivotIndex != rightIndex
-                        && StringIdMapper.compareDataCache( dataCache, tracker, pivotIndex, rightIndex,
-                                CompareType.GT ) )
-                {
-                    swaps++;
-                    swapElement( tracker, pivotIndex, rightIndex );
-                }
-            }
-            if ( leftIndexOfSubSet < rightIndex )
-            {
-                stack.push( leftIndexOfSubSet );
-                stack.push( rightIndex - 1 );
-            }
-            if ( rightIndexOfSubset > rightIndex )
-            {
-                stack.push( rightIndex + 1 );
-                stack.push( rightIndexOfSubset );
+                swapElement( tracker, li, ri );
             }
         }
+        int partingIndex = ri;
+        right = clearCollision( dataCache.get( tracker.get( ri ) ) );
+        if ( Utils.unsignedCompare( right, pivot, CompareType.LT ) )
+        {
+            partingIndex++;
+        }
+        //restore pivot
+        swapElement( tracker, rightIndex - 1, partingIndex );
+        return partingIndex;
+    }
+
+    public void recursiveQsort( int start, int end )
+    {
+        if ( end - start < 2 )
+        {
+            return;
+        }
+        //choose the middle value
+        int pivot = start + ((end - start) / 2);
+
+        pivot = partition( start, end, pivot );
+
+        recursiveQsort( start, pivot );
+        recursiveQsort( pivot + 1, end );
     }
 
     private class SortWorker extends Thread
     {
         private final int start, size;
         private final CountDownLatch doneSignal, waitSignal;
-        private final LongArray dataCache;
-        private final IntArray tracker;
         private int workerId = -1;
 
-        SortWorker( int workerId, int startRange, int size, LongArray dataCache, IntArray tracker, CountDownLatch wait,
-                CountDownLatch done )
+        SortWorker( int workerId, int startRange, int size, CountDownLatch wait, CountDownLatch done )
         {
             start = startRange;
             this.size = size;
             this.doneSignal = done;
-            this.dataCache = dataCache;
-            this.tracker = tracker;
             waitSignal = wait;
             this.workerId = workerId;
         }
@@ -265,15 +235,13 @@ public class ParallelSort
                 e.printStackTrace();
                 //ignore
             }
-            qSort( workerId, start, size, dataCache, tracker );
+            recursiveQsort( start, start + size );
             doneSignal.countDown();
         }
     }
 
     private static void swapElement( IntArray trackerCache, int left, int right )
     {
-        int temp = trackerCache.get( left );
-        trackerCache.set( left, trackerCache.get( right ) );
-        trackerCache.set( right, temp );
+        trackerCache.swap( left, right, 1 );
     }
 }

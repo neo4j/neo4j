@@ -20,87 +20,62 @@
 package org.neo4j.unsafe.impl.batchimport.cache;
 
 /**
- * Similar to {@link LongArray}, but has int values instead of long values. The values can be still be
- * addressed with long indexes.
+ * Implemented as just a {@link LongArray} with an {@link IntArray} interface to it. An attempt was made
+ * to have each long in the underlying {@link LongArray} store two ints, but there was concurrency issues
+ * with false sharing and where added synchronization would be too much of an overhead.
  *
- * Implemented as a class wrapping a {@link LongArray} since DRY ftw. It works like this:
+ * The reason it just wraps a {@link LongArray} is that there's a bunch of classes around {@link LongArray},
+ * f.ex {@link LongArrayFactory}, {@link HeapLongArray} and {@link OffHeapLongArray} which would be bad to duplicate.
  *
- * consider the following 3 longs: [    ,    ] [    ,    ] [    ,    ]
- * long[] indexes these as:             0           1           2
- * int[] indexes these as:           0     1     2     3     4     5
+ * Moving forward the implementation should rather use 4 bytes per int, instead of currently 8 bytes.
  */
 public class IntArray implements NumberArray
 {
-    private static final LongBitsManipulator LONG_BITS = new LongBitsManipulator( Integer.SIZE, Integer.SIZE );
     private final LongArray longs;
-    private final int defaultValue;
-    private long highestSetIndex = -1;
-    private long size;
 
     public IntArray( LongArrayFactory factory, long chunkSize, int defaultValue )
     {
-        long defaultLongValue = 0;
-        defaultLongValue = LONG_BITS.set( defaultLongValue, 0, defaultValue );
-        defaultLongValue = LONG_BITS.set( defaultLongValue, 1, defaultValue );
-
-        this.longs = factory.newDynamicLongArray( chunkSize, defaultLongValue );
-        this.defaultValue = defaultValue;
+        this.longs = factory.newDynamicLongArray( chunkSize, defaultValue );
     }
 
     @Override
     public long length()
     {
-        return longs.length()*2;
+        return longs.length();
     }
 
     public int get( long index )
     {
-        long longIndex = index >> 1;
-        long longValue = longs.get( longIndex );
-        return (int) LONG_BITS.get( longValue, (int)(index%2) );
+        return (int) longs.get( index );
     }
 
     public void set( long index, int value )
     {
-        long longIndex = index >> 1;
-        long longValue = longs.get( longIndex );
-        int slot = (int)(index%2);
-        if ( LONG_BITS.get( longValue, slot ) == defaultValue )
-        {
-            size++;
-        }
-        longValue = LONG_BITS.set( longValue, slot, value );
-        longs.set( longIndex, longValue );
-        if ( index > highestSetIndex )
-        {
-            highestSetIndex = index;
-        }
+        longs.set( index, value );
     }
 
     @Override
     public void clear()
     {
         longs.clear();
-        highestSetIndex = -1;
-        size = 0;
     }
 
     @Override
     public void swap( long fromIndex, long toIndex, int numberOfEntries )
     {
-        throw new UnsupportedOperationException( "Please implement" );
+        longs.swap( fromIndex, toIndex, numberOfEntries );
     }
 
     @Override
     public long highestSetIndex()
     {
-        return highestSetIndex;
+        return longs.highestSetIndex();
     }
 
     @Override
     public long size()
     {
-        return size;
+        return longs.size();
     }
 
     @Override

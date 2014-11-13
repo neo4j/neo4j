@@ -28,10 +28,22 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappings;
 public enum IdType
 {
     /**
-     * Used when node ids int input data are specified as long values and points to actual record ids.
-     * ADVANCED usage. Performance advantage, but requires carefully planned input data.
+     * Used when node ids int input data are any string identifier.
      */
-    ACTUAL( IdMappings.actual() )
+    STRING( IdMappings.strings( LongArrayFactory.AUTO ) )
+    {
+        @Override
+        public Extractor<?> extractor( Extractors extractors )
+        {
+            return extractors.string();
+        }
+    },
+
+    /**
+     * Used when node ids int input data are any integer identifier. It uses 8b longs for storage,
+     * but as a user facing enum a better name is integer
+     */
+    INTEGER( IdMappings.longs( LongArrayFactory.AUTO ) )
     {
         @Override
         public Extractor<?> extractor( Extractors extractors )
@@ -41,14 +53,15 @@ public enum IdType
     },
 
     /**
-     * Used when node ids int input data are any string identifier.
+     * Used when node ids int input data are specified as long values and points to actual record ids.
+     * ADVANCED usage. Performance advantage, but requires carefully planned input data.
      */
-    STRING( IdMappings.strings( LongArrayFactory.AUTO ) )
+    ACTUAL( IdMappings.actual() )
     {
         @Override
         public Extractor<?> extractor( Extractors extractors )
         {
-            return extractors.string();
+            return extractors.long_();
         }
     };
 

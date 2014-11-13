@@ -52,6 +52,8 @@ public class IdMappings
     }
 
     /**
+     * An {@link IdMapping} capable of mapping {@link String strings} to long ids.
+     *
      * @param cacheFactory {@link LongArrayFactory} for allocating memory for the cache used by this index.
      * @return {@link IdMapping} for when node ids given to {@link InputNode} and {@link InputRelationship} are
      * strings with o association with the actual ids in the database.
@@ -75,7 +77,38 @@ public class IdMappings
             @Override
             public String toString()
             {
-                return "IdMapping[string node ids]";
+                return "IdMapping[string ids]";
+            }
+        };
+    }
+
+    /**
+     * An {@link IdMapping} capable of mapping {@link Long arbitrary longs} to long ids.
+     *
+     * @param cacheFactory {@link LongArrayFactory} for allocating memory for the cache used by this index.
+     * @return {@link IdMapping} for when node ids given to {@link InputNode} and {@link InputRelationship} are
+     * strings with o association with the actual ids in the database.
+     */
+    public static IdMapping longs( final LongArrayFactory cacheFactory )
+    {
+        return new IdMapping()
+        {
+            @Override
+            public IdMapper idMapper()
+            {
+                return IdMappers.longs( cacheFactory );
+            }
+
+            @Override
+            public IdGenerator idGenerator()
+            {
+                return IdGenerators.startingFrom( 0 );
+            }
+
+            @Override
+            public String toString()
+            {
+                return "IdMapping[long ids]";
             }
         };
     }

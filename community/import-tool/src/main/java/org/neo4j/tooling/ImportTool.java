@@ -107,9 +107,10 @@ public class ImportTool
                                                  + "Quotes inside quotes like '\"\"' and '\\\"' are supported." ),
         ID_TYPE( "id-type", "<id-type>", "One out of " + Arrays.toString( IdType.values() )
                          + " and specifies how ids in node/relationship "
-                         + "input files are treated.\n" + IdType.STRING
-                         + ": arbitrary strings for identifying nodes.\n" + IdType.ACTUAL
-                         + ": (advanced) actual node ids, starting from 0." );
+                         + "input files are treated.\n"
+                         + IdType.STRING + ": arbitrary strings for identifying nodes.\n"
+                         + IdType.INTEGER + ": arbitrary integer values for identifying nodes.\n"
+                         + IdType.ACTUAL + ": (advanced) actual node ids." );
 
         private final String key;
         private final String usage;

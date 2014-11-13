@@ -27,7 +27,7 @@ import java.util.Arrays;
  *
  * Assumes a single thread making all calls to {@link #encode(String)}.
  */
-public class StringEncoder
+public class StringEncoder implements Encoder
 {
     private static long UPPER_INT_MASK = 0x00000000_FFFFFFFFL;
     private static final int FOURTH_BYTE = 0x000000FF;
@@ -46,6 +46,11 @@ public class StringEncoder
     private final int[] scratchCodes;
     private final int[] scratchSimplestCodes = new int[2];
 
+    public StringEncoder()
+    {
+        this( 2 );
+    }
+
     public StringEncoder( int codingStrength )
     {
         numCodes = codingStrength > 2 ? codingStrength : 2;
@@ -53,9 +58,10 @@ public class StringEncoder
         Arrays.fill( reMap, (byte)-1 );
     }
 
-    public long encode( String s )
+    @Override
+    public long encode( Object s )
     {
-        int[] val = encodeInt( s );
+        int[] val = encodeInt( (String) s );
         return (long) val[0] << 32 | val[1] & UPPER_INT_MASK;
     }
 

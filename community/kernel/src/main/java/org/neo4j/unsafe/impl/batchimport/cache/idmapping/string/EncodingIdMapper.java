@@ -19,8 +19,10 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 
 import org.neo4j.unsafe.impl.batchimport.Utils.CompareType;
 import org.neo4j.unsafe.impl.batchimport.cache.IntArray;
@@ -30,91 +32,75 @@ import org.neo4j.unsafe.impl.batchimport.cache.LongBitsManipulator;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 
-import static java.lang.Math.pow;
-
 import static org.neo4j.unsafe.impl.batchimport.Utils.unsignedCompare;
 
 /**
- * Maps arbitrary strings to ids. The strings can be {@link #put(Object, long) added} in any order,
+ * Maps arbitrary values to long ids. The values can be {@link #put(Object, long) added} in any order,
  * but {@link #needsPreparation() needs} {@link #prepare() preparation} in order to {@link #get(Object) get}
  * ids back later.
  *
  * In the {@link #prepare() preparation phase} the added entries are sorted according to a number representation
- * of each string and {@link #get(Object)} does simple binary search to find the correct one.
+ * of each input value and {@link #get(Object)} does simple binary search to find the correct one.
  *
  * The implementation is space-efficient, much more so than using, say, a {@link HashMap}.
  */
-public class StringIdMapper implements IdMapper
+public class EncodingIdMapper implements IdMapper
 {
     private static LongBitsManipulator COLLISION_BIT = new LongBitsManipulator( 62, 1, 1 );
-    private static int CACHE_CHUNK_SIZE = 1_000_000; // 8MB a piece
-    private static final int RADIX_BITS = 24;
-    private static final int LENGTH_MASK = (int) (0xFE000000_00000000L >>> (64 - RADIX_BITS));
-    private static final int HASHCODE_MASK = (int) (0x00FFFF00_00000000L >>> (64 - RADIX_BITS));
-
+    public static int CACHE_CHUNK_SIZE = 1_000_000; // 8MB a piece
     private final IntArray trackerCache;
     private final LongArray dataCache;
-    private final StringEncoder strEncoder;
+    private final Encoder encoder;
+    private final Radix radix;
     private final int processorsForSorting;
-
     private final LongArray collisionCache;
-    private final IntArray collisionStringIndex;
-    private final StringBuilder collisionStrings;
-
-    private final int[] radixIndexCount = new int[(int) pow( 2, RADIX_BITS - 1 )];
+    private final IntArray collisionValuesIndex;
+    private final List<Object> collisionValues = new ArrayList<>();
     private boolean readyForUse;
     private long[][] sortBuckets;
     private long size;
 
-    public StringIdMapper( LongArrayFactory cacheFactory )
+    public EncodingIdMapper( LongArrayFactory cacheFactory, Encoder encoder, Radix radix )
     {
-        this( cacheFactory, Runtime.getRuntime().availableProcessors() - 1 );
+        this( cacheFactory, encoder, radix, CACHE_CHUNK_SIZE, Runtime.getRuntime().availableProcessors() - 1 );
     }
 
-    public StringIdMapper( LongArrayFactory cacheFactory, int processorsForSorting )
+    public EncodingIdMapper( LongArrayFactory cacheFactory, Encoder encoder, Radix radix,
+            int chunkSize, int processorsForSorting )
     {
         this.processorsForSorting = processorsForSorting;
-        this.dataCache = newLongArray( cacheFactory );
-        this.trackerCache = newIntArray( cacheFactory );
-        this.strEncoder = new StringEncoder( 2 );
-        this.collisionCache = newLongArray( cacheFactory );
-        this.collisionStringIndex = newIntArray( cacheFactory );
-        this.collisionStrings = new StringBuilder();
+        this.dataCache = newLongArray( cacheFactory, chunkSize );
+        this.trackerCache = newIntArray( cacheFactory, chunkSize );
+        this.encoder = encoder;
+        this.radix = radix;
+        this.collisionCache = newLongArray( cacheFactory, chunkSize );
+        this.collisionValuesIndex = newIntArray( cacheFactory, chunkSize );
     }
 
-    private static IntArray newIntArray( LongArrayFactory cacheFactory )
+    private static IntArray newIntArray( LongArrayFactory cacheFactory, int chunkSize )
     {
-        return new IntArray( cacheFactory, CACHE_CHUNK_SIZE, -1 );
+        return new IntArray( cacheFactory, chunkSize, -1 );
     }
 
-    private static LongArray newLongArray( LongArrayFactory cacheFactory )
+    private static LongArray newLongArray( LongArrayFactory cacheFactory, int chunkSize )
     {
-        return cacheFactory.newDynamicLongArray( CACHE_CHUNK_SIZE, -1 );
+        return cacheFactory.newDynamicLongArray( chunkSize, -1 );
     }
 
     @Override
-    public long get( Object stringValue )
+    public long get( Object inputId )
     {
         assert readyForUse;
-        return binarySearch( (String) stringValue );
+        return binarySearch( inputId );
     }
 
     @Override
-    public void put( Object stringValue, long id )
+    public void put( Object inputId, long id )
     {
-        // synchronize if/when node encoder stage gets multi threaded
-        long code = strEncoder.encode( (String) stringValue );
+        long code = encoder.encode( inputId );
         dataCache.set( id, code );
-        int radix = radixOf( code );
-        radixIndexCount[radix]++;
+        radix.registerRadixOf( code );
         size++;
-    }
-
-    static int radixOf( long val )
-    {
-        int index = (int) (val >>> (64 - RADIX_BITS));
-        index = (((index & LENGTH_MASK) >>> 1) | (index & HASHCODE_MASK));
-        return index;
     }
 
     @Override
@@ -126,8 +112,12 @@ public class StringIdMapper implements IdMapper
     @Override
     public void prepare( Iterable<Object> ids )
     {
-        sortBuckets = new ParallelSort( radixIndexCount, dataCache, trackerCache, processorsForSorting ).run();
-
+        synchronized ( this )
+        {
+            // Synchronized since there's this concern that a couple of other threads are changing trackerCache
+            // and it's nice to go through a memory barrier afterwards to ensure this CPU see correct data.
+            sortBuckets = new ParallelSort( radix, dataCache, trackerCache, processorsForSorting ).run();
+        }
         if ( detectAndMarkCollisions() > 0 )
         {
             buildCollisionInfo( ids.iterator() );
@@ -135,11 +125,17 @@ public class StringIdMapper implements IdMapper
         readyForUse = true;
     }
 
-    private long binarySearch( String strValue )
+    private int radixOf( long value )
+    {
+        return radix.calculator().radixOf( value );
+    }
+
+    private long binarySearch( Object inputId )
     {
         long low = 0;
-        long high = trackerCache.highestSetIndex();
-        long x = strEncoder.encode( strValue );
+        long highestSetTrackerIndex = trackerCache.highestSetIndex();
+        long high = highestSetTrackerIndex;
+        long x = encoder.encode( inputId );
         int rIndex = radixOf( x );
         for ( int k = 0; k < sortBuckets.length; k++ )
         {
@@ -151,12 +147,12 @@ public class StringIdMapper implements IdMapper
             }
         }
 
-        long returnVal = binarySearch( x, strValue, false, low, high );
+        long returnVal = binarySearch( x, inputId, false, low, high );
         if ( returnVal == -1 )
         {
             low = 0;
             high = trackerCache.size() - 1;
-            returnVal = binarySearch( x, strValue, false, low, high );
+            returnVal = binarySearch( x, inputId, false, low, high );
         }
         return returnVal;
     }
@@ -166,7 +162,7 @@ public class StringIdMapper implements IdMapper
         return COLLISION_BIT.set( value, 1, 1 );
     }
 
-    private static long clearCollision( long value )
+    static long clearCollision( long value )
     {
         return COLLISION_BIT.clear( value, 1, false );
     }
@@ -189,8 +185,8 @@ public class StringIdMapper implements IdMapper
                     throw new IllegalStateException( "Failure:[" + i + "] " +
                             Long.toHexString( dataCache.get( trackerCache.get( i ) ) ) + ":" +
                             Long.toHexString( dataCache.get( trackerCache.get( i + 1 ) ) ) + " | " +
-                            radixOf( dataCache.get( trackerCache.get( i ) ) ) +
-                            ":" + radixOf( dataCache.get( trackerCache.get( i + 1 ) ) ) );
+                            radixOf( dataCache.get( trackerCache.get( i ) ) ) + ":" +
+                            radixOf( dataCache.get( trackerCache.get( i + 1 ) ) ) );
                 }
 
                 if ( trackerCache.get( i ) > trackerCache.get( i + 1 ) )
@@ -216,26 +212,26 @@ public class StringIdMapper implements IdMapper
         int collisionIndex = 0;
         for ( long i = 0; ids.hasNext(); i++ )
         {
-            String id = (String) ids.next();
+            Object id = ids.next();
             long value = dataCache.get( i );
             if ( isCollision( value ) )
             {
-                long val = strEncoder.encode( id );
+                long val = encoder.encode( id );
                 assert val == clearCollision( value );
-                int strIndex = collisionStrings.length();
-                collisionStrings.append( id );
+                int valueIndex = collisionValues.size();
+                collisionValues.add( id );
                 collisionCache.set( collisionIndex, i );
-                collisionStringIndex.set( collisionIndex, strIndex );
+                collisionValuesIndex.set( collisionIndex, valueIndex );
                 collisionIndex++;
             }
         }
     }
 
-    private long binarySearch( long x, String strValue, boolean trackerIndex, long low, long high )
+    private long binarySearch( long x, Object inputId, boolean trackerIndex, long low, long high )
     {
         while ( low <= high )
         {
-            long mid = (low + high) / 2;
+            long mid = low + (high - low)/2;//(low + high) / 2;
             int index = trackerCache.get( mid );
             if ( index == -1 )
             {
@@ -258,7 +254,7 @@ public class StringIdMapper implements IdMapper
                 }
                 if ( isCollision( midValue ) )
                 {
-                    return findFromCollisions( mid, strValue );
+                    return findFromCollisions( mid, inputId );
                 }
                 return index;
             }
@@ -299,11 +295,22 @@ public class StringIdMapper implements IdMapper
         return -1;
     }
 
-    private int findFromCollisions( long strIndex, String inString )
+    private int findFromCollisions( long index, Object inputId )
     {
-        long index = strIndex;
+        if ( collisionValues.isEmpty() )
+        {
+            return -1;
+        }
+
         long val = dataCache.get( trackerCache.get( index ) );
-        assert val == strEncoder.encode( inString );
+
+        // This assertion doesn't work since an Encoder can be stateful, and so to code a certain value
+        // into a certain long, any previous encoded values would have to be encoded as well, from a reset state.
+        // An assertion like this would be nice to have, although it would require an added Encoder#reset()
+        // and also making sure the algorithm would end up here through the same "encode path" as last time
+        // we encoded this exact value.
+//        assert val == encoder.encode( inputId );
+
         while ( unsignedCompare( val, dataCache.get( trackerCache.get( index - 1 ) ), CompareType.EQ ) )
         {
             index--;
@@ -319,20 +326,12 @@ public class StringIdMapper implements IdMapper
         {
             collisionVals[(int) (index - fromIndex)] = findIndex( collisionCache, trackerCache.get( index ) );
         }
+
         for ( int i = 0; i < collisionVals.length; i++ )
         {
-            int from = 0, to = 0;
-            from = collisionStringIndex.get( collisionVals[i] );
-            if ( collisionVals[i] == collisionStringIndex.highestSetIndex() )
-            {
-                to = collisionStrings.length();
-            }
-            else
-            {
-                to = collisionStringIndex.get( collisionVals[i] + 1 );
-            }
-            String str = collisionStrings.substring( from, to );
-            if ( inString.equals( str ) )
+            int collisionIndex = collisionValuesIndex.get( collisionVals[i] );
+            Object value = collisionValues.get( collisionIndex );
+            if ( inputId.equals( value ) )
             {
                 return trackerCache.get( fromIndex + i );
             }
@@ -361,6 +360,6 @@ public class StringIdMapper implements IdMapper
         dataCache.visitMemoryStats( visitor );
         trackerCache.visitMemoryStats( visitor );
         collisionCache.visitMemoryStats( visitor );
-        collisionStringIndex.visitMemoryStats( visitor );
+        collisionValuesIndex.visitMemoryStats( visitor );
     }
 }
