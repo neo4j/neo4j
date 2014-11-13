@@ -56,7 +56,8 @@ import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.register.Registers;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.test.DatabaseRule;
+import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -591,7 +592,7 @@ public class IndexStatisticsTest
     private static final double DOUBLE_ERROR_TOLERANCE = 0.00001d;
 
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule()
+    public DatabaseRule dbRule = new ImpermanentDatabaseRule()
     {
         @Override
         protected void configure( GraphDatabaseBuilder builder )
