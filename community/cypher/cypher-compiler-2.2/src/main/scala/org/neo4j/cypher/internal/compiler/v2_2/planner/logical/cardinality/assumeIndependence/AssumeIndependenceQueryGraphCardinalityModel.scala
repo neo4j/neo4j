@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assumeIndependence
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast.LabelName
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityModel
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.{QueryGraphCardinalityInput, QueryGraphCardinalityModel}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, Selectivity}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryGraph, SemanticTable}
@@ -34,9 +34,9 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics,
   private val expressionSelectivityEstimator = ExpressionSelectivityCalculator(stats, combiner)
   private val patternSelectivityEstimator = PatternSelectivityCalculator(stats, combiner)
 
-  def apply(queryGraph: QueryGraph, labels: Map[IdName, Seq[LabelName]], inboundCardinality: Cardinality): Cardinality = {
+  def apply(queryGraph: QueryGraph, input: QueryGraphCardinalityInput): Cardinality = {
     val combinations: Seq[QueryGraph] = findQueryGraphCombinations(queryGraph, semanticTable)
-    val cardinalities = combinations.map(cardinalityForQueryGraph(_, inboundCardinality, labels)(semanticTable))
+    val cardinalities = combinations.map(cardinalityForQueryGraph(_, input)(semanticTable))
     cardinalities.foldLeft(Cardinality.EMPTY) {
       case (acc, curr) => if (curr > acc) curr else acc
     }
@@ -56,13 +56,13 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics,
       .map(queryGraph.withOptionalMatches(Seq.empty) ++ _)
   }
 
-  private def cardinalityForQueryGraph(qg: QueryGraph, inboundCardinality: Cardinality, labels: Map[IdName, Seq[LabelName]])(implicit semanticTable: SemanticTable): Cardinality = {
-    val selectivity = calculateSelectivity(qg, labels)
+  private def cardinalityForQueryGraph(qg: QueryGraph, input: QueryGraphCardinalityInput)(implicit semanticTable: SemanticTable): Cardinality = {
+    val selectivity = calculateSelectivity(qg, input.labelInfo)
     val numberOfPatternNodes = qg.patternNodes.count(!qg.argumentIds.contains(_))
     val numberOfGraphNodes = stats.nodesWithLabelCardinality(None)
 
     val c = if (qg.argumentIds.nonEmpty)
-      inboundCardinality
+      input.inboundCardinality
     else
       Cardinality(1)
 

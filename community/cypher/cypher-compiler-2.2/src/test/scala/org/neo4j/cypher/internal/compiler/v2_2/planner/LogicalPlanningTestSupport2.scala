@@ -254,7 +254,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
           tokenResolver.resolve(ast)(semanticTable, planContext)
           val unionQuery = ast.asUnionQuery
           val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
-          val context = LogicalPlanningContext(planContext, metrics, semanticTable, queryGraphSolver, Cardinality(1))
+          val context = LogicalPlanningContext(planContext, metrics, semanticTable, queryGraphSolver, QueryGraphCardinalityInput(Map.empty, Cardinality(1)))
           val plannerQuery = unionQuery.queries.head
           strategy.internalPlan(plannerQuery)(context)
       }
@@ -273,7 +273,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
           tokenResolver.resolve(ast)(semanticTable, planContext)
           val unionQuery = ast.asUnionQuery
           val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
-          val context = LogicalPlanningContext(planContext, metrics, semanticTable, queryGraphSolver, Cardinality(1))
+          val context = LogicalPlanningContext(planContext, metrics, semanticTable, queryGraphSolver, QueryGraphCardinalityInput(Map.empty, Cardinality(1)))
           (strategy.plan(unionQuery)(context), semanticTable)
       }
     }
@@ -285,7 +285,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         metrics = metrics,
         semanticTable = semanticTable,
         strategy = queryGraphSolver,
-        inboundCardinality = Cardinality(1)
+        cardinalityInput = QueryGraphCardinalityInput(Map.empty, Cardinality(1))
       )
       f(ctx)
     }

@@ -111,7 +111,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
                                         semanticTable: SemanticTable = newMockedSemanticTable,
                                         strategy: QueryGraphSolver = new GreedyQueryGraphSolver(),
                                         cardinality: Cardinality = Cardinality(1)): LogicalPlanningContext =
-    LogicalPlanningContext(planContext, metrics, semanticTable, strategy, cardinality)
+    LogicalPlanningContext(planContext, metrics, semanticTable, strategy, QueryGraphCardinalityInput(Map.empty, cardinality))
 
   implicit class RichLogicalPlan(plan: LogicalPlan) {
     def asTableEntry = plan.availableSymbols -> plan

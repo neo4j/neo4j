@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.Statemen
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{PipeBuilder, PipeInfo}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.execution.{PipeExecutionBuilderContext, PipeExecutionPlanBuilder}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityInput
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
@@ -65,7 +66,7 @@ case class Planner(monitors: Monitors,
     val unionQuery = ast.asUnionQuery
 
     val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
-    val context = LogicalPlanningContext(planContext, metrics, semanticTable, queryGraphSolver, Cardinality(1))
+    val context = LogicalPlanningContext(planContext, metrics, semanticTable, queryGraphSolver, QueryGraphCardinalityInput(Map.empty, Cardinality(1)))
     val plan = strategy.plan(unionQuery)(context)
 
     val pipeBuildContext = PipeExecutionBuilderContext((e: PatternExpression) => {

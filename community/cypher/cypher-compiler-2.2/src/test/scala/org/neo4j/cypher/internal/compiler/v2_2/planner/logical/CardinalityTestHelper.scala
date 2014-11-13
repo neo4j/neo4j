@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.Statemen
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{Query, Statement}
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityModel
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.{QueryGraphCardinalityInput, QueryGraphCardinalityModel}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 import org.scalatest.mock.MockitoSugar
@@ -229,7 +229,7 @@ trait CardinalityTestHelper extends QueryGraphProducer {
       val (statistics, semanticTable) = prepareTestContext
       val queryGraph = createQueryGraph()
       val cardinalityModel: QueryGraphCardinalityModel = createCardinalityModel(statistics, semanticTable)
-      val result = cardinalityModel(queryGraph, Map.empty, Cardinality(1))
+      val result = cardinalityModel(queryGraph, QueryGraphCardinalityInput(Map.empty, Cardinality(1)))
       result should equal(Cardinality(number))
     }
 

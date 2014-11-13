@@ -32,7 +32,7 @@ case class CandidateList(plans: Seq[LogicalPlan] = Seq.empty) {
   def bestPlan(implicit context: LogicalPlanningContext): Option[LogicalPlan] = {
     val costs = context.cost
     val comparePlans = (c: LogicalPlan) =>
-      (-c.solved.numHints, costs(c, context.inboundCardinality), -c.availableSymbols.size)
+      (-c.solved.numHints, costs(c, context.cardinalityInput.inboundCardinality), -c.availableSymbols.size)
 
     if (VERBOSE) {
       val sortedPlans = plans.sortBy(comparePlans)
@@ -40,7 +40,7 @@ case class CandidateList(plans: Seq[LogicalPlan] = Seq.empty) {
       if (sortedPlans.size > 1) {
         println("Get best of:")
         for (plan <- sortedPlans) {
-          println("* " + plan.toString + s"\n${costs(plan, context.inboundCardinality)}\n")
+          println("* " + plan.toString + s"\n${costs(plan, context.cardinalityInput.inboundCardinality)}\n")
         }
 
         println("Best is:")

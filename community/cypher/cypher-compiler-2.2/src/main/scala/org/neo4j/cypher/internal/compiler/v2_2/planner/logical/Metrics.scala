@@ -26,6 +26,9 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryGraph, SemanticTabl
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 
 object Metrics {
+
+  case class QueryGraphCardinalityInput(labelInfo: Map[IdName, Seq[LabelName]], inboundCardinality: Cardinality)
+
   // This metric calculates how expensive executing a logical plan is.
   // (e.g. by looking at cardinality, expression selectivity and taking into account the effort
   // required to execute a step)
@@ -35,7 +38,7 @@ object Metrics {
   // (e.g. by asking the database for statistics)
   type CardinalityModel = (LogicalPlan, Cardinality) => Cardinality
 
-  type QueryGraphCardinalityModel = (QueryGraph, Map[IdName, Seq[LabelName]], Cardinality) => Cardinality
+  type QueryGraphCardinalityModel = (QueryGraph, QueryGraphCardinalityInput) => Cardinality
 }
 
 case class Metrics(cost: CostModel,
