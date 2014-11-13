@@ -93,9 +93,9 @@ class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport2 
 
   private def assertTopPlan(winner: LogicalPlan, candidates: LogicalPlan*)(GIVEN: given) {
     val environment = LogicalPlanningEnvironment(GIVEN)
-    val costs = environment.metricsFactory.newMetrics(GIVEN.graphStatistics, Cardinality(1), environment.semanticTable).cost
-    CandidateList(candidates).bestPlan(costs) should equal(Some(winner))
-    CandidateList(candidates.reverse).bestPlan(costs) should equal(Some(winner))
+    val context = LogicalPlanningContext(null, environment.metricsFactory.newMetrics(GIVEN.graphStatistics, environment.semanticTable), null, null, Cardinality(1))
+    CandidateList(candidates).bestPlan(context) should equal(Some(winner))
+    CandidateList(candidates.reverse).bestPlan(context) should equal(Some(winner))
   }
 }
 

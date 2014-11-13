@@ -43,7 +43,7 @@ case class solveOptionalMatches(solvers: Seq[OptionalSolver]) {
             val plans = solvers.flatMap(_.apply(optionalQg, lhs))
             assert(plans.map(_.solved).distinct.size == 1) // All plans are solving the same query
 
-            CandidateList(plans).bestPlan(context.cost).get
+            CandidateList(plans).bestPlan.get
         }
         table + newPlan
     }
@@ -85,7 +85,7 @@ object solveOptionalMatches extends LogicalPlanningFunction2[PlanTable, QueryGra
 
 case object applyOptional extends OptionalSolver {
   def apply(optionalQg: QueryGraph, lhs: LogicalPlan)(implicit context: LogicalPlanningContext) = {
-    Some(planApply(lhs, planOptional(context.strategy.plan(optionalQg))))
+    Some(planApply(lhs, planOptional(context.strategy.plan(optionalQg), lhs.availableSymbols)))
   }
 }
 

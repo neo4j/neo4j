@@ -28,11 +28,12 @@ import org.neo4j.graphdb.Direction
 
 class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSupport {
   object cardinalityModel extends CardinalityModel {
-    override def apply(lp: LogicalPlan): Cardinality = lp match {
+    def apply(lp: LogicalPlan, card: Cardinality): Cardinality = lp match {
       case e : Expand => Cardinality(100)
-      case _ => Cardinality(10)
+      case _          => Cardinality(10)
     }
   }
+
   val costModel = CardinalityCostModel(cardinalityModel)
 
   test("expand should only be counted once") {
@@ -47,6 +48,6 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
         )(PlannerQuery.empty)
 
 
-    costModel(plan) should equal(Cost(221))
+    costModel(plan, Cardinality(1)) should equal(Cost(221))
   }
 }

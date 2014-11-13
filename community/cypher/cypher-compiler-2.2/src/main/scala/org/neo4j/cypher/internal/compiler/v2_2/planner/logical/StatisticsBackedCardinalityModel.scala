@@ -26,13 +26,14 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, Lo
 
 class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel)
   extends Metrics.CardinalityModel {
-  def apply(plan: LogicalPlan): Cardinality = computeCardinality(plan.solved)
+  def apply(plan: LogicalPlan, incomingCardinality: Cardinality): Cardinality =
+    computeCardinality(plan.solved, incomingCardinality)
 
-  private def computeCardinality(query: PlannerQuery): Cardinality = {
-    val (cardinality, _) = query.fold[(Cardinality, Map[IdName, Seq[LabelName]])]((Cardinality(1), Map.empty)) {
+  private def computeCardinality(query: PlannerQuery, incomingCardinality: Cardinality): Cardinality = {
+    val (cardinality, _) = query.fold[(Cardinality, Map[IdName, Seq[LabelName]])]((incomingCardinality, Map.empty)) {
       case ((acc, labels), PlannerQuery(graph, horizon, _)) =>
-        val (graphCardinality, newLabels) = calculateCardinalityForQueryGraph(graph, labels)
-        val horizonCardinality = calculateCardinalityForQueryHorizon(graphCardinality * acc, horizon)
+        val (graphCardinality, newLabels) = calculateCardinalityForQueryGraph(graph, labels, acc)
+        val horizonCardinality = calculateCardinalityForQueryHorizon(graphCardinality, horizon)
         (horizonCardinality, newLabels)
     }
     cardinality
@@ -42,6 +43,10 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
     // Normal projection with LIMIT
     case RegularQueryProjection(_, QueryShuffle(_, None, Some(limit: IntegerLiteral))) =>
       Cardinality(Math.min(in.amount.toLong, limit.value))
+
+    // Distinct
+    case projection: AggregatingQueryProjection if projection.aggregationExpressions.isEmpty =>
+      in * Selectivity(0.95)
 
     // Aggregates
     case _: AggregatingQueryProjection =>
@@ -55,8 +60,10 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
       in
   }
 
-  private def calculateCardinalityForQueryGraph(graph: QueryGraph, labels: Map[IdName, Seq[LabelName]]): (Cardinality, Map[IdName, Seq[LabelName]]) = {
-    val cardinality = queryGraphCardinalityModel(graph, labels)
+  private def calculateCardinalityForQueryGraph(graph: QueryGraph,
+                                                labels: Map[IdName, Seq[LabelName]],
+                                                incomingCardinality: Cardinality): (Cardinality, Map[IdName, Seq[LabelName]]) = {
+    val cardinality = queryGraphCardinalityModel(graph, labels, incomingCardinality)
     val graphLabels = graph.patternNodeLabels.mapValues(_.toSeq)
     val newLabels = labels.fuse(graphLabels)(_ ++ _)
     (cardinality, newLabels)

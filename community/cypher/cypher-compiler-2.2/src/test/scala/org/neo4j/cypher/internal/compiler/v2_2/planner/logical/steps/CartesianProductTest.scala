@@ -58,10 +58,10 @@ class CartesianProductTest extends CypherFunSuite with LogicalPlanningTestSuppor
   private def prepare(cost: LogicalPlan => Double, plans: LogicalPlan*) = {
     val factory = newMockedMetricsFactory
 
-    when(factory.newCostModel(any())).thenReturn(cost.andThen(Cost.apply))
+    when(factory.newCostModel(any())).thenReturn((plan: LogicalPlan, c: Cardinality) =>  Cost(cost(plan)))
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(HardcodedGraphStatistics, Cardinality(1), newMockedSemanticTable)
+      metrics = factory.newMetrics(HardcodedGraphStatistics, newMockedSemanticTable)
     )
 
     val table = PlanTable(plans.map(p => p.availableSymbols -> p).toMap)

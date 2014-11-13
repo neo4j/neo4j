@@ -26,5 +26,5 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
 
 object pickBestPlan extends CandidateSelector {
   def apply(candidateList: CandidateList)(implicit context: LogicalPlanningContext): Option[LogicalPlan] =
-    candidateList.bestPlan(context.cost)
+    candidateList.bestPlan
 }

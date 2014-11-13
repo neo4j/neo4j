@@ -59,30 +59,29 @@ case class CardinalityCostModel(cardinality: CardinalityModel) extends CostModel
     case _ => DB_ACCESS_BOUND_PLAN_COST_PER_ROW
   }
 
-  private def cardinalityForPlan(plan: LogicalPlan): Cardinality = plan match {
-    case Selection(_, left) => cardinality(left)
-    case _                  => plan.lhs.map(cardinality).getOrElse(cardinality(plan))
+  private def cardinalityForPlan(plan: LogicalPlan, incomingCardinality: Cardinality): Cardinality = plan match {
+    case Selection(_, left) => cardinality(left, incomingCardinality)
+    case _                  => plan.lhs.map(p => cardinality(p, incomingCardinality)).getOrElse(cardinality(plan, incomingCardinality))
   }
 
-  def apply(plan: LogicalPlan): Cost = plan match {
+  def apply(plan: LogicalPlan, incomingCardinality: Cardinality): Cost = plan match {
     case CartesianProduct(lhs, rhs) =>
-      apply(lhs) + cardinality(lhs) * apply(rhs)
+      apply(lhs, incomingCardinality) + cardinality(lhs, incomingCardinality) * apply(rhs, incomingCardinality)
 
     case Apply(lhs, rhs) =>
-      val lCost = apply(lhs)
-      val lCardinality = cardinality(lhs)
-      val rCost = apply(rhs)
-      lCost + lCardinality * rCost
+      val lCost = apply(lhs, incomingCardinality)
+      val rCost = apply(rhs, cardinality(lhs, incomingCardinality))
+      lCost + rCost
 
     case OuterHashJoin(_, lhs, rhs) =>
-      val lCost = apply(lhs)
-      val rCost = apply(rhs)
+      val lCost = apply(lhs, incomingCardinality)
+      val rCost = apply(rhs, incomingCardinality)
       lCost + rCost
 
     case _ =>
-      val lhsCost = plan.lhs.map(apply).getOrElse(Cost(0))
-      val rhsCost = plan.rhs.map(apply).getOrElse(Cost(0))
-      val costForThisPlan = cardinalityForPlan(plan) * costPerRow(plan)
+      val lhsCost = plan.lhs.map(p => apply(p, incomingCardinality)).getOrElse(Cost(0))
+      val rhsCost = plan.rhs.map(p => apply(p, incomingCardinality)).getOrElse(Cost(0))
+      val costForThisPlan = cardinalityForPlan(plan, incomingCardinality) * costPerRow(plan)
       val totalCost = costForThisPlan + lhsCost + rhsCost
       totalCost
   }

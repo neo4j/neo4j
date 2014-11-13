@@ -29,13 +29,13 @@ object Metrics {
   // This metric calculates how expensive executing a logical plan is.
   // (e.g. by looking at cardinality, expression selectivity and taking into account the effort
   // required to execute a step)
-  type CostModel = (LogicalPlan) => Cost
+  type CostModel = (LogicalPlan, Cardinality) => Cost
 
   // This metric estimates how many rows of data a logical plan produces
   // (e.g. by asking the database for statistics)
-  type CardinalityModel = (LogicalPlan) => Cardinality
+  type CardinalityModel = (LogicalPlan, Cardinality) => Cardinality
 
-  type QueryGraphCardinalityModel = (QueryGraph, Map[IdName, Seq[LabelName]]) => Cardinality
+  type QueryGraphCardinalityModel = (QueryGraph, Map[IdName, Seq[LabelName]], Cardinality) => Cardinality
 }
 
 case class Metrics(cost: CostModel,
@@ -118,11 +118,11 @@ object Selectivity {
 trait MetricsFactory {
   def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel): CardinalityModel
   def newCostModel(cardinality: CardinalityModel): CostModel
-  def newQueryGraphCardinalityModel(statistics: GraphStatistics, inboundCardinality: Cardinality, semanticTable: SemanticTable): QueryGraphCardinalityModel
+  def newQueryGraphCardinalityModel(statistics: GraphStatistics, semanticTable: SemanticTable): QueryGraphCardinalityModel
   def newCandidateListCreator(): Seq[LogicalPlan] => CandidateList
 
-  def newMetrics(statistics: GraphStatistics, inboundCardinality: Cardinality, semanticTable: SemanticTable) = {
-    val queryGraphCardinalityModel = newQueryGraphCardinalityModel(statistics, inboundCardinality, semanticTable)
+  def newMetrics(statistics: GraphStatistics, semanticTable: SemanticTable) = {
+    val queryGraphCardinalityModel = newQueryGraphCardinalityModel(statistics, semanticTable)
     val cardinality = newCardinalityEstimator(queryGraphCardinalityModel)
     val cost = newCostModel(cardinality)
     Metrics(cost, cardinality, queryGraphCardinalityModel, newCandidateListCreator())

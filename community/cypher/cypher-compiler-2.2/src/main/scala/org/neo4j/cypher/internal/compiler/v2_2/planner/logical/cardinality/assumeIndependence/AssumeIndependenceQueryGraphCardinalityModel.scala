@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryGraph, SemanticTabl
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 
 case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics,
-                                                        inboundCardinality: Cardinality,
                                                         semanticTable: SemanticTable,
                                                         combiner: SelectivityCombiner)
   extends QueryGraphCardinalityModel  {
@@ -35,7 +34,7 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics,
   private val expressionSelectivityEstimator = ExpressionSelectivityCalculator(stats, combiner)
   private val patternSelectivityEstimator = PatternSelectivityCalculator(stats, combiner)
 
-  def apply(queryGraph: QueryGraph, labels: Map[IdName, Seq[LabelName]]): Cardinality = {
+  def apply(queryGraph: QueryGraph, labels: Map[IdName, Seq[LabelName]], inboundCardinality: Cardinality): Cardinality = {
     val combinations: Seq[QueryGraph] = findQueryGraphCombinations(queryGraph, semanticTable)
     val cardinalities = combinations.map(cardinalityForQueryGraph(_, inboundCardinality, labels)(semanticTable))
     cardinalities.foldLeft(Cardinality.EMPTY) {

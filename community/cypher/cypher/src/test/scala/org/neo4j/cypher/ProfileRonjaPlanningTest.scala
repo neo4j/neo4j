@@ -105,9 +105,9 @@ class ProfileRonjaPlanningTest extends ExecutionEngineFunSuite with QueryStatist
     }
   }
 
-  private def customMetrics(qgcmCreator: (GraphStatistics, Cardinality, SemanticTable) => QueryGraphCardinalityModel) = new MetricsFactory {
-    def newQueryGraphCardinalityModel(statistics: GraphStatistics, inboundCardinality: Cardinality, semanticTable: SemanticTable) =
-      qgcmCreator(statistics, inboundCardinality, semanticTable)
+  private def customMetrics(qgcmCreator: (GraphStatistics, SemanticTable) => QueryGraphCardinalityModel) = new MetricsFactory {
+    def newQueryGraphCardinalityModel(statistics: GraphStatistics, semanticTable: SemanticTable) =
+      qgcmCreator(statistics, semanticTable)
 
     def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel) =
       SimpleMetricsFactory.newCardinalityEstimator(queryGraphCardinalityModel)
@@ -175,9 +175,9 @@ class ProfileRonjaPlanningTest extends ExecutionEngineFunSuite with QueryStatist
       new CardinalityModel {
         val innerCardinalityModel = inner.newCardinalityEstimator(queryGraphCardinalityModel)
 
-        def apply(in: LogicalPlan): Cardinality = {
+        def apply(in: LogicalPlan, c: Cardinality): Cardinality = {
           log.startCardinalityEstimation(in)
-          val result = innerCardinalityModel(in)
+          val result = innerCardinalityModel(in, c)
           log.finishCardinalityEstimation(result)
           result
         }
@@ -186,9 +186,9 @@ class ProfileRonjaPlanningTest extends ExecutionEngineFunSuite with QueryStatist
     def newCostModel(cardinality: CardinalityModel): CostModel = new CostModel {
       val innerCostModel = inner.newCostModel(cardinality)
 
-      def apply(in: LogicalPlan): Cost = {
+      def apply(in: LogicalPlan, c: Cardinality): Cost = {
         log.startCostCalculation(in)
-        val result = innerCostModel(in)
+        val result = innerCostModel(in, c)
         log.finishCostCalculation(result)
         result
       }
@@ -199,20 +199,20 @@ class ProfileRonjaPlanningTest extends ExecutionEngineFunSuite with QueryStatist
 
       override def +(plan: LogicalPlan) = new LoggingCandidateList(super.+(plan).plans)
 
-      override def bestPlan(costs: CostModel) = if (plans.size > 1) {
+      override def bestPlan(implicit context: LogicalPlanningContext) = if (plans.size > 1) {
         log.startNewSelection(plans)
-        val winner: Option[LogicalPlan] = super.bestPlan(costs)
+        val winner: Option[LogicalPlan] = super.bestPlan
         log.finishedSelection(winner)
         winner
-      } else super.bestPlan(costs)
+      } else super.bestPlan
 
       override def map(f: (LogicalPlan) => LogicalPlan) = new LoggingCandidateList(super.map(f).plans)
     }
 
     def newCandidateListCreator(): (Seq[LogicalPlan]) => CandidateList = plans => new LoggingCandidateList(plans)
 
-    def newQueryGraphCardinalityModel(statistics: GraphStatistics, inboundCardinality: Cardinality, semanticTable: SemanticTable) =
-      inner.newQueryGraphCardinalityModel(statistics, inboundCardinality, semanticTable)
+    def newQueryGraphCardinalityModel(statistics: GraphStatistics, semanticTable: SemanticTable) =
+      inner.newQueryGraphCardinalityModel(statistics, semanticTable)
   }
 
 }

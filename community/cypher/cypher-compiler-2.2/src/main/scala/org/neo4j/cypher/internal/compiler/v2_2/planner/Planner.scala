@@ -64,9 +64,8 @@ case class Planner(monitors: Monitors,
     tokenResolver.resolve(ast)(semanticTable, planContext)
     val unionQuery = ast.asUnionQuery
 
-    val relativeMetricsFactory = (cardinality: Cardinality) => metricsFactory.newMetrics(planContext.statistics, cardinality, semanticTable)
-    val metrics = relativeMetricsFactory(Cardinality(1))
-    val context = LogicalPlanningContext(planContext, metrics, relativeMetricsFactory, semanticTable, queryGraphSolver)
+    val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
+    val context = LogicalPlanningContext(planContext, metrics, semanticTable, queryGraphSolver, Cardinality(1))
     val plan = strategy.plan(unionQuery)(context)
 
     val pipeBuildContext = PipeExecutionBuilderContext((e: PatternExpression) => {

@@ -44,9 +44,12 @@ object LogicalPlanProducer {
         argumentIds = argumentIds,
         patternNodes = Set(idName))))
 
-  def planApply(left: LogicalPlan, right: LogicalPlan) =
-    Apply(left, right)(
-      solved = left.solved ++ right.solved)
+  def planApply(left: LogicalPlan, right: LogicalPlan) = {
+    // We don't want to keep the arguments that this Apply is inserting on the RHS, so we remove them here.
+    val rhsSolved = right.solved.updateTailOrSelf(_.updateGraph(_.withArgumentIds(Set.empty)))
+
+    Apply(left, right)(solved = left.solved ++ rhsSolved)
+  }
 
   def planTailApply(left: LogicalPlan, right: LogicalPlan) =
     Apply(left, right)(
@@ -189,10 +192,11 @@ object LogicalPlanProducer {
       left.solved.updateGraph(_.withAddedOptionalMatch(solvedQueryGraph))
     )
 
-  def planOptional(inputPlan: LogicalPlan) =
+  def planOptional(inputPlan: LogicalPlan, ids: Set[IdName]) =
     Optional(inputPlan)(
       PlannerQuery(graph = QueryGraph.empty
         .withAddedOptionalMatch(inputPlan.solved.graph)
+        .withArgumentIds(ids)
       )
     )
 

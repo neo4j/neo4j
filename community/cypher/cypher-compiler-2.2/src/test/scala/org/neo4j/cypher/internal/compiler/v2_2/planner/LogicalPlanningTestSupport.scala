@@ -56,8 +56,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       SimpleMetricsFactory.newCardinalityEstimator(queryGraphCardinalityModel)
     def newCostModel(cardinality: CardinalityModel) =
       SimpleMetricsFactory.newCostModel(cardinality)
-    def newQueryGraphCardinalityModel(statistics: GraphStatistics, inboundCardinality: Cardinality, semanticTable: SemanticTable): QueryGraphCardinalityModel =
-      SimpleMetricsFactory.newQueryGraphCardinalityModel(statistics, inboundCardinality, semanticTable)
+    def newQueryGraphCardinalityModel(statistics: GraphStatistics, semanticTable: SemanticTable): QueryGraphCardinalityModel =
+      SimpleMetricsFactory.newQueryGraphCardinalityModel(statistics, semanticTable)
 
     def newCandidateListCreator(): (Seq[LogicalPlan]) => CandidateList = SimpleMetricsFactory.newCandidateListCreator()
 
@@ -68,7 +68,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   def newMockedPipeExecutionPlanBuilderContext: PipeExecutionBuilderContext = {
     val context = mock[PipeExecutionBuilderContext]
     val cardinality = new Metrics.CardinalityModel {
-      def apply(v1: LogicalPlan) = Cardinality(1)
+      def apply(v1: LogicalPlan, ignored: Cardinality) = Cardinality(1)
     }
     when(context.cardinality).thenReturn(cardinality)
     val semanticTable = SemanticTable()
@@ -82,7 +82,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   def newMetricsFactory = SimpleMetricsFactory
 
   def newSimpleMetrics(stats: GraphStatistics = newMockedGraphStatistics, semanticTable: SemanticTable) =
-    newMetricsFactory.newMetrics(stats, Cardinality(1), semanticTable)
+    newMetricsFactory.newMetrics(stats, semanticTable)
 
   def newMockedGraphStatistics = mock[GraphStatistics]
 
@@ -109,8 +109,9 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   def newMockedLogicalPlanningContext(planContext: PlanContext,
                                         metrics: Metrics = mockedMetrics,
                                         semanticTable: SemanticTable = newMockedSemanticTable,
-                                        strategy: QueryGraphSolver = new GreedyQueryGraphSolver()): LogicalPlanningContext =
-    LogicalPlanningContext(planContext, metrics, (_) => metrics, semanticTable, strategy)
+                                        strategy: QueryGraphSolver = new GreedyQueryGraphSolver(),
+                                        cardinality: Cardinality = Cardinality(1)): LogicalPlanningContext =
+    LogicalPlanningContext(planContext, metrics, semanticTable, strategy, cardinality)
 
   implicit class RichLogicalPlan(plan: LogicalPlan) {
     def asTableEntry = plan.availableSymbols -> plan

@@ -102,13 +102,13 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, semanticTable: SemanticTable) = {
       val model = new StatisticsBackedCardinalityModel(queryGraphCardinalityModel)
       ({
-        case (plan: LogicalPlan) => model(plan)
+        case (plan: LogicalPlan, card: Cardinality) => model(plan, card)
       })
     }
     def costModel(cardinality: CardinalityModel): PartialFunction[LogicalPlan, Cost] = {
       val model = new CardinalityCostModel(cardinality)
       ({
-        case (plan: LogicalPlan) => model(plan)
+        case (plan: LogicalPlan) => model(plan, Cardinality(1))
       })
     }
     def graphStatistics: GraphStatistics =
@@ -151,9 +151,13 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
           labelIdCardinality(labelId)
       }
 
-      labelScanCardinality
+      val r: PartialFunction[LogicalPlan, Cardinality] =
+        labelScanCardinality
         .orElse(cardinality)
-        .orElse(PartialFunction(parent.cardinalityModel(queryGraphCardinalityModel, semanticTable)))
+//        .orElse(PartialFunction(parent.cardinalityModel(queryGraphCardinalityModel, semanticTable)))
+
+      (p: LogicalPlan, c: Cardinality) =>
+        if(r.isDefinedAt(p)) r.apply(p) else parent.cardinalityModel(queryGraphCardinalityModel, semanticTable)(p, c)
     }
 
     def graphStatistics: GraphStatistics =
@@ -182,12 +186,14 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
     def metricsFactory = new MetricsFactory {
       def newCostModel(cardinality: Metrics.CardinalityModel) =
-        config.costModel(cardinality)
+        (plan: LogicalPlan, c: Cardinality) =>
+        config.costModel(cardinality)(plan)
+
       def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel) =
         config.cardinalityModel(queryGraphCardinalityModel, semanticTable)
 
-      def newQueryGraphCardinalityModel(statistics: GraphStatistics, inboundCardinality: Cardinality, semanticTable: SemanticTable) =
-        QueryGraphCardinalityModel.default(statistics, inboundCardinality, semanticTable)
+      def newQueryGraphCardinalityModel(statistics: GraphStatistics, semanticTable: SemanticTable) =
+        QueryGraphCardinalityModel.default(statistics, semanticTable)
 
       def newCandidateListCreator(): (Seq[LogicalPlan]) => CandidateList = CandidateList.apply
     }
@@ -247,8 +253,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         case ast: Query =>
           tokenResolver.resolve(ast)(semanticTable, planContext)
           val unionQuery = ast.asUnionQuery
-          val metrics = metricsFactory.newMetrics(planContext.statistics, Cardinality(1), semanticTable)
-          val context = LogicalPlanningContext(planContext, metrics, (_) => metrics, semanticTable, queryGraphSolver)
+          val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
+          val context = LogicalPlanningContext(planContext, metrics, semanticTable, queryGraphSolver, Cardinality(1))
           val plannerQuery = unionQuery.queries.head
           strategy.internalPlan(plannerQuery)(context)
       }
@@ -266,20 +272,20 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         case ast: Query =>
           tokenResolver.resolve(ast)(semanticTable, planContext)
           val unionQuery = ast.asUnionQuery
-          val metrics = metricsFactory.newMetrics(planContext.statistics, Cardinality(1), semanticTable)
-          val context = LogicalPlanningContext(planContext, metrics, (_) => metrics, semanticTable, queryGraphSolver)
+          val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
+          val context = LogicalPlanningContext(planContext, metrics, semanticTable, queryGraphSolver, Cardinality(1))
           (strategy.plan(unionQuery)(context), semanticTable)
       }
     }
 
     def withLogicalPlanningContext[T](f: LogicalPlanningContext => T): T = {
-      val metrics = metricsFactory.newMetrics(config.graphStatistics, Cardinality(1), semanticTable)
+      val metrics = metricsFactory.newMetrics(config.graphStatistics, semanticTable)
       val ctx = LogicalPlanningContext(
         planContext = planContext,
         metrics = metrics,
-        metricsFactory = (_) => metrics,
         semanticTable = semanticTable,
-        strategy = queryGraphSolver
+        strategy = queryGraphSolver,
+        inboundCardinality = Cardinality(1)
       )
       f(ctx)
     }
