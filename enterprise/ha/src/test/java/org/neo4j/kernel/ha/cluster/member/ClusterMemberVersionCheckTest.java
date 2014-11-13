@@ -43,6 +43,7 @@ import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.ha.cluster.member.ClusterMemberVersionCheck.Outcome;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
@@ -253,7 +254,8 @@ public class ClusterMemberVersionCheckTest
         Cluster cluster = cluster( clusterListenerSlot );
 
         final ClusterMembers members =
-                new ClusterMembers( cluster, mock( Heartbeat.class ), clusterMemberEvents, mock( InstanceId.class ) );
+                new ClusterMembers( cluster, mock( Heartbeat.class ), clusterMemberEvents, mock( InstanceId.class ),
+                        new DevNullLoggingService() );
 
         ClusterMemberListener memberListener = memberListenerSlot[0];
         ClusterListener clusterListener = clusterListenerSlot[0];
