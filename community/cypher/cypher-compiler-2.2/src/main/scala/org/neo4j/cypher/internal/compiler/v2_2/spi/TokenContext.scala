@@ -32,7 +32,3 @@ trait TokenContext {
   def getOptRelTypeId(relType: String): Option[Int]
   def getRelTypeId(relType: String): Int
 }
-
-object TokenContext {
-  def tryGet[T <: KernelException : Manifest](result: => Int) = try { Some(result) } catch { case (_: T) => None }
-}

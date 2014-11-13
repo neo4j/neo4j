@@ -25,12 +25,15 @@ import org.neo4j.cypher.internal.compiler.v2_2.spi.TokenContext
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations
 
 abstract class TransactionBoundTokenContext(statement: Statement) extends TokenContext {
-  def getOptPropertyKeyId(propertyKeyName: String): Option[Int] =
-    TokenContext.tryGet[PropertyKeyNotFoundException](getPropertyKeyId(propertyKeyName))
+  def getOptPropertyKeyId(propertyKeyName: String): Option[Int] = {
+    val propertyId: Int = statement.readOperations().propertyKeyGetForName(propertyKeyName)
+    if (propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY) None
+    else Some(propertyId)
+  }
 
   def getPropertyKeyId(propertyKeyName: String) = {
     val propertyId: Int = statement.readOperations().propertyKeyGetForName(propertyKeyName)
-    if ( propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+    if (propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY)
       throw new PropertyKeyNotFoundException("No such property.", null)
     propertyId
   }
@@ -44,13 +47,19 @@ abstract class TransactionBoundTokenContext(statement: Statement) extends TokenC
     labelId
   }
 
-  def getOptLabelId(labelName: String): Option[Int] =
-    TokenContext.tryGet[LabelNotFoundKernelException](getLabelId(labelName))
+  def getOptLabelId(labelName: String): Option[Int] = {
+    val labelId: Int = statement.readOperations().labelGetForName(labelName)
+    if (labelId == KeyReadOperations.NO_SUCH_LABEL) None
+    else Some(labelId)
+  }
 
   def getLabelName(labelId: Int): String = statement.readOperations().labelGetName(labelId)
 
-  def getOptRelTypeId(relType: String): Option[Int] =
-    TokenContext.tryGet[RelationshipTypeNotFoundException](getRelTypeId(relType))
+  def getOptRelTypeId(relType: String): Option[Int] = {
+    val relTypeId: Int = statement.readOperations().relationshipTypeGetForName(relType)
+    if (relTypeId == KeyReadOperations.NO_SUCH_RELATIONSHIP_TYPE) None
+    else Some(relTypeId)
+  }
 
   def getRelTypeId(relType: String): Int = {
     val relTypeId: Int = statement.readOperations().relationshipTypeGetForName(relType)
