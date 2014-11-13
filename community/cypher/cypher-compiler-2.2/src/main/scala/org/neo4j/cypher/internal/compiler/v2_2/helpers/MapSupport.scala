@@ -28,6 +28,7 @@ import org.neo4j.helpers.ThisShouldNotHappenError
 
 import scala.collection.JavaConverters._
 import scala.collection.{Iterator, Map}
+import scala.collection.immutable
 
 object IsMap extends MapSupport {
   def unapply(x: Any): Option[(QueryContext) => Map[String, Any]] = if (isMap(x)) {
@@ -75,4 +76,13 @@ trait MapSupport {
   }
 }
 
-
+object MapSupport {
+  implicit class PowerMap[A, B](m: immutable.Map[A, B]) {
+    def fuse(other: immutable.Map[A, B])(f: (B, B) => B): immutable.Map[A, B] = {
+      other.foldLeft(m) {
+        case (acc, (k, v)) if acc.contains(k) => acc + (k -> f(acc(k), v))
+        case (acc, entry)                     => acc + entry
+      }
+    }
+  }
+}

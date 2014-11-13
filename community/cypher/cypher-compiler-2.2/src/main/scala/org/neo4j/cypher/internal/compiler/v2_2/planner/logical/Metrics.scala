@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 
 object Metrics {
 
-  case class QueryGraphCardinalityInput(labelInfo: Map[IdName, Seq[LabelName]], inboundCardinality: Cardinality)
+  case class QueryGraphCardinalityInput(labelInfo: Map[IdName, Set[LabelName]], inboundCardinality: Cardinality)
 
   // This metric calculates how expensive executing a logical plan is.
   // (e.g. by looking at cardinality, expression selectivity and taking into account the effort

@@ -38,13 +38,6 @@ class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStra
     case _ => throw new CantHandleQueryException
   }
 
-  protected def planSingleQuery(query: PlannerQuery)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan = {
-    val firstPart = planPart(query, leafPlan)
-    val projectedFirstPart = planEventHorizon(query, firstPart)
-    val finalPlan = planWithTail(projectedFirstPart, query.tail)
-    verifyBestPlan(finalPlan, query)
-  }
-
   private def planQuery(queries: Seq[PlannerQuery], distinct: Boolean)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None) = {
     val logicalPlans: Seq[LogicalPlan] = queries.map(p => planSingleQuery(p))
     val unionPlan = logicalPlans.reduce[LogicalPlan] {
@@ -57,6 +50,13 @@ class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStra
       unionPlan
   }
 
+  protected def planSingleQuery(query: PlannerQuery)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan = {
+    val firstPart = planPart(query, leafPlan)
+    val projectedFirstPart = planEventHorizon(query, firstPart)
+    val finalPlan = planWithTail(projectedFirstPart, query.tail)
+    verifyBestPlan(finalPlan, query)
+  }
+
   private def planWithTail(pred: LogicalPlan, remaining: Option[PlannerQuery])(implicit context: LogicalPlanningContext): LogicalPlan = remaining match {
     case Some(query) =>
       val lhs = pred
@@ -64,7 +64,7 @@ class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStra
       val rhs = planPart(query, Some(planQueryArgumentRow(query.graph)))
       val applyPlan = planTailApply(lhs, rhs)
       val projectedPlan = planEventHorizon(query, applyPlan)(context)
-      planWithTail(projectedPlan, query.tail)(context.withInboundCardinality(lhsCardinality))
+      planWithTail(projectedPlan, query.tail)(context.withCardinalityInput(pred.solved.lastQueryGraph.selections.labelInfo, lhsCardinality))
     case None =>
       pred
   }

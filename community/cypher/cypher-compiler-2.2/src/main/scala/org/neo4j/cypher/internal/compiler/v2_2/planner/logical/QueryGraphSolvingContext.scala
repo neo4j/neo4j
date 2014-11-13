@@ -19,20 +19,22 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.Identifier
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{LabelName, Identifier}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityInput
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
-
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.MapSupport._
 
 case class LogicalPlanningContext(planContext: PlanContext,
                                   metrics: Metrics,
                                   semanticTable: SemanticTable,
                                   strategy: QueryGraphSolver,
                                   cardinalityInput: QueryGraphCardinalityInput) {
-  def withInboundCardinality(cardinality: Cardinality): LogicalPlanningContext =
-    copy(cardinalityInput = cardinalityInput.copy(inboundCardinality = cardinality))
+  def withCardinalityInput(labelInfo: Map[IdName, Set[LabelName]], inboundCardinality: Cardinality): LogicalPlanningContext = {
+    val newLabels = (cardinalityInput.labelInfo fuse labelInfo)(_ ++ _)
+    copy(cardinalityInput = QueryGraphCardinalityInput(newLabels, inboundCardinality))
+  }
 
   def statistics = planContext.statistics
   def cost = metrics.cost
@@ -52,4 +54,3 @@ object RelationshipIdName {
     case _                                                                                 => None
   }
 }
-

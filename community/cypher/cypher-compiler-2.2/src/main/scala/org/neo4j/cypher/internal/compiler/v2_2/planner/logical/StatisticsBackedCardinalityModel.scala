@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast.IntegerLiteral
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.MapSupport._
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.{QueryGraphCardinalityInput, QueryGraphCardinalityModel}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
@@ -61,18 +62,8 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
   }
 
   private def calculateCardinalityForQueryGraph(graph: QueryGraph, input: QueryGraphCardinalityInput): QueryGraphCardinalityInput = {
-    val graphLabels = graph.patternNodeLabels.mapValues(_.toSeq)
-    val newLabels = input.labelInfo.fuse(graphLabels)(_ ++ _)
+    val newLabels = input.labelInfo.fuse(graph.patternNodeLabels)(_ ++ _)
     val newCardinality = queryGraphCardinalityModel(graph, input)
     QueryGraphCardinalityInput(newLabels, newCardinality)
-  }
-
-  implicit class PowerMap[A, B](m: Map[A, B]) {
-    def fuse(other: Map[A, B])(f: (B, B) => B): Map[A, B] = {
-      other.foldLeft(m) {
-        case (acc, (k, v)) if acc.contains(k) => acc + (k -> f(acc(k), v))
-        case (acc, entry)                     => acc + entry
-      }
-    }
   }
 }
