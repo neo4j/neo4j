@@ -24,6 +24,8 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
+import static java.util.Objects.requireNonNull;
+
 @Service.Implementation(KernelExtensionFactory.class)
 public class InMemoryIndexProviderFactory extends KernelExtensionFactory<InMemoryIndexProviderFactory.Dependencies>
 {
@@ -47,21 +49,12 @@ public class InMemoryIndexProviderFactory extends KernelExtensionFactory<InMemor
     public InMemoryIndexProviderFactory( InMemoryIndexProvider singleProvider )
     {
         super( KEY );
-        if ( singleProvider == null )
-        {
-            throw new IllegalArgumentException( "Null provider" );
-        }
-        this.singleProvider = singleProvider;
+        this.singleProvider = requireNonNull( singleProvider, "provider" );
     }
 
     @Override
     public Lifecycle newKernelExtension( Dependencies dependencies ) throws Throwable
     {
-        return hasSingleProvider() ? singleProvider : new InMemoryIndexProvider();
-    }
-
-    private boolean hasSingleProvider()
-    {
-        return singleProvider != null;
+        return singleProvider != null ? singleProvider : new InMemoryIndexProvider();
     }
 }

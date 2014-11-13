@@ -19,10 +19,10 @@
  */
 package org.neo4j.test;
 
+import org.junit.rules.ExternalResource;
+
 import java.io.File;
 import java.io.IOException;
-
-import org.junit.rules.ExternalResource;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -32,15 +32,19 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.Function;
+import org.neo4j.helpers.Provider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 
 public abstract class DatabaseRule extends ExternalResource
 {
     GraphDatabaseBuilder databaseBuilder;
     GraphDatabaseAPI database;
     private String storeDir;
+    private Provider<Statement> statementProvider;
 
     public <T> T when( Function<GraphDatabaseService, T> function )
     {
@@ -129,6 +133,7 @@ public abstract class DatabaseRule extends ExternalResource
             configure( databaseBuilder );
             database = (GraphDatabaseAPI) databaseBuilder.newGraphDatabase();
             storeDir = database.getStoreDir();
+            statementProvider = resolveDependency( ThreadToStatementContextBridge.class );
         }
         catch ( RuntimeException e )
         {
@@ -189,10 +194,12 @@ public abstract class DatabaseRule extends ExternalResource
         database.shutdown();
         action.run( fs, new File( storeDir ) );
         database = (GraphDatabaseAPI) databaseBuilder.newGraphDatabase();
+        statementProvider = resolveDependency( ThreadToStatementContextBridge.class );
     }
 
     public void shutdown()
     {
+        statementProvider = null;
         try
         {
             if ( database != null )
@@ -219,5 +226,10 @@ public abstract class DatabaseRule extends ExternalResource
     public <T> T resolveDependency( Class<T> type )
     {
         return database.getDependencyResolver().resolveDependency( type );
+    }
+
+    public Statement statement()
+    {
+        return statementProvider.instance();
     }
 }

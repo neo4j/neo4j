@@ -21,6 +21,8 @@ package org.neo4j.helpers;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.neo4j.helpers.collection.Iterables;
 
@@ -108,7 +110,7 @@ public class Predicates
             }
         };
     }
-    
+
     public static <T> Predicate<T> in( final Collection<T> allowed )
     {
         return new Predicate<T>()
@@ -130,7 +132,7 @@ public class Predicates
             return item != null;
         }
     };
-    
+
     @SuppressWarnings( "unchecked" )
     public static <T> Predicate<T> notNull()
     {
@@ -148,6 +150,23 @@ public class Predicates
                 return specification.accept( function.apply( item ) );
             }
         };
+    }
+
+    public static <TYPE> void await( Provider<TYPE> provider, Predicate<TYPE> predicate, long timeout, TimeUnit unit )
+            throws TimeoutException, InterruptedException
+    {
+        long sleep = Math.max( unit.toMillis( timeout ) / 100, 1 );
+        long deadline = System.currentTimeMillis() + unit.toMillis( timeout );
+        do
+        {
+            if ( predicate.accept( provider.instance() ) )
+            {
+                return;
+            }
+            Thread.sleep( sleep );
+        }
+        while ( System.currentTimeMillis() < deadline );
+        throw new TimeoutException( "Waited for " + timeout + " " + unit + ", but " + predicate + " was not accepted." );
     }
 
     public static class AndPredicate<T> implements Predicate<T>

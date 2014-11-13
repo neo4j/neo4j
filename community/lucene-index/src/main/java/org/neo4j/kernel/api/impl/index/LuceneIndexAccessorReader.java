@@ -31,7 +31,9 @@ import java.io.Closeable;
 import java.io.IOException;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.index.impl.lucene.Hits;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
 
@@ -40,26 +42,27 @@ import static org.neo4j.register.Register.DoubleLong;
 
 class LuceneIndexAccessorReader implements IndexReader
 {
-
     private final IndexSearcher searcher;
     private final LuceneDocumentStructure documentLogic;
     private final Closeable onClose;
+    private final CancellationRequest cancellation;
     private final int bufferSizeLimit;
 
     LuceneIndexAccessorReader( IndexSearcher searcher, LuceneDocumentStructure documentLogic, Closeable onClose,
-                               int bufferSizeLimit )
+                               CancellationRequest cancellation, int bufferSizeLimit )
     {
         this.searcher = searcher;
         this.documentLogic = documentLogic;
         this.onClose = onClose;
+        this.cancellation = cancellation;
         this.bufferSizeLimit = bufferSizeLimit;
     }
 
     @Override
-    public long sampleIndex( DoubleLong.Out result )
+    public long sampleIndex( DoubleLong.Out result ) throws IndexNotFoundKernelException
     {
         NonUniqueIndexSampler sampler = new NonUniqueIndexSampler( bufferSizeLimit );
-        try ( TermEnum terms = searcher.getIndexReader().terms() )
+        try ( TermEnum terms = luceneIndexReader().terms() )
         {
             while ( terms.next() )
             {
@@ -69,6 +72,7 @@ class LuceneIndexAccessorReader implements IndexReader
                     String value = term.text();
                     sampler.include( value );
                 }
+                checkCancellation();
             }
         }
         catch ( IOException e )
@@ -127,4 +131,16 @@ class LuceneIndexAccessorReader implements IndexReader
         }
     }
 
+    protected void checkCancellation() throws IndexNotFoundKernelException
+    {
+        if ( cancellation.cancellationRequested() )
+        {
+            throw new IndexNotFoundKernelException( "Index dropped while sampling." );
+        }
+    }
+
+    protected org.apache.lucene.index.IndexReader luceneIndexReader()
+    {
+        return searcher.getIndexReader();
+    }
 }

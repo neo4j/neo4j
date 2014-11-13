@@ -19,25 +19,33 @@
  */
 package org.neo4j.helpers;
 
-/**
- * Represents the concept of a cancellation notification towards a task. The implementation for the request will
- * remain application dependent, but the task to be cancelled can use this to discover if cancellation has been
- * requested.
- */
-public interface CancellationRequest
-{
-    /**
-     * @return True iff a request for cancellation has been issued. It is assumed that the request cannot be withdrawn
-     * so once this method returns true it must always return true on all subsequent calls.
-     */
-    public boolean cancellationRequested();
+import java.util.concurrent.CountDownLatch;
 
-    public static final CancellationRequest NEVER_CANCELLED = new CancellationRequest()
+import org.neo4j.function.Consumer;
+
+public class ConcurrentTransfer<TYPE> implements Consumer<TYPE>, Provider<TYPE>
+{
+    private final CountDownLatch latch = new CountDownLatch( 1 );
+    private TYPE value;
+
+    @Override
+    public void accept( TYPE value )
     {
-        @Override
-        public boolean cancellationRequested()
+        this.value = value;
+        latch.countDown();
+    }
+
+    @Override
+    public TYPE instance()
+    {
+        try
         {
-            return false;
+            latch.await();
         }
-    };
+        catch ( InterruptedException e )
+        {
+            throw new RuntimeException( "Thread interrupted", e );
+        }
+        return value;
+    }
 }

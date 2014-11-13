@@ -19,25 +19,8 @@
  */
 package org.neo4j.helpers;
 
-/**
- * Represents the concept of a cancellation notification towards a task. The implementation for the request will
- * remain application dependent, but the task to be cancelled can use this to discover if cancellation has been
- * requested.
- */
-public interface CancellationRequest
+public interface TaskControl extends CancellationRequest, AutoCloseable
 {
-    /**
-     * @return True iff a request for cancellation has been issued. It is assumed that the request cannot be withdrawn
-     * so once this method returns true it must always return true on all subsequent calls.
-     */
-    public boolean cancellationRequested();
-
-    public static final CancellationRequest NEVER_CANCELLED = new CancellationRequest()
-    {
-        @Override
-        public boolean cancellationRequested()
-        {
-            return false;
-        }
-    };
+    @Override
+    void close();
 }

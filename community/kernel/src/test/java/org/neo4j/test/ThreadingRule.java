@@ -19,20 +19,26 @@
  */
 package org.neo4j.test;
 
+import org.junit.rules.ExternalResource;
+
 import java.util.Arrays;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
-import org.junit.rules.ExternalResource;
-
+import org.neo4j.function.Consumer;
+import org.neo4j.function.RawFunction;
 import org.neo4j.helpers.Cancelable;
 import org.neo4j.helpers.CancellationRequest;
-import org.neo4j.helpers.Function;
+import org.neo4j.helpers.ConcurrentTransfer;
+import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.Predicates;
 
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.function.Functions.swallow;
 
 public class ThreadingRule extends ExternalResource
 {
@@ -62,9 +68,25 @@ public class ThreadingRule extends ExternalResource
         }
     }
 
-    public <FROM, TO> Future<TO> execute( Function<FROM, TO> function, FROM parameter )
+    public <FROM, TO, EX extends Exception> Future<TO> execute( RawFunction<FROM,TO,EX> function, FROM parameter )
     {
-        return executor.submit( task( function, parameter ) );
+        return executor.submit( task( Barrier.NONE, function, parameter, swallow( Thread.class ) ) );
+    }
+
+    public <FROM, TO, EX extends Exception> Future<TO> executeAfter(
+            Barrier barrier, RawFunction<FROM,TO,EX> function, FROM parameter )
+    {
+        return executor.submit( task( barrier, function, parameter, swallow( Thread.class ) ) );
+    }
+
+    public <FROM, TO, EX extends Exception> Future<TO> executeAndAwait(
+            RawFunction<FROM,TO,EX> function, FROM parameter, Predicate<Thread> threadCondition,
+            long timeout, TimeUnit unit ) throws TimeoutException, InterruptedException
+    {
+        ConcurrentTransfer<Thread> threadTransfer = new ConcurrentTransfer<>();
+        Future<TO> future = executor.submit( task( Barrier.NONE, function, parameter, threadTransfer ) );
+        Predicates.await( threadTransfer, threadCondition, timeout, unit );
+        return future;
     }
 
     public Cancelable threadBlockMonitor( Thread thread, Runnable action )
@@ -76,7 +98,9 @@ public class ThreadingRule extends ExternalResource
         return cancellation;
     }
 
-    private static <FROM, TO> Callable<TO> task( final Function<FROM, TO> function, final FROM parameter )
+    private static <FROM, TO, EX extends Exception> Callable<TO> task(
+            final Barrier barrier, final RawFunction<FROM,TO,EX> function, final FROM parameter,
+            final Consumer<Thread> threadConsumer )
     {
         return new Callable<TO>()
         {
@@ -86,6 +110,8 @@ public class ThreadingRule extends ExternalResource
                 Thread thread = Thread.currentThread();
                 String name = thread.getName();
                 thread.setName( function.toString() );
+                threadConsumer.accept( thread );
+                barrier.reached();
                 try
                 {
                     return function.apply( parameter );
@@ -94,6 +120,28 @@ public class ThreadingRule extends ExternalResource
                 {
                     thread.setName( name );
                 }
+            }
+        };
+    }
+
+    public static Predicate<Thread> stackTracePredicate( final int depth, final Class<?> owner, final String method )
+    {
+        return new Predicate<Thread>()
+        {
+            @Override
+            public boolean accept( Thread thread )
+            {
+                StackTraceElement[] stackTrace = thread.getStackTrace();
+                return stackTrace.length > depth &&
+                       stackTrace[depth].getClassName().equals( owner.getName() ) &&
+                       stackTrace[depth].getMethodName().equals( method );
+            }
+
+            @Override
+            public String toString()
+            {
+                return String.format( "Predicate[thread.getStackTrace()[%s] == %s.%s()]",
+                        depth, owner.getName(), method );
             }
         };
     }

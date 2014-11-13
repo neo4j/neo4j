@@ -28,7 +28,9 @@ import org.neo4j.kernel.api.index.IndexReader;
 
 abstract class InMemoryIndexImplementation implements IndexReader, BoundedIterable<Long>
 {
-    abstract void clear();
+    abstract void initialize();
+
+    abstract void drop();
 
     @Override
     public final PrimitiveLongIterator lookup( Object value )

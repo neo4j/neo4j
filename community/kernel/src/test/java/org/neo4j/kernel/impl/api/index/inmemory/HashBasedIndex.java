@@ -28,40 +28,56 @@ import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
 import static org.neo4j.register.Register.DoubleLong;
 
 class HashBasedIndex extends InMemoryIndexImplementation
 {
-    private final Map<Object, Set<Long>> data = new HashMap<>();
+    private Map<Object, Set<Long>> data;
+
+    public Map<Object,Set<Long>> data()
+    {
+        if ( data == null )
+        {
+            throw new IllegalStateException( "Index has not been created, or has been dropped." );
+        }
+        return data;
+    }
 
     @Override
     public String toString()
     {
-        return data.toString();
+        return getClass().getSimpleName() + data;
     }
 
     @Override
-    void clear()
+    void initialize()
     {
-        data.clear();
+        data = new HashMap<>();
+    }
+
+    @Override
+    void drop()
+    {
+        data = null;
     }
 
     @Override
     PrimitiveLongIterator doLookup( Object propertyValue )
     {
-        Set<Long> nodes = data.get( propertyValue );
+        Set<Long> nodes = data().get( propertyValue );
         return nodes == null ? PrimitiveLongCollections.emptyIterator() : toPrimitiveIterator( nodes.iterator() );
     }
 
     @Override
     boolean doAdd( Object propertyValue, long nodeId, boolean applyIdempotently )
     {
-        Set<Long> nodes = data.get( propertyValue );
+        Set<Long> nodes = data().get( propertyValue );
         if ( nodes == null )
         {
-            data.put( propertyValue, nodes = new HashSet<>() );
+            data().put( propertyValue, nodes = new HashSet<>() );
         }
         // In this implementation we don't care about idempotency.
         return nodes.add( nodeId );
@@ -70,7 +86,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
     @Override
     void doRemove( Object propertyValue, long nodeId )
     {
-        Set<Long> nodes = data.get( propertyValue );
+        Set<Long> nodes = data().get( propertyValue );
         if ( nodes != null )
         {
             nodes.remove( nodeId );
@@ -80,7 +96,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
     @Override
     void remove( long nodeId )
     {
-        for ( Set<Long> nodes : data.values() )
+        for ( Set<Long> nodes : data().values() )
         {
             nodes.remove( nodeId );
         }
@@ -89,7 +105,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
     @Override
     void iterateAll( IndexEntryIterator iterator ) throws Exception
     {
-        for ( Map.Entry<Object, Set<Long>> entry : data.entrySet() )
+        for ( Map.Entry<Object, Set<Long>> entry : data().entrySet() )
         {
             iterator.visitEntry( entry.getKey(), entry.getValue() );
         }
@@ -110,7 +126,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
     private Collection<Long> ids()
     {
         Set<Long> allIds = new HashSet<>();
-        for ( Set<Long> someIds : data.values() )
+        for ( Set<Long> someIds : data().values() )
         {
             allIds.addAll( someIds );
         }
@@ -121,9 +137,10 @@ class HashBasedIndex extends InMemoryIndexImplementation
     InMemoryIndexImplementation snapshot()
     {
         HashBasedIndex snapshot = new HashBasedIndex();
-        for ( Map.Entry<Object, Set<Long>> entry : data.entrySet() )
+        snapshot.initialize();
+        for ( Map.Entry<Object, Set<Long>> entry : data().entrySet() )
         {
-            snapshot.data.put( entry.getKey(), new HashSet<>( entry.getValue() ) );
+            snapshot.data().put( entry.getKey(), new HashSet<>( entry.getValue() ) );
         }
         return snapshot;
     }
@@ -131,13 +148,17 @@ class HashBasedIndex extends InMemoryIndexImplementation
     @Override
     public int getIndexedCount( long nodeId, Object propertyValue )
     {
-        Set<Long> candidates = data.get( propertyValue );
+        Set<Long> candidates = data().get( propertyValue );
         return candidates != null && candidates.contains( nodeId ) ? 1 : 0;
     }
 
     @Override
-    public long sampleIndex( final DoubleLong.Out result )
+    public long sampleIndex( final DoubleLong.Out result ) throws IndexNotFoundKernelException
     {
+        if ( data == null )
+        {
+            throw new IndexNotFoundKernelException( "Index dropped while sampling." );
+        }
         final long[] uniqueAndSize = {0, 0};
         try
         {
@@ -163,5 +184,4 @@ class HashBasedIndex extends InMemoryIndexImplementation
         result.write( uniqueAndSize[0], uniqueAndSize[1] );
         return uniqueAndSize[1];
     }
-
 }

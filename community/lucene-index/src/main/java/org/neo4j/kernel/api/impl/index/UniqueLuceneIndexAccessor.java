@@ -19,13 +19,14 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import org.apache.lucene.search.IndexSearcher;
+
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 
-import org.apache.lucene.search.IndexSearcher;
-
+import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -57,9 +58,9 @@ class UniqueLuceneIndexAccessor extends LuceneIndexAccessor
     }
 
     @Override
-    protected IndexReader makeNewReader( IndexSearcher searcher, Closeable closeable )
+    protected IndexReader makeNewReader( IndexSearcher searcher, Closeable closeable, CancellationRequest cancellation )
     {
-        return new LuceneUniqueIndexAccessorReader( searcher, documentStructure, closeable );
+        return new LuceneUniqueIndexAccessorReader( searcher, documentStructure, closeable, cancellation );
     }
 
     /* The fact that this is here is a sign of a design error, and we should revisit and

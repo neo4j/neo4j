@@ -165,4 +165,19 @@ public class Functions
             }
         };
     }
+
+    @SuppressWarnings( "unchecked" )
+    public static <TYPE> Consumer<TYPE> swallow( @SuppressWarnings( "UnusedParameters" ) Class<TYPE> type )
+    {
+        return (Consumer<TYPE>) SWALLOWER;
+    }
+
+    private static Consumer SWALLOWER = new Consumer()
+    {
+        @Override
+        public void accept( Object value )
+        {
+            // yum, yum
+        }
+    };
 }
