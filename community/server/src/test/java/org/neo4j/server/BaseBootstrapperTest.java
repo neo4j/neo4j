@@ -19,23 +19,21 @@
  */
 package org.neo4j.server;
 
+import java.io.File;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.io.File;
-
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.Mute;
+import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.*;
 
-public abstract class BaseBootstrapperTest
+public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
 {
     @Rule
     public final Mute mute = Mute.muteAll();
