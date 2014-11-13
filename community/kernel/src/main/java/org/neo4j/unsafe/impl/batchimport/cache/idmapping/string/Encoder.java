@@ -20,9 +20,9 @@
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
 /**
- * Encodes a {@link String} into a long.
+ * Encodes a {@link Object} into a long.
  */
 public interface Encoder
 {
-    long encode( String value );
+    long encode( Object value );
 }

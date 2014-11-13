@@ -21,7 +21,10 @@ package org.neo4j.unsafe.impl.batchimport.cache.idmapping;
 
 import org.neo4j.unsafe.impl.batchimport.cache.LongArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.StringIdMapper;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.EncodingIdMapper;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.LongEncoder;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.Radix;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.StringEncoder;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 
@@ -69,6 +72,7 @@ public class IdMappers
     }
 
     /**
+     * An {@link IdMapper} capable of mapping {@link String strings} to long ids.
      *
      * @param cacheFactory {@link LongArrayFactory} for allocating memory for the cache used by this index.
      * @return {@link IdMapping} for when node ids given to {@link InputNode} and {@link InputRelationship} are
@@ -76,6 +80,18 @@ public class IdMappers
      */
     public static IdMapper strings( LongArrayFactory cacheFactory )
     {
-        return new StringIdMapper( cacheFactory );
+        return new EncodingIdMapper( cacheFactory, new StringEncoder(), new Radix.String() );
+    }
+
+    /**
+     * An {@link IdMapper} capable of mapping {@link Long arbitrary longs} to long ids.
+     *
+     * @param cacheFactory {@link LongArrayFactory} for allocating memory for the cache used by this index.
+     * @return {@link IdMapping} for when node ids given to {@link InputNode} and {@link InputRelationship} are
+     * strings with o association with the actual ids in the database.
+     */
+    public static IdMapper longs( LongArrayFactory cacheFactory )
+    {
+        return new EncodingIdMapper( cacheFactory, new LongEncoder(), new Radix.Long() );
     }
 }

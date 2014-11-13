@@ -25,23 +25,17 @@ package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 public class LongEncoder implements Encoder
 {
     @Override
-    public long encode( String value )
+    public long encode( Object value )
     {
-        long longValue = Long.parseLong( value );
-        long length = numberOfDigits( longValue );
+        long longValue = ((Number)value).longValue();
+        int length = numberOfDigits( longValue );
         length = length << 57;
         long returnVal = length | longValue;
         return returnVal;
     }
 
-    private long numberOfDigits( long value )
+    private int numberOfDigits( long value )
     {
-        int digits = 0;
-        while ( value > 0 )
-        {
-            value /= 10;
-            digits++;
-        }
-        return digits;
+        return (int)(Math.log10( value ) + 1);
     }
 }

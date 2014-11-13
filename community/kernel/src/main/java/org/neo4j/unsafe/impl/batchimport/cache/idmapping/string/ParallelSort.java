@@ -26,6 +26,8 @@ import org.neo4j.unsafe.impl.batchimport.Utils.CompareType;
 import org.neo4j.unsafe.impl.batchimport.cache.IntArray;
 import org.neo4j.unsafe.impl.batchimport.cache.LongArray;
 
+import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.EncodingIdMapper.clearCollision;
+
 /**
  * Sorts input data by dividing up into chunks and sort each chunk in parallel. Each chunk is sorted
  * using a quick sort method, whereas the dividing of the data is first sorted using radix sort.
@@ -155,14 +157,14 @@ public class ParallelSort
     private int partition( int leftIndex, int rightIndex, int pivotIndex )
     {
         int li = leftIndex, ri = rightIndex - 2, pi = pivotIndex;
-        long pivot = StringIdMapper.clearCollision( dataCache.get( tracker.get( pi ) ) );
+        long pivot = clearCollision( dataCache.get( tracker.get( pi ) ) );
         //save pivot in last index
         swapElement( tracker, pi, rightIndex - 1 );
         long left = 0, right = 0;
         while ( li < ri )
         {
-            left = StringIdMapper.clearCollision( dataCache.get( tracker.get( li ) ) );
-            right = StringIdMapper.clearCollision( dataCache.get( tracker.get( ri ) ) );
+            left = clearCollision( dataCache.get( tracker.get( li ) ) );
+            right = clearCollision( dataCache.get( tracker.get( ri ) ) );
             if ( Utils.unsignedCompare( left, pivot, CompareType.LT ) )
             {
                 //increment left to find the greater element than the pivot
@@ -180,7 +182,7 @@ public class ParallelSort
             }
         }
         int partingIndex = ri;
-        right = StringIdMapper.clearCollision( dataCache.get( tracker.get( ri ) ) );
+        right = clearCollision( dataCache.get( tracker.get( ri ) ) );
         if ( Utils.unsignedCompare( right, pivot, CompareType.LT ) )
         {
             partingIndex++;

@@ -39,19 +39,20 @@ import org.neo4j.unsafe.impl.batchimport.cache.GatheringMemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.LongArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
 
 import static java.lang.System.currentTimeMillis;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-public class StringIdMapperTest
+public class EncodingIdMapperTest
 {
     @Test
     public void shouldHandleGreatAmountsOfStuff() throws Exception
     {
         // GIVEN
-        IdMapper idMapper = new StringIdMapper( LongArrayFactory.AUTO );
+        IdMapper idMapper = IdMappers.strings( LongArrayFactory.AUTO );
         Iterable<Object> ids = new Iterable<Object>()
         {
             @Override
@@ -97,7 +98,7 @@ public class StringIdMapperTest
     public void shouldReturnExpectedValueForNotFound() throws Exception
     {
         // GIVEN
-        IdMapper idMapper = new StringIdMapper( LongArrayFactory.AUTO );
+        IdMapper idMapper = IdMappers.strings( LongArrayFactory.AUTO );
         idMapper.prepare( Arrays.asList() );
 
         // WHEN
@@ -111,7 +112,7 @@ public class StringIdMapperTest
     public void shouldEncodeShortStrings() throws Exception
     {
         // GIVEN
-        StringIdMapper mapper = new StringIdMapper( LongArrayFactory.AUTO );
+        IdMapper mapper = IdMappers.strings( LongArrayFactory.AUTO );
 
         // WHEN
         mapper.put( "123", 0 );
@@ -130,12 +131,14 @@ public class StringIdMapperTest
         // GIVEN
         int processorsForSorting = random.nextInt( 7 ) + 1;
         int size = random.nextInt( 10_000 ) + 2;
-        StringIdMapper mapper = new StringIdMapper( LongArrayFactory.HEAP, size*2, processorsForSorting /*1-7*/ );
+        boolean stringOrLong = random.nextBoolean();
+        IdMapper mapper = new EncodingIdMapper( LongArrayFactory.HEAP,
+                stringOrLong ? new StringEncoder() : new LongEncoder(),
+                stringOrLong ? new Radix.String() : new Radix.Long(),
+                size*2, processorsForSorting /*1-7*/ );
 
         // WHEN
-        Iterable<Object> values = new ValueGenerator( size, random.nextBoolean()
-                ? new LongValues()
-                : new StringValues() );
+        Iterable<Object> values = new ValueGenerator( size, stringOrLong ? new StringValues() : new LongValues() );
         {
             int id = 0;
             for ( Object value : values )
@@ -166,18 +169,16 @@ public class StringIdMapperTest
         @Override
         public Object newInstance()
         {
-            return String.valueOf( random.nextInt( 1_000_000 ) );
+            return random.nextInt( 1_000_000_000 );
         }
     }
 
     private class StringValues implements Factory<Object>
     {
-        private final String chars = "abcdefghijklmnopqrstuvwxyz";
-
         @Override
         public Object newInstance()
         {
-            return String.valueOf( random.nextInt( 1_000_000_000 ) ) + chars.charAt( random.nextInt( chars.length() ) );
+            return String.valueOf( random.nextInt( 1_000_000_000 ) );
         }
     }
 

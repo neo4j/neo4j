@@ -59,9 +59,9 @@ public class StringEncoder implements Encoder
     }
 
     @Override
-    public long encode( String s )
+    public long encode( Object s )
     {
-        int[] val = encodeInt( s );
+        int[] val = encodeInt( (String) s );
         return (long) val[0] << 32 | val[1] & UPPER_INT_MASK;
     }
 
