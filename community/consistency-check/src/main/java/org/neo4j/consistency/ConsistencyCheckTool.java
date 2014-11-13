@@ -70,13 +70,19 @@ public class ConsistencyCheckTool
         String storeDir = determineStoreDirectory( arguments );
         Config tuningConfiguration = readTuningConfiguration( storeDir, arguments );
 
-        attemptRecoveryOrCheckStateOfLogicalLogs( arguments, storeDir );
-
         StringLogger logger = StringLogger.SYSTEM;
-        try
-        {
+
+        try{
+            attemptRecoveryOrCheckStateOfLogicalLogs( arguments, storeDir );
             consistencyCheckService.runFullConsistencyCheck( storeDir, tuningConfiguration,
                     ProgressMonitorFactory.textual( System.err ), logger );
+        }
+        catch ( RuntimeException e )
+        {
+            // RuntimeException : if recovery fails in attemptRecoveryOrCheckStateOfLogicalLogs
+            // UnderlyingStorageException (which extends RuntimeException) : if consistency check fails in runFullConsistencyCheck
+            systemError.println( e.getMessage() );
+            systemError.println( "Aborting the consistency check. Please stop the server if it is running and try again." );
         }
         catch ( ConsistencyCheckIncompleteException e )
         {
