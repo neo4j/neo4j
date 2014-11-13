@@ -95,7 +95,7 @@ class LegacyPipeBuilder(monitors: Monitors, eagernessRewriter: Pipe => Pipe = ad
       }(in)
 
     val planInProgress: ExecutionPlanInProgress =
-      untilConverged(ExecutionPlanInProgress(initialPSQ, NullPipe(), isUpdating = false))
+      untilConverged(ExecutionPlanInProgress(initialPSQ, SingleRowPipe(), isUpdating = false))
 
     val pipe = eagernessRewriter(planInProgress.pipe)
 

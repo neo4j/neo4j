@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.executionplan.builders
 import org.neo4j.cypher.internal.compiler.v2_2._
 import executionplan.{PlanBuilder, ExecutionPlanInProgress}
 import commands._
-import org.neo4j.cypher.internal.compiler.v2_2.pipes.{PipeMonitor, EntityProducer, NullPipe, TraversalMatchPipe}
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.{PipeMonitor, EntityProducer, SingleRowPipe, TraversalMatchPipe}
 import pipes.matching.{Trail, TraversalMatcher, MonoDirectionalTraversalMatcher, BidirectionalTraversalMatcher}
 import spi.PlanContext
 import symbols._
@@ -124,7 +124,7 @@ class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
     entityFactory.nodeStartItems
 
   def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor): Boolean = {
-      plan.pipe.isInstanceOf[NullPipe] &&
+      plan.pipe.isInstanceOf[SingleRowPipe] &&
       !plan.query.optional &&
       extractExpanderStepsFromQuery(plan).nonEmpty
   }

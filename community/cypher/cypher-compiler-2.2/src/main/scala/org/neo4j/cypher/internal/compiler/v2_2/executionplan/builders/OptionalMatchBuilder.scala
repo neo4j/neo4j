@@ -28,7 +28,7 @@ case class OptionalMatchBuilder(solveMatch: Phase) extends PlanBuilder {
   def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor): Boolean = plan.query.optional
 
   def apply(in: ExecutionPlanInProgress, context: PlanContext)(implicit pipeMonitor: PipeMonitor): ExecutionPlanInProgress = {
-    val listeningPipe = new NullPipe(in.pipe.symbols) {
+    val listeningPipe = new ArgumentPipe(in.pipe.symbols)() {
       override def planDescription: InternalPlanDescription = in.pipe.planDescription
     }
     val nonOptionalQuery = in.query.copy(optional = false)

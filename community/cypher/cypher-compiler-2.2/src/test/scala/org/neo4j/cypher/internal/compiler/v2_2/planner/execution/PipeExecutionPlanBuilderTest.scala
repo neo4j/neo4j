@@ -45,12 +45,12 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
 
   test("projection only query") {
     val logicalPlan = Projection(
-      SingleRow(Set.empty)(solved)(), Map("42" -> SignedDecimalIntegerLiteral("42") _))_
+      SingleRow(), Map("42" -> SignedDecimalIntegerLiteral("42") _))_
     val pipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
-    pipeInfo.pipe should equal(ProjectionNewPipe(NullPipe(), Map("42" -> legacy.Literal(42)))())
+    pipeInfo.pipe should equal(ProjectionNewPipe(SingleRowPipe(), Map("42" -> legacy.Literal(42)))())
   }
 
   test("simple pattern query") {

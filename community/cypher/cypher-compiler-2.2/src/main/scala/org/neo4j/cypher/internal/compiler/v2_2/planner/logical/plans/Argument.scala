@@ -20,17 +20,16 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
+import org.neo4j.cypher.internal.compiler.v2_2.symbols.CypherType
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 
-case class SingleRow() extends LogicalLeafPlan {
+// Argument is used inside of an Apply to feed the row from the LHS of the Apply to the leaf of the RHS
+case class Argument(argumentIds: Set[IdName])(val solved: PlannerQuery)
+                    (val typeInfo: Map[String, CypherType] = argumentIds.map( id => id.name -> CTNode).toMap) extends LogicalLeafPlan {
   def availableSymbols = argumentIds
 
-  def argumentIds = Set.empty
-
-  def solved = PlannerQuery.empty
-
-  override def dup(children: Seq[AnyRef]) = {
-    assert(children.isEmpty)
-    SingleRow().asInstanceOf[this.type]
+  override def dup(children: Seq[AnyRef]) = children.size match {
+    case 1 =>
+      copy(children.head.asInstanceOf[Set[IdName]])(solved)(typeInfo).asInstanceOf[this.type]
   }
 }

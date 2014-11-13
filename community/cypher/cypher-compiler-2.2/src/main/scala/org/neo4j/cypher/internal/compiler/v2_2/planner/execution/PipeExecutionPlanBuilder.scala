@@ -87,8 +87,11 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
         case ProjectEndpoints(left, rel, start, end, directed, length) =>
           ProjectEndpointsPipe(buildPipe(left), rel.name, start.name, end.name, directed, length.isSimple)()
 
-        case sr @ SingleRow(ids) =>
-          NullPipe(new SymbolTable(sr.typeInfo))
+        case sr @ SingleRow() =>
+          SingleRowPipe()
+
+        case sr @ Argument(ids) =>
+          ArgumentPipe(new SymbolTable(sr.typeInfo))()
 
         case AllNodesScan(IdName(id), _) =>
           AllNodesScanPipe(id)()
@@ -224,7 +227,7 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
           UnwindPipe(buildPipe(lhs), collection.asCommandExpression, identifier.name)()
 
         case LegacyIndexSeek(id, hint: NodeStartItem, _) =>
-          val source = new NullPipe(SymbolTable())
+          val source = new SingleRowPipe()
           val ep = entityProducerFactory.nodeStartItems((planContext, StatementConverters.StartItemConverter(hint).asCommandStartItem))
           NodeStartPipe(source, id.name, ep)()
 

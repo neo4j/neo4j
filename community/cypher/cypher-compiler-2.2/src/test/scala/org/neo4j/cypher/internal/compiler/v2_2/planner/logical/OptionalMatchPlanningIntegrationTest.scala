@@ -84,7 +84,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
                 Selection(
                   predicates,
                   ProjectEndpoints(
-                    SingleRow(_), IdName("r"), IdName("b2"), IdName("a1$$$_"), true, SimplePatternLength
+                    Argument(_), IdName("r"), IdName("b2"), IdName("a1$$$_"), true, SimplePatternLength
                   )
                   )
                 )

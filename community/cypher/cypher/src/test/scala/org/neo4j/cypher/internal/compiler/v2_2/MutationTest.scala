@@ -25,7 +25,7 @@ import symbols._
 import org.neo4j.cypher.{ExecutionEngineFunSuite}
 import org.neo4j.graphdb.{Node, NotFoundException}
 import collection.mutable.{Map => MutableMap}
-import org.neo4j.cypher.internal.compiler.v2_2.pipes.{PipeMonitor, QueryState, ExecuteUpdateCommandsPipe, NullPipe}
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.{PipeMonitor, QueryState, ExecuteUpdateCommandsPipe, SingleRowPipe}
 
 class MutationTest extends ExecutionEngineFunSuite {
 
@@ -44,7 +44,7 @@ class MutationTest extends ExecutionEngineFunSuite {
 
   test("create_node") {
     val tx = graph.beginTx()
-    val start = NullPipe()
+    val start = SingleRowPipe()
     val createNode = new ExecuteUpdateCommandsPipe(start, Seq(CreateNode("n", Map("name" -> Literal("Andres")), Seq.empty)))
 
     val queryState = createQueryState
@@ -60,7 +60,7 @@ class MutationTest extends ExecutionEngineFunSuite {
 
   test("join_existing_transaction_and_rollback") {
     val tx = graph.beginTx()
-    val start = NullPipe()
+    val start = SingleRowPipe()
     val createNode = new ExecuteUpdateCommandsPipe(start, Seq(CreateNode("n", Map("name" -> Literal("Andres")), Seq.empty)))
 
     createNode.createResults(createQueryState).toList
@@ -73,7 +73,7 @@ class MutationTest extends ExecutionEngineFunSuite {
 
   test("join_existing_transaction_and_commit") {
     val tx = graph.beginTx()
-    val start = NullPipe()
+    val start = SingleRowPipe()
     val createNode = new ExecuteUpdateCommandsPipe(start, Seq(CreateNode("n", Map("name" -> Literal("Andres")), Seq.empty)))
 
     createNode.createResults(createQueryState).toList
@@ -97,7 +97,7 @@ class MutationTest extends ExecutionEngineFunSuite {
       RelationshipEndpoint(getNode("a", a), Map(), Seq.empty),
       RelationshipEndpoint(getNode("b", b), Map(), Seq.empty), "REL", Map("I" -> Literal("was here")))
 
-    val startPipe = NullPipe()
+    val startPipe = SingleRowPipe()
     val createNodePipe = new ExecuteUpdateCommandsPipe(startPipe, Seq(createRel))
 
     val state = createQueryState
@@ -126,7 +126,7 @@ class MutationTest extends ExecutionEngineFunSuite {
     val node_id: Long = a.getId
     val deleteCommand = DeleteEntityAction(getNode("a", a))
 
-    val startPipe = NullPipe()
+    val startPipe = SingleRowPipe()
     val createNodePipe = new ExecuteUpdateCommandsPipe(startPipe, Seq(deleteCommand))
 
     val state = createQueryState

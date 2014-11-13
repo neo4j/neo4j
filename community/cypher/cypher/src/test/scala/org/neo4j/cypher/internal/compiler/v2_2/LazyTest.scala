@@ -270,7 +270,7 @@ class LazyTest extends ExecutionEngineFunSuite {
     val step = trail.toSteps(0).get
     val producer = EntityProducer[Node]("test", mock[Argument]) { (ctx, state) => Iterator(monitoredNode) }
     val matcher = new MonoDirectionalTraversalMatcher(step, producer)
-    new TraversalMatchPipe(NullPipe(), matcher, trail)
+    new TraversalMatchPipe(SingleRowPipe(), matcher, trail)
   }
 }
 

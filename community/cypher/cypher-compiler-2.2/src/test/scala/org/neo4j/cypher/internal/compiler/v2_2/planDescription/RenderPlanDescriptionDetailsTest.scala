@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planDescription
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.pipes.{VarLengthExpandPipeForStringTypes, ExpandPipeForStringTypes, NullPipe, PipeMonitor}
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.{VarLengthExpandPipeForStringTypes, ExpandPipeForStringTypes, SingleRowPipe, PipeMonitor}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.graphdb.Direction
 
 class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
 
-  val pipe = NullPipe()(mock[PipeMonitor])
+  val pipe = SingleRowPipe()(mock[PipeMonitor])
 
   test("single node is represented nicely") {
     val arguments = Seq(
