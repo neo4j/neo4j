@@ -68,6 +68,7 @@ public class AutoConfiguratorTest
         ConsoleLogger logger = Mockito.mock( ConsoleLogger.class );
         mockFileSize( fs, "nodestore.db", 200 * GiB );
         mockFileSize( fs, "relationshipstore.db", 200 * GiB );
+        mockFileSize( fs, "relationshipgroupstore.db", 200 * GiB );
         mockFileSize( fs, "propertystore.db", 200 * GiB );
         mockFileSize( fs, "propertystore.db.strings", 200 * GiB );
         mockFileSize( fs, "propertystore.db.arrays", 200 * GiB );
@@ -90,6 +91,7 @@ public class AutoConfiguratorTest
         FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
         mockFileSize( fs, "nodestore.db", 200 * GiB );
         mockFileSize( fs, "relationshipstore.db", 200 * GiB );
+        mockFileSize( fs, "relationshipgroupstore.db", 200 * GiB );
         mockFileSize( fs, "propertystore.db", 200 * GiB );
         mockFileSize( fs, "propertystore.db.strings", 200 * GiB );
         mockFileSize( fs, "propertystore.db.arrays", 200 * GiB );
@@ -107,7 +109,8 @@ public class AutoConfiguratorTest
         // then
         assertMappedMemory( configuration, "75000M", "relationshipstore.db" );
         assertMappedMemory( configuration, " 5000M", "nodestore.db" );
-        assertMappedMemory( configuration, "15000M", "propertystore.db" );
+        assertMappedMemory( configuration, "    2M", "relationshipgroupstore.db" );
+        assertMappedMemory( configuration, "14998M", "propertystore.db" );
         assertMappedMemory( configuration, " 3750M", "propertystore.db.strings" );
         assertMappedMemory( configuration, " 1250M", "propertystore.db.arrays" );
     }
@@ -119,6 +122,7 @@ public class AutoConfiguratorTest
         FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
         mockFileSize( fs, "nodestore.db", 200 * GiB );
         mockFileSize( fs, "relationshipstore.db", 200 * GiB );
+        mockFileSize( fs, "relationshipgroupstore.db", 200 * GiB );
         mockFileSize( fs, "propertystore.db", 200 * GiB );
         mockFileSize( fs, "propertystore.db.strings", 200 * GiB );
         mockFileSize( fs, "propertystore.db.arrays", 200 * GiB );
@@ -133,7 +137,8 @@ public class AutoConfiguratorTest
         // then
         assertMappedMemory( configuration, "75000M", "relationshipstore.db" );
         assertMappedMemory( configuration, " 5000M", "nodestore.db" );
-        assertMappedMemory( configuration, "15000M", "propertystore.db" );
+        assertMappedMemory( configuration, "    2M", "relationshipgroupstore.db" );
+        assertMappedMemory( configuration, "14998M", "propertystore.db" );
         assertMappedMemory( configuration, " 3750M", "propertystore.db.strings" );
         assertMappedMemory( configuration, " 1250M", "propertystore.db.arrays" );
     }
@@ -145,6 +150,7 @@ public class AutoConfiguratorTest
         FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
         mockFileSize( fs, "nodestore.db", 0 );
         mockFileSize( fs, "relationshipstore.db", 0 );
+        mockFileSize( fs, "relationshipgroupstore.db", 0 );
         mockFileSize( fs, "propertystore.db", 0 );
         mockFileSize( fs, "propertystore.db.strings", 0 );
         mockFileSize( fs, "propertystore.db.arrays", 0 );
@@ -160,11 +166,12 @@ public class AutoConfiguratorTest
         Map<String, String> configuration = autoConf.configure();
 
         // then
-        assertMappedMemory( configuration, "15000M", "relationshipstore.db" );
-        assertMappedMemory( configuration, " 3400M", "nodestore.db" );
-        assertMappedMemory( configuration, "12240M", "propertystore.db" );
-        assertMappedMemory( configuration, "10404M", "propertystore.db.strings" );
-        assertMappedMemory( configuration, "11791M", "propertystore.db.arrays" );
+        assertMappedMemory( configuration, "12500M", "relationshipstore.db" );
+        assertMappedMemory( configuration, " 2916M", "nodestore.db" );
+        assertMappedMemory( configuration, "    1M", "relationshipgroupstore.db" );
+        assertMappedMemory( configuration, "10572M", "propertystore.db" );
+        assertMappedMemory( configuration, " 9251M", "propertystore.db.strings" );
+        assertMappedMemory( configuration, "10793M", "propertystore.db.arrays" );
     }
 
     @Test
@@ -174,6 +181,7 @@ public class AutoConfiguratorTest
         FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
         mockFileSize( fs, "nodestore.db", 0 );
         mockFileSize( fs, "relationshipstore.db", 0 );
+        mockFileSize( fs, "relationshipgroupstore.db", 0 );
         mockFileSize( fs, "propertystore.db", 0 );
         mockFileSize( fs, "propertystore.db.strings", 0 );
         mockFileSize( fs, "propertystore.db.arrays", 0 );
@@ -186,11 +194,12 @@ public class AutoConfiguratorTest
         Map<String, String> configuration = autoConf.configure();
 
         // then
-        assertMappedMemory( configuration, "15000M", "relationshipstore.db" );
-        assertMappedMemory( configuration, " 3400M", "nodestore.db" );
-        assertMappedMemory( configuration, "12240M", "propertystore.db" );
-        assertMappedMemory( configuration, "10404M", "propertystore.db.strings" );
-        assertMappedMemory( configuration, "11791M", "propertystore.db.arrays" );
+        assertMappedMemory( configuration, "12500M", "relationshipstore.db" );
+        assertMappedMemory( configuration, " 2916M", "nodestore.db" );
+        assertMappedMemory( configuration, "    1M", "relationshipgroupstore.db" );
+        assertMappedMemory( configuration, "10572M", "propertystore.db" );
+        assertMappedMemory( configuration, " 9251M", "propertystore.db.strings" );
+        assertMappedMemory( configuration, "10793M", "propertystore.db.arrays" );
     }
 
     @Test
@@ -200,6 +209,7 @@ public class AutoConfiguratorTest
         FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
         mockFileSize( fs, "nodestore.db", 0 );
         mockFileSize( fs, "relationshipstore.db", 0 );
+        mockFileSize( fs, "relationshipgroupstore.db", 0 );
         mockFileSize( fs, "propertystore.db", 0 );
         mockFileSize( fs, "propertystore.db.strings", 0 );
         mockFileSize( fs, "propertystore.db.arrays", 0 );
@@ -213,6 +223,7 @@ public class AutoConfiguratorTest
         // then
         verify( mock ).log( startsWith( "WARNING!" ) );
         assertMappedMemory( configuration, "0M", "relationshipstore.db" );
+        assertMappedMemory( configuration, "0M", "relationshipgroupstore.db" );
         assertMappedMemory( configuration, "0M", "nodestore.db" );
         assertMappedMemory( configuration, "0M", "propertystore.db" );
         assertMappedMemory( configuration, "0M", "propertystore.db.strings" );

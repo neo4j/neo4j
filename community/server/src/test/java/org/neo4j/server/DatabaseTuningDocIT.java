@@ -51,6 +51,7 @@ public class DatabaseTuningDocIT extends ExclusiveServerTestBase
 
         assertTrue( propertyAndValuePresentIn( "neostore.nodestore.db.mapped_memory", "25M", params ) );
         assertTrue( propertyAndValuePresentIn( "neostore.relationshipstore.db.mapped_memory", "50M", params ) );
+        assertTrue( propertyAndValuePresentIn( "neostore.relationshipgroupstore.db.mapped_memory", "10M", params ) );
         assertTrue( propertyAndValuePresentIn( "neostore.propertystore.db.mapped_memory", "90M", params ) );
         assertTrue( propertyAndValuePresentIn( "neostore.propertystore.db.strings.mapped_memory", "130M", params ) );
         assertTrue( propertyAndValuePresentIn( "neostore.propertystore.db.arrays.mapped_memory", "130M", params ) );

@@ -50,6 +50,7 @@ public class ProveFiveBillionIT
         BatchInserter inserter = BatchInserters.inserter( PATH/*, stringMap(
                 "neostore.nodestore.db.mapped_memory", "300M",
                 "neostore.relationshipstore.db.mapped_memory", "800M",
+                "neostore.relationshipgroupstore.db.mapped_memory", "10M",
                 "neostore.propertystore.db.mapped_memory", "100M",
                 "neostore.propertystore.db.strings.mapped_memory", "100M" ) */);
         

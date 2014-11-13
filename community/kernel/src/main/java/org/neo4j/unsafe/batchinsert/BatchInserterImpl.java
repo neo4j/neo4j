@@ -287,6 +287,7 @@ public class BatchInserterImpl implements BatchInserter
         params.put( "neostore.propertystore.db.strings.mapped_memory", "130M" );
         params.put( "neostore.propertystore.db.arrays.mapped_memory", "130M" );
         params.put( "neostore.relationshipstore.db.mapped_memory", "50M" );
+        params.put( "neostore.relationshipgroupstore.db.mapped_memory", "10M" );
         return params;
     }
 

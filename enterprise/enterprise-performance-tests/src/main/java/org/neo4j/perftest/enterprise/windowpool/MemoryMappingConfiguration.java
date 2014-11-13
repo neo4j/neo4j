@@ -37,6 +37,7 @@ public class MemoryMappingConfiguration
         config.put( "neostore.propertystore.db.strings.mapped_memory", mega( 130 * memoryUnit ) );
         config.put( "neostore.propertystore.db.arrays.mapped_memory", mega( 130 * memoryUnit ) );
         config.put( "neostore.relationshipstore.db.mapped_memory", mega( 100 * memoryUnit ) );
+        config.put( "neostore.relationshipgroupstore.db.mapped_memory", mega( 10 * memoryUnit ) );
     }
 
     private static String mega( long bytes )

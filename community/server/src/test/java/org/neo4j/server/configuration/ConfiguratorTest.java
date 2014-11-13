@@ -31,6 +31,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import org.neo4j.kernel.AutoConfigurator;
 import org.neo4j.server.ServerTestUtils;
 
 import static org.junit.Assert.assertEquals;
@@ -93,7 +94,7 @@ public class ConfiguratorTest
 
         Map<String, String> databaseTuningProperties = configurator.getDatabaseTuningProperties();
         assertNotNull( databaseTuningProperties );
-        assertEquals( 6, databaseTuningProperties.size() );
+        assertEquals( 1 + AutoConfigurator.NUMBER_OF_STORES_FOR_MEMORY_MAPPING, databaseTuningProperties.size() );
     }
 
     @Test

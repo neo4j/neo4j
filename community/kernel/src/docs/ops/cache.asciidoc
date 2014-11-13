@@ -60,6 +60,8 @@ IMPORTANT: Note that the block sizes can only be configured at store creation ti
   The maximum amount of memory to use for the file buffer cache of the node storage file.
 | neostore.relationshipstore.db.mapped_memory           |
   The maximum amount of memory to use for the file buffer cache of the relationship store file.
+| neostore.relationshipgroupstore.db.mapped_memory      |
+  The maximum amount of memory to use for the file buffer cache of the relationship group store file.
 | neostore.propertystore.db.index.keys.mapped_memory    |
   The maximum amount of memory to use for the file buffer cache of the something-something file.
 | neostore.propertystore.db.index.mapped_memory         |
