@@ -108,6 +108,9 @@ public class RestfulGraphDatabase
     private static final String PATH_NODE_PATHS = PATH_NODE + "/paths";
     private static final String PATH_NODE_LABELS = PATH_NODE + "/labels";
     private static final String PATH_NODE_LABEL = PATH_NODE + "/labels/{label}";
+    private static final String PATH_NODE_DEGREE = PATH_NODE + "/degree";
+    private static final String PATH_NODE_DEGREE_W_DIR = PATH_NODE_DEGREE + "/{direction}";
+    private static final String PATH_NODE_DEGREE_W_DIR_N_TYPES = PATH_NODE_DEGREE_W_DIR + "/{types}";
 
     private static final String PATH_PROPERTY_KEYS = "propertykeys";
 
@@ -673,6 +676,39 @@ public class RestfulGraphDatabase
         try
         {
             return output.ok( actions.getNodeRelationships( nodeId, direction, types ) );
+        }
+        catch ( NodeNotFoundException e )
+        {
+            return output.notFound( e );
+        }
+    }
+
+    // Degrees
+
+    @GET
+    @Path(PATH_NODE_DEGREE_W_DIR)
+    public Response getNodeDegree( @PathParam("nodeId") long nodeId,
+                                   @PathParam("direction") RelationshipDirection direction )
+    {
+        try
+        {
+            return output.ok( actions.getNodeDegree( nodeId, direction, Collections.<String>emptyList() ) );
+        }
+        catch ( NodeNotFoundException e )
+        {
+            return output.notFound( e );
+        }
+    }
+
+    @GET
+    @Path(PATH_NODE_DEGREE_W_DIR_N_TYPES)
+    public Response getNodeDegree(@PathParam("nodeId") long nodeId,
+                                  @PathParam("direction") RelationshipDirection direction,
+                                  @PathParam("types") AmpersandSeparatedCollection types )
+    {
+        try
+        {
+            return output.ok( actions.getNodeDegree( nodeId, direction, types ) );
         }
         catch ( NodeNotFoundException e )
         {
