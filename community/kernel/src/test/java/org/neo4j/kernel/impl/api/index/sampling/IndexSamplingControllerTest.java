@@ -299,6 +299,47 @@ public class IndexSamplingControllerTest
         verifyNoMoreInteractions( jobFactory, job, tracker );
     }
 
+    @Test
+    public void shouldSampleIndex()
+    {
+        // given
+        IndexSamplingController controller = newSamplingController( FALSE );
+        when( tracker.canExecuteMoreSamplingJobs() ).thenReturn( true );
+        when( indexProxy.getState() ).thenReturn( ONLINE );
+        when( anotherIndexProxy.getState() ).thenReturn( ONLINE );
+        indexMap.putIndexProxy( 3, anotherIndexProxy );
+
+        // when
+        controller.sampleIndex( indexProxy.getDescriptor(), TRIGGER_REBUILD_UPDATED );
+
+        // then
+        verify( jobFactory, times(1) ).create( samplingConfig, indexProxy );
+        verify( tracker, times(1) ).scheduleSamplingJob( job );
+        verify( jobFactory, never() ).create( samplingConfig, anotherIndexProxy );
+        verify( tracker, never() ).scheduleSamplingJob( anotherJob );
+
+        verify( tracker, times( 1 ) ).waitUntilCanExecuteMoreSamplingJobs();
+        verifyNoMoreInteractions( jobFactory, tracker );
+    }
+
+    @Test
+    public void shouldNotStartForSingleIndexAJobIfTheTrackerCannotHandleIt()
+    {
+        // given
+        IndexSamplingController controller = newSamplingController( FALSE );
+        when( tracker.canExecuteMoreSamplingJobs() ).thenReturn( false );
+        when( indexProxy.getState() ).thenReturn( ONLINE );
+
+        // when
+        controller.sampleIndex( indexProxy.getDescriptor(), BACKGROUND_REBUILD_UPDATED );
+
+        // then
+        verify( tracker, times( 1 ) ).canExecuteMoreSamplingJobs();
+        verifyNoMoreInteractions( jobFactory, tracker );
+    }
+
+
+
     private static final Predicate<IndexDescriptor> TRUE = Predicates.TRUE();
     private static final Predicate<IndexDescriptor> FALSE = not( TRUE );
 

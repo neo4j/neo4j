@@ -118,6 +118,12 @@ public class ManagementBeansTest
     }
 
     @Test
+    public void canIndexSamplingManagerBean() throws Exception
+    {
+        assertNotNull( getManager().getIndexSamplingManagerBean() );
+    }
+
+    @Test
     public void canGetMemoryMappingBean() throws Exception
     {
         assertNotNull( getManager().getMemoryMappingBean() );

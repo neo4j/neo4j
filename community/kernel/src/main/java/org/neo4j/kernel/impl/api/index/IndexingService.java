@@ -515,6 +515,11 @@ public class IndexingService extends LifecycleAdapter
         samplingController.sampleIndexes( mode );
     }
 
+    public void triggerIndexSampling( IndexDescriptor descriptor, IndexSamplingMode mode )
+    {
+        samplingController.sampleIndex( descriptor, mode );
+    }
+
     private void awaitIndexFuture( Future<Void> future ) throws Exception
     {
         try

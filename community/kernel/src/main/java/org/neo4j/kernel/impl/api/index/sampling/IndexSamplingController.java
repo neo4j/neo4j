@@ -87,6 +87,23 @@ public class IndexSamplingController
         }
     }
 
+    public void sampleIndex( IndexDescriptor descriptor, IndexSamplingMode mode )
+    {
+        IndexMap indexMap = indexMapSnapshotProvider.indexMapSnapshot();
+        jobQueue.sampleIndex( mode, descriptor );
+
+        if ( mode.blockUntilAllScheduled )
+        {
+            // Wait until last sampling job has been started
+            emptyQueue( indexMap );
+        }
+        else
+        {
+            // Try to schedule as many sampling jobs as possible
+            tryEmptyQueue( indexMap );
+        }
+    }
+
     public void recoverIndexSamples()
     {
         emptyLock.lock();
