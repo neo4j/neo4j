@@ -131,7 +131,7 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer[QueryGraph])
     def findBestPlanForPatternPredicates(plan: LogicalPlan): LogicalPlan = {
       val secretPlanTable = PlanTable(Map(plan.availableSymbols -> plan))
       val result: CandidateList = candidateListProducer(secretPlanTable, queryGraph)
-      result.bestPlan(context.cost).getOrElse(plan)
+      result.bestPlan.getOrElse(plan)
     }
 
     iterateUntilConverged(findBestPlanForPatternPredicates)(plan)

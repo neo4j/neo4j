@@ -25,8 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.Statemen
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{Query, Statement}
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityModel
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assumeDependence._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.{QueryGraphCardinalityInput, QueryGraphCardinalityModel}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 import org.scalatest.mock.MockitoSugar
@@ -60,7 +59,7 @@ trait CardinalityTestHelper extends QueryGraphProducer {
 
   self: CypherFunSuite with LogicalPlanningTestSupport =>
 
-  def createCardinalityModel(stats: GraphStatistics, inboundCardinality: Cardinality, semanticTable: SemanticTable): QueryGraphCardinalityModel
+  def createCardinalityModel(stats: GraphStatistics, semanticTable: SemanticTable): QueryGraphCardinalityModel
 
   def givenPattern(pattern: String) = TestUnit(pattern)
   def givenPredicate(pattern: String) = TestUnit("MATCH " + pattern)
@@ -220,7 +219,7 @@ trait CardinalityTestHelper extends QueryGraphProducer {
     implicit val cardinalityEq = new Equality[Cardinality] {
       def areEqual(a: Cardinality, b: Any): Boolean = b match {
         case b: Cardinality =>
-          val tolerance = Math.max(0.05, a.amount * 0.05) // 5% off is acceptable
+          val tolerance = Math.max(0.1, a.amount * 0.1) // 10% off is acceptable
           a.amount === b.amount +- tolerance
         case _ => false
       }
@@ -229,29 +228,18 @@ trait CardinalityTestHelper extends QueryGraphProducer {
     def shouldHaveQueryGraphCardinality(number: Double) {
       val (statistics, semanticTable) = prepareTestContext
       val queryGraph = createQueryGraph()
-      val cardinalityModel: QueryGraphCardinalityModel = createCardinalityModel(statistics, inboundCardinality, semanticTable)
-      val result = cardinalityModel(queryGraph, Map.empty)
+      val cardinalityModel: QueryGraphCardinalityModel = createCardinalityModel(statistics, semanticTable)
+      val result = cardinalityModel(queryGraph, QueryGraphCardinalityInput(Map.empty, Cardinality(1)))
       result should equal(Cardinality(number))
     }
 
     def shouldHavePlannerQueryCardinality(f: QueryGraphCardinalityModel => Metrics.CardinalityModel)(number: Double) {
       val (statistics, semanticTable) = prepareTestContext
-      val graphCardinalityModel = createCardinalityModel(statistics, inboundCardinality, semanticTable)
+      val graphCardinalityModel = createCardinalityModel(statistics, semanticTable)
       val cardinalityModelUnderTest = f(graphCardinalityModel)
       val plannerQuery: PlannerQuery = producePlannerQueryForPattern(query)
       val plan = newMockedLogicalPlanWithSolved(Set.empty, plannerQuery)
-      cardinalityModelUnderTest(plan) should equal(Cardinality(number))
-    }
-
-    // TODO: Still hard coded to use assumeDependence. Refactor!
-    def shouldHaveSelectivity(number: Double) {
-      val (statistics, semanticTable) = prepareTestContext
-      val queryGraph = createQueryGraph()
-      val predicates = producePredicates(queryGraph)
-      val selectivityEstimator = estimateSelectivity( statistics, semanticTable )
-      val result: List[(PredicateCombination, Selectivity)] = groupPredicates(selectivityEstimator)(predicates).toList
-      val mostSelective = result.map(_._2).min
-      mostSelective should equal(Selectivity(number))
+      cardinalityModelUnderTest(plan, QueryGraphCardinalityInput.empty) should equal(Cardinality(number))
     }
 
     def createQueryGraph(): QueryGraph = {

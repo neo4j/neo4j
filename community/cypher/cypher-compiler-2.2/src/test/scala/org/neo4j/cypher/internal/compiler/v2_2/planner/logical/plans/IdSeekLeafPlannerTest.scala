@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityInput
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
@@ -54,13 +55,13 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any())).thenReturn((plan: LogicalPlan) => plan match {
+    when(factory.newCardinalityEstimator(any())).thenReturn((plan: LogicalPlan, _: QueryGraphCardinalityInput) => plan match {
       case _: NodeByIdSeek => Cardinality(1)
       case _               => Cardinality(Double.MaxValue)
     })
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(statistics, Cardinality(1), newMockedSemanticTable)
+      metrics = factory.newMetrics(statistics, newMockedSemanticTable)
     )
     when(context.semanticTable.isNode(identifier)).thenReturn(true)
 
@@ -94,13 +95,13 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any())).thenReturn((plan: LogicalPlan) => plan match {
+    when(factory.newCardinalityEstimator(any())).thenReturn((plan: LogicalPlan, _: QueryGraphCardinalityInput) => plan match {
       case _: DirectedRelationshipByIdSeek => Cardinality(1)
       case _                               => Cardinality(Double.MaxValue)
     })
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(statistics, Cardinality(1), newMockedSemanticTable)
+      metrics = factory.newMetrics(statistics, newMockedSemanticTable)
     )
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
 
@@ -131,13 +132,13 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       patternRelationships = Set(patternRel))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any())).thenReturn((plan: LogicalPlan) => plan match {
+    when(factory.newCardinalityEstimator(any())).thenReturn((plan: LogicalPlan, _: QueryGraphCardinalityInput) => plan match {
       case _: UndirectedRelationshipByIdSeek => Cardinality(2)
       case _                                 => Cardinality(Double.MaxValue)
     })
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(statistics, Cardinality(1), newMockedSemanticTable)
+      metrics = factory.newMetrics(statistics, newMockedSemanticTable)
     )
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
 
@@ -174,13 +175,13 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       patternRelationships = Set(patternRel))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any())).thenReturn((plan: LogicalPlan) => plan match {
+    when(factory.newCardinalityEstimator(any())).thenReturn((plan: LogicalPlan, _: QueryGraphCardinalityInput) => plan match {
       case _: UndirectedRelationshipByIdSeek => Cardinality(2)
       case _                                 => Cardinality(Double.MaxValue)
     })
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(statistics, Cardinality(1), semanticTable)
+      metrics = factory.newMetrics(statistics, semanticTable)
     )
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
 
@@ -221,13 +222,13 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       patternRelationships = Set(patternRel))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any())).thenReturn((plan: LogicalPlan) => plan match {
+    when(factory.newCardinalityEstimator(any())).thenReturn((plan: LogicalPlan, _: QueryGraphCardinalityInput) => plan match {
       case _: UndirectedRelationshipByIdSeek => Cardinality(2)
       case _                                 => Cardinality(Double.MaxValue)
     })
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(statistics, Cardinality(1), semanticTable)
+      metrics = factory.newMetrics(statistics, semanticTable)
     )
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
 

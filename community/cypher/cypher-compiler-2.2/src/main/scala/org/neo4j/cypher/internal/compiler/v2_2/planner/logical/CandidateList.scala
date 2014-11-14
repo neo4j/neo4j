@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.CostModel
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 
 case class CandidateList(plans: Seq[LogicalPlan] = Seq.empty) {
@@ -30,8 +29,10 @@ case class CandidateList(plans: Seq[LogicalPlan] = Seq.empty) {
 
   final val VERBOSE = false
 
-  def bestPlan(costs: CostModel): Option[LogicalPlan] = {
-    val comparePlans = (c: LogicalPlan) => (-c.solved.numHints, costs(c), -c.availableSymbols.size)
+  def bestPlan(implicit context: LogicalPlanningContext): Option[LogicalPlan] = {
+    val costs = context.cost
+    val comparePlans = (c: LogicalPlan) =>
+      (-c.solved.numHints, costs(c, context.cardinalityInput), -c.availableSymbols.size)
 
     if (VERBOSE) {
       val sortedPlans = plans.sortBy(comparePlans)
@@ -39,7 +40,7 @@ case class CandidateList(plans: Seq[LogicalPlan] = Seq.empty) {
       if (sortedPlans.size > 1) {
         println("Get best of:")
         for (plan <- sortedPlans) {
-          println("* " + plan.toString + s"\n${costs(plan)}\n")
+          println("* " + plan.toString + s"\n${costs(plan, context.cardinalityInput)}\n")
         }
 
         println("Best is:")

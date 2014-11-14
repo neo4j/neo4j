@@ -32,8 +32,8 @@ object SimpleMetricsFactory extends MetricsFactory {
   def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel)
   : CardinalityModel = new StatisticsBackedCardinalityModel(queryGraphCardinalityModel)
 
-  def newQueryGraphCardinalityModel(statistics: GraphStatistics, inboundCardinality: Cardinality, semanticTable: SemanticTable) =
-    QueryGraphCardinalityModel.default(statistics, inboundCardinality, semanticTable)
+  def newQueryGraphCardinalityModel(statistics: GraphStatistics, semanticTable: SemanticTable) =
+    QueryGraphCardinalityModel.default(statistics, semanticTable)
 
   def newCandidateListCreator(): (Seq[LogicalPlan]) => CandidateList = plans => CandidateList(plans)
 }

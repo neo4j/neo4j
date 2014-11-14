@@ -28,12 +28,12 @@ import org.neo4j.cypher.internal.compiler.v2_2.{InternalException, LabelId, Name
 import org.neo4j.graphdb.Direction
 
 trait Pattern2Selectivity {
-  def apply(pattern: PatternRelationship, labels: Map[IdName, Seq[LabelName]])(implicit semanticTable: SemanticTable, selections: Selections): Selectivity
+  def apply(pattern: PatternRelationship, labels: Map[IdName, Set[LabelName]])(implicit semanticTable: SemanticTable, selections: Selections): Selectivity
 }
 
 case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: SelectivityCombiner) extends Pattern2Selectivity {
 
-  def apply(pattern: PatternRelationship, labels: Map[IdName, Seq[LabelName]])(implicit semanticTable: SemanticTable, selections: Selections): Selectivity = {
+  def apply(pattern: PatternRelationship, labels: Map[IdName, Set[LabelName]])(implicit semanticTable: SemanticTable, selections: Selections): Selectivity = {
     val lhs = pattern.nodes._1
     val rhs = pattern.nodes._2
     val labelsOnLhs: Seq[TokenSpec[LabelId]] = mapToLabelTokenSpecs(selections.labelsOnNode(lhs).toSeq ++ labels.getOrElse(lhs, Seq.empty))

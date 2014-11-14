@@ -38,13 +38,6 @@ class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStra
     case _ => throw new CantHandleQueryException
   }
 
-  protected def planSingleQuery(query: PlannerQuery)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan = {
-    val firstPart = planPart(query, leafPlan)
-    val projectedFirstPart = planEventHorizon(query, firstPart)
-    val finalPlan = planWithTail(projectedFirstPart, query.tail, context)
-    verifyBestPlan(finalPlan, query)
-  }
-
   private def planQuery(queries: Seq[PlannerQuery], distinct: Boolean)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None) = {
     val logicalPlans: Seq[LogicalPlan] = queries.map(p => planSingleQuery(p))
     val unionPlan = logicalPlans.reduce[LogicalPlan] {
@@ -57,17 +50,21 @@ class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStra
       unionPlan
   }
 
-  private def planWithTail(pred: LogicalPlan, remaining: Option[PlannerQuery], context: LogicalPlanningContext): LogicalPlan = remaining match {
+  protected def planSingleQuery(query: PlannerQuery)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan = {
+    val firstPart = planPart(query, leafPlan)
+    val projectedFirstPart = planEventHorizon(query, firstPart)
+    val finalPlan = planWithTail(projectedFirstPart, query.tail)
+    verifyBestPlan(finalPlan, query)
+  }
+
+  private def planWithTail(pred: LogicalPlan, remaining: Option[PlannerQuery])(implicit context: LogicalPlanningContext): LogicalPlan = remaining match {
     case Some(query) =>
       val lhs = pred
-      val inboundCardinality = context.cardinality(pred)
-      implicit val newContext = context.copy(
-        metrics = context.relativeMetrics(inboundCardinality)
-      )
-      val rhs = planPart(query, Some(planQueryArgumentRow(query.graph)))
+      val newContext = context.recurse(lhs)
+      val rhs = planPart(query, Some(planQueryArgumentRow(query.graph)))(newContext)
       val applyPlan = planTailApply(lhs, rhs)
       val projectedPlan = planEventHorizon(query, applyPlan)(context)
-      planWithTail(projectedPlan, query.tail, newContext)
+      planWithTail(projectedPlan, query.tail)(newContext)
     case None =>
       pred
   }

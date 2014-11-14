@@ -24,18 +24,34 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryGraph, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.MapSupport._
 
 object Metrics {
+
+  object QueryGraphCardinalityInput {
+    def empty = QueryGraphCardinalityInput(Map.empty, Cardinality(1))
+  }
+
+  case class QueryGraphCardinalityInput(labelInfo: Map[IdName, Set[LabelName]], inboundCardinality: Cardinality) {
+    def withCardinality(c: Cardinality): QueryGraphCardinalityInput = copy(inboundCardinality = c)
+
+    def recurse(fromPlan: LogicalPlan)(implicit cardinality: Metrics.CardinalityModel): QueryGraphCardinalityInput = {
+      val newCardinalityInput = cardinality(fromPlan, this)
+      val newLabels = (labelInfo fuse fromPlan.solved.labelInfo)(_ ++ _)
+      copy(labelInfo = newLabels, inboundCardinality = newCardinalityInput)
+    }
+  }
+
   // This metric calculates how expensive executing a logical plan is.
   // (e.g. by looking at cardinality, expression selectivity and taking into account the effort
   // required to execute a step)
-  type CostModel = (LogicalPlan) => Cost
+  type CostModel = (LogicalPlan, QueryGraphCardinalityInput) => Cost
 
   // This metric estimates how many rows of data a logical plan produces
   // (e.g. by asking the database for statistics)
-  type CardinalityModel = (LogicalPlan) => Cardinality
+  type CardinalityModel = (LogicalPlan, QueryGraphCardinalityInput) => Cardinality
 
-  type QueryGraphCardinalityModel = (QueryGraph, Map[IdName, Seq[LabelName]]) => Cardinality
+  type QueryGraphCardinalityModel = (QueryGraph, QueryGraphCardinalityInput) => Cardinality
 }
 
 case class Metrics(cost: CostModel,
@@ -118,11 +134,11 @@ object Selectivity {
 trait MetricsFactory {
   def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel): CardinalityModel
   def newCostModel(cardinality: CardinalityModel): CostModel
-  def newQueryGraphCardinalityModel(statistics: GraphStatistics, inboundCardinality: Cardinality, semanticTable: SemanticTable): QueryGraphCardinalityModel
+  def newQueryGraphCardinalityModel(statistics: GraphStatistics, semanticTable: SemanticTable): QueryGraphCardinalityModel
   def newCandidateListCreator(): Seq[LogicalPlan] => CandidateList
 
-  def newMetrics(statistics: GraphStatistics, inboundCardinality: Cardinality, semanticTable: SemanticTable) = {
-    val queryGraphCardinalityModel = newQueryGraphCardinalityModel(statistics, inboundCardinality, semanticTable)
+  def newMetrics(statistics: GraphStatistics, semanticTable: SemanticTable) = {
+    val queryGraphCardinalityModel = newQueryGraphCardinalityModel(statistics, semanticTable)
     val cardinality = newCardinalityEstimator(queryGraphCardinalityModel)
     val cost = newCostModel(cardinality)
     Metrics(cost, cardinality, queryGraphCardinalityModel, newCandidateListCreator())

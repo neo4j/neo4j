@@ -21,6 +21,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityInput
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{PlannerQuery, LogicalPlanningTestSupport2}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{LabelName, UsingIndexHint}
@@ -93,9 +94,9 @@ class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport2 
 
   private def assertTopPlan(winner: LogicalPlan, candidates: LogicalPlan*)(GIVEN: given) {
     val environment = LogicalPlanningEnvironment(GIVEN)
-    val costs = environment.metricsFactory.newMetrics(GIVEN.graphStatistics, Cardinality(1), environment.semanticTable).cost
-    CandidateList(candidates).bestPlan(costs) should equal(Some(winner))
-    CandidateList(candidates.reverse).bestPlan(costs) should equal(Some(winner))
+    val context = LogicalPlanningContext(null, environment.metricsFactory.newMetrics(GIVEN.graphStatistics, environment.semanticTable), null, null, QueryGraphCardinalityInput(Map.empty, Cardinality(1)))
+    CandidateList(candidates).bestPlan(context) should equal(Some(winner))
+    CandidateList(candidates.reverse).bestPlan(context) should equal(Some(winner))
   }
 }
 

@@ -20,12 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Cardinality
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assumeIndependence.{AssumeIndependenceQueryGraphCardinalityModel, IndependenceCombiner}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 
 object QueryGraphCardinalityModel {
-  def default(statistics: GraphStatistics, inboundCardinality: Cardinality, semanticTable: SemanticTable): QueryGraphCardinalityModel =
-    AssumeIndependenceQueryGraphCardinalityModel(statistics, inboundCardinality, semanticTable, IndependenceCombiner)
+  def default(statistics: GraphStatistics, semanticTable: SemanticTable): QueryGraphCardinalityModel =
+    AssumeIndependenceQueryGraphCardinalityModel(statistics, semanticTable, IndependenceCombiner)
 }

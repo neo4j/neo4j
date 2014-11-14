@@ -58,27 +58,9 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
     shouldHavePlannerQueryCardinality(produceCardinalityModel)(aggregation * relCount / allNodes)
   }
 
-  test("query containing a WITH and aggregation") {
-    val patternNodeCrossProduct = allNodes * allNodes
-    val labelSelectivity = personCount / allNodes
-    val maxRelCount = patternNodeCrossProduct * labelSelectivity
-    val relSelectivity = rel2Count / maxRelCount
-
-    val firstQG = patternNodeCrossProduct * labelSelectivity * relSelectivity
-
-    val aggregation = Math.sqrt(firstQG)
-
-    givenPattern("MATCH (a:Person)-[:REL2]->(b) WITH a, count(*) as c").
-    withGraphNodes(allNodes).
-    withLabel('Person -> personCount).
-    withRelationshipCardinality('Person -> 'REL -> 'Person -> relCount).
-    withRelationshipCardinality('Person -> 'REL2 -> 'Person -> rel2Count).
-    shouldHavePlannerQueryCardinality(produceCardinalityModel)(aggregation)
-  }
-
   def produceCardinalityModel(in: QueryGraphCardinalityModel): Metrics.CardinalityModel =
     new StatisticsBackedCardinalityModel(in)
 
-  def createCardinalityModel(stats: GraphStatistics, inboundCardinality: Cardinality, semanticTable: SemanticTable): QueryGraphCardinalityModel =
-    AssumeIndependenceQueryGraphCardinalityModel(stats, inboundCardinality, semanticTable, IndependenceCombiner)
+  def createCardinalityModel(stats: GraphStatistics, semanticTable: SemanticTable): QueryGraphCardinalityModel =
+    AssumeIndependenceQueryGraphCardinalityModel(stats, semanticTable, IndependenceCombiner)
 }

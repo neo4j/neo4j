@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.LabelId
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityInput
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.labelScanLeafPlanner
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, Candidates}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
@@ -45,7 +46,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       patternNodes = Set(idName))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any())).thenReturn((plan: LogicalPlan) => plan match {
+    when(factory.newCardinalityEstimator(any())).thenReturn((plan: LogicalPlan, _: QueryGraphCardinalityInput) => plan match {
       case _: NodeByLabelScan => Cardinality(1)
       case _                  => Cardinality(Double.MaxValue)
     })
@@ -56,7 +57,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     implicit val context = newMockedLogicalPlanningContext(
       semanticTable = semanticTable,
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(statistics, Cardinality(1), newMockedSemanticTable)
+      metrics = factory.newMetrics(statistics, newMockedSemanticTable)
     )
 
     // when
@@ -76,7 +77,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       patternNodes = Set(idName))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any())).thenReturn((plan: LogicalPlan) => plan match {
+    when(factory.newCardinalityEstimator(any())).thenReturn((plan: LogicalPlan, _: QueryGraphCardinalityInput) => plan match {
       case _: NodeByLabelScan => Cardinality(100)
       case _                  => Cardinality(Double.MaxValue)
     })
@@ -87,7 +88,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     implicit val context = newMockedLogicalPlanningContext(
       semanticTable = semanticTable,
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(statistics, Cardinality(1), semanticTable)
+      metrics = factory.newMetrics(statistics, semanticTable)
     )
 
     // when

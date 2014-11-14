@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityInput
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, LogicalPlanningContext, PlanTable}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{FakePlan, LogicalPlanningTestSupport, PlannerQuery, QueryGraph}
@@ -59,7 +60,7 @@ class SolveOptionalMatchesTest extends CypherFunSuite with LogicalPlanningTestSu
     val lhs = newMockedLogicalPlan("a")
 
     val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any())).thenReturn((plan: LogicalPlan) => plan match {
+    when(factory.newCardinalityEstimator(any())).thenReturn((plan: LogicalPlan, _: QueryGraphCardinalityInput) => plan match {
       case _: Argument => Cardinality(1.0)
       case _: FakePlan  => Cardinality(1.0)
       case _            => Cardinality(1000.0)
@@ -67,7 +68,7 @@ class SolveOptionalMatchesTest extends CypherFunSuite with LogicalPlanningTestSu
 
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(hardcodedStatistics, Cardinality(1), newMockedSemanticTable)
+      metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
     val planTable = PlanTable(Map(Set(IdName("a")) -> lhs))
 
@@ -279,14 +280,14 @@ class SolveOptionalMatchesTest extends CypherFunSuite with LogicalPlanningTestSu
              withAddedOptionalMatch(qgForAtoB.addPredicates(labelPredicate))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any())).thenReturn((plan: LogicalPlan) => plan match {
+    when(factory.newCardinalityEstimator(any())).thenReturn((plan: LogicalPlan, _: QueryGraphCardinalityInput) => plan match {
       case _: Argument  => Cardinality(1.0)
       case _            => Cardinality(1000.0)
     })
 
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(hardcodedStatistics, Cardinality(1), newMockedSemanticTable)
+      metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
     val lhs = newMockedLogicalPlan("a")
     val planTable = PlanTable(Map(Set(IdName("a")) -> lhs))
@@ -314,7 +315,7 @@ class SolveOptionalMatchesTest extends CypherFunSuite with LogicalPlanningTestSu
     val factory = newMockedMetricsFactory
     newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(hardcodedStatistics, Cardinality(1), newMockedSemanticTable)
+      metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
   }
 }

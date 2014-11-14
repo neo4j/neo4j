@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityInput
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
@@ -53,7 +54,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any())).thenReturn((plan: LogicalPlan) => plan match {
+    when(factory.newCardinalityEstimator(any())).thenReturn((plan: LogicalPlan, _: QueryGraphCardinalityInput) => plan match {
       case AllNodesScan(IdName("b"), _) => Cardinality(1) // Make sure we start the inner plan using b
       case _                         => Cardinality(1000)
     })
@@ -63,7 +64,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
       strategy = newMockedStrategy(innerPlan),
-      metrics = factory.newMetrics(hardcodedStatistics, Cardinality(1), newMockedSemanticTable)
+      metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
     val left = newMockedLogicalPlanWithPatterns(Set(aNode))
     val plans = outerHashJoin(optionalQg, left)

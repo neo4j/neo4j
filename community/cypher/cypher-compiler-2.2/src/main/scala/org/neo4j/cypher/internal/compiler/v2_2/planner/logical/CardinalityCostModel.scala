@@ -59,30 +59,31 @@ case class CardinalityCostModel(cardinality: CardinalityModel) extends CostModel
     case _ => DB_ACCESS_BOUND_PLAN_COST_PER_ROW
   }
 
-  private def cardinalityForPlan(plan: LogicalPlan): Cardinality = plan match {
-    case Selection(_, left) => cardinality(left)
-    case _                  => plan.lhs.map(cardinality).getOrElse(cardinality(plan))
+  private def cardinalityForPlan(plan: LogicalPlan, input: QueryGraphCardinalityInput): Cardinality = plan match {
+    case Selection(_, left) => cardinality(left, input)
+    case _                  => plan.lhs.map(p => cardinality(p, input)).getOrElse(cardinality(plan, input))
   }
 
-  def apply(plan: LogicalPlan): Cost = plan match {
+  def apply(plan: LogicalPlan, input: QueryGraphCardinalityInput): Cost = plan match {
     case CartesianProduct(lhs, rhs) =>
-      apply(lhs) + cardinality(lhs) * apply(rhs)
+      apply(lhs, input) + cardinality(lhs, input) * apply(rhs, input)
 
     case Apply(lhs, rhs) =>
-      val lCost = apply(lhs)
-      val lCardinality = cardinality(lhs)
-      val rCost = apply(rhs)
-      lCost + lCardinality * rCost
+      val newInput = input.withCardinality(cardinality(lhs, input))
+
+      val lCost = apply(lhs, input)
+      val rCost = apply(rhs, newInput)
+      lCost + rCost
 
     case OuterHashJoin(_, lhs, rhs) =>
-      val lCost = apply(lhs)
-      val rCost = apply(rhs)
+      val lCost = apply(lhs, input)
+      val rCost = apply(rhs, input)
       lCost + rCost
 
     case _ =>
-      val lhsCost = plan.lhs.map(apply).getOrElse(Cost(0))
-      val rhsCost = plan.rhs.map(apply).getOrElse(Cost(0))
-      val costForThisPlan = cardinalityForPlan(plan) * costPerRow(plan)
+      val lhsCost = plan.lhs.map(p => apply(p, input)).getOrElse(Cost(0))
+      val rhsCost = plan.rhs.map(p => apply(p, input)).getOrElse(Cost(0))
+      val costForThisPlan = cardinalityForPlan(plan, input) * costPerRow(plan)
       val totalCost = costForThisPlan + lhsCost + rhsCost
       totalCost
   }

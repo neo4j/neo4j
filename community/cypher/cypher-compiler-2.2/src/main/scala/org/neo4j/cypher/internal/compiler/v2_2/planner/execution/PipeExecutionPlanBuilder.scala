@@ -30,10 +30,11 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{Expression, Identifier, NodeStartItem, RelTypeName}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{AggregationExpression, Expression => CommandExpression}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.{EntityProducerFactory, True, Predicate => CommandPredicate}
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{PlanFingerprint, PipeInfo}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.builders.prepare.KeyTokenResolver
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{PipeInfo, PlanFingerprint}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityInput
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{CantHandleQueryException, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{InstrumentedGraphStatistics, PlanContext}
@@ -57,7 +58,7 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
       val instance = Rewriter.lift {
         case pattern: ast.PatternExpression =>
           val pos = pattern.position
-          val pipe = buildPipe(context.plan(pattern))
+          val pipe = buildPipe(context.plan(pattern), QueryGraphCardinalityInput.empty)
           val step = projectNamedPaths.patternPartPathExpression(ast.EveryPath(pattern.pattern.element))
           ast.NestedPipeExpression(pipe, ast.PathExpression(step)(pos))(pos)
       }
@@ -77,15 +78,16 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
       rewrittenExpr.asCommandPredicate.rewrite(resolver.resolveExpressions(_, planContext)).asInstanceOf[CommandPredicate]
     }
 
-    def buildPipe(plan: LogicalPlan): Pipe = {
+    def buildPipe(plan: LogicalPlan, input: QueryGraphCardinalityInput): Pipe = {
       implicit val monitor = monitors.newMonitor[PipeMonitor]()
+      implicit val c = context.cardinality
 
       val result: Pipe with RonjaPipe = plan match {
         case Projection(left, expressions) =>
-          ProjectionNewPipe(buildPipe(left), Eagerly.immutableMapValues(expressions, buildExpression))()
+          ProjectionNewPipe(buildPipe(left, input), Eagerly.immutableMapValues(expressions, buildExpression))()
 
         case ProjectEndpoints(left, rel, start, end, directed, length) =>
-          ProjectEndpointsPipe(buildPipe(left), rel.name, start.name, end.name, directed, length.isSimple)()
+          ProjectEndpointsPipe(buildPipe(left, input), rel.name, start.name, end.name, directed, length.isSimple)()
 
         case sr @ SingleRow() =>
           SingleRowPipe()
@@ -115,18 +117,18 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
           NodeIndexSeekPipe(id, label, propertyKey, valueExpr.map(buildExpression), unique = true)()
 
         case Selection(predicates, left) =>
-          FilterPipe(buildPipe(left), predicates.map(buildPredicate).reduce(_ ++ _))()
+          FilterPipe(buildPipe(left, input), predicates.map(buildPredicate).reduce(_ ++ _))()
 
         case CartesianProduct(left, right) =>
-          CartesianProductPipe(buildPipe(left), buildPipe(right))()
+          CartesianProductPipe(buildPipe(left, input), buildPipe(right, input))()
 
         case Expand(left, IdName(fromName), dir, projectedDir, types: Seq[RelTypeName], IdName(toName), IdName(relName), SimplePatternLength, _) =>
           implicit val table: SemanticTable = context.semanticTable
 
           if (types.exists(_.id == None))
-            ExpandPipeForStringTypes(buildPipe(left), fromName, relName, toName, dir, types.map(_.name))()
+            ExpandPipeForStringTypes(buildPipe(left, input), fromName, relName, toName, dir, types.map(_.name))()
           else {
-            ExpandPipeForIntTypes(buildPipe(left), fromName, relName, toName, dir, types.flatMap(_.id).map(_.id))()
+            ExpandPipeForIntTypes(buildPipe(left, input), fromName, relName, toName, dir, types.flatMap(_.id).map(_.id))()
           }
 
         case Expand(left, IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName), VarPatternLength(min, max), predicates) =>
@@ -144,87 +146,87 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
           implicit val table: SemanticTable = context.semanticTable
 
           if (types.exists(_.id == None))
-            VarLengthExpandPipeForStringTypes(buildPipe(left), fromName, relName, toName, dir, projectedDir, types.map(_.name), min, max, predicate)()
+            VarLengthExpandPipeForStringTypes(buildPipe(left, input), fromName, relName, toName, dir, projectedDir, types.map(_.name), min, max, predicate)()
           else
-            VarLengthExpandPipeForIntTypes(buildPipe(left), fromName, relName, toName, dir, projectedDir, types.flatMap(_.id).map(_.id), min, max, predicate)()
+            VarLengthExpandPipeForIntTypes(buildPipe(left, input), fromName, relName, toName, dir, projectedDir, types.flatMap(_.id).map(_.id), min, max, predicate)()
 
         case OptionalExpand(left, IdName(fromName), dir, types, IdName(toName), IdName(relName), SimplePatternLength, predicates) =>
           val predicate = predicates.map(buildPredicate).reduceOption(_ ++ _).getOrElse(True())
-          OptionalExpandPipe(buildPipe(left), fromName, relName, toName, dir, types.map(_.name), predicate)()
+          OptionalExpandPipe(buildPipe(left, input), fromName, relName, toName, dir, types.map(_.name), predicate)()
 
         case NodeHashJoin(nodes, left, right) =>
-          NodeHashJoinPipe(nodes.map(_.name), buildPipe(left), buildPipe(right))()
+          NodeHashJoinPipe(nodes.map(_.name), buildPipe(left, input), buildPipe(right, input))()
 
         case OuterHashJoin(nodes, left, right) =>
-          NodeOuterHashJoinPipe(nodes.map(_.name), buildPipe(left), buildPipe(right), (right.availableSymbols -- left.availableSymbols).map(_.name))()
+          NodeOuterHashJoinPipe(nodes.map(_.name), buildPipe(left, input), buildPipe(right, input), (right.availableSymbols -- left.availableSymbols).map(_.name))()
 
         case Optional(inner) =>
-          OptionalPipe(inner.availableSymbols.map(_.name), buildPipe(inner))()
+          OptionalPipe(inner.availableSymbols.map(_.name), buildPipe(inner, input))()
 
         case Apply(outer, inner) =>
-          ApplyPipe(buildPipe(outer), buildPipe(inner))()
+          ApplyPipe(buildPipe(outer, input), buildPipe(inner, input.recurse(outer)))()
 
         case SemiApply(outer, inner) =>
-          SemiApplyPipe(buildPipe(outer), buildPipe(inner), negated = false)()
+          SemiApplyPipe(buildPipe(outer, input), buildPipe(inner, input.recurse(outer)), negated = false)()
 
         case AntiSemiApply(outer, inner) =>
-          SemiApplyPipe(buildPipe(outer), buildPipe(inner), negated = true)()
+          SemiApplyPipe(buildPipe(outer, input), buildPipe(inner, input.recurse(outer)), negated = true)()
 
         case LetSemiApply(outer, inner, idName) =>
-          LetSemiApplyPipe(buildPipe(outer), buildPipe(inner), idName.name, negated = false)()
+          LetSemiApplyPipe(buildPipe(outer, input), buildPipe(inner, input.recurse(outer)), idName.name, negated = false)()
 
         case LetAntiSemiApply(outer, inner, idName) =>
-          LetSemiApplyPipe(buildPipe(outer), buildPipe(inner), idName.name, negated = true)()
+          LetSemiApplyPipe(buildPipe(outer, input), buildPipe(inner, input.recurse(outer)), idName.name, negated = true)()
 
         case apply@SelectOrSemiApply(outer, inner, predicate) =>
-          SelectOrSemiApplyPipe(buildPipe(outer), buildPipe(inner), buildPredicate(predicate), negated = false)()
+          SelectOrSemiApplyPipe(buildPipe(outer, input), buildPipe(inner, input.recurse(outer)), buildPredicate(predicate), negated = false)()
 
         case apply@SelectOrAntiSemiApply(outer, inner, predicate) =>
-          SelectOrSemiApplyPipe(buildPipe(outer), buildPipe(inner), buildPredicate(predicate), negated = true)()
+          SelectOrSemiApplyPipe(buildPipe(outer, input), buildPipe(inner, input.recurse(outer)), buildPredicate(predicate), negated = true)()
 
         case apply@LetSelectOrSemiApply(outer, inner, idName, predicate) =>
-          LetSelectOrSemiApplyPipe(buildPipe(outer), buildPipe(inner), idName.name, buildPredicate(predicate), negated = false)()
+          LetSelectOrSemiApplyPipe(buildPipe(outer, input), buildPipe(inner, input.recurse(outer)), idName.name, buildPredicate(predicate), negated = false)()
 
         case apply@LetSelectOrAntiSemiApply(outer, inner, idName, predicate) =>
-          LetSelectOrSemiApplyPipe(buildPipe(outer), buildPipe(inner), idName.name, buildPredicate(predicate), negated = true)()
+          LetSelectOrSemiApplyPipe(buildPipe(outer, input), buildPipe(inner, input.recurse(outer)), idName.name, buildPredicate(predicate), negated = true)()
 
         case Sort(left, sortItems) =>
-          SortPipe(buildPipe(left), sortItems)()
+          SortPipe(buildPipe(left, input), sortItems)()
 
-        case Skip(input, count) =>
-          SkipPipe(buildPipe(input), buildExpression(count))()
+        case Skip(lhs, count) =>
+          SkipPipe(buildPipe(lhs, input), buildExpression(count))()
 
-        case Limit(input, count) =>
-          LimitPipe(buildPipe(input), buildExpression(count))()
+        case Limit(lhs, count) =>
+          LimitPipe(buildPipe(lhs, input), buildExpression(count))()
 
-        case SortedLimit(input, exp, sortItems) =>
-          TopPipe(buildPipe(input), sortItems.map(_.asCommandSortItem).toList, exp.asCommandExpression)()
+        case SortedLimit(lhs, exp, sortItems) =>
+          TopPipe(buildPipe(lhs, input), sortItems.map(_.asCommandSortItem).toList, exp.asCommandExpression)()
 
         // TODO: Maybe we shouldn't encode distinct as an empty aggregation.
-        case Aggregation(Projection(input, expressions), groupingExpressions, aggregatingExpressions)
+        case Aggregation(Projection(source, expressions), groupingExpressions, aggregatingExpressions)
           if aggregatingExpressions.isEmpty && expressions == groupingExpressions =>
-          DistinctPipe(buildPipe(input), groupingExpressions.mapValues(_.asCommandExpression))()
+          DistinctPipe(buildPipe(source, input), groupingExpressions.mapValues(_.asCommandExpression))()
 
-        case Aggregation(input, groupingExpressions, aggregatingExpressions) if aggregatingExpressions.isEmpty =>
-          DistinctPipe(buildPipe(input), groupingExpressions.mapValues(_.asCommandExpression))()
+        case Aggregation(source, groupingExpressions, aggregatingExpressions) if aggregatingExpressions.isEmpty =>
+          DistinctPipe(buildPipe(source, input), groupingExpressions.mapValues(_.asCommandExpression))()
 
-        case Aggregation(input, groupingExpressions, aggregatingExpressions) =>
+        case Aggregation(source, groupingExpressions, aggregatingExpressions) =>
           EagerAggregationPipe(
-            buildPipe(input),
+            buildPipe(source, input),
             Eagerly.immutableMapValues[String, ast.Expression, commands.expressions.Expression](groupingExpressions, x => x.asCommandExpression),
             Eagerly.immutableMapValues[String, ast.Expression, AggregationExpression](aggregatingExpressions, x => x.asCommandExpression.asInstanceOf[AggregationExpression])
           )()
 
-        case FindShortestPaths(input, shortestPath) =>
+        case FindShortestPaths(source, shortestPath) =>
           val legacyShortestPaths = shortestPath.expr.asLegacyPatterns(shortestPath.name.map(_.name))
           val legacyShortestPath = legacyShortestPaths.head
-          new ShortestPathPipe(buildPipe(input), legacyShortestPath)()
+          new ShortestPathPipe(buildPipe(source, input), legacyShortestPath)()
 
         case Union(lhs, rhs) =>
-          NewUnionPipe(buildPipe(lhs), buildPipe(rhs))()
+          NewUnionPipe(buildPipe(lhs, input), buildPipe(rhs, input))()
 
         case UnwindCollection(lhs, identifier, collection) =>
-          UnwindPipe(buildPipe(lhs), collection.asCommandExpression, identifier.name)()
+          UnwindPipe(buildPipe(lhs, input), collection.asCommandExpression, identifier.name)()
 
         case LegacyIndexSeek(id, hint: NodeStartItem, _) =>
           val source = new SingleRowPipe()
@@ -235,10 +237,11 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
           throw new CantHandleQueryException(x.toString)
       }
 
-      result.withEstimatedCardinality(context.cardinality(plan).amount.toLong)
+      val cardinality = context.cardinality(plan, input)
+      result.withEstimatedCardinality(cardinality.amount.toLong)
     }
 
-    val topLevelPipe = buildPipe(plan)
+    val topLevelPipe = buildPipe(plan, QueryGraphCardinalityInput.empty)
 
     val fingerprint = planContext.statistics match {
       case igs: InstrumentedGraphStatistics =>
