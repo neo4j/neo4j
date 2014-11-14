@@ -21,9 +21,27 @@ package org.neo4j.kernel.impl.api.index.sampling;
 
 public enum IndexSamplingMode
 {
-    TRIGGER_REBUILD_ALL( false, true ),
-    TRIGGER_REBUILD_UPDATED( true, true ),
-    BACKGROUND_REBUILD_UPDATED( true, false );
+    TRIGGER_REBUILD_ALL( false, true ){
+        @Override
+        public String toString()
+        {
+            return "FORCE REBUILD";
+        }
+    },
+    TRIGGER_REBUILD_UPDATED( true, true ){
+        @Override
+        public String toString()
+        {
+            return "REBUILD OUTDATED";
+        }
+    },
+    BACKGROUND_REBUILD_UPDATED( true, false ){
+        @Override
+        public String toString()
+        {
+            return "BACKGROUND-REBUILD OF OUTDATED";
+        }
+    };
 
     public final boolean sampleOnlyIfUpdated;
     public final boolean blockUntilAllScheduled;
