@@ -19,18 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.commands.expressions
 
-<<<<<<< HEAD:community/cypher/cypher-compiler-2.1/src/test/scala/org/neo4j/cypher/internal/compiler/v2_1/commands/expressions/GenericCaseTest.scala
+import org.junit.Test
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
-import org.neo4j.cypher.internal.compiler.v2_1.commands.{Equals, Predicate}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{CoercedPredicate, Equals, Predicate}
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryStateHelper
-=======
-import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.commands.{CoercedPredicate, Predicate, Equals}
-import pipes.QueryStateHelper
-import org.scalatest.Assertions
-import org.junit.Test
->>>>>>> 2.0-maint:community/cypher/cypher-compiler-2.0/src/test/scala/org/neo4j/cypher/internal/compiler/v2_0/commands/expressions/GenericCaseTest.scala
 
 class GenericCaseTest extends CypherFunSuite {
 

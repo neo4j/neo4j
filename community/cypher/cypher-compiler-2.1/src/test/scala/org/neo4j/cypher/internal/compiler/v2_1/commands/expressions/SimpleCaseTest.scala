@@ -80,8 +80,7 @@ class SimpleCaseTest extends CypherFunSuite {
     result should equal("default")
   }
 
-  @Test
-  def when_the_input_expression_is_null_return_the_else_case() {
+  test("when_the_input_expression_is_null_return_the_else_case") {
     //GIVEN
     val caseExpr = case_(null,
       1 -> "one",
