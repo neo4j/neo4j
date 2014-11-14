@@ -28,7 +28,8 @@ angular.module('neo4jApp.directives')
         elem.bind('keydown', (e)->
           code = e.which || e.keyCode
           return unless code is 13
-
+          e.preventDefault()
+          
           if attr.onEnter is 'focus'
             element = document.getElementById(attr.onEnterTargetId)
             element.focus()
