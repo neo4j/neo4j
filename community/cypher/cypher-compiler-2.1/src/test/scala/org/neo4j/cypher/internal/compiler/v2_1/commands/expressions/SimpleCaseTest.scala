@@ -80,6 +80,21 @@ class SimpleCaseTest extends CypherFunSuite {
     result should equal("default")
   }
 
+  @Test
+  def when_the_input_expression_is_null_return_the_else_case() {
+    //GIVEN
+    val caseExpr = case_(null,
+      1 -> "one",
+      2 -> "two"
+    ) defaultsTo "default"
+
+    //WHEN
+    val result = caseExpr(ExecutionContext.empty)(QueryStateHelper.empty)
+
+    //THEN
+    assert(result == "default")
+  }
+
   private def case_(in: Any, alternatives: (Any, Any)*): SimpleCase = {
     val mappedAlt: Seq[(Expression, Expression)] = alternatives.map {
       case (a, b) => (Literal(a), Literal(b))
