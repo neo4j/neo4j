@@ -64,6 +64,13 @@ object Expression {
 import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression._
 
+final case class ExpressionTreeAcc[A](data: A, stack: Stack[Identifier] = Stack.empty) {
+  def toSet: Set[Identifier] = stack.toSet
+  def map(f: A => A) = copy(data = f(data))
+  def push(newIdentifier: Identifier) = copy(stack = stack.push(newIdentifier))
+  def pop = copy(stack = stack.pop)
+}
+
 abstract class Expression extends ASTNode with ASTExpression with SemanticChecking {
 
   def semanticCheck(ctx: SemanticContext): SemanticCheck
@@ -75,6 +82,8 @@ abstract class Expression extends ASTNode with ASTExpression with SemanticChecki
       (acc, _) => acc :+ e
   }
 
+  // All identifiers referenced from this expression or any of its childs
+  // that are not introduced inside this expression
   def dependencies: Set[Identifier] = {
     val (dependencies, _) = this.treeFold(Set.empty[Identifier] -> Stack.empty[Identifier]) {
       case fe: FilteringExpression => {
@@ -92,6 +101,39 @@ abstract class Expression extends ASTNode with ASTExpression with SemanticChecki
     }
     dependencies
   }
+
+//  def dependencies: Set[Identifier] =
+//    this.treeFold(ExpressionTreeAcc[Set[Identifier]](Set.empty)) {
+//      case fe: FilteringExpression => {
+//        case (acc, children) =>
+//          val newAcc = acc.push(fe.identifier)
+//          val childAcc = children(newAcc)
+//          childAcc.map(_ ++ fe.expression.dependencies).pop
+//      }
+//      case id: Identifier => {
+//        case (acc, children) if acc.data.contains(id) =>
+//          children(acc)
+//        case (acc, children) =>
+//          children(acc.map(_ + id))
+//      }
+//    }.data
+
+  // List of child expressions together with any of its dependencies introduced
+  // by any of its parent expressions (where this expression is the root of the tree)
+  def inputs: Seq[(Expression, Set[Identifier])] =
+    this.treeFold(ExpressionTreeAcc[Seq[(Expression, Set[Identifier])]](Seq.empty)) {
+      case fe: FilteringExpression => {
+        case (acc, children) =>
+          val newAcc = acc.push(fe.identifier).map { case pairs => pairs :+ (fe -> acc.toSet) }
+          children(newAcc).pop
+      }
+
+      case expr: Expression => {
+        case (acc, children) =>
+          val newAcc = acc.map { case pairs => pairs :+ (expr -> acc.toSet) }
+          children(newAcc)
+      }
+    }.data
 
   def specifyType(typeGen: TypeGenerator): SemanticState => Either[SemanticError, SemanticState] =
     s => specifyType(typeGen(s))(s)

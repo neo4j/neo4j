@@ -19,12 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_2.Rewriter
+import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.QueryPlanningStrategy.patternExpressionRewriter
+import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter.LogicalPlanRewriter
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.ExpressionConverters._
 
 class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default,
                             rewriter: Rewriter = LogicalPlanRewriter)
@@ -35,7 +38,8 @@ class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStra
       val plan = planQuery(queries, distinct)
       plan.endoRewrite(rewriter)
 
-    case _ => throw new CantHandleQueryException
+    case _ =>
+      throw new CantHandleQueryException
   }
 
   private def planQuery(queries: Seq[PlannerQuery], distinct: Boolean)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None) = {
@@ -60,13 +64,15 @@ class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStra
   private def planWithTail(pred: LogicalPlan, remaining: Option[PlannerQuery])(implicit context: LogicalPlanningContext): LogicalPlan = remaining match {
     case Some(query) =>
       val lhs = pred
-      val newContext = context.recurse(lhs)
-      val rhs = planPart(query, Some(planQueryArgumentRow(query.graph)))(newContext)
+      val lhsContext = context.recurse(lhs)
+      val rhs = planPart(query, Some(planQueryArgumentRow(query.graph)))(lhsContext)
       val applyPlan = planTailApply(lhs, rhs)
-      val projectedPlan = planEventHorizon(query, applyPlan)(context)
-      val completePlan = planExpressions(projectedPlan)
 
-      planWithTail(completePlan, query.tail)(newContext)
+      // val applyContext = lhsContext.recurse(applyPlan)
+      val projectedPlan = planEventHorizon(query, applyPlan)(context)
+      val completePlan = planNestedPlanExpressions(projectedPlan)(lhsContext)
+      planWithTail(completePlan, query.tail)(lhsContext)
+
     case None =>
       pred
   }
@@ -96,13 +102,37 @@ class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStra
     projectedPlan
   }
 
-  private def planExpressions(plan: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan = {
-    // bottom up rewrite of logical plans
-    // for each logical plan
-    // plan.mapExpression(f)
-    //
-    // f: rewrite all expressions, searching for pattern expressions
-    // for each pattern epxressions, plan, and replace with NestedPlanExpression
-    plan
+  private def planNestedPlanExpressions(plan: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan = {
+    case object planExpressionRewriter extends Rewriter {
+      override def apply(in: AnyRef): AnyRef = in match {
+        case plan: LogicalPlan =>
+          plan.mapExpressions {
+            case (arguments, expression) =>
+              val exprScopes = expression.inputs.map { case (k, v) => k -> v.map(IdName.fromIdentifier) }
+              val exprScopeMap = IdentityMap(exprScopes: _*)
+              expression.rewrite(patternExpressionRewriter(arguments, exprScopeMap)).asInstanceOf[Expression]
+          }
+      }
+    }
+
+    plan.endoRewrite(planExpressionRewriter)
+  }
+}
+
+object QueryPlanningStrategy {
+  case class patternExpressionRewriter(planArguments: Set[IdName], exprArguments: IdentityMap[Expression, Set[IdName]])(implicit context: LogicalPlanningContext) extends Rewriter {
+    val instance = Rewriter.lift {
+      case pattern: ast.PatternExpression =>
+        val dependencies = pattern.dependencies.map(IdName.fromIdentifier)
+        val qgArguments = (planArguments ++ exprArguments(pattern)) intersect dependencies
+        val qg = pattern.asQueryGraph.withArgumentIds(qgArguments)
+        val argLeafPlan = Some(planQueryArgumentRow(qg))
+        val patternPlanningContext = context.forExpressionPlanning
+        val queryGraphSolver = patternPlanningContext.strategy
+        val plan = queryGraphSolver.plan(qg)(patternPlanningContext, argLeafPlan)
+        ast.NestedPlanExpression(plan, pattern)(pattern.position)
+    }
+
+    def apply(that: AnyRef): AnyRef = bottomUp(instance).apply(that)
   }
 }

@@ -23,7 +23,7 @@ import java.lang.reflect.Method
 
 import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
 import org.neo4j.cypher.internal.compiler.v2_2.Rewritable._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{Identifier, Expression}
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
 import org.neo4j.cypher.internal.compiler.v2_2.{InternalException, Rewritable}
@@ -99,4 +99,6 @@ final case class IdName(name: String) extends PageDocFormatting // with ToPretty
 
 object IdName {
   implicit val byName = Ordering[String].on[IdName](_.name)
+
+  def fromIdentifier(identifier: Identifier) = IdName(identifier.name)
 }

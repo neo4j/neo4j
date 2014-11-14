@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner
 
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{PipeBuilder, PipeInfo}
@@ -29,7 +28,6 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.execution.{PipeExecutionB
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityInput
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.{ApplyRewriter, RewriterStepSequencer}
 
@@ -66,14 +64,7 @@ case class Planner(monitors: Monitors,
     val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
     val context = LogicalPlanningContext(planContext, metrics, semanticTable, queryGraphSolver, QueryGraphCardinalityInput.empty)
     val plan = strategy.plan(unionQuery)(context)
-
-    val pipeBuildContext = PipeExecutionBuilderContext((e: PatternExpression) => {
-      val expressionQueryGraph = e.asQueryGraph
-      val argLeafPlan = Some(planQueryArgumentRow(expressionQueryGraph))
-      val logicalPlan = queryGraphSolver.plan(expressionQueryGraph)(context, argLeafPlan)
-      logicalPlan
-    }, metrics.cardinality, semanticTable)
-
+    val pipeBuildContext = PipeExecutionBuilderContext(metrics.cardinality, semanticTable)
 
     (plan, pipeBuildContext)
   }

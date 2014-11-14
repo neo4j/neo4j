@@ -42,9 +42,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.helpers.Eagerly
 import org.neo4j.graphdb.Relationship
 
-case class PipeExecutionBuilderContext(f: ast.PatternExpression => LogicalPlan, cardinality: Metrics.CardinalityModel, semanticTable: SemanticTable) {
-  def plan(expr: ast.PatternExpression) = f(expr)
-}
+case class PipeExecutionBuilderContext(cardinality: Metrics.CardinalityModel, semanticTable: SemanticTable)
 
 class PipeExecutionPlanBuilder(monitors: Monitors) {
 
@@ -231,14 +229,12 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
 
     object buildPipeExpressions extends Rewriter {
       val instance = Rewriter.lift {
-        case pattern: ast.PatternExpression =>
-          println("buildPipeExpressions ->")
+        case ast.NestedPlanExpression(patternPlan, pattern) =>
           val pos = pattern.position
-          val plan = context.plan( pattern )
-          val pipe = buildPipe(plan, QueryGraphCardinalityInput.empty)
+          val pipe = buildPipe(patternPlan, QueryGraphCardinalityInput.empty)
           val step = projectNamedPaths.patternPartPathExpression(ast.EveryPath(pattern.pattern.element))
-          println("<- buildPipeExpressions")
-          ast.NestedPipeExpression(pipe, ast.PathExpression(step)(pos))(pos)
+          val result = ast.NestedPipeExpression(pipe, ast.PathExpression(step)(pos))(pos)
+          result
       }
 
       def apply(that: AnyRef): AnyRef = bottomUp(instance).apply(that)

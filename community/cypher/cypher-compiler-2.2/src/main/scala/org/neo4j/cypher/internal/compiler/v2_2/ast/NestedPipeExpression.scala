@@ -22,6 +22,11 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.Pipe
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression.SemanticContext
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
+
+case class NestedPlanExpression(plan: LogicalPlan, pattern: PatternExpression)(val position: InputPosition) extends Expression {
+  def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
+}
 
 case class NestedPipeExpression(pipe: Pipe, path: PathExpression)(val position: InputPosition) extends Expression {
   def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
