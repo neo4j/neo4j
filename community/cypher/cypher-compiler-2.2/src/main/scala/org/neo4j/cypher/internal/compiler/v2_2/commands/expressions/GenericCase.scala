@@ -29,9 +29,9 @@ case class GenericCase(alternatives: Seq[(Predicate, Expression)], default: Opti
   require(alternatives.nonEmpty)
 
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
-    val thisMatch: Option[Expression] = alternatives find {
-      case (p, e) => p.isTrue(ctx)
-    } map (_._2)
+    val thisMatch: Option[Expression] = alternatives collectFirst {
+      case (p, res) if p.isTrue(ctx) => res
+    }
 
     thisMatch match {
       case Some(result) => result(ctx)
