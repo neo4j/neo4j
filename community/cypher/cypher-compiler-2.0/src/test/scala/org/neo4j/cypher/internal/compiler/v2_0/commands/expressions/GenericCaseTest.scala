@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_0.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import commands.{Predicate, Equals}
+import org.neo4j.cypher.internal.compiler.v2_0.commands.{CoercedPredicate, Predicate, Equals}
 import pipes.QueryStateHelper
 import org.scalatest.Assertions
 import org.junit.Test
@@ -83,6 +83,18 @@ class GenericCaseTest extends Assertions {
 
     //THEN
     assert(result === "other")
+  }
+
+  @Test
+  def case_with_a_single_null_value_uses_the_default() {
+    //GIVEN CASE WHEN null THEN 42 ELSE "defaults"
+    val caseExpr = GenericCase(Seq(CoercedPredicate(Null())->Literal(42)), Some(Literal("defaults")))
+
+    //WHEN
+    val result = caseExpr(ExecutionContext.empty)(QueryStateHelper.empty)
+
+    //THEN
+    assert(result === "defaults")
   }
 
   private def case_(alternatives: ((Any, Any), Any)*): GenericCase = {
