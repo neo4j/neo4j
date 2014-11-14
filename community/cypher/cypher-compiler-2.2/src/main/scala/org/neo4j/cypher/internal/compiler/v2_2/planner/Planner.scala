@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner
 
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.conditions.containsNoNodesOfType
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters._
@@ -32,7 +31,6 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStep._
 import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.{ApplyRewriter, RewriterStepSequencer}
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
@@ -66,14 +64,14 @@ case class Planner(monitors: Monitors,
     val unionQuery = ast.asUnionQuery
 
     val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
-    val context = LogicalPlanningContext(planContext, metrics, semanticTable, queryGraphSolver, QueryGraphCardinalityInput(Map.empty, Cardinality(1)))
+    val context = LogicalPlanningContext(planContext, metrics, semanticTable, queryGraphSolver, QueryGraphCardinalityInput.empty)
     val plan = strategy.plan(unionQuery)(context)
 
     val pipeBuildContext = PipeExecutionBuilderContext((e: PatternExpression) => {
       val expressionQueryGraph = e.asQueryGraph
       val argLeafPlan = Some(planQueryArgumentRow(expressionQueryGraph))
-      val LogicalPlan = queryGraphSolver.plan(expressionQueryGraph)(context, argLeafPlan)
-      LogicalPlan
+      val logicalPlan = queryGraphSolver.plan(expressionQueryGraph)(context, argLeafPlan)
+      logicalPlan
     }, metrics.cardinality, semanticTable)
 
 

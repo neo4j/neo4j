@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{Expression, RelTypeName}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{Expression, RelTypeName}
 
 case class OptionalExpand(left: LogicalPlan,
                   from: IdName,
@@ -35,4 +35,7 @@ case class OptionalExpand(left: LogicalPlan,
   val lhs = Some(left)
   def rhs = None
   val availableSymbols = left.availableSymbols + to + relName
+
+  override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan =
+    copy(predicates = predicates.map(f(availableSymbols, _)))(solved)
 }

@@ -30,4 +30,7 @@ case class Selection(predicates: Seq[Expression], left: LogicalPlan)(val solved:
   def numPredicates = predicates.size
 
   def availableSymbols = left.availableSymbols
+
+  override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan =
+    copy(predicates = predicates.map(f(left.availableSymbols, _)))(solved)
 }

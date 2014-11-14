@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{SortItem, Expression}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{Expression, SortItem}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
 
 case class SortedLimit(left: LogicalPlan, limit: Expression, sortItems: Seq[SortItem])(val solved: PlannerQuery)
@@ -27,4 +27,10 @@ case class SortedLimit(left: LogicalPlan, limit: Expression, sortItems: Seq[Sort
   val lhs = Some(left)
   val rhs = None
   def availableSymbols = left.availableSymbols
+
+  override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan =
+    copy(
+      limit = f(left.availableSymbols, limit),
+      sortItems = sortItems.map(_.mapExpression(f(left.availableSymbols, _)))
+    )(solved)
 }

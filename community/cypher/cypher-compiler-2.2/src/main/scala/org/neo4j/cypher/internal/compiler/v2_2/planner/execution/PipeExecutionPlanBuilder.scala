@@ -54,30 +54,6 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
   def build(plan: LogicalPlan)(implicit context: PipeExecutionBuilderContext, planContext: PlanContext): PipeInfo = {
     val updating = false
 
-    object buildPipeExpressions extends Rewriter {
-      val instance = Rewriter.lift {
-        case pattern: ast.PatternExpression =>
-          val pos = pattern.position
-          val pipe = buildPipe(context.plan(pattern), QueryGraphCardinalityInput.empty)
-          val step = projectNamedPaths.patternPartPathExpression(ast.EveryPath(pattern.pattern.element))
-          ast.NestedPipeExpression(pipe, ast.PathExpression(step)(pos))(pos)
-      }
-
-      def apply(that: AnyRef): AnyRef = bottomUp(instance).apply(that)
-    }
-
-    def buildExpression(expr: ast.Expression): CommandExpression = {
-      val rewrittenExpr = expr.endoRewrite(buildPipeExpressions)
-
-      rewrittenExpr.asCommandExpression.rewrite(resolver.resolveExpressions(_, planContext))
-    }
-
-    def buildPredicate(expr: ast.Expression): CommandPredicate = {
-      val rewrittenExpr: Expression = expr.endoRewrite(buildPipeExpressions)
-
-      rewrittenExpr.asCommandPredicate.rewrite(resolver.resolveExpressions(_, planContext)).asInstanceOf[CommandPredicate]
-    }
-
     def buildPipe(plan: LogicalPlan, input: QueryGraphCardinalityInput): Pipe = {
       implicit val monitor = monitors.newMonitor[PipeMonitor]()
       implicit val c = context.cardinality
@@ -239,6 +215,33 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
 
       val cardinality = context.cardinality(plan, input)
       result.withEstimatedCardinality(cardinality.amount.toLong)
+    }
+
+    def buildExpression(expr: ast.Expression): CommandExpression = {
+      val rewrittenExpr = expr.endoRewrite(buildPipeExpressions)
+
+      rewrittenExpr.asCommandExpression.rewrite(resolver.resolveExpressions(_, planContext))
+    }
+
+    def buildPredicate(expr: ast.Expression): CommandPredicate = {
+      val rewrittenExpr: Expression = expr.endoRewrite(buildPipeExpressions)
+
+      rewrittenExpr.asCommandPredicate.rewrite(resolver.resolveExpressions(_, planContext)).asInstanceOf[CommandPredicate]
+    }
+
+    object buildPipeExpressions extends Rewriter {
+      val instance = Rewriter.lift {
+        case pattern: ast.PatternExpression =>
+          println("buildPipeExpressions ->")
+          val pos = pattern.position
+          val plan = context.plan( pattern )
+          val pipe = buildPipe(plan, QueryGraphCardinalityInput.empty)
+          val step = projectNamedPaths.patternPartPathExpression(ast.EveryPath(pattern.pattern.element))
+          println("<- buildPipeExpressions")
+          ast.NestedPipeExpression(pipe, ast.PathExpression(step)(pos))(pos)
+      }
+
+      def apply(that: AnyRef): AnyRef = bottomUp(instance).apply(that)
     }
 
     val topLevelPipe = buildPipe(plan, QueryGraphCardinalityInput.empty)

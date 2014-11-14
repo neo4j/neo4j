@@ -32,4 +32,5 @@ case class ProjectEndpoints(left: LogicalPlan,
   def rhs = None
 
   def availableSymbols: Set[IdName] = left.availableSymbols + rel + start + end
+
 }

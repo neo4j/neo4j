@@ -64,7 +64,9 @@ class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStra
       val rhs = planPart(query, Some(planQueryArgumentRow(query.graph)))(newContext)
       val applyPlan = planTailApply(lhs, rhs)
       val projectedPlan = planEventHorizon(query, applyPlan)(context)
-      planWithTail(projectedPlan, query.tail)(newContext)
+      val completePlan = planExpressions(projectedPlan)
+
+      planWithTail(completePlan, query.tail)(newContext)
     case None =>
       pred
   }
@@ -92,5 +94,15 @@ class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStra
     }
 
     projectedPlan
+  }
+
+  private def planExpressions(plan: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan = {
+    // bottom up rewrite of logical plans
+    // for each logical plan
+    // plan.mapExpression(f)
+    //
+    // f: rewrite all expressions, searching for pattern expressions
+    // for each pattern epxressions, plan, and replace with NestedPlanExpression
+    plan
   }
 }

@@ -27,7 +27,7 @@ case class CandidateList(plans: Seq[LogicalPlan] = Seq.empty) {
 
   def +(plan: LogicalPlan) = copy(plans :+ plan)
 
-  final val VERBOSE = false
+  final val VERBOSE = true
 
   def bestPlan(implicit context: LogicalPlanningContext): Option[LogicalPlan] = {
     val costs = context.cost

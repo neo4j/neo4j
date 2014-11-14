@@ -28,8 +28,15 @@ case class OrderBy(sortItems: Seq[SortItem])(val position: InputPosition) extend
 sealed trait SortItem extends ASTNode with ASTPhrase with SemanticCheckable {
   def expression: Expression
   def semanticCheck = expression.semanticCheck(Expression.SemanticContext.Results)
+
+  def mapExpression(f: Expression => Expression): SortItem
 }
 
-case class AscSortItem(expression: Expression)(val position: InputPosition) extends SortItem
-case class DescSortItem(expression: Expression)(val position: InputPosition) extends SortItem
+case class AscSortItem(expression: Expression)(val position: InputPosition) extends SortItem {
+  override def mapExpression(f: Expression => Expression) = copy(expression = f(expression))(position)
+}
+
+case class DescSortItem(expression: Expression)(val position: InputPosition) extends SortItem {
+  override def mapExpression(f: Expression => Expression) = copy(expression = f(expression))(position)
+}
 
