@@ -1,3 +1,7 @@
+2.1.6
+-----
+o Expose node degree in REST API
+
 2.1.5
 -----
 o Node REST representations now contain the labels of the node
