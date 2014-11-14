@@ -108,7 +108,7 @@ public class Schema extends TransactionProvidingApp
             {
                 out.println( String.format( "Awaiting :%s ON %s %s", index.getLabel().name(),
                         toList( index.getPropertyKeys() ), IndexState.ONLINE ) );
-                schema.awaitIndexOnline( index, 10000, TimeUnit.DAYS );
+                schema.awaitIndexOnline( index, 10, TimeUnit.SECONDS );
             }
         }
     }
