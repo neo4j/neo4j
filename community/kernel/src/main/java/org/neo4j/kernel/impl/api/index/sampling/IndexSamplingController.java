@@ -37,8 +37,6 @@ import static org.neo4j.kernel.impl.util.JobScheduler.Group.indexSamplingControl
 
 public class IndexSamplingController
 {
-
-    private final IndexSamplingConfig config;
     private final IndexSamplingJobFactory jobFactory;
     private final IndexSamplingJobQueue jobQueue;
     private final IndexSamplingJobTracker jobTracker;
@@ -46,6 +44,7 @@ public class IndexSamplingController
     private final JobScheduler scheduler;
     private final Predicate<IndexDescriptor> indexRecoveryCondition;
     private final Lock emptyLock = new ReentrantLock( true );
+    private final boolean backgroundSampling;
 
     // use IndexSamplingControllerFactory.create do not instantiate directly
     IndexSamplingController( IndexSamplingConfig config,
@@ -56,18 +55,13 @@ public class IndexSamplingController
                              JobScheduler scheduler,
                              Predicate<IndexDescriptor> indexRecoveryCondition )
     {
-        this.config = config;
+        this.backgroundSampling = config.backgroundSampling();
         this.jobFactory = jobFactory;
         this.indexMapSnapshotProvider = indexMapSnapshotProvider;
         this.jobQueue = jobQueue;
         this.jobTracker = jobTracker;
         this.scheduler = scheduler;
         this.indexRecoveryCondition = indexRecoveryCondition;
-    }
-
-    public IndexSamplingConfig config()
-    {
-        return config;
     }
 
     public void sampleIndexes( IndexSamplingMode mode )
@@ -219,14 +213,14 @@ public class IndexSamplingController
         }
         else
         {
-            job = jobFactory.create( config, proxy );
+            job = jobFactory.create( proxy );
         }
         return job;
     }
 
     public void start()
     {
-        if ( config.backgroundSampling() )
+        if ( backgroundSampling )
         {
             Runnable samplingRunner = new Runnable()
             {

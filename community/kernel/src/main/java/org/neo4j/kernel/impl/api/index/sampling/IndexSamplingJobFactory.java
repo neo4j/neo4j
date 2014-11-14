@@ -23,5 +23,5 @@ import org.neo4j.kernel.impl.api.index.IndexProxy;
 
 public interface IndexSamplingJobFactory
 {
-    IndexSamplingJob create( IndexSamplingConfig config, IndexProxy indexProxy );
+    IndexSamplingJob create( IndexProxy indexProxy );
 }

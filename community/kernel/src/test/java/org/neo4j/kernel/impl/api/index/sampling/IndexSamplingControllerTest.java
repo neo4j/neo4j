@@ -19,9 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
+import org.junit.Test;
+
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.Test;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Predicates;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -31,8 +32,14 @@ import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.test.DoubleLatch;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.Predicates.TRUE;
 import static org.neo4j.helpers.Predicates.not;
 import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
@@ -55,7 +62,7 @@ public class IndexSamplingControllerTest
         controller.sampleIndexes( BACKGROUND_REBUILD_UPDATED );
 
         // then
-        verify( jobFactory ).create( samplingConfig, indexProxy );
+        verify( jobFactory ).create( indexProxy );
         verify( tracker ).scheduleSamplingJob( job );
         verify( tracker, times( 2 ) ).canExecuteMoreSamplingJobs();
         verifyNoMoreInteractions( jobFactory, tracker );
@@ -105,7 +112,7 @@ public class IndexSamplingControllerTest
         IndexSamplingJobFactory jobFactory = new IndexSamplingJobFactory()
         {
             @Override
-            public IndexSamplingJob create( IndexSamplingConfig samplingConfig, IndexProxy indexProxy )
+            public IndexSamplingJob create( IndexProxy indexProxy )
             {
                 if ( !concurrentCount.compareAndSet( 0, 1 ) )
                 {
@@ -170,9 +177,9 @@ public class IndexSamplingControllerTest
         controller.sampleIndexes( TRIGGER_REBUILD_UPDATED );
 
         // then
-        verify( jobFactory ).create( samplingConfig, indexProxy );
+        verify( jobFactory ).create( indexProxy );
         verify( tracker ).scheduleSamplingJob( job );
-        verify( jobFactory ).create( samplingConfig, anotherIndexProxy );
+        verify( jobFactory ).create( anotherIndexProxy );
         verify( tracker ).scheduleSamplingJob( anotherJob );
 
         verify( tracker, times( 2 ) ).waitUntilCanExecuteMoreSamplingJobs();
@@ -193,7 +200,7 @@ public class IndexSamplingControllerTest
         controller.sampleIndexes( TRIGGER_REBUILD_UPDATED );
 
         // then
-        verify( jobFactory ).create( samplingConfig, indexProxy );
+        verify( jobFactory ).create( indexProxy );
         verify( tracker ).scheduleSamplingJob( job );
 
         verify( tracker, times( 2 ) ).waitUntilCanExecuteMoreSamplingJobs();
@@ -212,7 +219,7 @@ public class IndexSamplingControllerTest
         IndexSamplingJobFactory jobFactory = new IndexSamplingJobFactory()
         {
             @Override
-            public IndexSamplingJob create( IndexSamplingConfig samplingConfiguration, IndexProxy indexProxy )
+            public IndexSamplingJob create( IndexProxy indexProxy )
             {
                 if ( ! concurrentCount.compareAndSet( 0, 1 ) )
                 {
@@ -266,7 +273,7 @@ public class IndexSamplingControllerTest
         controller.recoverIndexSamples();
 
         // then
-        verify( jobFactory ).create( samplingConfig, indexProxy );
+        verify( jobFactory ).create( indexProxy );
         verify( job ).run();
         verifyNoMoreInteractions( jobFactory, job, tracker );
     }
@@ -313,9 +320,9 @@ public class IndexSamplingControllerTest
         controller.sampleIndex( indexProxy.getDescriptor(), TRIGGER_REBUILD_UPDATED );
 
         // then
-        verify( jobFactory, times(1) ).create( samplingConfig, indexProxy );
+        verify( jobFactory, times(1) ).create( indexProxy );
         verify( tracker, times(1) ).scheduleSamplingJob( job );
-        verify( jobFactory, never() ).create( samplingConfig, anotherIndexProxy );
+        verify( jobFactory, never() ).create( anotherIndexProxy );
         verify( tracker, never() ).scheduleSamplingJob( anotherJob );
 
         verify( tracker, times( 1 ) ).waitUntilCanExecuteMoreSamplingJobs();
@@ -363,8 +370,8 @@ public class IndexSamplingControllerTest
         when( indexProxy.getDescriptor() ).thenReturn( descriptor );
         when( anotherIndexProxy.getDescriptor() ).thenReturn( anotherDescriptor );
         when( snapshotProvider.indexMapSnapshot() ).thenReturn( indexMap );
-        when( jobFactory.create( samplingConfig, indexProxy ) ).thenReturn( job );
-        when( jobFactory.create( samplingConfig, anotherIndexProxy ) ).thenReturn( anotherJob );
+        when( jobFactory.create( indexProxy ) ).thenReturn( job );
+        when( jobFactory.create( anotherIndexProxy ) ).thenReturn( anotherJob );
         indexMap.putIndexProxy( 2, indexProxy );
     }
 

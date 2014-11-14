@@ -48,7 +48,7 @@ public class OnlineIndexSamplingJobTest
     public void shouldSampleTheIndexAndStoreTheValueWhenTheIndexIsOnline()
     {
         // given
-        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( config, indexProxy, indexStoreView, "Foo", logging );
+        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( indexProxy, indexStoreView, "Foo", logging );
         when( indexProxy.getState() ).thenReturn( ONLINE );
 
         // when
@@ -63,7 +63,7 @@ public class OnlineIndexSamplingJobTest
     public void shouldSampleTheIndexButDoNotStoreTheValuesIfTheIndexIsNotOnline()
     {
         // given
-        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( config, indexProxy, indexStoreView, "Foo", logging );
+        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( indexProxy, indexStoreView, "Foo", logging );
         when( indexProxy.getState() ).thenReturn( FAILED );
 
         // when
@@ -78,7 +78,6 @@ public class OnlineIndexSamplingJobTest
     private final IndexStoreView indexStoreView = mock( IndexStoreView.class );
     private final IndexDescriptor indexDescriptor = new IndexDescriptor( 1, 2 );
     private final IndexReader indexReader = mock( IndexReader.class );
-    private final IndexSamplingConfig config = mock( IndexSamplingConfig.class );
 
     private final long indexUniqueValues = 21l;
     private final long indexSize = 23l;
@@ -86,7 +85,6 @@ public class OnlineIndexSamplingJobTest
     @Before
     public void setup() throws IndexNotFoundKernelException
     {
-        when( config.bufferSize() ).thenReturn( 42 );
         when( indexProxy.getDescriptor() ).thenReturn( indexDescriptor );
         when( indexProxy.config() ).thenReturn( new IndexConfiguration( false ) );
         when( indexProxy.newReader() ).thenReturn( indexReader );

@@ -37,20 +37,17 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
 {
     private final IndexDescriptor indexDescriptor;
     private final IndexProxy indexProxy;
-    private final int bufferSize;
     private final IndexStoreView storeView;
     private final StringLogger logger;
     private final String indexUserDescription;
 
-    public OnlineIndexSamplingJob( IndexSamplingConfig config,
-                                   IndexProxy indexProxy,
+    public OnlineIndexSamplingJob( IndexProxy indexProxy,
                                    IndexStoreView storeView,
                                    String indexUserDescription,
                                    Logging logging )
     {
         this.indexDescriptor = indexProxy.getDescriptor();
         this.indexProxy = indexProxy;
-        this.bufferSize = config.bufferSize();
         this.storeView = storeView;
         this.logger = logging.getMessagesLog( OnlineIndexSamplingJob.class );
         this.indexUserDescription = indexUserDescription;
