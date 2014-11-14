@@ -103,8 +103,11 @@ public class ImportTool
         DELIMITER( "delimiter", "<delimiter-character>", "Delimiter character between values in CSV data." ),
         ARRAY_DELIMITER( "array-delimiter", "<array-delimiter-character>",
                 "Delimiter character between array elements within a value in CSV data." ),
-        QUOTE( "quote", "<quotation-character>", "Character to treat as quotation character in values in CSV data. "
-                                                 + "Quotes inside quotes like '\"\"' and '\\\"' are supported." ),
+        QUOTE( "quote", "<quotation-character>", "Character to treat as quotation character for values in CSV data. "
+                + "Quotes inside quotes escaped like `\"\"\"Go away\"\", he said.\"` and "
+                + "`\"\\\"Go away\\\", he said.\"` are supported. "
+                + "If you have set \"`'`\" to be used as the quotation character, "
+                + "you could write the previous example like this instead: " + "`'\"Go away\", he said.'`" ),
         ID_TYPE( "id-type", "<id-type>", "One out of " + Arrays.toString( IdType.values() )
                          + " and specifies how ids in node/relationship "
                          + "input files are treated.\n"
@@ -131,7 +134,7 @@ public class ImportTool
         void printUsage()
         {
             System.out.println( "--" + key + " " + usage );
-            for ( String line : Args.splitLongLine( description, 80 ) )
+            for ( String line : Args.splitLongLine( description.replace( "`", "" ), 80 ) )
             {
                 System.out.println( "\t" + line );
             }
