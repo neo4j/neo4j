@@ -47,6 +47,7 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.index_background_sampling_enabled;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.warn;
+import static org.neo4j.register.Registers.newDoubleLongRegister;
 
 public class RebuildCountsTest
 {
@@ -63,9 +64,9 @@ public class RebuildCountsTest
 
         // then
         CountsTracker tracker = counts();
-        assertEquals( 32, tracker.nodeCount( -1 ) );
-        assertEquals( 16, tracker.nodeCount( labelId( ALIEN ) ) );
-        assertEquals( 16, tracker.nodeCount( labelId( HUMAN ) ) );
+        assertEquals( 32, tracker.nodeCount( -1, newDoubleLongRegister() ).readSecond() );
+        assertEquals( 16, tracker.nodeCount( labelId( ALIEN ), newDoubleLongRegister() ).readSecond() );
+        assertEquals( 16, tracker.nodeCount( labelId( HUMAN ), newDoubleLongRegister() ).readSecond() );
 
         // and also
         logger().assertAtLeastOnce( warn( "Missing counts store, rebuilding it." ) );

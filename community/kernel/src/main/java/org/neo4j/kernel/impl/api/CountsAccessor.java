@@ -23,12 +23,28 @@ import org.neo4j.register.Register.DoubleLongRegister;
 
 public interface CountsAccessor
 {
-    long nodeCount( int labelId );
+    /**
+     * @param target a register to store the read values in
+     * @return the input register for convenience
+     */
+    DoubleLongRegister nodeCount( int labelId, DoubleLongRegister target );
 
-    long relationshipCount( int startLabelId, int typeId, int endLabelId );
+    /**
+     * @param target a register to store the read values in
+     * @return the input register for convenience
+     */
+    DoubleLongRegister relationshipCount( int startLabelId, int typeId, int endLabelId, DoubleLongRegister target );
 
+    /**
+     * @param target a register to store the read values in
+     * @return the input register for convenience
+     */
     DoubleLongRegister indexUpdatesAndSize( int labelId, int propertyKeyId, DoubleLongRegister target );
 
+    /**
+     * @param target a register to store the read values in
+     * @return the input register for convenience
+     */
     DoubleLongRegister indexSample( int labelId, int propertyKeyId, DoubleLongRegister target );
 
     void incrementNodeCount( int labelId, long delta );

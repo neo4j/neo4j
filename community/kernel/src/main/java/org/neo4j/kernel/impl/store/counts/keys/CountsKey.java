@@ -17,31 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.counts;
+package org.neo4j.kernel.impl.store.counts.keys;
 
-public enum CountsKeyType
+import org.neo4j.kernel.impl.api.CountsVisitor;
+
+public interface CountsKey extends Comparable<CountsKey>
 {
-    EMPTY( 0 ), ENTITY_NODE( 2 ), ENTITY_RELATIONSHIP( 3 ), INDEX_COUNTS( 4 ), INDEX_SAMPLE( 5 );
+    CountsKeyType recordType();
 
-    public final byte code;
-
-    private CountsKeyType( int code )
-    {
-        this.code = (byte) code;
-    }
-
-    public static CountsKeyType fromCode( byte code )
-    {
-        switch ( code )
-        {
-            case 0: return EMPTY;
-            case 2: return ENTITY_NODE;
-            case 3: return ENTITY_RELATIONSHIP;
-            case 4: return INDEX_COUNTS;
-            case 5: return INDEX_SAMPLE;
-
-            default:
-                throw new IllegalArgumentException( "Invalid counts record type code: " + code );
-        }
-    }
+    void accept( CountsVisitor visitor, long first, long second );
 }

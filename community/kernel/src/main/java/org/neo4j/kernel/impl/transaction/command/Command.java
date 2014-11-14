@@ -39,10 +39,9 @@ import org.neo4j.kernel.impl.transaction.state.PropertyRecordChange;
 
 import static java.lang.String.format;
 import static java.util.Collections.unmodifiableCollection;
-
 import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.kernel.impl.store.counts.CountsKey.label;
-import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipType;
+import static org.neo4j.kernel.impl.util.IdPrettyPrinter.label;
+import static org.neo4j.kernel.impl.util.IdPrettyPrinter.relationshipType;
 
 /**
  * Command implementations for all the commands that can be performed on a Neo
@@ -481,8 +480,8 @@ public abstract class Command
         public String toString()
         {
             return String.format( "UpdateCounts[(%s)-%s->(%s) %s %d]",
-                                  label( startLabelId ), relationshipType( typeId ), label( endLabelId ),
-                                  delta < 0 ? "-" : "+", Math.abs( delta ) );
+                    label( startLabelId ), relationshipType( typeId ), label( endLabelId ),
+                    delta < 0 ? "-" : "+", Math.abs( delta ) );
         }
 
         @Override

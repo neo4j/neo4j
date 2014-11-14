@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.counts;
 
-import java.util.List;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.List;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -36,14 +36,13 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.api.CountsRecordState;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.store.NeoStore;
-import org.neo4j.kernel.impl.store.counts.CountsKey;
+import org.neo4j.kernel.impl.store.counts.keys.RelationshipKey;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.kernel.impl.store.CountsComputer.computeCounts;
@@ -355,9 +354,9 @@ public class CompositeCountsTest
             StringBuilder error = new StringBuilder();
             for ( CountsRecordState.Difference difference : differences )
             {
-                if ( difference.key() instanceof CountsKey.RelationshipKey )
+                if ( difference.key() instanceof RelationshipKey )
                 {
-                    CountsKey.RelationshipKey key = (CountsKey.RelationshipKey) difference.key();
+                    RelationshipKey key = (RelationshipKey) difference.key();
                     if ( key.startLabelId() != ReadOperations.ANY_LABEL &&
                          key.endLabelId() != ReadOperations.ANY_LABEL )
                     {

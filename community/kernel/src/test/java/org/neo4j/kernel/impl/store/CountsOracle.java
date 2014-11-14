@@ -26,6 +26,7 @@ import org.neo4j.kernel.impl.api.CountsRecordState;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.register.Register.DoubleLongRegister;
+
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 
@@ -86,16 +87,17 @@ public class CountsOracle
                     @Override
                     public void visitNodeCount( int labelId, long count )
                     {
-                        assertEquals( "Should be able to read visited state.",
-                                      tracker.nodeCount( labelId ), count );
+                        long expected = tracker.nodeCount( labelId, newDoubleLongRegister() ).readSecond();
+                        assertEquals( "Should be able to read visited state.", expected, count );
                         verifier.visitNodeCount( labelId, count );
                     }
 
                     @Override
                     public void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count )
                     {
-                        assertEquals( "Should be able to read visited state.",
-                                      tracker.relationshipCount( startLabelId, typeId, endLabelId ), count );
+                        long expected = tracker.relationshipCount(
+                                startLabelId, typeId, endLabelId, newDoubleLongRegister() ).readSecond();
+                        assertEquals( "Should be able to read visited state.", expected, count );
                         verifier.visitRelationshipCount( startLabelId, typeId, endLabelId, count );
                     }
 

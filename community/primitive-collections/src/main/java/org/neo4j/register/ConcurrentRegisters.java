@@ -19,6 +19,7 @@
  */
 package org.neo4j.register;
 
+import org.neo4j.function.Function2;
 import org.neo4j.jsr166e.StampedLock;
 import org.neo4j.register.Register.CopyableDoubleLongRegister;
 
@@ -85,6 +86,28 @@ public class ConcurrentRegisters
                 }
 
                 @Override
+                public boolean satisfies( Function2<Long, Long, Boolean> condition )
+                {
+                    long stamp = lock.tryOptimisticRead();
+                    long firstCopy = this.first;
+                    long secondCopy = this.second;
+                    if ( !lock.validate( stamp ) )
+                    {
+                        stamp = lock.readLock();
+                        try
+                        {
+                            firstCopy = this.first;
+                            secondCopy = this.second;
+                        }
+                        finally
+                        {
+                            lock.unlock( stamp );
+                        }
+                    }
+                    return condition.apply( firstCopy, secondCopy );
+                }
+
+                @Override
                 public void write( long first, long second )
                 {
                     long stamp = lock.writeLock();
@@ -112,6 +135,28 @@ public class ConcurrentRegisters
                     {
                         lock.unlock( stamp );
                     }
+                }
+
+                @Override
+                public String toString()
+                {
+                    long stamp = lock.tryOptimisticRead();
+                    long firstCopy = this.first;
+                    long secondCopy = this.second;
+                    if ( !lock.validate( stamp ) )
+                    {
+                        stamp = lock.readLock();
+                        try
+                        {
+                            firstCopy = this.first;
+                            secondCopy = this.second;
+                        }
+                        finally
+                        {
+                            lock.unlock( stamp );
+                        }
+                    }
+                    return "DoubleLongRegister{first=" + firstCopy + ", second=" + secondCopy + "}";
                 }
             };
         }

@@ -39,7 +39,6 @@ import org.neo4j.kernel.impl.cache.MonitorGc;
 import static org.neo4j.helpers.Settings.ANY;
 import static org.neo4j.helpers.Settings.BOOLEAN;
 import static org.neo4j.helpers.Settings.BYTES;
-import static org.neo4j.helpers.Settings.BYTES_AS_INT;
 import static org.neo4j.helpers.Settings.DirectMemoryUsage.directMemoryUsage;
 import static org.neo4j.helpers.Settings.FALSE;
 import static org.neo4j.helpers.Settings.INTEGER;
@@ -50,6 +49,7 @@ import static org.neo4j.helpers.Settings.TRUE;
 import static org.neo4j.helpers.Settings.basePath;
 import static org.neo4j.helpers.Settings.illegalValueMessage;
 import static org.neo4j.helpers.Settings.matches;
+import static org.neo4j.helpers.Settings.max;
 import static org.neo4j.helpers.Settings.min;
 import static org.neo4j.helpers.Settings.options;
 import static org.neo4j.helpers.Settings.port;
@@ -153,8 +153,9 @@ public abstract class GraphDatabaseSettings
             setting("index_background_sampling_enabled", BOOLEAN, TRUE );
 
     @Description("Size of buffer used by index sampling")
-    public static final Setting<Integer> index_sampling_buffer_size =
-            setting("index_sampling_buffer_size", BYTES_AS_INT, "64m", min( /* 1m */ 1048576 ) );
+    public static final Setting<Long> index_sampling_buffer_size =
+            setting("index_sampling_buffer_size", BYTES, "64m",
+                    min( /* 1m */ 1048576l ), max( (long) Integer.MAX_VALUE ) );
 
     @Description("Percentage of index updates of total index size required before sampling of a given index is triggered")
     public static final Setting<Integer> index_sampling_update_percentage =

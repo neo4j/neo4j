@@ -23,10 +23,11 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.store.counts.CountsKey.IndexCountsKey;
-import org.neo4j.kernel.impl.store.counts.CountsKey.IndexSampleKey;
-import org.neo4j.kernel.impl.store.counts.CountsKey.NodeKey;
-import org.neo4j.kernel.impl.store.counts.CountsKey.RelationshipKey;
+import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
+import org.neo4j.kernel.impl.store.counts.keys.IndexCountsKey;
+import org.neo4j.kernel.impl.store.counts.keys.IndexSampleKey;
+import org.neo4j.kernel.impl.store.counts.keys.NodeKey;
+import org.neo4j.kernel.impl.store.counts.keys.RelationshipKey;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
 import org.neo4j.register.Register.CopyableDoubleLongRegister;
@@ -38,13 +39,29 @@ interface CountsTrackerState extends Closeable
 
     boolean hasChanges();
 
-    long nodeCount( NodeKey nodeKey );
+    /**
+     * @param target a register to store the read values in
+     * @return the input register for convenience
+     */
+    DoubleLongRegister nodeCount( NodeKey nodeKey, DoubleLongRegister target );
 
-    long relationshipCount( RelationshipKey relationshipKey );
+    /**
+     * @param target a register to store the read values in
+     * @return the input register for convenience
+     */
+    DoubleLongRegister relationshipCount( RelationshipKey relationshipKey, DoubleLongRegister target );
 
-    void indexUpdatesAndSize( IndexCountsKey indexCountsKey, DoubleLongRegister target );
+    /**
+     * @param target a register to store the read values in
+     * @return the input register for convenience
+     */
+    DoubleLongRegister indexUpdatesAndSize( IndexCountsKey indexCountsKey, DoubleLongRegister target );
 
-    void indexSample( IndexSampleKey indexSampleKey, DoubleLongRegister target );
+    /**
+     * @param target a register to store the read values in
+     * @return the input register for convenience
+     */
+    DoubleLongRegister indexSample( IndexSampleKey indexSampleKey, DoubleLongRegister target );
 
     void incrementNodeCount( NodeKey nodeKey, long delta );
 

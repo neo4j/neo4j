@@ -19,19 +19,20 @@
  */
 package org.neo4j.storeupgrade;
 
+import org.junit.Test;
+import org.junit.experimental.runners.Enclosed;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
-
-import org.junit.Test;
-import org.junit.experimental.runners.Enclosed;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -45,12 +46,16 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UpgradingStoreVersionNotFoundException;
+import org.neo4j.register.Register.DoubleLongRegister;
+import org.neo4j.register.Registers;
 import org.neo4j.server.Bootstrapper;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.Configurator;
@@ -63,8 +68,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
+import static org.neo4j.helpers.collection.Iterables.concat;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
@@ -82,18 +87,48 @@ public class StoreUpgradeIntegrationTest
         @Parameterized.Parameters(name = "{0}")
         public static Collection<Store[]> stores()
         {
-            return Arrays.<Store[]>asList(
-                    new Store[]{new Store( "/upgrade/0.A.1-db.zip", 1071, 0, 18 )}, // 2.0
-                    new Store[]{new Store( "0.A.1-db2.zip", 8, 1, 11 )}, // 2.00
-                    new Store[]{new Store( "0.A.0-db.zip", 4, 0, 4 )}, // 1.9
-                    new Store[]{new Store( "0.A.3-empty.zip", 0, 0, 1 )}, // 2.1.3
-                    new Store[]{new Store( "0.A.3-data.zip", 2, 0, 6 )} // 2.1.3
+            return Arrays.asList(
+                    // 1.9 stores
+                    new Store[]{new Store( "0.A.0-db.zip",
+                            4 /* node count */,
+                            4 /* last txId */,
+                            selectivities(),
+                            indexCounts()
+                    )},
+
+                    // 2.0 stores
+                    new Store[]{new Store( "/upgrade/0.A.1-db.zip",
+                            1071 /* node count */,
+                            18 /* last txId */,
+                            selectivities(),
+                            indexCounts()
+                    )},
+                    new Store[]{new Store( "0.A.1-db2.zip",
+                            179 /* node count */,
+                            31 /* last txId */,
+                            selectivities( 1.0, 1.0, 1.0 ),
+                            indexCounts( counts( 0, 1, 1, 1 ), counts( 0, 38, 38, 38 ), counts( 0, 133, 133, 133 ) )
+                    )},
+
+                    // 2.1
+                    new Store[]{new Store( "0.A.3-empty.zip",
+                            0 /* node count */,
+                            1 /* last txId */,
+                            selectivities(),
+                            indexCounts()
+                    )},
+                    new Store[]{new Store( "0.A.3-data.zip",
+                            173 /* node count */,
+                            26 /* last txId */,
+                            selectivities( 1.0, 1.0 ),
+                            indexCounts( counts( 0, 38, 38, 38 ), counts( 0, 133, 133, 133 ) )
+                    )}
             );
         }
 
         @Test
         public void embeddedDatabaseShouldStartOnOlderStoreWhenUpgradeIsEnabled()
-        throws IOException, ConsistencyCheckIncompleteException
+                throws IOException, ConsistencyCheckIncompleteException, IndexNotFoundKernelException
         {
             File dir = store.prepareDirectory();
 
@@ -104,6 +139,7 @@ public class StoreUpgradeIntegrationTest
             try
             {
                 checkInstance( store, (GraphDatabaseAPI) db );
+
             }
             finally
             {
@@ -115,7 +151,7 @@ public class StoreUpgradeIntegrationTest
 
         @Test
         public void serverDatabaseShouldStartOnOlderStoreWhenUpgradeIsEnabled()
-                throws IOException, ConsistencyCheckIncompleteException
+                throws IOException, ConsistencyCheckIncompleteException, IndexNotFoundKernelException
         {
             File dir = store.prepareDirectory();
 
@@ -212,8 +248,12 @@ public class StoreUpgradeIntegrationTest
         public static Collection<Store[]> stores()
         {
             return Arrays.<Store[]>asList(
-                    new Store[]{new Store( "0.A.3-to-be-recovered.zip", -1 /* ignored */, -1 /* ignored */,
-                            -1 /* ignored */ )}
+                    new Store[]{new Store(
+                            "0.A.3-to-be-recovered.zip",
+                            -1 /* ignored */,
+                            -1 /* ignored */,
+                            null /* ignored */,
+                            null /* ignored */ )}
             );
         }
 
@@ -244,15 +284,17 @@ public class StoreUpgradeIntegrationTest
         private final String resourceName;
         final long expectedNodeCount;
         final long lastTxId;
-        final long expectedIndexCount;
+        private final double[] indexSelectivity;
+        final long[][] indexCounts;
 
-
-        private Store( String resourceName, long expectedNodeCount, long expectedIndexCount, long lastTxId )
+        private Store( String resourceName, long expectedNodeCount, long lastTxId,
+                       double[] indexSelectivity, long[][] indexCounts )
         {
             this.resourceName = resourceName;
             this.expectedNodeCount = expectedNodeCount;
-            this.expectedIndexCount = expectedIndexCount;
             this.lastTxId = lastTxId;
+            this.indexSelectivity = indexSelectivity;
+            this.indexCounts = indexCounts;
         }
 
         public File prepareDirectory() throws IOException
@@ -267,13 +309,61 @@ public class StoreUpgradeIntegrationTest
         {
             return "Store: " + resourceName;
         }
+
+        public long indexes()
+        {
+            return indexCounts.length;
+        }
     }
 
-    private static void checkInstance( Store store, GraphDatabaseAPI db )
+    private static void checkInstance( Store store, GraphDatabaseAPI db ) throws IndexNotFoundKernelException
     {
         checkProvidedParameters( store, db );
         checkGlobalNodeCount( store, db );
         checkLabelCounts( db );
+        checkIndexCounts( store, db );
+    }
+
+    private static void checkIndexCounts( Store store, GraphDatabaseAPI db ) throws IndexNotFoundKernelException
+    {
+        CountsTracker counts = db.getDependencyResolver()
+                                 .resolveDependency( NeoStoreDataSource.class )
+                                 .getNeoStore().getCounts();
+
+        Iterator<IndexDescriptor> indexes = getAllIndexes( db );
+        DoubleLongRegister register = Registers.newDoubleLongRegister();
+        for ( int i = 0; indexes.hasNext(); i++ )
+        {
+            IndexDescriptor descriptor = indexes.next();
+            assertDoubleLongEquals( store.indexCounts[i][0], store.indexCounts[i][1],
+                    counts.indexUpdatesAndSize( descriptor.getLabelId(), descriptor.getPropertyKeyId(), register )
+            );
+            assertDoubleLongEquals( store.indexCounts[i][2], store.indexCounts[i][3],
+                    counts.indexSample( descriptor.getLabelId(), descriptor.getPropertyKeyId(), register )
+            );
+            try ( Transaction ignored = db.beginTx() )
+            {
+                ThreadToStatementContextBridge bridge = db.getDependencyResolver()
+                                                          .resolveDependency( ThreadToStatementContextBridge.class );
+                Statement statement = bridge.instance();
+                double selectivity = statement.readOperations().indexUniqueValuesSelectivity( descriptor );
+                assertEquals( store.indexSelectivity[i], selectivity, 0.0000001d );
+            }
+        }
+    }
+
+    private static Iterator<IndexDescriptor> getAllIndexes( GraphDatabaseAPI db )
+    {
+        try ( Transaction ignored = db.beginTx() )
+        {
+            ThreadToStatementContextBridge bridge = db.getDependencyResolver()
+                                                      .resolveDependency( ThreadToStatementContextBridge.class );
+            Statement statement = bridge.instance();
+            return concat(
+                    statement.readOperations().indexesGetAll(),
+                    statement.readOperations().uniqueIndexesGetAll()
+            );
+        }
     }
 
     private static void checkLabelCounts( GraphDatabaseAPI db )
@@ -333,7 +423,7 @@ public class StoreUpgradeIntegrationTest
 
             // count indexes
             long indexCount = count( db.schema().getIndexes() );
-            assertThat( indexCount, is( store.expectedIndexCount ) );
+            assertThat( indexCount, is( store.indexes() ) );
 
             // check last committed tx
             NeoStore neoStore = db.getDependencyResolver()
@@ -349,5 +439,29 @@ public class StoreUpgradeIntegrationTest
 
             assertThat( lastCommittedTxId, is( store.lastTxId ) );
         }
+    }
+
+    private static void assertDoubleLongEquals( long expectedFirst, long expectedSecond, DoubleLongRegister register )
+    {
+        long first = register.readFirst();
+        long second = register.readSecond();
+        String msg = String.format( "Expected (%d,%d), got (%d,%d)", expectedFirst, expectedSecond, first, second );
+        assertEquals( msg, expectedFirst, first );
+        assertEquals( msg, expectedSecond, second );
+    }
+
+    private static double[] selectivities( double... selectivity )
+    {
+        return selectivity;
+    }
+
+    private static long[][] indexCounts( long[]... counts )
+    {
+        return counts;
+    }
+
+    private static long[] counts( long upgrade, long size, long unique, long sampleSize )
+    {
+        return new long[]{upgrade, size, unique, sampleSize};
     }
 }

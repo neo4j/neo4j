@@ -25,31 +25,31 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.kernel.impl.store.counts.CountsKey;
+import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.state.RecordState;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 
 import static java.util.Objects.requireNonNull;
-
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
-import static org.neo4j.kernel.impl.store.counts.CountsKey.indexCountsKey;
-import static org.neo4j.kernel.impl.store.counts.CountsKey.indexSampleKey;
-import static org.neo4j.kernel.impl.store.counts.CountsKey.nodeKey;
-import static org.neo4j.kernel.impl.store.counts.CountsKey.relationshipKey;
 import static org.neo4j.kernel.impl.store.counts.CountsRecordSerializer.DEFAULT_FIRST_VALUE;
 import static org.neo4j.kernel.impl.store.counts.CountsRecordSerializer.DEFAULT_SECOND_VALUE;
+import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexCountsKey;
+import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexSampleKey;
+import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
+import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relationshipKey;
 
 public class CountsRecordState implements CountsVisitor.Visitable, CountsAccessor, RecordState
 {
     private final Map<CountsKey, DoubleLongRegister> counts = new HashMap<>();
 
     @Override
-    public long nodeCount( int labelId )
+    public DoubleLongRegister nodeCount( int labelId, DoubleLongRegister target )
     {
-        return counts( nodeKey( labelId ) ).readSecond();
+        counts( nodeKey( labelId ) ).copyTo( target );
+        return target;
     }
 
     @Override
@@ -59,9 +59,11 @@ public class CountsRecordState implements CountsVisitor.Visitable, CountsAccesso
     }
 
     @Override
-    public long relationshipCount( int startLabelId, int typeId, int endLabelId )
+    public DoubleLongRegister relationshipCount( int startLabelId, int typeId, int endLabelId,
+                                                 DoubleLongRegister target )
     {
-        return counts( relationshipKey( startLabelId, typeId, endLabelId ) ).readSecond();
+        counts( relationshipKey( startLabelId, typeId, endLabelId ) ).copyTo( target );
+        return target;
     }
 
     @Override

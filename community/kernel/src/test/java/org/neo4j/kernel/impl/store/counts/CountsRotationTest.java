@@ -41,10 +41,10 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
 import org.neo4j.register.Register.CopyableDoubleLongRegister;
-import org.neo4j.register.Registers;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
@@ -55,6 +55,7 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.BASE_MINOR_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.register.Register.DoubleLongRegister;
+import static org.neo4j.register.Registers.newDoubleLongRegister;
 
 public class CountsRotationTest
 {
@@ -156,11 +157,11 @@ public class CountsRotationTest
 
         // on the other hand the tracker should read the correct value by merging data on disk and data in memory
         final CountsTracker tracker = db.getDependencyResolver().resolveDependency( NeoStore.class ).getCounts();
-        assertEquals( 1 + 1, tracker.nodeCount( -1 ) );
+        assertEquals( 1 + 1, tracker.nodeCount( -1, newDoubleLongRegister() ).readSecond() );
 
         final LabelTokenHolder holder = db.getDependencyResolver().resolveDependency( LabelTokenHolder.class );
         int labelId = holder.getIdByName( C.name() );
-        assertEquals( 1, tracker.nodeCount( labelId ) );
+        assertEquals( 1, tracker.nodeCount( labelId, newDoubleLongRegister() ).readSecond() );
 
         db.shutdown();
     }
@@ -210,16 +211,17 @@ public class CountsRotationTest
         final Collection<Pair<CountsKey, Long>> records = new ArrayList<>();
         store.accept( new KeyValueRecordVisitor<CountsKey, CopyableDoubleLongRegister>()
         {
+            private final DoubleLongRegister register = newDoubleLongRegister();
+
             @Override
             public void visit( CountsKey key, CopyableDoubleLongRegister valueRegister  )
             {
                 // read out atomically in case count is a concurrent register
-                DoubleLongRegister register = Registers.newDoubleLongRegister();
                 valueRegister.copyTo( register );
                 records.add( Pair.of( key, register.readSecond() ) );
             }
 
-        }, Registers.newDoubleLongRegister() );
+        }, newDoubleLongRegister() );
         return records;
     }
 }
