@@ -595,6 +595,28 @@ public class DatabaseActions
         return RelationshipRepresentation.list( expander.expand( node ) );
     }
 
+    // Node degrees
+
+    @SuppressWarnings("unchecked")
+    public Representation getNodeDegree( long nodeId, RelationshipDirection direction, Collection<String> types )
+            throws NodeNotFoundException
+    {
+        Node node = node( nodeId );
+        if ( types.isEmpty() )
+        {
+            return PropertiesRepresentation.value( node.getDegree( direction.internal ) );
+        }
+        else
+        {
+            int sum = 0;
+            for ( String type : types )
+            {
+                sum += node.getDegree(DynamicRelationshipType.withName( type), direction.internal);
+            }
+            return PropertiesRepresentation.value( sum );
+        }
+    }
+
     // Relationship properties
 
     public PropertiesRepresentation getAllRelationshipProperties(

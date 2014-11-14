@@ -26,6 +26,8 @@ include::relationship-properties.asciidoc[]
 
 include::node-labels.asciidoc[]
 
+include::node-degree.asciidoc[]
+
 include::indexes.asciidoc[]
 
 include::constraints.asciidoc[]
