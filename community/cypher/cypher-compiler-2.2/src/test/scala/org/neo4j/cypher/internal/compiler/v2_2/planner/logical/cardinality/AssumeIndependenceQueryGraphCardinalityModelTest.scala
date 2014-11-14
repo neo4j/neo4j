@@ -47,7 +47,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
   val Bprop = 0.003      // Selectivity of index on :B(prop)
   val Abar = 0.002       // Selectivity of index on :A(bar)
 
-  val A_T1_A_sel = 5 / A // Numbers of relationships of type T1 between A and B respectively labeled nodes
+  val A_T1_A_sel = 5.0 / A // Numbers of relationships of type T1 between A and B respectively labeled nodes
   val A_T1_B_sel = 0.5
   val A_T1_C_sel = 0.05
   val A_T1_D_sel = 0.005
@@ -58,7 +58,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
   val A_T1_D    = A * D * A_T1_D_sel
   val A_T1_STAR = A_T1_A + A_T1_B + A_T1_C + A_T1_D
 
-  val B_T1_B_sel = 10 / B
+  val B_T1_B_sel = 10.0 / B
   val B_T1_C_sel = 0.1
   val B_T1_A_sel = 0.01
   val B_T1_D_sel = 0.001
