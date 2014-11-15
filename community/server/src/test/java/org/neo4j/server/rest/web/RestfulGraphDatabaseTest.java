@@ -336,14 +336,6 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith204ForGetNoNodeProperties() throws Exception
-    {
-        long nodeId = helper.createNode();
-        Response response = service.getAllNodeProperties( nodeId );
-        assertEquals( 204, response.getStatus() );
-    }
-
-    @Test
     public void shouldGetPropertiesForGetNodeProperties() throws Exception
     {
         long nodeId = helper.createNode();
@@ -661,14 +653,6 @@ public class RestfulGraphDatabaseTest
 
         Map<String, Object> readProperties = JsonHelper.jsonToMap( entityAsString( response ) );
         assertEquals( properties, readProperties );
-    }
-
-    @Test
-    public void shouldRespondWith204ForGetNoRelationshipProperties()
-    {
-        long relationshipId = helper.createRelationship( "knows" );
-        Response response = service.getAllRelationshipProperties( relationshipId );
-        assertEquals( 204, response.getStatus() );
     }
 
     @Test
