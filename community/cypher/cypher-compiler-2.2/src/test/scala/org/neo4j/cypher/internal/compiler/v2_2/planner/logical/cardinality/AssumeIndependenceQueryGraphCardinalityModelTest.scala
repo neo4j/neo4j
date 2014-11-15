@@ -52,6 +52,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
   val A_T1_B_sel = 0.5
   val A_T1_C_sel = 0.05
   val A_T1_D_sel = 0.005
+  val A_T1_STAR_sel = or(A_T1_A_sel, A_T1_B_sel, A_T1_C_sel, A_T1_D_sel)
 
   val A_T1_A    = A * A * A_T1_A_sel
   val A_T1_B    = A * B * A_T1_B_sel
@@ -63,6 +64,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
   val B_T1_C_sel = 0.1
   val B_T1_A_sel = 0.01
   val B_T1_D_sel = 0.001
+  val STAR_T1_A_sel = or(A_T1_A_sel, B_T1_A_sel)
 
   val B_T1_B    = B * B * B_T1_B_sel
   val B_T1_C    = B * C * B_T1_C_sel
@@ -70,6 +72,9 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
   val B_T1_D    = B * D * B_T1_D_sel
   val B_T1_STAR = B_T1_A + B_T1_B + B_T1_C + B_T1_D
   val STAR_T1_B = B_T1_B + A_T1_B
+
+  val C_T1_D_sel= 0.02
+  val C_T1_D    = C * D * C_T1_D_sel
 
   val D_T1_C_sel = 0.3
   val D_T1_C     = D * C * D_T1_C_sel
@@ -423,6 +428,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
     withRelationshipCardinality('B -> 'T1 -> 'D, B_T1_D).
     withRelationshipCardinality('A -> 'T2 -> 'A, A_T2_A).
     withRelationshipCardinality('A -> 'T2 -> 'B, A_T2_B).
+    withRelationshipCardinality('C -> 'T1 -> 'D, C_T1_D).
     withRelationshipCardinality('D -> 'T1 -> 'C, D_T1_C).
     withRelationshipCardinality('D -> 'T2 -> 'C, D_T2_C)
 
