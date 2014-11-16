@@ -24,6 +24,7 @@ import java.io.StringReader;
 import org.junit.Test;
 
 import org.neo4j.csv.reader.BufferedCharSeeker;
+import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
@@ -40,6 +41,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
 import static org.neo4j.csv.reader.Readables.multipleSources;
+import static org.neo4j.csv.reader.Readables.wrap;
 import static org.neo4j.helpers.collection.IteratorUtil.array;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.TABS;
@@ -52,8 +54,8 @@ public class DataFactoriesTest
     public void shouldParseDefaultNodeFileHeaderCorrectly() throws Exception
     {
         // GIVEN
-        CharSeeker seeker = new BufferedCharSeeker( new StringReader(
-                "ID:ID,label-one:label,also-labels:LABEL,name,age:long" ) );
+        CharSeeker seeker = new BufferedCharSeeker( wrap( new StringReader(
+                "ID:ID,label-one:label,also-labels:LABEL,name,age:long" ) ) );
         IdType idType = IdType.STRING;
         Extractors extractors = new Extractors( ',' );
 
@@ -74,8 +76,8 @@ public class DataFactoriesTest
     public void shouldParseDefaultRelationshipFileHeaderCorrectly() throws Exception
     {
         // GIVEN
-        CharSeeker seeker = new BufferedCharSeeker( new StringReader(
-                ":START_ID\t:END_ID\ttype:TYPE\tdate:long\tmore:long[]" ) );
+        CharSeeker seeker = new BufferedCharSeeker( wrap( new StringReader(
+                ":START_ID\t:END_ID\ttype:TYPE\tdate:long\tmore:long[]" ) ) );
         IdType idType = IdType.ACTUAL;
         Extractors extractors = new Extractors( '\t' );
 
@@ -96,8 +98,7 @@ public class DataFactoriesTest
     public void shouldHaveEmptyHeadersBeInterpretedAsIgnored() throws Exception
     {
         // GIVEN
-        CharSeeker seeker = new BufferedCharSeeker( new StringReader(
-                "one:id\ttwo\t\tdate:long" ) );
+        CharSeeker seeker = new BufferedCharSeeker( wrap( new StringReader( "one:id\ttwo\t\tdate:long" ) ) );
         IdType idType = IdType.ACTUAL;
         Extractors extractors = new Extractors( '\t' );
 
@@ -117,8 +118,7 @@ public class DataFactoriesTest
     public void shouldFailForDuplicatePropertyHeaderEntries() throws Exception
     {
         // GIVEN
-        CharSeeker seeker = new BufferedCharSeeker( new StringReader(
-                "one:id\tname\tname:long" ) );
+        CharSeeker seeker = new BufferedCharSeeker( wrap( new StringReader( "one:id\tname\tname:long" ) ) );
         IdType idType = IdType.ACTUAL;
         Extractors extractors = new Extractors( '\t' );
 
@@ -140,8 +140,7 @@ public class DataFactoriesTest
     public void shouldFailForDuplicateIdHeaderEntries() throws Exception
     {
         // GIVEN
-        CharSeeker seeker = new BufferedCharSeeker( new StringReader(
-                "one:id\ttwo:id" ) );
+        CharSeeker seeker = new BufferedCharSeeker( wrap( new StringReader( "one:id\ttwo:id" ) ) );
         IdType idType = IdType.ACTUAL;
         Extractors extractors = new Extractors( '\t' );
 
@@ -163,8 +162,7 @@ public class DataFactoriesTest
     public void shouldFailForMissingIdHeaderEntry() throws Exception
     {
         // GIVEN
-        CharSeeker seeker = new BufferedCharSeeker( new StringReader(
-                "one\ttwo" ) );
+        CharSeeker seeker = new BufferedCharSeeker( wrap( new StringReader( "one\ttwo" ) ) );
 
         // WHEN
         try
@@ -185,7 +183,7 @@ public class DataFactoriesTest
         // GIVEN
         CharSeeker dataSeeker = mock( CharSeeker.class );
         Header.Factory headerFactory =
-                defaultFormatNodeFileHeader( new StringReader( "id:ID\tname:String\tbirth_date:long" ) );
+                defaultFormatNodeFileHeader( wrap( new StringReader( "id:ID\tname:String\tbirth_date:long" ) ) );
         Extractors extractors = new Extractors( ';' );
 
         // WHEN
@@ -204,12 +202,12 @@ public class DataFactoriesTest
     public void shouldParseHeaderFromFirstLineOfFirstInputFile() throws Exception
     {
         // GIVEN
-        final Readable firstSource = new StringReader( "id:ID\tname:String\tbirth_date:long" );
-        final Readable secondSource = new StringReader( "0\tThe node\t123456789" );
-        DataFactory<InputNode> dataFactory = data( Functions.<InputNode>identity(), new Factory<Readable>()
+        final CharReadable firstSource = wrap( new StringReader( "id:ID\tname:String\tbirth_date:long" ) );
+        final CharReadable secondSource = wrap( new StringReader( "0\tThe node\t123456789" ) );
+        DataFactory<InputNode> dataFactory = data( Functions.<InputNode>identity(), new Factory<CharReadable>()
         {
             @Override
-            public Readable newInstance()
+            public CharReadable newInstance()
             {
                 return multipleSources( firstSource, secondSource );
             }

@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
@@ -132,7 +133,7 @@ public class DataFactories
      * @return {@link DataFactory} that returns a {@link CharSeeker} over the supplied {@code readable}
      */
     public static <ENTITY extends InputEntity> DataFactory<ENTITY> data( final Function<ENTITY,ENTITY> decorator,
-                                                                         final Factory<Readable> readable )
+                                                                         final Factory<CharReadable> readable )
     {
         return new DataFactory<ENTITY>()
         {
@@ -175,7 +176,7 @@ public class DataFactories
      * from a {@link Readable} containing that data.
      * @param reader {@link Readable} containing header data.
      */
-    public static Header.Factory defaultFormatNodeFileHeader( Readable reader )
+    public static Header.Factory defaultFormatNodeFileHeader( CharReadable reader )
     {
         return new DefaultNodeFileHeaderParser( new HeaderFromSeparateReaderFactory( reader ) );
     }
@@ -197,7 +198,7 @@ public class DataFactories
      * from a {@link Readable} containing that data.
      * @param reader {@link Readable} containing header data.
      */
-    public static Header.Factory defaultFormatRelationshipFileHeader( Readable reader )
+    public static Header.Factory defaultFormatRelationshipFileHeader( CharReadable reader )
     {
         return new DefaultRelationshipFileHeaderParser( new HeaderFromSeparateReaderFactory( reader ) );
     }
@@ -257,9 +258,9 @@ public class DataFactories
 
     private static class HeaderFromSeparateReaderFactory extends SeparateHeaderReaderFactory
     {
-        private final Readable readable;
+        private final CharReadable readable;
 
-        HeaderFromSeparateReaderFactory( Readable readable )
+        HeaderFromSeparateReaderFactory( CharReadable readable )
         {
             this.readable = readable;
         }

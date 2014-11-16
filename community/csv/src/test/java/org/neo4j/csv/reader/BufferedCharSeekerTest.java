@@ -34,13 +34,15 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import static org.neo4j.csv.reader.Readables.wrap;
+
 public class BufferedCharSeekerTest
 {
     @Test
     public void shouldFindCertainCharacter() throws Exception
     {
         // GIVEN
-        seeker = new BufferedCharSeeker( new StringReader( "abcdefg\thijklmnop\tqrstuvxyz" ) );
+        seeker = new BufferedCharSeeker( wrap( new StringReader( "abcdefg\thijklmnop\tqrstuvxyz" ) ) );
 
         // WHEN/THEN
         // first value
@@ -69,9 +71,9 @@ public class BufferedCharSeekerTest
     public void shouldReadMultipleLines() throws Exception
     {
         // GIVEN
-        seeker = new BufferedCharSeeker( new StringReader(
+        seeker = new BufferedCharSeeker( wrap( new StringReader(
                 "1\t2\t3\n" +
-                "4\t5\t6\n" ) );
+                "4\t5\t6\n" ) ) );
 
         // WHEN/THEN
         assertTrue( seeker.seek( mark, TAB ) );
@@ -108,8 +110,8 @@ public class BufferedCharSeekerTest
     public void shouldSeekThroughAdditionalBufferRead() throws Exception
     {
         // GIVEN
-        seeker = new BufferedCharSeeker( new StringReader(
-                                                  "1234,5678,9012,3456" ), 12 );
+        seeker = new BufferedCharSeeker( wrap( new StringReader(
+                                                  "1234,5678,9012,3456" ) ), 12 );
         // bufferSIze 12 should have seeker read more here     ^
 
         // WHEN/THEN
@@ -128,10 +130,10 @@ public class BufferedCharSeekerTest
     public void shouldHandleWindowsEndOfLineCharacters() throws Exception
     {
         // GIVEN
-        seeker = new BufferedCharSeeker( new StringReader(
+        seeker = new BufferedCharSeeker( wrap( new StringReader(
                 "here,comes,Windows\r\n" +
                 "and,it,has\r" +
-                "other,line,endings" ), 100 );
+                "other,line,endings" ) ), 100 );
 
         // WHEN/THEN
         assertEquals( "here", seeker.seek( mark, COMMA ) ? seeker.extract( mark, extractors.string() ).value() : "" );
@@ -155,7 +157,7 @@ public class BufferedCharSeekerTest
         int cols = 3, rows = 3;
         char delimiter = '\t';
         String[][] data = randomWeirdValues( cols, rows, delimiter, '\n', '\r' );
-        seeker = new BufferedCharSeeker( new StringReader( join( data, delimiter ) ) );
+        seeker = new BufferedCharSeeker( wrap( new StringReader( join( data, delimiter ) ) ) );
 
         // WHEN/THEN
         for ( int row = 0; row < rows; row++ )
@@ -174,7 +176,7 @@ public class BufferedCharSeekerTest
     public void shouldHandleEmptyValues() throws Exception
     {
         // GIVEN
-        seeker = new BufferedCharSeeker( new StringReader( "1,,3,4" ) );
+        seeker = new BufferedCharSeeker( wrap( new StringReader( "1,,3,4" ) ) );
 
         // WHEN
         assertTrue( seeker.seek( mark, COMMA ) );
@@ -193,8 +195,8 @@ public class BufferedCharSeekerTest
     public void shouldNotLetEolCharSkippingMessUpPositionsInMark() throws Exception
     {
         // GIVEN
-        seeker = new BufferedCharSeeker( new StringReader( "12,34,56\n789,901,23" ), 9 );
-        //      reading this char will cause new chunk read          ^
+        seeker = new BufferedCharSeeker( wrap( new StringReader( "12,34,56\n789,901,23" ) ), 9 );
+        //      reading this char will cause new chunk read                ^
 
         // WHEN
         assertTrue( seeker.seek( mark, COMMA ) );
@@ -218,7 +220,7 @@ public class BufferedCharSeekerTest
     public void shouldSeeEofEvenIfBufferAlignsWithEnd() throws Exception
     {
         // GIVEN
-        seeker = new BufferedCharSeeker( new StringReader( "123,56" ), 6 );
+        seeker = new BufferedCharSeeker( wrap( new StringReader( "123,56" ) ), 6 );
 
         // WHEN
         assertTrue( seeker.seek( mark, COMMA ) );
@@ -235,9 +237,9 @@ public class BufferedCharSeekerTest
     public void shouldSkipEmptyLastValue() throws Exception
     {
         // GIVEN
-        seeker = new BufferedCharSeeker( new StringReader(
+        seeker = new BufferedCharSeeker( wrap( new StringReader(
                 "one,two,three,\n" +
-                "uno,dos,tres," ), 100 );
+                "uno,dos,tres," ) ), 100 );
 
         // WHEN
         assertNextValue( seeker, mark, COMMA, "one" );
@@ -267,8 +269,8 @@ public class BufferedCharSeekerTest
     public void shouldContinueThroughCompletelyEmptyLines() throws Exception
     {
         // GIVEN
-        seeker = new BufferedCharSeeker( new StringReader(
-                "one,two,three\n\n\nfour,five,six" ), 200 );
+        seeker = new BufferedCharSeeker( wrap( new StringReader(
+                "one,two,three\n\n\nfour,five,six" ) ), 200 );
 
         // WHEN/THEN
         assertArrayEquals( new String[] {"one", "two", "three"}, nextLineOfAllStrings( seeker, mark ) );
@@ -302,8 +304,8 @@ public class BufferedCharSeekerTest
     public void shouldReadQuotes() throws Exception
     {
         // GIVEN
-        seeker = new BufferedCharSeeker( new StringReader(
-                "value one\t\"value two\"\tvalue three" ) );
+        seeker = new BufferedCharSeeker( wrap( new StringReader(
+                "value one\t\"value two\"\tvalue three" ) ) );
 
         // WHEN/THEN
         assertTrue( seeker.seek( mark, TAB ) );
@@ -320,8 +322,8 @@ public class BufferedCharSeekerTest
     public void shouldReadQuotedValuesWithDelimiterInside() throws Exception
     {
         // GIVEN
-        seeker =  new BufferedCharSeeker( new StringReader(
-                "value one\t\"value\ttwo\"\tvalue three" ) );
+        seeker =  new BufferedCharSeeker( wrap( new StringReader(
+                "value one\t\"value\ttwo\"\tvalue three" ) ) );
 
         // WHEN/THEN
         assertTrue( seeker.seek( mark, TAB ) );
@@ -338,8 +340,8 @@ public class BufferedCharSeekerTest
     public void shouldReadQuotedValuesWithNewLinesInside() throws Exception
     {
         // GIVEN
-        seeker =  new BufferedCharSeeker( new StringReader(
-                "value one\t\"value\ntwo\"\tvalue three" ) );
+        seeker =  new BufferedCharSeeker( wrap( new StringReader(
+                "value one\t\"value\ntwo\"\tvalue three" ) ) );
 
         // WHEN/THEN
         assertTrue( seeker.seek( mark, TAB ) );
@@ -356,8 +358,8 @@ public class BufferedCharSeekerTest
     public void shouldHandleDoubleQuotes() throws Exception
     {
         // GIVEN
-        seeker = new BufferedCharSeeker( new StringReader(
-                "\"value \"\"one\"\"\"\t\"\"\"value\"\" two\"\t\"va\"\"lue\"\" three\"" ) );
+        seeker = new BufferedCharSeeker( wrap( new StringReader(
+                "\"value \"\"one\"\"\"\t\"\"\"value\"\" two\"\t\"va\"\"lue\"\" three\"" ) ) );
 
         // WHEN/THEN
         assertTrue( seeker.seek( mark, TAB ) );
@@ -374,8 +376,8 @@ public class BufferedCharSeekerTest
     public void shouldHandleSlashEncodedQuotes() throws Exception
     {
         // GIVEN
-        seeker = new BufferedCharSeeker( new StringReader(
-                "\"value \\\"one\\\"\"\t\"\\\"value\\\" two\"\t\"va\\\"lue\\\" three\"" ) );
+        seeker = new BufferedCharSeeker( wrap( new StringReader(
+                "\"value \\\"one\\\"\"\t\"\\\"value\\\" two\"\t\"va\\\"lue\\\" three\"" ) ) );
 
         // WHEN/THEN
         assertTrue( seeker.seek( mark, TAB ) );
@@ -392,9 +394,9 @@ public class BufferedCharSeekerTest
     public void shouldRecognizeStrayQuoteCharacters() throws Exception
     {
         // GIVEN
-        seeker = new BufferedCharSeeker( new StringReader(
+        seeker = new BufferedCharSeeker( wrap( new StringReader(
                 "one,two\",th\"ree\n" +
-                "four,five,s\"ix" ) );
+                "four,five,s\"ix" ) ) );
 
         // THEN
         assertNextValue( seeker, mark, COMMA, "one" );

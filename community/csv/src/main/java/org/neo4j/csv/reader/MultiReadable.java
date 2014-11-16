@@ -21,33 +21,32 @@ package org.neo4j.csv.reader;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.nio.CharBuffer;
 import java.util.Iterator;
 
 import org.neo4j.collection.RawIterator;
 
 /**
- * Have multiple {@link Readable} instances look like one. The provided {@link Readable readables} should
+ * Have multiple {@link CharReadable} instances look like one. The provided {@link CharReadable readables} should
  * be opened lazily, in {@link Iterator#next()}, and will be closed in here, if they implement {@link Closeable}.
  */
-public class MultiReadable implements Readable, Closeable
+public class MultiReadable implements CharReadable, Closeable
 {
-    private final RawIterator<Readable,IOException> actual;
-    private Readable current = Readables.EMPTY;
+    private final RawIterator<CharReadable,IOException> actual;
+    private CharReadable current = Readables.EMPTY;
     private int readFromCurrent;
 
-    public MultiReadable( RawIterator<Readable,IOException> actual )
+    public MultiReadable( RawIterator<CharReadable,IOException> actual )
     {
         this.actual = actual;
     }
 
     @Override
-    public int read( CharBuffer cb ) throws IOException
+    public int read( char[] buffer, int offset, int length ) throws IOException
     {
         int read = 0;
-        while ( cb.hasRemaining() )
+        while ( read < length )
         {
-            int readThisTime = current.read( cb );
+            int readThisTime = current.read( buffer, offset + read, length - read );
             if ( readThisTime == -1 )
             {
                 if ( actual.hasNext() )
@@ -60,7 +59,7 @@ public class MultiReadable implements Readable, Closeable
                     // look like one long line.
                     if ( readFromCurrent > 0 )
                     {
-                        cb.put( '\n' );
+                        buffer[offset + read++] = '\n';
                         readFromCurrent = 0;
                     }
                 }
@@ -80,10 +79,7 @@ public class MultiReadable implements Readable, Closeable
 
     private void closeCurrent() throws IOException
     {
-        if ( current instanceof Closeable )
-        {
-            ((Closeable) current).close();
-        }
+        current.close();
     }
 
     @Override

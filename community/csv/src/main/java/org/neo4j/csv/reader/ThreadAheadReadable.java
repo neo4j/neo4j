@@ -25,28 +25,32 @@ import java.nio.CharBuffer;
 import java.util.concurrent.locks.LockSupport;
 
 import static java.lang.Math.min;
+import static java.lang.System.arraycopy;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
- * Like an ordinary {@link Readable}, it's just that the reading happens in a separate thread, so when
+ * Like an ordinary {@link CharReadable}, it's just that the reading happens in a separate thread, so when
  * a consumer wants to {@link #read(CharBuffer)} more data it's already available, merely a memcopy away.
  */
-public class ThreadAheadReadable extends Thread implements Readable, Closeable
+public class ThreadAheadReadable extends Thread implements CharReadable, Closeable
 {
     private static final long PARK_TIME = MILLISECONDS.toNanos( 100 );
 
-    private final Readable actual;
+    private final CharReadable actual;
     private final Thread owner;
+    private final char[] readAheadArray;
     private final CharBuffer readAheadBuffer;
     private volatile boolean hasReadAhead;
     private volatile boolean closed;
+    private volatile boolean eof;
     private volatile IOException ioException;
 
-    private ThreadAheadReadable( Readable actual, int bufferSize  )
+    private ThreadAheadReadable( CharReadable actual, int bufferSize  )
     {
         this.actual = actual;
         this.owner = Thread.currentThread();
-        this.readAheadBuffer = CharBuffer.allocate( bufferSize );
+        this.readAheadArray = new char[bufferSize];
+        this.readAheadBuffer = CharBuffer.wrap( readAheadArray );
         this.readAheadBuffer.position( bufferSize );
         start();
     }
@@ -56,7 +60,7 @@ public class ThreadAheadReadable extends Thread implements Readable, Closeable
      * waits for this thread to have fully read the next buffer.
      */
     @Override
-    public int read( CharBuffer target ) throws IOException
+    public int read( char[] buffer, int offset, int length ) throws IOException
     {
         // are we still healthy and all that?
         assertHealthy();
@@ -68,31 +72,27 @@ public class ThreadAheadReadable extends Thread implements Readable, Closeable
             assertHealthy();
         }
 
-        // copy data from the read ahead buffer into the target buffer
-        int available = readAheadBuffer.limit();
-        int bytesToCopy;
-        try
+        if ( eof )
         {
-            bytesToCopy = min( available, target.remaining() );
-            readAheadBuffer.limit( bytesToCopy );
-            target.put( readAheadBuffer );
-        }
-        finally
-        {
-            readAheadBuffer.limit( available );
+            return -1;
         }
 
-        // Wake up the reader... there's stuff to do, data to read
+        // copy data from the read ahead buffer into the target buffer
+        int bytesToCopy = min( readAheadBuffer.remaining(), length );
+        arraycopy( readAheadArray, readAheadBuffer.position(), buffer, offset, bytesToCopy );
+        readAheadBuffer.position( readAheadBuffer.position() + bytesToCopy );
+
+        // wake up the reader... there's stuff to do, data to read
         hasReadAhead = false;
         LockSupport.unpark( this );
-        return bytesToCopy;
+        return bytesToCopy == 0 ? -1 : bytesToCopy;
     }
 
     private void assertHealthy() throws IOException
     {
         if ( ioException != null )
         {
-            throw new IOException( "IOException occured in read-ahead thread", ioException );
+            throw new IOException( "Error occured in read-ahead thread", ioException );
         }
     }
 
@@ -115,10 +115,7 @@ public class ThreadAheadReadable extends Thread implements Readable, Closeable
         }
         finally
         {
-            if ( actual instanceof Closeable )
-            {
-                ((Closeable) actual).close();
-            }
+            actual.close();
         }
     }
 
@@ -127,7 +124,7 @@ public class ThreadAheadReadable extends Thread implements Readable, Closeable
     {
         while ( !closed )
         {
-            if ( hasReadAhead )
+            if ( hasReadAhead || eof )
             {   // We have already read ahead, sleep a little
                 parkAWhile();
             }
@@ -136,8 +133,14 @@ public class ThreadAheadReadable extends Thread implements Readable, Closeable
                 try
                 {
                     readAheadBuffer.compact();
-                    actual.read( readAheadBuffer );
-                    readAheadBuffer.flip();
+                    int read = actual.read( readAheadArray, readAheadBuffer.position(), readAheadBuffer.remaining() );
+                    if ( read == -1 )
+                    {
+                        eof = true;
+                        read = 0;
+                    }
+                    readAheadBuffer.limit( readAheadBuffer.position() + read );
+                    readAheadBuffer.position( 0 );
                     hasReadAhead = true;
                     LockSupport.unpark( owner );
                 }
@@ -146,11 +149,16 @@ public class ThreadAheadReadable extends Thread implements Readable, Closeable
                     ioException = e;
                     closed = true;
                 }
+                catch ( Throwable e )
+                {
+                    ioException = new IOException( e );
+                    closed = true;
+                }
             }
         }
     }
 
-    public static Readable threadAhead( Readable actual, int bufferSize )
+    public static CharReadable threadAhead( CharReadable actual, int bufferSize )
     {
         return new ThreadAheadReadable( actual, bufferSize );
     }

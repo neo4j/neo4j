@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.CharBuffer;
 import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -48,9 +47,9 @@ public class ReadablesTest
         File compressed = compressWithZip( text );
 
         // WHEN
-        Readable readable = Readables.file( compressed );
+        CharReadable readable = Readables.file( compressed );
         char[] readText = new char[text.toCharArray().length];
-        readable.read( CharBuffer.wrap( readText ) );
+        readable.read( readText, 0, readText.length );
 
         // THEN
         assertArrayEquals( text.toCharArray(), readText );
@@ -64,9 +63,9 @@ public class ReadablesTest
         File compressed = compressWithGZip( text );
 
         // WHEN
-        Readable readable = Readables.file( compressed );
+        CharReadable readable = Readables.file( compressed );
         char[] readText = new char[text.toCharArray().length];
-        readable.read( CharBuffer.wrap( readText ) );
+        readable.read( readText, 0, readText.length );
 
         // THEN
         assertArrayEquals( text.toCharArray(), readText );
@@ -80,9 +79,9 @@ public class ReadablesTest
         File plainText = write( text );
 
         // WHEN
-        Readable readable = Readables.file( plainText );
+        CharReadable readable = Readables.file( plainText );
         char[] readText = new char[text.toCharArray().length];
-        readable.read( CharBuffer.wrap( readText ) );
+        readable.read( readText, 0, readText.length );
 
         // THEN
         assertArrayEquals( text.toCharArray(), readText );
@@ -96,9 +95,9 @@ public class ReadablesTest
         File compressed = compressWithZip( text, ".nothing", ".DS_Store", "__MACOSX/", "__MACOSX/file" );
 
         // WHEN
-        Readable readable = Readables.file( compressed );
+        CharReadable readable = Readables.file( compressed );
         char[] readText = new char[text.toCharArray().length];
-        readable.read( CharBuffer.wrap( readText ) );
+        readable.read( readText, 0, readText.length );
 
         // THEN
         assertArrayEquals( text.toCharArray(), readText );
@@ -112,7 +111,7 @@ public class ReadablesTest
         File compressed = compressWithZip( text, ".nothing", ".DS_Store", "somewhere/something" );
 
         // WHEN
-        Readable readable;
+        CharReadable readable;
         try
         {
             readable = Readables.file( compressed );

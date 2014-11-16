@@ -21,9 +21,6 @@ package org.neo4j.management;
 
 import org.neo4j.jmx.Description;
 import org.neo4j.jmx.ManagementInterface;
-import org.neo4j.kernel.info.LockInfo;
-
-import java.util.List;
 
 @ManagementInterface( name = IndexSamplingManager.NAME )
 @Description( "Handle index sampling." )
