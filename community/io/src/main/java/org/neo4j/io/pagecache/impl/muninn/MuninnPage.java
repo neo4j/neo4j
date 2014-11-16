@@ -65,7 +65,7 @@ final class MuninnPage extends StampedLock implements Page
 
     private long pointer;
 
-    // Optimistically incremented; occasionally truncated to a max of 5.
+    // Optimistically incremented; occasionally truncated to a max of 4.
     // accessed through unsafe
     private volatile byte usageStamp;
 
@@ -269,35 +269,25 @@ final class MuninnPage extends StampedLock implements Page
         }
     }
 
-    /** Increment the usage stamp to at most 5. */
+    /** Increment the usage stamp to at most 4. */
     public void incrementUsage()
     {
+        // This is intentionally left benignly racy for performance.
         byte usage = UnsafeUtil.getByteVolatile( this, usageStampOffset );
-        if ( usage < 5 )
-        {
-            // A Java 8 alternative:
-//            UnsafeUtil.getAndAddInt( this, usageStampOffset, 1 );
-
-            // Java 7:
-            UnsafeUtil.putByteVolatile( this, usageStampOffset, (byte) (usage + 1) );
-        }
+        usage <<= 1;
+        usage++; // Raise at least one bit in case it was all zeros.
+        usage &= 0x0F;
+        UnsafeUtil.putByteVolatile( this, usageStampOffset, usage );
     }
 
     /** Decrement the usage stamp. Returns true if it reaches 0. */
     public boolean decrementUsage()
     {
+        // This is intentionally left benignly racy for performance.
         byte usage = UnsafeUtil.getByteVolatile( this, usageStampOffset );
-        if ( usage > 0 )
-        {
-            // A Java 8 alternative:
-//            return UnsafeUtil.getAndAddInt( this, usageStampOffset, -1 ) <= 1;
-
-            // Java 7:
-            usage--;
-            UnsafeUtil.putByteVolatile( this, usageStampOffset, usage );
-            return usage == 0;
-        }
-        return true;
+        usage >>>= 1;
+        UnsafeUtil.putByteVolatile( this, usageStampOffset, usage );
+        return usage == 0;
     }
 
     /**
