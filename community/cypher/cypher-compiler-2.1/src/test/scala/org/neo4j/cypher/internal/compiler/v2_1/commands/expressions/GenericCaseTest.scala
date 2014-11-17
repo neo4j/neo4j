@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.commands.expressions
 
-import org.junit.Test
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.{CoercedPredicate, Equals, Predicate}
@@ -82,8 +81,7 @@ class GenericCaseTest extends CypherFunSuite {
     result should equal("other")
   }
 
-  @Test
-  def case_with_a_single_null_value_uses_the_default() {
+  test("case_with_a_single_null_value_uses_the_default") {
     //GIVEN CASE WHEN null THEN 42 ELSE "defaults"
     val caseExpr = GenericCase(Seq(CoercedPredicate(Null())->Literal(42)), Some(Literal("defaults")))
 
