@@ -27,12 +27,14 @@ import org.junit.Test;
 import java.io.Closeable;
 import java.io.IOException;
 
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.CancellationRequest.NEVER_CANCELLED;
 
 public class LuceneUniqueIndexAccessorReaderTest
 {
@@ -48,11 +50,12 @@ public class LuceneUniqueIndexAccessorReaderTest
     }
 
     @Test
-    public void shouldProvideTheIndexUniqueValuesForAnEmptyIndex()
+    public void shouldProvideTheIndexUniqueValuesForAnEmptyIndex() throws Exception
     {
         // Given
         when( reader.numDocs() ).thenReturn( 0 );
-        final LuceneUniqueIndexAccessorReader accessor = new LuceneUniqueIndexAccessorReader( searcher, documentLogic, closeable );
+        final LuceneUniqueIndexAccessorReader accessor =
+                new LuceneUniqueIndexAccessorReader( searcher, documentLogic, closeable, NEVER_CANCELLED );
 
         // When
         final DoubleLongRegister output = Registers.newDoubleLongRegister();
@@ -65,11 +68,12 @@ public class LuceneUniqueIndexAccessorReaderTest
     }
 
     @Test
-    public void shouldSkipTheNonNodeIdKeyEntriesWhenCalculatingIndexUniqueValues() throws IOException
+    public void shouldSkipTheNonNodeIdKeyEntriesWhenCalculatingIndexUniqueValues() throws Exception
     {
         // Given
         when( reader.numDocs() ).thenReturn( 2 );
-        final LuceneUniqueIndexAccessorReader accessor = new LuceneUniqueIndexAccessorReader( searcher, documentLogic, closeable );
+        final LuceneUniqueIndexAccessorReader accessor =
+                new LuceneUniqueIndexAccessorReader( searcher, documentLogic, closeable, NEVER_CANCELLED );
 
         // When
         final DoubleLongRegister output = Registers.newDoubleLongRegister();
@@ -82,6 +86,7 @@ public class LuceneUniqueIndexAccessorReaderTest
     }
 
     private long sampleAccessor( LuceneIndexAccessorReader reader, DoubleLongRegister output )
+            throws IndexNotFoundKernelException
     {
         return reader.sampleIndex( output );
     }

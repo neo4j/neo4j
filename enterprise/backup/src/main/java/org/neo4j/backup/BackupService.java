@@ -148,7 +148,7 @@ class BackupService
                 {
                     Monitors monitors = new Monitors();
                     client = new BackupClient( sourceHostNameOrIp, sourcePort, new DevNullLoggingService(),
-                            StoreId.DEFAULT, timeout, ResponseUnpacker.NO_OP_RESPONSE_UNPACKER, 
+                            StoreId.DEFAULT, timeout, ResponseUnpacker.NO_OP_RESPONSE_UNPACKER,
                             monitors.newMonitor( ByteCounterMonitor.class ),
                             monitors.newMonitor( RequestMonitor.class ) );
                     client.start();
@@ -160,7 +160,7 @@ class BackupService
                 {
                     client.stop();
                 }
-            }, CancellationRequest.NONE );
+            }, CancellationRequest.NEVER_CANCELLED );
 
             targetDb = startTemporaryDb( targetDirectory );
         }

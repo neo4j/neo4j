@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.index;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Resource;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 
 import static org.neo4j.register.Register.DoubleLong;
 
@@ -71,6 +72,47 @@ public interface IndexReader extends Resource
      * Sample this index (on the current thread)
      * @param result contains the unique values and the sampled size
      * @return the index size
+     * @throws IndexNotFoundKernelException if the index is dropped while sampling
      */
-    public long sampleIndex( DoubleLong.Out result );
+    public long sampleIndex( DoubleLong.Out result ) throws IndexNotFoundKernelException;
+
+    class Delegator implements IndexReader
+    {
+        private final IndexReader delegate;
+
+        public Delegator( IndexReader delegate )
+        {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public PrimitiveLongIterator lookup( Object value )
+        {
+            return delegate.lookup( value );
+        }
+
+        @Override
+        public int getIndexedCount( long nodeId, Object propertyValue )
+        {
+            return delegate.getIndexedCount( nodeId, propertyValue );
+        }
+
+        @Override
+        public long sampleIndex( DoubleLong.Out result ) throws IndexNotFoundKernelException
+        {
+            return delegate.sampleIndex( result );
+        }
+
+        @Override
+        public void close()
+        {
+            delegate.close();
+        }
+
+        @Override
+        public String toString()
+        {
+            return delegate.toString();
+        }
+    }
 }

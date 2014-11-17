@@ -193,7 +193,7 @@ public class RemoteStoreCopierTest
                 verify( response, times( 1 ) ).close();
             }
         } );
-        copier.copyStore( requester, CancellationRequest.NONE );
+        copier.copyStore( requester, CancellationRequest.NEVER_CANCELLED );
 
         // Then
         GraphDatabaseService copy = new GraphDatabaseFactory().newEmbeddedDatabase( copyDir.getAbsolutePath() );
@@ -246,7 +246,7 @@ public class RemoteStoreCopierTest
         when( requester.copyStore( any( StoreWriter.class ) ) ).thenReturn( response );
 
         // When
-        copier.copyStore( requester, CancellationRequest.NONE );
+        copier.copyStore( requester, CancellationRequest.NEVER_CANCELLED );
 
         // Then
         LoggerContext context = ReflectionUtil.getPrivateField( logging, "loggerContext", LoggerContext.class );

@@ -39,7 +39,7 @@ public interface IndexAccessor extends Closeable
     /**
      * Deletes this index as well as closes all used external resources.
      * There will not be any interactions after this call.
-     * 
+     *
      * @throws IOException if unable to drop index.
      */
     void drop() throws IOException;
@@ -58,19 +58,19 @@ public interface IndexAccessor extends Closeable
      * Forces this index to disk. Called at certain points from within Neo4j for example when
      * rotating the logical log. After completion of this call there cannot be any essential state that
      * hasn't been forced to disk.
-     * 
+     *
      * @throws IOException if there was a problem forcing the state to persistent storage.
      */
     void force() throws IOException;
-    
+
     /**
      * Closes this index accessor. There will not be any interactions after this call.
      * After completion of this call there cannot be any essential state that hasn't been forced to disk.
-     * 
+     *
      * @throws IOException if unable to close index.
      */
     void close() throws IOException;
-    
+
     /**
      * @return a new {@link IndexReader} responsible for looking up results in the index. The returned
      * reader must honor repeatable reads.
@@ -141,6 +141,64 @@ public interface IndexAccessor extends Closeable
         public ResourceIterator<File> snapshotFiles()
         {
             return emptyIterator();
+        }
+    }
+
+    class Delegator implements IndexAccessor
+    {
+        private final IndexAccessor delegate;
+
+        public Delegator( IndexAccessor delegate )
+        {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void drop() throws IOException
+        {
+            delegate.drop();
+        }
+
+        @Override
+        public IndexUpdater newUpdater( IndexUpdateMode mode )
+        {
+            return delegate.newUpdater( mode );
+        }
+
+        @Override
+        public void force() throws IOException
+        {
+            delegate.force();
+        }
+
+        @Override
+        public void close() throws IOException
+        {
+            delegate.close();
+        }
+
+        @Override
+        public IndexReader newReader()
+        {
+            return delegate.newReader();
+        }
+
+        @Override
+        public BoundedIterable<Long> newAllEntriesReader()
+        {
+            return delegate.newAllEntriesReader();
+        }
+
+        @Override
+        public ResourceIterator<File> snapshotFiles() throws IOException
+        {
+            return delegate.snapshotFiles();
+        }
+
+        @Override
+        public String toString()
+        {
+            return delegate.toString();
         }
     }
 }

@@ -23,6 +23,8 @@ import org.apache.lucene.search.IndexSearcher;
 
 import java.io.Closeable;
 
+import org.neo4j.helpers.CancellationRequest;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 
 import static org.neo4j.register.Register.DoubleLong;
@@ -30,19 +32,23 @@ import static org.neo4j.register.Register.DoubleLong;
 
 class LuceneUniqueIndexAccessorReader extends LuceneIndexAccessorReader
 {
-    private final IndexSearcher searcher;
-
-    LuceneUniqueIndexAccessorReader( IndexSearcher searcher, LuceneDocumentStructure documentLogic, Closeable onClose )
+    LuceneUniqueIndexAccessorReader( IndexSearcher searcher, LuceneDocumentStructure documentLogic, Closeable onClose,
+                                     CancellationRequest cancellation )
     {
-        super( searcher, documentLogic, onClose, -1 /* unused */ );
-        this.searcher = searcher;
+        super( searcher, documentLogic, onClose, cancellation, -1 /* unused */ );
     }
 
+    /**
+     * Implementation note:
+     * re-uses the {@link UniqueIndexSampler} in order to know that we have the same semantics as in
+     * {@link DeferredConstraintVerificationUniqueLuceneIndexPopulator population}.
+     */
     @Override
-    public long sampleIndex( DoubleLong.Out result )
+    public long sampleIndex( DoubleLong.Out result ) throws IndexNotFoundKernelException
     {
         UniqueIndexSampler sampler = new UniqueIndexSampler();
-        sampler.increment( searcher.getIndexReader().numDocs() );
+        sampler.increment( luceneIndexReader().numDocs() );
+        checkCancellation();
         return sampler.result( result );
     }
 }

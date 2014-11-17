@@ -27,6 +27,7 @@ import java.util.Collection;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.direct.BoundedIterable;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -114,7 +115,7 @@ class InMemoryIndex
         @Override
         public void create()
         {
-            indexData.clear();
+            indexData.initialize();
         }
 
         @Override
@@ -138,7 +139,7 @@ class InMemoryIndex
         @Override
         public void drop() throws IOException
         {
-            indexData.clear();
+            indexData.drop();
         }
 
         @Override
@@ -160,7 +161,14 @@ class InMemoryIndex
         @Override
         public long sampleResult( DoubleLong.Out result )
         {
-            return indexData.sampleIndex( result );
+            try
+            {
+                return indexData.sampleIndex( result );
+            }
+            catch ( IndexNotFoundKernelException e )
+            {
+                throw new IllegalStateException( e );
+            }
         }
     }
 
@@ -178,7 +186,7 @@ class InMemoryIndex
         @Override
         public void drop() throws IOException
         {
-            indexData.clear();
+            indexData.drop();
         }
 
         @Override

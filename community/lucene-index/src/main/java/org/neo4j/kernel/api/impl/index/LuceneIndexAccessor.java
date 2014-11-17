@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import java.io.Closeable;
-import java.io.File;
-import java.io.IOException;
-import java.util.Collection;
-
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
@@ -33,7 +28,16 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.CancellationRequest;
+import org.neo4j.helpers.TaskControl;
+import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.direct.BoundedIterable;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -55,6 +59,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     private final Directory dir;
     private final File dirFile;
     private final int bufferSizeLimit;
+    private final TaskCoordinator taskCoordinator = new TaskCoordinator( 10, TimeUnit.MILLISECONDS );
 
     LuceneIndexAccessor( LuceneDocumentStructure documentStructure, LuceneIndexWriterFactory indexWriterFactory,
                          IndexWriterStatus writerStatus, DirectoryFactory dirFactory, File dirFile,
@@ -88,7 +93,16 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     @Override
     public void drop() throws IOException
     {
+        taskCoordinator.cancel();
         closeIndexResources();
+        try
+        {
+            taskCoordinator.awaitCompletion();
+        }
+        catch ( InterruptedException e )
+        {
+            throw new IOException( "Interrupted while waiting for concurrent tasks to complete.", e );
+        }
         deleteDirectoryContents( dir );
     }
 
@@ -115,20 +129,22 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     public IndexReader newReader()
     {
         final IndexSearcher searcher = searcherManager.acquire();
+        final TaskControl token = taskCoordinator.newInstance();
         final Closeable closeable = new Closeable()
         {
             @Override
             public void close() throws IOException
             {
                 searcherManager.release( searcher );
+                token.close();
             }
         };
-        return makeNewReader( searcher, closeable );
+        return makeNewReader( searcher, closeable, token );
     }
 
-    protected IndexReader makeNewReader( IndexSearcher searcher, Closeable closeable )
+    protected IndexReader makeNewReader( IndexSearcher searcher, Closeable closeable, CancellationRequest cancellation )
     {
-        return new LuceneIndexAccessorReader( searcher, documentStructure, closeable, bufferSizeLimit );
+        return new LuceneIndexAccessorReader( searcher, documentStructure, closeable, cancellation, bufferSizeLimit );
     }
 
     @Override

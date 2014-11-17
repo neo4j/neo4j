@@ -29,6 +29,7 @@ import org.junit.Test;
 import java.io.Closeable;
 import java.io.IOException;
 
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 
@@ -37,6 +38,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.CancellationRequest.NEVER_CANCELLED;
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KEY;
 
 public class LuceneIndexAccessorReaderTest
@@ -57,11 +59,11 @@ public class LuceneIndexAccessorReaderTest
     }
 
     @Test
-    public void shouldProvideTheIndexUniqueValuesForAnEmptyIndex()
+    public void shouldProvideTheIndexUniqueValuesForAnEmptyIndex() throws Exception
     {
         // Given
         final LuceneIndexAccessorReader accessor =
-                new LuceneIndexAccessorReader( searcher, documentLogic, closeable, BUFFER_SIZE_LIMIT );
+                new LuceneIndexAccessorReader( searcher, documentLogic, closeable, NEVER_CANCELLED, BUFFER_SIZE_LIMIT );
 
         // When
         final DoubleLongRegister output = Registers.newDoubleLongRegister();
@@ -74,7 +76,7 @@ public class LuceneIndexAccessorReaderTest
     }
 
     @Test
-    public void shouldProvideTheIndexUniqueValuesForAnIndexWithDuplicates() throws IOException
+    public void shouldProvideTheIndexUniqueValuesForAnIndexWithDuplicates() throws Exception
     {
         // Given
         when( terms.next() ).thenReturn( true, true, true, false );
@@ -85,7 +87,7 @@ public class LuceneIndexAccessorReaderTest
         );
 
         final LuceneIndexAccessorReader accessor =
-                new LuceneIndexAccessorReader( searcher, documentLogic, closeable, BUFFER_SIZE_LIMIT );
+                new LuceneIndexAccessorReader( searcher, documentLogic, closeable, NEVER_CANCELLED, BUFFER_SIZE_LIMIT );
 
         // When
         final DoubleLongRegister output = Registers.newDoubleLongRegister();
@@ -99,7 +101,7 @@ public class LuceneIndexAccessorReaderTest
 
 
     @Test
-    public void shouldSkipTheNonNodeIdKeyEntriesWhenCalculatingIndexUniqueValues() throws IOException
+    public void shouldSkipTheNonNodeIdKeyEntriesWhenCalculatingIndexUniqueValues() throws Exception
     {
         // Given
         when( terms.next() ).thenReturn( true, true, false );
@@ -109,7 +111,7 @@ public class LuceneIndexAccessorReaderTest
         );
 
         final LuceneIndexAccessorReader accessor =
-                new LuceneIndexAccessorReader( searcher, documentLogic, closeable, BUFFER_SIZE_LIMIT );
+                new LuceneIndexAccessorReader( searcher, documentLogic, closeable, NEVER_CANCELLED, BUFFER_SIZE_LIMIT );
 
         // When
 
@@ -123,13 +125,13 @@ public class LuceneIndexAccessorReaderTest
     }
 
     @Test
-    public void shouldWrapAnIOExceptionIntoARuntimeExceptionWhenCalculatingIndexUniqueValues() throws IOException
+    public void shouldWrapAnIOExceptionIntoARuntimeExceptionWhenCalculatingIndexUniqueValues() throws Exception
     {
         // Given
         final IOException ioex = new IOException();
         when( terms.next() ).thenThrow( ioex );
         final LuceneIndexAccessorReader accessor =
-                new LuceneIndexAccessorReader( searcher, documentLogic, closeable, BUFFER_SIZE_LIMIT );
+                new LuceneIndexAccessorReader( searcher, documentLogic, closeable, NEVER_CANCELLED, BUFFER_SIZE_LIMIT );
 
         // When
         try
@@ -145,6 +147,7 @@ public class LuceneIndexAccessorReaderTest
     }
 
     private long sampleAccessor( LuceneIndexAccessorReader reader, DoubleLongRegister output )
+            throws IndexNotFoundKernelException
     {
         return reader.sampleIndex( output );
     }
