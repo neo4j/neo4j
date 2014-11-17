@@ -70,9 +70,9 @@ public final class IndexSamplingManagerBean extends ManagementBeanProvider
         }
 
         @Override
-        public void triggerIndexSampling( String labelKey, String propertyKey )
+        public void triggerIndexSampling( String labelKey, String propertyKey, boolean forceSample )
         {
-            access.triggerIndexSampling( labelKey, propertyKey );
+            access.triggerIndexSampling( labelKey, propertyKey, forceSample );
         }
     }
 
@@ -111,7 +111,7 @@ public final class IndexSamplingManagerBean extends ManagementBeanProvider
             state = null;
         }
 
-        public void triggerIndexSampling( String labelKey, String propertyKey )
+        public void triggerIndexSampling( String labelKey, String propertyKey, boolean forceSample )
         {
             int labelKeyId = -1, propertyKeyId = -1;
             State state = this.state;
@@ -123,10 +123,22 @@ public final class IndexSamplingManagerBean extends ManagementBeanProvider
             if ( labelKeyId == -1 || propertyKeyId == -1 )
             {
                 throw new IllegalArgumentException( "No property or label key was found associated with " +
-                                                    propertyKey + " and " + labelKey );
+                        propertyKey + " and " + labelKey );
             }
             state.indexingService.triggerIndexSampling( new IndexDescriptor( labelKeyId, propertyKeyId ),
-                    IndexSamplingMode.TRIGGER_REBUILD_UPDATED);
+                    getIndexSamplingMode( forceSample ) );
+        }
+
+        private IndexSamplingMode getIndexSamplingMode( boolean forceSample )
+        {
+            if ( forceSample )
+            {
+                return IndexSamplingMode.TRIGGER_REBUILD_ALL;
+            }
+            else
+            {
+                return IndexSamplingMode.TRIGGER_REBUILD_UPDATED;
+            }
         }
     }
 }

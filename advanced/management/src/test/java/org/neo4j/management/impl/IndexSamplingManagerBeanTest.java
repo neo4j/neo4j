@@ -68,11 +68,26 @@ public class IndexSamplingManagerBeanTest
         storeAccess.registered( dataSource );
 
         // When
-        storeAccess.triggerIndexSampling( EXISTING_LABEL, EXISTING_PROPERTY );
+        storeAccess.triggerIndexSampling( EXISTING_LABEL, EXISTING_PROPERTY, false );
 
         // Then
         verify( indexingService, times( 1 ) ).triggerIndexSampling( new IndexDescriptor( LABEL_ID, PROPERTY_ID ) ,
                 IndexSamplingMode.TRIGGER_REBUILD_UPDATED);
+    }
+
+    @Test
+    public void forceSamplingTriggeredWhenIdsArePresent()
+    {
+        // Given
+        IndexSamplingManagerBean.StoreAccess storeAccess = new IndexSamplingManagerBean.StoreAccess();
+        storeAccess.registered( dataSource );
+
+        // When
+        storeAccess.triggerIndexSampling( EXISTING_LABEL, EXISTING_PROPERTY, true );
+
+        // Then
+        verify( indexingService, times( 1 ) ).triggerIndexSampling( new IndexDescriptor( LABEL_ID, PROPERTY_ID ) ,
+                IndexSamplingMode.TRIGGER_REBUILD_ALL);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -83,7 +98,7 @@ public class IndexSamplingManagerBeanTest
         storeAccess.registered( dataSource );
 
         // When
-        storeAccess.triggerIndexSampling( NON_EXISTING_LABEL, EXISTING_PROPERTY );
+        storeAccess.triggerIndexSampling( NON_EXISTING_LABEL, EXISTING_PROPERTY, false );
     }
 
 
@@ -95,7 +110,7 @@ public class IndexSamplingManagerBeanTest
         storeAccess.registered( dataSource );
 
         // When
-        storeAccess.triggerIndexSampling( EXISTING_LABEL, NON_EXISTING_PROPERTY );
+        storeAccess.triggerIndexSampling( EXISTING_LABEL, NON_EXISTING_PROPERTY, false );
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -105,6 +120,6 @@ public class IndexSamplingManagerBeanTest
         IndexSamplingManagerBean.StoreAccess storeAccess = new IndexSamplingManagerBean.StoreAccess();
 
         // When
-        storeAccess.triggerIndexSampling( EXISTING_LABEL, EXISTING_PROPERTY );
+        storeAccess.triggerIndexSampling( EXISTING_LABEL, EXISTING_PROPERTY, false );
     }
 }
