@@ -45,6 +45,11 @@ angular.module('neo4jApp.controllers')
         keyboard: yes
         size: 'lg'
 
+      $scope.theme = Settings.theme
+      $scope.$on('settings:saved', () ->
+        $scope.theme = Settings.theme
+      )
+
       $scope.toggleMessenger = () ->
         UsageDataCollectionService.toggleMessenger()
 
