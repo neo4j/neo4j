@@ -5,8 +5,8 @@ Server Configuration
 .Quick info
 ***********
 * The server's primary configuration file is found under _conf/neo4j-server.properties_
-* Low-level performance tuning parameters are found in _conf/neo4j.properties_
-* Configuraion of the deamonizing wrapper are found in _conf/neo4j-wrapper.properties_
+* Low-level performance tuning parameters and configuration of legacy indexes and the remote shell are found in _conf/neo4j.properties_
+* Configuration of the daemonizing wrapper is found in _conf/neo4j-wrapper.properties_
 * HTTP logging configuration is found in _conf/neo4j-http-logging.xml_
 ***********
 
