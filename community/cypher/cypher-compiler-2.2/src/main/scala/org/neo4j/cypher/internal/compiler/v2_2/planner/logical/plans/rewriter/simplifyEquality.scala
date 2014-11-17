@@ -19,16 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.compiler.v2_2.{Rewriter, repeat}
-import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSequencer
+import org.neo4j.cypher.internal.compiler.v2_2._
+import org.neo4j.cypher.internal.compiler.v2_2.ast._
 
-case object LogicalPlanRewriter extends Rewriter {
-  val instance: Rewriter = repeat(RewriterStepSequencer.newDefault("LogicalPlanRewriter")(
-    mergeTwoSelections,
-    unnestApply,
-    simplifyEquality,
-    unnestOptional
-  ))
+case object simplifyEquality extends Rewriter {
+  def apply(input: AnyRef) = bottomUp(instance).apply(input)
 
-  def apply(that: AnyRef) = instance(that)
+  private val instance: Rewriter = Rewriter.lift {
+    case in@In(exp, Collection(values@Seq(idValueExpr))) if values.size == 1 =>
+      Equals(exp, idValueExpr)(in.position)
+  }
 }
