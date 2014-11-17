@@ -68,10 +68,14 @@ class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStra
       val rhs = planPart(query, Some(planQueryArgumentRow(query.graph)))(lhsContext)
       val applyPlan = planTailApply(lhs, rhs)
 
-      // val applyContext = lhsContext.recurse(applyPlan)
-      val projectedPlan = planEventHorizon(query, applyPlan)(context)
-      val completePlan = planNestedPlanExpressions(projectedPlan)(lhsContext)
-      planWithTail(completePlan, query.tail)(lhsContext)
+      val applyContext = lhsContext.recurse(applyPlan)
+      val projectedPlan = planEventHorizon(query, applyPlan)(applyContext)
+
+      val projectedContext = applyContext.recurse(projectedPlan)
+      val completePlan = planNestedPlanExpressions(projectedPlan)(projectedContext)
+
+      // planning nested expressions doesn't change outer cardinality
+      planWithTail(completePlan, query.tail)(projectedContext)
 
     case None =>
       pred
