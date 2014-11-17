@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{CachedMetricsFac
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
 import org.neo4j.cypher.internal.{LRUCache, PlanType}
 import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.kernel.impl.util.StringLogger
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 
 trait SemanticCheckMonitor {
@@ -42,13 +43,13 @@ trait AstRewritingMonitor {
 }
 
 trait CypherCacheFlushingMonitor[T] {
-  def cacheFlushDetected(justBeforeKey: T)
+  def cacheFlushDetected(justBeforeKey: T){}
 }
 
 trait CypherCacheHitMonitor[T] {
-  def cacheHit(key: T)
-  def cacheMiss(key: T)
-  def cacheDiscard(key: T)
+  def cacheHit(key: T){}
+  def cacheMiss(key: T){}
+  def cacheDiscard(key: T){}
 }
 
 trait CypherCacheMonitor[T, E] extends CypherCacheHitMonitor[T] with CypherCacheFlushingMonitor[E]
@@ -58,9 +59,10 @@ trait AstCacheMonitor extends CypherCacheMonitor[PreparedQuery, CacheAccessor[Pr
 object CypherCompilerFactory {
   val monitorTag = "cypher2.2"
 
-  def ronjaCompiler(graph: GraphDatabaseService, queryCacheSize: Int, kernelMonitors: KernelMonitors): CypherCompiler = {
+  def ronjaCompiler(graph: GraphDatabaseService, queryCacheSize: Int,
+                    kernelMonitors: KernelMonitors, logger: StringLogger): CypherCompiler = {
     val monitors = new Monitors(kernelMonitors)
-    val parser = new CypherParser(monitors.newMonitor[ParserMonitor[ast.Statement]](monitorTag))
+    val parser = new CypherParser(monitors.newMonitor[ParserMonitor[Statement]](monitorTag))
     val checker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
     val rewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag))
     val planBuilderMonitor = monitors.newMonitor[NewLogicalPlanSuccessRateMonitor](monitorTag)
@@ -71,9 +73,16 @@ object CypherCompilerFactory {
     val execPlanBuilder = new ExecutionPlanBuilder(graph, pipeBuilder)
     val planCacheFactory = () => new LRUCache[PreparedQuery, ExecutionPlan](queryCacheSize)
     val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
+    monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), monitorTag)
     val cache = new MonitoringCacheAccessor[PreparedQuery, ExecutionPlan](cacheMonitor)
 
     new CypherCompiler(parser, checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheMonitor, monitors)
+  }
+
+  private def logStalePlanRemovalMonitor(logger: StringLogger) = new AstCacheMonitor {
+    override def cacheDiscard(key: PreparedQuery) {
+      logger.info(s"Discarded stale query from the query cache: ${key.queryText}")
+    }
   }
 
   def legacyCompiler(graph: GraphDatabaseService, queryCacheSize: Int, kernelMonitors: KernelMonitors): CypherCompiler = {
@@ -118,12 +127,14 @@ case class CypherCompiler(parser: CypherParser,
 
   def planPreparedQuery(parsedQuery: PreparedQuery, context: PlanContext): (ExecutionPlan, Map[String, Any]) = {
     val cache = provideCache(cacheAccessor, cacheMonitor, context)
+    var planned = false
     val plan = Iterator.continually {
       cacheAccessor.getOrElseUpdate(cache)(parsedQuery, {
+        planned = true
         executionPlanBuilder.build(context, parsedQuery)
       })
     }.flatMap { plan =>
-      if (plan.isStale(context.getLastCommittedTransactionId, context.statistics)) {
+      if ( !planned && plan.isStale(context.getLastCommittedTransactionId, context.statistics) ) {
         cacheAccessor.remove(cache)(parsedQuery)
         None
       } else {

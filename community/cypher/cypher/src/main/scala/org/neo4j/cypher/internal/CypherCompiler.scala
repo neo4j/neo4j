@@ -25,6 +25,7 @@ import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.InternalAbstractGraphDatabase
 import org.neo4j.kernel.api.KernelAPI
+import org.neo4j.kernel.impl.util.StringLogger
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 
 object CypherCompiler {
@@ -38,13 +39,15 @@ class CypherCompiler(graph: GraphDatabaseService,
                      kernelAPI: KernelAPI,
                      kernelMonitors: KernelMonitors,
                      defaultVersion: CypherVersion = CypherVersion.vDefault,
-                     optionParser: CypherOptionParser) {
+                     optionParser: CypherOptionParser,
+                     logger: StringLogger) {
   private val queryCacheSize: Int = getQueryCacheSize
   private val compatibilityFor1_9 = CompatibilityFor1_9(graph, queryCacheSize)
   private val compatibilityFor2_0 = CompatibilityFor2_0(graph, queryCacheSize)
   private val compatibilityFor2_1 = CompatibilityFor2_1(graph, queryCacheSize, kernelMonitors, kernelAPI)
   private val compatibilityFor2_2Rule = CompatibilityFor2_2Rule(graph, queryCacheSize, kernelMonitors, kernelAPI)
-  private val compatibilityFor2_2Cost = CompatibilityFor2_2Cost(graph, queryCacheSize, kernelMonitors, kernelAPI)
+  private val compatibilityFor2_2Cost =
+    CompatibilityFor2_2Cost(graph, queryCacheSize, kernelMonitors, kernelAPI, logger)
 
   @throws(classOf[SyntaxException])
   def parseQuery(queryText: String): ParsedQuery = {
@@ -66,7 +69,7 @@ class CypherCompiler(graph: GraphDatabaseService,
 
   private def preParse(queryWithOption: CypherQueryWithOptions): PreParsedQuery = {
 
-    import CollectionFrosting._
+    import org.neo4j.cypher.internal.CollectionFrosting._
 
     val versionOptions = queryWithOption.options.collectSingle {
       case VersionOption(v) => CypherVersion(v)
