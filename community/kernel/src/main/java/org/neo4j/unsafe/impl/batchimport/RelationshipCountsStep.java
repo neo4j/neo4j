@@ -31,6 +31,8 @@ import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
  */
 public class RelationshipCountsStep extends RelationshipStoreProcessorStep
 {
+    /** Don't support these counts at the moment so don't compute them */
+    private static final boolean COMPUTE_DOUBLE_SIDED_RELATIONSHIP_COUNTS = false;
     private final NodeLabelsCache nodeLabelCache;
     // start node label id | relationship type | end node label id. Roughly 8Mb for 100,100,100
     private final long[][][] counts;
@@ -112,6 +114,13 @@ public class RelationshipCountsStep extends RelationshipStoreProcessorStep
                 long[] endNodeLabelIds = types[typeId];
                 for ( int endNodeLabelId = 0; endNodeLabelId < endNodeLabelIds.length; endNodeLabelId++ )
                 {
+                    if ( !COMPUTE_DOUBLE_SIDED_RELATIONSHIP_COUNTS )
+                    {
+                        if ( startNodeLabelId != anyLabel && endNodeLabelId != anyLabel )
+                        {
+                            continue;
+                        }
+                    }
                     int startLabel = startNodeLabelId == anyLabel ? ReadOperations.ANY_LABEL : startNodeLabelId;
                     int type = typeId == anyRelationshipType ? ReadOperations.ANY_RELATIONSHIP_TYPE : typeId;
                     int endLabel = endNodeLabelId == anyLabel ? ReadOperations.ANY_LABEL : endNodeLabelId;

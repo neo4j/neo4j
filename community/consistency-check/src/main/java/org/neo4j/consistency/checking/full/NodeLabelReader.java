@@ -30,13 +30,14 @@ import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
 public class NodeLabelReader
 {
-    public static <REPORT extends ConsistencyReport> Set<Long> getListOfLabels(
-            NodeRecord nodeRecord, RecordAccess records, CheckerEngine<NodeRecord, REPORT> engine )
+    public static <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport> Set<Long> getListOfLabels(
+            NodeRecord nodeRecord, RecordAccess records, CheckerEngine<RECORD, REPORT> engine )
     {
         final Set<Long> labels = new HashSet<>();
 
@@ -49,23 +50,23 @@ public class NodeLabelReader
             RecordReference<DynamicRecord> firstRecordReference = records.nodeLabels( firstRecordId );
             engine.comparativeCheck( firstRecordReference,
                     new LabelChainWalker<>(
-                            new LabelChainWalker.Validator<NodeRecord, REPORT>()
+                            new LabelChainWalker.Validator<RECORD, REPORT>()
                             {
                                 @Override
                                 public void onRecordNotInUse( DynamicRecord dynamicRecord,
-                                                              CheckerEngine<NodeRecord, REPORT> engine )
+                                                              CheckerEngine<RECORD, REPORT> engine )
                                 {
                                 }
 
                                 @Override
                                 public void onRecordChainCycle( DynamicRecord record,
-                                                                CheckerEngine<NodeRecord, REPORT> engine )
+                                                                CheckerEngine<RECORD, REPORT> engine )
                                 {
                                 }
 
                                 @Override
                                 public void onWellFormedChain( long[] labelIds,
-                                                               CheckerEngine<NodeRecord, REPORT> engine,
+                                                               CheckerEngine<RECORD, REPORT> engine,
                                                                RecordAccess records )
                                 {
                                     copyToSet( labelIds, labels );

@@ -103,7 +103,7 @@ the relevant Commercial Agreement.
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <skip>false</skip>
-          <argLine>-Xmx300m</argLine>
+          <argLine>-Xmx300m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=target/test-data</argLine>
         </configuration>
       </plugin>
       <plugin>

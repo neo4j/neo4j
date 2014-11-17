@@ -77,6 +77,11 @@ class ConcurrentCountsTrackerState implements CountsTrackerState
     @Override
     public void incrementNodeCount( NodeKey key, long delta )
     {
+        if ( delta == 0 )
+        {
+            // this prevent to load in memory data that don't need to be modified
+            return;
+        }
         CopyableDoubleLongRegister register = writeRegister( key );
         register.increment( 0, delta );
         assert register.satisfies( NON_NEGATIVE ) :
@@ -92,6 +97,11 @@ class ConcurrentCountsTrackerState implements CountsTrackerState
     @Override
     public void incrementRelationshipCount( RelationshipKey key, long delta )
     {
+        if ( delta == 0 )
+        {
+            // this prevent to load in memory data that don't need to be modified
+            return;
+        }
         CopyableDoubleLongRegister register = writeRegister( key );
         register.increment( 0, delta );
         assert register.satisfies( NON_NEGATIVE ) :
@@ -115,7 +125,12 @@ class ConcurrentCountsTrackerState implements CountsTrackerState
     @Override
     public void incrementIndexUpdates( IndexCountsKey key, long delta )
     {
-        assert delta >= 0 : String.format( "incrementIndexUpdates(key=%s, delta=%d)", key, delta );
+        if ( delta == 0 )
+        {
+            // this prevent to load in memory data that don't need to be modified
+            return;
+        }
+        assert delta > 0 : String.format( "incrementIndexUpdates(key=%s, delta=%d)", key, delta );
         writeRegister( key ).increment( delta, 0l );
     }
 

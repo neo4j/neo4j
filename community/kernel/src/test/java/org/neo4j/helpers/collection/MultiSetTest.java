@@ -52,7 +52,7 @@ public class MultiSetTest
         Object value = new Object();
 
         // when
-        int count = multiSet.add( value );
+        long count = multiSet.add( value );
 
         // then
         assertEquals( 1, count );
@@ -72,7 +72,7 @@ public class MultiSetTest
         multiSet.add( value );
 
         // when
-        int count = multiSet.remove( value );
+        long count = multiSet.remove( value );
 
         // then
         assertEquals( 0, count );
@@ -92,7 +92,7 @@ public class MultiSetTest
         multiSet.add( value );
 
         // when
-        int count = multiSet.add( value );
+        long count = multiSet.add( value );
 
         // then
         assertEquals( 2, count );
@@ -113,7 +113,7 @@ public class MultiSetTest
         multiSet.add( value );
 
         // when
-        int count = multiSet.remove( value );
+        long count = multiSet.remove( value );
 
         // then
         assertEquals( 1, count );

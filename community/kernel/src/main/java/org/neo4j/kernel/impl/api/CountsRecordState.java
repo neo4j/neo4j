@@ -41,8 +41,10 @@ import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexSamp
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relationshipKey;
 
-public class CountsRecordState implements CountsVisitor.Visitable, CountsAccessor, RecordState
+public class CountsRecordState implements CountsAccessor, RecordState
 {
+    /** Don't support these counts at the moment so don't compute them */
+    private static final boolean COMPUTE_DOUBLE_SIDED_RELATIONSHIP_COUNTS = false;
     private final Map<CountsKey, DoubleLongRegister> counts = new HashMap<>();
 
     @Override
@@ -239,10 +241,13 @@ public class CountsRecordState implements CountsVisitor.Visitable, CountsAccesso
         {
             incrementRelationshipCount( (int) startLabelId, ANY_RELATIONSHIP_TYPE, ANY_LABEL, 1 );
             incrementRelationshipCount( (int) startLabelId, type, ANY_LABEL, 1 );
-            for ( long endLabelId : endLabels )
+            if ( COMPUTE_DOUBLE_SIDED_RELATIONSHIP_COUNTS )
             {
-                incrementRelationshipCount( (int) startLabelId, ANY_RELATIONSHIP_TYPE, (int) endLabelId, 1 );
-                incrementRelationshipCount( (int) startLabelId, type, (int) endLabelId, 1 );
+                for ( long endLabelId : endLabels )
+                {
+                    incrementRelationshipCount( (int) startLabelId, ANY_RELATIONSHIP_TYPE, (int) endLabelId, 1 );
+                    incrementRelationshipCount( (int) startLabelId, type, (int) endLabelId, 1 );
+                }
             }
         }
         for ( long endLabelId : endLabels )

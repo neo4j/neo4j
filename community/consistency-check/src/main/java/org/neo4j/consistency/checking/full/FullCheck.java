@@ -73,8 +73,14 @@ public class FullCheck
         InconsistencyReport report = new InconsistencyReport( new InconsistencyMessageLogger( logger ), summary );
 
         OwnerCheck ownerCheck = new OwnerCheck( checkPropertyOwners );
-        execute( stores, ownerCheck, recordAccess( stores.nativeStores() ), report );
+        CountsBuilderDecorator countsBuilder =
+                new CountsBuilderDecorator( stores.nativeStores().getRawNeoStore().getNodeStore() );
+        CheckDecorator decorator = new CheckDecorator.ChainCheckDecorator( ownerCheck, countsBuilder );
+        DiffRecordAccess records = recordAccess( stores.nativeStores() );
+        execute( stores, decorator, records, report );
         ownerCheck.scanForOrphanChains( progressFactory );
+        countsBuilder.checkCounts( stores.nativeStores().getCounts(), new ConsistencyReporter( records, report ),
+                progressFactory );
 
         if ( !summary.isConsistent() )
         {
@@ -83,8 +89,8 @@ public class FullCheck
         return summary;
     }
 
-    void execute( final DirectStoreAccess directStoreAccess, CheckDecorator decorator, final DiffRecordAccess recordAccess,
-                  final InconsistencyReport report )
+    void execute( final DirectStoreAccess directStoreAccess, CheckDecorator decorator,
+                  final DiffRecordAccess recordAccess, final InconsistencyReport report )
             throws ConsistencyCheckIncompleteException
     {
         final ConsistencyReporter reporter = new ConsistencyReporter( recordAccess, report );

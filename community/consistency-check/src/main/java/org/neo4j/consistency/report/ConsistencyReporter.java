@@ -34,6 +34,7 @@ import org.neo4j.consistency.report.ConsistencyReport.RelationshipGroupConsisten
 import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
+import org.neo4j.consistency.store.synthetic.CountsEntry;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -48,7 +49,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
 import static java.util.Arrays.asList;
-
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Exceptions.withCause;
 
@@ -80,6 +80,8 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
             ProxyFactory.create( ConsistencyReport.IndexConsistencyReport.class );
     private static final ProxyFactory<ConsistencyReport.RelationshipGroupConsistencyReport> RELATIONSHIP_GROUP_REPORT =
             ProxyFactory.create( ConsistencyReport.RelationshipGroupConsistencyReport.class );
+    private static final ProxyFactory<ConsistencyReport.CountsConsistencyReport> COUNTS_REPORT =
+            ProxyFactory.create( ConsistencyReport.CountsConsistencyReport.class );
 
     private final DiffRecordAccess records;
     private final InconsistencyReport report;
@@ -519,6 +521,13 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
             RecordCheck<RelationshipGroupRecord, RelationshipGroupConsistencyReport> checker )
     {
         dispatchChange( RecordType.RELATIONSHIP_GROUP, RELATIONSHIP_GROUP_REPORT, oldRecord, newRecord, checker );
+    }
+
+    @Override
+    public void forCounts( CountsEntry countsEntry,
+                           RecordCheck<CountsEntry,ConsistencyReport.CountsConsistencyReport> checker )
+    {
+        dispatch( RecordType.COUNTS, COUNTS_REPORT, countsEntry, checker );
     }
 
     static class ProxyFactory<T>

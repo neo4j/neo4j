@@ -26,6 +26,7 @@ import java.lang.annotation.Target;
 
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.RecordCheck;
+import org.neo4j.consistency.store.synthetic.CountsEntry;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -126,6 +127,9 @@ public interface ConsistencyReport
 
         void forRelationshipGroupChange( RelationshipGroupRecord oldRecord, RelationshipGroupRecord newRecord,
                 RecordCheck<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> checker );
+
+        void forCounts( CountsEntry countsEntry,
+                        RecordCheck<CountsEntry, ConsistencyReport.CountsConsistencyReport> checker );
     }
 
     interface PrimitiveConsistencyReport extends ConsistencyReport
@@ -706,5 +710,24 @@ public interface ConsistencyReport
         /** This node record has a label that is not found in the label scan store entry for this node */
         @Documented
         void nodeLabelNotInIndex( NodeRecord referredNodeRecord, long missingLabelId );
+    }
+
+    public interface CountsConsistencyReport extends ConsistencyReport
+    {
+        /** The node count does not correspond with the expected count. */
+        @Documented
+        void inconsistentNodeCount( long expectedCount );
+
+        /** The relationship count does not correspond with the expected count. */
+        @Documented
+        void inconsistentRelationshipCount( long expectedCount );
+
+        /** The node key entries in the store does not correspond with the expected number. */
+        @Documented
+        void inconsistentNumberOfNodeKeys( long expectedCount );
+
+        /** The relationship key entries in the store does not correspond with the expected number. */
+        @Documented
+        void inconsistentNumberOfRelationshipKeys( long expectedCount );
     }
 }
