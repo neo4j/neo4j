@@ -24,6 +24,11 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.neo4j.function.Factory;
 
+/**
+ * Represents a collection point for various {@link TaskControl} instances that need to be waited on and potentially
+ * cancelled en mass. Instances of {@link TaskControl} acquired through the {@link #newInstance()} method can be
+ * notified of cancellation with the semantics of {@link CancellationRequest}.
+ */
 public class TaskCoordinator implements Cancelable, Factory<TaskControl>
 {
     private static final AtomicIntegerFieldUpdater<TaskCoordinator> TASKS =

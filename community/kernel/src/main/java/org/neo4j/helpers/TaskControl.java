@@ -19,6 +19,11 @@
  */
 package org.neo4j.helpers;
 
+/**
+ * Represents a control handle passed to a child task which allows the creator to cancel it. The child task can
+ * use the {@link AutoCloseable} interface and call {@link #close()} to signal completion of the task, regardless if
+ * it was cancelled or completed successfully.
+ */
 public interface TaskControl extends CancellationRequest, AutoCloseable
 {
     @Override

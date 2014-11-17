@@ -23,6 +23,10 @@ import java.util.concurrent.CountDownLatch;
 
 import org.neo4j.function.Consumer;
 
+/**
+ * Abstracts a meeting point between two threads, where a reference can change hands. It is essentially
+ * a latch where a reference to a value can be set while a thread waits on it.
+ */
 public class ConcurrentTransfer<TYPE> implements Consumer<TYPE>, Provider<TYPE>
 {
     private final CountDownLatch latch = new CountDownLatch( 1 );
