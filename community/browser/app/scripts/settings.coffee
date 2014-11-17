@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 baseURL = ''
 restAPI = "#{baseURL}/db/data"
 
-angular.module('neo4jApp.settings', [])
+angular.module('neo4jApp.settings', ['neo4jApp.utils'])
   .constant('Settings', {
     cmdchar: ':'
     endpoint:
@@ -48,13 +48,13 @@ angular.module('neo4jApp.settings', [])
   })
 
 angular.module('neo4jApp.settings')
-.service('SettingsStore', ['localStorageService','Settings'
-  (localStorageService, Settings) ->
+.service('SettingsStore', ['localStorageService','Settings', 'Utils'
+  (localStorageService, Settings, Utils) ->
     originalSettings = angular.copy(Settings)
     load: ->
       settings = localStorageService.get('settings')
       if angular.isObject(settings)
-        angular.extend(Settings, settings)
+        Utils.extendDeep(Settings, settings)
 
     reset: ->
       localStorageService.remove('settings')
