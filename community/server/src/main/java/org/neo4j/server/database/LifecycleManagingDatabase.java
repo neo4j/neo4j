@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.database;
 
+import java.io.File;
 import java.util.Map;
 
 import org.neo4j.cypher.javacompat.ExecutionEngine;
@@ -88,7 +89,8 @@ public class LifecycleManagingDatabase implements Database
     @Override
     public String getLocation()
     {
-        return dbConfig.get(GraphDatabaseSettings.store_dir).getAbsolutePath();
+        File file = dbConfig.get( GraphDatabaseSettings.store_dir );
+        return file.getAbsolutePath();
     }
 
     @Override

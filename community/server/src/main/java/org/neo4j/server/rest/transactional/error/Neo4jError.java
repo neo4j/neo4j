@@ -40,6 +40,11 @@ public class Neo4jError
     private final Status status;
     private final Throwable cause;
 
+    public Neo4jError( Status status, String message )
+    {
+        this(status, new RuntimeException( message ));
+    }
+
     public Neo4jError( Status status, Throwable cause )
     {
         if ( status == null  )
@@ -50,6 +55,8 @@ public class Neo4jError
         this.status = status;
         this.cause = cause;
     }
+
+    public Throwable cause() { return cause; }
 
     public Status status()
     {

@@ -27,7 +27,6 @@ import java.util.Map;
 import org.junit.Test;
 
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.web.WebServer;
@@ -57,7 +56,7 @@ public class ManagementApiModuleTest
 
         when( neoServer.getConfig() ).thenReturn( config );
 
-        ManagementApiModule module = new ManagementApiModule(webServer, config, DevNullLoggingService.DEV_NULL);
+        ManagementApiModule module = new ManagementApiModule(webServer, config );
         module.start();
 
         verify( webServer ).addJAXRSClasses( any( List.class ), anyString(), anyCollection() );

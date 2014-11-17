@@ -23,8 +23,6 @@ import java.net.URI;
 import java.util.List;
 
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.server.webadmin.rest.JmxService;
@@ -39,13 +37,11 @@ public class ManagementApiModule implements ServerModule
 {
 	private final Config config;
 	private final WebServer webServer;
-    private final ConsoleLogger log;
 
-    public ManagementApiModule(WebServer webServer, Config config, Logging logging)
+    public ManagementApiModule( WebServer webServer, Config config )
     {
     	this.webServer = webServer;
     	this.config = config;
-    	this.log = logging.getConsoleLog( getClass() );
     }
 
     @Override
@@ -53,7 +49,6 @@ public class ManagementApiModule implements ServerModule
     {
         String serverMountPoint = managementApiUri().toString();
         webServer.addJAXRSClasses( getClassNames(), serverMountPoint, null );
-        log.log( "Mounted management API at [%s]", serverMountPoint );
     }
 
     private List<String> getClassNames()

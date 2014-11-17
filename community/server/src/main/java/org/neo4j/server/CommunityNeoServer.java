@@ -29,7 +29,7 @@ import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.modules.DiscoveryModule;
+import org.neo4j.server.modules.DBMSModule;
 import org.neo4j.server.modules.ManagementApiModule;
 import org.neo4j.server.modules.Neo4jBrowserModule;
 import org.neo4j.server.modules.RESTApiModule;
@@ -106,12 +106,12 @@ public class CommunityNeoServer extends AbstractNeoServer
     {
         Logging logging = dependencies.logging();
         return Arrays.asList(
-                new DiscoveryModule( webServer, logging ),
+                new DBMSModule(webServer, security, configurator.configuration() ),
                 new RESTApiModule( webServer, database, configurator.configuration(), logging ),
-                new ManagementApiModule( webServer, configurator.configuration(), logging ),
+                new ManagementApiModule( webServer, configurator.configuration() ),
                 new ThirdPartyJAXRSModule( webServer, configurator.configuration(), logging, this ),
-                new WebAdminModule( webServer, logging ),
-                new Neo4jBrowserModule( webServer, configurator.configuration(), logging, database ),
+                new WebAdminModule( webServer ),
+                new Neo4jBrowserModule( webServer ),
                 new StatisticModule( webServer, statisticsCollector, configurator.configuration() ),
                 new SecurityRulesModule( webServer, configurator.configuration(), logging ) );
     }

@@ -19,10 +19,6 @@
  */
 package org.neo4j.server.modules;
 
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.Logging;
-import org.neo4j.server.database.Database;
 import org.neo4j.server.web.WebServer;
 
 public class Neo4jBrowserModule implements ServerModule
@@ -30,24 +26,17 @@ public class Neo4jBrowserModule implements ServerModule
     private static final String DEFAULT_NEO4J_BROWSER_PATH = "/browser";
     private static final String DEFAULT_NEO4J_BROWSER_STATIC_WEB_CONTENT_LOCATION = "browser";
 
-    private final Config config;
     private final WebServer webServer;
-    private final Database database;
-    private final ConsoleLogger log;
 
-    public Neo4jBrowserModule(WebServer webServer, Config config, Logging logging, Database database)
+    public Neo4jBrowserModule( WebServer webServer )
     {
     	this.webServer = webServer;
-    	this.config = config;
-    	this.database = database;
-        this.log = logging.getConsoleLog( getClass() );
     }
 
     @Override
 	public void start()
     {
         webServer.addStaticContent( DEFAULT_NEO4J_BROWSER_STATIC_WEB_CONTENT_LOCATION, DEFAULT_NEO4J_BROWSER_PATH );
-        log.log( "Mounted Neo4j Browser at [%s]", DEFAULT_NEO4J_BROWSER_PATH );
     }
 
     @Override

@@ -22,7 +22,7 @@ package org.neo4j.kernel.api.exceptions;
 import org.neo4j.kernel.api.TokenNameLookup;
 
 /** A super class of checked exceptions coming from the {@link org.neo4j.kernel.api.KernelAPI Kernel API}. */
-public abstract class KernelException extends Exception
+public abstract class KernelException extends Exception implements Status.HasStatus
 {
     private final Status statusCode;
 
@@ -40,6 +40,7 @@ public abstract class KernelException extends Exception
     }
 
     /** The Neo4j status code associated with this exception type. */
+    @Override
     public Status status()
     {
         return statusCode;

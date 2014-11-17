@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
+
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
@@ -36,6 +37,7 @@ import org.neo4j.server.rest.web.RelationshipNotFoundException;
 import org.neo4j.server.web.HttpHeaderUtils;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
+import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
 
 public class OutputFormat
 {
@@ -86,9 +88,19 @@ public class OutputFormat
         return response( Response.created( uri( representation ) ), representation );
     }
 
-    public final Response response( Status status, Representation representation )
+    public final Response response( Response.StatusType status, Representation representation )
     {
         return response( Response.status( status ), representation );
+    }
+
+    /**
+     * Before the 'errors' response existed, we would just spit out stack traces.
+     * For new endpoints, we should return the new 'errors' response format, which will bundle stack traces only on
+     * unknown problems.
+     */
+    public Response badRequestWithoutLegacyStacktrace( Throwable exception )
+    {
+        return response( Response.status( BAD_REQUEST ), new ExceptionRepresentation( exception, false ) );
     }
 
     public Response badRequest( Throwable exception )
@@ -122,6 +134,12 @@ public class OutputFormat
             throws BadInputException
     {
         return response( Response.status( Status.CONFLICT ), representation );
+    }
+
+    /** @see {@link #badRequestWithoutLegacyStacktrace} */
+    public Response serverErrorWithoutLegacyStacktrace( Throwable exception )
+    {
+        return response( Response.status( Status.INTERNAL_SERVER_ERROR ), new ExceptionRepresentation( exception, false ) );
     }
 
     public Response serverError( Throwable exception )
@@ -251,5 +269,12 @@ public class OutputFormat
         representationWriteHandler.onRepresentationStartWriting();
         representationWriteHandler.onRepresentationFinal();
         return Response.status( BAD_REQUEST ).type( mediaType  ).entity( entity ).build();
+    }
+
+    public Response unauthorized( Representation representation, String authChallenge )
+    {
+        return formatRepresentation( Response.status( UNAUTHORIZED ), representation )
+                .header( HttpHeaders.WWW_AUTHENTICATE, authChallenge )
+                .build();
     }
 }

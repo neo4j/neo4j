@@ -153,4 +153,7 @@ public interface ServerSettings
 
     @Description( "Timeout for idle transactions." )
     public static final Setting<Long> transaction_timeout = setting( "org.neo4j.server.transaction.timeout", DURATION, "60s" );
+
+    @Description( "Enable authorization requirement to access Neo4j." )
+    public static final Setting<Boolean> authorization_enabled = setting("dbms.security.authorization_enabled", BOOLEAN, FALSE);
 }

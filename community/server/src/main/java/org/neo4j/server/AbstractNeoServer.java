@@ -31,7 +31,6 @@ import java.util.Map;
 import javax.servlet.Filter;
 
 import org.apache.commons.configuration.Configuration;
-
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.internal.ServerExecutionEngine;
 import org.neo4j.graphdb.DependencyResolver;
@@ -41,6 +40,7 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.RunCarefully;
 import org.neo4j.helpers.Settings;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.ConfigWrappingConfiguration;
@@ -82,9 +83,11 @@ import org.neo4j.server.rest.transactional.TransitionalPeriodTransactionMessCont
 import org.neo4j.server.rest.web.DatabaseActions;
 import org.neo4j.server.rrd.RrdDbProvider;
 import org.neo4j.server.rrd.RrdFactory;
-import org.neo4j.server.security.KeyStoreFactory;
-import org.neo4j.server.security.KeyStoreInformation;
-import org.neo4j.server.security.SslCertificateFactory;
+import org.neo4j.server.security.auth.FileUserRepository;
+import org.neo4j.server.security.auth.SecurityCentral;
+import org.neo4j.server.security.ssl.KeyStoreFactory;
+import org.neo4j.server.security.ssl.KeyStoreInformation;
+import org.neo4j.server.security.ssl.SslCertificateFactory;
 import org.neo4j.server.statistic.StatisticCollector;
 import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.server.web.SimpleUriBuilder;
@@ -95,7 +98,6 @@ import org.neo4j.shell.ShellSettings;
 import static java.lang.Math.round;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.impl.util.JobScheduler.Group.serverTransactionTimeout;
@@ -123,11 +125,14 @@ public abstract class AbstractNeoServer implements NeoServer
     protected WebServer webServer;
     protected final StatisticCollector statisticsCollector = new StatisticCollector();
 
+    protected SecurityCentral security;
+
     private final PreFlightTasks preFlight;
 
     private final List<ServerModule> serverModules = new ArrayList<>();
     private final SimpleUriBuilder uriBuilder = new SimpleUriBuilder();
     private final Config dbConfig;
+    private final LifeSupport life = new LifeSupport();
 
     private InterruptThreadTimer interruptStartupTimer;
     private DatabaseActions databaseActions;
@@ -161,9 +166,12 @@ public abstract class AbstractNeoServer implements NeoServer
         this.dbConfig = new Config();
         this.log = dependencies.logging().getConsoleLog( getClass() );
 
-        this.database = dependencyResolver.satisfyDependency(dbFactory.newDatabase( dbConfig,
-                dependencies));
+        this.database = life.add( dependencyResolver.satisfyDependency(dbFactory.newDatabase( dbConfig, dependencies)) );
 
+        FileUserRepository users = life.add(new FileUserRepository( new DefaultFileSystemAbstraction(),
+                configurator.configuration().get( ServerInternalSettings.authorization_store )));
+
+        this.security = life.add(new SecurityCentral( Clock.SYSTEM_CLOCK, users ));
         this.preFlight = dependencyResolver.satisfyDependency(createPreflightTasks());
         this.webServer = createWebServer();
 
@@ -195,7 +203,7 @@ public abstract class AbstractNeoServer implements NeoServer
             {
                 reloadConfigFromDisk();
 
-                database.start();
+                life.start();
 
                 DiagnosticsManager diagnosticsManager = resolveDependency(DiagnosticsManager.class);
 
@@ -233,17 +241,13 @@ public abstract class AbstractNeoServer implements NeoServer
             // Guard against poor operating systems that don't clear interrupt flags
             // after having handled interrupts (looking at you, Bill).
             Thread.interrupted();
-
             if ( interruptStartupTimer.wasTriggered() )
             {
                 // Make sure we don't leak rrd db files
                 stopRrdDb();
 
                 // If the database has been started, attempt to cleanly shut it down to avoid unclean shutdowns.
-                if(database.isRunning())
-                {
-                    stopDatabase();
-                }
+                life.shutdown();
 
                 throw new ServerStartupException(
                         "Startup took longer than " + interruptStartupTimer.getTimeoutMillis() + "ms, " +
@@ -573,6 +577,7 @@ public abstract class AbstractNeoServer implements NeoServer
     @Override
     public void stop()
     {
+        // TODO: All components should be moved over to the LifeSupport instance, life, in here.
         new RunCarefully(
             new Runnable() {
                 @Override
@@ -599,7 +604,7 @@ public abstract class AbstractNeoServer implements NeoServer
                 @Override
                 public void run()
                 {
-                    stopDatabase();
+                    life.stop();
                 }
             }
         ).run();
@@ -633,21 +638,6 @@ public abstract class AbstractNeoServer implements NeoServer
         if ( webServer != null )
         {
             webServer.stop();
-        }
-    }
-
-    private void stopDatabase()
-    {
-        if ( database != null )
-        {
-            try
-            {
-                database.stop();
-            }
-            catch ( Throwable e )
-            {
-                throw new RuntimeException( e );
-            }
         }
     }
 
@@ -731,8 +721,10 @@ public abstract class AbstractNeoServer implements NeoServer
         singletons.add( new ExecutionEngineProvider( cypherExecutor ) );
 
         singletons.add( providerForSingleton( transactionFacade, TransactionFacade.class ) );
+        singletons.add( providerForSingleton( security, SecurityCentral.class ) );
         singletons.add( new TransactionFilter( database ) );
         singletons.add( new LoggingProvider( dependencies.logging() ) );
+        singletons.add( providerForSingleton( dependencies.logging().getConsoleLog( NeoServer.class ), ConsoleLogger.class ) );
 
         return singletons;
     }
@@ -773,7 +765,8 @@ public abstract class AbstractNeoServer implements NeoServer
         @Override
         public DependencyResolver instance()
         {
-            return dependencyResolver.resolveDependency( Database.class ).getGraph().getDependencyResolver();
+            Database db = dependencyResolver.resolveDependency( Database.class );
+            return db.getGraph().getDependencyResolver();
         }
     });
 }
