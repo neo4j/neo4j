@@ -23,6 +23,8 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 
 import scala.collection.immutable.Stack
+import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression._
 
 object Expression {
   sealed trait SemanticContext
@@ -59,19 +61,20 @@ object Expression {
     def expectType(possibleTypes: => TypeSpec): SemanticCheck =
       traversable.foldSemanticCheck { _.expectType(possibleTypes) }
   }
-}
 
-import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression._
-
-final case class ExpressionTreeAcc[A](data: A, stack: Stack[Identifier] = Stack.empty) {
-  def toSet: Set[Identifier] = stack.toSet
-  def map(f: A => A) = copy(data = f(data))
-  def push(newIdentifier: Identifier) = copy(stack = stack.push(newIdentifier))
-  def pop = copy(stack = stack.pop)
+  final case class TreeAcc[A](data: A, stack: Stack[Set[Identifier]] = Stack.empty) {
+    def toSet: Set[Identifier] = stack.toSet.flatten
+    def map(f: A => A): TreeAcc[A] = copy(data = f(data))
+    def push(newIdentifier: Identifier): TreeAcc[A] = push(Set(newIdentifier))
+    def push(newIdentifiers: Set[Identifier]): TreeAcc[A] = copy(stack = stack.push(newIdentifiers))
+    def pop: TreeAcc[A] = copy(stack = stack.pop)
+    def contains(identifier: Identifier) = stack.exists(_.contains(identifier))
+  }
 }
 
 abstract class Expression extends ASTNode with ASTExpression with SemanticChecking {
+
+  import Expression.TreeAcc
 
   def semanticCheck(ctx: SemanticContext): SemanticCheck
 
@@ -84,47 +87,28 @@ abstract class Expression extends ASTNode with ASTExpression with SemanticChecki
 
   // All identifiers referenced from this expression or any of its childs
   // that are not introduced inside this expression
-  def dependencies: Set[Identifier] = {
-    val (dependencies, _) = this.treeFold(Set.empty[Identifier] -> Stack.empty[Identifier]) {
-      case fe: FilteringExpression => {
-        case ((deps, spoiled), children) => {
-          val (newDeps, newSpoiled) = children(deps -> spoiled.push(fe.identifier))
-          newDeps ++ fe.expression.dependencies -> newSpoiled.pop
-        }
+  def dependencies: Set[Identifier] =
+    this.treeFold(TreeAcc[Set[Identifier]](Set.empty)) {
+      case scope: ScopeExpression => {
+        case (acc, children) =>
+          val newAcc = acc.push(scope.identifiers)
+          children(newAcc).pop
       }
       case id: Identifier => {
-        case (acc @ (_, spoiled), children) if spoiled.contains(id) =>
+        case (acc, children) if acc.contains(id) =>
           children(acc)
-        case ((deps, spoiled), children) =>
-          children(deps + id -> spoiled)
+        case (acc, children) =>
+          children(acc.map(_ + id))
       }
-    }
-    dependencies
-  }
-
-//  def dependencies: Set[Identifier] =
-//    this.treeFold(ExpressionTreeAcc[Set[Identifier]](Set.empty)) {
-//      case fe: FilteringExpression => {
-//        case (acc, children) =>
-//          val newAcc = acc.push(fe.identifier)
-//          val childAcc = children(newAcc)
-//          childAcc.map(_ ++ fe.expression.dependencies).pop
-//      }
-//      case id: Identifier => {
-//        case (acc, children) if acc.data.contains(id) =>
-//          children(acc)
-//        case (acc, children) =>
-//          children(acc.map(_ + id))
-//      }
-//    }.data
+    }.data
 
   // List of child expressions together with any of its dependencies introduced
   // by any of its parent expressions (where this expression is the root of the tree)
   def inputs: Seq[(Expression, Set[Identifier])] =
-    this.treeFold(ExpressionTreeAcc[Seq[(Expression, Set[Identifier])]](Seq.empty)) {
-      case fe: FilteringExpression => {
+    this.treeFold(TreeAcc[Seq[(Expression, Set[Identifier])]](Seq.empty)) {
+      case scope: ScopeExpression=> {
         case (acc, children) =>
-          val newAcc = acc.push(fe.identifier).map { case pairs => pairs :+ (fe -> acc.toSet) }
+          val newAcc = acc.push(scope.identifiers).map { case pairs => pairs :+ (scope -> acc.toSet) }
           children(newAcc).pop
       }
 

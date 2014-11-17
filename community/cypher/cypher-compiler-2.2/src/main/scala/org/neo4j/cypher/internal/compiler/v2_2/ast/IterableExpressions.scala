@@ -23,16 +23,21 @@ import Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_2._
 import symbols._
 
-trait FilteringExpression extends ScopeIntroducingExpression {
+trait FilteringExpression extends Expression {
   def name: String
+  def identifier: Identifier
   def expression: Expression
   def innerPredicate: Option[Expression]
+
   override def arguments = Seq(expression)
 
   def semanticCheck(ctx: SemanticContext) =
     expression.semanticCheck(ctx) chain
     expression.expectType(CTCollection(CTAny).covariant) chain
     checkInnerPredicate
+
+  protected def possibleInnerTypes: TypeGenerator = s =>
+    (expression.types(s) constrain CTCollection(CTAny)).unwrapCollections
 
   protected def checkPredicateDefined =
     when (innerPredicate.isEmpty) {
@@ -44,9 +49,6 @@ trait FilteringExpression extends ScopeIntroducingExpression {
       SemanticError(s"$name(...) should not contain a WHERE predicate", position)
     }
 
-  protected def possibleInnerTypes: TypeGenerator = s =>
-    (expression.types(s) constrain CTCollection(CTAny)).unwrapCollections
-
   private def checkInnerPredicate: SemanticCheck = innerPredicate match {
     case Some(e) => withScopedState {
       identifier.declare(possibleInnerTypes) chain e.semanticCheck(SemanticContext.Simple)
@@ -56,8 +58,11 @@ trait FilteringExpression extends ScopeIntroducingExpression {
 }
 
 
-case class FilterExpression(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression])(val position: InputPosition) extends FilteringExpression {
+case class FilterExpression(scope: FilterScope, expression: Expression)(val position: InputPosition) extends FilteringExpression {
   val name = "filter"
+
+  def identifier = scope.identifier
+  def innerPredicate = scope.innerPredicate
 
   override def semanticCheck(ctx: SemanticContext) =
     checkPredicateDefined chain
@@ -65,13 +70,18 @@ case class FilterExpression(identifier: Identifier, expression: Expression, inne
     this.specifyType(expression.types)
 }
 
-case class ExtractExpression(
-    identifier: Identifier,
-    expression: Expression,
-    innerPredicate: Option[Expression],
-    extractExpression: Option[Expression])(val position: InputPosition) extends FilteringExpression
+object FilterExpression {
+  def apply(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression])(position: InputPosition): FilterExpression =
+    FilterExpression(FilterScope(identifier, innerPredicate)(position), expression)(position)
+}
+
+case class ExtractExpression(scope: ExtractScope, expression: Expression)(val position: InputPosition) extends FilteringExpression
 {
   val name = "extract"
+
+  def identifier = scope.identifier
+  def innerPredicate = scope.innerPredicate
+  def extractExpression = scope.extractExpression
 
   override def semanticCheck(ctx: SemanticContext) =
     checkPredicateNotDefined chain
@@ -80,12 +90,12 @@ case class ExtractExpression(
     checkInnerExpression
 
   private def checkExtractExpressionDefined =
-    when (extractExpression.isEmpty) {
+    when (scope.extractExpression.isEmpty) {
       SemanticError(s"$name(...) requires '| expression' (an extract expression)", position)
     }
 
   private def checkInnerExpression: SemanticCheck =
-    extractExpression.fold(SemanticCheckResult.success) {
+    scope.extractExpression.fold(SemanticCheckResult.success) {
       e => withScopedState {
         identifier.declare(possibleInnerTypes) chain e.semanticCheck(SemanticContext.Simple)
       } chain {
@@ -95,14 +105,21 @@ case class ExtractExpression(
     }
 }
 
+object ExtractExpression {
+  def apply(identifier: Identifier,
+            expression: Expression,
+            innerPredicate: Option[Expression],
+            extractExpression: Option[Expression])(position: InputPosition): ExtractExpression =
+    ExtractExpression(ExtractScope(identifier, innerPredicate, extractExpression)(position), expression)(position)
+}
 
-case class ListComprehension(
-    identifier: Identifier,
-    expression: Expression,
-    innerPredicate: Option[Expression],
-    extractExpression: Option[Expression])(val position: InputPosition) extends FilteringExpression
+case class ListComprehension(scope: ExtractScope, expression: Expression)(val position: InputPosition) extends FilteringExpression
 {
   val name = "[...]"
+
+  def identifier = scope.identifier
+  def innerPredicate = scope.innerPredicate
+  def extractExpression = scope.extractExpression
 
   override def semanticCheck(ctx: SemanticContext) = super.semanticCheck(ctx) chain checkInnerExpression
 
@@ -118,37 +135,69 @@ case class ListComprehension(
   }
 }
 
+object ListComprehension {
+  def apply(identifier: Identifier,
+            expression: Expression,
+            innerPredicate: Option[Expression],
+            extractExpression: Option[Expression])(position: InputPosition): ListComprehension =
+    ListComprehension(ExtractScope(identifier, innerPredicate, extractExpression)(position), expression)(position)
+
+}
 
 sealed trait IterablePredicateExpression extends FilteringExpression {
+
+  def scope: FilterScope
+  def identifier = scope.identifier
+  def innerPredicate = scope.innerPredicate
+
   override def semanticCheck(ctx: SemanticContext) =
     checkPredicateDefined chain
     super.semanticCheck(ctx) chain
     this.specifyType(CTBoolean)
 }
 
-case class AllIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression])(val position: InputPosition) extends IterablePredicateExpression {
+case class AllIterablePredicate(scope: FilterScope, expression: Expression)(val position: InputPosition) extends IterablePredicateExpression {
   val name = "all"
 }
 
-case class AnyIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression])(val position: InputPosition) extends IterablePredicateExpression {
+object AllIterablePredicate {
+  def apply(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression])(position: InputPosition): AllIterablePredicate =
+    AllIterablePredicate(FilterScope(identifier, innerPredicate)(position), expression)(position)
+}
+
+case class AnyIterablePredicate(scope: FilterScope, expression: Expression)(val position: InputPosition) extends IterablePredicateExpression {
   val name = "any"
 }
 
-case class NoneIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression])(val position: InputPosition) extends IterablePredicateExpression {
+object AnyIterablePredicate {
+  def apply(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression])(position: InputPosition): AnyIterablePredicate =
+    AnyIterablePredicate(FilterScope(identifier, innerPredicate)(position), expression)(position)
+}
+
+case class NoneIterablePredicate(scope: FilterScope, expression: Expression)(val position: InputPosition) extends IterablePredicateExpression {
   val name = "none"
 }
 
-case class SingleIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression])(val position: InputPosition) extends IterablePredicateExpression {
+object NoneIterablePredicate {
+  def apply(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression])(position: InputPosition): NoneIterablePredicate =
+    NoneIterablePredicate(FilterScope(identifier, innerPredicate)(position), expression)(position)
+}
+
+case class SingleIterablePredicate(scope: FilterScope, expression: Expression)(val position: InputPosition) extends IterablePredicateExpression {
   val name = "single"
 }
 
-
-object ReduceExpression {
-  val AccumulatorExpressionTypeMismatchMessageGenerator = (expected: String, existing: String) => s"accumulator is $expected but expression has type $existing"
+object SingleIterablePredicate {
+  def apply(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression])(position: InputPosition): SingleIterablePredicate =
+    SingleIterablePredicate(FilterScope(identifier, innerPredicate)(position), expression)(position)
 }
 
-case class ReduceExpression(accumulator: Identifier, init: Expression, identifier: Identifier, collection: Expression, expression: Expression)(val position: InputPosition) extends ScopeIntroducingExpression {
+case class ReduceExpression(scope: ReduceScope, init: Expression, collection: Expression)(val position: InputPosition) extends Expression {
   import ReduceExpression._
+
+  def identifier = scope.identifier
+  def accumulator = scope.accumulator
+  def expression = scope.expression
 
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
     init.semanticCheck(ctx) chain
@@ -165,3 +214,11 @@ case class ReduceExpression(accumulator: Identifier, init: Expression, identifie
     } chain expression.expectType(init.types, AccumulatorExpressionTypeMismatchMessageGenerator) chain
     this.specifyType(s => init.types(s) leastUpperBounds expression.types(s))
 }
+
+object ReduceExpression {
+  val AccumulatorExpressionTypeMismatchMessageGenerator = (expected: String, existing: String) => s"accumulator is $expected but expression has type $existing"
+
+  def apply(accumulator: Identifier, init: Expression, identifier: Identifier, collection: Expression, expression: Expression)(position: InputPosition): ReduceExpression =
+    ReduceExpression(ReduceScope(accumulator, identifier, expression)(position), init, collection)(position)
+}
+
