@@ -50,6 +50,8 @@ angular.module('neo4jApp.controllers')
                   $scope.kernel[a.name] = a.value
           ).error((r)-> $scope.kernel = {})
 
+        $scope.identity = angular.identity
+
         $scope.motd = motdService
         $scope.auth_service = AuthService
         
