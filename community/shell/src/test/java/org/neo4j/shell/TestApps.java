@@ -894,6 +894,192 @@ public class TestApps extends AbstractShellTest
     }
 
     @Test
+    public void failSampleWhenNoOptionGiven() throws Exception
+    {
+        // GIVEN
+        Label label = label( "Person" );
+        String property = "name";
+        beginTx();
+        IndexDefinition index = db.schema().indexFor( label ).on( property ).create();
+        finishTx();
+        waitForIndex( db, index );
+
+        // WHEN / THEN
+        try
+        {
+            executeCommand( "schema sample");
+            fail("This should fail");
+        }
+        catch ( ShellException e )
+        {
+            assertThat(e.getMessage(), containsString("Invalid usage of sample"));
+        }
+    }
+
+    @Test
+    public void canSampleAllIndexes() throws Exception
+    {
+        // GIVEN
+        Label label = label( "Person" );
+        String property = "name";
+        beginTx();
+        IndexDefinition index = db.schema().indexFor( label ).on( property ).create();
+        finishTx();
+        waitForIndex( db, index );
+
+        // WHEN / THEN
+        executeCommand( "schema sample -a");
+    }
+
+    @Test
+    public void canForceSampleIndexes() throws Exception
+    {
+        // GIVEN
+        Label label = label( "Person" );
+        String property = "name";
+        beginTx();
+        IndexDefinition index = db.schema().indexFor( label ).on( property ).create();
+        finishTx();
+        waitForIndex( db, index );
+
+        // WHEN / THEN
+        executeCommand( "schema sample -a -f");
+    }
+
+    @Test
+    public void canSampleSpecificIndex() throws Exception
+    {
+        // GIVEN
+        Label label = label( "Person" );
+        String property = "name";
+        beginTx();
+        IndexDefinition index = db.schema().indexFor( label ).on( property ).create();
+        finishTx();
+        waitForIndex( db, index );
+
+        // WHEN / THEN
+        executeCommand( "schema sample -l Person -p name");
+    }
+
+    @Test
+    public void failSamplingWhenProvidingBadLabel() throws Exception
+    {
+        // GIVEN
+        Label label = label( "Person" );
+        String property = "name";
+        beginTx();
+        IndexDefinition index = db.schema().indexFor( label ).on( property ).create();
+        finishTx();
+        waitForIndex( db, index );
+
+        // WHEN / THEN
+        try
+        {
+            executeCommand( "schema sample -l People -p name");
+            fail("This should fail");
+        }
+        catch ( ShellException e )
+        {
+            assertThat(e.getMessage(), containsString("No label associated with 'People' was found"));
+        }
+    }
+
+    @Test
+    public void failSamplingWhenProvidingBadProperty() throws Exception
+    {
+        // GIVEN
+        Label label = label( "Person" );
+        String property = "name";
+        beginTx();
+        IndexDefinition index = db.schema().indexFor( label ).on( property ).create();
+        finishTx();
+        waitForIndex( db, index );
+
+        // WHEN / THEN
+        try
+        {
+            executeCommand( "schema sample -l Person -p namn");
+            fail("This should fail");
+        }
+        catch ( ShellException e )
+        {
+            assertThat(e.getMessage(), containsString("No property associated with 'namn' was found"));
+        }
+    }
+
+    @Test
+    public void failSamplingWhenProvidingOnlyLabel() throws Exception
+    {
+        // GIVEN
+        Label label = label( "Person" );
+        String property = "name";
+        beginTx();
+        IndexDefinition index = db.schema().indexFor( label ).on( property ).create();
+        finishTx();
+        waitForIndex( db, index );
+
+        // WHEN / THEN
+        try
+        {
+            executeCommand( "schema sample -l Person");
+            fail("This should fail");
+        }
+        catch ( ShellException e )
+        {
+            assertThat(e.getMessage(), containsString("Provide both the property and the label, or run with -a to sample all indexes"));
+        }
+    }
+
+    @Test
+    public void failSamplingWhenProvidingOnlyProperty() throws Exception
+    {
+        // GIVEN
+        Label label = label( "Person" );
+        String property = "name";
+        beginTx();
+        IndexDefinition index = db.schema().indexFor( label ).on( property ).create();
+        finishTx();
+        waitForIndex( db, index );
+
+        // WHEN / THEN
+        try
+        {
+            executeCommand( "schema sample -p name");
+            fail("This should fail");
+        }
+        catch ( ShellException e )
+        {
+            assertThat(e.getMessage(), containsString("Provide both the property and the label, or run with -a to sample all indexes"));
+        }
+    }
+
+    @Test
+    public void failSamplingWhenProvidingMultipleLabels() throws Exception
+    {
+        // GIVEN
+        Label label = label( "Person" );
+        Label otherLabel = label( "Dog" );
+        String property = "name";
+        beginTx();
+        IndexDefinition index1 = db.schema().indexFor( label ).on( property ).create();
+        IndexDefinition index2 = db.schema().indexFor( otherLabel ).on( property ).create();
+        finishTx();
+        waitForIndex( db, index1 );
+        waitForIndex( db, index2 );
+
+        // WHEN / THEN
+        try
+        {
+            executeCommand( "schema sample -p name -l [Person,Dog]");
+            fail("This should fail");
+        }
+        catch ( ShellException e )
+        {
+            assertThat(e.getMessage(), containsString("Only one label must be provided"));
+        }
+    }
+
+    @Test
     public void committingFailedTransactionShouldProperlyFinishTheTransaction() throws Exception
     {
         // GIVEN a transaction with a created constraint in it

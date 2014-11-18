@@ -22,12 +22,16 @@ package org.neo4j.shell.kernel.apps;
 import java.rmi.RemoteException;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.function.Function;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
-import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.ColumnPrinter;
 import org.neo4j.shell.Continuation;
@@ -35,6 +39,7 @@ import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
+import org.neo4j.shell.ShellException;
 
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.indexOf;
@@ -59,6 +64,10 @@ public class Schema extends TransactionProvidingApp
                 "Specifies which label selected operation is about" ) );
         addOptionDefinition( "p", new OptionDefinition( OptionValueType.MUST,
                 "Specifies which property selected operation is about" ) );
+        addOptionDefinition( "a", new OptionDefinition( OptionValueType.NONE,
+                "Used together with schema sample to indicate that all indexes should be sampled" ) );
+        addOptionDefinition( "f", new OptionDefinition( OptionValueType.NONE,
+                "Used together with schema sample to force indexes to be sampled" ) );
         addOptionDefinition( "v", new OptionDefinition( OptionValueType.NONE,
                 "Verbose output of failure descriptions etc." ) );
     }
@@ -70,6 +79,12 @@ public class Schema extends TransactionProvidingApp
                 "Listing indexes\n" +
                 "  schema ls\n" +
                 "  schema ls -l :Person\n" +
+                "Sample indexes all indexes\n" +
+                "  schema sample -a\n" +
+                "Sample a specific index\n" +
+                "  schema sample -l :Person -p name\n" +
+                "Force a sampling of a specific index\n" +
+                "  schema sample -f -l :Person -p name\n" +
                 "Awaiting indexes to come online\n" +
                 "  schema await -l Person -p name";
     }
@@ -81,6 +96,8 @@ public class Schema extends TransactionProvidingApp
         org.neo4j.graphdb.schema.Schema schema = getServer().getDb().schema();
         Label[] labels = parseLabels( parser );
         String property = parser.option( "p", null );
+        boolean sampleAll = parser.options().containsKey( "a" );
+        boolean forceSample = parser.options().containsKey( "f" );
         boolean verbose = parser.options().containsKey( "v" );
 
         if ( action.equals( "await" ) )
@@ -91,12 +108,85 @@ public class Schema extends TransactionProvidingApp
         {
             listIndexesAndConstraints( out, schema, labels, property, verbose );
         }
+        else if ( action.equals( "sample" ) )
+        {
+            sampleIndexes( labels, property, sampleAll, forceSample );
+        }
         else
         {
             out.println( "Unknown action: " + action + "\nUSAGE:\n" + getDescription() );
         }
 
         return INPUT_COMPLETE;
+    }
+
+    private void sampleIndexes( Label[] labels, String property, boolean sampleAll, boolean forceSample ) throws ShellException
+    {
+
+        IndexingService indexingService = getServer().getDb().getDependencyResolver().resolveDependency(
+                IndexingService.class );
+        if ( indexingService == null )
+        {
+            throw new ShellException( "Internal error: failed to resolve IndexingService" );
+        }
+
+        IndexSamplingMode samplingMode = getSamplingMode( forceSample );
+
+        // Trigger sampling for all indices
+        if ( sampleAll )
+        {
+            indexingService.triggerIndexSampling( samplingMode );
+            return;
+        }
+
+        validateLabelsAndProperty( labels, property );
+
+        Statement statement = getServer().getStatement();
+
+        int labelKey = statement.readOperations().labelGetForName( labels[0].name() );
+        int propertyKey = statement.readOperations().propertyKeyGetForName( property );
+
+        if ( labelKey == -1 )
+        {
+            throw new ShellException( "No label associated with '" + labels[0].name() + "' was found");
+        }
+        if ( propertyKey == -1 )
+        {
+            throw new ShellException( "No property associated with '" + property + "' was found");
+        }
+
+        indexingService.triggerIndexSampling( new IndexDescriptor( labelKey, propertyKey ), samplingMode );
+    }
+
+    private IndexSamplingMode getSamplingMode(boolean forceSample)
+    {
+        if (forceSample)
+        {
+            return IndexSamplingMode.TRIGGER_REBUILD_ALL;
+        }
+        else
+        {
+            return IndexSamplingMode.TRIGGER_REBUILD_UPDATED;
+        }
+    }
+
+    private void validateLabelsAndProperty( Label[] labels, String property ) throws ShellException
+    {
+        if ( labels.length == 0 && property == null)
+        {
+            throw new ShellException( "Invalid usage of sample. \nUSAGE:\n" + getDescription() );
+        }
+
+        if ( labels.length > 1 )
+        {
+            throw new ShellException( "Only one label must be provided" );
+        }
+
+        // If we provide one we must also provide the other
+        if ( property == null || labels.length == 0 )
+        {
+            throw new ShellException( "Provide both the property and the label, or run with -a to sample all indexes" );
+        }
     }
 
     private void awaitIndexes( Output out, org.neo4j.graphdb.schema.Schema schema, Label[] labels, String property )

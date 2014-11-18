@@ -29,6 +29,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.TopLevelTransaction;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Response;
@@ -115,6 +116,11 @@ public class GraphDatabaseShellServer extends AbstractAppServer
             TopLevelTransaction tx = threadToStatementContextBridge.getTopLevelTransactionBoundToThisThread( false );
             clients.put( clientId, tx );
         }
+    }
+
+    public Statement getStatement()
+    {
+        return getThreadToStatementContextBridge().instance();
     }
 
     private ThreadToStatementContextBridge getThreadToStatementContextBridge()
