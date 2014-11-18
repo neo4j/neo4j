@@ -1,3 +1,8 @@
+2.1.6
+-----
+o Tweaks of segment merge options which allow for reduced file handle
+  usage
+
 2.0.1
 -----
 o Improve speed of verifying unique constraints on constraint creation.

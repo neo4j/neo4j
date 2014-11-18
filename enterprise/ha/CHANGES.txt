@@ -1,3 +1,9 @@
+2.1.6
+-----
+o Fixes issue where if the master lost contact with a majority of slaves
+  and subsequently contact was restored, the master instance would not
+  resume its role
+
 2.1.4
 -----
 o Master switches now properly cancel slaves that are transitioning

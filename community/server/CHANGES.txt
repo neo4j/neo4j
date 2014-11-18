@@ -1,5 +1,6 @@
-2.2-SNAPSHOT
-------------
+2.1.6
+-----
+o Users of unmanaged extensions now have access to Cypher ExecutionEngine
 o Expose node degree in REST API
 o Changed the DELETE verb on a transaction to also mark it as terminated even if there
   are concurrent requests that use the transaction. Consult community/kernel/CHANGES.txt and

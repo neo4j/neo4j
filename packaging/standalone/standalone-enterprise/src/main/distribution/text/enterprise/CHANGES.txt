@@ -1,5 +1,38 @@
 For Release Notes, see http://neo4j.com/release-notes/neo4j-${project.version}/
 
+2.1.6
+-----
+Kernel:
+o Fixes issue with shutdown order for the store and the transaction log,
+  which might result in record changes to not be applied in case of
+  IO errors
+o Fixes potential deadlock if a transaction starts when the database is
+  shutting down
+o Fixes potential ConcurrentModificationException from concurrent access to
+  AutoIndexer configuration
+
+Lucene index:
+o Tweaks of segment merge options which allow for reduced file handle
+  usage
+
+Consistency checker:
+o Fixes bug that could lead to false positives when checking for property
+  owners
+
+Server:
+o Users of unmanaged extensions now have access to Cypher ExecutionEngine
+o Expose node degree in REST API
+
+Backup:
+o Fixes an issue with backup, where it could happen that the backup
+  would not be initialized with the proper last txid which could make
+  the store inappropriate for use in HA
+
+HA:
+o Fixes issue where if the master lost contact with a majority of slaves
+  and subsequently contact was restored, the master instance would not
+  resume its role
+
 2.1.5
 -----
 Cypher:

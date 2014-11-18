@@ -1,3 +1,9 @@
+2.1.6
+-----
+o Fixes an issue with backup, where it could happen that the backup
+  would not be initialized with the proper last txid which could make
+  the store inappropriate for use in HA
+
 2.1.4
 -----
 o Command line tool no longer expects "-from" argument, but "-host" and "-port" instead
