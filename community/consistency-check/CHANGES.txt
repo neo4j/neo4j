@@ -1,3 +1,8 @@
+2.1.6
+-----
+o Fixes bug that could lead to false positives when checking for property
+  owners
+
 2.1.5
 -----
 o Added a consistency check for duplicate property names in a given

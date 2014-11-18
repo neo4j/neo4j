@@ -1,5 +1,6 @@
 2.1.6
 -----
+o Users of unmanaged extensions now have access to Cypher ExecutionEngine
 o Expose node degree in REST API
 
 2.1.5

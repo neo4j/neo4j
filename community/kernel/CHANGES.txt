@@ -1,3 +1,13 @@
+2.1.6
+-----
+o Fixes issue with shutdown order for the store and the transaction log,
+  which might result in record changes to not be applied in case of
+  IO errors
+o Fixes potential deadlock if a transaction starts when the database is
+  shutting down
+o Fixes potential ConcurrentModificationException from concurrent access to
+  AutoIndexer configuration
+
 2.1.5
 -----
 o Solves an issue where discrete remove+add operations on an existing property
