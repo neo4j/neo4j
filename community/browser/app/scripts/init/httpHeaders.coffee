@@ -23,4 +23,9 @@ angular.module('neo4jApp').config([
   ($httpProvider) ->
     $httpProvider.defaults.headers.common['X-stream'] = true
     $httpProvider.defaults.headers.common['Content-Type'] = 'application/json'
+
+    $httpProvider.defaults.headers.get ||= {}
+    $httpProvider.defaults.headers.get['Cache-Control'] = 'no-cache'
+    $httpProvider.defaults.headers.get['Pragma'] = 'no-cache'
+    $httpProvider.defaults.headers.get['If-Modified-Since'] = "Wed, 11 Dec 2013 08:00:00 GMT"
 ])
