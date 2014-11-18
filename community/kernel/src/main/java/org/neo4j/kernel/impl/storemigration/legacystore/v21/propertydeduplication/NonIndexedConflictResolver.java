@@ -123,12 +123,13 @@ class NonIndexedConflictResolver implements PrimitiveLongObjectVisitor<List<Dupl
             } catch (IOException e) {
                 throw new InnerIterationIOException( e );
             }
+            store.updateRecord( record );
         }
 
         int getNewPropertyKeyId() throws IOException
         {
-            index++;
             String duplicateName = "__DUPLICATE_" + oldName + "_" + index;
+            index++;
             return getOrCreatePropertyKeyToken( duplicateName, keyTokenStore );
         }
     }

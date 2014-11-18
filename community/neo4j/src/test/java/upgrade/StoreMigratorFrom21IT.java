@@ -21,13 +21,8 @@ package upgrade;
 
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-
+import org.neo4j.consistency.ConsistencyCheckService;
+import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
@@ -36,7 +31,9 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -45,10 +42,18 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.TargetDirectory;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings( "unchecked" )
 public class StoreMigratorFrom21IT
@@ -94,7 +99,18 @@ public class StoreMigratorFrom21IT
                 new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir.getAbsolutePath() ).setConfig(
                         GraphDatabaseSettings.allow_store_upgrade, "true" );
         GraphDatabaseService database = builder.newGraphDatabase();
+        database.shutdown();
+        ConsistencyCheckService service = new ConsistencyCheckService();
 
+        try {
+            ConsistencyCheckService.Result result = service.runFullConsistencyCheck( dir.getAbsolutePath(), new Config(), ProgressMonitorFactory.NONE,
+                    StringLogger.SYSTEM );
+            assertTrue(result.isSuccessful());
+        } catch (ConsistencyCheckIncompleteException e) {
+            e.printStackTrace();
+        }
+
+        database = builder.newGraphDatabase();
         // Upgrade is now completed. Verify the contents:
         NeoStoreProvider provider = ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency(
                 NeoStoreProvider
@@ -111,7 +127,8 @@ public class StoreMigratorFrom21IT
                     Pair.of( "keyA", "actual" ) );
             verifyPropertiesEqual( database.getNodeById( 1 ),
                     Pair.of( "keyA", "actual" ),
-                    Pair.of( "__DUPLICATE_keyA", "actual" ) );
+                    Pair.of( "__DUPLICATE_keyA_1", "actual" ),
+                    Pair.of( "__DUPLICATE_keyA_2", "actual" ));
             verifyPropertiesEqual( database.getNodeById( 2 ),
                     Pair.of( "keyA", "real1" ),
                     Pair.of( "keyD", "real2" ) );
@@ -128,7 +145,8 @@ public class StoreMigratorFrom21IT
                     Pair.of( "keyC", "actual" ) );
             verifyPropertiesEqual( database.getRelationshipById( 0 ),
                     Pair.of( "keyA", "actual" ),
-                    Pair.of( "__DUPLICATE_keyA", "actual" ) );
+                    Pair.of( "__DUPLICATE_keyA_1", "actual" ),
+                    Pair.of( "__DUPLICATE_keyA_2", "actual" ));
             verifyPropertiesEqual( database.getRelationshipById( 1 ),
                     Pair.of( "keyA", "real1" ),
                     Pair.of( "__DUPLICATE_keyA_1", "real1" ),

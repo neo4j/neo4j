@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.store.*;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import java.io.File;
@@ -95,13 +96,13 @@ public class PropertyDeduplicator
                 continue;
             }
 
-            long propertyId = record.getId();
-            while ( propertyId != -1 )
+            long propertyId = headRecordId;
+            while ( propertyId != Record.NO_NEXT_PROPERTY.intValue() )
             {
                 record = store.getRecord( propertyId );
 
                 List<PropertyBlock> propertyBlocks = record.getPropertyBlocks();
-                scanForDuplicates( store, propertyId, propertyBlocks );
+                scanForDuplicates( propertyId, propertyBlocks );
 
                 propertyId = record.getNextProp();
             }
@@ -109,7 +110,7 @@ public class PropertyDeduplicator
             localDuplicateClusters.visitEntries(new PrimitiveIntObjectVisitor<DuplicateCluster>() {
                 @Override
                 public void visited(int key, DuplicateCluster duplicateCluster) {
-                    List<DuplicateCluster> clusters = duplicateClusters.get(key);
+                    List<DuplicateCluster> clusters = duplicateClusters.get(localHeadRecordId);
                     if (clusters == null) {
                         clusters = new ArrayList<>();
                         duplicateClusters.put(localHeadRecordId, clusters);
@@ -125,8 +126,7 @@ public class PropertyDeduplicator
         return duplicateClusters;
     }
 
-    private void scanForDuplicates( PropertyStore store,
-                                    long propertyId,
+    private void scanForDuplicates( long propertyId,
                                     List<PropertyBlock> propertyBlocks )
     {
         for (PropertyBlock block : propertyBlocks) {

@@ -126,17 +126,19 @@ class IndexLookup implements AutoCloseable
         return reader;
     }
 
-    public Index getAnyIndexOrNull( final long[] labelIds, final int propertyKeyId )
-    {
+    public Index getAnyIndexOrNull( final long[] labelIds, final int propertyKeyId ) throws IOException {
+        List<IndexRule> indexRules = indexRuleIndex.get( propertyKeyId );
+        IndexRule rule = findRelevantIndexRule(indexRules, propertyKeyId, labelIds );
+        if (rule == null) {
+            return null;
+        }
+        final IndexReader reader = getIndexReader( rule );
+
         return new Index()
         {
             @Override
-            public boolean contains( long nodeId, Object propertyValue ) throws IOException
+            public boolean contains( long nodeId, Object propertyValue )
             {
-                List<IndexRule> indexRules = indexRuleIndex.get( propertyKeyId );
-                IndexRule rule = findRelevantIndexRule(
-                        indexRules, propertyKeyId, labelIds );
-                IndexReader reader = getIndexReader( rule );
                 return reader.getIndexedCount( nodeId, propertyValue ) > 0;
             }
         };

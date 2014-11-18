@@ -582,6 +582,7 @@ public class StoreMigrator implements StoreMigrationParticipant
                 break;
             case Legacy21Store.LEGACY_VERSION:
                 filesToMove = Arrays.asList(
+                        StoreFile.NODE_STORE,
                         StoreFile.COUNTS_STORE_ALPHA,
                         StoreFile.COUNTS_STORE_BETA,
                         StoreFile.PROPERTY_STORE,

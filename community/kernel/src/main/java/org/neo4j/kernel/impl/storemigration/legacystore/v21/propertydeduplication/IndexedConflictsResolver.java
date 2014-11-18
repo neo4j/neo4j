@@ -105,7 +105,7 @@ class IndexedConflictsResolver implements NodeStore.NodeRecordProcessor, AutoClo
 
                 if ( index != null )
                 {
-                    IndexConsultedPropertyBlockSweeper sweeper = new IndexConsultedPropertyBlockSweeper(index, record);
+                    IndexConsultedPropertyBlockSweeper sweeper = new IndexConsultedPropertyBlockSweeper( duplicateCluster.propertyKeyId, index, record);
                     duplicateCluster.propertyRecordIds.visitKeys(sweeper);
                     assert sweeper.foundExact;
                     it.remove();
@@ -114,11 +114,13 @@ class IndexedConflictsResolver implements NodeStore.NodeRecordProcessor, AutoClo
         }
 
         private class IndexConsultedPropertyBlockSweeper implements PrimitiveLongVisitor {
+            private int propertyKeyId;
             private final IndexLookup.Index index;
             private final NodeRecord nodeRecord;
             boolean foundExact;
 
-            public IndexConsultedPropertyBlockSweeper(IndexLookup.Index index, NodeRecord nodeRecord) {
+            public IndexConsultedPropertyBlockSweeper(int propertyKeyId, IndexLookup.Index index, NodeRecord nodeRecord) {
+                this.propertyKeyId = propertyKeyId;
                 this.index = index;
                 this.nodeRecord = nodeRecord;
                 this.foundExact = false;
@@ -133,28 +135,28 @@ class IndexedConflictsResolver implements NodeStore.NodeRecordProcessor, AutoClo
                 ListIterator<PropertyBlock> it = blocks.listIterator();
                 while (it.hasNext()) {
                     PropertyBlock block = it.next();
-                    Object lastPropertyValue = propertyStore.getValue( block );
 
-                    try {
-                        if ( index.contains( nodeRecord.getId(), lastPropertyValue ) && !foundExact )
-                        {
-                            foundExact = true;
+                    if (block.getKeyIndexId() == propertyKeyId) {
+                        Object lastPropertyValue = propertyStore.getValue(block);
+
+                        try {
+                            if (index.contains(nodeRecord.getId(), lastPropertyValue) && !foundExact) {
+                                foundExact = true;
+                            } else {
+                                it.remove();
+                                changed = true;
+                            }
+                        } catch (IOException e) {
+                            throw new InnerIterationIOException(e);
                         }
-                        else
-                        {
-                            it.remove();
-                            changed = true;
-                        }
-                    } catch (IOException e) {
-                        throw new InnerIterationIOException( e );
                     }
                 }
                 if (changed)
                 {
-                    propertyStore.updateRecord(record);
                     if (blocks.isEmpty()) {
                         propertyRemover.fixUpPropertyLinksAroundUnusedRecord( nodeRecord, record );
                     }
+                    propertyStore.updateRecord(record);
                 }
             }
         }

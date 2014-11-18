@@ -23,6 +23,7 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.Record;
 
 class PropertyRemover
 {
@@ -37,7 +38,7 @@ class PropertyRemover
 
     public void fixUpPropertyLinksAroundUnusedRecord( NodeRecord nodeRecord, PropertyRecord duplicateRecord )
     {
-        assert !duplicateRecord.inUse();
+        assert duplicateRecord.getPropertyBlocks().isEmpty();
         long headProp = nodeRecord.getNextProp();
         if ( duplicateRecord.getId() == headProp ) {
             nodeRecord.setNextProp( duplicateRecord.getNextProp() );
@@ -46,13 +47,13 @@ class PropertyRemover
 
         long previousRecordId = duplicateRecord.getPrevProp();
         long nextRecordId = duplicateRecord.getNextProp();
-        if ( previousRecordId != -1 )
+        if ( previousRecordId != Record.NO_PREVIOUS_PROPERTY.intValue() )
         {
             PropertyRecord property = propertyStore.getRecord( previousRecordId );
             property.setNextProp( nextRecordId );
-            propertyStore.updateRecord( property );
+            propertyStore.updateRecord(property);
         }
-        if ( nextRecordId != -1 )
+        if ( nextRecordId != Record.NO_NEXT_PROPERTY.intValue() )
         {
             PropertyRecord property = propertyStore.getRecord( nextRecordId );
             property.setPrevProp( previousRecordId );
