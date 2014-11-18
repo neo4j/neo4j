@@ -20,22 +20,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 'use strict';
 
-# Requires jQuery
-angular.module('neo4jApp.directives')
-  .directive('helpTopic', ['$rootScope', 'Frame','Settings', ($rootScope, Frame, Settings) ->
-    restrict: 'A'
-    link: (scope, element, attrs) ->
+angular.module('neo4jApp.services')
+  .factory('RequestInterceptor', [
+    'AuthDataService'
+    (AuthDataService) ->
+      interceptor = 
+        request: (config) ->
+          header = AuthDataService.getAuthData()
+          if header then config.headers['Authorization'] = "Basic #{header}"
+          config
+      interceptor
+])
 
-      topic = attrs.helpTopic
-      command = "help"
-
-      if topic
-        element.on 'click', (e) ->
-          e.preventDefault()
-
-          topic = topic.toLowerCase().trim().replace('-', ' ')
-          Frame.create(input: "#{Settings.cmdchar}#{command} #{topic}")
-
-          $rootScope.$apply() unless $rootScope.$$phase
-
-  ])
+angular.module('neo4jApp.services').config(['$httpProvider', ($httpProvider) ->
+  $httpProvider.interceptors.push 'RequestInterceptor'
+])

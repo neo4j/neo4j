@@ -232,11 +232,97 @@ angular.module('neo4jApp')
               q.resolve(r.data)
             ,
             (r) ->
-              q.reject(error("Server responded #{r.status}"))
+              q.reject(r)
           )
 
           q.promise
       ]
+
+    FrameProvider.interpreters.push
+      type: 'auth'
+      fullscreenable: false
+      templateUrl: 'views/frame-connect.html'
+      matches: (input) ->
+        pattern = new RegExp("^#{cmdchar}server connect")
+        input.match(pattern)
+      exec: ['AuthService', (AuthService) ->
+        (input, q) -> q.resolve()
+      ]
+
+    FrameProvider.interpreters.push
+      type: 'auth'
+      fullscreenable: false
+      templateUrl: 'views/frame-disconnect.html'
+      matches:  (input) ->
+        pattern = new RegExp("^#{cmdchar}server disconnect")
+        input.match(pattern)
+      exec: ['Settings', 'AuthService', (Settings, AuthService) ->
+        (input, q) -> 
+          q.resolve()
+      ]
+
+    FrameProvider.interpreters.push
+      type: 'auth'
+      fullscreenable: false
+      templateUrl: 'views/frame-server-status.html'
+      matches:  (input) ->
+        pattern = new RegExp("^#{cmdchar}server status")
+        input.match(pattern)
+      exec: ['AuthService', (AuthService) ->
+        (input, q) -> 
+          AuthService.getAuthInfo()
+          .then(
+            (r) ->
+              q.resolve(r)
+            ,
+            (r) ->
+              q.reject(r)
+            )
+          q.promise
+      ]
+
+    FrameProvider.interpreters.push
+      type: 'auth'
+      fullscreenable: false
+      templateUrl: 'views/frame-change-password.html'
+      matches:  (input) ->
+        pattern = new RegExp("^#{cmdchar}server change-password")
+        input.match(pattern)
+      exec: ['AuthService', (AuthService) ->
+        (input, q) -> 
+          q.resolve()
+          q.promise
+      ]
+
+    FrameProvider.interpreters.push
+      type: 'auth'
+      fullscreenable: false
+      templateUrl: 'views/frame-invalidate-token.html'
+      matches:  (input) ->
+        pattern = new RegExp("^#{cmdchar}server invalidate-token")
+        input.match(pattern)
+      exec: ['AuthService', (AuthService) ->
+        (input, q) -> 
+          q.resolve()
+          q.promise
+      ]
+
+    FrameProvider.interpreters.push
+      type: 'auth'
+      fullscreenable: false
+      templateUrl: 'views/frame-set-token.html'
+      matches:  (input) ->
+        pattern = new RegExp("^#{cmdchar}server set-token")
+        input.match(pattern)
+      exec: ['AuthService', (AuthService) ->
+        (input, q) -> 
+          q.resolve()
+          q.promise
+      ]
+
+    
+
+      
 
     # Profile a cypher command
     # FrameProvider.interpreters.push
@@ -282,10 +368,12 @@ angular.module('neo4jApp')
                     graph: extractGraphModel(response, CypherGraphModel)
                   )
                 ,
-                q.reject
+                (r) ->
+                  q.reject(r)
               )
             ,
-            q.reject
+            (r) -> 
+              q.reject(r)
           )
           q.promise.transaction = current_transaction
           q.promise

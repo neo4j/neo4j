@@ -51,6 +51,7 @@ module.exports = function(config) {
       'app/components/angular-ui-codemirror/ui-codemirror.js',
       'app/components/d3/d3.js',
       'app/components/UUID.js/src/uuid.js',
+      'app/components/angular-base64/angular-base64.min.js',
       'app/scripts/*.coffee',
       'app/scripts/**/*.coffee',
       'test/spec/**/*.coffee'

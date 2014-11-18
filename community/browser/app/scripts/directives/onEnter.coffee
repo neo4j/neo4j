@@ -20,22 +20,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 'use strict';
 
-# Requires jQuery
 angular.module('neo4jApp.directives')
-  .directive('helpTopic', ['$rootScope', 'Frame','Settings', ($rootScope, Frame, Settings) ->
-    restrict: 'A'
-    link: (scope, element, attrs) ->
-
-      topic = attrs.helpTopic
-      command = "help"
-
-      if topic
-        element.on 'click', (e) ->
+  .directive('onEnter', [ 
+    ->
+      restrict: 'A',
+      link: (scope, elem, attr, ctrl) ->
+        elem.bind('keydown', (e)->
+          code = e.which || e.keyCode
+          return unless code is 13
           e.preventDefault()
-
-          topic = topic.toLowerCase().trim().replace('-', ' ')
-          Frame.create(input: "#{Settings.cmdchar}#{command} #{topic}")
-
-          $rootScope.$apply() unless $rootScope.$$phase
-
+          
+          if attr.onEnter is 'focus'
+            element = document.getElementById(attr.onEnterTargetId)
+            element.focus()
+          else if attr.onEnter is 'click'
+            element = document.getElementById(attr.onEnterTargetId)
+            angular.element(element).triggerHandler('click')
+            elem.select()
+        )
   ])

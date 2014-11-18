@@ -1,0 +1,34 @@
+div(ng-controller="AuthCtrl")
+  .outer
+    include partials/frame-common-actions
+    .inner
+      .view-result
+        article.help
+          .container-fluid
+            .section.row-fluid.summary
+              .summary.col-sm-3
+                h3
+                  | Connection status
+                p.lead
+                  | This is your current server connection information.
+              .details.col-sm-9(ng-hide="!frame.response.username")
+                p
+                ul.big.undecorated
+                  li
+                    span.center-tbl-left-col 
+                      | Current user: 
+                    code
+                      | {{frame.response.username}}
+                  li
+                    span.center-tbl-left-col
+                      | Authorization token: 
+                    code
+                      | {{frame.response.authorization_token}}
+              .details.col-sm-9(ng-show="!frame.response.username && !static_is_authenticated")
+                p You are not connected to the server.
+              .details.col-sm-9(ng-show="!frame.response.username && static_is_authenticated")
+                p You have a working connection with the Neo4j database and server authentication is disabled.
+      .status-bar(ng-class='{error: frame.hasErrors, loading: frame.isLoading}')
+        .status(ng-show="errorText")
+          .fa.fa-exclamation-triangle.icon-warning-sign
+          {{errorText}}

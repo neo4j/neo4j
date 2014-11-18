@@ -25,7 +25,6 @@ a
     color: color-link-hover
     text-decoration: none
 
-
 #incompatible
   background-color: #fff
   bottom: 0
@@ -45,7 +44,7 @@ svg
   border-top: 1px solid #dfe5f0
   border-bottom: 1px solid #e7e9eb
 
-[play-topic], [help-topic], a[target]
+[play-topic], [help-topic], [server-topic], a[target]
   &:before
     font-family: FontAwesome
     padding-right: 4px
@@ -54,7 +53,7 @@ svg
       padding-right: 0
       content: ''
 
-[play-topic]
+[play-topic], [server-topic]
   &:before
     content: "\f144"
 
@@ -112,6 +111,12 @@ table.json-object
   font-size: 13px
   position: relative
   background-color: #FFF
+  white-space: nowrap
+  overflow: hidden
+  .btn-group
+    absolute: top 3px right 12px
+  .icon-warning-sign
+    font-size: 18px
   .status
     float: left
     padding-left: horizontal-padding
@@ -274,6 +279,7 @@ select
     text-align right
     margin 0
     padding-left 0
+    white-space: nowrap
 
 .table td.wrapped
   word-break break-all
@@ -419,3 +425,6 @@ select
   padding-left: 24px
   font-size: 15px
   font-weight: bold
+span.error 
+  font-size: 11px
+  color: red

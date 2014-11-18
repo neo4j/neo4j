@@ -18,24 +18,17 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-'use strict';
+'use strict'
 
-# Requires jQuery
-angular.module('neo4jApp.directives')
-  .directive('helpTopic', ['$rootScope', 'Frame','Settings', ($rootScope, Frame, Settings) ->
-    restrict: 'A'
-    link: (scope, element, attrs) ->
+angular.module('neo4jApp.controllers')
+  .controller 'DisconnectCtrl', [
+    '$scope'
+    'AuthService'
+    ($scope, AuthService) ->
+      AuthService.forget().then( ->
+        $scope.static_user = angular.copy(AuthService.getCurrentUser())
+        $scope.static_is_authenticated = AuthService.isAuthenticated()
+      )
 
-      topic = attrs.helpTopic
-      command = "help"
-
-      if topic
-        element.on 'click', (e) ->
-          e.preventDefault()
-
-          topic = topic.toLowerCase().trim().replace('-', ' ')
-          Frame.create(input: "#{Settings.cmdchar}#{command} #{topic}")
-
-          $rootScope.$apply() unless $rootScope.$$phase
-
-  ])
+      $scope.focusEditor()
+  ]

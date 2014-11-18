@@ -1,0 +1,38 @@
+div(ng-controller="GenerateTokenCtrl", fullscreen)
+  .outer
+    include partials/frame-common-actions
+    .inner
+      .view-result
+        article.help
+          .container-fluid
+            .section.row-fluid.summary
+              .summary.col-sm-3
+                h3 Set authorization token
+                p.lead
+                  | Manually set your users authorization token. Note that this 
+                  | invalidates your current token.
+              .details.col-sm-9(ng-hide="token_changed")
+                .form
+                  .row
+                    .col-sm-4
+                      | New authorization token
+                      br
+                      input.form-control(type='text', ng-model="new_token", style="margin: 0")
+                      br
+                  .row
+                    .col-sm-4
+                      | Your Password
+                      br
+                      input.form-control(type='password', ng-model="current_password", style="margin: 0")
+                      br
+                  .row
+                    .col-sm-4
+                      button.btn.btn-default(ng-click="setToken()", style="margin: 0") Set authorization token
+              .details.col-sm-9(ng-show="token_changed")
+                br
+                br
+                p Your new authorization token is now in effect.
+      .status-bar(ng-class='{error: error_text, loading: frame.isLoading}')
+        .status(ng-show="error_text")
+          .fa.fa-exclamation-triangle.icon-warning-sign
+          {{error_text}}

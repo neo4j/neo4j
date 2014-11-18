@@ -22,10 +22,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 angular.module('neo4jApp.utils', [])
   .service('Utils', ['$timeout', ($timeout)->
-    argv: (input) ->
+    @argv = (input) ->
       rv = input.toLowerCase().split(' ')
       rv or []
-    debounce: (func, wait, immediate) ->
+    @debounce = (func, wait, immediate) ->
       result = undefined
       timeout = null
       ->
@@ -41,16 +41,30 @@ angular.module('neo4jApp.utils', [])
         result = func.apply(context, args) if callNow
         result
 
-    parseId: (resource = "") ->
+    @parseId = (resource = "") ->
       id = resource.substr(resource.lastIndexOf("/")+1)
       return parseInt(id, 10)
 
-    stripComments: (input) ->
+    @stripComments = (input) ->
       rows = input.split("\n")
       rv = []
       rv.push row for row in rows when row.indexOf('//') isnt 0
       rv.join("\n")
 
-    firstWord: (input) ->
+    @firstWord = (input) ->
       input.split(/\n| /)[0] 
+
+    @extendDeep = (dst) =>
+      that = @
+      angular.forEach(arguments, (obj) ->
+        if (obj != dst) 
+          angular.forEach(obj, (value, key)  ->
+            if (dst[key] && angular.isObject(dst[key])) 
+              that.extendDeep(dst[key], value)
+            else if(!angular.isFunction(dst[key])) 
+              dst[key] = value
+          )
+      )
+      dst
+    @
   ])

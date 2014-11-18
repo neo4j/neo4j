@@ -22,18 +22,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # Requires jQuery
 angular.module('neo4jApp.directives')
-  .directive('helpTopic', ['$rootScope', 'Frame','Settings', ($rootScope, Frame, Settings) ->
+  .directive('serverTopic', ['$rootScope', 'Frame','Settings', ($rootScope, Frame, Settings) ->
     restrict: 'A'
     link: (scope, element, attrs) ->
 
-      topic = attrs.helpTopic
-      command = "help"
+      topic = attrs.serverTopic
+      command = "server"
 
       if topic
         element.on 'click', (e) ->
           e.preventDefault()
 
-          topic = topic.toLowerCase().trim().replace('-', ' ')
+          topic = topic.toLowerCase().trim()
           Frame.create(input: "#{Settings.cmdchar}#{command} #{topic}")
 
           $rootScope.$apply() unless $rootScope.$$phase
