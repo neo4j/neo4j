@@ -63,7 +63,22 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       if func.function == Some(functions.Id) =>
       c.expressions.size / stats.nodesWithLabelCardinality(None)
 
-    case _ => Selectivity(.5)
+    // Implicit relation uniqueness predicates
+    case NotEquals(lhs: Identifier, rhs: Identifier)
+      if semanticTable.isRelationship(lhs) && semanticTable.isRelationship(rhs) =>
+        GraphStatistics.DEFAULT_REL_UNIQUENESS_SELECTIVITY // This should not be the default. Instead, we should figure
+                                                           // out the number of matching relationships and use it
+
+    // WHERE <expr> = <expr>
+    case _: Equals =>
+      GraphStatistics.DEFAULT_EQUALITY_SELECTIVITY
+
+    // WHERE <expr> >= <expr>
+    case _: GreaterThan | _: GreaterThanOrEqual | _: LessThan | _: LessThanOrEqual =>
+      GraphStatistics.DEFAULT_RANGE_SELECTIVITY
+
+    case _ =>
+      GraphStatistics.DEFAULT_PREDICATE_SELECTIVITY
   }
 
   private def calculateSelectivityForLabel(label: Option[LabelId]): Selectivity = {

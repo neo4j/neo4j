@@ -34,19 +34,17 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics,
   private val expressionSelectivityEstimator = ExpressionSelectivityCalculator(stats, combiner)
   private val patternSelectivityEstimator = PatternSelectivityCalculator(stats, combiner)
 
+  /**
+   * When there are optional matches, the cardinality is always the maximum of any matches that exist,
+   * because no matches are limiting. So we need to calculate cardinality of all possible combinations
+   * of matches, and then take the max.
+   */
   def apply(queryGraph: QueryGraph, input: QueryGraphCardinalityInput): Cardinality = {
     val combinations: Seq[QueryGraph] = findQueryGraphCombinations(queryGraph, semanticTable)
     val cardinalities = combinations.map(cardinalityForQueryGraph(_, input)(semanticTable))
-    cardinalities.foldLeft(Cardinality.EMPTY) {
-      case (acc, curr) => if (curr > acc) curr else acc
-    }
+    cardinalities.max
   }
 
-  /**
-   * Finds all combinations of a querygraph with its optional matches,
-   * e.g. Given QueryGraph QG with optional matches [opt1, opt2, opt3] we get
-   * [QG, QG ++ opt1, QG ++ opt2, QG ++ opt3, QG ++ opt1 ++ opt2, QG ++ opt2 ++ opt3, QG ++ opt1 ++ opt2 ++ opt3]
-   */
   private def findQueryGraphCombinations(queryGraph: QueryGraph, semanticTable: SemanticTable): Seq[QueryGraph] = {
     (0 to queryGraph.optionalMatches.length)
       .map(queryGraph.optionalMatches.combinations)

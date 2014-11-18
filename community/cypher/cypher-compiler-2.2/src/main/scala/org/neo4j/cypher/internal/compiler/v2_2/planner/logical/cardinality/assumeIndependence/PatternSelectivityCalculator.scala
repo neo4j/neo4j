@@ -57,7 +57,7 @@ case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: Select
                                       labelsOnRhs: Seq[TokenSpec[LabelId]],
                                       dir: Direction,
                                       maxRelCount: Cardinality): Selectivity = {
-    val selectivities = (types map { typ =>
+    val selectivities = types map { typ =>
       for {
         lhsLabel <- labelsOnLhs
         rhsLabel <- labelsOnRhs
@@ -80,9 +80,13 @@ case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: Select
             )).get
         }
       }
-    }).map(combiner.andTogetherSelectivities).flatten
+    }
 
-    combiner.orTogetherSelectivities(selectivities).getOrElse(Selectivity(1))
+    val selectivitiesPerRelType = selectivities.map(combiner.andTogetherSelectivities).flatten
+
+    val combinedSelectivity = combiner.orTogetherSelectivities(selectivitiesPerRelType)
+
+    combinedSelectivity.getOrElse(Selectivity(1))
   }
 
   private def calculateLabelSelectivity(specs: Seq[TokenSpec[LabelId]]): Selectivity = {
