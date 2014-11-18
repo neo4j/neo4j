@@ -39,25 +39,6 @@ BSD - Scala License
 BSD License
   Scala Compiler
 
-Eclipse Public License, Version 1.0
-  Logback Classic Module
-  Logback Core Module
-
-GNU Lesser General Public License, Version 2.1
-  Logback Classic Module
-  Logback Core Module
-
 MIT License
   SLF4J API Module
-
-Dependencies with multiple licenses
------------------------------------
-
-Logback Classic Module
-  Eclipse Public License, Version 1.0
-  GNU Lesser General Public License, Version 2.1
-
-Logback Core Module
-  Eclipse Public License, Version 1.0
-  GNU Lesser General Public License, Version 2.1
 
