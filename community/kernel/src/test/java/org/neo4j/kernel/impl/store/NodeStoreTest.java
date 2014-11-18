@@ -19,30 +19,33 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import org.junit.After;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
+
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.PageCacheRule;
 
 import static java.util.Arrays.asList;
-
-import static org.junit.Assert.*;
-
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.store.NodeStore.readOwnerFromDynamicLabelsRecord;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
@@ -175,6 +178,51 @@ public class NodeStoreTest
         assertTrue( store.inUse( exists ) );
         assertFalse( store.inUse( deleted ) );
         assertFalse(store.inUse( IdType.NODE.getMaxValue() ));
+    }
+
+    @Test
+    public void scanningRecordsShouldVisitEachInUseRecordOnce() throws IOException
+    {
+        EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+        NodeStore store = newNodeStore( fs );
+
+        ThreadLocalRandom rng = ThreadLocalRandom.current();
+        final PrimitiveLongSet nextRelSet = Primitive.longSet();
+        for ( int i = 0; i < 10_000; i++ )
+        {
+            // Enough records to span several pages
+            int nextRelCandidate = rng.nextInt( 0, Integer.MAX_VALUE );
+            if ( nextRelSet.add( nextRelCandidate ) )
+            {
+                long nodeId = store.nextId();
+                NodeRecord record = new NodeRecord(
+                        nodeId, false, nextRelCandidate, 20, true );
+                store.updateRecord( record );
+                if ( rng.nextInt( 0, 10 ) < 3 )
+                {
+                    nextRelSet.remove( nextRelCandidate );
+                    record.setInUse( false );
+                    store.updateRecord( record );
+                }
+            }
+        }
+
+        // Now we have an interesting set of node records.
+        // If we visit each and remove that node from our nextRelSet,
+        // we should observe that no nextRel is ever removed twice, nor
+        // do we have anything left in the set afterwards.
+
+        NodeStore.NodeRecordScanner scanner = new NodeStore.NodeRecordScanner()
+        {
+            @Override
+            public void process( NodeRecord record ) throws IOException
+            {
+                assertTrue( nextRelSet.remove( record.getNextRel() ) );
+            }
+        };
+        store.scanRecords( 0, store.getHighestPossibleIdInUse(), scanner );
+
+        assertTrue( nextRelSet.isEmpty() );
     }
 
     private NodeStore newNodeStore( EphemeralFileSystemAbstraction fs )

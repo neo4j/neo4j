@@ -169,7 +169,7 @@ public class PropertyDeduplicator
               IndexedConflictsResolver indexedConflictsResolver =
                       new IndexedConflictsResolver( duplicateClusters, indexLookup, nodeStore, propertyStore ) )
         {
-            nodeStore.processRecords( 0, nodeStore.getHighestPossibleIdInUse(), indexedConflictsResolver );
+            nodeStore.scanRecords( 0, nodeStore.getHighestPossibleIdInUse(), indexedConflictsResolver );
         }
 
         // Initially resolve all duplicateClusters by changing the propertyKey for the first conflicting property block, to

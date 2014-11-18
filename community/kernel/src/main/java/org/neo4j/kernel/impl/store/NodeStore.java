@@ -342,8 +342,11 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
 
     /**
      * Scan the given range of records both inclusive, and pass all the in-use ones to the given processor, one by one.
+     *
+     * The record passed to the NodeRecordScanner is reused instead of reallocated for every record, so it must be
+     * cloned if you want to save it for later.
      */
-    public void processRecords( long fromRecordId, long toRecordId, NodeRecordProcessor processor ) throws IOException
+    public void scanRecords( long fromRecordId, long toRecordId, NodeRecordScanner scanner ) throws IOException
     {
         long startPageId = pageIdForRecord( fromRecordId );
         long currentPageId = startPageId;
@@ -369,7 +372,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
 
                     if ( record.inUse() )
                     {
-                        processor.process( record );
+                        scanner.process( record );
                     }
                     currentRecordId++;
                 }
@@ -378,7 +381,10 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
         }
     }
 
-    public interface NodeRecordProcessor
+    /**
+     * @see NodeStore#scanRecords(long, long, org.neo4j.kernel.impl.store.NodeStore.NodeRecordScanner)
+     */
+    public interface NodeRecordScanner
     {
         void process( NodeRecord record ) throws IOException;
     }

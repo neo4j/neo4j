@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
-class IndexedConflictsResolver implements NodeStore.NodeRecordProcessor, AutoCloseable
+class IndexedConflictsResolver implements NodeStore.NodeRecordScanner, AutoCloseable
 {
     private final PrimitiveLongObjectMap<List<DuplicateCluster>> duplicateClusters;
     private final NodeStore nodeStore;
