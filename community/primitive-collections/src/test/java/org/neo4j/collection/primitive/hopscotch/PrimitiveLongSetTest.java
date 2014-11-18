@@ -24,10 +24,10 @@ import java.util.Set;
 
 import org.junit.Test;
 
+import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.Monitor;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -345,6 +345,16 @@ public class PrimitiveLongSetTest
         assertFalse( "1103190229303827372 should not exist before adding here", existedBefore );
         assertTrue( "1103190229303827372 should be reported as added here", added );
         assertTrue( "1103190229303827372 should exist", existsAfter );
+    }
+
+    @Test
+    public void shouldHandleEmptySet() throws Exception
+    {
+        // GIVEN
+        PrimitiveLongSet set = Primitive.longSet( 0 );
+
+        // THEN
+        assertFalse( set.contains( 564 ) );
     }
 
     private Monitor onlyAllowGrowing( final int growthsToAllow )

@@ -29,6 +29,7 @@ import java.util.Set;
 
 import javax.transaction.Status;
 
+import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.TransactionData;
@@ -36,6 +37,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.nioneo.store.Record;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.persistence.PersistenceManager.ResourceHolder;
 import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
@@ -44,6 +46,8 @@ import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdArrayWithLoops;
 import org.neo4j.kernel.impl.util.RelIdIterator;
+
+import static org.neo4j.collection.primitive.Primitive.intObjectMap;
 
 public class WritableTransactionState implements TransactionState
 {
@@ -94,7 +98,7 @@ public class WritableTransactionState implements TransactionState
             return totalCount.value;
         }
     }
-    
+
     public static class PrimitiveElement
     {
         PrimitiveElement()
@@ -196,7 +200,7 @@ public class WritableTransactionState implements TransactionState
         }
     }
 
-    public static class CowNodeElement extends CowEntityElement
+    public static class CowNodeElement extends CowEntityElement implements FirstRelationshipIds
     {
         CowNodeElement( long id )
         {
@@ -204,9 +208,12 @@ public class WritableTransactionState implements TransactionState
         }
 
         private long firstProp = Record.NO_NEXT_PROPERTY.intValue();
+        private long firstRel = Record.NO_NEXT_RELATIONSHIP.intValue();
 
+        private PrimitiveIntObjectMap<RelationshipGroupRecord> addedGroups;
         private ArrayMap<Integer, RelIdArray> relationshipAddMap;
         private ArrayMap<Integer, SetAndDirectionCounter> relationshipRemoveMap;
+        public boolean dense;
 
         public ArrayMap<Integer, RelIdArray> getRelationshipAddMap( boolean create )
         {
@@ -258,10 +265,45 @@ public class WritableTransactionState implements TransactionState
             return result;
         }
 
+        public void addRelationshipGroupChange( RelationshipGroupRecord group )
+        {
+            if ( group.inUse() )
+            {
+                if ( addedGroups == null )
+                {
+                    addedGroups = intObjectMap();
+                }
+                addedGroups.put( group.getType(), group );
+            }
+        }
+
+        @Override
+        public long firstIdOf( int type, DirectionWrapper direction )
+        {
+            if ( !dense )
+            {
+                // For sparse nodes there's only a single relationship that is going to be the first
+                // relationship in the chain, not a relationship per type and direction. So we'll return
+                // that single relationship id, knowing that the caller of this method is also aware
+                // of the sparse/dense node states and will use this id accordingly.
+                return firstRel;
+            }
+
+            RelationshipGroupRecord group = addedGroups.get( type );
+            if ( group == null )
+            {
+                return Record.NO_NEXT_RELATIONSHIP.intValue();
+            }
+
+            return direction.getNextRel( group );
+        }
+
         @Override
         public String toString()
         {
-            return "Node[" + id + "]";
+            return "Node[" + id + "\n" +
+                    "+" + relationshipAddMap + "\n" +
+                    "-" + relationshipRemoveMap + "]";
         }
     }
 
@@ -331,10 +373,19 @@ public class WritableTransactionState implements TransactionState
     }
 
     @Override
-    public void setFirstIds( long nodeId, long firstRel, long firstProp )
+    public void setFirstIds( long nodeId, boolean dense, long firstRel, long firstProp )
     {
         CowNodeElement nodeElement = getPrimitiveElement( true ).nodeElement( nodeId, true );
         nodeElement.firstProp = firstProp;
+        nodeElement.firstRel = firstRel;
+        nodeElement.dense = dense;
+    }
+
+    @Override
+    public void addRelationshipGroupChange( long nodeId, RelationshipGroupRecord group )
+    {
+        CowNodeElement nodeElement = getPrimitiveElement( true ).nodeElement( nodeId, true );
+        nodeElement.addRelationshipGroupChange( group );
     }
 
     @Override
@@ -362,9 +413,9 @@ public class WritableTransactionState implements TransactionState
     }
 
     @Override
-    public void commitCows()
+    public void commitCows( CacheAccessBackDoor cacheAccess )
     {
-        applyTransactionStateToCache( Status.STATUS_COMMITTED );
+        applyTransactionStateToCache( Status.STATUS_COMMITTED, cacheAccess );
     }
 
     @Override
@@ -372,7 +423,7 @@ public class WritableTransactionState implements TransactionState
     {
         try
         {
-            applyTransactionStateToCache( Status.STATUS_ROLLEDBACK );
+            applyTransactionStateToCache( Status.STATUS_ROLLEDBACK, null );
         }
         finally
         {
@@ -380,7 +431,7 @@ public class WritableTransactionState implements TransactionState
         }
     }
 
-    private void applyTransactionStateToCache( int param )
+    private void applyTransactionStateToCache( int param, CacheAccessBackDoor cacheAccess )
     {
         if ( primitiveElement == null )
         {
@@ -397,7 +448,14 @@ public class WritableTransactionState implements TransactionState
                 CowNodeElement nodeElement = entry.getValue();
                 if ( param == Status.STATUS_COMMITTED )
                 {
-                    node.commitRelationshipMaps( nodeElement.relationshipAddMap, nodeElement.relationshipRemoveMap );
+                    if ( node.commitRelationshipMaps(
+                            nodeElement.relationshipAddMap,
+                            nodeElement.relationshipRemoveMap,
+                            nodeElement,
+                            nodeElement.dense ) )
+                    {
+                        cacheAccess.removeNodeFromCache( node.getId() );
+                    }
                     node.commitPropertyMaps( nodeElement.propertyAddMap,
                             nodeElement.propertyRemoveMap, nodeElement.firstProp );
                 }
@@ -436,8 +494,7 @@ public class WritableTransactionState implements TransactionState
         if ( primitiveElement.graph != null && param == Status.STATUS_COMMITTED )
         {
             nodeManager.getGraphProperties().commitPropertyMaps( primitiveElement.graph.getPropertyAddMap( false ),
-                    primitiveElement.graph.getPropertyRemoveMap( false ), Record.NO_NEXT_PROPERTY.intValue()
-            );
+                    primitiveElement.graph.getPropertyRemoveMap( false ), Record.NO_NEXT_PROPERTY.intValue() );
         }
     }
 

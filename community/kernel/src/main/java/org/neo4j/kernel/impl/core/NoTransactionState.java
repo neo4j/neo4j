@@ -28,6 +28,7 @@ import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.core.WritableTransactionState.SetAndDirectionCounter;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.persistence.PersistenceManager.ResourceHolder;
 import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
@@ -57,7 +58,12 @@ public class NoTransactionState implements TransactionState
     }
 
     @Override
-    public void setFirstIds( long nodeId, long firstRel, long firstProp )
+    public void setFirstIds( long nodeId, boolean dense, long firstRel, long firstProp )
+    {
+    }
+
+    @Override
+    public void addRelationshipGroupChange( long nodeId, RelationshipGroupRecord group )
     {
     }
 
@@ -74,7 +80,7 @@ public class NoTransactionState implements TransactionState
     }
 
     @Override
-    public void commitCows()
+    public void commitCows( CacheAccessBackDoor cacheAccess )
     {
     }
 

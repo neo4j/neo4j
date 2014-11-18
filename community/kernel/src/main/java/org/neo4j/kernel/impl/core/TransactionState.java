@@ -25,6 +25,7 @@ import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.core.WritableTransactionState.SetAndDirectionCounter;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransaction;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.persistence.PersistenceManager.ResourceHolder;
@@ -56,11 +57,13 @@ public interface TransactionState
 
     SetAndDirectionCounter getOrCreateCowRelationshipRemoveMap( NodeImpl node, int type );
 
-    void setFirstIds( long nodeId, long firstRel, long firstProp );
+    void setFirstIds( long nodeId, boolean dense, long firstRel, long firstProp );
 
+    void addRelationshipGroupChange( long nodeId, RelationshipGroupRecord group );
+    
     void commit();
 
-    void commitCows();
+    void commitCows( CacheAccessBackDoor cacheAccess );
 
     void rollback();
 

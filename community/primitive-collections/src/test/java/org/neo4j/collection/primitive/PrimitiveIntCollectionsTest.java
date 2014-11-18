@@ -20,6 +20,7 @@
 package org.neo4j.collection.primitive;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -30,6 +31,7 @@ import org.neo4j.function.primitive.PrimitiveIntPredicate;
 import static java.util.Arrays.asList;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -314,6 +316,19 @@ public class PrimitiveIntCollectionsTest
         {   // Good
             assertThat( e.getMessage(), containsString( "More than one" ) );
         }
+    }
+
+    @Test
+    public void shouldConvertCollectionToPrimitiveArray() throws Exception
+    {
+        // GIVEN
+        Collection<Integer> values = asList( 1, 2, 3, 4, 5 );
+
+        // WHEN
+        int[] primitiveValues = PrimitiveIntCollections.asArray( values );
+
+        // THEN
+        assertArrayEquals( new int[] {1, 2, 3, 4, 5}, primitiveValues );
     }
 
     private static final class CountingPrimitiveIntIteratorResource implements PrimitiveIntIterator, AutoCloseable
