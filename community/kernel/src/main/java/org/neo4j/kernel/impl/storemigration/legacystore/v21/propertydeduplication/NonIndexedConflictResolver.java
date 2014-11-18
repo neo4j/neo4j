@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydeduplication;
 
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.neo4j.collection.primitive.PrimitiveLongObjectVisitor;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.kernel.impl.core.Token;
@@ -31,11 +36,6 @@ import org.neo4j.kernel.impl.transaction.state.Loaders;
 import org.neo4j.kernel.impl.transaction.state.TokenCreator;
 import org.neo4j.unsafe.batchinsert.DirectRecordAccess;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 class NonIndexedConflictResolver implements PrimitiveLongObjectVisitor<List<DuplicateCluster>>
 {
     private final PropertyKeyTokenStore keyTokenStore;
@@ -46,14 +46,15 @@ class NonIndexedConflictResolver implements PrimitiveLongObjectVisitor<List<Dupl
                                        PropertyStore store ) throws IOException
     {
         this.keyTokenStore = keyTokenStore;
-        this.propertyTokenMap = buildPropertyKeyIndex( keyTokenStore );;
+        this.propertyTokenMap = buildPropertyKeyIndex( keyTokenStore );
+        ;
         this.store = store;
     }
 
-    private Map<String,Integer> buildPropertyKeyIndex( PropertyKeyTokenStore tokenStore ) throws IOException
+    private Map<String, Integer> buildPropertyKeyIndex( PropertyKeyTokenStore tokenStore ) throws IOException
     {
         Token[] tokens = tokenStore.getTokens( (int) tokenStore.getHighestPossibleIdInUse() + 1 );
-        Map<String,Integer> map = new HashMap<>();
+        Map<String, Integer> map = new HashMap<>();
         for ( Token token : tokens )
         {
             map.put( token.name(), token.id() );
@@ -62,18 +63,19 @@ class NonIndexedConflictResolver implements PrimitiveLongObjectVisitor<List<Dupl
     }
 
     @Override
-    public void visited( long key, List<DuplicateCluster> duplicateClusters)
+    public void visited( long key, List<DuplicateCluster> duplicateClusters )
     {
-        for ( DuplicateCluster duplicateCluster : duplicateClusters)
+        for ( DuplicateCluster duplicateCluster : duplicateClusters )
         {
-            resolveConflict(duplicateCluster);
+            resolveConflict( duplicateCluster );
         }
     }
 
-    private void resolveConflict( final DuplicateCluster duplicateCluster) {
+    private void resolveConflict( final DuplicateCluster duplicateCluster )
+    {
         final String oldName = keyTokenStore.getToken( duplicateCluster.propertyKeyId ).name();
-        DuplicateNameAssigner visitor = new DuplicateNameAssigner(duplicateCluster, oldName);
-        duplicateCluster.propertyRecordIds.visitKeys(visitor);
+        DuplicateNameAssigner visitor = new DuplicateNameAssigner( duplicateCluster, oldName );
+        duplicateCluster.propertyRecordIds.visitKeys( visitor );
     }
 
     private int getOrCreatePropertyKeyToken( String name, PropertyKeyTokenStore keyTokenStore ) throws IOException
@@ -84,7 +86,7 @@ class NonIndexedConflictResolver implements PrimitiveLongObjectVisitor<List<Dupl
             return token;
         }
         TokenCreator<PropertyKeyTokenRecord> creator = new TokenCreator<>( keyTokenStore );
-        DirectRecordAccess<Integer,PropertyKeyTokenRecord,Void> recordAccess = new DirectRecordAccess<>(
+        DirectRecordAccess<Integer, PropertyKeyTokenRecord, Void> recordAccess = new DirectRecordAccess<>(
                 keyTokenStore, Loaders.propertyKeyTokenLoader( keyTokenStore )
         );
         int propertyKeyTokenId = (int) keyTokenStore.nextId();
@@ -94,33 +96,42 @@ class NonIndexedConflictResolver implements PrimitiveLongObjectVisitor<List<Dupl
         return propertyKeyTokenId;
     }
 
-    private class DuplicateNameAssigner implements PrimitiveLongVisitor {
+    private class DuplicateNameAssigner implements PrimitiveLongVisitor
+    {
         private final DuplicateCluster duplicateCluster;
         private final String oldName;
         int index;
 
-        public DuplicateNameAssigner(DuplicateCluster duplicateCluster, String oldName) {
+        public DuplicateNameAssigner( DuplicateCluster duplicateCluster, String oldName )
+        {
             this.duplicateCluster = duplicateCluster;
             this.oldName = oldName;
             index = 0;
         }
 
         @Override
-        public void visited(long propertyRecordId) {
+        public void visited( long propertyRecordId )
+        {
             PropertyRecord record = store.getRecord( propertyRecordId );
-            try {
-                for ( PropertyBlock block: record.getPropertyBlocks() )
+            try
+            {
+                for ( PropertyBlock block : record.getPropertyBlocks() )
                 {
-                    if (block.getKeyIndexId() == duplicateCluster.propertyKeyId)
+                    if ( block.getKeyIndexId() == duplicateCluster.propertyKeyId )
                     {
-                        if (index == 0) {
+                        if ( index == 0 )
+                        {
                             index += 1;
-                        } else {
-                            block.setKeyIndexId(getNewPropertyKeyId());
+                        }
+                        else
+                        {
+                            block.setKeyIndexId( getNewPropertyKeyId() );
                         }
                     }
                 }
-            } catch (IOException e) {
+            }
+            catch ( IOException e )
+            {
                 throw new InnerIterationIOException( e );
             }
             store.updateRecord( record );

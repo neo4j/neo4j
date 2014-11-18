@@ -19,17 +19,14 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydeduplication;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.collection.primitive.PrimitiveLongVisitor;
-import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.PropertyBlock;
-import org.neo4j.kernel.impl.store.record.PropertyRecord;
-
-import java.io.IOException;
-import java.util.*;
 
 class IndexedConflictsResolver implements NodeStore.NodeRecordProcessor, AutoCloseable
 {
@@ -60,17 +57,13 @@ class IndexedConflictsResolver implements NodeStore.NodeRecordProcessor, AutoClo
 
         if ( duplicateClusterList != null )
         {
-            deferredResolutions.add( new DeferredIndexedConflictResolution( record.clone(), duplicateClusterList) );
+            deferredResolutions.add( new DeferredIndexedConflictResolution( record.clone(), duplicateClusterList,
+                    nodeStore, indexLookup, propertyStore, propertyRemover ) );
         }
     }
 
     @Override
     public void close() throws IOException
-    {
-        complete();
-    }
-
-    private void complete() throws IOException
     {
         for ( DeferredIndexedConflictResolution deferredResolution : deferredResolutions )
         {
@@ -78,87 +71,4 @@ class IndexedConflictsResolver implements NodeStore.NodeRecordProcessor, AutoClo
         }
     }
 
-    private class DeferredIndexedConflictResolution
-    {
-        private final NodeRecord record;
-        private final List<DuplicateCluster> duplicateClusterList;
-
-        public DeferredIndexedConflictResolution( NodeRecord record, List<DuplicateCluster> duplicateClusters)
-        {
-            this.record = record;
-            this.duplicateClusterList = duplicateClusters;
-        }
-
-        public void resolve() throws IOException
-        {
-            // For every conflicting property key id, if we can find a matching index, delete all the property blocks
-            // whose value match nothing in the index.
-            // Otherwise, leave the duplicateClusters to be resolved in a later step.
-            long[] labelIds = NodeLabelsField.get(record, nodeStore);
-            ListIterator<DuplicateCluster> it = duplicateClusterList.listIterator();
-            while ( it.hasNext() )
-            {
-                // Figure out if the node is indexed by the property key for this conflict, and resolve the
-                // conflict if that is the case.
-                DuplicateCluster duplicateCluster = it.next();
-                final IndexLookup.Index index = indexLookup.getAnyIndexOrNull( labelIds, duplicateCluster.propertyKeyId );
-
-                if ( index != null )
-                {
-                    IndexConsultedPropertyBlockSweeper sweeper = new IndexConsultedPropertyBlockSweeper( duplicateCluster.propertyKeyId, index, record);
-                    duplicateCluster.propertyRecordIds.visitKeys(sweeper);
-                    assert sweeper.foundExact;
-                    it.remove();
-                }
-            }
-        }
-
-        private class IndexConsultedPropertyBlockSweeper implements PrimitiveLongVisitor {
-            private int propertyKeyId;
-            private final IndexLookup.Index index;
-            private final NodeRecord nodeRecord;
-            boolean foundExact;
-
-            public IndexConsultedPropertyBlockSweeper(int propertyKeyId, IndexLookup.Index index, NodeRecord nodeRecord) {
-                this.propertyKeyId = propertyKeyId;
-                this.index = index;
-                this.nodeRecord = nodeRecord;
-                this.foundExact = false;
-            }
-
-            @Override
-            public void visited(long recordId) {
-                PropertyRecord record = propertyStore.getRecord( recordId );
-                boolean changed = false;
-
-                List<PropertyBlock> blocks = record.getPropertyBlocks();
-                ListIterator<PropertyBlock> it = blocks.listIterator();
-                while (it.hasNext()) {
-                    PropertyBlock block = it.next();
-
-                    if (block.getKeyIndexId() == propertyKeyId) {
-                        Object lastPropertyValue = propertyStore.getValue(block);
-
-                        try {
-                            if (index.contains(nodeRecord.getId(), lastPropertyValue) && !foundExact) {
-                                foundExact = true;
-                            } else {
-                                it.remove();
-                                changed = true;
-                            }
-                        } catch (IOException e) {
-                            throw new InnerIterationIOException(e);
-                        }
-                    }
-                }
-                if (changed)
-                {
-                    if (blocks.isEmpty()) {
-                        propertyRemover.fixUpPropertyLinksAroundUnusedRecord( nodeRecord, record );
-                    }
-                    propertyStore.updateRecord(record);
-                }
-            }
-        }
-    }
 }

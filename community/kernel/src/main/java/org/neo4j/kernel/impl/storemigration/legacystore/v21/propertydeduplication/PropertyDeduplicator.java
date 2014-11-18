@@ -154,11 +154,7 @@ public class PropertyDeduplicator
             final NodeStore nodeStore,
             SchemaStore schemaStore ) throws IOException
     {
-        if ( duplicateClusters.isEmpty() )
-        {
-            // The happiest of cases.
-            return;
-        }
+        assert duplicateClusters.size() > 0;
 
         // For each conflict:
         //  - If we have an index for the given property key id, and the property is on an indexed node, then remove

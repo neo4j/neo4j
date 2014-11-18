@@ -366,8 +366,6 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
         storeMigrationProcess.addParticipant( indexProvider.storeMigrationParticipant() );
         // TODO: Build a real provider map
         final DefaultSchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( indexProvider );
-
-
         storeMigrationProcess.migrateIfNeeded( store.getParentFile() );
         neoStore = dependencies.satisfyDependency( storeFactory.newNeoStore( false, true ) );
         dependencies.satisfyDependency( neoStore );
@@ -724,9 +722,8 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
             Guard guard, LegacyIndexStore legacyIndexStore )
     {
         // Bottom layer: Read-access to committed data
-        StoreReadLayer storeLayer = storeReadLayer;
         // + Transaction state handling
-        StateHandlingStatementOperations stateHandlingContext = new StateHandlingStatementOperations( storeLayer,
+        StateHandlingStatementOperations stateHandlingContext = new StateHandlingStatementOperations(storeReadLayer,
                 legacyPropertyTrackers, constraintIndexCreator,
                 legacyIndexStore );
         StatementOperationParts parts = new StatementOperationParts( stateHandlingContext, stateHandlingContext,
