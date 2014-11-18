@@ -318,7 +318,7 @@ public class StoreFactory
 
     public LabelTokenStore newLabelTokenStore( File baseFile )
     {
-        return newLabelTokenStore( new File( baseFile.getParent() + NAMES_PART ), baseFile );
+        return newLabelTokenStore( new File( baseFile + NAMES_PART ), baseFile );
     }
 
     private LabelTokenStore newLabelTokenStore( File labelTokenNamesStore, File labelTokenStore )
