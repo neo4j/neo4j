@@ -688,14 +688,14 @@ public abstract class InternalAbstractGraphDatabase
     {
         if ( readOnly )
         {
-            return new ReadOnlyNodeManager( logging, this, locks, txManager, persistenceManager,
+            return new ReadOnlyNodeManager( logging, this, txManager, persistenceManager,
                     persistenceSource, relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder,
                     createNodeLookup(), createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager,
                     statementContextProvider );
         }
 
         return new NodeManager(
-                logging, this, locks, txManager, persistenceManager,
+                logging, this, txManager, persistenceManager,
                 persistenceSource, relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder,
                 createNodeLookup(), createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager,
                 statementContextProvider );
@@ -707,7 +707,7 @@ public abstract class InternalAbstractGraphDatabase
     {
         if ( readOnly )
         {
-            return new ReadOnlyNodeManager( logging, this, locks, txManager, persistenceManager,
+            return new ReadOnlyNodeManager( logging, this, txManager, persistenceManager,
                     persistenceSource, relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder, createNodeLookup(),
                     createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager, statementContextProvider )
             {
@@ -756,7 +756,7 @@ public abstract class InternalAbstractGraphDatabase
             };
         }
 
-        return new NodeManager( logging, this, locks, txManager, persistenceManager,
+        return new NodeManager( logging, this, txManager, persistenceManager,
                 persistenceSource, relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder, createNodeLookup(),
                 createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager, statementContextProvider )
         {

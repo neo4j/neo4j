@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
@@ -467,12 +468,6 @@ public class TestNeoStore
         }
 
         @Override
-        public void updateFirst( long first )
-        {
-            actual.updateFirst( first );
-        }
-
-        @Override
         public long position( DirectionWrapper direction, int[] types )
         {
             return actual.position( direction, types );
@@ -491,15 +486,21 @@ public class TestNeoStore
         }
 
         @Override
-        public void compareAndAdvance( long relIdDeleted, long nextRelId )
+        public boolean atPosition( DirectionWrapper direction, int type, long position )
         {
-            actual.compareAndAdvance( relIdDeleted, nextRelId );
+            return actual.atPosition( direction, type, position );
+        }
+
+        @Override
+        public void compareAndAdvance( DirectionWrapper direction, int type, long relIdDeleted, long nextRelId )
+        {
+            actual.compareAndAdvance( direction, type, relIdDeleted, nextRelId );
         }
 
         @Override
         public RelationshipLoadingPosition clone()
         {
-            return actual.clone();
+            return new MutableRelationshipLoadingPosition( actual.clone() );
         }
     }
 

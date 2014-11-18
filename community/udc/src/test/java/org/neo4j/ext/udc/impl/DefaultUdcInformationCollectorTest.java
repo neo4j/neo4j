@@ -280,7 +280,7 @@ public class DefaultUdcInformationCollectorTest
             if ( type == NodeManager.class )
             {
                 //noinspection unchecked
-                return (T) new NodeManager( mock(Logging.class), null, null, null, null, new StubIdGenerator(), null, null, null, null,
+                return (T) new NodeManager( mock(Logging.class), null, null, null, new StubIdGenerator(), null, null, null, null,
                         null, null, null,
                         null, null, null );
             }
