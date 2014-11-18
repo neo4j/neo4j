@@ -40,8 +40,6 @@ public class DesktopConfigurator implements ConfigurationBuilder
     private final Map<String, String> map = new HashMap<>();
     private final Installation installation;
 
-    private ConfigurationBuilder propertyFileConfig;
-
     public DesktopConfigurator( Installation installation )
     {
         this.installation = installation;
@@ -50,10 +48,10 @@ public class DesktopConfigurator implements ConfigurationBuilder
 
     public void refresh()
     {
-        Map<String,String> newMap = new HashMap( map );
+        Map<String,String> newMap = new HashMap<>( map );
 
         // re-read server properties, then add to config
-        propertyFileConfig = new PropertyFileConfigurator( installation.getServerConfigurationsFile() );
+        ConfigurationBuilder propertyFileConfig = new PropertyFileConfigurator( installation.getServerConfigurationsFile() );
         newMap.putAll( propertyFileConfig.configuration().getParams() );
 
         this.compositeConfig.applyChanges( newMap );

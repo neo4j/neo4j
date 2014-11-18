@@ -59,7 +59,7 @@ public interface ConfigurationBuilder
         public ConfiguratorWrappingConfigurationBuilder ( Configurator configurator )
         {
             // copy the server properties to create server config
-            Map<String, String> serverProperties = new HashMap();
+            Map<String, String> serverProperties = new HashMap<>();
             Configuration oldConfiguration = configurator.configuration();
             Iterator<String> keys = oldConfiguration.getKeys();
             while( keys.hasNext() )
@@ -137,5 +137,5 @@ public interface ConfigurationBuilder
             return builder.configuration().get( ServerSettings.third_party_packages );
         }
 
-    };
+    }
 }
