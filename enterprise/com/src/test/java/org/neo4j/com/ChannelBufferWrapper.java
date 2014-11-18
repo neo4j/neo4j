@@ -19,6 +19,11 @@
  */
 package org.neo4j.com;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.ByteBufProcessor;
+import io.netty.buffer.Unpooled;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -28,18 +33,13 @@ import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.ScatteringByteChannel;
 import java.nio.charset.Charset;
 
-import org.jboss.netty.buffer.ByteBufferBackedChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBufferFactory;
-import org.jboss.netty.buffer.ChannelBufferIndexFinder;
-
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadPastEndException;
 
 /**
- * Wraps an {@link InMemoryLogChannel}, making it look like one {@link ChannelBuffer}.
+ * Wraps an {@link InMemoryLogChannel}, making it look like one {@link ByteBuf}.
  */
-public class ChannelBufferWrapper implements ChannelBuffer
+public class ChannelBufferWrapper extends ByteBuf
 {
     private final InMemoryLogChannel delegate;
 
@@ -49,21 +49,45 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public ChannelBufferFactory factory()
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public int capacity()
     {
         return delegate.capacity();
     }
 
     @Override
+    public ByteBuf capacity( int newCapacity )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int maxCapacity()
+    {
+        return delegate.capacity();
+    }
+
+    @Override
+    public ByteBufAllocator alloc()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public ByteOrder order()
     {
         return ByteOrder.BIG_ENDIAN;
+    }
+
+    @Override
+    public ByteBuf order( ByteOrder endianness )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ByteBuf unwrap()
+    {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -79,9 +103,10 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void readerIndex( int readerIndex )
+    public ByteBuf readerIndex( int readerIndex )
     {
         delegate.positionReader( readerIndex );
+        return this;
     }
 
     @Override
@@ -91,16 +116,18 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void writerIndex( int writerIndex )
+    public ByteBuf writerIndex( int writerIndex )
     {
         delegate.positionWriter( writerIndex );
+        return this;
     }
 
     @Override
-    public void setIndex( int readerIndex, int writerIndex )
+    public ByteBuf setIndex( int readerIndex, int writerIndex )
     {
         delegate.positionReader( readerIndex );
         delegate.positionWriter( writerIndex );
+        return this;
     }
 
     @Override
@@ -116,62 +143,94 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public boolean readable()
+    public int maxWritableBytes()
+    {
+        return delegate.availableBytesToWrite();
+    }
+
+    @Override
+    public boolean isReadable()
     {
         return delegate.writerPosition() > delegate.readerPosition();
     }
 
     @Override
-    public boolean writable()
+    public boolean isReadable( int size )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean isWritable()
     {
         return delegate.writerPosition() < delegate.capacity();
     }
 
     @Override
-    public void clear()
+    public boolean isWritable( int size )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ByteBuf clear()
     {
         delegate.reset();
+        return this;
     }
 
     @Override
-    public void markReaderIndex()
+    public ByteBuf markReaderIndex()
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void resetReaderIndex()
+    public ByteBuf resetReaderIndex()
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void markWriterIndex()
+    public ByteBuf markWriterIndex()
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void resetWriterIndex()
+    public ByteBuf resetWriterIndex()
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void discardReadBytes()
+    public ByteBuf discardReadBytes()
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void ensureWritableBytes( int writableBytes )
+    public ByteBuf discardSomeReadBytes()
     {
-        boolean availableBytes = delegate.availableBytesToWrite() < writableBytes;
-        if ( availableBytes )
-        {
-            throw new IndexOutOfBoundsException( "Wanted " + writableBytes + " to be available for writing, " +
-                    "but there were only " + availableBytes + " available" );
-        }
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ByteBuf ensureWritable( int minWritableBytes )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int ensureWritable( int minWritableBytes, boolean force )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean getBoolean( int index )
+    {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -343,12 +402,13 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void getBytes( int index, ChannelBuffer dst )
+    public ByteBuf getBytes( int index, ByteBuf dst )
     {
         int pos = delegate.positionReader( index );
         try
         {
             readBytes( dst );
+            return this;
         }
         finally
         {
@@ -357,12 +417,13 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void getBytes( int index, ChannelBuffer dst, int length )
+    public ByteBuf getBytes( int index, ByteBuf dst, int length )
     {
         int pos = delegate.positionReader( index );
         try
         {
             readBytes( dst, length );
+            return this;
         }
         finally
         {
@@ -371,12 +432,13 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void getBytes( int index, ChannelBuffer dst, int dstIndex, int length )
+    public ByteBuf getBytes( int index, ByteBuf dst, int dstIndex, int length )
     {
         int pos = delegate.positionReader( index );
         try
         {
             readBytes( dst, dstIndex, length );
+            return this;
         }
         finally
         {
@@ -385,12 +447,13 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void getBytes( int index, byte[] dst )
+    public ByteBuf getBytes( int index, byte[] dst )
     {
         int pos = delegate.positionReader( index );
         try
         {
             readBytes( dst );
+            return this;
         }
         finally
         {
@@ -399,12 +462,13 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void getBytes( int index, byte[] dst, int dstIndex, int length )
+    public ByteBuf getBytes( int index, byte[] dst, int dstIndex, int length )
     {
         int pos = delegate.positionReader( index );
         try
         {
             readBytes( dst, dstIndex, length );
+            return this;
         }
         finally
         {
@@ -413,12 +477,13 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void getBytes( int index, ByteBuffer dst )
+    public ByteBuf getBytes( int index, ByteBuffer dst )
     {
         int pos = delegate.positionReader( index );
         try
         {
             readBytes( dst );
+            return this;
         }
         finally
         {
@@ -427,12 +492,13 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void getBytes( int index, OutputStream out, int length ) throws IOException
+    public ByteBuf getBytes( int index, OutputStream out, int length ) throws IOException
     {
         int pos = delegate.positionReader( index );
         try
         {
             readBytes( out, length );
+            return this;
         }
         finally
         {
@@ -455,12 +521,19 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void setByte( int index, int value )
+    public ByteBuf setBoolean( int index, boolean value )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ByteBuf setByte( int index, int value )
     {
         int pos = delegate.positionWriter( index );
         try
         {
             writeByte( value );
+            return this;
         }
         finally
         {
@@ -469,12 +542,13 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void setShort( int index, int value )
+    public ByteBuf setShort( int index, int value )
     {
         int pos = delegate.positionWriter( index );
         try
         {
             writeShort( value );
+            return this;
         }
         finally
         {
@@ -483,12 +557,13 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void setMedium( int index, int value )
+    public ByteBuf setMedium( int index, int value )
     {
         int pos = delegate.positionWriter( index );
         try
         {
             writeMedium( value );
+            return this;
         }
         finally
         {
@@ -497,12 +572,13 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void setInt( int index, int value )
+    public ByteBuf setInt( int index, int value )
     {
         int pos = delegate.positionWriter( index );
         try
         {
             writeInt( value );
+            return this;
         }
         finally
         {
@@ -511,12 +587,13 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void setLong( int index, long value )
+    public ByteBuf setLong( int index, long value )
     {
         int pos = delegate.positionWriter( index );
         try
         {
             writeLong( value );
+            return this;
         }
         finally
         {
@@ -525,12 +602,13 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void setChar( int index, int value )
+    public ByteBuf setChar( int index, int value )
     {
         int pos = delegate.positionWriter( index );
         try
         {
             writeChar( value );
+            return this;
         }
         finally
         {
@@ -539,12 +617,13 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void setFloat( int index, float value )
+    public ByteBuf setFloat( int index, float value )
     {
         int pos = delegate.positionWriter( index );
         try
         {
             writeFloat( value );
+            return this;
         }
         finally
         {
@@ -553,12 +632,13 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void setDouble( int index, double value )
+    public ByteBuf setDouble( int index, double value )
     {
         int pos = delegate.positionWriter( index );
         try
         {
             writeDouble( value );
+            return this;
         }
         finally
         {
@@ -567,12 +647,13 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void setBytes( int index, ChannelBuffer src )
+    public ByteBuf setBytes( int index, ByteBuf src )
     {
         int pos = delegate.positionWriter( index );
         try
         {
             writeBytes( src );
+            return this;
         }
         finally
         {
@@ -581,12 +662,13 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void setBytes( int index, ChannelBuffer src, int length )
+    public ByteBuf setBytes( int index, ByteBuf src, int length )
     {
         int pos = delegate.positionWriter( index );
         try
         {
             writeBytes( src, length );
+            return this;
         }
         finally
         {
@@ -595,12 +677,13 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void setBytes( int index, ChannelBuffer src, int srcIndex, int length )
+    public ByteBuf setBytes( int index, ByteBuf src, int srcIndex, int length )
     {
         int pos = delegate.positionWriter( index );
         try
         {
             writeBytes( src, srcIndex, length );
+            return this;
         }
         finally
         {
@@ -609,12 +692,13 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void setBytes( int index, byte[] src )
+    public ByteBuf setBytes( int index, byte[] src )
     {
         int pos = delegate.positionWriter( index );
         try
         {
             writeBytes( src );
+            return this;
         }
         finally
         {
@@ -623,12 +707,13 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void setBytes( int index, byte[] src, int srcIndex, int length )
+    public ByteBuf setBytes( int index, byte[] src, int srcIndex, int length )
     {
         int pos = delegate.positionWriter( index );
         try
         {
             writeBytes( src, srcIndex, length );
+            return this;
         }
         finally
         {
@@ -637,12 +722,13 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void setBytes( int index, ByteBuffer src )
+    public ByteBuf setBytes( int index, ByteBuffer src )
     {
         int pos = delegate.positionWriter( index );
         try
         {
             writeBytes( src );
+            return this;
         }
         finally
         {
@@ -679,7 +765,7 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void setZero( int index, int length )
+    public ByteBuf setZero( int index, int length )
     {
         int pos = delegate.positionWriter( index );
         try
@@ -688,11 +774,18 @@ public class ChannelBufferWrapper implements ChannelBuffer
             {
                 writeByte( 0 );
             }
+            return this;
         }
         finally
         {
             delegate.positionWriter( pos );
         }
+    }
+
+    @Override
+    public boolean readBoolean()
+    {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -854,13 +947,13 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public ChannelBuffer readBytes( int length )
+    public ByteBuf readBytes( int length )
     {
         try
         {
             byte[] array = new byte[length];
             delegate.get( array, length );
-            return new ByteBufferBackedChannelBuffer( ByteBuffer.wrap( array ) );
+            return Unpooled.wrappedBuffer( array );
         }
         catch ( ReadPastEndException e )
         {
@@ -869,37 +962,27 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public ChannelBuffer readBytes( ChannelBufferIndexFinder indexFinder )
+    public ByteBuf readSlice( int length )
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public ChannelBuffer readSlice( int length )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public ChannelBuffer readSlice( ChannelBufferIndexFinder indexFinder )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void readBytes( ChannelBuffer dst )
+    public ByteBuf readBytes( ByteBuf dst )
     {
         readBytes( dst, dst.writableBytes() );
+        return this;
     }
 
     @Override
-    public void readBytes( ChannelBuffer dst, int length )
+    public ByteBuf readBytes( ByteBuf dst, int length )
     {
         try
         {
             byte[] array = new byte[length];
             delegate.get( array, length );
             dst.writeBytes( array );
+            return this;
         }
         catch ( ReadPastEndException e )
         {
@@ -908,18 +991,20 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void readBytes( ChannelBuffer dst, int dstIndex, int length )
+    public ByteBuf readBytes( ByteBuf dst, int dstIndex, int length )
     {
         dst.readerIndex( dstIndex );
         readBytes( dst, length );
+        return this;
     }
 
     @Override
-    public void readBytes( byte[] dst )
+    public ByteBuf readBytes( byte[] dst )
     {
         try
         {
             delegate.get( dst, dst.length );
+            return this;
         }
         catch ( ReadPastEndException e )
         {
@@ -928,13 +1013,14 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void readBytes( byte[] dst, int dstIndex, int length )
+    public ByteBuf readBytes( byte[] dst, int dstIndex, int length )
     {
         try
         {
             byte[] array = new byte[length];
             delegate.get( array, length );
             System.arraycopy( array, 0, dst, dstIndex, length );
+            return this;
         }
         catch ( ReadPastEndException e )
         {
@@ -943,13 +1029,14 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void readBytes( ByteBuffer dst )
+    public ByteBuf readBytes( ByteBuffer dst )
     {
         byte[] array = new byte[dst.remaining()];
         try
         {
             delegate.get( array, array.length );
             dst.put( array );
+            return this;
         }
         catch ( ReadPastEndException e )
         {
@@ -958,13 +1045,14 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void readBytes( OutputStream out, int length ) throws IOException
+    public ByteBuf readBytes( OutputStream out, int length ) throws IOException
     {
         byte[] array = new byte[length];
         try
         {
             delegate.get( array, length );
             out.write( array );
+            return this;
         }
         catch ( ReadPastEndException e )
         {
@@ -988,23 +1076,25 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void skipBytes( int length )
+    public ByteBuf skipBytes( int length )
     {
         delegate.positionReader( delegate.readerPosition()+length );
+        return this;
     }
 
     @Override
-    public int skipBytes( ChannelBufferIndexFinder indexFinder )
+    public ByteBuf writeBoolean( boolean value )
     {
-        throw new UnsupportedOperationException();
+        return null;
     }
 
     @Override
-    public void writeByte( int value )
+    public ByteBuf writeByte( int value )
     {
         try
         {
             delegate.put( (byte)value );
+            return this;
         }
         catch ( IOException e )
         {
@@ -1018,11 +1108,12 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void writeShort( int value )
+    public ByteBuf writeShort( int value )
     {
         try
         {
             delegate.putShort( (short)value );
+            return this;
         }
         catch ( IOException e )
         {
@@ -1031,12 +1122,13 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void writeMedium( int value )
+    public ByteBuf writeMedium( int value )
     {
         try
         {
             delegate.putShort( (short)value );
             delegate.put( (byte)(value >>> 16) );
+            return this;
         }
         catch ( IOException e )
         {
@@ -1045,11 +1137,12 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void writeInt( int value )
+    public ByteBuf writeInt( int value )
     {
         try
         {
             delegate.putInt( value );
+            return this;
         }
         catch ( IOException e )
         {
@@ -1058,11 +1151,12 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void writeLong( long value )
+    public ByteBuf writeLong( long value )
     {
         try
         {
             delegate.putLong( value );
+            return this;
         }
         catch ( IOException e )
         {
@@ -1071,12 +1165,13 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void writeChar( int value )
+    public ByteBuf writeChar( int value )
     {
         try
         {
             delegate.put( (byte)value );
             delegate.put( (byte)(value >>> 8) );
+            return this;
         }
         catch ( IOException e )
         {
@@ -1085,11 +1180,12 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void writeFloat( float value )
+    public ByteBuf writeFloat( float value )
     {
         try
         {
             delegate.putFloat( value );
+            return this;
         }
         catch ( IOException e )
         {
@@ -1098,11 +1194,12 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void writeDouble( double value )
+    public ByteBuf writeDouble( double value )
     {
         try
         {
             delegate.putDouble( value );
+            return this;
         }
         catch ( IOException e )
         {
@@ -1111,19 +1208,21 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void writeBytes( ChannelBuffer src )
+    public ByteBuf writeBytes( ByteBuf src )
     {
         writeBytes( src, src.readableBytes() );
+        return this;
     }
 
     @Override
-    public void writeBytes( ChannelBuffer src, int length )
+    public ByteBuf writeBytes( ByteBuf src, int length )
     {
         try
         {
             byte[] array = new byte[length];
             src.readBytes( array );
             delegate.put( array, array.length );
+            return this;
         }
         catch ( IOException e )
         {
@@ -1132,18 +1231,20 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void writeBytes( ChannelBuffer src, int srcIndex, int length )
+    public ByteBuf writeBytes( ByteBuf src, int srcIndex, int length )
     {
         src.readerIndex( srcIndex );
         writeBytes( src, length );
+        return this;
     }
 
     @Override
-    public void writeBytes( byte[] src )
+    public ByteBuf writeBytes( byte[] src )
     {
         try
         {
             delegate.put( src, src.length );
+            return this;
         }
         catch ( IOException e )
         {
@@ -1152,7 +1253,7 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void writeBytes( byte[] src, int srcIndex, int length )
+    public ByteBuf writeBytes( byte[] src, int srcIndex, int length )
     {
         if ( srcIndex > 0 )
         {
@@ -1161,14 +1262,16 @@ public class ChannelBufferWrapper implements ChannelBuffer
             src = array;
         }
         writeBytes( src );
+        return this;
     }
 
     @Override
-    public void writeBytes( ByteBuffer src )
+    public ByteBuf writeBytes( ByteBuffer src )
     {
         byte[] array = new byte[src.remaining()];
         src.get( array );
         writeBytes( array );
+        return this;
     }
 
     @Override
@@ -1190,12 +1293,13 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public void writeZero( int length )
+    public ByteBuf writeZero( int length )
     {
         for ( int i = 0; i < length; i++ )
         {
             writeByte( 0 );
         }
+        return this;
     }
 
     @Override
@@ -1225,12 +1329,6 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public int indexOf( int fromIndex, int toIndex, ChannelBufferIndexFinder indexFinder )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public int bytesBefore( byte value )
     {
         int index = indexOf( readerIndex(), writerIndex(), value );
@@ -1238,21 +1336,9 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public int bytesBefore( ChannelBufferIndexFinder indexFinder )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public int bytesBefore( int length, byte value )
     {
         return bytesBefore( readerIndex(), length, value );
-    }
-
-    @Override
-    public int bytesBefore( int length, ChannelBufferIndexFinder indexFinder )
-    {
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -1263,61 +1349,91 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public int bytesBefore( int index, int length, ChannelBufferIndexFinder indexFinder )
+    public int forEachByte( ByteBufProcessor processor )
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public ChannelBuffer copy()
+    public int forEachByte( int index, int length, ByteBufProcessor processor )
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public ChannelBuffer copy( int index, int length )
+    public int forEachByteDesc( ByteBufProcessor processor )
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public ChannelBuffer slice()
+    public int forEachByteDesc( int index, int length, ByteBufProcessor processor )
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public ChannelBuffer slice( int index, int length )
+    public ByteBuf copy()
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public ChannelBuffer duplicate()
+    public ByteBuf copy( int index, int length )
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public ByteBuffer toByteBuffer()
+    public ByteBuf slice()
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public ByteBuffer toByteBuffer( int index, int length )
+    public ByteBuf slice( int index, int length )
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public ByteBuffer[] toByteBuffers()
+    public ByteBuf duplicate()
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public ByteBuffer[] toByteBuffers( int index, int length )
+    public int nioBufferCount()
+    {
+        return 0;
+    }
+
+    @Override
+    public ByteBuffer nioBuffer()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ByteBuffer nioBuffer( int index, int length )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ByteBuffer internalNioBuffer( int index, int length )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ByteBuffer[] nioBuffers()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ByteBuffer[] nioBuffers( int index, int length )
     {
         throw new UnsupportedOperationException();
     }
@@ -1341,6 +1457,18 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
+    public boolean hasMemoryAddress()
+    {
+        return false;
+    }
+
+    @Override
+    public long memoryAddress()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public String toString( Charset charset )
     {
         return toString();
@@ -1353,32 +1481,74 @@ public class ChannelBufferWrapper implements ChannelBuffer
     }
 
     @Override
-    public String toString( String charsetName )
-    {
-        return toString();
-    }
-
-    @Override
-    public String toString( String charsetName, ChannelBufferIndexFinder terminatorFinder )
-    {
-        return toString();
-    }
-
-    @Override
-    public String toString( int index, int length, String charsetName )
-    {
-        return toString();
-    }
-
-    @Override
-    public String toString( int index, int length, String charsetName, ChannelBufferIndexFinder terminatorFinder )
-    {
-        return toString();
-    }
-
-    @Override
-    public int compareTo( ChannelBuffer buffer )
+    public int compareTo( ByteBuf buffer )
     {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ByteBuf retain( int increment )
+    {
+        throw new UnsupportedOperationException( "Refcounting not supported by this buffer." );
+    }
+
+    @Override
+    public boolean release()
+    {
+        throw new UnsupportedOperationException( "Refcounting not supported by this buffer." );
+    }
+
+    @Override
+    public boolean release( int decrement )
+    {
+        throw new UnsupportedOperationException( "Refcounting not supported by this buffer." );
+    }
+
+    @Override
+    public int refCnt()
+    {
+        throw new UnsupportedOperationException( "Refcounting not supported by this buffer." );
+    }
+
+    @Override
+    public ByteBuf retain()
+    {
+        throw new UnsupportedOperationException( "Refcounting not supported by this buffer." );
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        ChannelBufferWrapper that = (ChannelBufferWrapper) o;
+
+        if ( delegate != null ? !delegate.equals( that.delegate ) : that.delegate != null )
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return delegate != null ? delegate.hashCode() : 0;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "ByteBufWrapper{" +
+               "delegate=" + delegate +
+               '}';
     }
 }

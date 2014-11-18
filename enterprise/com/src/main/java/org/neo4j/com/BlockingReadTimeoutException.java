@@ -19,12 +19,6 @@
  */
 package org.neo4j.com;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-
-import io.netty.buffer.ByteBuf;
-
-public interface Deserializer<T>
+public class BlockingReadTimeoutException extends Exception
 {
-    T read( ByteBuf buffer, ByteBuffer temporaryBuffer ) throws IOException;
 }

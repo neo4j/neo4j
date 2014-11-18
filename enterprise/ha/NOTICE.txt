@@ -27,6 +27,7 @@ Third-party licenses
 
 Apache Software License, Version 2.0
   Lucene Core
+  Netty/All-in-One
   The Netty Project
 
 MIT License

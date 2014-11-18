@@ -19,10 +19,10 @@
  */
 package org.neo4j.com;
 
-import java.io.IOException;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.channel.Channel;
+import java.io.IOException;
 
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.HostnamePort;
@@ -123,7 +123,7 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
         {
             @Override
             public Response<Integer> call( MadeUpCommunicationInterface master,
-                                           RequestContext context, ChannelBuffer input, ChannelBuffer target )
+                                           RequestContext context, ByteBuf input, ByteBuf target )
             {
                 int value1 = input.readInt();
                 int value2 = input.readInt();
@@ -135,7 +135,7 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
         {
             @Override
             public Response<Void> call( MadeUpCommunicationInterface master,
-                                        RequestContext context, ChannelBuffer input, ChannelBuffer target )
+                                        RequestContext context, ByteBuf input, ByteBuf target )
             {
                 int dataSize = input.readInt();
                 return master.fetchDataStream( new ToChannelBufferWriter( target ), dataSize );
@@ -146,7 +146,7 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
         {
             @Override
             public Response<Void> call( MadeUpCommunicationInterface master,
-                                        RequestContext context, ChannelBuffer input, ChannelBuffer target )
+                                        RequestContext context, ByteBuf input, ByteBuf target )
             {
                 BlockLogReader reader = new BlockLogReader( input );
                 try
@@ -177,7 +177,7 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
         {
             @Override
             public Response<Integer> call( MadeUpCommunicationInterface master,
-                                           RequestContext context, ChannelBuffer input, ChannelBuffer target )
+                                           RequestContext context, ByteBuf input, ByteBuf target )
             {
                 return master.throwException( readString( input ) );
             }
@@ -187,7 +187,7 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
         {
             @Override
             public Response<Integer> call( MadeUpCommunicationInterface master,
-                RequestContext context, ChannelBuffer input, ChannelBuffer target )
+                RequestContext context, ByteBuf input, ByteBuf target )
             {
                 throw new ThisShouldNotHappenError( "Jake", "Test should not reach this far, " +
                     "it should fail while reading the request context." );
@@ -198,7 +198,7 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
         {
             @Override
             public Response<Integer> call( MadeUpCommunicationInterface master, RequestContext context,
-                    ChannelBuffer input, ChannelBuffer target )
+                    ByteBuf input, ByteBuf target )
             {
                 return master.streamBackTransactions( input.readInt(), input.readInt() );
             }
@@ -208,7 +208,7 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
         {
             @Override
             public Response<Integer> call( MadeUpCommunicationInterface master, RequestContext context,
-                    ChannelBuffer input, ChannelBuffer target )
+                    ByteBuf input, ByteBuf target )
             {
                 return master.informAboutTransactionObligations( input.readInt(), input.readLong() );
             }

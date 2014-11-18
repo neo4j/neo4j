@@ -19,15 +19,15 @@
  */
 package org.neo4j.com;
 
+import io.netty.buffer.ByteBuf;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-
 /**
  * The counterpart of {@link BlockLogBuffer}, sits on the receiving end and
- * reads chunks of log. It is provided with a {@link ChannelBuffer} which feeds
+ * reads chunks of log. It is provided with a {@link ByteBuf} which feeds
  * a series of chunks formatted as follows: <li>If the first byte is 0, then it
  * is 256 bytes in total size (including the first byte) AND there are more
  * coming.</li> <li>If the first byte is not 0, then its value cast as an
@@ -37,12 +37,12 @@ import org.jboss.netty.buffer.ChannelBuffer;
  */
 public class BlockLogReader implements ReadableByteChannel
 {
-    private final ChannelBuffer source;
+    private final ByteBuf source;
     private final byte[] byteArray = new byte[BlockLogBuffer.MAX_SIZE];
     private final ByteBuffer byteBuffer = ByteBuffer.wrap( byteArray );
     private boolean moreBlocks;
 
-    public BlockLogReader( ChannelBuffer source )
+    public BlockLogReader( ByteBuf source )
     {
         this.source = source;
         readNextBlock();

@@ -19,16 +19,16 @@
  */
 package org.neo4j.backup;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -52,7 +52,6 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.subprocess.SubProcess;
 
 import static java.lang.Integer.parseInt;
-
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -60,7 +59,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
 
@@ -325,7 +323,6 @@ public class TestBackup
             OnlineBackup backup = OnlineBackup.from( "127.0.0.1" );
             backup.full( backupPath.getPath() );
             assertTrue( "Should be consistent", backup.isConsistent() );
-            assertTrue( backup.isConsistent() );
         }
         finally
         {

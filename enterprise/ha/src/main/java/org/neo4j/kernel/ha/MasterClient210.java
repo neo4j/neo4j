@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.ha;
 
+import io.netty.buffer.ByteBuf;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
-
-import org.jboss.netty.buffer.ChannelBuffer;
 
 import org.neo4j.com.Client;
 import org.neo4j.com.Deserializer;
@@ -129,14 +129,14 @@ public class MasterClient210 extends Client<Master> implements MasterClient
         return sendRequest( HaRequestType210.ALLOCATE_IDS, context, new Serializer()
                 {
                     @Override
-                    public void write( ChannelBuffer buffer ) throws IOException
+                    public void write( ByteBuf buffer ) throws IOException
                     {
                         buffer.writeByte( idType.ordinal() );
                     }
                 }, new Deserializer<IdAllocation>()
                 {
                     @Override
-                    public IdAllocation read( ChannelBuffer buffer, ByteBuffer temporaryBuffer )
+                    public IdAllocation read( ByteBuf buffer, ByteBuffer temporaryBuffer )
                     {
                         return readIdAllocation( buffer );
                     }
@@ -150,7 +150,7 @@ public class MasterClient210 extends Client<Master> implements MasterClient
         return sendRequest( HaRequestType210.CREATE_RELATIONSHIP_TYPE, context, new Serializer()
         {
             @Override
-            public void write( ChannelBuffer buffer ) throws IOException
+            public void write( ByteBuf buffer ) throws IOException
             {
                 writeString( buffer, name );
             }
@@ -158,7 +158,7 @@ public class MasterClient210 extends Client<Master> implements MasterClient
         {
             @Override
             @SuppressWarnings("boxing")
-            public Integer read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
+            public Integer read( ByteBuf buffer, ByteBuffer temporaryBuffer ) throws IOException
             {
                 return buffer.readInt();
             }
@@ -171,7 +171,7 @@ public class MasterClient210 extends Client<Master> implements MasterClient
         return sendRequest( HaRequestType210.CREATE_PROPERTY_KEY, context, new Serializer()
         {
             @Override
-            public void write( ChannelBuffer buffer ) throws IOException
+            public void write( ByteBuf buffer ) throws IOException
             {
                 writeString( buffer, name );
             }
@@ -179,7 +179,7 @@ public class MasterClient210 extends Client<Master> implements MasterClient
         {
             @Override
             @SuppressWarnings("boxing")
-            public Integer read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
+            public Integer read( ByteBuf buffer, ByteBuffer temporaryBuffer ) throws IOException
             {
                 return buffer.readInt();
             }
@@ -192,7 +192,7 @@ public class MasterClient210 extends Client<Master> implements MasterClient
         return sendRequest( HaRequestType210.CREATE_LABEL, context, new Serializer()
                 {
                     @Override
-                    public void write( ChannelBuffer buffer ) throws IOException
+                    public void write( ByteBuf buffer ) throws IOException
                     {
                 writeString( buffer, name );
             }
@@ -200,7 +200,7 @@ public class MasterClient210 extends Client<Master> implements MasterClient
         {
             @Override
             @SuppressWarnings("boxing")
-            public Integer read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
+            public Integer read( ByteBuf buffer, ByteBuffer temporaryBuffer ) throws IOException
             {
                 return buffer.readInt();
             }
@@ -237,7 +237,7 @@ public class MasterClient210 extends Client<Master> implements MasterClient
                 {
                     @Override
                     @SuppressWarnings("boxing")
-                    public Long read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
+                    public Long read( ByteBuf buffer, ByteBuffer temporaryBuffer ) throws IOException
                     {
                         return buffer.readLong();
                     }
@@ -251,7 +251,7 @@ public class MasterClient210 extends Client<Master> implements MasterClient
         return sendRequest( HaRequestType210.END_LOCK_SESSION, context, new Serializer()
         {
             @Override
-            public void write( ChannelBuffer buffer ) throws IOException
+            public void write( ByteBuf buffer ) throws IOException
             {
                 buffer.writeByte( success ? 1 : 0 );
             }
@@ -282,14 +282,14 @@ public class MasterClient210 extends Client<Master> implements MasterClient
         return sendRequest( HaRequestType210.HANDSHAKE, RequestContext.EMPTY, new Serializer()
                 {
                     @Override
-                    public void write( ChannelBuffer buffer ) throws IOException
+                    public void write( ByteBuf buffer ) throws IOException
                     {
                         buffer.writeLong( txId );
                     }
                 }, new Deserializer<HandshakeResult>()
                 {
                     @Override
-                    public HandshakeResult read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws
+                    public HandshakeResult read( ByteBuf buffer, ByteBuffer temporaryBuffer ) throws
                             IOException
                     {
                         return new HandshakeResult( buffer.readInt(), buffer.readLong(), buffer.readLong() );
@@ -318,7 +318,7 @@ public class MasterClient210 extends Client<Master> implements MasterClient
         return PROTOCOL_VERSION;
     }
 
-    protected static IdAllocation readIdAllocation( ChannelBuffer buffer )
+    protected static IdAllocation readIdAllocation( ByteBuf buffer )
     {
         int numberOfDefragIds = buffer.readInt();
         long[] defragIds = new long[numberOfDefragIds];
@@ -334,6 +334,18 @@ public class MasterClient210 extends Client<Master> implements MasterClient
                 highId, defragCount );
     }
 
+    @Override
+    public void init() throws Throwable
+    {
+
+    }
+
+    @Override
+    public void shutdown() throws Throwable
+    {
+
+    }
+
     protected static class AcquireLockSerializer implements Serializer
     {
         private final Locks.ResourceType type;
@@ -346,7 +358,7 @@ public class MasterClient210 extends Client<Master> implements MasterClient
         }
 
         @Override
-        public void write( ChannelBuffer buffer ) throws IOException
+        public void write( ByteBuf buffer ) throws IOException
         {
             buffer.writeInt( type.typeId() );
             buffer.writeInt( resourceIds.length );

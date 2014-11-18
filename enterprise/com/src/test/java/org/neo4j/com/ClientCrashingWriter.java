@@ -48,7 +48,7 @@ public class ClientCrashingWriter implements MadeUpWriter
                 if ( size == -1 ) break;
                 if ( (totalSize += size) >= crashAtSize ) client.stop();
             }
-            catch ( IOException e )
+            catch ( IOException | InterruptedException e )
             {
                 throw new ComException( e );
             }

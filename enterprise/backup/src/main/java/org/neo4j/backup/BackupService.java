@@ -158,7 +158,14 @@ class BackupService
                 @Override
                 public void done()
                 {
-                    client.stop();
+                    try
+                    {
+                        client.stop();
+                    }
+                    catch ( InterruptedException e )
+                    {
+                        throw new RuntimeException( "Failed to stop backup client.", e );
+                    }
                 }
             }, CancellationRequest.NEVER_CANCELLED );
 

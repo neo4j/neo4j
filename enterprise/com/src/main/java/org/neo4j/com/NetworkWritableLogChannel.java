@@ -19,18 +19,18 @@
  */
 package org.neo4j.com;
 
-import java.io.IOException;
+import io.netty.buffer.ByteBuf;
 
-import org.jboss.netty.buffer.ChannelBuffer;
+import java.io.IOException;
 
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
 
 public class NetworkWritableLogChannel implements WritableLogChannel
 {
-    private final ChannelBuffer delegate;
+    private final ByteBuf delegate;
 
-    public NetworkWritableLogChannel( ChannelBuffer delegate )
+    public NetworkWritableLogChannel( ByteBuf delegate )
     {
         this.delegate = delegate;
     }
