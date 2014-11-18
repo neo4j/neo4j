@@ -43,6 +43,9 @@ import org.neo4j.server.web.WebServer;
 
 import static org.neo4j.server.JAXRSHelper.listFrom;
 
+/**
+ * Mounts the database REST API.
+ */
 public class RESTApiModule implements ServerModule
 {
     private PluginManager plugins;
@@ -73,8 +76,6 @@ public class RESTApiModule implements ServerModule
             loadPlugins();
 
             setupRequestTimeLimit();
-
-            log.log( "Mounted REST API at [%s]", restApiUri.toString() );
         }
         catch ( URISyntaxException e )
         {

@@ -21,6 +21,22 @@ org.neo4j.server.webserver.port=7474
 
 If you need to enable access from external hosts, configure the Web server in the _conf/neo4j-server.properties_ by setting the property +org.neo4j.server.webserver.address=0.0.0.0+ to enable access from any host.
 
+== Authorization ==
+
+Neo4j allows you to enable authorization to access the REST API.
+This will disallow anyone without a valid authorization token access to the database.
+
+The authorization data is stored under 'data/dbms/authorization'.
+This file can be copied over to other neo4j instances to ensure they share the same username/password and authorization token.
+
+Please refer to <<rest-api-security>> for details on this API.
+
+[source]
+----
+# Enable authorization
+dbms.security.authorization_enabled=true
+----
+
 == Arbitrary code execution ==
 
 By default, the Neo4j Server comes with some places where arbitrary code code execution can happen. These are the <<rest-api-traverse>> REST endpoints.
@@ -63,7 +79,7 @@ org.neo4j.server.webserver.https.port=443
 
 == Server Authorization Rules ==
 
-Administrators may require more fine-grained security policies in addition to IP-level restrictions on the Web server.
+Administrators may require more fine-grained security policies in addition to the basic authorization and/or IP-level restrictions on the Web server.
 Neo4j server supports administrators in allowing or disallowing access the specific aspects of the database based on credentials that users or applications provide.
 
 To facilitate domain-specific authorization policies in Neo4j Server, security rules can be implemented and registered with the server.

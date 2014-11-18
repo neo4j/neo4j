@@ -60,7 +60,7 @@ public class ThirdPartyJAXRSModule implements ServerModule
             List<String> packageNames = packagesFor( tpp );
             Collection<Injectable<?>> injectables = extensionInitializer.initializePackages( packageNames );
             webServer.addJAXRSPackages( packageNames, tpp.getMountPoint(), injectables );
-            log.log( "Mounted third-party JAX-RS package [%s] at [%s]", tpp.getPackageName(), tpp.getMountPoint() );
+            log.log( "Mounted unmanaged extension [%s] at [%s]", tpp.getPackageName(), tpp.getMountPoint() );
         }
     }
 

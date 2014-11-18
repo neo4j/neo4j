@@ -4,6 +4,7 @@ o Expose node degree in REST API
 o Changed the DELETE verb on a transaction to also mark it as terminated even if there
   are concurrent requests that use the transaction. Consult community/kernel/CHANGES.txt and
   the manual for more details on the new transaction termination API.
+o Introduce optional support for authentication and authorization using Authorization Tokens
 
 2.1.5
 -----

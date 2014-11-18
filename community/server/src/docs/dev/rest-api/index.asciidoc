@@ -6,6 +6,8 @@ include::introduction.asciidoc[]
 
 include::transactional.asciidoc[]
 
+include::security.asciidoc[]
+
 include::service-root.asciidoc[]
 
 include::streaming.asciidoc[]

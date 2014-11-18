@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.web;
 
+import java.io.File;
 import java.net.URI;
 
 import org.neo4j.graphdb.config.Setting;
@@ -27,6 +28,7 @@ import static org.neo4j.helpers.Settings.BOOLEAN;
 import static org.neo4j.helpers.Settings.DURATION;
 import static org.neo4j.helpers.Settings.FALSE;
 import static org.neo4j.helpers.Settings.NORMALIZED_RELATIVE_URI;
+import static org.neo4j.helpers.Settings.PATH;
 import static org.neo4j.helpers.Settings.TRUE;
 import static org.neo4j.helpers.Settings.setting;
 
@@ -71,5 +73,7 @@ public class ServerInternalSettings
             FALSE );
 
     public static final Setting<Long> startup_timeout = setting( "org.neo4j.server.startup_timeout", DURATION, "120s" );
+
+    public static final Setting<File> authorization_store = setting("dbms.security.authorization_location", PATH, "data/dbms/authorization");
 
 }

@@ -64,8 +64,8 @@ import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.plugins.Injectable;
-import org.neo4j.server.security.KeyStoreInformation;
-import org.neo4j.server.security.SslSocketConnectorFactory;
+import org.neo4j.server.security.ssl.KeyStoreInformation;
+import org.neo4j.server.security.ssl.SslSocketConnectorFactory;
 
 import static java.lang.String.format;
 

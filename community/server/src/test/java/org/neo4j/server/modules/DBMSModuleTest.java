@@ -24,19 +24,19 @@ import java.util.List;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.kernel.logging.SystemOutLogging;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.CommunityNeoServer;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.test.Mute;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyCollection;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class DiscoveryModuleTest
+public class DBMSModuleTest
 {
     @Rule
     public Mute mute = Mute.mute( Mute.System.err, Mute.System.out );
@@ -51,7 +51,7 @@ public class DiscoveryModuleTest
         when( neoServer.baseUri() ).thenReturn( new URI( "http://localhost:7575" ) );
         when( neoServer.getWebServer() ).thenReturn( webServer );
 
-        DiscoveryModule module = new DiscoveryModule(webServer, new SystemOutLogging() );
+        DBMSModule module = new DBMSModule(webServer, null, new Config(stringMap( ServerSettings.authorization_enabled.name(), "false" )) );
 
         module.start();
 
