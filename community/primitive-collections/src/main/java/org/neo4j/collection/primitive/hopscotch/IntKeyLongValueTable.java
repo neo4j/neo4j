@@ -19,29 +19,45 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
-public class LongKeyTable<VALUE>
-        extends IntArrayBasedKeyTable<VALUE>
+public class IntKeyLongValueTable extends IntArrayBasedKeyTable<long[]>
 {
-    public LongKeyTable( int capacity, VALUE singleValue )
+    public static final long NULL = -1L;
+
+    public IntKeyLongValueTable( int capacity )
     {
-        super( capacity, 3, 32, singleValue );
+        super( capacity, 3 + 1, 32, new long[] { NULL } );
     }
 
     @Override
     public long key( int index )
     {
-        return getLong( index( index ) );
+        return table[index( index )];
     }
 
     @Override
-    protected void internalPut( int actualIndex, long key, VALUE value )
+    protected void internalPut( int actualIndex, long key, long[] valueHolder )
     {
-        putLong( actualIndex, key );
+        table[actualIndex] = (int)key; // we know that key is an int
+        putLong( actualIndex+1, valueHolder[0] );
     }
 
     @Override
-    protected LongKeyTable<VALUE> newInstance( int newCapacity )
+    public long[] value( int index )
     {
-        return new LongKeyTable<>( newCapacity, singleValue );
+        singleValue[0] = getLong( index( index )+1 );
+        return singleValue;
+    }
+
+    @Override
+    public long[] putValue( int index, long[] value )
+    {
+        singleValue[0] = putLong( index( index )+1, value[0] );
+        return singleValue;
+    }
+
+    @Override
+    protected Table<long[]> newInstance( int newCapacity )
+    {
+        return new IntKeyLongValueTable( newCapacity );
     }
 }

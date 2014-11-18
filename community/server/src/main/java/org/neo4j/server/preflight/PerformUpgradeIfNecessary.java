@@ -34,7 +34,6 @@ import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.web.ServerInternalSettings;
 
 import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;

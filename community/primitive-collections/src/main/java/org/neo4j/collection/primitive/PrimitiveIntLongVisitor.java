@@ -17,15 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.core;
+package org.neo4j.collection.primitive;
 
-/**
- * Reservation for a node to come later. For now just use this as an instanceof check, nothing else required.
- */
-public class NodeImplReservation extends NodeImpl
+public interface PrimitiveIntLongVisitor
 {
-    public NodeImplReservation( long id )
-    {
-        super( id );
-    }
+    void visited( int key, long value );
 }

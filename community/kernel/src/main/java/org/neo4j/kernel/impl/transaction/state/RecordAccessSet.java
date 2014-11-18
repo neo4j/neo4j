@@ -50,5 +50,7 @@ public interface RecordAccessSet
 
     RecordAccess<Integer, RelationshipTypeTokenRecord, Void> getRelationshipTypeTokenChanges();
 
+    boolean hasChanges();
+
     void close();
 }

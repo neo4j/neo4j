@@ -19,88 +19,52 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
-import static java.util.Arrays.fill;
-
-public class LongKeyIntValueTable extends LongKeyTable<int[]>
+public class LongKeyIntValueTable extends IntArrayBasedKeyTable<int[]>
 {
     public static final int NULL = -1;
-    private final int[] transport;
-    private int[] values;
 
     public LongKeyIntValueTable( int capacity )
     {
-        super( capacity, new int[] { NULL } );
-        this.transport = new int[1];
+        super( capacity, 3 + 1, 32, new int[] { NULL } );
     }
 
     @Override
-    protected void initializeTable()
+    public long key( int index )
     {
-        super.initializeTable();
-        values = new int[capacity];
+        return getLong( index( index ) );
     }
 
     @Override
-    protected void clearTable()
+    protected void internalPut( int actualIndex, long key, int[] value )
     {
-        super.clearTable();
-        fill( values, NULL );
-    }
-
-    @Override
-    public int[] value( int index )
-    {
-        int value = values[index];
-        return value == NULL ? null : pack( value );
-    }
-
-    @Override
-    public void put( int index, long key, int[] value )
-    {
-        values[index] = unpack( value );
-        super.put( index, key, value );
+        putLong( actualIndex, key );
+        table[actualIndex+2] = value[0];
     }
 
     @Override
     public int[] putValue( int index, int[] value )
     {
-        int previous = values[index];
-        values[index] = unpack( value );
-        super.putValue( index, value );
+        int actualIndex = index( index )+2;
+        int previous = table[actualIndex];
+        table[actualIndex] = value[0];
         return pack( previous );
     }
 
     @Override
-    public int[] remove( int index )
+    public int[] value( int index )
     {
-        int[] result = pack( values[index] );
-        values[index] = NULL;
-        super.remove( index );
-        return result;
+        return pack( table[index( index )+2] );
     }
 
     @Override
-    public long move( int fromIndex, int toIndex )
-    {
-        values[toIndex] = values[fromIndex];
-        values[fromIndex] = NULL;
-        return super.move( fromIndex, toIndex );
-    }
-
-    @Override
-    protected LongKeyTable<int[]> newInstance( int newCapacity )
+    protected Table<int[]> newInstance( int newCapacity )
     {
         return new LongKeyIntValueTable( newCapacity );
     }
 
-    private int unpack( int[] value )
-    {
-        return value[0];
-    }
-
     private int[] pack( int value )
     {
-        transport[0] = value;
-        return transport;
+        singleValue[0] = value;
+        return singleValue;
     }
 }

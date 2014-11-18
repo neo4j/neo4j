@@ -39,12 +39,6 @@ public class IntKeyTable<VALUE> extends IntArrayBasedKeyTable<VALUE>
     }
 
     @Override
-    protected void internalRemove( int actualIndex )
-    {
-        table[actualIndex] = -1;
-    }
-
-    @Override
     protected IntArrayBasedKeyTable<VALUE> newInstance( int newCapacity )
     {
         return new IntKeyTable<>( newCapacity, singleValue );

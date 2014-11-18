@@ -43,8 +43,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersions;
 import org.neo4j.kernel.impl.transaction.state.PropertyDeleter;
 import org.neo4j.kernel.impl.transaction.state.PropertyTraverser;
+import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.transaction.state.RecordChangeSet;
-import org.neo4j.kernel.impl.transaction.state.RecordChanges;
 import org.neo4j.kernel.impl.transaction.state.RelationshipCreator;
 import org.neo4j.kernel.impl.transaction.state.RelationshipDeleter;
 import org.neo4j.kernel.impl.transaction.state.RelationshipGroupGetter;
@@ -147,22 +147,21 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>,L
 
     private void translateRecordChangeSetToEntries( List<LogEntry> result, List<LogEntryCommand> commands )
     {
-        for ( RecordChanges.RecordChange<Long,NodeRecord,Void> nodeChange : recordChangeSet.getNodeRecords().changes() )
+        for ( RecordProxy<Long,NodeRecord,Void> nodeChange : recordChangeSet.getNodeRecords().changes() )
         {
             Command.NodeCommand newCommand = new Command.NodeCommand();
             newCommand.init( nodeChange.getBefore(), nodeChange.forChangingData() );
             result.add( new LogEntryCommand( newCommand ) );
         }
 
-        for ( RecordChanges.RecordChange<Long,RelationshipRecord,Void> relChange :
-                recordChangeSet.getRelRecords().changes() )
+        for ( RecordProxy<Long,RelationshipRecord,Void> relChange : recordChangeSet.getRelRecords().changes() )
         {
             Command.RelationshipCommand newCommand = new Command.RelationshipCommand();
             newCommand.init( relChange.forChangingData() );
             result.add( new LogEntryCommand( newCommand ) );
         }
 
-        for ( RecordChanges.RecordChange<Long,RelationshipGroupRecord,Integer> relGroupChange :
+        for ( RecordProxy<Long,RelationshipGroupRecord,Integer> relGroupChange :
                 recordChangeSet.getRelGroupRecords().changes() )
         {
             Command.RelationshipGroupCommand newCommand = new Command.RelationshipGroupCommand();
@@ -170,7 +169,7 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>,L
             result.add( new LogEntryCommand( newCommand ) );
         }
 
-        for ( RecordChanges.RecordChange<Long,PropertyRecord,PrimitiveRecord> propChange :
+        for ( RecordProxy<Long,PropertyRecord,PrimitiveRecord> propChange :
                 recordChangeSet.getPropertyRecords().changes() )
         {
             Command.PropertyCommand newCommand = new Command.PropertyCommand();
