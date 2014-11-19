@@ -51,6 +51,24 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineFunSuite with QueryStati
     }
   }
 
+  //zendesk issue 2038
+  test("test_create_unique_with_array_properties_as_parameters") {
+    // given
+    createNode()
+    createNode()
+    val nodeProps1: Map[String, Any] = Map("foo"-> Array("Pontus"))
+    val nodeProps2: Map[String, Any] = Map("foo"-> Array("Pontus"))
+
+    // when
+    val query = "MATCH (s) WHERE id(s) = 0 CREATE UNIQUE s-[:REL]->(n:label {param}) RETURN n"
+    val res1 = execute(query,"param" -> nodeProps1)
+    val res2 = execute(query, "param" -> nodeProps2)
+
+    //then
+    assertStats(res1, nodesCreated = 1, relationshipsCreated = 1, propertiesSet = 1, labelsAdded = 1)
+    assertStats(res2, nodesCreated = 0, relationshipsCreated = 0, propertiesSet = 0, labelsAdded = 0)
+  }
+
   test("create_new_node_with_labels_on_the_left") {
     val a = createNode()
     val b = createNode()
