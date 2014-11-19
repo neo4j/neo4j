@@ -31,6 +31,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.ServerSettings;
@@ -43,10 +44,13 @@ import org.neo4j.test.TestData;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
 
+import static java.lang.String.format;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.*;
+
 import static org.neo4j.test.server.HTTP.RawPayload;
 
 public class AuthenticationDocIT extends ExclusiveServerTestBase
@@ -324,10 +328,10 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
         HTTP.Response res = HTTP.GET( server.baseUri().resolve( "" ).toString() );
 
         // Then
-        assertThat( res.rawContent(), equalTo(
-            "{\n" +
-            "  \"authentication\" : \""+server.baseUri().resolve( "authentication" )+"\"\n" +
-            "}" ));
+        assertThat( res.rawContent(), equalTo( format(
+            "{%n" +
+            "  \"authentication\" : \""+server.baseUri().resolve( "authentication" )+"\"%n" +
+            "}" ) ) );
     }
 
     @Test
