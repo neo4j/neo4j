@@ -65,28 +65,25 @@ trait CardinalityTestHelper extends QueryGraphProducer {
   def givenPredicate(pattern: String) = TestUnit("MATCH " + pattern)
 
   case class TestUnit(query: String,
-                      allNodes: Option[Long] = None,
-                      knownLabelCardinality: Map[String, Long] = Map.empty,
+                      allNodes: Option[Double] = None,
+                      knownLabelCardinality: Map[String, Double] = Map.empty,
                       knownIndexSelectivity: Map[(String, String), Double] = Map.empty,
                       knownProperties: Set[String] = Set.empty,
-                      knownRelationshipCardinality: Map[(String, String, String), Long] = Map.empty,
+                      knownRelationshipCardinality: Map[(String, String, String), Double] = Map.empty,
                       queryGraphArgumentIds: Set[IdName] = Set.empty,
                       inboundCardinality: Cardinality = Cardinality(1)) {
     def withInboundCardinality(d: Double) = copy(inboundCardinality = Cardinality(d))
 
-    def withLabel(tuple: (Symbol, Long)): TestUnit = copy(knownLabelCardinality = knownLabelCardinality + (tuple._1.name -> tuple._2))
-    def withLabel(label: Symbol, cardinality: Double): TestUnit = copy(knownLabelCardinality = knownLabelCardinality + (label.name -> cardinality.toLong))
+    def withLabel(tuple: (Symbol, Double)): TestUnit = copy(knownLabelCardinality = knownLabelCardinality + (tuple._1.name -> tuple._2))
+    def withLabel(label: Symbol, cardinality: Double): TestUnit = copy(knownLabelCardinality = knownLabelCardinality + (label.name -> cardinality))
 
     def withQueryGraphArgumentIds(idNames: IdName*): TestUnit =
       copy(queryGraphArgumentIds = Set(idNames: _*))
 
-    def withGraphNodes(number: Long): TestUnit = copy(allNodes = Some(number))
-    def withGraphNodes(number: Double): TestUnit = copy(allNodes = Some(number.toLong))
+    def withGraphNodes(number: Double): TestUnit = copy(allNodes = Some(number))
 
-    def withRelationshipCardinality(relationship: ((Symbol, Symbol), Symbol), cardinality: Double): TestUnit =
-      withRelationshipCardinality(relationship -> cardinality.toLong)
 
-    def withRelationshipCardinality(relationship: (((Symbol, Symbol), Symbol), Long)): TestUnit = {
+    def withRelationshipCardinality(relationship: (((Symbol, Symbol), Symbol), Double)): TestUnit = {
       val (((lhs, relType), rhs), cardinality) = relationship
       copy (
         knownRelationshipCardinality = knownRelationshipCardinality + ((lhs.name, relType.name, rhs.name) -> cardinality)
@@ -122,9 +119,9 @@ trait CardinalityTestHelper extends QueryGraphProducer {
         def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
           Cardinality({
             labelId.map(
-              id => getLabelName(id).map(knownLabelCardinality).getOrElse(0L)
+              id => getLabelName(id).map(knownLabelCardinality).getOrElse(0.0)
             ).getOrElse(nodesCardinality)
-          }.toDouble)
+          })
 
         def indexSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] = {
           val labelName: Option[String] = getLabelName(label)
@@ -138,8 +135,8 @@ trait CardinalityTestHelper extends QueryGraphProducer {
           }
         }
 
-        def getCardinality(fromLabel:String, typ:String, toLabel:String): Long =
-          knownRelationshipCardinality.getOrElse((fromLabel, typ, toLabel), 0)
+        def getCardinality(fromLabel:String, typ:String, toLabel:String): Double =
+          knownRelationshipCardinality.getOrElse((fromLabel, typ, toLabel), 0.0)
 
         def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
           (fromLabel, relTypeId, toLabel) match {
