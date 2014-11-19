@@ -19,13 +19,15 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
+import sun.misc.Unsafe;
+
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-
-import sun.misc.Unsafe;
 
 public final class UnsafeUtil
 {
@@ -37,6 +39,15 @@ public final class UnsafeUtil
     private static Object nullSentinel; // see the retainReference() method
     private static final String allowUnalignedMemoryAccessProperty =
             "org.neo4j.io.pagecache.impl.muninn.UnsafeUtil.allowUnalignedMemoryAccess";
+
+    private static final Class<?> directByteBufferClass;
+    private static final Constructor<?> directByteBufferCtor;
+    private static final long directByteBufferCapacityOffset;
+    private static final long directByteBufferLimitOffset;
+    private static final long directByteBufferMarkOffset;
+    private static final long directByteBufferAddressOffset;
+
+
     public static final boolean allowUnalignedMemoryAccess;
     public static final boolean storeByteOrderIsNative;
 
@@ -65,6 +76,44 @@ public final class UnsafeUtil
         MethodHandles.Lookup lookup = MethodHandles.lookup();
         getAndAddInt = getGetAndAddIntMethodHandle( lookup );
         getAndSetObject = getGetAndSetObjectMethodHandle( lookup );
+
+        Class<?> dbbClass = null;
+        Constructor<?> ctor = null;
+        long dbbCapacityOffset = 0;
+        long dbbLimitOffset = 0;
+        long dbbMarkOffset = 0;
+        long dbbAddressOffset = 0;
+        try
+        {
+            dbbClass = Class.forName( "java.nio.DirectByteBuffer" );
+            Class<?> bufferClass = Class.forName( "java.nio.Buffer" );
+            dbbCapacityOffset = unsafe.objectFieldOffset( bufferClass.getDeclaredField( "capacity" ) );
+            dbbLimitOffset = unsafe.objectFieldOffset( bufferClass.getDeclaredField( "limit" ) );
+            dbbMarkOffset = unsafe.objectFieldOffset( bufferClass.getDeclaredField( "mark" ) );
+            dbbAddressOffset = unsafe.objectFieldOffset( bufferClass.getDeclaredField( "address" ) );
+        }
+        catch ( Throwable e )
+        {
+            if ( dbbClass == null )
+            {
+                throw new AssertionError( e );
+            }
+            try
+            {
+                ctor = dbbClass.getConstructor( Long.TYPE, Integer.TYPE );
+                ctor.setAccessible( true );
+            }
+            catch ( NoSuchMethodException e1 )
+            {
+                throw new AssertionError( e1 );
+            }
+        }
+        directByteBufferClass = dbbClass;
+        directByteBufferCtor = ctor;
+        directByteBufferCapacityOffset = dbbCapacityOffset;
+        directByteBufferLimitOffset = dbbLimitOffset;
+        directByteBufferMarkOffset = dbbMarkOffset;
+        directByteBufferAddressOffset = dbbAddressOffset;
 
         // See java.nio.Bits.unaligned() and its uses.
         String alignmentProperty = System.getProperty(
@@ -284,6 +333,22 @@ public final class UnsafeUtil
     public static void setMemory( long address, long bytes, byte value )
     {
         unsafe.setMemory( address, bytes, value );
+    }
+
+    public static ByteBuffer newDirectByteBuffer(long addr, int cap) throws Exception
+    {
+        if ( directByteBufferCtor == null )
+        {
+            // Simulate the JNI NewDirectByteBuffer(void*, long) invocation.
+            Object dbb = unsafe.allocateInstance( directByteBufferClass );
+            unsafe.putInt( dbb, directByteBufferCapacityOffset, cap );
+            unsafe.putInt( dbb, directByteBufferLimitOffset, cap );
+            unsafe.putInt( dbb, directByteBufferMarkOffset, -1 );
+            unsafe.putLong( dbb, directByteBufferAddressOffset, addr );
+            return (ByteBuffer) dbb;
+        }
+        // Reflection based fallback code.
+        return (ByteBuffer) directByteBufferCtor.newInstance( addr, cap );
     }
 
     /**
