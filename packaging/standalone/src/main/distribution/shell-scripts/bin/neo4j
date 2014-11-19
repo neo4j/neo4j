@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 ### BEGIN REDHAT INFO
 # chkconfig: 2345 99 20
 # description: The Neo4J graph database server. See http://neo4j.org
