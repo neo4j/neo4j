@@ -302,7 +302,7 @@ public class JmxDocTest
                                        MBeanOperationInfo[] operations, boolean nonHtml )
     {
         addNonHtmlCondition( beanInfo, nonHtml );
-        beanInfo.append( "[options=\"header\", cols=\"20m,40,20m,20m\"]\n"
+        beanInfo.append( "[options=\"header\", cols=\"23m,37,20m,20m\"]\n"
                 + "|===\n"
                 + "|Name|Description|ReturnType|Signature\n" );
         SortedSet<String> operationInfo = new TreeSet<String>(
