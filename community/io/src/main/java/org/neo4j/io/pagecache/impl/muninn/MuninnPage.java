@@ -20,7 +20,6 @@
 package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.IOException;
-import java.lang.reflect.Constructor;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 
@@ -28,33 +27,18 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.Page;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
-import org.neo4j.jsr166e.StampedLock;
 import org.neo4j.io.pagecache.monitoring.EvictionEvent;
 import org.neo4j.io.pagecache.monitoring.FlushEvent;
 import org.neo4j.io.pagecache.monitoring.FlushEventOpportunity;
 import org.neo4j.io.pagecache.monitoring.PageFaultEvent;
+import org.neo4j.jsr166e.StampedLock;
 
 import static org.neo4j.io.pagecache.impl.muninn.UnsafeUtil.allowUnalignedMemoryAccess;
 import static org.neo4j.io.pagecache.impl.muninn.UnsafeUtil.storeByteOrderIsNative;
 
 final class MuninnPage extends StampedLock implements Page
 {
-    private static final Constructor<?> directBufferCtor;
     private static final long usageStampOffset = UnsafeUtil.getFieldOffset( MuninnPage.class, "usageStamp" );
-    static {
-        Constructor<?> ctor = null;
-        try
-        {
-            Class<?> dbb = Class.forName( "java.nio.DirectByteBuffer" );
-            ctor = dbb.getDeclaredConstructor( Long.TYPE, Integer.TYPE );
-            ctor.setAccessible( true );
-        }
-        catch ( Exception e )
-        {
-            e.printStackTrace();
-        }
-        directBufferCtor = ctor;
-    }
 
     private final int cachePageSize;
     private final int cachePageId;
@@ -301,8 +285,7 @@ final class MuninnPage extends StampedLock implements Page
         int readTotal = 0;
         try
         {
-            ByteBuffer bufferProxy = (ByteBuffer) directBufferCtor.newInstance(
-                    pointer, cachePageSize );
+            ByteBuffer bufferProxy = UnsafeUtil.newDirectByteBuffer( pointer, cachePageSize );
             bufferProxy.clear();
             bufferProxy.limit( length );
             int read;
@@ -323,7 +306,7 @@ final class MuninnPage extends StampedLock implements Page
         {
             throw e;
         }
-        catch ( Exception e )
+        catch ( Throwable e )
         {
             String msg = String.format(
                     "Read failed after %s of %s bytes from offset %s",
@@ -342,8 +325,7 @@ final class MuninnPage extends StampedLock implements Page
         assert isReadLocked() || isWriteLocked() : "swapOut requires lock";
         try
         {
-            ByteBuffer bufferProxy = (ByteBuffer) directBufferCtor.newInstance(
-                    pointer, cachePageSize );
+            ByteBuffer bufferProxy = UnsafeUtil.newDirectByteBuffer( pointer, cachePageSize );
             bufferProxy.clear();
             bufferProxy.limit( length );
             channel.writeAll( bufferProxy, offset );
@@ -352,7 +334,7 @@ final class MuninnPage extends StampedLock implements Page
         {
             throw e;
         }
-        catch ( Exception e )
+        catch ( Throwable e )
         {
             throw new IOException( e );
         }
