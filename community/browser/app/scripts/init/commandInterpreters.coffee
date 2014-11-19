@@ -232,7 +232,7 @@ angular.module('neo4jApp')
               q.resolve(r.data)
             ,
             (r) ->
-              q.reject(r)
+              q.reject(error("Error: #{r.status} - #{r.statusText}"))
           )
 
           q.promise
