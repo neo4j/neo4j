@@ -31,6 +31,8 @@ public interface IndexSamplingManager
 {
     final String NAME = "Index sampler";
 
-    @Description( "Trigger index sampling for the index associated with the provided label and property key" )
-    void triggerIndexSampling(String labelKey, String propertyKey);
+    @Description("Trigger index sampling for the index associated with the provided label and property key." +
+            " If forceSample is set to true an index sampling will always happen otherwise a sampling is only " +
+            "done if the number of updates exceeds the configured index_sampling_update_percentage.")
+    void triggerIndexSampling( String labelKey, String propertyKey, boolean forceSample );
 }
