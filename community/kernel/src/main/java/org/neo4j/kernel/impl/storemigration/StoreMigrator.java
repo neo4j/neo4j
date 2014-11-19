@@ -187,13 +187,14 @@ public class StoreMigrator implements StoreMigrationParticipant
             // ensure the stores have the new versions set before reading them to create a counts store
             ensureStoreVersions( storeDir );
 
+
+            // create counters from scratch
             final LifeSupport life = new LifeSupport();
-            PageCache pageCache = createPageCache( fileSystem, "migration-pagecache", life );
+            life.start();
             try
             {
+                final PageCache pageCache = createPageCache( fileSystem, "build-counts", life );
                 removeDuplicateEntityProperties( storeDir, migrationDir, pageCache );
-
-                // create counters from scratch
                 rebuildCountsFromScratch( storeDir, migrationDir, lastTxId, pageCache );
             }
             finally
@@ -236,6 +237,7 @@ public class StoreMigrator implements StoreMigrationParticipant
                 StoreFactory.PROPERTY_STRINGS_STORE_NAME,
                 StoreFactory.PROPERTY_ARRAYS_STORE_NAME,
                 StoreFactory.NODE_STORE_NAME,
+                StoreFactory.NODE_STORE_NAME + ".id",
                 StoreFactory.NODE_LABELS_STORE_NAME,
                 StoreFactory.SCHEMA_STORE_NAME
         );
@@ -248,7 +250,8 @@ public class StoreMigrator implements StoreMigrationParticipant
         deduplicator.deduplicateProperties();
     }
 
-    private void rebuildCountsFromScratch( File storeDir, File migrationDir, long lastTxId, PageCache pageCache ) throws IOException
+    private void rebuildCountsFromScratch(
+            File storeDir, File migrationDir, long lastTxId, PageCache pageCache ) throws IOException
     {
         final File storeFileBase = new File( migrationDir, NeoStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE );
         CountsTracker.createEmptyCountsStore( pageCache, storeFileBase,

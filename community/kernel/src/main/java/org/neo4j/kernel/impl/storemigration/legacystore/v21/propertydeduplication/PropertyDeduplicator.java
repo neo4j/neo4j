@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydeduplication;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntObjectVisitor;
@@ -26,15 +31,16 @@ import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.impl.store.*;
+import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
+import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.kernel.impl.store.SchemaStore;
+import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
 
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
@@ -154,7 +160,11 @@ public class PropertyDeduplicator
             final NodeStore nodeStore,
             SchemaStore schemaStore ) throws IOException
     {
-        assert duplicateClusters.size() > 0;
+        if ( duplicateClusters.isEmpty() )
+        {
+            // Happiest of cases.
+            return;
+        }
 
         // For each conflict:
         //  - If we have an index for the given property key id, and the property is on an indexed node, then remove
