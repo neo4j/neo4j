@@ -50,27 +50,21 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
   val A_T1_B_sel = 0.5
   val A_T1_C_sel = 0.05
   val A_T1_D_sel = 0.005
-  val A_T1_STAR_sel = or(A_T1_A_sel, A_T1_B_sel, A_T1_C_sel, A_T1_D_sel)
 
   val A_T1_A    = A * A * A_T1_A_sel
   val A_T1_B    = A * B * A_T1_B_sel
   val A_T1_C    = A * C * A_T1_C_sel
   val A_T1_D    = A * D * A_T1_D_sel
-  val A_T1_STAR = A_T1_A + A_T1_B + A_T1_C + A_T1_D
 
   val B_T1_B_sel = 10.0 / B
   val B_T1_C_sel = 0.1
   val B_T1_A_sel = 0.01
   val B_T1_D_sel = 0.001
-  val STAR_T1_A_sel = or(A_T1_A_sel, B_T1_A_sel)
-  val STAR_T1_A = N * A * STAR_T1_A_sel
 
   val B_T1_B    = B * B * B_T1_B_sel
   val B_T1_C    = B * C * B_T1_C_sel
   val B_T1_A    = B * A * B_T1_A_sel
   val B_T1_D    = B * D * B_T1_D_sel
-  val B_T1_STAR = B_T1_A + B_T1_B + B_T1_C + B_T1_D
-  val STAR_T1_B = B_T1_B + A_T1_B
 
   val C_T1_D_sel= 0.02
   val C_T1_D    = C * D * C_T1_D_sel
@@ -83,13 +77,27 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
 
   val A_T2_A    = A * A * A_T2_A_sel
   val A_T2_B    = A * B * A_T2_B_sel
-  val A_T2_STAR = A_T2_A + A_T2_B
-  val STAR_T2_B = A_T2_B + 0 // B_T2_B
 
   val B_T2_C_sel = 0.0031
   val B_T2_C = B * C * B_T2_C_sel
   val D_T2_C_sel = 0.07
   val D_T2_C     = D * C * D_T2_C_sel
+
+  val B_T1_STAR = B_T1_A + B_T1_B + B_T1_C + B_T1_D
+  val STAR_T1_B = B_T1_B + A_T1_B
+  val STAR_T1_B_sel = STAR_T1_B / N
+  val STAR_T1_A = A_T1_A + B_T1_A
+  val STAR_T1_A_sel = STAR_T1_A / (N * A)
+  val A_T1_STAR = A_T1_A + A_T1_B + A_T1_C + A_T1_D
+  val A_T1_STAR_sel = A_T1_STAR / (N * A)
+  val A_T2_STAR = A_T2_A + A_T2_B
+  val A_STAR_STAR = A_T1_STAR + A_T2_STAR
+  val B_T2_STAR = B_T2_C
+  val B_STAR_STAR = B_T1_STAR + B_T2_STAR
+  val STAR_T2_B = A_T2_B + 0 // B_T2_B
+  val D_T1_STAR = D_T1_C
+  val D_T2_STAR = D_T2_C
+
 
   // Relationship count: the total number of relationships in the system
   val R = A_T1_STAR + B_T1_STAR + A_T2_STAR + D_T1_C + D_T2_C
@@ -179,16 +187,15 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
         val STAR_T1_A = B_T1_A
         A_T1_STAR + STAR_T1_A
       },
+
       "MATCH (a:A:B)-->()"
         -> {
         val maxRelCount = N * N * Asel * Bsel
-        val B_T2_STAR = 0
-        val A_relSelectivity = (A_T1_STAR + A_T2_STAR) / maxRelCount
-        val B_relSelectivity = (B_T1_STAR + B_T2_STAR) / maxRelCount
+        val A_relSelectivity = A_STAR_STAR / maxRelCount
+        val B_relSelectivity = B_STAR_STAR / maxRelCount
         val relSelectivity = A_relSelectivity * B_relSelectivity
         A * B * relSelectivity
       },
-
 
       "MATCH (a:A)-[:T1|:T2]->(:B)"
         -> {
@@ -213,8 +220,6 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
 
       "MATCH (a:A:D)-[:T1|:T2]->()"
         -> {
-        val D_T1_STAR = D_T1_C
-        val D_T2_STAR = D_T2_C
         val patternNodeCrossProduct = N * N
         val labelSelectivity = Asel * Dsel
         val maxRelCount = patternNodeCrossProduct * labelSelectivity
@@ -308,12 +313,19 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
   // TODO: Add a test for a relpatterns where the number of matching nodes is zero
 
 
-  ignore("varlength two steps out") {
+  test("varlength two steps out") {
+
+// The result includes all (:A)-[:T1]->(:B)
+// and all (:A)-[:T1]->()-[:T1]->(:B)
+
+    val maxRelCount = A * N * B
+    val l1Selectivity = A_T1_B / maxRelCount
+    val l2Selectivities = Seq(A_T1_STAR / maxRelCount, STAR_T1_B / maxRelCount)
+    val l2Selectivity = l2Selectivities.reduce(_ * _)
+    val totalSelectivity = or(l1Selectivity, l2Selectivity)
+
     forQuery("MATCH (a:A)-[r:T1*1..2]->(b:B)").
-    shouldHaveQueryGraphCardinality(
-        A_T1_A + // The result includes all (:A)-[:T1]->(:B)
-          A * N * B * A_T1_STAR_sel * STAR_T1_A_sel * DEFAULT_REL_UNIQUENESS_SELECTIVITY // and all (:A)-[:T1]->()-[:T1]->(:B)
-      )
+    shouldHaveQueryGraphCardinality(maxRelCount * totalSelectivity)
   }
 
 //  test("varlength three steps out") {

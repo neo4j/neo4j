@@ -29,6 +29,8 @@ trait GraphStatistics {
 
   /*
       Probability of any node with the given label, to have a property with a given value
+
+      indexSelectivity(:X, prop) = s => |MATCH (a:X)| * s = |MATCH (a:X) WHERE x.prop = *|
    */
   def indexSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity]
 }

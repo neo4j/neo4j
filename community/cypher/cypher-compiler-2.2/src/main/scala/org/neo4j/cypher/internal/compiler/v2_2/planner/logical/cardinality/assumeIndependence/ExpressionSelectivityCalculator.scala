@@ -32,6 +32,8 @@ trait Expression2Selectivity {
 }
 
 case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: SelectivityCombiner) extends Expression2Selectivity  {
+
+  // apply(exp) = s => |MATCH a| * s = |MATCH a WHERE exp(a)|
   def apply(exp: Expression)(implicit semanticTable: SemanticTable, selections: Selections): Selectivity = exp match {
     // WHERE a:Label
     case HasLabels(_, label :: Nil) =>
@@ -65,7 +67,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
 
     // Implicit relation uniqueness predicates
     case NotEquals(lhs: Identifier, rhs: Identifier)
-      if semanticTable.isRelationship(lhs) && semanticTable.isRelationship(rhs) =>
+      if areRelationships(semanticTable, lhs, rhs) =>
         GraphStatistics.DEFAULT_REL_UNIQUENESS_SELECTIVITY // This should not be the default. Instead, we should figure
                                                            // out the number of matching relationships and use it
 
@@ -79,6 +81,17 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
 
     case _ =>
       GraphStatistics.DEFAULT_PREDICATE_SELECTIVITY
+  }
+
+  def areRelationships(semanticTable: SemanticTable, lhs: Identifier, rhs: Identifier): Boolean = {
+    try {
+      semanticTable.isRelationship(lhs) && semanticTable.isRelationship(rhs)
+    }
+    catch {
+      // TODO: Fix SemanticTable w.r.t. rewriting, triggered by ReturnAcceptanceTest
+      case e: NoSuchElementException =>
+        false
+    }
   }
 
   private def calculateSelectivityForLabel(label: Option[LabelId]): Selectivity = {

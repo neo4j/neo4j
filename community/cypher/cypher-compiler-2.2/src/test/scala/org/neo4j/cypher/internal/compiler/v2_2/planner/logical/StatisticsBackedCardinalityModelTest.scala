@@ -37,7 +37,10 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
     withGraphNodes(allNodes).
     withLabel('Person -> personCount).
     withRelationshipCardinality('Person -> 'REL -> 'Person -> relCount).
-    shouldHavePlannerQueryCardinality(produceCardinalityModel)(Math.min(allNodes * (personCount / allNodes), 10.0) * (relCount / allNodes))
+    shouldHavePlannerQueryCardinality(produceCardinalityModel)(
+        Math.min(allNodes * (personCount / allNodes), 10.0) *
+        allNodes * (relCount / (personCount * allNodes))
+      )
   }
 
   test("query containing a WITH and aggregation vol. 2") {
@@ -55,7 +58,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
     withLabel('Person -> personCount).
     withRelationshipCardinality('Person -> 'REL -> 'Person -> relCount).
     withRelationshipCardinality('Person -> 'REL2 -> 'Person -> rel2Count).
-    shouldHavePlannerQueryCardinality(produceCardinalityModel)(aggregation * relCount / allNodes)
+    shouldHavePlannerQueryCardinality(produceCardinalityModel)(aggregation * allNodes * relCount / (personCount * allNodes))
   }
 
   def produceCardinalityModel(in: QueryGraphCardinalityModel): Metrics.CardinalityModel =
