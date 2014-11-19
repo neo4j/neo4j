@@ -163,7 +163,6 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
         {
             fs.deleteFile( fileToWriteTo );
         }
-        fs.create( fileToWriteTo );
         try(OutputStream out = fs.openAsOutputStream( fileToWriteTo, false ))
         {
             out.write( serialization.serialize( users ) );
