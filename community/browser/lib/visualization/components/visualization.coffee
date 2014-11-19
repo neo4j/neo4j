@@ -96,7 +96,7 @@ neo.viz = (el, measureSize, graph, layout, style) ->
 
   currentStats = newStatsBucket()
 
-  now = if window.performance
+  now = if window.performance and window.performance.now
     () ->
       window.performance.now()
   else
