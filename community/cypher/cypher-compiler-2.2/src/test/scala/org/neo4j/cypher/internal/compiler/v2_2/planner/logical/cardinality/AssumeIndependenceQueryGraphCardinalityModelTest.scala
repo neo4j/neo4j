@@ -31,17 +31,18 @@ import org.neo4j.cypher.internal.helpers.testRandomizer
 
 class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite with LogicalPlanningTestSupport with CardinalityTestHelper {
 
+
   // Glossary:
-  val N: Long = testRandomizer.nextDouble() * 1E6 // Graph node count - the god number.
+  val N: Double  = testRandomizer.nextDouble() * 1E6 // Graph node count - the god number.
   println("N: " + N)
   val Asel = .2          // How selective a :A predicate is
   val Bsel = .1          // How selective a :B predicate is
   val Csel = .01         // How selective a :C predicate is
   val Dsel = .001        // How selective a :D predicate is
-  val A: Long = N * Asel // Nodes with label A
-  val B: Long = N * Bsel // Nodes with label B
-  val C: Long = N * Csel // Nodes with label C
-  val D: Long = N * Dsel // Nodes with label D
+  val A: Double = N * Asel // Nodes with label A
+  val B: Double = N * Bsel // Nodes with label B
+  val C: Double = N * Csel // Nodes with label C
+  val D: Double = N * Dsel // Nodes with label D
 
   val Aprop = 0.5        // Selectivity of index on :A(prop)
   val Bprop = 0.003      // Selectivity of index on :B(prop)
@@ -271,6 +272,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
     shouldHaveQueryGraphCardinality(patternNodeCrossProduct * labelSelectivity * relSelectivity)
   }
 
+  //TODO this test is weird since relSelectivity will often have relSelectivity >> 1?
   test("cardinality for rel-patterns with multiple rel types and multiple labels on both sides") {
     val A_T2_C = 0
     val A_T2_D = 0
