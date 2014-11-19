@@ -35,6 +35,9 @@ case class LogicalPlanningContext(planContext: PlanContext,
     copy(cardinalityInput = newInput)
   }
 
+  def forExpressionPlanning =
+    copy(cardinalityInput = cardinalityInput.copy(inboundCardinality = Cardinality(1)))
+
   def statistics = planContext.statistics
   def cost = metrics.cost
   def cardinality = metrics.cardinality

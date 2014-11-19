@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast
 
 import org.neo4j.cypher.internal.compiler.v2_2._
+import org.neo4j.cypher.internal.helpers.Eagerly
 
 object ASTAnnotationMap {
   def empty[K <: ASTNode, V]: ASTAnnotationMap[K, V] = new ASTAnnotationMap(Map.empty[(K, InputPosition), V])
@@ -42,4 +43,7 @@ class ASTAnnotationMap[K <: ASTNode, V] private (store: Map[(K, InputPosition), 
 
   override def -(key: K): Map[K, V] =
     new ASTAnnotationMap(store - ((key, key.position)))
+
+  override def mapValues[C](f: (V) => C): ASTAnnotationMap[K, C] =
+    new ASTAnnotationMap(Eagerly.immutableMapValues(store, f))
 }

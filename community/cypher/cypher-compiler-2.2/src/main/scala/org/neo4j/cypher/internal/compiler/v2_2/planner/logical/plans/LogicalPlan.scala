@@ -22,10 +22,11 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 import java.lang.reflect.Method
 
 import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
-import org.neo4j.cypher.internal.compiler.v2_2.{InternalException, Rewritable}
 import org.neo4j.cypher.internal.compiler.v2_2.Rewritable._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{Identifier, Expression}
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
+import org.neo4j.cypher.internal.compiler.v2_2.{InternalException, Rewritable}
 
 /*
 A LogicalPlan is an algebraic query, which is represented by a query tree whose leaves are database relations and
@@ -37,6 +38,9 @@ abstract class LogicalPlan
   extends Product
   with Rewritable
   with PageDocFormatting {
+
+  self =>
+
 //  with ToPrettyString[LogicalPlan] {
 
 //  def toDefaultPrettyString(formatter: DocFormatter) =
@@ -79,6 +83,8 @@ abstract class LogicalPlan
       else
         constructor.invoke(this, args: _*).asInstanceOf[this.type]
     }
+
+  def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan = self
 }
 
 abstract class LogicalLeafPlan extends LogicalPlan {
@@ -93,4 +99,6 @@ final case class IdName(name: String) extends PageDocFormatting // with ToPretty
 
 object IdName {
   implicit val byName = Ordering[String].on[IdName](_.name)
+
+  def fromIdentifier(identifier: Identifier) = IdName(identifier.name)
 }

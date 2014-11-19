@@ -26,6 +26,33 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 
 class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+
+  test("should consider identifiers introduced by outer list comprehensions when planning pattern predicates") {
+    val plan = (new given {
+      cardinality = mapCardinality {
+        case _: Expand => 10
+        case _: Argument => 1
+        case _ => 4000000
+      }
+    } planFor """MATCH (a:Person)-[:KNOWS]->(b:Person) WITH a, collect(b) AS friends RETURN a, [f IN friends WHERE (f)-[:WORKS_AT]->(:ComedyClub)] AS clowns""").plan
+
+    plan match {
+      case Projection(_, expressions) =>
+        expressions("clowns") match {
+          case ListComprehension(ExtractScope(_, Some(NestedPlanExpression(nestedPlan, _)), _), _) =>
+            nestedPlan should equal(
+              Selection(
+                Seq(HasLabels(ident("  UNNAMED116"), Seq(LabelName("ComedyClub")_))_),
+                Expand(
+                  Argument(Set("f"))(PlannerQuery.empty)(),
+                  "f", Direction.OUTGOING, Direction.OUTGOING, Seq(RelTypeName("WORKS_AT")_), "  UNNAMED116", "  UNNAMED102", SimplePatternLength, Seq()
+                )(PlannerQuery.empty)
+              )(PlannerQuery.empty)
+            )
+        }
+    }
+  }
+
   test("should build plans containing semi apply for a single pattern predicate") {
    planFor("MATCH (a) WHERE (a)-[:X]->() RETURN a").plan should equal(
       SemiApply(

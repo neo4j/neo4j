@@ -37,7 +37,7 @@ object expand extends CandidateGenerator[PlanTable] {
       val otherSide = patternRel.otherSide(nodeId)
       val availablePredicates = queryGraph.selections.predicatesGiven(plan.availableSymbols + patternRel.name)
       val (predicates, allPredicates) = availablePredicates.collect {
-        case all @ AllIterablePredicate(identifier, relId @ Identifier(patternRel.name.name), Some(innerPredicate))
+        case all @ AllIterablePredicate(FilterScope(identifier, Some(innerPredicate)), relId @ Identifier(patternRel.name.name))
           if !innerPredicate.exists { case expr => expr == relId } =>
           (identifier, innerPredicate) -> all
       }.unzip

@@ -330,7 +330,7 @@ object ExpressionConverters {
 
   implicit class ExtractConverter(val e: ast.ExtractExpression) extends AnyVal {
     def asCommandExtract: commandexpressions.ExtractFunction =
-      commandexpressions.ExtractFunction(e.expression.asCommandExpression, e.identifier.name, e.extractExpression.get.asCommandExpression)
+      commandexpressions.ExtractFunction(e.expression.asCommandExpression, e.identifier.name, e.scope.extractExpression.get.asCommandExpression)
   }
 
   implicit class ListComprehensionConverter(val e: ast.ListComprehension) extends AnyVal {

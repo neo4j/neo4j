@@ -22,12 +22,11 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
+import org.neo4j.graphdb.Direction
 
-class ExpressionTest extends CypherFunSuite {
+class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
 
   val expression = DummyExpression(CTAny, DummyPosition(0))
-
-
 
   test("shouldReturnCalculatedType") {
     expression.types(SemanticState.clean) should equal(TypeSpec.all)
@@ -72,5 +71,81 @@ class ExpressionTest extends CypherFunSuite {
     assert(result.errors.head.position === expression.position)
     assert(result.errors.head.msg == "Type mismatch: lhs was String yet rhs was Integer or Node")
     assert(expression.types(result.state).isEmpty)
+  }
+
+  test("should compute dependencies of simple expressions") {
+    ident("a").dependencies should equal(Set(ident("a")))
+    SignedDecimalIntegerLiteral("1")(pos).dependencies should equal(Set())
+  }
+
+  test("should compute dependencies of composite expressions") {
+    Add(ident("a"), Subtract(SignedDecimalIntegerLiteral("1")(pos), ident("b"))_)(pos).dependencies should equal(Set(ident("a"), ident("b")))
+  }
+
+  test("should compute dependencies for filtering expressions") {
+    // extract(x IN (n)-->(k) | head(nodes(x)) )
+    val pat: RelationshipsPattern = RelationshipsPattern(
+      RelationshipChain(
+        NodePattern(Some(ident("n")), Seq.empty, None, naked = false)_,
+        RelationshipPattern(None, optional = false, Seq.empty, None, None, Direction.OUTGOING)_,
+        NodePattern(Some(ident("k")), Seq.empty, None, naked = false)_
+      )_
+    )_
+    val expr: Expression = ExtractExpression(
+      ident("x"),
+      PatternExpression(pat),
+      None,
+      Some(FunctionInvocation(FunctionName("head")_, FunctionInvocation(FunctionName("nodes")_, ident("x"))_)_)
+    )_
+
+    expr.dependencies should equal(Set(ident("n"), ident("k")))
+  }
+
+
+  test("should compute inputs of composite expressions") {
+    val identA = ident("a")
+    val identB = ident("b")
+    val lit1 = SignedDecimalIntegerLiteral("1")(pos)
+    val sub = Subtract(lit1, identB)(pos)
+    val add = Add(identA, sub)(pos)
+
+    IdentityMap(add.inputs: _*) should equal(IdentityMap(
+      identA -> Set.empty,
+      identB -> Set.empty,
+      lit1 -> Set.empty,
+      sub -> Set.empty,
+      add -> Set.empty
+    ))
+  }
+
+  test("should compute inputs for filtering expressions") {
+    // given
+    val pat = PatternExpression(RelationshipsPattern(
+      RelationshipChain(
+        NodePattern(Some(ident("n")), Seq.empty, None, naked = false)_,
+        RelationshipPattern(None, optional = false, Seq.empty, None, None, Direction.OUTGOING)_,
+        NodePattern(Some(ident("k")), Seq.empty, None, naked = false)_
+      )_
+    )_)
+
+    val callNodes: Expression = FunctionInvocation(FunctionName("nodes") _, ident("x"))_
+    val callHead: Expression = FunctionInvocation(FunctionName("head") _, callNodes) _
+
+    // extract(x IN (n)-->(k) | head(nodes(x)) )
+    val expr: Expression = ExtractExpression(
+      ident("x"),
+      pat,
+      None,
+      Some(callHead)
+    )_
+
+    // when
+    val inputs = IdentityMap(expr.inputs: _*)
+
+    // then
+    inputs(callNodes) should equal(Set(ident("x")))
+    inputs(callHead) should equal(Set(ident("x")))
+    inputs(expr) should equal(Set.empty)
+    inputs(pat) should equal(Set.empty)
   }
 }

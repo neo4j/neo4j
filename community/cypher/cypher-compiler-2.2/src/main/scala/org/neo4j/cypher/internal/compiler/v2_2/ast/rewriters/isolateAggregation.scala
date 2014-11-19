@@ -56,11 +56,11 @@ case object isolateAggregation extends Rewriter {
             (expressions: Seq[Expression]) => expressions.flatMap {
               case e if hasAggregateButIsNotAggregate(e) =>
                 e match {
-                  case ReduceExpression(_, init, _, coll, _) => Seq(init, coll)
-                  case FilterExpression(_, expr, _)          => Some(expr)
-                  case ExtractExpression(_, expr, _, _)      => Some(expr)
-                  case ListComprehension(_, expr, _, _)      => Some(expr)
-                  case _                                     => e.arguments
+                  case ReduceExpression(_, init, coll) => Seq(init, coll)
+                  case FilterExpression(_, expr)       => Some(expr)
+                  case ExtractExpression(_, expr)      => Some(expr)
+                  case ListComprehension(_, expr)      => Some(expr)
+                  case _                               => e.arguments
                 }
 
               case e =>

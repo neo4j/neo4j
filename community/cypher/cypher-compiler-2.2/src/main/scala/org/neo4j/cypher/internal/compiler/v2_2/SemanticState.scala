@@ -19,19 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
-import ast.ASTAnnotationMap
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{ASTNode, ASTAnnotationMap}
 import helpers.{TreeZipper, TreeElem}
 import symbols._
 import scala.collection.immutable.HashMap
 
-// A symbol collects all uses of a postion within the current scope and
+// A symbol collects all uses of a position within the current scope and
 // up to the originally defining scope together with type information
 //
 // (s1 n1 (s2 ... (s3 n2 (s4 ... n3)) =>
 //
-// s1.localSymbol(n) = Symblol(n, Seq(1), type(n))
-// s3.localSymbol(n) = Symblol(n, Seq(1, 2), type(n))
-// s4.localSymbol(n) = Symblol(n, Seq(1, 2, 3), type(n))
+// s1.localSymbol(n) = Symbol(n, Seq(1), type(n))
+// s3.localSymbol(n) = Symbol(n, Seq(1, 2), type(n))
+// s4.localSymbol(n) = Symbol(n, Seq(1, 2, 3), type(n))
 //
 case class Symbol(name: String, positions: Set[InputPosition], types: TypeSpec)
 
@@ -166,4 +166,7 @@ case class SemanticState(currentScope: ScopeLocation, typeTable: ASTAnnotationMa
 
   def scope(astNode: ast.ASTNode): Option[Scope] =
     recordedScopes.get(astNode)
+
+  def scopeSymbolsTable: ASTAnnotationMap[ASTNode, Set[String]] =
+    recordedScopes.mapValues(_.symbolNames)
 }

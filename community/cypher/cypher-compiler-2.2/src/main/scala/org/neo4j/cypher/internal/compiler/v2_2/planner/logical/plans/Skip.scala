@@ -26,4 +26,7 @@ case class Skip(left: LogicalPlan, count: Expression)(val solved: PlannerQuery) 
   val lhs = Some(left)
   val rhs = None
   def availableSymbols = left.availableSymbols
+
+  override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan =
+    copy(count = f(left.availableSymbols, count))(solved)
 }

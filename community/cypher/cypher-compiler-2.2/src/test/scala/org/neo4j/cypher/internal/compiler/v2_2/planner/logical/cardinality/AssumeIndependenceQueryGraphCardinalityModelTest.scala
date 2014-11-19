@@ -34,7 +34,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
   // Glossary:
   val N: Long = testRandomizer.nextDouble() * 1E6 // Graph node count - the god number.
   println("N: " + N)
-  val Asel = .2         // How selective a :A predicate is
+  val Asel = .2          // How selective a :A predicate is
   val Bsel = .1          // How selective a :B predicate is
   val Csel = .01         // How selective a :C predicate is
   val Dsel = .001        // How selective a :D predicate is
