@@ -324,11 +324,11 @@ removeservice() {
 # in place.
 checkandrepairenv() {
     # Create data/log if missing, change owner if created.
-    if [ ! -d "$NEO4J_HOME"/data/log ]; then
-      echo "${NEO4J_HOME}/data/log was missing, recreating..."
-      mkdir "$NEO4J_HOME"/data/log
+    if [ ! -d "$NEO4J_LOG" ]; then
+      echo "${NEO4J_LOG}" was missing, recreating..."
+      mkdir "$NEO4J_LOG}"
       if [ $UID == 0 ] ; then
-        chown $NEO4J_USER "$NEO4J_HOME"/data/log
+        chown $NEO4J_USER "$NEO4J_LOG"
       fi
     fi
 }
