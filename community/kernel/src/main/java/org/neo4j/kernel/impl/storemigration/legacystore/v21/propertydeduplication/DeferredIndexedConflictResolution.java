@@ -51,6 +51,8 @@ class DeferredIndexedConflictResolution
 
     public void resolve() throws IOException
     {
+        assert duplicateClusterList.size() > 0;
+
         // For every conflicting property key id, if we can find a matching index, delete all the property blocks
         // whose value match nothing in the index.
         // Otherwise, leave the duplicateClusters to be resolved in a later step.
@@ -61,12 +63,14 @@ class DeferredIndexedConflictResolution
             // Figure out if the node is indexed by the property key for this conflict, and resolve the
             // conflict if that is the case.
             DuplicateCluster duplicateCluster = it.next();
+            assert duplicateCluster.size() > 0;
+
             final IndexLookup.Index index = indexLookup.getAnyIndexOrNull( labelIds, duplicateCluster.propertyKeyId );
 
             if ( index != null )
             {
-                IndexConsultedPropertyBlockSweeper sweeper = new IndexConsultedPropertyBlockSweeper( duplicateCluster
-                        .propertyKeyId, index, record, propertyStore, propertyRemover );
+                IndexConsultedPropertyBlockSweeper sweeper = new IndexConsultedPropertyBlockSweeper(
+                        duplicateCluster.propertyKeyId, index, record, propertyStore, propertyRemover );
                 duplicateCluster.propertyRecordIds.visitKeys( sweeper );
                 assert sweeper.foundExact;
                 it.remove();

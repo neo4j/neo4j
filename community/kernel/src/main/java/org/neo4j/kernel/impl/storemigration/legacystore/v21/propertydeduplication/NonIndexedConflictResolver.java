@@ -73,6 +73,8 @@ class NonIndexedConflictResolver implements PrimitiveLongObjectVisitor<List<Dupl
 
     private void resolveConflict( final DuplicateCluster duplicateCluster )
     {
+        assert duplicateCluster.size() > 0;
+
         final String oldName = keyTokenStore.getToken( duplicateCluster.propertyKeyId ).name();
         DuplicateNameAssigner visitor = new DuplicateNameAssigner( duplicateCluster, oldName );
         duplicateCluster.propertyRecordIds.visitKeys( visitor );

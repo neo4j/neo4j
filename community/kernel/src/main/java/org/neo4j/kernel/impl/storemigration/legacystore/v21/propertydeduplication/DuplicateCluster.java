@@ -37,4 +37,9 @@ class DuplicateCluster
     {
         this.propertyRecordIds.add(record);
     }
+
+    public int size()
+    {
+        return propertyRecordIds.size();
+    }
 }
