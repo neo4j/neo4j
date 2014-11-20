@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PathExpander;
@@ -61,10 +59,7 @@ class AsOneStartBranch implements TraversalBranch
     
     private Iterator<TraversalBranch> toBranches( Iterable<Node> nodes )
     {
-        List<TraversalBranch> result = new ArrayList<TraversalBranch>();
-        for ( Node node : nodes )
-            result.add( new StartNodeTraversalBranch( context, this, node, initialState ) );
-        return result.iterator();
+        return new TraversalBranchIterator( nodes.iterator() );
     }
 
     @Override
@@ -177,5 +172,34 @@ class AsOneStartBranch implements TraversalBranch
     public Object state()
     {
         throw new UnsupportedOperationException();
+    }
+
+    private class TraversalBranchIterator implements Iterator<TraversalBranch>
+    {
+        private final Iterator<Node> nodeIterator;
+
+        public TraversalBranchIterator( Iterator<Node> nodeIterator )
+        {
+            this.nodeIterator = nodeIterator;
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+            return nodeIterator.hasNext();
+        }
+
+        @Override
+        public TraversalBranch next()
+        {
+            return new StartNodeTraversalBranch( context, AsOneStartBranch.this, nodeIterator.next(),
+                    initialState );
+        }
+
+        @Override
+        public void remove()
+        {
+            nodeIterator.remove();
+        }
     }
 }
