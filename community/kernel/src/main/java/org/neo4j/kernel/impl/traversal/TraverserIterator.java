@@ -29,6 +29,7 @@ import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.InitialBranchState;
 import org.neo4j.graphdb.traversal.PathEvaluator;
 import org.neo4j.graphdb.traversal.TraversalBranch;
+import org.neo4j.graphdb.traversal.UniquenessFactory;
 import org.neo4j.graphdb.traversal.UniquenessFilter;
 
 class TraverserIterator extends AbstractTraverserIterator
@@ -38,13 +39,13 @@ class TraverserIterator extends AbstractTraverserIterator
     private final UniquenessFilter uniqueness;
     
     TraverserIterator( UniquenessFilter uniqueness, PathExpander expander, BranchOrderingPolicy order,
-            PathEvaluator evaluator, Iterable<Node> startNodes, InitialBranchState initialState )
+                       PathEvaluator evaluator, Iterable<Node> startNodes, InitialBranchState initialState, UniquenessFactory uniquenessFactory )
     {
         this.uniqueness = uniqueness;
         this.evaluator = evaluator;
-        this.selector = order.create( new AsOneStartBranch( this, startNodes, initialState ), expander );
+        this.selector = order.create( new AsOneStartBranch( this, startNodes, initialState, uniquenessFactory ), expander );
     }
-    
+
     protected BranchSelector selector()
     {
         return selector;

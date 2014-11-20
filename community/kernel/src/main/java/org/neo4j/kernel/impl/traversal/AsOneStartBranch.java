@@ -34,6 +34,8 @@ import org.neo4j.graphdb.traversal.InitialBranchState;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalContext;
 import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.graphdb.traversal.UniquenessFactory;
+import org.neo4j.kernel.Uniqueness;
 
 /**
  * A {@link TraversalBranch} that abstracts the fact that it is actually
@@ -51,20 +53,28 @@ class AsOneStartBranch implements TraversalBranch
     private int expanded;
     private final TraversalContext context;
     private final InitialBranchState initialState;
+    private final UniquenessFactory uniqueness;
 
-    AsOneStartBranch( TraversalContext context, Iterable<Node> nodes, InitialBranchState initialState )
+    AsOneStartBranch( TraversalContext context, Iterable<Node> nodes, InitialBranchState initialState, UniquenessFactory uniqueness )
     {
         this.context = context;
         this.initialState = initialState;
+        this.uniqueness = uniqueness;
         this.branches = toBranches( nodes );
     }
-    
+
     private Iterator<TraversalBranch> toBranches( Iterable<Node> nodes )
     {
-        List<TraversalBranch> result = new ArrayList<TraversalBranch>();
-        for ( Node node : nodes )
-            result.add( new StartNodeTraversalBranch( context, this, node, initialState ) );
-        return result.iterator();
+        if ( uniqueness.eagerStartBranches() )
+        {
+            List<TraversalBranch> result = new ArrayList<TraversalBranch>();
+            for ( Node node : nodes )
+                result.add( new StartNodeTraversalBranch( context, this, node, initialState ) );
+            return result.iterator();
+        } else
+        {
+            return new TraversalBranchIterator( nodes.iterator() );
+        }
     }
 
     @Override
@@ -177,5 +187,34 @@ class AsOneStartBranch implements TraversalBranch
     public Object state()
     {
         throw new UnsupportedOperationException();
+    }
+
+    private class TraversalBranchIterator implements Iterator<TraversalBranch>
+    {
+        private final Iterator<Node> nodeIterator;
+
+        public TraversalBranchIterator( Iterator<Node> nodeIterator )
+        {
+            this.nodeIterator = nodeIterator;
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+            return nodeIterator.hasNext();
+        }
+
+        @Override
+        public TraversalBranch next()
+        {
+            return new StartNodeTraversalBranch( context, AsOneStartBranch.this, nodeIterator.next(),
+                    initialState);
+        }
+
+        @Override
+        public void remove()
+        {
+            nodeIterator.remove();
+        }
     }
 }

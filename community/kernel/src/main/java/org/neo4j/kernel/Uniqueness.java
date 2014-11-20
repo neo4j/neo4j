@@ -39,6 +39,11 @@ public enum Uniqueness implements UniquenessFactory
             acceptNull( optionalParameter );
             return new GloballyUnique( PrimitiveTypeFetcher.NODE );
         }
+
+        public boolean eagerStartBranches()
+        {
+            return true;
+        }
     },
     /**
      * For each returned node there's a unique path from the start node to it.
@@ -49,6 +54,11 @@ public enum Uniqueness implements UniquenessFactory
         {
             acceptNull( optionalParameter );
             return new PathUnique( PrimitiveTypeFetcher.NODE );
+        }
+
+        public boolean eagerStartBranches()
+        {
+            return true;
         }
     },
     /**
@@ -68,17 +78,26 @@ public enum Uniqueness implements UniquenessFactory
             acceptIntegerOrNull( optionalParameter );
             return new RecentlyUnique( PrimitiveTypeFetcher.NODE, optionalParameter );
         }
+
+        public boolean eagerStartBranches()
+        {
+            return true;
+        }
     },
     /**
      * Entities on the same level are guaranteed to be unique.
      */
     NODE_LEVEL
     {
-        @Override
         public UniquenessFilter create( Object optionalParameter )
         {
             acceptNull( optionalParameter );
             return new LevelUnique( PrimitiveTypeFetcher.NODE );
+        }
+
+        public boolean eagerStartBranches()
+        {
+            return true;
         }
     },
 
@@ -92,6 +111,11 @@ public enum Uniqueness implements UniquenessFactory
             acceptNull( optionalParameter );
             return new GloballyUnique( PrimitiveTypeFetcher.RELATIONSHIP );
         }
+
+        public boolean eagerStartBranches()
+        {
+            return true;
+        }
     },
     /**
      * For each returned node there's a (relationship wise) unique path from the
@@ -104,6 +128,11 @@ public enum Uniqueness implements UniquenessFactory
             acceptNull( optionalParameter );
             return new PathUnique( PrimitiveTypeFetcher.RELATIONSHIP );
         }
+
+        public boolean eagerStartBranches()
+        {
+            return false;
+        }
     },
     /**
      * Same as for {@link Uniqueness#NODE_RECENT}, but for relationships.
@@ -115,17 +144,26 @@ public enum Uniqueness implements UniquenessFactory
             acceptIntegerOrNull( optionalParameter );
             return new RecentlyUnique( PrimitiveTypeFetcher.RELATIONSHIP, optionalParameter );
         }
+
+        public boolean eagerStartBranches()
+        {
+            return true;
+        }
     },
     /**
      * Entities on the same level are guaranteed to be unique.
      */
     RELATIONSHIP_LEVEL
     {
-        @Override
         public UniquenessFilter create( Object optionalParameter )
         {
             acceptNull( optionalParameter );
             return new LevelUnique( PrimitiveTypeFetcher.RELATIONSHIP );
+        }
+
+        public boolean eagerStartBranches()
+        {
+            return true;
         }
     },
     
@@ -140,6 +178,11 @@ public enum Uniqueness implements UniquenessFactory
         {
             acceptNull( optionalParameter );
             return instance;
+        }
+
+        public boolean eagerStartBranches()
+        {
+            return true;
         }
     };
     

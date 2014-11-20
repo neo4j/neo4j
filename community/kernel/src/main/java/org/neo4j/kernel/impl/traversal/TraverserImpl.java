@@ -39,7 +39,7 @@ class TraverserImpl extends AbstractTraverser
     {
         TraverserIterator iterator = new TraverserIterator( description.uniqueness.create( description.uniquenessParameter ),
                 description.expander, description.branchOrdering, description.evaluator,
-                startNodes, description.initialState );
+                startNodes, description.initialState, description.uniqueness);
         return description.sorting != null ? new SortingTraverserIterator( this, iterator ) : iterator;
     }
 }
