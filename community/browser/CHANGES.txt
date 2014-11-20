@@ -1,3 +1,26 @@
+2.2.0-M01
+---------
+o Overall UI Facelift.
+o Support for server authentication /  authorization.
+o Terminate long running queries.
+o Add `:history` command.
+o Graph panning.
+o Graph relationships captions changeable.
+o Move Legend outside the graph.
+o Move Inspector below the graph.
+o Persist `:config` changes.
+o Curved arrows in graph view.
+o Improved maxRows behaviour, showing first config:maxRows of resultset in table.
+o Change default caption on nodes.
+o Treat everything not recognized as a command as Cypher.
+o Fix text not showing in fullscreen editor.
+o Fix history stepping in OS X to use cmd + up/down arrow and cmd+enter to run current command.
+o Disable :hover event on node drag.
+o Heartbeat to correct URL.
+o Stop the action buttons in editor from flashing when typing.
+o Sometimes when the editor is blurred, you could not saved the contents as a script.
+o Escape contents displayed to prevent javascript from executing.
+
 2.1.2
 -----
 o Relaxes heartbeat to server

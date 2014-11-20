@@ -1,5 +1,19 @@
-2.2.0-SNAPSHOT
---------------
+2.2.0-M01
+---------
+o Configuration for store memory mapping values is now changed to be a
+  single value that is shared across all stores
+o New Muninn page cache offers more performant operation with reduced
+  garbage collector strain
+o Removes dependency on JTA
+o Lucene logical logs (lucene.log.vXXX) and TransactionManager 
+  logs (tm_tx_log.X) are no longer created
+o Logical logs are now renamed to neostore.transaction.db.vXXX
+o Introduces batched writes, which especially benefit small transactions
+  and multi-threaded workloads
+o Log rotation no longer transfers transactions in flight between
+  logs, removing a class of performance issues
+o Introduces count store (neostore.counts.db) for use by the
+  cost based Cypher planner
 o Deprecated Function and Function2 interfaces, as they are internal utility APIs.
   Users may still use the new org.neo4j.function.Function interface, but these are no
   longer considered official API. Users are expected to choose a utility library like
@@ -8,6 +22,8 @@ o Extends the Transaction interface with a new method `terminate()` that makes i
   to mark the transaction as terminated, which means it will be both marked for rollback
   as well as all further operations carried out within that transaction will throw
   a `TransactionTerminatedException` exception.
+o Adds an import script (neo4j-import on Unix, Neo4jImport on Windows) for bulk import
+  of data from CSV files
 
 2.1.6
 -----

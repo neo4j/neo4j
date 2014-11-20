@@ -1,3 +1,10 @@
+2.2.0-M01
+---------
+o Authentication and authorization functionality is now available
+  through the ReST API
+o Configuration options are now located in ServerSettings class instead of being
+  String constants in Configurator
+
 2.1.6
 -----
 o Users of unmanaged extensions now have access to Cypher ExecutionEngine

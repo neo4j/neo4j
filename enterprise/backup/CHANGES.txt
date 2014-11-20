@@ -1,3 +1,7 @@
+2.2.0-M01
+---------
+o Backup tool exits with error if consistency check fails.
+
 2.1.6
 -----
 o Fixes an issue with backup, where it could happen that the backup

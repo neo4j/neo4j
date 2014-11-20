@@ -1,5 +1,6 @@
-2.2.0
------
+2.2.0-M01
+---------
+o Ronja, the cost based planner, is now the default
 o Adds EXPLAIN and PROFILE to Cypher
 
 2.1.5
