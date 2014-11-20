@@ -21,8 +21,14 @@ package upgrade;
 
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+
 import org.neo4j.consistency.ConsistencyCheckService;
-import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
@@ -45,12 +51,6 @@ import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.TargetDirectory;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -59,7 +59,7 @@ import static org.junit.Assert.assertTrue;
 public class StoreMigratorFrom21IT
 {
     @Test
-    public void mustMendDuplicatePropertiesWhenUpgradingFromVersion21() throws IOException
+    public void mustMendDuplicatePropertiesWhenUpgradingFromVersion21() throws Exception
     {
         // The rules:
         // If an index is present, all duplicates should be removed and the property set to the value in the index
@@ -102,19 +102,14 @@ public class StoreMigratorFrom21IT
         database.shutdown();
         ConsistencyCheckService service = new ConsistencyCheckService();
 
-        try {
-            ConsistencyCheckService.Result result = service.runFullConsistencyCheck( dir.getAbsolutePath(), new Config(), ProgressMonitorFactory.NONE,
-                    StringLogger.SYSTEM );
-            assertTrue(result.isSuccessful());
-        } catch (ConsistencyCheckIncompleteException e) {
-            e.printStackTrace();
-        }
+        ConsistencyCheckService.Result result = service.runFullConsistencyCheck(
+                dir.getAbsolutePath(), new Config(), ProgressMonitorFactory.NONE, StringLogger.SYSTEM );
+        assertTrue(result.isSuccessful());
 
         database = builder.newGraphDatabase();
         // Upgrade is now completed. Verify the contents:
-        NeoStoreProvider provider = ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency(
-                NeoStoreProvider
-                        .class );
+        DependencyResolver dependencyResolver = ((GraphDatabaseAPI) database).getDependencyResolver();
+        NeoStoreProvider provider = dependencyResolver.resolveDependency( NeoStoreProvider.class );
         NeoStore store = provider.evaluate();
         NodeStore nodeStore = store.getNodeStore();
         RelationshipStore relStore = store.getRelationshipStore();

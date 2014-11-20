@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydeduplication;
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
 
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -36,10 +36,10 @@ class IndexConsultedPropertyBlockSweeper implements PrimitiveLongVisitor
     private final NodeRecord nodeRecord;
     boolean foundExact;
     private PropertyStore propertyStore;
-    private PropertyRemover propertyRemover;
+    private DuplicatePropertyRemover propertyRemover;
 
     public IndexConsultedPropertyBlockSweeper( int propertyKeyId, IndexLookup.Index index, NodeRecord nodeRecord,
-                                               PropertyStore propertyStore, PropertyRemover propertyRemover )
+                                               PropertyStore propertyStore, DuplicatePropertyRemover propertyRemover )
     {
         this.propertyKeyId = propertyKeyId;
         this.index = index;
@@ -56,7 +56,7 @@ class IndexConsultedPropertyBlockSweeper implements PrimitiveLongVisitor
         boolean changed = false;
 
         List<PropertyBlock> blocks = record.getPropertyBlocks();
-        ListIterator<PropertyBlock> it = blocks.listIterator();
+        Iterator<PropertyBlock> it = blocks.iterator();
         while ( it.hasNext() )
         {
             PropertyBlock block = it.next();
@@ -67,7 +67,7 @@ class IndexConsultedPropertyBlockSweeper implements PrimitiveLongVisitor
 
                 try
                 {
-                    if ( index.contains( nodeRecord.getId(), lastPropertyValue ) && !foundExact )
+                    if ( !foundExact && index.contains( nodeRecord.getId(), lastPropertyValue ) )
                     {
                         foundExact = true;
                     }

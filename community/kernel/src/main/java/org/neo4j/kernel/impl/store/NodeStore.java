@@ -346,13 +346,13 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
      * The record passed to the NodeRecordScanner is reused instead of reallocated for every record, so it must be
      * cloned if you want to save it for later.
      */
-    public void scanRecords( long fromRecordId, long toRecordId, NodeRecordScanner scanner ) throws IOException
+    public void scanAllRecords( Visitor<NodeRecord,IOException> visitor ) throws IOException
     {
-        long startPageId = pageIdForRecord( fromRecordId );
+        long startPageId = pageIdForRecord( 0 );
         long currentPageId = startPageId;
-        long endPageId = pageIdForRecord( toRecordId );
-        long currentRecordId = fromRecordId;
-        NodeRecord record = new NodeRecord( 0 );
+        long endPageId = pageIdForRecord( getHighestPossibleIdInUse() );
+        long currentRecordId = 0;
+        NodeRecord record = new NodeRecord( -1 );
         int recordsPerPage = storeFile.pageSize() / getRecordSize();
 
         try ( PageCursor cursor = storeFile.io( startPageId, PF_SHARED_LOCK | PF_READ_AHEAD ) )
@@ -372,21 +372,16 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
 
                     if ( record.inUse() )
                     {
-                        scanner.process( record );
+                        if ( visitor.visit( record ) )
+                        {
+                            return;
+                        }
                     }
                     currentRecordId++;
                 }
                 currentPageId++;
             }
         }
-    }
-
-    /**
-     * @see NodeStore#scanRecords(long, long, org.neo4j.kernel.impl.store.NodeStore.NodeRecordScanner)
-     */
-    public interface NodeRecordScanner
-    {
-        void process( NodeRecord record ) throws IOException;
     }
 
     public DynamicArrayStore getDynamicLabelStore()

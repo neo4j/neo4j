@@ -33,6 +33,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
@@ -183,6 +184,7 @@ public class NodeStoreTest
     @Test
     public void scanningRecordsShouldVisitEachInUseRecordOnce() throws IOException
     {
+        // GIVEN we have a NodeStore with data that spans several pages...
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         NodeStore store = newNodeStore( fs );
 
@@ -207,21 +209,22 @@ public class NodeStoreTest
             }
         }
 
-        // Now we have an interesting set of node records.
-        // If we visit each and remove that node from our nextRelSet,
-        // we should observe that no nextRel is ever removed twice, nor
-        // do we have anything left in the set afterwards.
+        // ...WHEN we now have an interesting set of node records, and we
+        // visit each and remove that node from our nextRelSet...
 
-        NodeStore.NodeRecordScanner scanner = new NodeStore.NodeRecordScanner()
+        Visitor<NodeRecord, IOException> scanner = new Visitor<NodeRecord, IOException>()
         {
             @Override
-            public void process( NodeRecord record ) throws IOException
+            public boolean visit( NodeRecord record ) throws IOException
             {
+                // ...THEN we should observe that no nextRel is ever removed twice...
                 assertTrue( nextRelSet.remove( record.getNextRel() ) );
+                return false;
             }
         };
-        store.scanRecords( 0, store.getHighestPossibleIdInUse(), scanner );
+        store.scanAllRecords( scanner );
 
+        // ...NOR do we have anything left in the set afterwards.
         assertTrue( nextRelSet.isEmpty() );
     }
 

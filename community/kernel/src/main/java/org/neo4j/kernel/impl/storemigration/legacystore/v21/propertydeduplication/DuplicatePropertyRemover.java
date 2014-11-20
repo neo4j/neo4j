@@ -25,12 +25,12 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 
-class PropertyRemover
+class DuplicatePropertyRemover
 {
     private NodeStore nodeStore;
     private final PropertyStore propertyStore;
 
-    PropertyRemover( NodeStore nodeStore, PropertyStore propertyStore )
+    DuplicatePropertyRemover( NodeStore nodeStore, PropertyStore propertyStore )
     {
         this.nodeStore = nodeStore;
         this.propertyStore = propertyStore;
@@ -51,7 +51,7 @@ class PropertyRemover
         {
             PropertyRecord property = propertyStore.getRecord( previousRecordId );
             property.setNextProp( nextRecordId );
-            propertyStore.updateRecord(property);
+            propertyStore.updateRecord( property );
         }
         if ( nextRecordId != Record.NO_NEXT_PROPERTY.intValue() )
         {

@@ -93,7 +93,6 @@ public class PropertyDeduplicator
 
         for ( long headRecordId = 0; headRecordId < store.getHighestPossibleIdInUse(); ++headRecordId )
         {
-            final long localHeadRecordId = headRecordId;
             PropertyRecord record = store.forceGetRecord( headRecordId );
             // Skip property propertyRecordIds that are not in use.
             // Skip property propertyRecordIds that are not at the start of a chain.
@@ -113,6 +112,7 @@ public class PropertyDeduplicator
                 propertyId = record.getNextProp();
             }
 
+            final long localHeadRecordId = headRecordId;
             localDuplicateClusters.visitEntries(new PrimitiveIntObjectVisitor<DuplicateCluster>() {
                 @Override
                 public void visited(int key, DuplicateCluster duplicateCluster) {
@@ -135,12 +135,14 @@ public class PropertyDeduplicator
     private void scanForDuplicates( long propertyId,
                                     List<PropertyBlock> propertyBlocks )
     {
-        for (PropertyBlock block : propertyBlocks) {
+        for (PropertyBlock block : propertyBlocks)
+        {
             int propertyKeyId = block.getKeyIndexId();
 
             // If we've seen this property key in this chain before, we schedule the newly found
             // duplicate for removal.
-            if (seenPropertyKeys.containsKey(propertyKeyId)) {
+            if (seenPropertyKeys.containsKey(propertyKeyId))
+            {
                 DuplicateCluster cluster = localDuplicateClusters.get(propertyKeyId);
                 if (cluster == null) {
                     cluster = new DuplicateCluster(propertyKeyId);
@@ -148,7 +150,9 @@ public class PropertyDeduplicator
                 }
                 cluster.add(seenPropertyKeys.get(propertyKeyId));
                 cluster.add(propertyId);
-            } else {
+            }
+            else
+            {
                 seenPropertyKeys.put(propertyKeyId, propertyId);
             }
         }
@@ -179,7 +183,10 @@ public class PropertyDeduplicator
               IndexedConflictsResolver indexedConflictsResolver =
                       new IndexedConflictsResolver( duplicateClusters, indexLookup, nodeStore, propertyStore ) )
         {
-            nodeStore.scanRecords( 0, nodeStore.getHighestPossibleIdInUse(), indexedConflictsResolver );
+            if ( indexLookup.hasAnyIndexes() )
+            {
+                nodeStore.scanAllRecords( indexedConflictsResolver );
+            }
         }
 
         // Initially resolve all duplicateClusters by changing the propertyKey for the first conflicting property block, to

@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydeduplication;
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
 
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -35,11 +35,11 @@ class DeferredIndexedConflictResolution
     private NodeStore nodeStore;
     private IndexLookup indexLookup;
     private PropertyStore propertyStore;
-    private PropertyRemover propertyRemover;
+    private DuplicatePropertyRemover propertyRemover;
 
     public DeferredIndexedConflictResolution( NodeRecord record, List<DuplicateCluster> duplicateClusters,
                                               NodeStore nodeStore, IndexLookup indexLookup,
-                                              PropertyStore propertyStore, PropertyRemover propertyRemover )
+                                              PropertyStore propertyStore, DuplicatePropertyRemover propertyRemover )
     {
         this.record = record;
         this.duplicateClusterList = duplicateClusters;
@@ -57,7 +57,7 @@ class DeferredIndexedConflictResolution
         // whose value match nothing in the index.
         // Otherwise, leave the duplicateClusters to be resolved in a later step.
         long[] labelIds = NodeLabelsField.get( record, nodeStore );
-        ListIterator<DuplicateCluster> it = duplicateClusterList.listIterator();
+        Iterator<DuplicateCluster> it = duplicateClusterList.iterator();
         while ( it.hasNext() )
         {
             // Figure out if the node is indexed by the property key for this conflict, and resolve the

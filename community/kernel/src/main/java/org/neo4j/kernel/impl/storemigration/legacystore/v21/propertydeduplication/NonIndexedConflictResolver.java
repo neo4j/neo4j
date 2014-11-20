@@ -47,7 +47,6 @@ class NonIndexedConflictResolver implements PrimitiveLongObjectVisitor<List<Dupl
     {
         this.keyTokenStore = keyTokenStore;
         this.propertyTokenMap = buildPropertyKeyIndex( keyTokenStore );
-        ;
         this.store = store;
     }
 
@@ -102,13 +101,12 @@ class NonIndexedConflictResolver implements PrimitiveLongObjectVisitor<List<Dupl
     {
         private final DuplicateCluster duplicateCluster;
         private final String oldName;
-        int index;
+        private int index;
 
         public DuplicateNameAssigner( DuplicateCluster duplicateCluster, String oldName )
         {
             this.duplicateCluster = duplicateCluster;
             this.oldName = oldName;
-            index = 0;
         }
 
         @Override

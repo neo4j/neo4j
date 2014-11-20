@@ -24,16 +24,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
-class IndexedConflictsResolver implements NodeStore.NodeRecordScanner, AutoCloseable
+class IndexedConflictsResolver implements Visitor<NodeRecord, IOException>, AutoCloseable
 {
     private final PrimitiveLongObjectMap<List<DuplicateCluster>> duplicateClusters;
     private final NodeStore nodeStore;
     private final PropertyStore propertyStore;
-    private final PropertyRemover propertyRemover;
+    private final DuplicatePropertyRemover propertyRemover;
     private final List<DeferredIndexedConflictResolution> deferredResolutions;
     private final IndexLookup indexLookup;
 
@@ -46,12 +47,12 @@ class IndexedConflictsResolver implements NodeStore.NodeRecordScanner, AutoClose
         this.indexLookup = indexLookup;
         this.nodeStore = nodeStore;
         this.propertyStore = propertyStore;
-        propertyRemover = new PropertyRemover( nodeStore, propertyStore );
+        propertyRemover = new DuplicatePropertyRemover( nodeStore, propertyStore );
         deferredResolutions = new ArrayList<>();
     }
 
     @Override
-    public void process( NodeRecord record ) throws IOException
+    public boolean visit( NodeRecord record ) throws IOException
     {
         List<DuplicateCluster> duplicateClusterList = duplicateClusters.get( record.getNextProp() );
 
@@ -60,6 +61,7 @@ class IndexedConflictsResolver implements NodeStore.NodeRecordScanner, AutoClose
             deferredResolutions.add( new DeferredIndexedConflictResolution( record.clone(), duplicateClusterList,
                     nodeStore, indexLookup, propertyStore, propertyRemover ) );
         }
+        return false;
     }
 
     @Override

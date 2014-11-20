@@ -448,8 +448,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
 
     public Object getValue( PropertyBlock propertyBlock )
     {
-        PropertyType type = propertyBlock.getType();
-        return type.getValue( propertyBlock, this );
+        return propertyBlock.getType().getValue( propertyBlock, this );
     }
 
     @Override
