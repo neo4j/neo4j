@@ -277,6 +277,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                 // We just got scheduled. Maybe we are already obsolete - test
                 if ( cancellationHandle.cancellationRequested() )
                 {
+                    msgLog.info( "Switch to master cancelled in the begining of switching to master." );
                     return;
                 }
 
@@ -345,7 +346,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                          * null slave uri means the task was cancelled. The task then must simply terminate and
                          * have no side effects.
                          */
-                        msgLog.info( "Switch to slave resulted in null URI - that means it was effectively cancelled" );
+                        msgLog.info( "Switch to slave is effectively cancelled" );
                     }
                     else
                     {

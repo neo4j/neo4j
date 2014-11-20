@@ -202,6 +202,7 @@ public class SwitchToSlave
              */
             if ( cancellationRequest.cancellationRequested() )
             {
+                msgLog.info( "Switch to slave cancelled during store copy if no local store is present." );
                 return null;
             }
 
@@ -219,11 +220,13 @@ public class SwitchToSlave
 
             if ( !consistencyChecksExecutedSuccessfully )
             {
+                msgLog.info( "Switch to slave cancelled due to consistency check failure." );
                 return null;
             }
 
             if ( cancellationRequest.cancellationRequested() )
             {
+                msgLog.info( "Switch to slave cancelled after consistency checks." );
                 return null;
             }
 
