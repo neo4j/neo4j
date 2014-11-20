@@ -19,14 +19,16 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
+
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
@@ -36,19 +38,32 @@ import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.FixedDependencyResolver;
 
 import static org.junit.Assert.assertTrue;
 
 public class StoreMigratorTest
 {
+    private DependencyResolver dependencyResolver = new FixedDependencyResolver( new InMemoryIndexProvider() );
+
+    private File createNeoStoreWithOlderVersion( String version ) throws IOException
+    {
+        File storeDir = new File( "dir" ).getAbsoluteFile();
+        EphemeralFileSystemAbstraction fileSystem = fs.get();
+        fileSystem.mkdirs( storeDir );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fileSystem, storeDir );
+        return storeDir;
+    }
+
     @Test
     public void shouldBeAbleToResumeMigration() throws Exception
     {
         // GIVEN a legacy database
-        File storeDirectory = createNeoStoreWithOlderVersion();
+        File storeDirectory = createNeoStoreWithOlderVersion( Legacy20Store.LEGACY_VERSION );
         // and a state of the migration saying that it has done the actual migration
         Logging logging = new DevNullLoggingService();
-        StoreMigrator migrator = new StoreMigrator( new SilentMigrationProgressMonitor(), fs.get(), logging );
+        StoreMigrator migrator = new StoreMigrator( new SilentMigrationProgressMonitor(), fs.get(), logging,
+                dependencyResolver );
         File migrationDir = new File( storeDirectory, StoreUpgrader.MIGRATION_DIRECTORY );
         fs.get().mkdirs( migrationDir );
         assertTrue( migrator.needsMigration( storeDirectory ) );
@@ -56,7 +71,7 @@ public class StoreMigratorTest
         migrator.close();
 
         // WHEN simulating resuming the migration
-        migrator = new StoreMigrator( new SilentMigrationProgressMonitor(), fs.get(), logging );
+        migrator = new StoreMigrator( new SilentMigrationProgressMonitor(), fs.get(), logging, dependencyResolver );
         migrator.moveMigratedFiles( migrationDir, storeDirectory );
 
         // THEN starting the new store should be successful
@@ -73,15 +88,6 @@ public class StoreMigratorTest
         {
             life.shutdown();
         }
-    }
-
-    private File createNeoStoreWithOlderVersion() throws IOException
-    {
-        File storeDir = new File( "dir" ).getAbsoluteFile();
-        EphemeralFileSystemAbstraction fileSystem = fs.get();
-        fileSystem.mkdirs( storeDir );
-        MigrationTestUtils.prepareSampleLegacyDatabase( Legacy20Store.LEGACY_VERSION, fileSystem, storeDir );
-        return storeDir;
     }
 
     public final @Rule EphemeralFileSystemRule fs = new EphemeralFileSystemRule();

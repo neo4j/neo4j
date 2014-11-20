@@ -42,7 +42,6 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.transaction.state.PropertyRecordChange;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -66,7 +65,6 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     public static final int DEFAULT_PAYLOAD_SIZE = 32;
 
     public static final String TYPE_DESCRIPTOR = "PropertyStore";
-    public static final String FILE_NAME = ".propertystore.db";
 
     public static final int RECORD_SIZE = 1/*next and prev high bits*/
     + 4/*next*/
@@ -332,7 +330,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
             {
                 do
                 {
-                    record = getRecord( id, cursor, RecordLoad.NORMAL );
+                    record = getRecord( id, cursor );
                 } while ( cursor.shouldRetry() );
             }
 
@@ -359,7 +357,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
             {
                 do
                 {
-                    record = getRecord( id, cursor, RecordLoad.FORCE );
+                    record = getRecord( id, cursor );
                 } while ( cursor.shouldRetry() );
             }
             return record == null? new PropertyRecord( id ) : record;
@@ -415,7 +413,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
         return record;
     }
 
-    private PropertyRecord getRecord( long id, PageCursor cursor, RecordLoad load )
+    private PropertyRecord getRecord( long id, PageCursor cursor )
     {
         cursor.setOffset( (int) (id * RECORD_SIZE % storeFile.pageSize()) );
         return getRecordFromBuffer( id, cursor );

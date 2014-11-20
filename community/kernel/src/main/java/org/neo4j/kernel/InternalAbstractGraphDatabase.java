@@ -539,9 +539,12 @@ public abstract class InternalAbstractGraphDatabase
 
         idGeneratorFactory = createIdGeneratorFactory();
 
+        StringLogger messagesLog = logging.getMessagesLog( StoreMigrator.class );
+        VisibleMigrationProgressMonitor progressMonitor =
+                new VisibleMigrationProgressMonitor( messagesLog, System.out );
+        UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( fileSystem ) );
         storeMigrationProcess.addParticipant( new StoreMigrator(
-                new VisibleMigrationProgressMonitor( logging.getMessagesLog( StoreMigrator.class ), System.out ),
-                fileSystem, new UpgradableDatabase( new StoreVersionCheck( fileSystem ) ), config, logging ) );
+                progressMonitor, fileSystem, upgradableDatabase, config, logging, dependencyResolver ) );
 
         propertyKeyTokenHolder = life.add( new PropertyKeyTokenHolder( createPropertyKeyCreator() ) );
         labelTokenHolder = life.add( new LabelTokenHolder( createLabelIdCreator() ) );

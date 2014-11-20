@@ -149,9 +149,9 @@ public class MigrationTestUtils
         return Unzip.unzip( Legacy21Store.class, "upgradeTest21Db.zip" );
     }
 
-    public static File find21FormatStoreDirectory( File unzipTarget ) throws IOException
+    public static File find21FormatStoreDirectoryWithDuplicateProperties( File directory ) throws IOException
     {
-        return Unzip.unzip( Legacy21Store.class, "upgradeTest21Db.zip", unzipTarget );
+        return Unzip.unzip( Legacy21Store.class, "with-duplicate-properties.zip", directory );
     }
 
     public static File find20FormatStoreDirectory() throws IOException
@@ -189,6 +189,7 @@ public class MigrationTestUtils
     {
         final Iterable<StoreFile> storeFilesWithGivenVersions =
                 Iterables.filter( ALL_EXCEPT_COUNTS_STORE, StoreFile.legacyStoreFilesForVersion( version ) );
+        boolean success = true;
         for ( StoreFile storeFile : storeFilesWithGivenVersions )
         {
             StoreChannel channel = fileSystem.open( new File( workingDirectory, storeFile.storeFileName() ), "r" );
@@ -202,10 +203,10 @@ public class MigrationTestUtils
             String foundVersion = UTF8.decode( bytes );
             if ( !version.equals( foundVersion ) )
             {
-                return false;
+                success = false;
             }
         }
-        return true;
+        return success;
     }
 
     public static boolean containsAnyStoreFiles( FileSystemAbstraction fileSystem, File directory )

@@ -58,17 +58,17 @@ public class StoreMigrationTool
         ConfigMapUpgradeConfiguration upgradeConfiguration = new ConfigMapUpgradeConfiguration( config );
         StoreUpgrader migrationProcess = new StoreUpgrader( upgradeConfiguration, fs, monitor, logging );
 
-        // Add the kernel store migrator
-        config = StoreFactory.configForStoreDir( config, new File( legacyStoreDirectory ) );
-        migrationProcess.addParticipant( new StoreMigrator(
-                new VisibleMigrationProgressMonitor( logging.getMessagesLog( StoreMigrationTool.class ), System.out ),
-                fs, new UpgradableDatabase( new StoreVersionCheck( fs ) ), config, logging ) );
-
         // Add participants from kernel extensions...
         LifeSupport life = new LifeSupport();
         KernelExtensions kernelExtensions = life.add( new KernelExtensions(
                 GraphDatabaseDependencies.newDependencies().kernelExtensions(), config,
                 kernelExtensionDependencyResolver( fs, config ), ignore() ) );
+
+        // Add the kernel store migrator
+        config = StoreFactory.configForStoreDir( config, new File( legacyStoreDirectory ) );
+        migrationProcess.addParticipant( new StoreMigrator(
+                new VisibleMigrationProgressMonitor( logging.getMessagesLog( StoreMigrationTool.class ), System.out ),
+                fs, new UpgradableDatabase( new StoreVersionCheck( fs ) ), config, logging, kernelExtensions ) );
         life.start();
         // ... TODO although hard coded to SchemaIndexProvider a.t.m.
         try

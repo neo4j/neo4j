@@ -25,7 +25,6 @@ import java.nio.ByteBuffer;
 
 import org.neo4j.helpers.UTF8;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
@@ -99,17 +98,5 @@ public class Legacy21Store implements LegacyStore
     {
         // not needed
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void copyLegacyIndexStoreFile( File toDirectory ) throws IOException
-    {
-        File legacyDirectory = storageFileName.getParentFile();
-        File fromFile = new File( legacyDirectory, IndexConfigStore.INDEX_DB_FILE_NAME );
-        if ( fromFile.exists() )
-        {
-            File toFile = new File( toDirectory, IndexConfigStore.INDEX_DB_FILE_NAME );
-            fs.copyFile( fromFile, toFile );
-        }
     }
 }

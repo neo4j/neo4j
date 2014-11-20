@@ -721,10 +721,10 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
             ConstraintIndexCreator constraintIndexCreator, UpdateableSchemaState updateableSchemaState,
             Guard guard, LegacyIndexStore legacyIndexStore )
     {
-        // Bottom layer: Read-access to committed data
-        StoreReadLayer storeLayer = storeReadLayer;
+        // The passed in StoreReadLayer is the bottom most layer: Read-access to committed data.
+        // To it we add:
         // + Transaction state handling
-        StateHandlingStatementOperations stateHandlingContext = new StateHandlingStatementOperations( storeLayer,
+        StateHandlingStatementOperations stateHandlingContext = new StateHandlingStatementOperations(storeReadLayer,
                 legacyPropertyTrackers, constraintIndexCreator,
                 legacyIndexStore );
         StatementOperationParts parts = new StatementOperationParts( stateHandlingContext, stateHandlingContext,

@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
@@ -337,6 +338,50 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
         record.setNextProp( longFromIntAndMod( nextProp, propModifier ) );
         record.setInUse( inUse );
         record.setLabelField( labels, Collections.<DynamicRecord>emptyList() );
+    }
+
+    /**
+     * Scan the given range of records both inclusive, and pass all the in-use ones to the given processor, one by one.
+     *
+     * The record passed to the NodeRecordScanner is reused instead of reallocated for every record, so it must be
+     * cloned if you want to save it for later.
+     */
+    public void scanAllRecords( Visitor<NodeRecord,IOException> visitor ) throws IOException
+    {
+        long startPageId = pageIdForRecord( 0 );
+        long currentPageId = startPageId;
+        long endPageId = pageIdForRecord( getHighestPossibleIdInUse() );
+        long currentRecordId = 0;
+        NodeRecord record = new NodeRecord( -1 );
+        int recordsPerPage = storeFile.pageSize() / getRecordSize();
+
+        try ( PageCursor cursor = storeFile.io( startPageId, PF_SHARED_LOCK | PF_READ_AHEAD ) )
+        {
+            while ( currentPageId <= endPageId && cursor.next() )
+            {
+                for ( int i = 0; i < recordsPerPage; i++ )
+                {
+                    record.setId( currentRecordId );
+                    int offset = offsetForId( currentRecordId );
+                    do {
+                        cursor.setOffset( offset );
+                        byte inUseByte = cursor.getByte();
+                        boolean isInUse = isInUse( inUseByte );
+                        readIntoRecord( cursor, record, inUseByte, isInUse );
+                    } while ( cursor.shouldRetry() );
+
+                    if ( record.inUse() )
+                    {
+                        if ( visitor.visit( record ) )
+                        {
+                            return;
+                        }
+                    }
+                    currentRecordId++;
+                }
+                currentPageId++;
+            }
+        }
     }
 
     public DynamicArrayStore getDynamicLabelStore()

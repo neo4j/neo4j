@@ -17,20 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration.legacystore;
+package org.neo4j.test;
 
-import java.io.Closeable;
-import java.io.File;
-import java.io.IOException;
+import org.neo4j.graphdb.DependencyResolver;
 
-public interface LegacyStore extends Closeable
+/**
+ * A stub DependencyResolver implementation that always returns the same dependency, no matter what is being asked for.
+ */
+public class FixedDependencyResolver implements DependencyResolver
 {
-    File getStorageFileName();
+    private final Object dependency;
+
+    public FixedDependencyResolver( Object dependency )
+    {
+        this.dependency = dependency;
+    }
 
     @Override
-    void close() throws IOException;
+    public <T> T resolveDependency( Class<T> type ) throws IllegalArgumentException
+    {
+        return (T) dependency;
+    }
 
-    LegacyNodeStoreReader getNodeStoreReader();
-
-    LegacyRelationshipStoreReader getRelStoreReader();
+    @Override
+    public <T> T resolveDependency( Class<T> type, SelectionStrategy selector )
+            throws IllegalArgumentException
+    {
+        return (T) dependency;
+    }
 }
