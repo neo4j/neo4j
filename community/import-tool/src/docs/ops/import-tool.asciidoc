@@ -4,17 +4,18 @@
 The import tool is used to create a new Neo4j database from data in CSV files.
 
 This chapter will give the details on the format of the input data together with an example.
+
 _For the command line parameters of the tool, see <<neo4j-import-manpage, the manpage>>._
 
 * Fields default to be comma separated, but a different delimiter can be specified.
 * All files must use the same delimiter.
-* A header which provides information on the data format must be on the first row of each data source.
+* Multiple data sources can be used for both nodes and relationships.
 * A data source can optionally be provided using multiple files.
-* Multiple data sources can be provided.
-* Data with no corresponding information in the header will not be read.
+* A header which provides information on the data fields must be on the first row of each data source.
+* Fields without corresponding information in the header will not be read.
 * UTF-8 encoding is used.
 * Indexes are not created during the import.
-  Instead, add the indexes afterwards.
+  Instead, add the indexes afterwards (see <<graphdb-neo4j-schema-indexes>>).
 
 [NOTE]
 Data cannot be imported into an existing database.
@@ -39,18 +40,20 @@ IGNORE::
 
 See below for the specifics of node and relationship data source headers.
 
+[[import-too-header-format-nodes]]
 === Nodes
 
-The following types of fields can be used for node data sources:
+The following field types do additionally apply to node data sources:
 
 ID::
-  Each node must have a unique id.
-  This id is used when connecting nodes through relationships.
+  Each node must have a unique id which is used during the import.
+  The ids are used to find the correct nodes when creating relationships.
   Note that the id has to be unique across all nodes in the import, even nodes with different labels.
 LABEL::
   Read one or more labels from this field.
   For multiple labels, the values are separated by the array delimiter.
 
+[[import-too-header-format-rels]]
 === Relationships
 
 For relationship data sources, there's three mandatory fields:
@@ -58,12 +61,15 @@ For relationship data sources, there's three mandatory fields:
 TYPE::
   The relationship type to use for the relationship.
 START_ID::
-  The id defined for the start node of the relationship.
+  The id of the start node of the relationship to create.
 END_ID::
-  The id defined for the end node of the relationship.
+  The id of the end node of the relationship to create.
 
-[[import-tool-example]]
-== Import Tool Example
+[[import-tool-examples]]
+== Import Tool Examples
+
+[[import-tool-basic-example]]
+=== Basic Import Tool Example
 
 Let's look at an example.
 We'll use a tiny data set with movies, actors and roles.
@@ -108,4 +114,57 @@ include::example-command.adoc[]
 Now we're ready to start up a database from the target directory.
 With the database running, we could add indexes.
 See <<cypherdoc-labels-constraints-and-indexes>> for how to do that.
+
+[[import-tool-separate-headers-example]]
+=== Using Separate Header Files
+
+It can be convenient to put the header in a separate file.
+This makes it easier to edit the header, as you avoid having to open a huge data file to just change the header.
+
+We'll use the same data as in the previous example, but put the headers in separate files.
+This time the field delimiter character is altered, as well as the array-delimiter character and the quotation character.
+See the command below for the details!
+
+.movies2-header.csv
+[source]
+----
+include::movies2-header.csv[]
+----
+
+.movies2.csv
+[source]
+----
+include::movies2.csv[]
+----
+
+.actors2-header.csv
+[source]
+----
+include::actors2-header.csv[]
+----
+.actors2.csv
+[source]
+----
+include::actors2.csv[]
+----
+
+.roles2-header.csv
+[source]
+----
+include::roles2-header.csv[]
+----
+
+.roles2.csv
+[source]
+----
+include::roles2.csv[]
+----
+
+Note how the file groups are enclosed in quotation marks in the command:
+
+[source]
+----
+include::separate-header-example-command.adoc[]
+----
+
 
