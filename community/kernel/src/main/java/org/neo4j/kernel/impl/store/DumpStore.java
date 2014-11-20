@@ -141,50 +141,34 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
 
     private static void dumpRelationshipGroups( File file, StoreFactory storeFactory ) throws Exception
     {
-        RelationshipGroupStore store = storeFactory.newRelationshipGroupStore( file );
-        try
+        try ( RelationshipGroupStore store = storeFactory.newRelationshipGroupStore( file ) )
         {
-            new DumpStore<RelationshipGroupRecord, RelationshipGroupStore>( System.out ).dump( store );
-        }
-        finally
-        {
-            store.close();
+            new DumpStore<RelationshipGroupRecord,RelationshipGroupStore>( System.out ).dump( store );
         }
     }
 
     private static void dumpRelationshipStore( File file, StoreFactory storeFactory ) throws Exception
     {
-        RelationshipStore store = storeFactory.newRelationshipStore( file );
-        try
+        try ( RelationshipStore store = storeFactory.newRelationshipStore( file ) )
         {
-            new DumpStore<RelationshipRecord, RelationshipStore>( System.out ).dump( store );
-        }
-        finally
-        {
-            store.close();
+            new DumpStore<RelationshipRecord,RelationshipStore>( System.out ).dump( store );
         }
     }
 
     private static void dumpPropertyStore( File file, StoreFactory storeFactory ) throws Exception
     {
-        PropertyStore store = storeFactory.newPropertyStore( file );
-        try
+        try ( PropertyStore store = storeFactory.newPropertyStore( file ) )
         {
-            new DumpStore<PropertyRecord, PropertyStore>( System.out ).dump( store );
-        }
-        finally
-        {
-            store.close();
+            new DumpStore<PropertyRecord,PropertyStore>( System.out ).dump( store );
         }
     }
 
     private static void dumpSchemaStore( File file, StoreFactory storeFactory ) throws Exception
     {
-        SchemaStore store = storeFactory.newSchemaStore( file );
-        try
+        try ( SchemaStore store = storeFactory.newSchemaStore( file ) )
         {
             final SchemaStorage storage = new SchemaStorage( store );
-            new DumpStore<DynamicRecord, SchemaStore>( System.out )
+            new DumpStore<DynamicRecord,SchemaStore>( System.out )
             {
                 @Override
                 protected Object transform( DynamicRecord record ) throws Exception
@@ -195,18 +179,13 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
                 }
             }.dump( store );
         }
-        finally
-        {
-            store.close();
-        }
     }
 
     private static void dumpNodeStore( File file, StoreFactory storeFactory ) throws Exception
     {
-        NodeStore store = storeFactory.newNodeStore( file );
-        try
+        try ( NodeStore store = storeFactory.newNodeStore( file ) )
         {
-            new DumpStore<NodeRecord, NodeStore>( System.out )
+            new DumpStore<NodeRecord,NodeStore>( System.out )
             {
                 @Override
                 protected Object transform( NodeRecord record ) throws Exception
@@ -214,10 +193,6 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
                     return record.inUse() ? record : "";
                 }
             }.dump( store );
-        }
-        finally
-        {
-            store.close();
         }
     }
 
@@ -237,7 +212,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
         out.println( "store.getRecordSize() = " + size );
         out.println( "<dump>" );
         long used = 0;
-        for ( long i = 1, high = store.getHighestPossibleIdInUse(); i <= high; i++ )
+        for ( long i = 0, high = store.getHighestPossibleIdInUse(); i <= high; i++ )
         {
             RECORD record = store.forceGetRecord( i );
             if ( record.inUse() )
