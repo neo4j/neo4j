@@ -19,7 +19,7 @@
  */
 package org.neo4j.collection.primitive;
 
-public interface PrimitiveLongObjectVisitor<VALUE>
+public interface PrimitiveLongObjectVisitor<VALUE, E extends Exception>
 {
-    void visited( long key, VALUE value );
+    boolean visited( long key, VALUE value ) throws E;
 }

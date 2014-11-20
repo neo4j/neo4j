@@ -113,17 +113,21 @@ public class PropertyDeduplicator
             }
 
             final long localHeadRecordId = headRecordId;
-            localDuplicateClusters.visitEntries(new PrimitiveIntObjectVisitor<DuplicateCluster>() {
+            localDuplicateClusters.visitEntries( new PrimitiveIntObjectVisitor<DuplicateCluster, RuntimeException>()
+            {
                 @Override
-                public void visited(int key, DuplicateCluster duplicateCluster) {
-                    List<DuplicateCluster> clusters = duplicateClusters.get(localHeadRecordId);
-                    if (clusters == null) {
+                public boolean visited( int key, DuplicateCluster duplicateCluster )
+                {
+                    List<DuplicateCluster> clusters = duplicateClusters.get( localHeadRecordId );
+                    if ( clusters == null )
+                    {
                         clusters = new ArrayList<>();
-                        duplicateClusters.put(localHeadRecordId, clusters);
+                        duplicateClusters.put( localHeadRecordId, clusters );
                     }
-                    clusters.add(duplicateCluster);
+                    clusters.add( duplicateCluster );
+                    return false;
                 }
-            });
+            } );
 
             seenPropertyKeys.clear();
             localDuplicateClusters.clear();
@@ -135,25 +139,26 @@ public class PropertyDeduplicator
     private void scanForDuplicates( long propertyId,
                                     List<PropertyBlock> propertyBlocks )
     {
-        for (PropertyBlock block : propertyBlocks)
+        for ( PropertyBlock block : propertyBlocks )
         {
             int propertyKeyId = block.getKeyIndexId();
 
             // If we've seen this property key in this chain before, we schedule the newly found
             // duplicate for removal.
-            if (seenPropertyKeys.containsKey(propertyKeyId))
+            if ( seenPropertyKeys.containsKey( propertyKeyId ) )
             {
-                DuplicateCluster cluster = localDuplicateClusters.get(propertyKeyId);
-                if (cluster == null) {
-                    cluster = new DuplicateCluster(propertyKeyId);
-                    localDuplicateClusters.put(propertyKeyId, cluster);
+                DuplicateCluster cluster = localDuplicateClusters.get( propertyKeyId );
+                if ( cluster == null )
+                {
+                    cluster = new DuplicateCluster( propertyKeyId );
+                    localDuplicateClusters.put( propertyKeyId, cluster );
                 }
-                cluster.add(seenPropertyKeys.get(propertyKeyId));
-                cluster.add(propertyId);
+                cluster.add( seenPropertyKeys.get( propertyKeyId ) );
+                cluster.add( propertyId );
             }
             else
             {
-                seenPropertyKeys.put(propertyKeyId, propertyId);
+                seenPropertyKeys.put( propertyKeyId, propertyId );
             }
         }
     }
@@ -192,14 +197,7 @@ public class PropertyDeduplicator
         // Initially resolve all duplicateClusters by changing the propertyKey for the first conflicting property block, to
         // one that is prefixed with "__DUPLICATE_<key>".
         PropertyKeyTokenStore keyTokenStore = propertyStore.getPropertyKeyTokenStore();
-        try
-        {
-            NonIndexedConflictResolver resolver = new NonIndexedConflictResolver(keyTokenStore, propertyStore);
-            duplicateClusters.visitEntries( resolver );
-        }
-        catch ( InnerIterationIOException e )
-        {
-            throw e.getCause();
-        }
+        NonIndexedConflictResolver resolver = new NonIndexedConflictResolver( keyTokenStore, propertyStore );
+        duplicateClusters.visitEntries( resolver );
     }
 }

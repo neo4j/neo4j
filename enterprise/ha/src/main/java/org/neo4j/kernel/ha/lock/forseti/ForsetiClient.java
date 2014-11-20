@@ -48,7 +48,7 @@ public class ForsetiClient implements Locks.Client
     private final int myId;
 
     /** resourceType -> lock map. These are the global lock maps, shared across all clients. */
-    private final ConcurrentMap[] lockMaps;
+    private final ConcurrentMap<Long, ForsetiLockManager.Lock>[] lockMaps;
 
     /** resourceType -> wait strategy */
     private final WaitStrategy<AcquireLockTimeoutException>[] waitStrategies;
@@ -77,8 +77,8 @@ public class ForsetiClient implements Locks.Client
     private final ExclusiveLock myExclusiveLock = new ExclusiveLock(this);
 
     public ForsetiClient( int id,
-                          ConcurrentMap[] lockMaps,
-                          WaitStrategy[] waitStrategies,
+                          ConcurrentMap<Long, ForsetiLockManager.Lock>[] lockMaps,
+                          WaitStrategy<AcquireLockTimeoutException>[] waitStrategies,
                           LinkedQueuePool<ForsetiClient> clientPool )
     {
         this.myId                = id;
@@ -708,12 +708,12 @@ public class ForsetiClient implements Locks.Client
 
     // Visitors used for bulk ops on the lock maps (such as releasing all locks)
 
-    private class ReleaseSharedLocksVisitor implements PrimitiveLongVisitor
+    private class ReleaseSharedLocksVisitor implements PrimitiveLongVisitor<RuntimeException>
     {
         private PrimitiveLongIntMap exclusiveLockCounts;
         private ConcurrentMap<Long, ForsetiLockManager.Lock> lockMap;
 
-        private PrimitiveLongVisitor initialize( PrimitiveLongIntMap exclusiveLockCounts,
+        private PrimitiveLongVisitor<RuntimeException> initialize( PrimitiveLongIntMap exclusiveLockCounts,
                                                  ConcurrentMap<Long, ForsetiLockManager.Lock> lockMap )
         {
             this.exclusiveLockCounts = exclusiveLockCounts;
@@ -722,12 +722,13 @@ public class ForsetiClient implements Locks.Client
         }
 
         @Override
-        public void visited( long resourceId )
+        public boolean visited( long resourceId )
         {
             if(!exclusiveLockCounts.containsKey( resourceId ))
             {
                 releaseGlobalLock( lockMap, resourceId );
             }
+            return false;
         }
     }
 
@@ -736,29 +737,30 @@ public class ForsetiClient implements Locks.Client
      * this operates under the guarantee that there will be no exclusive locks held by this client, and so it can remove
      * a check otherwise needed. It is used when releasing all locks.
      */
-    private class ReleaseSharedDontCheckExclusiveVisitor implements PrimitiveLongVisitor
+    private class ReleaseSharedDontCheckExclusiveVisitor implements PrimitiveLongVisitor<RuntimeException>
     {
         private ConcurrentMap<Long, ForsetiLockManager.Lock> lockMap;
 
-        private PrimitiveLongVisitor initialize( ConcurrentMap<Long, ForsetiLockManager.Lock> lockMap )
+        private PrimitiveLongVisitor<RuntimeException> initialize( ConcurrentMap<Long, ForsetiLockManager.Lock> lockMap )
         {
             this.lockMap = lockMap;
             return this;
         }
 
         @Override
-        public void visited( long resourceId )
+        public boolean visited( long resourceId )
         {
             releaseGlobalLock( lockMap, resourceId );
+            return false;
         }
     }
 
-    private class ReleaseExclusiveLocksVisitor implements PrimitiveLongVisitor
+    private class ReleaseExclusiveLocksVisitor implements PrimitiveLongVisitor<RuntimeException>
     {
         private PrimitiveLongIntMap sharedLockCounts;
         private ConcurrentMap<Long, ForsetiLockManager.Lock> lockMap;
 
-        private PrimitiveLongVisitor initialize( PrimitiveLongIntMap sharedLockCounts,
+        private PrimitiveLongVisitor<RuntimeException> initialize( PrimitiveLongIntMap sharedLockCounts,
                                                  ConcurrentMap<Long, ForsetiLockManager.Lock> lockMap )
         {
             this.sharedLockCounts = sharedLockCounts;
@@ -767,7 +769,7 @@ public class ForsetiClient implements Locks.Client
         }
 
         @Override
-        public void visited( long resourceId )
+        public boolean visited( long resourceId )
         {
             if(sharedLockCounts.containsKey( resourceId ))
             {
@@ -777,6 +779,7 @@ public class ForsetiClient implements Locks.Client
             {
                 releaseGlobalLock( lockMap, resourceId );
             }
+            return false;
         }
     }
 
@@ -786,12 +789,12 @@ public class ForsetiClient implements Locks.Client
      * exclusive lock and remove any local reference to the shared lock. This is an optimization used when releasing
      * all locks.
      */
-    private class ReleaseExclusiveLocksAndClearSharedVisitor implements PrimitiveLongVisitor
+    private class ReleaseExclusiveLocksAndClearSharedVisitor implements PrimitiveLongVisitor<RuntimeException>
     {
         private PrimitiveLongIntMap sharedLockCounts;
         private ConcurrentMap<Long, ForsetiLockManager.Lock> lockMap;
 
-        private PrimitiveLongVisitor initialize( PrimitiveLongIntMap sharedLockCounts,
+        private PrimitiveLongVisitor<RuntimeException> initialize( PrimitiveLongIntMap sharedLockCounts,
                                                  ConcurrentMap<Long, ForsetiLockManager.Lock> lockMap )
         {
             this.sharedLockCounts = sharedLockCounts;
@@ -800,7 +803,7 @@ public class ForsetiClient implements Locks.Client
         }
 
         @Override
-        public void visited( long resourceId )
+        public boolean visited( long resourceId )
         {
             releaseGlobalLock( lockMap, resourceId );
 
@@ -810,6 +813,7 @@ public class ForsetiClient implements Locks.Client
             {
                 sharedLockCounts.remove( resourceId );
             }
+            return false;
         }
     }
 

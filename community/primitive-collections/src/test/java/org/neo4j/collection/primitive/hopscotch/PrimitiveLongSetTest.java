@@ -19,20 +19,27 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import org.junit.Test;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
+import org.neo4j.collection.primitive.PrimitiveIntVisitor;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.Monitor;
 
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.collection.primitive.Primitive.VALUE_MARKER;
 import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.NO_MONITOR;
 
@@ -95,9 +102,10 @@ public class PrimitiveLongSetTest
         set.visitKeys( new PrimitiveLongVisitor()
         {
             @Override
-            public void visited( long value )
+            public boolean visited( long value )
             {
                 assertTrue( visitedKeys.add( value ) );
+                return false;
             }
         } );
         assertEquals( expectedValues, visitedKeys );
@@ -347,21 +355,95 @@ public class PrimitiveLongSetTest
         assertTrue( "1103190229303827372 should exist", existsAfter );
     }
 
-    private Monitor onlyAllowGrowing( final int growthsToAllow )
+    @SuppressWarnings( "unchecked" )
+    @Test
+    public void longVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
     {
-        return new Monitor.Adapter()
-        {
-            private int observedGrowths;
+        // GIVEN
+        PrimitiveLongSet set = Primitive.longSet();
+        set.add( 1 );
+        set.add( 2 );
+        set.add( 3 );
+        PrimitiveLongVisitor<RuntimeException> visitor = mock( PrimitiveLongVisitor.class );
 
+        // WHEN
+        set.visitKeys( visitor );
+
+        // THEN
+        verify( visitor ).visited( 1 );
+        verify( visitor ).visited( 2 );
+        verify( visitor ).visited( 3 );
+        verifyNoMoreInteractions( visitor );
+    }
+
+    @Test
+    public void longVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
+    {
+        // GIVEN
+        PrimitiveIntSet map = Primitive.intSet();
+        map.add( 1 );
+        map.add( 2 );
+        map.add( 3 );
+        map.add( 4 );
+        final AtomicInteger counter = new AtomicInteger();
+
+        // WHEN
+        map.visitKeys( new PrimitiveIntVisitor<RuntimeException>()
+        {
             @Override
-            public boolean tableGrew( int fromCapacity, int toCapacity, int currentSize )
+            public boolean visited( int value )
             {
-                if ( observedGrowths++ == growthsToAllow )
-                {
-                    fail( "This test should not need to grow table these many times" );
-                }
-                return true;
+                return counter.incrementAndGet() > 2;
             }
-        };
+        } );
+
+        // THEN
+        assertThat( counter.get(), is( 3 ) );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    @Test
+    public void intVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
+    {
+        // GIVEN
+        PrimitiveIntSet set = Primitive.intSet();
+        set.add( 1 );
+        set.add( 2 );
+        set.add( 3 );
+        PrimitiveIntVisitor<RuntimeException> visitor = mock( PrimitiveIntVisitor.class );
+
+        // WHEN
+        set.visitKeys( visitor );
+
+        // THEN
+        verify( visitor ).visited( 1 );
+        verify( visitor ).visited( 2 );
+        verify( visitor ).visited( 3 );
+        verifyNoMoreInteractions( visitor );
+    }
+
+    @Test
+    public void intVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
+    {
+        // GIVEN
+        PrimitiveIntSet map = Primitive.intSet();
+        map.add( 1 );
+        map.add( 2 );
+        map.add( 3 );
+        map.add( 4 );
+        final AtomicInteger counter = new AtomicInteger();
+
+        // WHEN
+        map.visitKeys( new PrimitiveIntVisitor<RuntimeException>()
+        {
+            @Override
+            public boolean visited( int value )
+            {
+                return counter.incrementAndGet() > 2;
+            }
+        } );
+
+        // THEN
+        assertThat( counter.get(), is( 3 ) );
     }
 }

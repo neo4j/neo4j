@@ -19,7 +19,7 @@
  */
 package org.neo4j.collection.primitive;
 
-public interface PrimitiveIntVisitor
+public interface PrimitiveIntVisitor<E extends Exception>
 {
-    void visited( int value );
+    boolean visited( int value ) throws E;
 }

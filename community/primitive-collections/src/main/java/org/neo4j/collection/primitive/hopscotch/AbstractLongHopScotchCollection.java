@@ -38,16 +38,16 @@ public class AbstractLongHopScotchCollection<VALUE> extends AbstractHopScotchCol
     }
 
     @Override
-    public void visitKeys( PrimitiveLongVisitor visitor )
+    public <E extends Exception> void visitKeys( PrimitiveLongVisitor<E> visitor ) throws E
     {
         int capacity = table.capacity();
         long nullKey = table.nullKey();
         for ( int i = 0; i < capacity; i++ )
         {
             long key = table.key( i );
-            if ( key != nullKey )
+            if ( key != nullKey && visitor.visited( key ) )
             {
-                visitor.visited( key );
+                return;
             }
         }
     }

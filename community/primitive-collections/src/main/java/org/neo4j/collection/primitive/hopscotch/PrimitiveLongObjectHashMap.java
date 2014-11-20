@@ -73,17 +73,16 @@ public class PrimitiveLongObjectHashMap<VALUE> extends AbstractLongHopScotchColl
     }
 
     @Override
-    public void visitEntries( PrimitiveLongObjectVisitor<VALUE> visitor )
+    public <E extends Exception> void visitEntries( PrimitiveLongObjectVisitor<VALUE, E> visitor ) throws E
     {
         long nullKey = table.nullKey();
         int capacity = table.capacity();
         for ( int i = 0; i < capacity; i++ )
         {
             long key = table.key( i );
-            if ( key != nullKey )
+            if ( key != nullKey && visitor.visited( key, table.value( i ) ) )
             {
-                VALUE value = table.value( i );
-                visitor.visited( key, value );
+                return;
             }
         }
     }

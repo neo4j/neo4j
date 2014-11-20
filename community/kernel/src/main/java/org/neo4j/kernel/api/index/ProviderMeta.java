@@ -228,12 +228,13 @@ public class ProviderMeta extends LifecycleAdapter
 
     private void updatePendingSnapshotChanges()
     {
-        snapshotRecords.visitEntries( new PrimitiveLongObjectVisitor<ProviderMeta.Record>()
+        snapshotRecords.visitEntries( new PrimitiveLongObjectVisitor<ProviderMeta.Record, RuntimeException>()
         {
             @Override
-            public void visited( long key, Record value )
+            public boolean visited( long key, Record value )
             {
                 updateRecord( value );
+                return false;
             }
         } );
     }

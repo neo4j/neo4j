@@ -21,5 +21,8 @@ package org.neo4j.collection.primitive;
 
 public interface PrimitiveIntCollection extends PrimitiveCollection, PrimitiveIntIterable
 {
-    void visitKeys( PrimitiveIntVisitor visitor );
+    /**
+     * Visit the keys of this collection, until all have been visited or the visitor returns 'true'.
+     */
+    <E extends Exception> void visitKeys( PrimitiveIntVisitor<E> visitor ) throws E;
 }

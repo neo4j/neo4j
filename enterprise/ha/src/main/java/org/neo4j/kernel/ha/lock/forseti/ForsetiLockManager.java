@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.collection.pool.LinkedQueuePool;
 import org.neo4j.collection.pool.Pool;
+import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.util.collection.SimpleBitSet;
 import org.neo4j.kernel.impl.util.concurrent.WaitStrategy;
@@ -107,10 +108,7 @@ public class ForsetiLockManager extends LifecycleAdapter implements Locks
     }
 
     /** Pointers to lock maps, one array per resource type. */
-    private final ConcurrentMap[] lockMaps;
-
-    /** Wait strategies per resource type */
-    private final WaitStrategy[] waitStrategies;
+    private final ConcurrentMap<Long, ForsetiLockManager.Lock>[] lockMaps;
 
     /** Reverse lookup resource types by id, used for introspection */
     private final ResourceType[] resourceTypes;
@@ -118,16 +116,19 @@ public class ForsetiLockManager extends LifecycleAdapter implements Locks
     /** Pool forseti clients. */
     private final Pool<ForsetiClient> clientPool;
 
+    @SuppressWarnings( "unchecked" )
     public ForsetiLockManager( ResourceType... resourceTypes )
     {
         this.lockMaps = new ConcurrentMap[findMaxResourceId( resourceTypes )];
-        this.waitStrategies = new WaitStrategy[findMaxResourceId( resourceTypes )];
         this.resourceTypes = new ResourceType[findMaxResourceId( resourceTypes )];
+
+        /* Wait strategies per resource type */
+        WaitStrategy<AcquireLockTimeoutException>[] waitStrategies = new WaitStrategy[findMaxResourceId( resourceTypes )];
 
         for ( ResourceType type : resourceTypes )
         {
-            this.lockMaps[type.typeId()] = new ConcurrentHashMap(16, 0.6f, 512);
-            this.waitStrategies[type.typeId()] = type.waitStrategy();
+            this.lockMaps[type.typeId()] = new ConcurrentHashMap<>(16, 0.6f, 512);
+            waitStrategies[type.typeId()] = type.waitStrategy();
             this.resourceTypes[type.typeId()] = type;
         }
         // TODO Using a FlyweightPool here might still be more than what we actually need.
@@ -155,9 +156,8 @@ public class ForsetiLockManager extends LifecycleAdapter implements Locks
             if(lockMaps[i] != null)
             {
                 ResourceType type = resourceTypes[i];
-                for ( Object raw : lockMaps[i].entrySet() )
+                for ( Map.Entry<Long, Lock> entry : lockMaps[i].entrySet() )
                 {
-                    Map.Entry<Long, Lock> entry = (Map.Entry<Long, Lock>)raw;
                     Lock lock = entry.getValue();
                     out.visit( type, entry.getKey(), lock.describeWaitList(), 0 );
                 }
@@ -183,10 +183,12 @@ public class ForsetiLockManager extends LifecycleAdapter implements Locks
         /** Re-use ids, forseti uses these in arrays, so we want to keep them low and not loose them. */
         // TODO we could use a synchronised SimpleBitSet instead, since we know that we only care about reusing a very limited set of integers.
         private final Queue<Integer> unusedIds = new ConcurrentLinkedQueue<>();
-        private final ConcurrentMap[] lockMaps;
-        private final WaitStrategy[] waitStrategies;
+        private final ConcurrentMap<Long, ForsetiLockManager.Lock>[] lockMaps;
+        private final WaitStrategy<AcquireLockTimeoutException>[] waitStrategies;
 
-        public ForsetiClientFlyweightPool( ConcurrentMap[] lockMaps, WaitStrategy[] waitStrategies )
+        public ForsetiClientFlyweightPool(
+                ConcurrentMap<Long, ForsetiLockManager.Lock>[] lockMaps,
+                WaitStrategy<AcquireLockTimeoutException>[] waitStrategies )
         {
             super( 128, null);
             this.lockMaps = lockMaps;
