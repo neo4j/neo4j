@@ -72,6 +72,7 @@ public class StoreFactory
     public static final String RELATIONSHIP_GROUP_STORE_NAME = ".relationshipgroupstore.db";
     public static final String COUNTS_STORE = ".counts.db";
     private final Config config;
+    @SuppressWarnings( "deprecation" )
     private final IdGeneratorFactory idGeneratorFactory;
     private final FileSystemAbstraction fileSystemAbstraction;
     private final StringLogger stringLogger;
@@ -80,6 +81,7 @@ public class StoreFactory
     private final Monitors monitors;
     private final PageCache pageCache;
 
+    @SuppressWarnings( "deprecation" )
     public StoreFactory( FileSystemAbstraction fileSystem, File storeDir, PageCache pageCache, StringLogger logger,
                          Monitors monitors )
     {
@@ -88,15 +90,16 @@ public class StoreFactory
                 logger, monitors, StoreVersionMismatchHandler.THROW_EXCEPTION );
     }
 
-    public StoreFactory( Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
-                         FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger, Monitors monitors )
+    public StoreFactory( Config config, @SuppressWarnings( "deprecation" ) IdGeneratorFactory idGeneratorFactory,
+                         PageCache pageCache, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
+                         Monitors monitors )
     {
         this( config, idGeneratorFactory, pageCache, fileSystemAbstraction, stringLogger,
                 monitors, StoreVersionMismatchHandler.THROW_EXCEPTION );
     }
 
-    public StoreFactory( Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
-                         FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
+    public StoreFactory( Config config, @SuppressWarnings( "deprecation" ) IdGeneratorFactory idGeneratorFactory,
+                         PageCache pageCache, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
                          Monitors monitors, StoreVersionMismatchHandler versionMismatchHandler )
     {
         this.config = config;
@@ -194,8 +197,8 @@ public class StoreFactory
 
             try ( NodeStore nodeStore = newNodeStore();
                   RelationshipStore relationshipStore = newRelationshipStore();
-                  CountsTracker tracker =
-                          new CountsTracker( fileSystemAbstraction, pageCache, storeFileBase, BASE_TX_ID ) )
+                  CountsTracker tracker = new CountsTracker(
+                          stringLogger, fileSystemAbstraction, pageCache, storeFileBase, BASE_TX_ID ) )
             {
                 CountsComputer.computeCounts( nodeStore, relationshipStore ).
                         accept( new CountsAccessor.Initializer( tracker ) );
@@ -231,13 +234,15 @@ public class StoreFactory
         return newSchemaStore( storeFileName( SCHEMA_STORE_NAME ) );
     }
 
+    @SuppressWarnings( "deprecation" )
     public SchemaStore newSchemaStore( File baseFile )
     {
         return new SchemaStore( baseFile, config, IdType.SCHEMA,
                 idGeneratorFactory, pageCache, fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
     }
 
-    public DynamicStringStore newDynamicStringStore( File fileName, IdType nameIdType )
+    public DynamicStringStore newDynamicStringStore( File fileName,
+                                                     @SuppressWarnings( "deprecation" ) IdType nameIdType )
     {
         return new DynamicStringStore( fileName, config, nameIdType, idGeneratorFactory, pageCache,
                 fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
@@ -254,6 +259,7 @@ public class StoreFactory
         return newRelationshipTypeTokenStore( new File( baseFile + NAMES_PART ), baseFile );
     }
 
+    @SuppressWarnings( "deprecation" )
     private RelationshipTypeTokenStore newRelationshipTypeTokenStore( File relationshipTypeTokenNamesStore,
                                                                       File relationshipTypeTokenStore )
     {
@@ -278,6 +284,7 @@ public class StoreFactory
                 new File( baseFile.getPath() + INDEX_PART ) );
     }
 
+    @SuppressWarnings( "deprecation" )
     private PropertyStore newPropertyStore( File propertyStringStore, File propertyArrayStore, File propertyStore,
                                             File propertyKeysStore )
     {
@@ -300,6 +307,7 @@ public class StoreFactory
         return newPropertyKeyTokenStore( new File( baseFile.getPath() + KEYS_PART ), baseFile );
     }
 
+    @SuppressWarnings( "deprecation" )
     private PropertyKeyTokenStore newPropertyKeyTokenStore( File propertyKeyTokenNamesStore,
                                                             File propertyKeyTokenStore )
     {
@@ -323,6 +331,7 @@ public class StoreFactory
 
     private LabelTokenStore newLabelTokenStore( File labelTokenNamesStore, File labelTokenStore )
     {
+        @SuppressWarnings( "deprecation" )
         DynamicStringStore nameStore = newDynamicStringStore( labelTokenNamesStore, IdType.LABEL_TOKEN_NAME );
         return new LabelTokenStore( labelTokenStore, config, idGeneratorFactory,
                 pageCache, fileSystemAbstraction, stringLogger, nameStore, versionMismatchHandler, monitors );
@@ -339,7 +348,7 @@ public class StoreFactory
                 idGeneratorFactory, pageCache, fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
     }
 
-    public DynamicArrayStore newDynamicArrayStore( File fileName, IdType idType )
+    public DynamicArrayStore newDynamicArrayStore( File fileName, @SuppressWarnings( "deprecation" ) IdType idType )
     {
         return new DynamicArrayStore( fileName, config, idType, idGeneratorFactory, pageCache,
                 fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
@@ -355,6 +364,7 @@ public class StoreFactory
         return newNodeStore( new File( baseFile.getPath() + LABELS_PART ), baseFile );
     }
 
+    @SuppressWarnings( "deprecation" )
     private NodeStore newNodeStore( File labelStore, File nodeStore )
     {
         DynamicArrayStore dynamicLabelStore = new DynamicArrayStore( labelStore,
@@ -366,7 +376,7 @@ public class StoreFactory
 
     private CountsTracker newCountsStore( long txId )
     {
-        return new CountsTracker( fileSystemAbstraction, pageCache, storeFileName( COUNTS_STORE ), txId );
+        return new CountsTracker( stringLogger, fileSystemAbstraction, pageCache, storeFileName( COUNTS_STORE ), txId );
     }
 
     public NeoStore createNeoStore()
@@ -437,6 +447,7 @@ public class StoreFactory
         ) );
     }
 
+    @SuppressWarnings( "deprecation" )
     private void createNodeLabelsStore()
     {
         int labelStoreBlockSize = config.get( Configuration.label_block_size );
@@ -460,6 +471,7 @@ public class StoreFactory
      * filename is <CODE>null</CODE> or the file already exists an
      * <CODE>IOException</CODE> is thrown.
      */
+    @SuppressWarnings( "deprecation" )
     public void createPropertyStore()
     {
         createEmptyStore( storeFileName( PROPERTY_STORE_NAME ),
@@ -478,6 +490,7 @@ public class StoreFactory
      * If filename is <CODE>null</CODE> or the file already exists an
      * <CODE>IOException</CODE> is thrown.
      */
+    @SuppressWarnings( "deprecation" )
     private void createRelationshipTypeStore()
     {
         createEmptyStore( storeFileName( RELATIONSHIP_TYPE_TOKEN_STORE_NAME ),
@@ -488,6 +501,7 @@ public class StoreFactory
         store.close();
     }
 
+    @SuppressWarnings( "deprecation" )
     private void createLabelTokenStore()
     {
         createEmptyStore( storeFileName( LABEL_TOKEN_STORE_NAME ),
@@ -498,11 +512,13 @@ public class StoreFactory
         store.close();
     }
 
-    public void createDynamicStringStore( File fileName, int blockSize, IdType idType )
+    public void createDynamicStringStore( File fileName, int blockSize,
+                                          @SuppressWarnings( "deprecation" ) IdType idType )
     {
         createEmptyDynamicStore( fileName, blockSize, DynamicStringStore.VERSION, idType );
     }
 
+    @SuppressWarnings( "deprecation" )
     public void createPropertyKeyTokenStore()
     {
         createEmptyStore( storeFileName( PROPERTY_KEY_TOKEN_STORE_NAME ),
@@ -511,11 +527,13 @@ public class StoreFactory
                 TokenStore.NAME_STORE_BLOCK_SIZE, IdType.PROPERTY_KEY_TOKEN_NAME );
     }
 
+    @SuppressWarnings( "deprecation" )
     public void createDynamicArrayStore( File fileName, int blockSize )
     {
         createEmptyDynamicStore( fileName, blockSize, DynamicArrayStore.VERSION, IdType.ARRAY_BLOCK );
     }
 
+    @SuppressWarnings( "deprecation" )
     public void createSchemaStore()
     {
         createEmptyDynamicStore( storeFileName( SCHEMA_STORE_NAME ), SchemaStore.BLOCK_SIZE,
@@ -545,7 +563,8 @@ public class StoreFactory
      * @param typeAndVersionDescriptor The type and version descriptor that identifies this store
      */
     public void createEmptyDynamicStore( File fileName, int baseBlockSize,
-                                         String typeAndVersionDescriptor, IdType idType )
+                                         String typeAndVersionDescriptor,
+                                         @SuppressWarnings( "deprecation" ) IdType idType )
     {
         int blockSize = baseBlockSize;
         // sanity checks
@@ -597,6 +616,7 @@ public class StoreFactory
         idGenerator.close();
     }
 
+    @SuppressWarnings( "deprecation" )
     public void createRelationshipGroupStore( int denseNodeThreshold )
     {
         ByteBuffer firstRecord = ByteBuffer.allocate( RelationshipGroupStore.RECORD_SIZE ).putInt( denseNodeThreshold );
@@ -613,7 +633,7 @@ public class StoreFactory
     }
 
     private void createEmptyStore( File fileName, String typeAndVersionDescriptor, ByteBuffer firstRecordData,
-                                   IdType idType )
+                                   @SuppressWarnings( "deprecation" ) IdType idType )
     {
         // sanity checks
         if ( fileName == null )

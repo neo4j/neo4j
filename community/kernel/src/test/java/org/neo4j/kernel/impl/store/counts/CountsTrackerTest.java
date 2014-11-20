@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.register.Register.CopyableDoubleLongRegister;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -78,14 +79,16 @@ public class CountsTrackerTest
         CountsOracle oracle = oracle();
 
         // when
-        try ( CountsTracker tracker = new CountsTracker( fs.get(), pageCache(), storeFile(), BASE_TX_ID ) )
+        try ( CountsTracker tracker = new CountsTracker( StringLogger.DEV_NULL, fs.get(), pageCache(),
+                storeFile(), BASE_TX_ID ) )
         {
             oracle.update( tracker );
             tracker.rotate( 1 );
         }
 
         // then
-        try ( CountsTracker tracker = new CountsTracker( fs.get(), pageCache(), storeFile(), BASE_TX_ID ) )
+        try ( CountsTracker tracker = new CountsTracker( StringLogger.DEV_NULL, fs.get(), pageCache(),
+                storeFile(), BASE_TX_ID ) )
         {
             oracle.verify( tracker );
         }
@@ -98,7 +101,8 @@ public class CountsTrackerTest
         CountsTracker.createEmptyCountsStore( pageCache(), storeFile(), VERSION );
         CountsOracle oracle = oracle();
         int newTxId = 2;
-        try ( CountsTracker tracker = new CountsTracker( fs.get(), pageCache(), storeFile(), BASE_TX_ID ) )
+        try ( CountsTracker tracker = new CountsTracker( StringLogger.DEV_NULL, fs.get(), pageCache(),
+                storeFile(), BASE_TX_ID ) )
         {
             oracle.update( tracker );
             tracker.rotate( 1 );
@@ -124,7 +128,8 @@ public class CountsTrackerTest
         }
 
         // then
-        try ( CountsTracker tracker = new CountsTracker( fs.get(), pageCache(), storeFile(), newTxId ) )
+        try ( CountsTracker tracker = new CountsTracker( StringLogger.DEV_NULL, fs.get(), pageCache(),
+                storeFile(), newTxId ) )
         {
             oracle.verify( tracker );
         }
@@ -137,7 +142,8 @@ public class CountsTrackerTest
         CountsTracker.createEmptyCountsStore( pageCache(), storeFile(), VERSION );
         CountsOracle oracle = oracle();
         int newTxId = 2;
-        try ( CountsTracker tracker = new CountsTracker( fs.get(), pageCache(), storeFile(), BASE_TX_ID ) )
+        try ( CountsTracker tracker = new CountsTracker( StringLogger.DEV_NULL, fs.get(), pageCache(),
+                storeFile(), BASE_TX_ID ) )
         {
             oracle.update( tracker );
             tracker.rotate( newTxId );
@@ -157,6 +163,7 @@ public class CountsTrackerTest
         try ( CountsTracker tracker =
                       new InstrumentedCountsTracker( fs.get(), pageCache(), storeFile(), newTxId, barrier ) )
         {
+            @SuppressWarnings( "deprecation" )
             Future<Void> task = threading.execute( new Function<CountsTracker, Void>()
             {
                 @Override
@@ -196,7 +203,8 @@ public class CountsTrackerTest
             createStoreFile( fs, pageCache, alphaFile, BASE_TX_ID );
             createStoreFile( fs, pageCache, betaFile, BASE_TX_ID + 1 );
 
-            CountsTracker tracker = new CountsTracker( fs, pageCache, storeFile(), BASE_TX_ID + 1 );
+            CountsTracker tracker = new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
+                    storeFile(), BASE_TX_ID + 1 );
             assertEquals( betaFile, tracker.storeFile() );
             tracker.close();
         }
@@ -205,7 +213,8 @@ public class CountsTrackerTest
             createStoreFile( fs, pageCache, alphaFile, BASE_TX_ID + 1 );
             createStoreFile( fs, pageCache, betaFile, BASE_TX_ID );
 
-            CountsTracker tracker = new CountsTracker( fs, pageCache, storeFile(), BASE_TX_ID + 1 );
+            CountsTracker tracker = new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
+                    storeFile(), BASE_TX_ID + 1 );
             assertEquals( alphaFile, tracker.storeFile() );
             tracker.close();
         }
@@ -223,7 +232,8 @@ public class CountsTrackerTest
         createStoreFile( fs, pageCache, betaFile, BASE_TX_ID );
 
         {
-            CountsTracker tracker = new CountsTracker( fs, pageCache, storeFile(), BASE_TX_ID + 1 );
+            CountsTracker tracker = new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
+                    storeFile(), BASE_TX_ID + 1 );
             assertEquals( alphaFile, tracker.storeFile() );
             tracker.incrementNodeCount( 1, 1l );
             tracker.rotate( BASE_TX_ID + 1 );
@@ -232,7 +242,8 @@ public class CountsTrackerTest
         }
 
         {
-            CountsTracker tracker = new CountsTracker( fs, pageCache, storeFile(), BASE_TX_ID + 1 );
+            CountsTracker tracker = new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
+                    storeFile(), BASE_TX_ID + 1 );
             assertEquals( betaFile, tracker.storeFile() );
             tracker.close();
         }
@@ -254,7 +265,8 @@ public class CountsTrackerTest
         }
 
         // when
-        try ( CountsTracker tracker = new CountsTracker( fs, pageCache, storeFile(), BASE_TX_ID + 1 ) )
+        try ( CountsTracker tracker = new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
+                storeFile(), BASE_TX_ID + 1 ) )
         {
             assertEquals( alphaStoreFile(), tracker.storeFile() );
         }
@@ -270,7 +282,8 @@ public class CountsTrackerTest
         createStoreFile( fs, pageCache, betaStoreFile(), BASE_TX_ID + 1 );
 
         // when
-        try ( CountsTracker tracker = new CountsTracker( fs, pageCache, storeFile(), BASE_TX_ID + 42 ) )
+        try ( @SuppressWarnings( "UnusedDeclaration" ) CountsTracker tracker = new CountsTracker(
+                StringLogger.DEV_NULL, fs, pageCache, storeFile(), BASE_TX_ID + 42 ) )
         {
             fail( "should have thrown" );
         }
@@ -335,7 +348,7 @@ public class CountsTrackerTest
         InstrumentedCountsTracker( FileSystemAbstraction fs, PageCache pageCache, File storeFileBase, long txId,
                                    Barrier barrier )
         {
-            super( fs, pageCache, storeFileBase, txId );
+            super( StringLogger.DEV_NULL, fs, pageCache, storeFileBase, txId );
             this.barrier = barrier;
         }
 

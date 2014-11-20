@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -61,6 +62,7 @@ public class CountsComputerTest
     @Test
     public void shouldCreateAnEmptyCountsStoreFromAnEmptyDatabase() throws IOException
     {
+        @SuppressWarnings( "deprecation" )
         final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
         final CountsRecordState countsState = CountsComputer.computeCounts( db );
         long lastCommittedTransactionId = getLastTxId( db );
@@ -81,6 +83,7 @@ public class CountsComputerTest
     @Test
     public void shouldCreateACountsStoreWhenThereAreNodesInTheDB() throws IOException
     {
+        @SuppressWarnings( "deprecation" )
         final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
         try ( Transaction tx = db.beginTx() )
         {
@@ -113,6 +116,7 @@ public class CountsComputerTest
     @Test
     public void shouldCreateACountsStoreWhenThereAreUnusedNodeRecordsInTheDB() throws IOException
     {
+        @SuppressWarnings( "deprecation" )
         final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
         try ( Transaction tx = db.beginTx() )
         {
@@ -146,6 +150,7 @@ public class CountsComputerTest
     @Test
     public void shouldCreateACountsStoreWhenThereAreUnusedRelationshipRecordsInTheDB() throws IOException
     {
+        @SuppressWarnings( "deprecation" )
         final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
         try ( Transaction tx = db.beginTx() )
         {
@@ -183,6 +188,7 @@ public class CountsComputerTest
     @Test
     public void shouldCreateACountsStoreWhenThereAreNodesAndRelationshipsInTheDB() throws IOException
     {
+        @SuppressWarnings( "deprecation" )
         final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
         try ( Transaction tx = db.beginTx() )
         {
@@ -226,6 +232,7 @@ public class CountsComputerTest
     @Test
     public void shouldCreateACountStoreWhenDBContainsDenseNodes() throws IOException
     {
+        @SuppressWarnings( "deprecation" )
         final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.
                 setConfig( GraphDatabaseSettings.dense_node_threshold, "2" ).newGraphDatabase();
         try ( Transaction tx = db.beginTx() )
@@ -306,7 +313,7 @@ public class CountsComputerTest
         return new File( dir, COUNTS_STORE_BASE + CountsTracker.BETA );
     }
 
-    private long getLastTxId( GraphDatabaseAPI db )
+    private long getLastTxId( @SuppressWarnings( "deprecation" ) GraphDatabaseAPI db )
     {
         return db.getDependencyResolver().resolveDependency( NeoStore.class )
                 .getLastCommittedTransactionId();
@@ -322,7 +329,8 @@ public class CountsComputerTest
 
     private void rebuildCounts( CountsRecordState countsState, long lastCommittedTransactionId ) throws IOException
     {
-        CountsTracker tracker = new CountsTracker( fs, pageCache, new File( dir, COUNTS_STORE_BASE ), BASE_TX_ID );
+        CountsTracker tracker = new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
+                new File( dir, COUNTS_STORE_BASE ), BASE_TX_ID );
         countsState.accept( new CountsAccessor.Initializer( tracker ) );
         tracker.rotate( lastCommittedTransactionId );
         tracker.close();

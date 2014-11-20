@@ -261,7 +261,8 @@ public class StoreMigrator implements StoreMigrationParticipant
                 new StoreFactory( fileSystem, storeDir, pageCache, DEV_NULL, new Monitors() );
         try ( NodeStore nodeStore = storeFactory.newNodeStore();
               RelationshipStore relationshipStore = storeFactory.newRelationshipStore();
-              CountsTracker tracker = new CountsTracker( fileSystem, pageCache, storeFileBase, BASE_TX_ID ) )
+              CountsTracker tracker = new CountsTracker( logging.getMessagesLog( CountsTracker.class ),
+                      fileSystem, pageCache, storeFileBase, BASE_TX_ID ) )
         {
             CountsComputer.computeCounts( nodeStore, relationshipStore ).
                     accept( new CountsAccessor.Initializer( tracker ) );

@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -79,15 +80,21 @@ public class CountsStoreWriter implements Writer<CountsKey, CopyableDoubleLongRe
         this.fs = fs;
         this.pageCache = pageCache;
         int pageSize = pageCache.pageSize();
+        this.oldHeader = oldHeader;
+        this.targetFile = targetFile;
+        this.txId = lastCommittedTxId;
+        this.minorVersion = txId == oldHeader.lastTxId()
+                            ? oldHeader.minorVersion() + 1
+                            : SortedKeyValueStoreHeader.BASE_MINOR_VERSION;
+        try ( StoreChannel channel = fs.open( targetFile, "rw" ) )
+        {
+            channel.truncate( 0 ).force( true );
+        }
         if ( pageSize % RECORD_SIZE != 0 )
         {
             throw new IllegalStateException( "page size must a multiple of the record size" );
         }
         this.pagedFile = pageCache.map( targetFile, pageSize );
-        this.oldHeader = oldHeader;
-        this.targetFile = targetFile;
-        this.txId = lastCommittedTxId;
-        this.minorVersion = txId == oldHeader.lastTxId() ? oldHeader.minorVersion() + 1 : SortedKeyValueStoreHeader.BASE_MINOR_VERSION;
         if ( !(this.page = pagedFile.io( 0, PF_EXCLUSIVE_LOCK )).next() )
         {
             throw new IOException( "Could not acquire page." );

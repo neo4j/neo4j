@@ -163,11 +163,6 @@ public class PhysicalLogNeoCommandReaderV2 implements CommandReader
             command = new Command.CountsCommand();
             break;
         }
-        case NeoCommandType.NONE:
-        {
-            command = null;
-            break;
-        }
         default:
         {
             LogPositionMarker position = new LogPositionMarker();
@@ -175,7 +170,7 @@ public class PhysicalLogNeoCommandReaderV2 implements CommandReader
             throw new IOException( "Unknown command type[" + commandType + "] near " + position.newPosition() );
         }
         }
-        if ( command != null && command.handle( reader ) )
+        if ( command.handle( reader ) )
         {
             return null;
         }
@@ -260,7 +255,7 @@ public class PhysicalLogNeoCommandReaderV2 implements CommandReader
             }
             else
             {
-                record = new RelationshipRecord( id, -1, -1, -1 );
+                record = new RelationshipRecord( id, -1, -1, channel.getInt() );
                 record.setInUse( false );
             }
             if ( bitFlag( flags, Record.CREATED_IN_TX ) )
