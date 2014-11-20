@@ -22,6 +22,7 @@ package org.neo4j.kernel.ha.cluster;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
+
 import javax.transaction.TransactionManager;
 
 import org.neo4j.cluster.ClusterSettings;
@@ -204,6 +205,7 @@ public class SwitchToSlave
             */
             if ( cancellationRequest.cancellationRequested() )
             {
+                msgLog.info( "Switch to slave cancelled during store copy if no local store is present." );
                 return null;
             }
 
@@ -220,12 +222,14 @@ public class SwitchToSlave
 
             if ( !consistencyChecksExecutedSuccessfully )
             {
+                msgLog.info( "Switch to slave cancelled due to consistency check failure." );
                 return null;
             }
         }
 
         if ( cancellationRequest.cancellationRequested() )
         {
+            msgLog.info( "Switch to slave cancelled after consistency checks." );
             return null;
         }
         // no exception were thrown and we can proceed
