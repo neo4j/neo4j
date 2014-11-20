@@ -31,7 +31,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -120,29 +119,26 @@ public class StoreMigrator implements StoreMigrationParticipant
     private final UpgradableDatabase upgradableDatabase;
     private final Config config;
     private final Logging logging;
-    private final DependencyResolver dependencyResolver;
     private final LegacyLogs legacyLogs;
     private String versionToUpgradeFrom;
 
     // TODO progress meter should be an aspect of StoreUpgrader, not specific to this participant.
 
     public StoreMigrator( MigrationProgressMonitor progressMonitor, FileSystemAbstraction fileSystem,
-                          Logging logging, DependencyResolver dependencyResolver )
+                          Logging logging )
     {
         this( progressMonitor, fileSystem, new UpgradableDatabase( new StoreVersionCheck( fileSystem ) ),
-                new Config(), logging, dependencyResolver );
+                new Config(), logging );
     }
 
     public StoreMigrator( MigrationProgressMonitor progressMonitor, FileSystemAbstraction fileSystem,
-                          UpgradableDatabase upgradableDatabase, Config config, Logging logging,
-                          DependencyResolver dependencyResolver )
+                          UpgradableDatabase upgradableDatabase, Config config, Logging logging )
     {
         this.progressMonitor = progressMonitor;
         this.fileSystem = fileSystem;
         this.upgradableDatabase = upgradableDatabase;
         this.config = config;
         this.logging = logging;
-        this.dependencyResolver = dependencyResolver;
         this.legacyLogs = new LegacyLogs( fileSystem );
     }
 
@@ -163,7 +159,8 @@ public class StoreMigrator implements StoreMigrationParticipant
      * Will detect which version we're upgrading from.
      * Doing that initialization here is good because we do this check when
      * {@link #moveMigratedFiles(File, File) moving migrated files}, which might be done
-     * as part of a resumed migration, i.e. run even if {@link #migrate(File, File)}
+     * as part of a resumed migration, i.e. run even if
+     * {@link StoreMigrationParticipant#migrate(java.io.File, java.io.File, org.neo4j.kernel.api.index.SchemaIndexProvider)}
      * hasn't been run.
      */
     private String versionToUpgradeFrom( FileSystemAbstraction fileSystem, File storeDir )
@@ -176,7 +173,7 @@ public class StoreMigrator implements StoreMigrationParticipant
     }
 
     @Override
-    public void migrate( File storeDir, File migrationDir ) throws IOException
+    public void migrate( File storeDir, File migrationDir, SchemaIndexProvider schemaIndexProvider ) throws IOException
     {
         progressMonitor.started();
 
@@ -194,7 +191,7 @@ public class StoreMigrator implements StoreMigrationParticipant
             try
             {
                 final PageCache pageCache = createPageCache( fileSystem, "build-counts", life );
-                removeDuplicateEntityProperties( storeDir, migrationDir, pageCache );
+                removeDuplicateEntityProperties( storeDir, migrationDir, pageCache, schemaIndexProvider );
                 rebuildCountsFromScratch( storeDir, migrationDir, lastTxId, pageCache );
             }
             finally
@@ -225,7 +222,8 @@ public class StoreMigrator implements StoreMigrationParticipant
         }
     }
 
-    private void removeDuplicateEntityProperties( File storeDir, File migrationDir, PageCache pageCache ) throws IOException
+    private void removeDuplicateEntityProperties( File storeDir, File migrationDir, PageCache pageCache,
+                                                  SchemaIndexProvider schemaIndexProvider ) throws IOException
     {
         copyStores( storeDir, migrationDir,
                 StoreFactory.PROPERTY_STORE_NAME,
@@ -241,9 +239,6 @@ public class StoreMigrator implements StoreMigrationParticipant
                 StoreFactory.NODE_LABELS_STORE_NAME,
                 StoreFactory.SCHEMA_STORE_NAME
         );
-
-        SchemaIndexProvider schemaIndexProvider = dependencyResolver.resolveDependency( SchemaIndexProvider.class,
-                SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE );
 
         PropertyDeduplicator deduplicator = new PropertyDeduplicator(
                 fileSystem, migrationDir, pageCache, schemaIndexProvider );

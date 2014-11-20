@@ -30,9 +30,9 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
@@ -42,7 +42,6 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.logging.DevNullLoggingService;
-import org.neo4j.test.FixedDependencyResolver;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 
@@ -59,7 +58,7 @@ import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UP
 public class StoreUpgraderInterruptionTestIT
 {
     private String version;
-    private DependencyResolver dependencyResolver = new FixedDependencyResolver( new InMemoryIndexProvider() );
+    private SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
 
     public StoreUpgraderInterruptionTestIT( String version )
     {
@@ -83,13 +82,13 @@ public class StoreUpgraderInterruptionTestIT
         File workingDirectory = directory.directory();
         MigrationTestUtils.prepareSampleLegacyDatabase( version, fileSystem, workingDirectory );
 
-        StoreMigrator failingStoreMigrator = new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem, DevNullLoggingService.DEV_NULL,
-                dependencyResolver )
+        StoreMigrator failingStoreMigrator = new StoreMigrator(
+                new SilentMigrationProgressMonitor(), fileSystem, DevNullLoggingService.DEV_NULL )
         {
             @Override
-            public void migrate( File sourceStoreDir, File targetStoreDir ) throws IOException
+            public void migrate( File sourceStoreDir, File targetStoreDir, SchemaIndexProvider schemaIndexProvider ) throws IOException
             {
-                super.migrate( sourceStoreDir, targetStoreDir );
+                super.migrate( sourceStoreDir, targetStoreDir, schemaIndexProvider );
                 throw new RuntimeException( "This upgrade is failing" );
             }
         };
@@ -98,7 +97,7 @@ public class StoreUpgraderInterruptionTestIT
 
         try
         {
-            newUpgrader( failingStoreMigrator ).migrateIfNeeded( workingDirectory );
+            newUpgrader( failingStoreMigrator ).migrateIfNeeded( workingDirectory, schemaIndexProvider );
             fail( "Should throw exception" );
         }
         catch ( RuntimeException e )
@@ -108,10 +107,9 @@ public class StoreUpgraderInterruptionTestIT
 
         assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, version ) );
 
-        newUpgrader( new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem, DevNullLoggingService
-                .DEV_NULL,
-                dependencyResolver ) )
-                .migrateIfNeeded( workingDirectory );
+        newUpgrader( new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem,
+                DevNullLoggingService.DEV_NULL ) )
+                .migrateIfNeeded( workingDirectory, schemaIndexProvider );
 
         assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, ALL_STORES_VERSION ) );
         assertConsistentStore( workingDirectory );

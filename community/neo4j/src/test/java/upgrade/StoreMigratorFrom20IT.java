@@ -28,12 +28,12 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
@@ -47,7 +47,6 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.CleanupRule;
-import org.neo4j.test.FixedDependencyResolver;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 
@@ -64,16 +63,15 @@ import static upgrade.StoreMigratorTestUtil.buildClusterWithMasterDirIn;
 
 public class StoreMigratorFrom20IT
 {
-    private DependencyResolver dependencyResolver = new FixedDependencyResolver( new InMemoryIndexProvider() );
+    private SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
 
     @Test
     public void shouldMigrate() throws IOException, ConsistencyCheckIncompleteException
     {
         // WHEN
-        upgrader( new StoreMigrator( monitor, fs, DevNullLoggingService.DEV_NULL, dependencyResolver ) )
+        upgrader( new StoreMigrator( monitor, fs, DevNullLoggingService.DEV_NULL ) )
                 .migrateIfNeeded(
-                find20FormatStoreDirectory( storeDir.directory() )
-        );
+                find20FormatStoreDirectory( storeDir.directory() ), schemaIndexProvider );
 
         // THEN
         assertEquals( 100, monitor.eventSize() );
@@ -107,7 +105,8 @@ public class StoreMigratorFrom20IT
         File legacyStoreDir = find20FormatStoreDirectory( storeDir.directory() );
 
         // When
-        upgrader( new StoreMigrator( monitor, fs, DevNullLoggingService.DEV_NULL, dependencyResolver ) ).migrateIfNeeded( legacyStoreDir );
+        upgrader( new StoreMigrator( monitor, fs, DevNullLoggingService.DEV_NULL ) ).migrateIfNeeded(
+                legacyStoreDir, schemaIndexProvider );
         ClusterManager.ManagedCluster cluster =
                 cleanup.add( buildClusterWithMasterDirIn( fs, legacyStoreDir, cleanup ) );
         cluster.await( allSeesAllAsAvailable() );

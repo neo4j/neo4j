@@ -30,7 +30,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -38,6 +37,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
@@ -53,7 +53,6 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.CleanupRule;
-import org.neo4j.test.FixedDependencyResolver;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.tooling.GlobalGraphOperations;
@@ -76,7 +75,7 @@ import static upgrade.StoreMigratorTestUtil.buildClusterWithMasterDirIn;
 
 public class StoreMigratorFrom19IT
 {
-    private DependencyResolver dependencyResolver = new FixedDependencyResolver( new InMemoryIndexProvider() );
+    private SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
 
     @Test
     public void shouldMigrate() throws IOException, ConsistencyCheckIncompleteException
@@ -85,7 +84,7 @@ public class StoreMigratorFrom19IT
         File legacyStoreDir = find19FormatHugeStoreDirectory( storeDir.directory() );
 
         // WHEN
-        newStoreUpgrader().migrateIfNeeded( legacyStoreDir );
+        newStoreUpgrader().migrateIfNeeded( legacyStoreDir, schemaIndexProvider );
 
         // THEN
         assertEquals( 100, monitor.eventSize() );
@@ -120,7 +119,7 @@ public class StoreMigratorFrom19IT
         File legacyStoreDir = find19FormatStoreDirectory( storeDir.directory() );
 
         // When
-        newStoreUpgrader().migrateIfNeeded( legacyStoreDir );
+        newStoreUpgrader().migrateIfNeeded( legacyStoreDir, schemaIndexProvider );
 
         ClusterManager.ManagedCluster cluster =
                 cleanup.add( buildClusterWithMasterDirIn( fs, legacyStoreDir, cleanup ) );
@@ -144,7 +143,7 @@ public class StoreMigratorFrom19IT
         // WHEN
         // upgrading that store, the two key tokens for "name" should be merged
 
-        newStoreUpgrader().migrateIfNeeded( storeDir.directory() );
+        newStoreUpgrader().migrateIfNeeded( storeDir.directory(), schemaIndexProvider );
 
         // THEN
         // verify that the "name" property for both the involved nodes
@@ -244,7 +243,7 @@ public class StoreMigratorFrom19IT
     {
         DevNullLoggingService logging = new DevNullLoggingService();
         StoreUpgrader upgrader = new StoreUpgrader( ALLOW_UPGRADE, fs, StoreUpgrader.NO_MONITOR, logging );
-        upgrader.addParticipant( new StoreMigrator( monitor, fs, logging, dependencyResolver ) );
+        upgrader.addParticipant( new StoreMigrator( monitor, fs, logging ) );
         return upgrader;
     }
 

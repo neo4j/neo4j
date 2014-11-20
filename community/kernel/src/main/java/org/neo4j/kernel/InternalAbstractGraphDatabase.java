@@ -544,7 +544,7 @@ public abstract class InternalAbstractGraphDatabase
                 new VisibleMigrationProgressMonitor( messagesLog, System.out );
         UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( fileSystem ) );
         storeMigrationProcess.addParticipant( new StoreMigrator(
-                progressMonitor, fileSystem, upgradableDatabase, config, logging, dependencyResolver ) );
+                progressMonitor, fileSystem, upgradableDatabase, config, logging ) );
 
         propertyKeyTokenHolder = life.add( new PropertyKeyTokenHolder( createPropertyKeyCreator() ) );
         labelTokenHolder = life.add( new LabelTokenHolder( createLabelIdCreator() ) );
@@ -575,8 +575,8 @@ public abstract class InternalAbstractGraphDatabase
         final IndexProvider indexProvider = new IndexProviderImpl( indexLookup, threadToTransactionBridge );
         nodeAutoIndexer = life.add( new NodeAutoIndexerImpl( config, indexProvider, nodeManager ) );
         relAutoIndexer = life.add( new RelationshipAutoIndexerImpl( config, indexProvider, nodeManager ) );
-        indexManager =
-                new IndexManagerImpl( threadToTransactionBridge, indexProvider, nodeAutoIndexer, relAutoIndexer );
+        indexManager = new IndexManagerImpl(
+                threadToTransactionBridge, indexProvider, nodeAutoIndexer, relAutoIndexer );
 
         recoveryVerifier = createRecoveryVerifier();
 
