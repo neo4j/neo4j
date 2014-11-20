@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.collection.pool.Pool;
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.ThisShouldNotHappenError;
@@ -288,10 +289,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 {
                     throw new IllegalStateException( "Constraint index that was created in a transaction should be " +
                                                      "possible to drop during rollback of that transaction.", e );
-                }
-                catch ( TransactionFailureException e )
-                {
-                    throw e;
                 }
             }
         }
@@ -603,6 +600,34 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         @Override
         public void visitDeletedNode( long id )
         {
+            try
+            {
+                PrimitiveIntIterator labels = storeLayer.nodeGetLabels( id );
+                if ( labels.hasNext() )
+                {
+                    final int[] removed = PrimitiveIntCollections.asArray( labels );
+                    storeLayer.nodeVisitDegrees( id, new DegreeVisitor()
+                    {
+                        @Override
+                        public void visitDegree( int type, int outgoing, int incoming )
+                        {
+                            for ( int label : removed )
+                            {
+                                // untyped
+                                counts.incrementRelationshipCount( label, -1, -1, -outgoing );
+                                counts.incrementRelationshipCount( -1, -1, label, -incoming );
+                                // typed
+                                counts.incrementRelationshipCount( label, type, -1, -outgoing );
+                                counts.incrementRelationshipCount( -1, type, label, -incoming );
+                            }
+                        }
+                    } );
+                }
+            }
+            catch ( EntityNotFoundException e )
+            {
+                // this should not happen, but I guess it means the node we deleted did not exist...?
+            }
             recordState.nodeDelete( id );
         }
 

@@ -60,7 +60,7 @@ class ConcurrentCountsTrackerState implements CountsTrackerState
     @Override
     public String toString()
     {
-        return String.format( "ConcurrentTrackerState[store=%s - %s]", store, super.toString() );
+        return String.format( "ConcurrentTrackerState[store=%s - %s]", store, changes.toString() );
     }
 
     public boolean hasChanges()

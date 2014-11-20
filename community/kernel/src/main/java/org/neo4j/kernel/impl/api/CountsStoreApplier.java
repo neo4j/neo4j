@@ -37,6 +37,7 @@ import static org.neo4j.collection.primitive.Primitive.longSet;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyIterator;
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
+import static org.neo4j.kernel.impl.store.NodeLabelsField.fieldPointsToDynamicRecordOfLabels;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
 public class CountsStoreApplier extends NeoCommandHandler.Adapter
@@ -111,7 +112,8 @@ public class CountsStoreApplier extends NeoCommandHandler.Adapter
         { // node deleted
             nodesDelta--;
         }
-        if ( before.getLabelField() != after.getLabelField() )
+        if ( before.getLabelField() != after.getLabelField() ||
+             fieldPointsToDynamicRecordOfLabels( before.getLabelField() ) )
         {
             long[] labelsBefore = labels( before );
             long[] labelsAfter = labels( after );
@@ -152,9 +154,8 @@ public class CountsStoreApplier extends NeoCommandHandler.Adapter
     @Override
     public boolean visitUpdateCountsCommand( Command.CountsCommand command ) throws IOException
     {
-        long delta = command.delta();
         countsAccessor.incrementRelationshipCount(
-                command.startLabelId(), command.typeId(), command.endLabelId(), delta );
+                command.startLabelId(), command.typeId(), command.endLabelId(), command.delta() );
         return false;
     }
 

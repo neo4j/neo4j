@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.counts;
 
-import java.util.concurrent.Future;
-
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -43,7 +43,7 @@ import org.neo4j.test.NamedFunction;
 import org.neo4j.test.ThreadingRule;
 
 import static org.junit.Assert.assertEquals;
-
+import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
 public class RelationshipCountsTest
@@ -88,7 +88,7 @@ public class RelationshipCountsTest
     }
 
     @Test
-    @Ignore("TODO: reenable this test when we can etract proper counts form TxState")
+    @Ignore("TODO: re-enable this test when we can extract proper counts form TxState")
     public void shouldAccountForDeletedRelationships() throws Exception
     {
         // given
@@ -235,6 +235,70 @@ public class RelationshipCountsTest
         assertEquals( 1, baz );
         assertEquals( 0, qux );
         assertEquals( 6, total );
+    }
+
+    @Test
+    public void shouldUpdateRelationshipWithLabelCountsWhenDeletingNodeWithRelationship() throws Exception
+    {
+        // given
+        Node foo;
+        try ( Transaction tx = db.beginTx() )
+        {
+            foo = db.createNode( label( "Foo" ) );
+            Node bar = db.createNode( label( "Bar" ) );
+            foo.createRelationshipTo( bar, withName( "BAZ" ) );
+
+            tx.success();
+        }
+        long before = numberOfRelationshipsMatching( label( "Foo" ), withName( "BAZ" ), null );
+
+        // when
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( Relationship relationship : foo.getRelationships() )
+            {
+                relationship.delete();
+            }
+            foo.delete();
+
+            tx.success();
+        }
+        long after = numberOfRelationshipsMatching( label( "Foo" ), withName( "BAZ" ), null );
+
+        // then
+        assertEquals( before - 1, after );
+    }
+
+    @Test
+    public void shouldUpdateRelationshipWithLabelCountsWhenRemovingLabelAndDeletingRelationship() throws Exception
+    {
+        // given
+        Node foo;
+        try ( Transaction tx = db.beginTx() )
+        {
+            foo = db.createNode( label( "Foo" ) );
+            Node bar = db.createNode( label( "Bar" ) );
+            foo.createRelationshipTo( bar, withName( "BAZ" ) );
+
+            tx.success();
+        }
+        long before = numberOfRelationshipsMatching( label( "Foo" ), withName( "BAZ" ), null );
+
+        // when
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( Relationship relationship : foo.getRelationships() )
+            {
+                relationship.delete();
+            }
+            foo.removeLabel( label("Foo"));
+
+            tx.success();
+        }
+        long after = numberOfRelationshipsMatching( label( "Foo" ), withName( "BAZ" ), null );
+
+        // then
+        assertEquals( before - 1, after );
     }
 
     private long numberOfRelationships( RelationshipType type )

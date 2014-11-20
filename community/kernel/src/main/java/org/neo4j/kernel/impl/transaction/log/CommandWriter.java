@@ -93,6 +93,10 @@ public class CommandWriter implements NeoCommandHandler
                    .putLong( record.getNextProp() )
                    .put( (byte) ((record.isFirstInFirstChain() ? 1 : 0) | (record.isFirstInSecondChain() ? 2 : 0)) );
         }
+        else
+        {
+            channel.putInt( record.getType() );
+        }
         return false;
     }
 

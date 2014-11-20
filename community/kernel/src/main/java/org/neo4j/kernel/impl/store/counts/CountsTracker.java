@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.register.Register.CopyableDoubleLongRegister;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
@@ -59,13 +60,16 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     public static final String ALPHA = ".alpha", BETA = ".beta";
     private final File alphaFile, betaFile;
     private final ReadWriteLock updateLock = new ReentrantReadWriteLock( /*fair=*/true );
+    private final StringLogger logger;
     private volatile CountsTrackerState state;
 
-    public CountsTracker( FileSystemAbstraction fs, PageCache pageCache, File storeFileBase, long neoStoreTxId )
+    public CountsTracker( StringLogger logger, FileSystemAbstraction fs, PageCache pageCache,
+                          File storeFileBase, long neoStoreTxId )
     {
+        this.logger = logger;
         this.alphaFile = storeFile( storeFileBase, ALPHA );
         this.betaFile = storeFile( storeFileBase, BETA );
-        CountsStore store = openStore( fs, pageCache, this.alphaFile, this.betaFile );
+        CountsStore store = openStore( logger, fs, pageCache, this.alphaFile, this.betaFile );
         if ( store.lastTxId() < neoStoreTxId )
         {
             IOException exOnClose = safelyCloseTheStore( store );
@@ -76,7 +80,8 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
         this.state = new ConcurrentCountsTrackerState( store );
     }
 
-    private static CountsStore openStore( FileSystemAbstraction fs, PageCache pageCache, File alpha, File beta )
+    private static CountsStore openStore( StringLogger logger, FileSystemAbstraction fs, PageCache pageCache,
+                                          File alpha, File beta )
     {
         try
         {
@@ -88,28 +93,42 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
             if ( isAlphaCorrupted && isBetaCorrupted )
             {
                 throw new UnderlyingStorageException(
-                    "Both counts store files are corrupted. Please shut down the database and delete them " +
-                    "to have the database recreate the counts store on next startup" );
+                        "Both counts store files are corrupted. Please shut down the database and delete them " +
+                        "to have the database recreate the counts store on next startup" );
             }
 
             if ( isAlphaCorrupted )
             {
+                logger.debug( "CountsStore picked beta since alpha store file is corrupted " +
+                              "(txId=" + betaStore.lastTxId() +
+                              ", minorVersion=" + betaStore.minorVersion() + ")" );
                 return betaStore;
             }
 
             if ( isBetaCorrupted )
             {
+                logger.debug( "CountsStore picked alpha store file since beta is corrupted " +
+                              "(txId=" + alphaStore.lastTxId() +
+                              ", minorVersion=" + alphaStore.minorVersion() + ")" );
                 return alphaStore;
             }
 
             // default case
             if ( isAlphaStoreMoreRecent( alphaStore, betaStore ) )
             {
+                logger.debug( "CountsStore picked alpha store file (txId=" + alphaStore.lastTxId() +
+                              ", minorVersion=" + alphaStore.minorVersion() +
+                              "), against beta (txId=" + betaStore.lastTxId() +
+                              ", minorVersion=" + betaStore.minorVersion() + ")" );
                 betaStore.close();
                 return alphaStore;
             }
             else
             {
+                logger.debug( "CountsStore picked beta store file (txId=" + betaStore.lastTxId() +
+                              ", minorVersion=" + betaStore.minorVersion() +
+                              "), against alpha (txId=" + alphaStore.lastTxId() +
+                              ", minorVersion=" + alphaStore.minorVersion() + ")" );
                 alphaStore.close();
                 return betaStore;
             }
@@ -134,8 +153,10 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
         {
             return CountsStore.open( fs, pageCache, file );
         }
-        catch ( UnderlyingStorageException ex )
+        catch ( UnderlyingStorageException | IOException ex )
         {
+            // This will be treated as the file being corrupted, if both files are corrupted an exception will be
+            // thrown from the openStore() method, informing the user that the store is corrupted, and how to fix it.
             return null;
         }
     }
@@ -193,7 +214,7 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     @Override
     public void incrementNodeCount( int labelId, long delta )
     {
-        try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
+        try ( @SuppressWarnings( "UnusedDeclaration" ) LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
         {
             state.incrementNodeCount( nodeKey( labelId ), delta );
         }
@@ -209,7 +230,7 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     @Override
     public void incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta )
     {
-            try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
+            try ( @SuppressWarnings( "UnusedDeclaration" ) LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
             {
                 state.incrementRelationshipCount( relationshipKey( startLabelId, typeId, endLabelId ), delta );
             }
@@ -230,7 +251,7 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     @Override
     public void replaceIndexUpdateAndSize( int labelId, int propertyKeyId, long updates, long size )
     {
-        try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
+        try ( @SuppressWarnings( "UnusedDeclaration" ) LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
         {
             state.replaceIndexUpdatesAndSize( indexCountsKey( labelId, propertyKeyId ), updates, size );
         }
@@ -239,7 +260,7 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     @Override
     public void incrementIndexUpdates( int labelId, int propertyKeyId, long delta )
     {
-        try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
+        try ( @SuppressWarnings( "UnusedDeclaration" ) LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
         {
             state.incrementIndexUpdates( indexCountsKey( labelId, propertyKeyId ), delta );
         }
@@ -248,7 +269,7 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     @Override
     public void replaceIndexSample( int labelId, int propertyKeyId, long unique, long size )
     {
-        try ( LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
+        try ( @SuppressWarnings( "UnusedDeclaration" ) LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
         {
             state.replaceIndexSample( indexSampleKey( labelId, propertyKeyId ), unique, size );
         }
@@ -288,11 +309,19 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
 
     public void rotate( long lastCommittedTxId ) throws IOException
     {
-        try ( LockWrapper _ = new LockWrapper( updateLock.writeLock() ) )
+        try ( @SuppressWarnings( "UnusedDeclaration" ) LockWrapper _ = new LockWrapper( updateLock.writeLock() ) )
         {
             CountsTrackerState state = this.state;
-            if ( state.hasChanges() || state.lastTxId() != lastCommittedTxId )
+            long stateTxId = state.lastTxId();
+            if ( stateTxId > lastCommittedTxId )
             {
+                throw new IllegalStateException( String.format(
+                        "Ask to rotate on an already used txId, storeTxId=%d and got lastTxId=%d",
+                        stateTxId, lastCommittedTxId ) );
+            }
+            if ( state.hasChanges() || stateTxId < lastCommittedTxId )
+            {
+                logger.debug( "Start writing new counts store with txId=" + lastCommittedTxId );
                 // select the next file, and create a writer for it
                 try ( CountsStore.Writer<CountsKey,CopyableDoubleLongRegister> writer =
                               nextWriter( state, lastCommittedTxId ) )
@@ -301,6 +330,7 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
                     // replaceSecond the old store with the
                     this.state = new ConcurrentCountsTrackerState( writer.openForReading() );
                 }
+                logger.debug( "Completed writing of counts store with txId=" + lastCommittedTxId );
                 // close the old store
                 state.close();
             }
