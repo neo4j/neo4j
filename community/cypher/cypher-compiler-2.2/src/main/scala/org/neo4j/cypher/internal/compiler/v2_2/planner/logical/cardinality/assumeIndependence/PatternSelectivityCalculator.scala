@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assumeIndependence
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{LabelName, RelTypeName}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, Selectivity}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{Selections, SemanticTable}
@@ -166,18 +167,5 @@ case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: Select
       }
 }
 
-sealed trait TokenSpec[+ID <: NameId] {
-  def id: Option[ID]
-}
 
-case class SpecifiedButUnknown() extends TokenSpec[Nothing] {
-  def id = throw new InternalException("Tried to use a token id unknown to the schema")
-}
 
-case class Unspecified() extends TokenSpec[Nothing] {
-  def id = None
-}
-
-case class SpecifiedAndKnown[+ID <: NameId](_id: ID) extends TokenSpec[ID] {
-  def id = Some(_id)
-}

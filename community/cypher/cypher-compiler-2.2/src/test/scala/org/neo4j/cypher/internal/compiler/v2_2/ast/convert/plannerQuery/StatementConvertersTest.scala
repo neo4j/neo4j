@@ -606,7 +606,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.tail.get.graph should equal(
       QueryGraph
         .empty
-        .addArgumentId(Seq("a"))
+        .addArgumentIds(Seq("a"))
         .addPatternNodes("a", "b")
         .addPatternRel(patternRel)
     )
@@ -629,7 +629,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.tail.get.graph should equal(
       QueryGraph
         .empty
-        .addArgumentId(Seq("a"))
+        .addArgumentIds(Seq("a"))
         .addPatternNodes("a", "b")
         .addPatternRel(patternRel)
     )

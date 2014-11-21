@@ -72,7 +72,7 @@ object LogicalPlanProducer {
       PlannerQuery(graph = QueryGraph.empty
         .addPatternRel(pattern)
         .addPredicates(solvedPredicates: _*)
-        .addArgumentId(argumentIds.toSeq)
+        .addArgumentIds(argumentIds.toSeq)
       )
     )
 
@@ -87,7 +87,7 @@ object LogicalPlanProducer {
       PlannerQuery(graph = QueryGraph.empty
         .addPatternRel(pattern)
         .addPredicates(solvedPredicates: _*)
-        .addArgumentId(argumentIds.toSeq)
+        .addArgumentIds(argumentIds.toSeq)
       )
     )
 
@@ -118,7 +118,7 @@ object LogicalPlanProducer {
       PlannerQuery(graph = QueryGraph.empty
         .addPatternNodes(idName)
         .addPredicates(solvedPredicates: _*)
-        .addArgumentId(argumentIds.toSeq)
+        .addArgumentIds(argumentIds.toSeq)
       )
     )
 
@@ -129,7 +129,7 @@ object LogicalPlanProducer {
         .addPatternNodes(idName)
         .addPredicates(solvedPredicates: _*)
         .addHints(solvedHint)
-        .addArgumentId(argumentIds.toSeq)
+        .addArgumentIds(argumentIds.toSeq)
       )
     )
 
@@ -144,7 +144,7 @@ object LogicalPlanProducer {
         .addPatternNodes(idName)
         .addPredicates(solvedPredicates: _*)
         .addHints(solvedHint)
-        .addArgumentId(argumentIds.toSeq)
+        .addArgumentIds(argumentIds.toSeq)
       )
     )
   }
@@ -153,7 +153,7 @@ object LogicalPlanProducer {
     LegacyIndexSeek(idName, hint, argumentIds)(
       PlannerQuery(graph = QueryGraph.empty
         .addHints(Some(hint))
-        .addArgumentId(argumentIds.toSeq)
+        .addArgumentIds(argumentIds.toSeq)
       )
     )
   }
@@ -175,7 +175,7 @@ object LogicalPlanProducer {
         .addPatternNodes(idName)
         .addPredicates(solvedPredicates: _*)
         .addHints(solvedHint)
-        .addArgumentId(argumentIds.toSeq)
+        .addArgumentIds(argumentIds.toSeq)
       )
     )
 

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assu
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast.LabelName
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.{QueryGraphCardinalityInput, QueryGraphCardinalityModel}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.{ExpressionSelectivityCalculator, SelectivityCombiner}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{VarPatternLength, SimplePatternLength, IdName}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, Selectivity}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryGraph, SemanticTable}
@@ -91,42 +92,8 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics,
   }
 }
 
-trait SelectivityCombiner {
-  def andTogetherSelectivities(selectivities: Seq[Selectivity]): Option[Selectivity]
 
-  // A ∪ B = ¬ ( ¬ A ∩ ¬ B )
-  def orTogetherSelectivities(selectivities: Seq[Selectivity]): Option[Selectivity] = {
-    val inverses = selectivities.map(_.negate)
-    andTogetherSelectivities(inverses).
-      map(_.negate)
-  }
-}
 
-case object IndependenceCombiner extends SelectivityCombiner {
-  // This is the simple and straight forward way of combining two statistically independent probabilities
-  //P(A ∪ B) = P(A) * P(B)
-  def andTogetherSelectivities(selectivities: Seq[Selectivity]): Option[Selectivity] =
-    selectivities.reduceOption(_ * _)
-}
 
-// The estimate is computed the most selective predicate multiplied by the table cardinality, multiplied by the
-// square root of the next most selective predicate, and so on with each new selectivity gaining an additional
-// square root.
-// Recalling that selectivity is a number between 0 and 1, it is clear that applying a square root moves the number
-// closer to 1. The effect is to take account of all predicates in the final estimate, but to reduce the impact of
-// the less selective predicates exponentially.
-// For the ones that need visual aids to grokk it: http://i.imgur.com/V4Fs7AC.png
-case object ExponentialBackOff extends SelectivityCombiner {
-  def andTogetherSelectivities(selectivities: Seq[Selectivity]): Option[Selectivity] =
-    if (selectivities.isEmpty)
-      None
-    else {
-      val newSelectivity = (selectivities.sorted zipWithIndex).foldLeft(1.0) {
-        // P(A ∪ B ∪ C) = P(A) * SQRT(P(B)) * SQRT(SQRT(P(C)))
-        // This is encoded using the fact that SQRT(x) is equal to x to the power of 1/2.
-        case (acc, (sel, idx)) => acc * Math.pow(sel.factor, 1.0 / Math.pow(2, idx))
-      }
 
-      Some(Selectivity(newSelectivity))
-    }
-}
+

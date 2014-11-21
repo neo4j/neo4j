@@ -17,92 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assumeIndependence
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.CardinalityTestHelper
+import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityModel
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assumeIndependence.{AssumeIndependenceQueryGraphCardinalityModel, IndependenceCombiner}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.{RandomizedCardinalityModelTestSuite, ABCDCardinalityData}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
-import org.neo4j.cypher.internal.helpers.testRandomizer
 
-class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite with LogicalPlanningTestSupport with CardinalityTestHelper {
-
-
-  // Glossary:
-  val N: Double  = testRandomizer.nextDouble() * 1E6 // Graph node count - the god number.
-  println("N: " + N)
-  val Asel = .2          // How selective a :A predicate is
-  val Bsel = .1          // How selective a :B predicate is
-  val Csel = .01         // How selective a :C predicate is
-  val Dsel = .001        // How selective a :D predicate is
-  val A = N * Asel // Nodes with label A
-  val B = N * Bsel // Nodes with label B
-  val C = N * Csel // Nodes with label C
-  val D = N * Dsel // Nodes with label D
-
-  val Aprop = 0.5        // Selectivity of index on :A(prop)
-  val Bprop = 0.003      // Selectivity of index on :B(prop)
-  val Abar = 0.002       // Selectivity of index on :A(bar)
-
-  val A_T1_A_sel: Double = 5.0 / A // Numbers of relationships of type T1 between A and B respectively labeled nodes
-  val A_T1_B_sel = 0.5
-  val A_T1_C_sel = 0.05
-  val A_T1_D_sel = 0.005
-
-  val A_T1_A    = A * A * A_T1_A_sel
-  val A_T1_B    = A * B * A_T1_B_sel
-  val A_T1_C    = A * C * A_T1_C_sel
-  val A_T1_D    = A * D * A_T1_D_sel
-
-  val B_T1_B_sel = 10.0 / B
-  val B_T1_C_sel = 0.1
-  val B_T1_A_sel = 0.01
-  val B_T1_D_sel = 0.001
-
-  val B_T1_B    = B * B * B_T1_B_sel
-  val B_T1_C    = B * C * B_T1_C_sel
-  val B_T1_A    = B * A * B_T1_A_sel
-  val B_T1_D    = B * D * B_T1_D_sel
-
-  val C_T1_D_sel= 0.02
-  val C_T1_D    = C * D * C_T1_D_sel
-
-  val D_T1_C_sel = 0.3
-  val D_T1_C     = D * C * D_T1_C_sel
-
-  val A_T2_A_sel = 0
-  val A_T2_B_sel = 5
-
-  val A_T2_A    = A * A * A_T2_A_sel
-  val A_T2_B    = A * B * A_T2_B_sel
-
-  val B_T2_C_sel = 0.0031
-  val B_T2_C = B * C * B_T2_C_sel
-  val D_T2_C_sel = 0.07
-  val D_T2_C     = D * C * D_T2_C_sel
-
-  val B_T1_STAR = B_T1_A + B_T1_B + B_T1_C + B_T1_D
-  val STAR_T1_B = B_T1_B + A_T1_B
-  val STAR_T1_B_sel = STAR_T1_B / N
-  val STAR_T1_A = A_T1_A + B_T1_A
-  val STAR_T1_A_sel = STAR_T1_A / (N * A)
-  val A_T1_STAR = A_T1_A + A_T1_B + A_T1_C + A_T1_D
-  val A_T1_STAR_sel = A_T1_STAR / (N * A)
-  val A_T2_STAR = A_T2_A + A_T2_B
-  val A_STAR_STAR = A_T1_STAR + A_T2_STAR
-  val B_T2_STAR = B_T2_C
-  val B_STAR_STAR = B_T1_STAR + B_T2_STAR
-  val STAR_T2_B = A_T2_B + 0 // B_T2_B
-  val D_T1_STAR = D_T1_C
-  val D_T2_STAR = D_T2_C
-
-
-  // Relationship count: the total number of relationships in the system
-  val R = A_T1_STAR + B_T1_STAR + A_T2_STAR + D_T1_C + D_T2_C
+class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardinalityModelTestSuite with ABCDCardinalityData {
 
   import org.scalatest.prop.TableDrivenPropertyChecks._
+
+  import ABCD._
 
   test("all queries") {
     val queries = Table.apply[String, Double](
@@ -338,36 +265,6 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
 //      )
 //  }
 
-  private def forQuery(q: String) =
-    givenPattern(q).
-    withGraphNodes(N).
-    withLabel('A, A).
-    withLabel('B, B).
-    withLabel('C, C).
-    withLabel('D, D).
-    withLabel('EMPTY, 0).
-    withIndexSelectivity(('A, 'prop) -> Aprop).
-    withIndexSelectivity(('B, 'prop) -> Bprop).
-    withIndexSelectivity(('A, 'bar) -> Abar).
-    withRelationshipCardinality('A -> 'T1 -> 'A, A_T1_A).
-    withRelationshipCardinality('A -> 'T1 -> 'B, A_T1_B).
-    withRelationshipCardinality('A -> 'T1 -> 'C, A_T1_C).
-    withRelationshipCardinality('A -> 'T1 -> 'D, A_T1_D).
-    withRelationshipCardinality('A -> 'T2 -> 'A, A_T2_A).
-    withRelationshipCardinality('A -> 'T2 -> 'B, A_T2_B).
-    withRelationshipCardinality('B -> 'T1 -> 'B, B_T1_B).
-    withRelationshipCardinality('B -> 'T1 -> 'C, B_T1_C).
-    withRelationshipCardinality('B -> 'T1 -> 'A, B_T1_A).
-    withRelationshipCardinality('B -> 'T1 -> 'D, B_T1_D).
-    withRelationshipCardinality('B -> 'T2 -> 'C, B_T2_C).
-    withRelationshipCardinality('C -> 'T1 -> 'D, C_T1_D).
-    withRelationshipCardinality('D -> 'T1 -> 'C, D_T1_C).
-    withRelationshipCardinality('D -> 'T2 -> 'C, D_T2_C)
-
-  def or(numbers: Double*) = 1 - numbers.map(1 - _).reduce(_ * _)
-
-  implicit def toLong(d: Double): Long = d.toLong
-
   def createCardinalityModel(stats: GraphStatistics, semanticTable: SemanticTable): QueryGraphCardinalityModel =
-    AssumeIndependenceQueryGraphCardinalityModel(stats, semanticTable, IndependenceCombiner)
+    AssumeIndependenceQueryGraphCardinalityModel(stats, semanticTable, combiner)
 }

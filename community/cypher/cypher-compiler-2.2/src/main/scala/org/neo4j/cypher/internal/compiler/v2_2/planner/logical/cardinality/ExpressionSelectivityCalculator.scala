@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assumeIndependence
+package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, Multiplier, Selectivity}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryGraph, Selections, SemanticTable}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{Selections, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics._
 import org.neo4j.cypher.internal.compiler.v2_2.{LabelId, functions}

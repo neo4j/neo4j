@@ -17,52 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
+package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.StatementConverters._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{Identifier, Query, Statement}
-import org.neo4j.cypher.internal.compiler.v2_2.planner._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.{QueryGraphCardinalityInput, QueryGraphCardinalityModel}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, QueryGraphProducer, Selectivity}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport, QueryGraph, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
-import org.scalatest.mock.MockitoSugar
-import org.scalautils.Equality
+import org.neo4j.cypher.internal.compiler.v2_2.{LabelId, PropertyKeyId, RelTypeId}
 
-import scala.Symbol
 import scala.collection.mutable
 
-trait QueryGraphProducer extends MockitoSugar {
-  self: LogicalPlanningTestSupport =>
-
-
-  def producePlannerQueryForPattern(query: String): PlannerQuery = {
-    val q = query + " RETURN 1"
-    val ast = parser.parse(q)
-    val semanticChecker = new SemanticChecker(mock[SemanticCheckMonitor])
-    val cleanedStatement: Statement = ast.endoRewrite(inSequence(normalizeReturnClauses, normalizeWithClauses))
-    val semanticState = semanticChecker.check(query, cleanedStatement)
-
-    val firstRewriteStep = astRewriter.rewrite(query, cleanedStatement, semanticState)._1
-    val rewrittenAst: Statement =
-      Planner.rewriteStatement(firstRewriteStep, semanticState.scopeTree)
-    rewrittenAst.asInstanceOf[Query].asUnionQuery.queries.head
-  }
-
-  def produceQueryGraphForPattern(query: String): QueryGraph =
-    producePlannerQueryForPattern(query).lastQueryGraph
-}
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.MapSupport._
 
 trait CardinalityTestHelper extends QueryGraphProducer {
 
   self: CypherFunSuite with LogicalPlanningTestSupport =>
 
-  def createCardinalityModel(stats: GraphStatistics, semanticTable: SemanticTable): QueryGraphCardinalityModel
+  def combiner: SelectivityCombiner = IndependenceCombiner
 
-  def givenPattern(pattern: String) = TestUnit(pattern)
-  def givenPredicate(pattern: String) = TestUnit("MATCH " + pattern)
+  def not(number: Double) = Selectivity(number).negate.factor
+  def and(numbers: Double*) = combiner.andTogetherSelectivities(numbers.map(Selectivity.apply)).get.factor
+  def or(numbers: Double*) = combiner.orTogetherSelectivities(numbers.map(Selectivity.apply)).get.factor
+
+  def degree(above: Double, below: Double) = above / below
 
   case class TestUnit(query: String,
                       allNodes: Option[Double] = None,
@@ -72,10 +51,19 @@ trait CardinalityTestHelper extends QueryGraphProducer {
                       knownRelationshipCardinality: Map[(String, String, String), Double] = Map.empty,
                       queryGraphArgumentIds: Set[IdName] = Set.empty,
                       inboundCardinality: Cardinality = Cardinality(1)) {
+
+    self =>
+
     def withInboundCardinality(d: Double) = copy(inboundCardinality = Cardinality(d))
 
     def withLabel(tuple: (Symbol, Double)): TestUnit = copy(knownLabelCardinality = knownLabelCardinality + (tuple._1.name -> tuple._2))
+
     def withLabel(label: Symbol, cardinality: Double): TestUnit = copy(knownLabelCardinality = knownLabelCardinality + (label.name -> cardinality))
+
+    def addWithLabels(cardinality: Double, labels: Symbol*) = {
+      val increments = labels.map { label => label.name -> cardinality }.toMap
+      copy(knownLabelCardinality = knownLabelCardinality.fuse(increments)(_ + _))
+    }
 
     def withQueryGraphArgumentIds(idNames: IdName*): TestUnit =
       copy(queryGraphArgumentIds = Set(idNames: _*))
@@ -89,6 +77,15 @@ trait CardinalityTestHelper extends QueryGraphProducer {
       assert(!knownRelationshipCardinality.contains(key), "This label/type/label combo is already known")
       copy (
         knownRelationshipCardinality = knownRelationshipCardinality + (key -> cardinality)
+      )
+    }
+
+    def addRelationshipCardinality(relationship: (((Symbol, Symbol), Symbol), Double)): TestUnit = {
+      val (((lhs, relType), rhs), cardinality) = relationship
+      val key = (lhs.name, relType.name, rhs.name)
+      val increment = Map(key -> cardinality)
+      copy (
+        knownRelationshipCardinality = knownRelationshipCardinality.fuse(increment)(_ + _)
       )
     }
 
@@ -189,39 +186,9 @@ trait CardinalityTestHelper extends QueryGraphProducer {
       }
     }
 
-    implicit val cardinalityEq = new Equality[Cardinality] {
-      def areEqual(a: Cardinality, b: Any): Boolean = b match {
-        case b: Cardinality =>
-          val tolerance = Math.max(0.1, a.amount * 0.1) // 10% off is acceptable
-          a.amount === b.amount +- tolerance
-        case _ => false
-      }
-    }
-
-    def shouldHaveQueryGraphCardinality(number: Double) {
-      val (statistics, semanticTable) = prepareTestContext
-      val queryGraph = createQueryGraph()
-      val cardinalityModel: QueryGraphCardinalityModel = createCardinalityModel(statistics, semanticTable)
-      val result = cardinalityModel(queryGraph, QueryGraphCardinalityInput(Map.empty, Cardinality(1)))
-      result should equal(Cardinality(number))
-    }
-
-    def shouldHavePlannerQueryCardinality(f: QueryGraphCardinalityModel => Metrics.CardinalityModel)(number: Double) {
-      val (statistics, semanticTable) = prepareTestContext
-      val graphCardinalityModel = createCardinalityModel(statistics, semanticTable)
-      val cardinalityModelUnderTest = f(graphCardinalityModel)
-      val plannerQuery: PlannerQuery = producePlannerQueryForPattern(query)
-      val plan = newMockedLogicalPlanWithSolved(Set.empty, plannerQuery)
-      cardinalityModelUnderTest(plan, QueryGraphCardinalityInput.empty) should equal(Cardinality(number))
-    }
-
     def createQueryGraph(): QueryGraph = {
       produceQueryGraphForPattern(query)
         .withArgumentIds(queryGraphArgumentIds)
     }
   }
-
-  val DEFAULT_PREDICATE_SELECTIVITY = GraphStatistics.DEFAULT_PREDICATE_SELECTIVITY.factor
-  val DEFAULT_EQUALITY_SELECTIVITY = GraphStatistics.DEFAULT_EQUALITY_SELECTIVITY.factor
-  val DEFAULT_REL_UNIQUENESS_SELECTIVITY = GraphStatistics.DEFAULT_REL_UNIQUENESS_SELECTIVITY.factor
 }
