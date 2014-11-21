@@ -56,7 +56,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     private final TransactionMetadataCache transactionMetadataCache;
     private final Visitor<ReadableVersionableLogChannel, IOException> recoveredDataVisitor;
     private final Monitor monitor;
-    private final ByteBuffer headerBuffer = ByteBuffer.allocate( 16 );
+    private final ByteBuffer headerBuffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
     private final LogRotationControl logRotationControl;
     private PhysicalWritableLogChannel writer;
     private final LogVersionRepository logVersionRepository;
