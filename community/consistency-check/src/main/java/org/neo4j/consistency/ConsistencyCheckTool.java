@@ -34,6 +34,7 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.recovery.StoreRecoverer;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -56,11 +57,21 @@ public class ConsistencyCheckTool
     }
 
     private final ConsistencyCheckService consistencyCheckService;
+    private final StoreRecoverer recoveryChecker;
+    private final GraphDatabaseFactory dbFactory;
     private final PrintStream systemError;
 
     ConsistencyCheckTool( ConsistencyCheckService consistencyCheckService, PrintStream systemError )
     {
+        this( consistencyCheckService, new StoreRecoverer(), new GraphDatabaseFactory(), systemError );
+    }
+
+    ConsistencyCheckTool( ConsistencyCheckService consistencyCheckService, StoreRecoverer recoveryChecker,
+            GraphDatabaseFactory dbFactory, PrintStream systemError )
+    {
         this.consistencyCheckService = consistencyCheckService;
+        this.recoveryChecker = recoveryChecker;
+        this.dbFactory = dbFactory;
         this.systemError = systemError;
     }
 
@@ -90,13 +101,12 @@ public class ConsistencyCheckTool
 
     private void attemptRecoveryOrCheckStateOfLogicalLogs( Args arguments, String storeDir )
     {
-        if ( arguments.getBoolean( RECOVERY, false, true ) )
+        if ( arguments.getBoolean( RECOVERY, true, true ) )
         {
-            new GraphDatabaseFactory().newEmbeddedDatabase( storeDir ).shutdown();
+            dbFactory.newEmbeddedDatabase( storeDir ).shutdown();
         }
         else
         {
-            StoreRecoverer recoveryChecker = new StoreRecoverer();
             try
             {
                 if ( recoveryChecker.recoveryNeededAt( new File( storeDir ) ) )
