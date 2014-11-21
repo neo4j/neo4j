@@ -45,6 +45,7 @@ import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.LifecycleManagingDatabase;
 import org.neo4j.server.preflight.PreFlightTasks;
@@ -216,6 +217,7 @@ public class CommunityServerBuilder
             }
         }
 
+        properties.put( ServerSettings.authorization_enabled.name(), "false" );
         properties.put( ServerInternalSettings.authorization_store.name(), "neo4j-home/data/dbms/authorization" );
 
         for ( Object key : arbitraryProperties.keySet() )
