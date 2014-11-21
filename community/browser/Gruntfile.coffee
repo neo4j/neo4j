@@ -285,7 +285,7 @@ module.exports = (grunt) ->
     rev:
       dist:
         files:
-          src: ["<%= yeoman.dist %>/scripts/{,*/}*.js", "<%= yeoman.dist %>/styles/{,*/}*.css", "<%= yeoman.dist %>/images/{,*/}*.{png,jpg,jpeg,gif,webp,svg}", "<%= yeoman.dist %>/styles/fonts/*"]
+          src: ["<%= yeoman.dist %>/scripts/{,*/}*.js", "<%= yeoman.dist %>/styles/{,*/}*.css"]
 
     copy:
       dist:
@@ -319,7 +319,7 @@ module.exports = (grunt) ->
   grunt.renameTask "regarde", "watch"
   grunt.registerTask "server", ["clean:server", "coffee", "configureProxies", "stylus", "jade", "livereload-start", "connect:livereload", "watch"]
   grunt.registerTask "test", ["clean:server", "coffee", "connect:test", "karma"]
-  grunt.registerTask "build", ["clean:dist", "test", "coffee", "jade", "stylus", "useminPrepare", "concat", "copy", "imagemin", "cssmin", "htmlmin", "uglify", "usemin", "replace"]
+  grunt.registerTask "build", ["clean:dist", "test", "coffee", "jade", "stylus", "useminPrepare", "concat", "copy", "imagemin", "cssmin", "htmlmin", "uglify", "rev", "usemin", "replace"]
   grunt.registerTask "server:dist", ["build", "configureProxies", "connect:dist:keepalive"]
   grunt.registerTask "default", ["build"]
 
