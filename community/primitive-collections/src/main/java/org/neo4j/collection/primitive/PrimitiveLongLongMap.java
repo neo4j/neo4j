@@ -29,5 +29,8 @@ public interface PrimitiveLongLongMap extends PrimitiveLongCollection
 
     long remove( long key );
 
-    void visitEntries( PrimitiveLongLongVisitor visitor );
+    /**
+     * Visit the entries of this map, until all have been visited or the visitor returns 'true'.
+     */
+    <E extends Exception> void visitEntries( PrimitiveLongLongVisitor<E> visitor ) throws E;
 }
