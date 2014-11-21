@@ -26,12 +26,12 @@ import java.nio.charset.Charset;
 
 import javax.ws.rs.core.HttpHeaders;
 
-import com.sun.jersey.core.util.Base64;
 import org.codehaus.jackson.JsonNode;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.ServerSettings;
@@ -44,9 +44,11 @@ import org.neo4j.test.TestData;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
 
+import com.sun.jersey.core.util.Base64;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 public class UsersDocIT extends ExclusiveServerTestBase
 {
@@ -94,6 +96,39 @@ public class UsersDocIT extends ExclusiveServerTestBase
         assertEquals(401, HTTP.withHeaders( HttpHeaders.AUTHORIZATION, challengeResponse( token ) ).GET( authURL() ).status());
     }
 
+    /**
+     * Changing your password for the first time
+     *
+     * When enabling authorization for the first time, you must change the password before an authorization token can be granted.
+     * You can choose any password you like, except the default `neo4j`.
+     * The response will include an authorization token.
+     */
+    @Test
+    @Documented
+    public void change_password_first_time() throws PropertyValueException, IOException
+    {
+        // Given
+        startServer( true );
+
+        // Document
+        RESTDocsGenerator.ResponseEntity response = gen.get()
+                .noGraph()
+                .expectedStatus( 200 )
+                .payload( quotedJson( "{'password':'neo4j', 'new_password':'qwerty'}" ) )
+                .post( server.baseUri().resolve( "/user/neo4j/password" ).toString() );
+
+        // Then
+        JsonNode data = JsonHelper.jsonNode( response.entity() );
+        String token = data.get( "authorization_token" ).asText();
+        assertThat( token.length(), not( 0 ) );
+
+        // And then the new password should work
+        assertEquals(200, HTTP.POST( authURL(), HTTP.RawPayload.quotedJson( "{'username':'neo4j','password':'qwerty'}" ) ).status());
+
+        // And then the old password should not be invalid
+        assertEquals(422, HTTP.POST( authURL(), HTTP.RawPayload.quotedJson( "{'username':'neo4j','password':'neo4j'}" ) ).status());
+    }
+    
     /**
      * Changing your password
      *

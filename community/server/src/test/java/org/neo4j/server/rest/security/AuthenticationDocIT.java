@@ -25,7 +25,6 @@ import java.nio.charset.Charset;
 
 import javax.ws.rs.core.HttpHeaders;
 
-import com.sun.jersey.core.util.Base64;
 import org.codehaus.jackson.JsonNode;
 import org.junit.After;
 import org.junit.Before;
@@ -43,15 +42,17 @@ import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.TestData;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
+import org.neo4j.test.server.HTTP.RawPayload;
+
+import com.sun.jersey.core.util.Base64;
 
 import static java.lang.String.format;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.*;
-
-import static org.neo4j.test.server.HTTP.RawPayload;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 public class AuthenticationDocIT extends ExclusiveServerTestBase
 {
@@ -96,7 +97,7 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
     }
 
     /**
-     * Authenticate to obtain authorization token
+     * Authenticate to obtain an authorization token
      *
      * You authenticate by sending a username and a password to Neo4j. The database will reply with an authorization
      * token. The reply from this endpoint will also indicate if your password should be changed which will,
@@ -187,7 +188,7 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
      * You can use this endpoint to determine if security is enabled, and to check if your authorization token is valid.
      *
      * Given that you have a valid authorization token, you can retrieve metadata about the current user from the authentication endpoint.
-     * If neo4j security is disabled, this endpoint will also return 200 OK, see <<rest-api-get-authorization-status-when-auth-is-disabled>>.
+     * If Neo4j security is disabled, this endpoint will also return `200 OK`, see <<rest-api-get-authorization-status-when-authorization-is-disabled>>.
      * If security is enabled and your token is invalid, you will get an error reply, see <<rest-api-attempting-to-get-authorization-status-while-unauthorized>>.
      * This way, you can use this endpoint to determine if you need to acquire an authorization token.
      */
@@ -240,10 +241,10 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
     }
 
     /**
-     * Get authorization status when auth is disabled
+     * Get authorization status when authorization is disabled
      *
-     * Given that auth is disabled in the configuration, you can perform a GET to the authentication endpoint, and will
-     * get back an OK response. You will not receive a username or authorization token.
+     * Given that authorization is disabled in the configuration, you can perform a `GET` request to the authentication endpoint, and will
+     * get back an `200 OK` response. You will not receive a username or authorization token.
      */
     @Test
     @Documented

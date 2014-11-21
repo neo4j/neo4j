@@ -8,7 +8,7 @@ By default, the Neo4j Server is bundled with a Web server that binds to host +lo
 
 This is configured in the _conf/neo4j-server.properties_ file:
 
-[source]
+[source,properties]
 ----
 # http port (for all data, administrative, and UI access)
 org.neo4j.server.webserver.port=7474
@@ -17,25 +17,28 @@ org.neo4j.server.webserver.port=7474
 #is localhost (only accept local connections). Uncomment to allow
 #any connection.
 #org.neo4j.server.webserver.address=0.0.0.0
----- 
+----
 
 If you need to enable access from external hosts, configure the Web server in the _conf/neo4j-server.properties_ by setting the property +org.neo4j.server.webserver.address=0.0.0.0+ to enable access from any host.
 
+[[security-server-auth]]
 == Authorization ==
 
-Neo4j allows you to enable authorization to access the REST API.
+Neo4j allows you to require clients to supply an authorization token to gain access the REST API.
 This will disallow anyone without a valid authorization token access to the database.
 
-The authorization data is stored under 'data/dbms/authorization'.
+The authorization data is stored under _data/dbms/authorization_.
 This file can be copied over to other neo4j instances to ensure they share the same username/password and authorization token.
 
 Please refer to <<rest-api-security>> for details on this API.
 
-[source]
+[source,properties]
 ----
 # Enable authorization
 dbms.security.authorization_enabled=true
 ----
+
+NOTE: Authorization is enabled by default.
 
 == Arbitrary code execution ==
 
@@ -45,13 +48,13 @@ Also, the Java Security Manager, see http://docs.oracle.com/javase/7/docs/techno
 
 == HTTPS support ==
 
-The Neo4j server includes built in support for SSL encrypted communication over HTTPS. 
+The Neo4j server includes built in support for SSL encrypted communication over HTTPS.
 The first time the server starts, it automatically generates a self-signed SSL certificate and a private key.
 Because the certificate is self signed, it is not safe to rely on for production use, instead, you should provide your own key and certificate for the server to use.
 
 To provide your own key and certificate, replace the generated key and certificate, or change the _conf/neo4j-server.properties_ file to set the location of your certificate and key:
 
-[source]
+[source,properties]
 ----
 # Certificate location (auto generated if the file does not exist)
 org.neo4j.server.webserver.https.cert.location=ssl/snakeoil.cert
@@ -60,15 +63,15 @@ org.neo4j.server.webserver.https.cert.location=ssl/snakeoil.cert
 org.neo4j.server.webserver.https.key.location=ssl/snakeoil.key
 ----
 
-Note that the key should be unencrypted. 
+Note that the key should be unencrypted.
 Make sure you set correct permissions on the private key, so that only the Neo4j server user can read/write it.
 
-Neo4j also supports chained SSL certificates. 
+Neo4j also supports chained SSL certificates.
 This requires to have all certificates in PEM format combined in one file and the private key needs to be in DER format.
 
 You can set what port the HTTPS connector should bind to in the same configuration file, as well as turn HTTPS off:
 
-[source]
+[source,properties]
 ----
 # Turn https-support on/off
 org.neo4j.server.webserver.https.enabled=true
@@ -95,7 +98,7 @@ include::using-complex-wildcards-to-target-security-rules.asciidoc[]
 == Hosted Scripting ==
 
 [IMPORTANT]
-The neo4j server exposes remote scripting functionality by default that allow full access to the underlying system. 
+The neo4j server exposes remote scripting functionality by default that allow full access to the underlying system.
 Exposing your server without implementing a security layer poses a substantial security vulnerability.
 
 == Security in Depth ==
@@ -117,7 +120,7 @@ This provides a number of advantages:
 
 While equivalent functionality can be implemented with Neo4j's +SecurityRule+ plugins (see above), for operations professionals configuring servers like Apache is often preferable to developing plugins. However it should be noted that where both approaches are used, they will work harmoniously providing the behavior is consistent across proxy server and +SecurityRule+ plugins.
 
-* Run Neo4j Server as a non-root user on a Linux/Unix system on a port < 1000 (e.g. port 80) using 
+* Run Neo4j Server as a non-root user on a Linux/Unix system on a port < 1000 (e.g. port 80) using
 +
 [source]
 ---------------
