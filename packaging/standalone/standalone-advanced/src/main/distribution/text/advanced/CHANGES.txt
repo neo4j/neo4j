@@ -56,8 +56,9 @@ o Fix history stepping in OS X to use cmd + up/down arrow and cmd+enter to run c
 o Disable :hover event on node drag.
 o Heartbeat to correct URL.
 o Stop the action buttons in editor from flashing when typing.
-o Sometimes when the editor is blurred, you could not saved the contents as a script.
+o Sometimes when the editor is blurred, you could not execute it or save the contents as a script.
 o Escape contents displayed to prevent javascript from executing.
+o Prepend js and css file names with part of md5 hex of it's contents to prevent false caching.
 
 2.1.6
 -----
