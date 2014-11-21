@@ -34,10 +34,10 @@ import java.util.Collection;
 import java.util.List;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -53,11 +53,9 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.test.FixedDependencyResolver;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 
@@ -96,7 +94,7 @@ import static org.neo4j.kernel.logging.DevNullLoggingService.DEV_NULL;
 public class StoreUpgraderTest
 {
     private final String version;
-    private DependencyResolver dependencyResolver = new FixedDependencyResolver( new InMemoryIndexProvider() );
+    private SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
 
     public StoreUpgraderTest( String version )
     {
@@ -127,7 +125,7 @@ public class StoreUpgraderTest
         assertTrue( allStoreFilesHaveVersion( fileSystem, dbDirectory, version ) );
 
         // When
-        newUpgrader( ALLOW_UPGRADE ).migrateIfNeeded( dbDirectory );
+        newUpgrader( ALLOW_UPGRADE ).migrateIfNeeded( dbDirectory, schemaIndexProvider );
 
         // Then
         assertTrue( allStoreFilesHaveVersion( fileSystem, dbDirectory, ALL_STORES_VERSION ) );
@@ -152,7 +150,7 @@ public class StoreUpgraderTest
 
         try
         {
-            newUpgrader( vetoingUpgradeConfiguration ).migrateIfNeeded( dbDirectory );
+            newUpgrader( vetoingUpgradeConfiguration ).migrateIfNeeded( dbDirectory, schemaIndexProvider );
             fail( "Should throw exception" );
         }
         catch ( UpgradeNotAllowedByConfigurationException e )
@@ -174,7 +172,7 @@ public class StoreUpgraderTest
 
         try
         {
-            newUpgrader( ALLOW_UPGRADE ).migrateIfNeeded( dbDirectory );
+            newUpgrader( ALLOW_UPGRADE ).migrateIfNeeded( dbDirectory, schemaIndexProvider );
             fail( "Should throw exception" );
         }
         catch ( StoreUpgrader.UnexpectedUpgradingStoreVersionException e )
@@ -198,7 +196,7 @@ public class StoreUpgraderTest
         fileSystem.copyRecursively( dbDirectory, comparisonDirectory );
         try
         {
-            newUpgrader( ALLOW_UPGRADE ).migrateIfNeeded( dbDirectory );
+            newUpgrader( ALLOW_UPGRADE ).migrateIfNeeded( dbDirectory, schemaIndexProvider );
             fail( "Should throw exception" );
         }
         catch ( StoreUpgrader.UnableToUpgradeException e )
@@ -222,7 +220,7 @@ public class StoreUpgraderTest
 
         try
         {
-            newUpgrader( ALLOW_UPGRADE ).migrateIfNeeded( dbDirectory );
+            newUpgrader( ALLOW_UPGRADE ).migrateIfNeeded( dbDirectory, schemaIndexProvider );
             fail( "Should throw exception" );
         }
         catch ( StoreUpgrader.UnableToUpgradeException e )
@@ -244,7 +242,7 @@ public class StoreUpgraderTest
         // WHEN
         try
         {
-            upgrader.migrateIfNeeded( dbDirectory );
+            upgrader.migrateIfNeeded( dbDirectory, schemaIndexProvider );
         }
         catch ( UnableToUpgradeException e )
         {   // THEN
@@ -258,10 +256,11 @@ public class StoreUpgraderTest
         StoreMigrationParticipant observingParticipant = Mockito.mock( StoreMigrationParticipant.class );
         when( observingParticipant.needsMigration( any( File.class ) ) ).thenReturn( true );
         upgrader.addParticipant( observingParticipant );
-        upgrader.migrateIfNeeded( dbDirectory );
+        upgrader.migrateIfNeeded( dbDirectory, schemaIndexProvider );
 
         // THEN
-        verify( observingParticipant, Mockito.times( 0 ) ).migrate( any( File.class ), any( File.class ) );
+        verify( observingParticipant, Mockito.times( 0 ) ).migrate(
+                any( File.class ), any( File.class ), any( SchemaIndexProvider.class ) );
         verify( observingParticipant, Mockito.times( 1 ) ).moveMigratedFiles( any( File.class ), any( File.class ) );
         verify( observingParticipant, Mockito.times( 1 ) ).cleanup( any( File.class ) );
         verify( monitor ).migrationCompleted();
@@ -274,7 +273,7 @@ public class StoreUpgraderTest
         fileSystem.deleteFile( new File( dbDirectory, StringLogger.DEFAULT_NAME ) );
 
         // When
-        newUpgrader( ALLOW_UPGRADE ).migrateIfNeeded( dbDirectory );
+        newUpgrader( ALLOW_UPGRADE ).migrateIfNeeded( dbDirectory, schemaIndexProvider );
 
         // Then
         LifeSupport life = new LifeSupport();
@@ -305,7 +304,7 @@ public class StoreUpgraderTest
         fileSystem.deleteFile( new File( dbDirectory, StringLogger.DEFAULT_NAME ) );
 
         // When
-        newUpgrader( ALLOW_UPGRADE ).migrateIfNeeded( dbDirectory );
+        newUpgrader( ALLOW_UPGRADE ).migrateIfNeeded( dbDirectory, schemaIndexProvider );
 
         // Then
         assertThat( migrationHelperDirs(), is( emptyCollectionOf( File.class ) ) );
@@ -323,10 +322,10 @@ public class StoreUpgraderTest
         fileSystem.mkdir( new File( dbDirectory, StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY + "_42" ) );
 
         // When
-        StoreMigrator migrator = spy( new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem, DEV_NULL,
-                dependencyResolver ) );
+        StoreMigrator migrator = spy( new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem, DEV_NULL ) );
         when( migrator.needsMigration( dbDirectory ) ).thenReturn( false );
-        newUpgrader( ALLOW_UPGRADE, migrator, StoreUpgrader.NO_MONITOR ).migrateIfNeeded( dbDirectory );
+        newUpgrader( ALLOW_UPGRADE, migrator, StoreUpgrader.NO_MONITOR ).migrateIfNeeded( dbDirectory,
+                schemaIndexProvider );
 
         // Then
         assertThat( migrationHelperDirs(), is( emptyCollectionOf( File.class ) ) );
@@ -343,7 +342,7 @@ public class StoreUpgraderTest
             }
 
             @Override
-            public void migrate( File storeDir, File migrationDir ) throws IOException, UnsatisfiedDependencyException
+            public void migrate( File storeDir, File migrationDir, SchemaIndexProvider schemaIndexProvider ) throws IOException
             {  // Do nothing in particular
             }
 
@@ -374,7 +373,7 @@ public class StoreUpgraderTest
     {
         StoreMigrator defaultMigrator = new StoreMigrator(
                 new SilentMigrationProgressMonitor(), fileSystem,
-                DEV_NULL, dependencyResolver );
+                DEV_NULL );
         return newUpgrader( upgradeConfig, defaultMigrator, StoreUpgrader.NO_MONITOR );
     }
 
@@ -382,7 +381,7 @@ public class StoreUpgraderTest
     {
         StoreMigrator defaultMigrator = new StoreMigrator(
                 new SilentMigrationProgressMonitor(), fileSystem,
-                DEV_NULL, dependencyResolver );
+                DEV_NULL );
         return newUpgrader( ALLOW_UPGRADE, defaultMigrator, monitor );
     }
 

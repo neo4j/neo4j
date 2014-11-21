@@ -31,6 +31,7 @@ import java.util.regex.Pattern;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 
@@ -123,7 +124,7 @@ public class StoreUpgrader
         this.participants.add( participant );
     }
 
-    public void migrateIfNeeded( File storeDirectory )
+    public void migrateIfNeeded( File storeDirectory, SchemaIndexProvider schemaIndexProvider )
     {
         File migrationDirectory = new File( storeDirectory, MIGRATION_DIRECTORY );
 
@@ -158,7 +159,8 @@ public class StoreUpgrader
             {
                 cleanMigrationDirectory( migrationDirectory );
                 setMigrationStatus( migrationStateFile, MigrationStatus.migrating );
-                migrateToIsolatedDirectory( participantsNeedingMigration, storeDirectory, migrationDirectory );
+                migrateToIsolatedDirectory(
+                        participantsNeedingMigration, storeDirectory, migrationDirectory, schemaIndexProvider );
                 setMigrationStatus( migrationStateFile, MigrationStatus.moving );
             }
 
@@ -266,7 +268,8 @@ public class StoreUpgrader
     }
 
     private void migrateToIsolatedDirectory( List<StoreMigrationParticipant> participantsNeedingMigration,
-                                             File storeDir, File migrationDirectory )
+                                             File storeDir, File migrationDirectory,
+                                             SchemaIndexProvider schemaIndexProvider )
     {
         try
         {
@@ -274,7 +277,7 @@ public class StoreUpgrader
             {
                 if ( participantsNeedingMigration.contains( participant ) )
                 {   // This participant needs migration, do it
-                    participant.migrate( storeDir, migrationDirectory );
+                    participant.migrate( storeDir, migrationDirectory, schemaIndexProvider );
                 }
             }
         }

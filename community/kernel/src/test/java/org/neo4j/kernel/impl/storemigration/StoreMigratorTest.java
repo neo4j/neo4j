@@ -25,9 +25,9 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -38,13 +38,12 @@ import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.FixedDependencyResolver;
 
 import static org.junit.Assert.assertTrue;
 
 public class StoreMigratorTest
 {
-    private DependencyResolver dependencyResolver = new FixedDependencyResolver( new InMemoryIndexProvider() );
+    private SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
 
     private File createNeoStoreWithOlderVersion( String version ) throws IOException
     {
@@ -62,16 +61,15 @@ public class StoreMigratorTest
         File storeDirectory = createNeoStoreWithOlderVersion( Legacy20Store.LEGACY_VERSION );
         // and a state of the migration saying that it has done the actual migration
         Logging logging = new DevNullLoggingService();
-        StoreMigrator migrator = new StoreMigrator( new SilentMigrationProgressMonitor(), fs.get(), logging,
-                dependencyResolver );
+        StoreMigrator migrator = new StoreMigrator( new SilentMigrationProgressMonitor(), fs.get(), logging );
         File migrationDir = new File( storeDirectory, StoreUpgrader.MIGRATION_DIRECTORY );
         fs.get().mkdirs( migrationDir );
         assertTrue( migrator.needsMigration( storeDirectory ) );
-        migrator.migrate( storeDirectory, migrationDir );
+        migrator.migrate( storeDirectory, migrationDir, schemaIndexProvider );
         migrator.close();
 
         // WHEN simulating resuming the migration
-        migrator = new StoreMigrator( new SilentMigrationProgressMonitor(), fs.get(), logging, dependencyResolver );
+        migrator = new StoreMigrator( new SilentMigrationProgressMonitor(), fs.get(), logging );
         migrator.moveMigratedFiles( migrationDir, storeDirectory );
 
         // THEN starting the new store should be successful

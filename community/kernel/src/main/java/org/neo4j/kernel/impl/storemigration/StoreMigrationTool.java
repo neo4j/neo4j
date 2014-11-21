@@ -66,15 +66,14 @@ public class StoreMigrationTool
 
         // Add the kernel store migrator
         config = StoreFactory.configForStoreDir( config, new File( legacyStoreDirectory ) );
-        migrationProcess.addParticipant( new StoreMigrator(
-                new VisibleMigrationProgressMonitor( logging.getMessagesLog( StoreMigrationTool.class ), System.out ),
-                fs, new UpgradableDatabase( new StoreVersionCheck( fs ) ), config, logging, kernelExtensions ) );
         life.start();
-        // ... TODO although hard coded to SchemaIndexProvider a.t.m.
+        SchemaIndexProvider schemaIndexProvider = kernelExtensions.resolveDependency( SchemaIndexProvider.class,
+                SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE );
         try
         {
-            SchemaIndexProvider schemaIndexProvider = kernelExtensions.resolveDependency( SchemaIndexProvider.class,
-                    SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE );
+            migrationProcess.addParticipant( new StoreMigrator(
+                    new VisibleMigrationProgressMonitor( logging.getMessagesLog( StoreMigrationTool.class ), System.out ),
+                    fs, new UpgradableDatabase( new StoreVersionCheck( fs ) ), config, logging ) );
             migrationProcess.addParticipant( schemaIndexProvider.storeMigrationParticipant() );
         }
         catch ( IllegalArgumentException e )
@@ -85,7 +84,7 @@ public class StoreMigrationTool
         try
         {
             long startTime = System.currentTimeMillis();
-            migrationProcess.migrateIfNeeded( new File( legacyStoreDirectory ) );
+            migrationProcess.migrateIfNeeded( new File( legacyStoreDirectory ), schemaIndexProvider );
             long duration = System.currentTimeMillis() - startTime;
             logging.getMessagesLog( StoreMigrationTool.class )
                     .info( format( "Migration completed in %d s%n", duration / 1000 ) );
