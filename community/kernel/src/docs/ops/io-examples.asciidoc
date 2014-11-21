@@ -18,7 +18,7 @@ If memory belonging to the Neo4j process gets swapped out, it can lead to consid
 
 The amount of memory available to the page cache can be configured in two ways; both using the `mapped_memory_total_size` setting.
 You can either directly specify the number of bytes available to the page cache, e.g. `150M` og `4G`, or you can specify a percentage of the available memory, which is what the default setting of `50%` means.
-In either case, the amount of memory reserved for the page cache is capped at the amount of free memory as measured when the database starts, and then rounded down to a multiple of the `mapped_memory_page_size`.
+In either case, the amount of memory reserved for the page cache is capped at the amount of free memory as measured when the database starts.
 
 For optimal performance, you will want to have as much of your data fit in the page cache as possible.
 You can sum up the size of all the `neostore.*` files in your store file directory, to figure out how big a page cache you need to fit all your data.
