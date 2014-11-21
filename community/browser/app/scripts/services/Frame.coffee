@@ -87,9 +87,9 @@ angular.module('neo4jApp.services')
                 result = result.data?.errors[0] || result.errors?[0] || result
                 @errorText = result.message or "Unknown error"
                 @detailedErrorText = " " # ABKTODO consider a friendly message here
-                if result.length > 0 and result[0].code
-                  @errorText = result[0].code
-                  @detailedErrorText = result[0].message if result[0].message
+                if result.code?
+                  @errorText = result.code
+                  @detailedErrorText = result.message
                 @runTime = timer.stop().time()
 
             )
