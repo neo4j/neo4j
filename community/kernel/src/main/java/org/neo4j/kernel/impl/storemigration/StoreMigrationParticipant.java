@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.Resource;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 
@@ -48,16 +49,17 @@ public interface StoreMigrationParticipant extends Resource
      * @param storeDir data to migrate.
      * @param migrationDir place to migrate to.
      * @param schemaIndexProvider The SchemaIndexProvider for the migrating database.
+     * @param pageCache A page cache instance the participant can use if need be.
      * @throws IOException if there was an error migrating.
      * @throws UnsatisfiedDependencyException if one or more dependencies were unsatisfied.
      */
-    void migrate( File storeDir, File migrationDir, SchemaIndexProvider schemaIndexProvider ) throws IOException;
+    void migrate( File storeDir, File migrationDir, SchemaIndexProvider schemaIndexProvider, PageCache pageCache ) throws IOException;
 
     /**
      * After a successful migration, move all affected files from {@code upgradeDirectory} over to
      * the {@code workingDirectory}, effectively activating the migration changes.
      * @param migrationDir directory where the
-     * {@link #migrate(java.io.File, java.io.File, org.neo4j.kernel.api.index.SchemaIndexProvider) migration}
+     * {@link #migrate(java.io.File, java.io.File, org.neo4j.kernel.api.index.SchemaIndexProvider, org.neo4j.io.pagecache.PageCache) migration}
      * put its files.
      * @param storeDir directory the store directory of the to move the migrated files to.
      * @throws IOException if unable to move one or more files.
@@ -86,7 +88,8 @@ public interface StoreMigrationParticipant extends Resource
         }
 
         @Override
-        public void migrate( File sourceStoreDir, File targetStoreDir, SchemaIndexProvider schemaIndexProvider )
+        public void migrate( File sourceStoreDir, File targetStoreDir, SchemaIndexProvider schemaIndexProvider,
+                             PageCache pageCache )
                 throws IOException, UnsatisfiedDependencyException
         {
             throw new UnsupportedOperationException( "Should not have been called" );

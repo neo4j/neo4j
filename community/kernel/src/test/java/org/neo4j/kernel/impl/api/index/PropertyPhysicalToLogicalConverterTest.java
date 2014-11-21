@@ -220,7 +220,7 @@ public class PropertyPhysicalToLogicalConverterTest
         Monitors monitors = new Monitors();
         Config config = StoreFactory.configForStoreDir( new Config(), storeDir );
         StoreFactory storeFactory = new StoreFactory( config,
-                new DefaultIdGeneratorFactory(), pageCacheRule.getPageCache( fs.get(), config ),
+                new DefaultIdGeneratorFactory(), pageCacheRule.getPageCache( fs.get() ),
                 fs.get(), StringLogger.DEV_NULL, monitors );
         storeFactory.createPropertyStore();
         store = storeFactory.newPropertyStore();

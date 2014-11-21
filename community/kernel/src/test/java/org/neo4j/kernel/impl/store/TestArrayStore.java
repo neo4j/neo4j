@@ -70,7 +70,7 @@ public class TestArrayStore
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         Monitors monitors = new Monitors();
-        PageCache pageCache = pageCacheRule.getPageCache( fs, config );
+        PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreFactory factory = new StoreFactory(
                 config,
                 idGeneratorFactory,

@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.io.File;
-import java.util.Collections;
-import java.util.concurrent.Future;
-
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.util.Collections;
+import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -52,7 +52,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
 import static org.neo4j.graphdb.Neo4jMatchers.getPropertyKeys;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
@@ -190,7 +189,7 @@ public class TestGraphProperties
         StoreFactory storeFactory = new StoreFactory(
                 config,
                 new DefaultIdGeneratorFactory(),
-                pageCacheRule.getPageCache( fs.get(), config ),
+                pageCacheRule.getPageCache( fs.get() ),
                 fs.get(),
                 StringLogger.DEV_NULL,
                 monitors );

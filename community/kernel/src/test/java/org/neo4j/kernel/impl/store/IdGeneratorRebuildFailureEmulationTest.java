@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -31,6 +27,10 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
+
+import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -56,7 +56,6 @@ import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;
 
 @RunWith(Suite.class)
@@ -129,7 +128,7 @@ public class IdGeneratorRebuildFailureEmulationTest
         factory = new StoreFactory(
                 config,
                 new DefaultIdGeneratorFactory(),
-                pageCacheRule.getPageCache( fs, config ),
+                pageCacheRule.getPageCache( fs ),
                 fs,
                 StringLogger.DEV_NULL,
                 monitors );

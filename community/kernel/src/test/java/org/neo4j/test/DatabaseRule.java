@@ -30,6 +30,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Provider;
@@ -162,6 +163,9 @@ public abstract class DatabaseRule extends ExternalResource
     protected void configure( GraphDatabaseBuilder builder )
     {
         // Override to configure the database
+
+        // Adjusted defaults for testing
+        builder.setConfig( GraphDatabaseSettings.mapped_memory_total_size, "20M" );
     }
 
     public GraphDatabaseService getGraphDatabaseService()

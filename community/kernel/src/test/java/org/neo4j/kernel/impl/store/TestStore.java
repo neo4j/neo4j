@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
@@ -37,16 +37,12 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
-import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.StoreVersionMismatchHandler;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.test.PageCacheRule;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 
 public class TestStore
 {
@@ -55,21 +51,15 @@ public class TestStore
     public static FileSystemAbstraction FILE_SYSTEM =
             new DefaultFileSystemAbstraction();
 
-    private final LifeSupport life = new LifeSupport();
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
+
     private PageCache pageCache;
 
     @Before
     public void setUp()
     {
-        pageCache = createPageCache( FILE_SYSTEM, getClass().getName(), life );
-        life.start();
-    }
-
-    @After
-    public void tearDown() throws IOException
-    {
-        pageCache.close();
-        life.shutdown();
+        pageCache = pageCacheRule.getPageCache( FILE_SYSTEM );
     }
 
     private File path()

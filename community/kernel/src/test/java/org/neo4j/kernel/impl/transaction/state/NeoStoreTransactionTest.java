@@ -1386,7 +1386,7 @@ public class NeoStoreTransactionTest
     public void before() throws Exception
     {
         fs = new EphemeralFileSystemAbstraction();
-        pageCache = pageCacheRule.getPageCache( fs, new Config() );
+        pageCache = pageCacheRule.getPageCache( fs );
         instantiateNeoStore( parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() ) );
     }
 
@@ -1481,7 +1481,7 @@ public class NeoStoreTransactionTest
             neoStore.close();
         }
         fs = new EphemeralFileSystemAbstraction();
-        pageCache = pageCacheRule.getPageCache( fs, new Config() );
+        pageCache = pageCacheRule.getPageCache( fs );
     }
 
     private Pair<TransactionRecordState, NeoStoreTransactionContext> newWriteTransaction()

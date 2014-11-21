@@ -21,19 +21,20 @@ package org.neo4j.kernel.impl.store;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.Map;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import java.util.Map;
+import org.neo4j.test.PageCacheRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
@@ -41,7 +42,9 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class StoreFactoryTest
 {
-    private LifeSupport life;
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
+
     private StoreFactory storeFactory;
     private NeoStore neostore;
 
@@ -51,9 +54,7 @@ public class StoreFactoryTest
         FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         Map<String, String> configParams = stringMap(
                 GraphDatabaseSettings.neo_store.name(), "graph.db/neostore" );
-        life = new LifeSupport();
-        life.start();
-        PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs, getClass().getName(), life );
+        PageCache pageCache = pageCacheRule.getPageCache( fs );
 
         storeFactory = new StoreFactory( new Config( configParams ), new DefaultIdGeneratorFactory(),
                 pageCache, fs, StringLogger.DEV_NULL, new Monitors() );
@@ -63,7 +64,6 @@ public class StoreFactoryTest
     public void teardown()
     {
         neostore.close();
-        life.shutdown();
     }
 
     @Test

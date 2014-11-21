@@ -31,9 +31,10 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 
 /*
  * This class is an helper to allow to construct properly a page cache in the few places we need it without all
- * the graph database stuff, e.g., some tests, store dumps (see, DumpStore) and for some bits when upgrading.
- * That said, this is not to be used to create a page cache for the regular use case since that one should be
- * properly integrated with monitors and the scheduler into neo4j.
+ * the graph database stuff, e.g., various store dump programs.
+ *
+ * All other places where a "proper" page cache is available, e.g. in store migration, should have that one injected.
+ * And tests should use the PageCacheRule.
  */
 public class StandalonePageCacheFactory
 {

@@ -31,6 +31,7 @@ import java.util.Collection;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
@@ -42,6 +43,7 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 
@@ -81,14 +83,19 @@ public class StoreUpgraderInterruptionTestIT
     {
         File workingDirectory = directory.directory();
         MigrationTestUtils.prepareSampleLegacyDatabase( version, fileSystem, workingDirectory );
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
 
         StoreMigrator failingStoreMigrator = new StoreMigrator(
                 new SilentMigrationProgressMonitor(), fileSystem, DevNullLoggingService.DEV_NULL )
         {
             @Override
-            public void migrate( File sourceStoreDir, File targetStoreDir, SchemaIndexProvider schemaIndexProvider ) throws IOException
+            public void migrate(
+                    File sourceStoreDir,
+                    File targetStoreDir,
+                    SchemaIndexProvider schemaIndexProvider,
+                    PageCache pageCache ) throws IOException
             {
-                super.migrate( sourceStoreDir, targetStoreDir, schemaIndexProvider );
+                super.migrate( sourceStoreDir, targetStoreDir, schemaIndexProvider, pageCache );
                 throw new RuntimeException( "This upgrade is failing" );
             }
         };
@@ -97,7 +104,7 @@ public class StoreUpgraderInterruptionTestIT
 
         try
         {
-            newUpgrader( failingStoreMigrator ).migrateIfNeeded( workingDirectory, schemaIndexProvider );
+            newUpgrader( failingStoreMigrator ).migrateIfNeeded( workingDirectory, schemaIndexProvider, pageCache );
             fail( "Should throw exception" );
         }
         catch ( RuntimeException e )
@@ -109,7 +116,7 @@ public class StoreUpgraderInterruptionTestIT
 
         newUpgrader( new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem,
                 DevNullLoggingService.DEV_NULL ) )
-                .migrateIfNeeded( workingDirectory, schemaIndexProvider );
+                .migrateIfNeeded( workingDirectory, schemaIndexProvider, pageCache );
 
         assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, ALL_STORES_VERSION ) );
         assertConsistentStore( workingDirectory );
@@ -123,7 +130,10 @@ public class StoreUpgraderInterruptionTestIT
         return upgrader;
     }
 
-    public final @Rule TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
 
     @SuppressWarnings( "deprecation" )
     private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();

@@ -1027,7 +1027,7 @@ order by a.COL1""")
     result should have size 2
   }
 
-  override def databaseConfig() = Map(
+  override def databaseConfig() = super.databaseConfig() ++ Map(
     "query_plan_ttl" -> "0"
   )
 

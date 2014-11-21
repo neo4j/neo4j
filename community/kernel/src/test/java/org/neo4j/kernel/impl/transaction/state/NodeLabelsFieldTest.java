@@ -19,6 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,12 +33,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.IteratorUtil;
@@ -54,7 +54,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -459,7 +458,7 @@ public class NodeLabelsFieldTest
         StoreFactory storeFactory = new StoreFactory(
                 config,
                 new DefaultIdGeneratorFactory(),
-                pageCacheRule.getPageCache( fs.get(), config ),
+                pageCacheRule.getPageCache( fs.get() ),
                 fs.get(),
                 StringLogger.DEV_NULL,
                 monitors );

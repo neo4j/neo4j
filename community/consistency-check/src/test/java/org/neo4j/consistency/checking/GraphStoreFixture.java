@@ -81,7 +81,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         if ( directStoreAccess == null )
         {
             DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-            PageCache pageCache = getPageCache( fileSystem, new Config() );
+            PageCache pageCache = getPageCache( fileSystem );
             StoreAccess nativeStores = new StoreAccess( fileSystem, pageCache, directory );
             directStoreAccess = new DirectStoreAccess(
                     nativeStores,

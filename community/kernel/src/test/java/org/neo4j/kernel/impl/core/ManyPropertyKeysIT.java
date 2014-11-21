@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
-
-import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -40,17 +41,15 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
+import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 
 /**
  * Tests for handling many property keys (even after restart of database)
@@ -98,6 +97,9 @@ public class ManyPropertyKeysIT
         assertEquals( 1, propertyKeyCount( db ) );
         db.shutdown();
     }
+
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
     private final File storeDir = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
 
     private GraphDatabaseAPI database()
@@ -108,9 +110,7 @@ public class ManyPropertyKeysIT
     private GraphDatabaseAPI databaseWithManyPropertyKeys( int propertyKeyCount ) throws IOException
     {
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        LifeSupport life = new LifeSupport();
-        life.start();
-        PageCache pageCache = createPageCache( fs, getClass().getName(), life );
+        PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreFactory storeFactory = new StoreFactory( fs, storeDir, pageCache, StringLogger.DEV_NULL, new Monitors() );
         NeoStore neoStore = storeFactory.newNeoStore( true, false );
         PropertyKeyTokenStore store = neoStore.getPropertyKeyTokenStore();
@@ -125,7 +125,6 @@ public class ManyPropertyKeysIT
         }
         neoStore.close();
         pageCache.close();
-        life.shutdown();
 
         return database();
     }

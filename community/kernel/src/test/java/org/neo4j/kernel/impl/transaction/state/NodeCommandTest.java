@@ -216,7 +216,7 @@ public class NodeCommandTest
         StoreFactory storeFactory = new StoreFactory(
                 config,
                 new DefaultIdGeneratorFactory(),
-                pageCacheRule.getPageCache( fs.get(), config ),
+                pageCacheRule.getPageCache( fs.get() ),
                 fs.get(),
                 StringLogger.DEV_NULL,
                 monitors );

@@ -28,7 +28,6 @@ import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
@@ -147,6 +146,6 @@ public class CountsStoreWriterTest
     public void setup()
     {
         fs = fsRule.get();
-        pageCache = pageCacheRule.getPageCache( fs, new Config() );
+        pageCache = pageCacheRule.getPageCache( fs );
     }
 }

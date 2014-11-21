@@ -108,6 +108,6 @@ public class SortedKeyValueStoreHeaderTest
     public void setup()
     {
         fs = fsRule.get();
-        pageCache = pageCacheRule.getPageCache( fs, new Config() );
+        pageCache = pageCacheRule.getPageCache( fs );
     }
 }

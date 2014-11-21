@@ -19,7 +19,6 @@
  */
 package upgrade;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -32,6 +31,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
@@ -43,17 +43,16 @@ import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.CleanupRule;
+import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
-import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.store.NeoStore.versionLongToString;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.find20FormatStoreDirectory;
@@ -71,7 +70,7 @@ public class StoreMigratorFrom20IT
         // WHEN
         upgrader( new StoreMigrator( monitor, fs, DevNullLoggingService.DEV_NULL ) )
                 .migrateIfNeeded(
-                find20FormatStoreDirectory( storeDir.directory() ), schemaIndexProvider );
+                find20FormatStoreDirectory( storeDir.directory() ), schemaIndexProvider, pageCache );
 
         // THEN
         assertEquals( 100, monitor.eventSize() );
@@ -106,7 +105,7 @@ public class StoreMigratorFrom20IT
 
         // When
         upgrader( new StoreMigrator( monitor, fs, DevNullLoggingService.DEV_NULL ) ).migrateIfNeeded(
-                legacyStoreDir, schemaIndexProvider );
+                legacyStoreDir, schemaIndexProvider, pageCache );
         ClusterManager.ManagedCluster cluster =
                 cleanup.add( buildClusterWithMasterDirIn( fs, legacyStoreDir, cleanup ) );
         cluster.await( allSeesAllAsAvailable() );
@@ -162,29 +161,26 @@ public class StoreMigratorFrom20IT
     public final TargetDirectory.TestDirectory storeDir = TargetDirectory.testDirForTest( getClass() );
     @Rule
     public final CleanupRule cleanup = new CleanupRule();
-    private final LifeSupport life = new LifeSupport();
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
+
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     private final ListAccumulatorMigrationProgressMonitor monitor = new ListAccumulatorMigrationProgressMonitor();
     private StoreFactory storeFactory;
+    private PageCache pageCache;
 
     @Before
     public void setUp()
     {
-        life.start();
         Config config = MigrationTestUtils.defaultConfig();
+        pageCache = pageCacheRule.getPageCache( fs );
 
         storeFactory = new StoreFactory(
                 StoreFactory.configForStoreDir( config, storeDir.directory() ),
                 new DefaultIdGeneratorFactory(),
-                cleanup.add( createPageCache( fs, getClass().getName(), life ) ),
+                pageCache,
                 fs,
                 StringLogger.DEV_NULL,
                 new Monitors() );
-    }
-
-    @After
-    public void close()
-    {
-        life.shutdown();
     }
 }

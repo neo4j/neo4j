@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.internal.spi.v2_2.TransactionBoundPlanContext
 import org.neo4j.cypher.internal.{CypherCompiler, CypherOptionParser}
 import org.neo4j.graphdb._
+import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.api.{DataWriteOperations, KernelAPI}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.{GraphDatabaseAPI, monitoring}
@@ -40,7 +41,8 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   var graph: GraphDatabaseAPI with Snitch = null
   var nodes: List[Node] = null
 
-  def databaseConfig(): Map[String,String] = Map.empty
+  def databaseConfig(): Map[String,String] =
+    Map(GraphDatabaseSettings.mapped_memory_total_size.name -> "8M")
 
   override protected def initTest() {
     super.initTest()

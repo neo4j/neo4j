@@ -29,15 +29,14 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
-import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.PageCacheRule;
 
 import static org.junit.Assert.assertTrue;
 
@@ -61,11 +60,12 @@ public class StoreMigratorTest
         File storeDirectory = createNeoStoreWithOlderVersion( Legacy20Store.LEGACY_VERSION );
         // and a state of the migration saying that it has done the actual migration
         Logging logging = new DevNullLoggingService();
+        PageCache pageCache = pageCacheRule.getPageCache( fs.get() );
         StoreMigrator migrator = new StoreMigrator( new SilentMigrationProgressMonitor(), fs.get(), logging );
         File migrationDir = new File( storeDirectory, StoreUpgrader.MIGRATION_DIRECTORY );
         fs.get().mkdirs( migrationDir );
         assertTrue( migrator.needsMigration( storeDirectory ) );
-        migrator.migrate( storeDirectory, migrationDir, schemaIndexProvider );
+        migrator.migrate( storeDirectory, migrationDir, schemaIndexProvider, pageCache );
         migrator.close();
 
         // WHEN simulating resuming the migration
@@ -73,20 +73,13 @@ public class StoreMigratorTest
         migrator.moveMigratedFiles( migrationDir, storeDirectory );
 
         // THEN starting the new store should be successful
-        LifeSupport life = new LifeSupport();
-        PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs.get(), getClass().getSimpleName(), life );
-        life.start();
-        try
-        {
-            StoreFactory storeFactory = new StoreFactory( fs.get(), storeDirectory, pageCache,
-                    logging.getMessagesLog( getClass() ), new Monitors() );
-            storeFactory.newNeoStore( false, false ).close();
-        }
-        finally
-        {
-            life.shutdown();
-        }
+        StoreFactory storeFactory = new StoreFactory( fs.get(), storeDirectory, pageCache,
+                logging.getMessagesLog( getClass() ), new Monitors() );
+        storeFactory.newNeoStore( false, false ).close();
     }
 
-    public final @Rule EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @Rule
+    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
 }

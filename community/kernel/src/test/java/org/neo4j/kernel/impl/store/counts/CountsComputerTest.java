@@ -36,7 +36,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.CountsRecordState;
 import org.neo4j.kernel.impl.store.CountsComputer;
@@ -298,7 +297,7 @@ public class CountsComputerTest
         fs = fsRule.get();
         dir = testDir.directory( "dir" ).getAbsoluteFile();
         dbBuilder = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabaseBuilder( dir.getPath() );
-        pageCache = pcRule.getPageCache( fs, new Config() );
+        pageCache = pcRule.getPageCache( fs );
     }
 
     private static final String COUNTS_STORE_BASE = NeoStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE;

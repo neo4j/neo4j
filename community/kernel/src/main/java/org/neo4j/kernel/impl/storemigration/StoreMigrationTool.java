@@ -23,13 +23,17 @@ import java.io.File;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
+import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensions;
+import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
+import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.SystemOutLogging;
@@ -58,8 +62,13 @@ public class StoreMigrationTool
         ConfigMapUpgradeConfiguration upgradeConfiguration = new ConfigMapUpgradeConfiguration( config );
         StoreUpgrader migrationProcess = new StoreUpgrader( upgradeConfiguration, fs, monitor, logging );
 
-        // Add participants from kernel extensions...
         LifeSupport life = new LifeSupport();
+        Neo4jJobScheduler jobScheduler = life.add( new Neo4jJobScheduler() );
+        SingleFilePageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs );
+        LifecycledPageCache pageCache = life.add(
+                new LifecycledPageCache( swapperFactory, jobScheduler, config, PageCacheMonitor.NULL ) );
+
+        // Add participants from kernel extensions...
         KernelExtensions kernelExtensions = life.add( new KernelExtensions(
                 GraphDatabaseDependencies.newDependencies().kernelExtensions(), config,
                 kernelExtensionDependencyResolver( fs, config ), ignore() ) );
@@ -84,7 +93,7 @@ public class StoreMigrationTool
         try
         {
             long startTime = System.currentTimeMillis();
-            migrationProcess.migrateIfNeeded( new File( legacyStoreDirectory ), schemaIndexProvider );
+            migrationProcess.migrateIfNeeded( new File( legacyStoreDirectory ), schemaIndexProvider, pageCache );
             long duration = System.currentTimeMillis() - startTime;
             logging.getMessagesLog( StoreMigrationTool.class )
                     .info( format( "Migration completed in %d s%n", duration / 1000 ) );

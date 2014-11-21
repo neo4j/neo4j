@@ -149,7 +149,7 @@ public class NodeCommitAndReadRaceTest
     {
         File storeDir = new File( "dir" );
         Config config = configForStoreDir( new Config(), storeDir );
-        PageCache pageCache = pageCacheRule.getPageCache( fsr.get(), config );
+        PageCache pageCache = pageCacheRule.getPageCache( fsr.get() );
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         Monitors monitors = new Monitors();
         StoreFactory storeFactory = new StoreFactory( config, idGeneratorFactory, pageCache, fsr.get(),
