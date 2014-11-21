@@ -41,7 +41,7 @@ public class MultiReadableTest
                 {"where this", "is the second line"},
                 {"and here comes", "the third line"}
         };
-        RawIterator<Readable,IOException> readers = readerIteratorFromStrings( data, null );
+        RawIterator<CharReadable,IOException> readers = readerIteratorFromStrings( data, null );
         CharSeeker seeker = CharSeekers.charSeeker( new MultiReadable( readers ), 200, true, '"' );
 
         // WHEN/THEN
@@ -63,7 +63,7 @@ public class MultiReadableTest
         };
 
         // WHEN
-        RawIterator<Readable,IOException> readers = readerIteratorFromStrings( data, '\n' );
+        RawIterator<CharReadable,IOException> readers = readerIteratorFromStrings( data, '\n' );
         CharSeeker seeker = CharSeekers.charSeeker( Readables.multipleSources( readers ), 200, true, '"' );
 
         // WHEN/THEN
@@ -85,10 +85,10 @@ public class MultiReadableTest
         assertTrue( mark.isEndOfLine() );
     }
 
-    private RawIterator<Readable,IOException> readerIteratorFromStrings(
+    private RawIterator<CharReadable,IOException> readerIteratorFromStrings(
             final String[][] data, final Character lineEnding )
     {
-        return new RawIterator<Readable,IOException>()
+        return new RawIterator<CharReadable,IOException>()
         {
             private int cursor;
 
@@ -99,9 +99,9 @@ public class MultiReadableTest
             }
 
             @Override
-            public Readable next()
+            public CharReadable next()
             {
-                return new StringReader( join( data[cursor++] ) );
+                return Readables.wrap( new StringReader( join( data[cursor++] ) ) );
             }
 
             private String join( String[] strings )

@@ -25,7 +25,7 @@ import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.CharBuffer;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Iterator;
@@ -38,7 +38,7 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.function.RawFunction;
 
 /**
- * Means of instantiating common {@link Readable} instances.
+ * Means of instantiating common {@link CharReadable} instances.
  *
  * There are support for compressed files as well for those methods accepting a {@link File} argument.
  * <ol>
@@ -61,26 +61,49 @@ public class Readables
         throw new AssertionError( "No instances allowed" );
     }
 
-    public static final Readable EMPTY = new Readable()
+    public static final CharReadable EMPTY = new CharReadable()
     {
         @Override
-        public int read( CharBuffer cb ) throws IOException
+        public int read( char[] buffer, int offset, int length ) throws IOException
         {
             return -1;
         }
+
+        @Override
+        public void close() throws IOException
+        {   // Nothing to close
+        }
     };
 
-    private static final RawFunction<File,Readable,IOException> FROM_FILE = new RawFunction<File,Readable,IOException>()
+    public static CharReadable wrap( final Reader reader )
+    {
+        return new CharReadable()
+        {
+            @Override
+            public int read( char[] buffer, int offset, int length ) throws IOException
+            {
+                return reader.read( buffer, offset, length );
+            }
+
+            @Override
+            public void close() throws IOException
+            {
+                reader.close();
+            }
+        };
+    }
+
+    private static final RawFunction<File,CharReadable,IOException> FROM_FILE = new RawFunction<File,CharReadable,IOException>()
     {
         @Override
-        public Readable apply( File file ) throws IOException
+        public CharReadable apply( File file ) throws IOException
         {
             int magic = magic( file );
             if ( magic == ZIP_MAGIC )
             {   // ZIP file
                 ZipFile zipFile = new ZipFile( file );
                 ZipEntry entry = getSingleSuitableEntry( zipFile );
-                return new InputStreamReader( zipFile.getInputStream( entry ) );
+                return wrap( new InputStreamReader( zipFile.getInputStream( entry ) ) );
             }
             else if ( (magic >>> 16) == GZIP_MAGIC )
             {   // GZIP file. GZIP isn't an archive like ZIP, so this is purely data that is compressed.
@@ -89,10 +112,10 @@ public class Readables
                 // the data will look like garbage and the reader will fail for whatever it will be used for.
                 // TODO add tar support
                 GZIPInputStream zipStream = new GZIPInputStream( new FileInputStream( file ) );
-                return new InputStreamReader( zipStream );
+                return wrap( new InputStreamReader( zipStream ) );
             }
 
-            return new FileReader( file );
+            return wrap( new FileReader( file ) );
         }
 
         private ZipEntry getSingleSuitableEntry( ZipFile zipFile ) throws IOException
@@ -143,37 +166,37 @@ public class Readables
                name.contains( "/." );
     }
 
-    private static final RawFunction<Readable,Readable,IOException> IDENTITY =
-            new RawFunction<Readable,Readable,IOException>()
+    private static final RawFunction<CharReadable,CharReadable,IOException> IDENTITY =
+            new RawFunction<CharReadable,CharReadable,IOException>()
     {
         @Override
-        public Readable apply( Readable in )
+        public CharReadable apply( CharReadable in )
         {
             return in;
         }
     };
 
-    public static Readable file( File file ) throws IOException
+    public static CharReadable file( File file ) throws IOException
     {
         return FROM_FILE.apply( file );
     }
 
-    public static Readable multipleFiles( File... files )
+    public static CharReadable multipleFiles( File... files )
     {
         return new MultiReadable( iterator( files, FROM_FILE ) );
     }
 
-    public static Readable multipleSources( Readable... sources )
+    public static CharReadable multipleSources( CharReadable... sources )
     {
         return new MultiReadable( iterator( sources, IDENTITY ) );
     }
 
-    public static Readable multipleFiles( Iterator<File> files )
+    public static CharReadable multipleFiles( Iterator<File> files )
     {
         return new MultiReadable( iterator( files, FROM_FILE ) );
     }
 
-    public static Readable multipleSources( RawIterator<Readable,IOException> sources )
+    public static CharReadable multipleSources( RawIterator<CharReadable,IOException> sources )
     {
         return new MultiReadable( sources );
     }

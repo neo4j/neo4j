@@ -20,7 +20,6 @@
 package org.neo4j.csv.reader;
 
 import java.io.IOException;
-import java.nio.CharBuffer;
 import java.util.concurrent.locks.LockSupport;
 
 import org.junit.Test;
@@ -34,29 +33,43 @@ public class ThreadAheadReadableTest
         // GIVEN
         MockedReader actual = new MockedReader( 20 );
         int bufferSize = 10;
-        Readable aheadReader = ThreadAheadReadable.threadAhead( actual, bufferSize );
+        CharReadable aheadReader = ThreadAheadReadable.threadAhead( actual, bufferSize );
 
         // WHEN starting it up it should read and fill the buffer to the brim
         assertEquals( bufferSize, actual.awaitCompletedReadAttempts( 1 ) );
 
         // WHEN we grab a couple of bytes off of the actual reader, the read-ahead reader should immediately
         // fill those bytes up with new data.
-        assertEquals( 7, aheadReader.read( CharBuffer.allocate( 7 ) ) );
+        assertEquals( 7, aheadReader.read( new char[7], 0, 7 ) );
         assertEquals( bufferSize+7, actual.awaitCompletedReadAttempts( 2 ) );
 
         // WHEN reading a bit more
-        assertEquals( 10, aheadReader.read( CharBuffer.allocate( 10 ) ) );
+        assertEquals( 10, aheadReader.read( new char[10], 0, 10 ) );
         assertEquals( 20, actual.awaitCompletedReadAttempts( 3 ) );
 
         // WHEN reaching the end
-        assertEquals( 3, aheadReader.read( CharBuffer.allocate( 5 /*anything more than 3*/ ) ) );
+        assertEquals( 3, aheadReader.read( new char[5], 0, 5 /*anything more than 3*/ ) );
         assertEquals( 20, actual.awaitCompletedReadAttempts( 4 ) );
 
         // THEN we should have reached the end
-        assertEquals( 0, aheadReader.read( CharBuffer.allocate( 2 ) ) );
+        assertEquals( -1, aheadReader.read( new char[2], 0, 2 ) );
     }
 
-    private static class MockedReader implements Readable
+    @Test
+    public void shouldHandleReadAheadEmptyData() throws Exception
+    {
+        // GIVEN
+        MockedReader actual = new MockedReader( 0 );
+        CharReadable aheadReadable = ThreadAheadReadable.threadAhead( actual, 10 );
+
+        // WHEN
+        actual.awaitCompletedReadAttempts( 1 );
+
+        // THEN
+        assertEquals( -1, aheadReadable.read( new char[10], 0, 10 ) );
+    }
+
+    private static class MockedReader implements CharReadable
     {
         private int bytesRead;
         private volatile int readsCompleted;
@@ -68,15 +81,19 @@ public class ThreadAheadReadableTest
         }
 
         @Override
-        public int read( CharBuffer cb ) throws IOException
+        public int read( char[] buffer, int offset, int len ) throws IOException
         {
             try
             {
+                if ( bytesRead == length )
+                {   // eof
+                    return -1;
+                }
+
                 int count = 0;
-                while ( cb.hasRemaining() && bytesRead < length )
+                while ( count < len && bytesRead < length )
                 {
-                    cb.put( (char) bytesRead++ );
-                    count++;
+                    buffer[offset + count++] = (char) bytesRead++;
                 }
                 return count;
             }
@@ -84,6 +101,11 @@ public class ThreadAheadReadableTest
             {
                 readsCompleted++;
             }
+        }
+
+        @Override
+        public void close() throws IOException
+        {   // Nothing to close
         }
 
         private int awaitCompletedReadAttempts( int ticket )

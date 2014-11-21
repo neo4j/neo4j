@@ -20,10 +20,11 @@
 package org.neo4j.csv.reader;
 
 import java.io.BufferedReader;
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.CharBuffer;
+
+import static java.lang.Math.max;
 
 import static org.neo4j.csv.reader.Mark.END_OF_LINE_CHARACTER;
 
@@ -41,33 +42,34 @@ public class BufferedCharSeeker implements CharSeeker
     private static final char EOF_CHAR = (char) -1;
     private static final char BACK_SLASH = '\\';
 
-    private final Readable reader;
+    private final CharReadable reader;
     private final char[] buffer;
+
+    // Wraps the char[] buffer and is only used during reading more data, using f.ex. compact()
+    // so that we don't have to duplicate that functionality.
     private final CharBuffer charBuffer;
+
     private int bufferPos;
-    private long bufferStartPos;
     private long lineStartPos;
     private int seekStartPos;
     private int lineNumber = 1;
     private boolean eof;
     private final char quoteChar;
 
-    public BufferedCharSeeker( Readable reader )
+    public BufferedCharSeeker( CharReadable reader )
     {
         this( reader, DEFAULT_BUFFER_SIZE, DEFAULT_QUOTE_CHAR );
     }
 
-    public BufferedCharSeeker( Readable reader, int bufferSize )
+    public BufferedCharSeeker( CharReadable reader, int bufferSize )
     {
         this( reader, bufferSize, DEFAULT_QUOTE_CHAR );
     }
 
-
-    public BufferedCharSeeker( Readable reader, int bufferSize, char quoteChar )
+    public BufferedCharSeeker( CharReadable reader, int bufferSize, char quoteChar )
     {
         this.reader = reader;
         this.buffer = new char[bufferSize];
-        this.bufferStartPos = -bufferSize;
         this.charBuffer = CharBuffer.wrap( buffer );
         this.bufferPos = bufferSize;
         this.quoteChar = quoteChar;
@@ -228,18 +230,17 @@ public class BufferedCharSeeker implements CharSeeker
         {
             if ( seekStartPos == 0 )
             {
-                throw new IllegalStateException( "Tried to read in a value larger than buffer size " + charBuffer.capacity() );
+                throw new IllegalStateException( "Tried to read in a value larger than buffer size " + buffer.length );
             }
             charBuffer.position( seekStartPos );
             charBuffer.compact();
-            int position = charBuffer.position();
-            reader.read( charBuffer );
-            if ( charBuffer.hasRemaining() )
+            int remaining = charBuffer.remaining();
+            int read = reader.read( buffer, charBuffer.position(), remaining );
+            if ( read < remaining )
             {
-                charBuffer.put( EOF_CHAR );
+                buffer[charBuffer.position() + max( read, 0 )] = EOF_CHAR;
             }
-            bufferPos = position;
-            bufferStartPos += seekStartPos;
+            bufferPos = charBuffer.position();
             seekStartPos = 0;
         }
     }
@@ -247,18 +248,13 @@ public class BufferedCharSeeker implements CharSeeker
     @Override
     public void close() throws IOException
     {
-        // Check instanceof since we use the more generic Readable interface instead of Reader directly
-        // and we don't want to create an unnecessary indirection
-        if ( reader instanceof Closeable )
-        {
-            ((Closeable) reader).close();
-        }
+        reader.close();
     }
 
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[readPos:" + bufferStartPos + ", buffer:" + charBuffer +
+        return getClass().getSimpleName() + "[buffer:" + charBuffer +
                 ", seekPos:" + seekStartPos + ", line:" + lineNumber + "]";
     }
 }
