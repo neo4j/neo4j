@@ -21,7 +21,7 @@
   </scm>
 
   <properties>
-    <version-package>cypher.internal.compiler.v2_0</version-package>
+    <version-package>cypher.internal.compiler.v2_2</version-package>
   </properties>
 
   <licenses>
