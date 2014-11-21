@@ -20,66 +20,74 @@
 package org.neo4j.kernel.impl.api.index.sampling;
 
 import java.util.ArrayDeque;
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.Queue;
-import java.util.Set;
 
 import org.neo4j.helpers.Predicate;
-import org.neo4j.kernel.api.index.IndexDescriptor;
 
-public class IndexSamplingJobQueue
+public class IndexSamplingJobQueue<T>
 {
-    private final Predicate<? super IndexDescriptor> updatePredicate;
-    private final Queue<IndexDescriptor> queue;
+    private final Queue<T> queue = new ArrayDeque<>();
+    private final Predicate<? super T> enqueueablePredicate;
 
-    public IndexSamplingJobQueue( Predicate<? super IndexDescriptor> updatePredicate )
+    public IndexSamplingJobQueue( Predicate<? super T> enqueueablePredicate )
     {
-        this.updatePredicate = updatePredicate;
-        this.queue = new ArrayDeque<>();
+        this.enqueueablePredicate = enqueueablePredicate;
     }
 
-    public synchronized void sampleIndex( IndexSamplingMode mode, IndexDescriptor descriptor ) {
-        if ( shouldSample( mode, descriptor ) )
+    public synchronized void add( boolean force, T item )
+    {
+        if ( shouldEnqueue( force, item ) )
         {
-            queue.add( descriptor );
+            queue.add( item );
         }
     }
 
-    private boolean shouldSample( IndexSamplingMode mode, IndexDescriptor descriptor )
+    public synchronized void addAll( boolean force, Iterator<T> items )
+    {
+        while ( items.hasNext() )
+        {
+            add( force, items.next() );
+        }
+    }
+
+    private boolean shouldEnqueue( boolean force, T item )
     {
 
         // Add index if not in queue
-        if ( queue.contains( descriptor ) )
+        if ( queue.contains( item ) )
         {
             return false;
         }
 
         // and either adding all
-        if ( ! mode.sampleOnlyIfUpdated )
+        if ( force )
         {
             return true;
         }
 
         // or otherwise only if seen enough updates (as determined by updatePredicate)
-        return updatePredicate.accept( descriptor );
+        return enqueueablePredicate.accept( item );
     }
 
-    public synchronized IndexDescriptor poll()
+    public synchronized T poll()
     {
         return queue.poll();
     }
 
-    public synchronized Iterable<IndexDescriptor> pollAll()
+    public synchronized Iterable<T> pollAll()
     {
-        Set<IndexDescriptor> descriptors = new HashSet<>();
+        Collection<T> items = new ArrayList<>( queue.size() );
         while ( true )
         {
-            IndexDescriptor descriptor = queue.poll();
-            if ( descriptor == null )
+            T item = queue.poll();
+            if ( item == null )
             {
-                return descriptors;
+                return items;
             }
-            descriptors.add( descriptor );
+            items.add( item );
         }
     }
 }

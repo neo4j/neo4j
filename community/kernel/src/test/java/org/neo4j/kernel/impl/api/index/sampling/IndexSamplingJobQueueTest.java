@@ -21,86 +21,95 @@ package org.neo4j.kernel.impl.api.index.sampling;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.api.index.IndexDescriptor;
-
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-
 import static org.neo4j.helpers.Predicates.TRUE;
 import static org.neo4j.helpers.Predicates.not;
 import static org.neo4j.helpers.collection.Iterables.toArray;
-import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.BACKGROUND_REBUILD_UPDATED;
 
 public class IndexSamplingJobQueueTest
 {
     @Test
     public void returnsNullWhenEmpty()
     {
-        assertNull( new IndexSamplingJobQueue( TRUE() ).poll() );
+        assertNull( new IndexSamplingJobQueue<>( TRUE() ).poll() );
     }
 
     @Test
-    public void enqueuesJobWhenEmpty()
+    public void shouldEnqueueJobWhenEmpty()
     {
         // given
-        final IndexSamplingJobQueue jobQueue = new IndexSamplingJobQueue( TRUE() );
-        jobQueue.sampleIndex( BACKGROUND_REBUILD_UPDATED, descriptor );
+        final IndexSamplingJobQueue<Object> jobQueue = new IndexSamplingJobQueue<>( TRUE() );
+        jobQueue.add( false, something );
 
         // when
-        IndexDescriptor result = jobQueue.poll();
+        Object result = jobQueue.poll();
 
         // then
-        assertEquals( descriptor, result );
+        assertEquals( something, result );
     }
 
     @Test
-    public void enqueuesJobOnlyOnce()
+    public void shouldEnqueueJobOnlyOnce()
     {
         // given
-        final IndexSamplingJobQueue jobQueue = new IndexSamplingJobQueue( TRUE() );
-        jobQueue.sampleIndex( BACKGROUND_REBUILD_UPDATED, descriptor );
+        final IndexSamplingJobQueue<Object> jobQueue = new IndexSamplingJobQueue<>( TRUE() );
+        jobQueue.add( false, something );
 
         // when
-        jobQueue.sampleIndex( BACKGROUND_REBUILD_UPDATED, descriptor );
+        jobQueue.add( false, something );
 
         // then
-        assertEquals( descriptor, jobQueue.poll() );
+        assertEquals( something, jobQueue.poll() );
         assertNull( jobQueue.poll() );
     }
 
     @Test
-    public void enqueuesJobOnlyIfUpdatedIfThatIsRequested()
+    public void shouldNotEnqueueJobOnlyIfForbiddenByThePredicate()
     {
         // given
-        final IndexSamplingJobQueue jobQueue = new IndexSamplingJobQueue( not( TRUE() ) );
+        final IndexSamplingJobQueue<Object> jobQueue = new IndexSamplingJobQueue<>( not( TRUE() ) );
 
         // when
-        jobQueue.sampleIndex( BACKGROUND_REBUILD_UPDATED, descriptor );
+        jobQueue.add( false, something );
 
         // then
         assertNull( jobQueue.poll() );
     }
 
     @Test
-    public void dequeuesAll()
+    public void shouldForceEnqueueOfAnJobEvenIfThePredicateForbidsIt()
     {
         // given
-        final IndexDescriptor anotherDescriptor = new IndexDescriptor( 3, 4 );
-        final IndexSamplingJobQueue jobQueue = new IndexSamplingJobQueue( TRUE() );
-        jobQueue.sampleIndex( BACKGROUND_REBUILD_UPDATED, descriptor );
-        jobQueue.sampleIndex( BACKGROUND_REBUILD_UPDATED, anotherDescriptor );
+        final IndexSamplingJobQueue<Object> jobQueue = new IndexSamplingJobQueue<>( not( TRUE() ) );
 
         // when
-        Iterable<IndexDescriptor> descriptors = jobQueue.pollAll();
+        jobQueue.add( true, something );
+
+        // then
+        assertEquals( something, jobQueue.poll() );
+    }
+
+    @Test
+    public void shouldDequeueAll()
+    {
+        // given
+        final Object somethingElse = new Object();
+        final IndexSamplingJobQueue<Object> jobQueue = new IndexSamplingJobQueue<>( TRUE() );
+        jobQueue.add( false, something );
+        jobQueue.add( false, somethingElse );
+
+        // when
+        Iterable<Object> objects = jobQueue.pollAll();
 
         // then
         assertArrayEquals(
-                new IndexDescriptor[]{descriptor, anotherDescriptor},
-                toArray( IndexDescriptor.class, descriptors )
+                new Object[]{something, somethingElse},
+                toArray( Object.class, objects )
         );
         assertNull( jobQueue.poll() );
     }
 
-    private final IndexDescriptor descriptor = new IndexDescriptor( 1, 2 );
+    private final Object something = new Object();
 }
