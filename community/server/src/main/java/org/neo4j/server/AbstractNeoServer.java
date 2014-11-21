@@ -19,6 +19,8 @@
  */
 package org.neo4j.server;
 
+import org.apache.commons.configuration.Configuration;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -27,10 +29,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.servlet.Filter;
 
-import org.apache.commons.configuration.Configuration;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.internal.ServerExecutionEngine;
 import org.neo4j.graphdb.DependencyResolver;

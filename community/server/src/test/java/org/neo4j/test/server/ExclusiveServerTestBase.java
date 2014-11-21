@@ -19,11 +19,12 @@
  */
 package org.neo4j.test.server;
 
-import java.util.concurrent.Callable;
-
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
+
+import java.util.concurrent.Callable;
+
 import org.neo4j.test.Mute;
 
 import static org.neo4j.test.Mute.muteAll;
@@ -32,6 +33,7 @@ public class ExclusiveServerTestBase
 {
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
+
     @Rule
     public Mute mute = muteAll();
 

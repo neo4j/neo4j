@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -98,5 +99,21 @@ public class TestLogging implements Logging
     public void visitConsoleLog( Class loggingClass, Visitor<TestLogger.LogCall,RuntimeException> logVisitor )
     {
         visitLog( consoleLoggers.get( loggingClass ), logVisitor );
+    }
+
+    /** Dump everything logged to every file to a printstream */
+    public void dump( PrintStream out )
+    {
+        for ( Map.Entry<Class,TestLogger> entry : messageLoggers.entrySet() )
+        {
+            out.println("== MessagesLog, " + entry.getKey() + " ==");
+            entry.getValue().dump(out);
+        }
+
+        for ( Map.Entry<Class,TestLogger> entry : consoleLoggers.entrySet() )
+        {
+            out.println("== ConsoleLog, " + entry.getKey() + " ==");
+            entry.getValue().dump(out);
+        }
     }
 }

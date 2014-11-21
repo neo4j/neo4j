@@ -19,15 +19,7 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import static java.lang.String.format;
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.Predicates.equalTo;
-import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -38,13 +30,21 @@ import org.neo4j.helpers.collection.Visitable;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.logging.LogMarker;
 
+import static java.lang.String.format;
+import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.neo4j.helpers.Predicates.equalTo;
+import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+
 /**
  * A string logger implementation for testing that components log things correctly.
  * See the TestTestLogger (I know, sorry) test for how to use this to assert things.
  */
 public class TestLogger extends StringLogger
 {
-
     private enum Level
     {
         DEBUG,
@@ -339,6 +339,12 @@ public class TestLogger extends StringLogger
         {
             logCall.accept( visitor );
         }
+    }
+
+    /** Dump this whole log into a print stream */
+    public void dump( PrintStream out )
+    {
+        out.print( serialize( logCalls.iterator() ) );
     }
 
     private Predicate<LogCall> hasLevel( final Level level )
