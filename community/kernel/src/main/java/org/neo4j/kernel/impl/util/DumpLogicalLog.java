@@ -115,7 +115,7 @@ public class DumpLogicalLog
 
     public static void main( String args[] ) throws IOException
     {
-        Args arguments = new Args( args );
+        Args arguments = Args.parse( args );
         TimeZone timeZone = parseTimeZoneConfig( arguments );
         try ( Printer printer = getPrinter( arguments ) )
         {

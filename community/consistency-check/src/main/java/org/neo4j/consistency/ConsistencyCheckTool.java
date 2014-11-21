@@ -66,7 +66,7 @@ public class ConsistencyCheckTool
 
     void run( String... args ) throws ToolFailureException
     {
-        Args arguments = new Args( args );
+        Args arguments = Args.withFlags( RECOVERY ).parse( args );
         String storeDir = determineStoreDirectory( arguments );
         Config tuningConfiguration = readTuningConfiguration( storeDir, arguments );
 

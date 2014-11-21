@@ -107,7 +107,7 @@ class RebuildFromLogs
             printUsage();
             return;
         }
-        Args params = new Args( args );
+        Args params = Args.parse( args );
         @SuppressWarnings("boxing")
         boolean full = params.getBoolean( "full", false, true );
         List<String> orphans = params.orphans();

@@ -40,7 +40,7 @@ public class DumpProcessInformation
 {
     public static void main( String[] args ) throws Exception
     {
-        Args arg = new Args( args == null ? new String[0] : args );
+        Args arg = Args.parse( args == null ? new String[0] : args );
         boolean doHeapDump = arg.getBoolean( "heap", false, true );
         String[] containing = arg.orphans().toArray( new String[arg.orphans().size()] );
         String dumpDir = arg.get( "dir", "data" );

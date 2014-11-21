@@ -121,7 +121,7 @@ public class BackupTool
 
     BackupOutcome run( String[] args ) throws ToolFailureException
     {
-        Args arguments = new Args( args );
+        Args arguments = Args.parse( args );
 
         if ( !arguments.hasNonNull( TO ) )
         {
