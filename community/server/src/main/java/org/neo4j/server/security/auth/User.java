@@ -150,7 +150,7 @@ public class User
     {
         return "User{" +
                 "name='" + name + '\'' +
-                ", token='" + token + '\'' +
+                ", token="+ (hasToken() ? "'" + token + "'" : "NO_TOKEN" ) +
                 ", privileges=" + privileges +
                 ", credentials=" + credentials +
                 ", passwordChangeRequired=" + passwordChangeRequired +

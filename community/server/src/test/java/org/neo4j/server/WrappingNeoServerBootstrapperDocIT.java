@@ -19,14 +19,16 @@
  */
 package org.neo4j.server;
 
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-
+import com.sun.jersey.api.client.ClientHandlerException;
+import com.sun.jersey.api.client.ClientResponse.Status;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -36,6 +38,7 @@ import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerConfigurator;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RESTDocsGenerator;
@@ -46,11 +49,7 @@ import org.neo4j.test.TestData;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
-import com.sun.jersey.api.client.ClientHandlerException;
-import com.sun.jersey.api.client.ClientResponse.Status;
-
 import static java.lang.String.format;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -104,8 +103,9 @@ public class WrappingNeoServerBootstrapperDocIT extends ExclusiveServerTestBase
         ServerConfigurator config;
         config = new ServerConfigurator( graphdb );
         // let the server endpoint be on a custom port
-        config.setProperty(
+        config.configuration().setProperty(
                 Configurator.WEBSERVER_PORT_PROPERTY_KEY, "7575" );
+        config.configuration().setProperty( ServerSettings.authorization_enabled.name(), "false" );
 
         WrappingNeoServerBootstrapper srv;
         srv = new WrappingNeoServerBootstrapper( graphdb, config );
@@ -124,8 +124,9 @@ public class WrappingNeoServerBootstrapperDocIT extends ExclusiveServerTestBase
     @Test
     public void shouldAllowShellConsoleWithoutCustomConfig()
     {
-        WrappingNeoServerBootstrapper srv;
-        srv = new WrappingNeoServerBootstrapper( myDb );
+        ServerConfigurator config = new ServerConfigurator( myDb );
+        config.configuration().setProperty( ServerSettings.authorization_enabled.name(), "false" );
+        WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper( myDb, config );
         srv.start();
         String response = gen.get().payload(
                 "{\"command\" : \"ls\",\"engine\":\"shell\"}" ).expectedStatus(
@@ -140,9 +141,10 @@ public class WrappingNeoServerBootstrapperDocIT extends ExclusiveServerTestBase
     {
         ServerConfigurator config = new ServerConfigurator( myDb );
         String hostAddress = InetAddress.getLocalHost().getHostAddress();
-        config.setProperty(
+        config.configuration().setProperty(
                 Configurator.WEBSERVER_ADDRESS_PROPERTY_KEY, hostAddress.toString() );
-        config.setProperty(
+        config.configuration().setProperty( ServerSettings.authorization_enabled.name(), "false" );
+        config.configuration().setProperty(
                 Configurator.WEBSERVER_PORT_PROPERTY_KEY, "8484" );
 
 
@@ -169,7 +171,10 @@ public class WrappingNeoServerBootstrapperDocIT extends ExclusiveServerTestBase
     @Test
     public void shouldRespondAndBeAbleToModifyDb()
     {
-        WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper( myDb );
+        Configurator configurator = new ServerConfigurator(myDb);
+
+        configurator.configuration().setProperty( ServerSettings.authorization_enabled.name(), "false" );
+        WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper( myDb, configurator );
         srv.start();
 
         long originalNodeNumber = myDb.getDependencyResolver().resolveDependency( JmxKernelExtension.class )

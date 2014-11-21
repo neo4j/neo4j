@@ -19,13 +19,13 @@
  */
 package org.neo4j.server.web;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.logging.DevNullLoggingService;
@@ -93,8 +93,8 @@ public class TestJetty9WebServer
         };
 
         ServerConfigurator config = new ServerConfigurator( db );
-        config.setProperty( Configurator.WEBSERVER_PORT_PROPERTY_KEY, "7476" );
-        config.setProperty( Configurator.WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY, "1000s" );
+        config.configuration().setProperty( Configurator.WEBSERVER_PORT_PROPERTY_KEY, "7476" );
+        config.configuration().setProperty( Configurator.WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY, "1000s" );
         WrappingNeoServerBootstrapper testBootstrapper = new WrappingNeoServerBootstrapper( db, config );
 
         // When

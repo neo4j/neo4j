@@ -62,7 +62,7 @@ public class UserSerialization
                 user.name(),
                 user.token(),
                 serialize( user.credentials() ),
-                user.passwordChangeRequired() ? "true" : "false"} );
+                user.passwordChangeRequired() ? "password_change_required" : ""} );
     }
 
     private User deserializeUser( String line )
@@ -74,9 +74,9 @@ public class UserSerialization
         }
         return new User.Builder()
                 .withName( parts[0] )
-                .withToken( parts[1] )
+                .withToken( parts[1].equals("") ? User.NO_TOKEN : parts[1])
                 .withCredentials( deserializeCredentials(parts[2]) )
-                .withRequiredPasswordChange( parts[3].equals( "true" ) )
+                .withRequiredPasswordChange( parts[3].equals( "password_change_required" ) )
                 .withPrivileges( Privileges.ADMIN ) // Only "real" privilege available right now
                 .build();
     }
@@ -102,7 +102,7 @@ public class UserSerialization
         for ( int i = 0; i < segments.length; i++ )
         {
             if(i > 0) { sb.append( separator ); }
-            sb.append( segments[i] );
+            sb.append( segments[i] == null ? "" : segments[i] );
         }
         return sb.toString();
     }
