@@ -25,6 +25,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.register.Register.DoubleLongRegister;
 
@@ -56,7 +57,7 @@ public class IndexSamplingControllerFactory
         Predicate<IndexDescriptor> samplingUpdatePredicate = createSamplingPredicate();
         IndexSamplingJobQueue jobQueue = new IndexSamplingJobQueue( samplingUpdatePredicate );
         IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( config, scheduler );
-        Predicate<IndexDescriptor> indexRecoveryCondition = createIndexDescriptorPredicate();
+        Predicate<IndexDescriptor> indexRecoveryCondition = createIndexDescriptorPredicate( logging, tokenNameLookup );
         return new IndexSamplingController(
                 config, jobFactory, jobQueue, jobTracker, snapshotProvider, scheduler, indexRecoveryCondition
         );
@@ -80,16 +81,24 @@ public class IndexSamplingControllerFactory
         };
     }
 
-    private Predicate<IndexDescriptor> createIndexDescriptorPredicate()
+    private Predicate<IndexDescriptor> createIndexDescriptorPredicate( final Logging logging,
+                                                                       final TokenNameLookup tokenNameLookup )
     {
         return new Predicate<IndexDescriptor>()
         {
+            private final StringLogger logger = logging.getMessagesLog( IndexSamplingController.class );
             private final DoubleLongRegister register = newDoubleLongRegister();
 
             @Override
             public boolean accept( IndexDescriptor descriptor )
             {
-                return storeView.indexSample( descriptor, register ).readSecond() == 0;
+                boolean result = storeView.indexSample( descriptor, register ).readSecond() == 0;
+                if ( result )
+                {
+                    logger.warn( "Recovering index sampling for index " +
+                                 descriptor.userDescription( tokenNameLookup ));
+                }
+                return result;
             }
         };
     }

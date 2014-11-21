@@ -87,6 +87,7 @@ public class IndexingService extends LifecycleAdapter
     private final IndexMapReference indexMapRef;
     private final Iterable<IndexRule> indexRules;
     private final StringLogger logger;
+    private final TokenNameLookup tokenNameLookup;
     private final Monitor monitor;
     private final Set<Long> recoveredNodeIds = new HashSet<>();
 
@@ -138,6 +139,7 @@ public class IndexingService extends LifecycleAdapter
                                IndexStoreView storeView,
                                Iterable<IndexRule> indexRules,
                                IndexSamplingController samplingController,
+                               TokenNameLookup tokenNameLookup,
                                Logging logging,
                                Monitor monitor )
     {
@@ -147,6 +149,7 @@ public class IndexingService extends LifecycleAdapter
         this.storeView = storeView;
         this.indexRules = indexRules;
         this.samplingController = samplingController;
+        this.tokenNameLookup = tokenNameLookup;
         this.monitor = monitor;
         this.logger = logging.getMessagesLog( getClass() );
     }
@@ -177,7 +180,7 @@ public class IndexingService extends LifecycleAdapter
         );
 
         return new IndexingService( proxySetup, providerMap, indexMapRef, storeView, indexRules,
-                indexSamplingController, logging, monitor );
+                indexSamplingController, tokenNameLookup, logging, monitor );
     }
 
     /**
@@ -512,11 +515,14 @@ public class IndexingService extends LifecycleAdapter
 
     public void triggerIndexSampling( IndexSamplingMode mode )
     {
+        logger.info( "Manual trigger for sampling all indexes [" + mode + "]" );
         samplingController.sampleIndexes( mode );
     }
 
     public void triggerIndexSampling( IndexDescriptor descriptor, IndexSamplingMode mode )
     {
+        String description = descriptor.userDescription( tokenNameLookup );
+        logger.info( "Manual trigger for sampling index " + description + " [" + mode + "]" );
         samplingController.sampleIndex( descriptor, mode );
     }
 

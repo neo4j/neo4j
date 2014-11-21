@@ -36,6 +36,7 @@ import org.neo4j.graphdb.{ResourceIterator, GraphDatabaseService}
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.{KernelAPI, Statement}
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
+import org.neo4j.kernel.impl.util.StringLogger
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 
 import scala.collection.JavaConverters._
@@ -270,8 +271,9 @@ case class CompatibilityPlanDescription(inner: InternalPlanDescription, version:
 case class CompatibilityFor2_2Cost(graph: GraphDatabaseService,
                                    queryCacheSize: Int,
                                    kernelMonitors: KernelMonitors,
-                                   kernelAPI: KernelAPI) extends CompatibilityFor2_2 {
-  protected val compiler = CypherCompilerFactory.ronjaCompiler(graph, queryCacheSize, kernelMonitors)
+                                   kernelAPI: KernelAPI,
+                                   logger: StringLogger) extends CompatibilityFor2_2 {
+  protected val compiler = CypherCompilerFactory.ronjaCompiler(graph, queryCacheSize, kernelMonitors, logger)
 }
 
 case class CompatibilityFor2_2Rule(graph: GraphDatabaseService,

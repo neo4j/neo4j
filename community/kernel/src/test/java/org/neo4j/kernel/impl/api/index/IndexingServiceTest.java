@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.InOrder;
@@ -48,6 +47,7 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
@@ -55,6 +55,7 @@ import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.TestLogger;
+import org.neo4j.kernel.impl.util.TestLogging;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.logging.Logging;
@@ -68,6 +69,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doAnswer;
@@ -85,6 +87,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
 import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.TRIGGER_REBUILD_ALL;
 import static org.neo4j.kernel.impl.store.record.IndexRule.constraintIndexRule;
 import static org.neo4j.kernel.impl.store.record.IndexRule.indexRule;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
@@ -95,26 +98,15 @@ public class IndexingServiceTest
 {
     @Rule
     public final LifeRule life = new LifeRule();
-
-    private int labelId;
-    private int propertyKeyId;
-    private IndexPopulator populator;
-    private SchemaIndexProvider indexProvider;
-    private IndexUpdater updater;
-    private IndexAccessor accessor;
-    private IndexStoreView storeView;
-
-    @Before
-    public void setUp()
-    {
-        labelId = 7;
-        propertyKeyId = 15;
-        populator = mock( IndexPopulator.class );
-        updater = mock( IndexUpdater.class );
-        indexProvider = mock( SchemaIndexProvider.class );
-        accessor = mock( IndexAccessor.class, RETURNS_MOCKS );
-        storeView  = mock( IndexStoreView.class );
-    }
+    private final int labelId = 7;
+    private final int propertyKeyId = 15;
+    private final IndexPopulator populator = mock( IndexPopulator.class );
+    private final IndexUpdater updater = mock( IndexUpdater.class );
+    private final SchemaIndexProvider indexProvider = mock( SchemaIndexProvider.class );
+    private final IndexAccessor accessor = mock( IndexAccessor.class, RETURNS_MOCKS );
+    private final IndexStoreView storeView  = mock( IndexStoreView.class );
+    private final TokenNameLookup nameLookup = mock( TokenNameLookup.class );
+    private final TestLogging logging = new TestLogging();
 
     @Test
     public void shouldBringIndexOnlineAndFlipOverToIndexAccessor() throws Exception
@@ -447,6 +439,38 @@ public class IndexingServiceTest
         // then no exception should be thrown.
     }
 
+    @Test
+    public void shouldLogTriggerSamplingOnAllIndexes() throws Exception
+    {
+        // given
+        IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
+        IndexSamplingMode mode = TRIGGER_REBUILD_ALL;
+
+        // when
+        indexingService.triggerIndexSampling( mode );
+
+        // then
+        logging.getMessagesLog( IndexingService.class ).assertAtLeastOnce(
+                info( "Manual trigger for sampling all indexes [" + mode + "]" ) );
+    }
+
+    @Test
+    public void shouldLogTriggerSamplingOnAnIndexes() throws Exception
+    {
+        // given
+        IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
+        IndexSamplingMode mode = TRIGGER_REBUILD_ALL;
+        IndexDescriptor descriptor = new IndexDescriptor( 0, 1 );
+
+        // when
+        indexingService.triggerIndexSampling( descriptor, mode );
+
+        // then
+        String userDescription = descriptor.userDescription( nameLookup );
+        logging.getMessagesLog( IndexingService.class ).assertAtLeastOnce(
+                info( "Manual trigger for sampling index " + userDescription + " [" + mode + "]" ) );
+    }
+
     private Answer waitForLatch( final CountDownLatch latch ) {
         return new Answer() {
             @Override
@@ -486,7 +510,6 @@ public class IndexingServiceTest
                                                                       DataUpdates data,
                                                                       IndexRule... rules ) throws IOException
     {
-        StringLogger logger = mock( StringLogger.class );
         UpdateableSchemaState schemaState = mock( UpdateableSchemaState.class );
 
         when( indexProvider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
@@ -499,14 +522,17 @@ public class IndexingServiceTest
         when( indexProvider.snapshotMetaFiles() ).thenReturn( IteratorUtil.<File>emptyIterator() );
         when( indexProvider.storeMigrationParticipant() ).thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
 
+        when( nameLookup.labelGetName( anyInt() ) ).thenAnswer( new NameLookupAnswer( "label" ) );
+        when( nameLookup.propertyKeyGetName( anyInt() ) ).thenAnswer( new NameLookupAnswer( "property" ) );
+
         return life.add( IndexingService.create( new IndexSamplingConfig( new Config() ),
                         life.add( new Neo4jJobScheduler() ),
                         new DefaultSchemaIndexProviderMap( indexProvider ),
                         storeView,
-                        mock( TokenNameLookup.class ),
+                        nameLookup,
                         schemaState,
                         loop( iterator( rules ) ),
-                        mockLogging( logger ),
+                        logging,
                         IndexingService.NO_MONITOR )
         );
     }
@@ -570,6 +596,24 @@ public class IndexingServiceTest
         public String toString()
         {
             return Arrays.toString( updates );
+        }
+    }
+
+    private static class NameLookupAnswer implements Answer<String>
+    {
+        private final String kind;
+
+        public NameLookupAnswer( String kind )
+        {
+
+            this.kind = kind;
+        }
+
+        @Override
+        public String answer( InvocationOnMock invocation ) throws Throwable
+        {
+            int id = (Integer) invocation.getArguments()[0];
+            return kind + "[" + id + "]";
         }
     }
 }

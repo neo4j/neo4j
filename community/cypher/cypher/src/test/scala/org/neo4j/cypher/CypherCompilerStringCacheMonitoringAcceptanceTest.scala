@@ -19,27 +19,38 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.api
+import org.neo4j.kernel.impl.util.TestLogger
+import org.neo4j.kernel.impl.util.TestLogger.LogCall
+
+import scala.collection.Map
 
 class CypherCompilerStringCacheMonitoringAcceptanceTest extends ExecutionEngineFunSuite {
 
-  case class CacheCounts(hits: Int = 0, misses: Int = 0, flushes: Int = 0)
+  case class CacheCounts(hits: Int = 0, misses: Int = 0, flushes: Int = 0, evicted: Int = 0) {
+    override def toString = s"hits = $hits, misses = $misses, flushes = $flushes, evicted = $evicted"
+  }
 
   class CacheCounter(var counts: CacheCounts = CacheCounts()) extends StringCacheMonitor {
-    def cacheMiss(key: String) {
+    override def cacheMiss(key: String) {
       counts = counts.copy(misses = counts.misses + 1)
     }
 
-    def cacheHit(key: String) {
+    override def cacheHit(key: String) {
       counts = counts.copy(hits = counts.hits + 1)
     }
 
-    def cacheFlushDetected(justBeforeKey: api.Statement) {
+    override def cacheFlushDetected(justBeforeKey: api.Statement) {
       counts = counts.copy(flushes = counts.flushes + 1)
     }
 
-    def cacheDiscard(key: String): Unit = ???
+    override def cacheDiscard(key: String) {
+      counts = counts.copy(evicted = counts.evicted + 1)
+    }
   }
+
+  override def databaseConfig(): Map[String,String] = Map(GraphDatabaseSettings.query_plan_ttl.name() -> "0")
 
   test("should monitor cache miss") {
     // given
@@ -78,6 +89,44 @@ class CypherCompilerStringCacheMonitoringAcceptanceTest extends ExecutionEngineF
 
     // then
     counter.counts should equal(CacheCounts(hits = 3, misses = 3, flushes = 2))
+  }
+
+  test("should monitor cache evictions") {
+    // given
+    val counter = new CacheCounter()
+    kernelMonitors.addMonitorListener(counter)
+    val query = "match (n:Person:Dog) return n"
+
+    createLabeledNode("Dog")
+    (0 until 50).foreach { _ => createLabeledNode("Person") }
+    execute(query).toList
+
+    // when
+    (0 until 1000).foreach { _ => createLabeledNode("Dog") }
+    execute(query).toList
+
+    // then
+    counter.counts should equal(CacheCounts(hits = 3, misses = 2, flushes = 1, evicted = 1))
+  }
+
+  test("should log on cache evictions") {
+    // given
+    val logger: TestLogger = new TestLogger()
+    val engine = new ExecutionEngine(graph, logger)
+    val counter = new CacheCounter()
+    kernelMonitors.addMonitorListener(counter)
+    val query = "match (n:Person:Dog) return n"
+
+    createLabeledNode("Dog")
+    (0 until 50).foreach { _ => createLabeledNode("Person") }
+    engine.execute(query).toList
+
+    // when
+    (0 until 1000).foreach { _ => createLabeledNode("Dog") }
+    engine.execute(query).toList
+
+    // then
+    logger.assertAtLeastOnce(LogCall.info(s"Discarded stale query from the query cache: $query"))
   }
 }
 

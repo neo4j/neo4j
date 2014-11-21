@@ -82,7 +82,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService,
         val date = new Date()
         fingerprint.fold(false) { fingerprint =>
           lastTxId != fingerprint.txId &&
-            fingerprint.creationDate.getTime + TTL < date.getTime &&
+            fingerprint.creationDate.getTime + TTL <= date.getTime &&
             fingerprint.snapshot.diverges(fingerprint.snapshot.recompute(statistics), MIN_DIVERGENCE)
         }
       }

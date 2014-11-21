@@ -1542,7 +1542,8 @@ public class NeoStoreTransactionTest
                                          Iterable<IndexRule> indexRules, IndexSamplingController samplingController,
                                          Logging logging, Monitor monitor )
         {
-            super( proxySetup, providerMap, indexMapRef, storeView, indexRules, samplingController, logging, monitor );
+            super( proxySetup, providerMap, indexMapRef, storeView, indexRules, samplingController, null, logging,
+                    monitor );
         }
 
         @Override

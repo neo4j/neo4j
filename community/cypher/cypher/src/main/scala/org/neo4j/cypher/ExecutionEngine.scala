@@ -28,9 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.{CypherCacheMonitor, MonitoringCa
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
 import org.neo4j.kernel.impl.util.StringLogger
 import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase, api}
 
@@ -47,9 +45,14 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   protected val graphAPI = graph.asInstanceOf[GraphDatabaseAPI]
   protected val kernel = graphAPI.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.api.KernelAPI])
   protected val kernelMonitors = graphAPI.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])
-  protected val compiler = createCompiler()
+  protected val compiler = createCompiler(logger)
 
   private val cacheMonitor = kernelMonitors.newMonitor(classOf[StringCacheMonitor])
+  kernelMonitors.addMonitorListener( new StringCacheMonitor {
+    override def cacheDiscard(query: String) {
+      logger.info(s"Discarded stale query from the query cache: $query")
+    }
+  })
   private val cacheAccessor = new MonitoringCacheAccessor[String, (ExecutionPlan, Map[String, Any])](cacheMonitor)
 
   private val parsedQueries = new LRUCache[String, ParsedQuery](getPlanCacheSize)
@@ -107,7 +110,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
             parsedQuery.plan(kernelStatement)
           })
         }.flatMap { case (plan, params) =>
-          if (plan.isStale(graphAPI, kernelStatement)) {
+          if ( !touched && plan.isStale(graphAPI, kernelStatement)) {
             cacheAccessor.remove(cache)(queryText)
             None
           } else {
@@ -154,12 +157,12 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
 
   def prettify(query: String): String = Prettifier(query)
 
-  private def createCompiler(): CypherCompiler = {
+  private def createCompiler(logger: StringLogger): CypherCompiler = {
     val version = optGraphSetting[String](
       graph, GraphDatabaseSettings.cypher_parser_version, CypherVersion.vDefault.name
     )
     val optionParser = CypherOptionParser(kernelMonitors.newMonitor(classOf[ParserMonitor[CypherQueryWithOptions]]))
-    new CypherCompiler(graph, kernel, kernelMonitors, CypherVersion(version), optionParser)
+    new CypherCompiler(graph, kernel, kernelMonitors, CypherVersion(version), optionParser, logger)
   }
 
   private def getPlanCacheSize: Int =
