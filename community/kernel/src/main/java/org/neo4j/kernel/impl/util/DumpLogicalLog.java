@@ -56,6 +56,8 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLo
 
 public class DumpLogicalLog
 {
+    private static final String TO_FILE = "tofile";
+
     private final FileSystemAbstraction fileSystem;
 
     public DumpLogicalLog( FileSystemAbstraction fileSystem )
@@ -115,7 +117,7 @@ public class DumpLogicalLog
 
     public static void main( String args[] ) throws IOException
     {
-        Args arguments = new Args( args );
+        Args arguments = Args.withFlags( TO_FILE ).parse( args );
         TimeZone timeZone = parseTimeZoneConfig( arguments );
         try ( Printer printer = getPrinter( arguments ) )
         {
@@ -129,7 +131,7 @@ public class DumpLogicalLog
 
     public static Printer getPrinter( Args args )
     {
-        boolean toFile = args.getBoolean( "tofile", false, true );
+        boolean toFile = args.getBoolean( TO_FILE, false, true );
         return toFile ? new FilePrinter() : SYSTEM_OUT_PRINTER;
     }
 

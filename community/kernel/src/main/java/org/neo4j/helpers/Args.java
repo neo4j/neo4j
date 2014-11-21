@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 
 import org.neo4j.function.Function;
 import org.neo4j.kernel.impl.util.Validator;
@@ -69,6 +70,21 @@ public class Args
 {
     private static final char OPTION_METADATA_DELIMITER = ':';
 
+    public static class ArgsParser
+    {
+        private final String[] flags;
+
+        private ArgsParser( String... flags )
+        {
+            this.flags = Objects.requireNonNull( flags );
+        }
+
+        public Args parse( String... arguments )
+        {
+            return new Args( flags, arguments );
+        }
+    }
+
     public static class Option<T>
     {
         private final T value;
@@ -110,24 +126,36 @@ public class Args
     };
 
     private final String[] args;
+    private final String[] flags;
     private final Map<String, List<Option<String>>> map = new HashMap<>();
     private final List<String> orphans = new ArrayList<>();
 
-    /**
-     * Suitable for main( String[] args )
-     * @param args the arguments to parse.
-     */
-    public <T> Args( String... args )
+    public static ArgsParser withFlags( String... flags )
     {
-        this( DEFAULT_OPTION_PARSER, args );
+        return new ArgsParser( flags );
+    }
+
+    public static Args parse( String...args )
+    {
+        return withFlags().parse( args );
     }
 
     /**
      * Suitable for main( String[] args )
      * @param args the arguments to parse.
      */
-    public Args( Function<String,Option<String>> optionParser, String... args )
+    private Args( String[] flags, String[] args )
     {
+        this( DEFAULT_OPTION_PARSER, flags, args );
+    }
+
+    /**
+     * Suitable for main( String[] args )
+     * @param args the arguments to parse.
+     */
+    private Args( Function<String,Option<String>> optionParser, String[] flags, String[] args )
+    {
+        this.flags = flags;
         this.args = args;
         parseArgs( optionParser, args );
     }
@@ -139,6 +167,7 @@ public class Args
 
     public Args( Function<String,Option<String>> optionParser, Map<String, String> source )
     {
+        this.flags = new String[] {};
         this.args = null;
         for ( Entry<String,String> entry : source.entrySet() )
         {
@@ -326,9 +355,13 @@ public class Args
                         put( optionParser, key, value );
                     }
                 }
+                else if ( ArrayUtil.contains( flags, arg ) )
+                {
+                    put( optionParser, arg, "true" );
+                }
                 else
                 {
-                    int nextIndex = i+1;
+                    int nextIndex = i + 1;
                     String value = nextIndex < args.length ?
                         args[ nextIndex ] : null;
                     value = ( value == null || isOption( value ) ) ? null : value;

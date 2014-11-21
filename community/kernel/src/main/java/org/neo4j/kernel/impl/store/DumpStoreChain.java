@@ -49,7 +49,7 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
 
     public static void main( String... args ) throws Exception
     {
-        Args arguments = new Args( args );
+        Args arguments = Args.withFlags( REVERSE, RELS, PROPS ).parse( args );
         List<String> orphans = arguments.orphans();
         if ( orphans.size() != 1 )
         {

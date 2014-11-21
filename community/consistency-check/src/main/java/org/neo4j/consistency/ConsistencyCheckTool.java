@@ -41,6 +41,7 @@ public class ConsistencyCheckTool
 {
     private static final String RECOVERY = "recovery";
     private static final String CONFIG = "config";
+    private static final String PROP_OWNER = "propowner";
 
     public static void main( String[] args )
     {
@@ -66,7 +67,7 @@ public class ConsistencyCheckTool
 
     void run( String... args ) throws ToolFailureException
     {
-        Args arguments = new Args( args );
+        Args arguments = Args.withFlags( RECOVERY, PROP_OWNER ).parse( args );
         String storeDir = determineStoreDirectory( arguments );
         Config tuningConfiguration = readTuningConfiguration( storeDir, arguments );
 

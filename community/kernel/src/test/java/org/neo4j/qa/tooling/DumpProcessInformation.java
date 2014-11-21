@@ -38,12 +38,15 @@ import static org.neo4j.helpers.Predicates.in;
 
 public class DumpProcessInformation
 {
+    private static final String HEAP = "heap";
+    private static final String DIR = "dir";
+
     public static void main( String[] args ) throws Exception
     {
-        Args arg = new Args( args == null ? new String[0] : args );
-        boolean doHeapDump = arg.getBoolean( "heap", false, true );
+        Args arg = Args.withFlags( HEAP ).parse( args == null ? new String[0] : args );
+        boolean doHeapDump = arg.getBoolean( HEAP, false, true );
         String[] containing = arg.orphans().toArray( new String[arg.orphans().size()] );
-        String dumpDir = arg.get( "dir", "data" );
+        String dumpDir = arg.get( DIR, "data" );
         new DumpProcessInformation( new SystemOutLogging(), new File( dumpDir ) ).dumpRunningProcesses(
                 doHeapDump, containing );
     }

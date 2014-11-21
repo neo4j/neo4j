@@ -62,7 +62,7 @@ public class LegacyDatabaseImpl extends UnicastRemoteObject implements LegacyDat
     // This has to be adapted to the way HA GDB is started in the specific old version it's used for.
     public static void main( String[] args ) throws Exception
     {
-        Args arguments = new Args( args );
+        Args arguments = Args.parse( args );
         String storeDir = arguments.orphans().get( 0 );
 
         GraphDatabaseAPI db = (GraphDatabaseAPI) new HighlyAvailableGraphDatabaseFactory()

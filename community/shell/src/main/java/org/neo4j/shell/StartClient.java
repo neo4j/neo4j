@@ -126,7 +126,7 @@ public class StartClient
 
     private void start( String[] arguments, CtrlCHandler signalHandler )
     {
-        Args args = new Args( arguments );
+        Args args = Args.withFlags( ARG_READONLY ).parse( arguments );
         if ( args.has( "?" ) || args.has( "h" ) || args.has( "help" ) || args.has( "usage" ) )
         {
             printUsage();
