@@ -28,6 +28,7 @@ import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.util.Arrays.asList;
 
@@ -145,6 +146,12 @@ public class GraphDatabaseFactory
     public GraphDatabaseFactory setLogging( Logging logging )
     {
         getCurrentState().setLogging( logging );
+        return this;
+    }
+
+    public GraphDatabaseFactory setMonitors( Monitors monitors )
+    {
+        getCurrentState().setMonitors( monitors );
         return this;
     }
 }
