@@ -84,7 +84,7 @@ public class PrimitiveLongLongHashMap extends AbstractLongHopScotchCollection<lo
     }
 
     @Override
-    public void visitEntries( PrimitiveLongLongVisitor visitor )
+    public <E extends Exception> void visitEntries( PrimitiveLongLongVisitor<E> visitor ) throws E
     {
         long nullKey = table.nullKey();
         int capacity = table.capacity();
@@ -94,9 +94,9 @@ public class PrimitiveLongLongHashMap extends AbstractLongHopScotchCollection<lo
             if ( key != nullKey )
             {
                 long[] value = table.value( i );
-                if ( value != null )
+                if ( value != null && visitor.visited( key, value[0] ) )
                 {
-                    visitor.visited( key, value[0] );
+                    return;
                 }
             }
         }

@@ -29,7 +29,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 
-class IndexConsultedPropertyBlockSweeper implements PrimitiveLongVisitor
+class IndexConsultedPropertyBlockSweeper implements PrimitiveLongVisitor<IOException>
 {
     private int propertyKeyId;
     private final IndexLookup.Index index;
@@ -50,7 +50,7 @@ class IndexConsultedPropertyBlockSweeper implements PrimitiveLongVisitor
     }
 
     @Override
-    public void visited( long recordId )
+    public boolean visited( long recordId ) throws IOException
     {
         PropertyRecord record = propertyStore.getRecord( recordId );
         boolean changed = false;
@@ -65,21 +65,14 @@ class IndexConsultedPropertyBlockSweeper implements PrimitiveLongVisitor
             {
                 Object lastPropertyValue = propertyStore.getValue( block );
 
-                try
+                if ( !foundExact && index.contains( nodeRecord.getId(), lastPropertyValue ) )
                 {
-                    if ( !foundExact && index.contains( nodeRecord.getId(), lastPropertyValue ) )
-                    {
-                        foundExact = true;
-                    }
-                    else
-                    {
-                        it.remove();
-                        changed = true;
-                    }
+                    foundExact = true;
                 }
-                catch ( IOException e )
+                else
                 {
-                    throw new InnerIterationIOException( e );
+                    it.remove();
+                    changed = true;
                 }
             }
         }
@@ -91,5 +84,6 @@ class IndexConsultedPropertyBlockSweeper implements PrimitiveLongVisitor
             }
             propertyStore.updateRecord( record );
         }
+        return false;
     }
 }

@@ -50,11 +50,28 @@ public class LongKeyLongValueUnsafeTable extends UnsafeTable<long[]>
     @Override
     public long[] putValue( int index, long[] value )
     {
-        long valueAddress = keyAddress( index )+8;
+        long valueAddress = valueAddress( index );
         long oldValue = unsafe.getLong( valueAddress );
         unsafe.putLong( valueAddress, value[0] );
-        valueMarker[0] = oldValue;
+        return pack( oldValue );
+    }
+
+    private long[] pack( long value )
+    {
+        valueMarker[0] = value;
         return valueMarker;
+    }
+
+    private long valueAddress( int index )
+    {
+        return keyAddress( index )+8;
+    }
+
+    @Override
+    public long[] value( int index )
+    {
+        long value = unsafe.getLong( valueAddress( index ) );
+        return pack( value );
     }
 
     @Override

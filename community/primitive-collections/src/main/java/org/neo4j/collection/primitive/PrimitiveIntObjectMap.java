@@ -29,5 +29,8 @@ public interface PrimitiveIntObjectMap<VALUE> extends PrimitiveIntCollection
 
     VALUE remove( int key );
 
-    void visitEntries( PrimitiveIntObjectVisitor<VALUE> visitor );
+    /**
+     * Visit the entries of this map, until all have been visited or the visitor returns 'true'.
+     */
+    <E extends Exception> void visitEntries( PrimitiveIntObjectVisitor<VALUE, E> visitor ) throws E;
 }

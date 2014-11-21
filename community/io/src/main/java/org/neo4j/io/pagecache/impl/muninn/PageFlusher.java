@@ -26,7 +26,7 @@ import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.monitoring.FlushEventOpportunity;
 import org.neo4j.io.pagecache.monitoring.MajorFlushEvent;
 
-final class PageFlusher implements PrimitiveLongObjectVisitor<MuninnPage>
+final class PageFlusher implements PrimitiveLongObjectVisitor<MuninnPage, IOException>
 {
     private final PageSwapper swapper;
     private final FlushEventOpportunity flushOpportunity;
@@ -38,17 +38,13 @@ final class PageFlusher implements PrimitiveLongObjectVisitor<MuninnPage>
     }
 
     @Override
-    public void visited( long filePageId, MuninnPage page )
+    public boolean visited( long filePageId, MuninnPage page ) throws IOException
     {
         long stamp = page.readLock();
         try
         {
             page.flush( swapper, filePageId, flushOpportunity );
-        }
-        catch ( IOException e )
-        {
-            // TODO throw something better, here...
-            throw new RuntimeException( e );
+            return false;
         }
         finally
         {

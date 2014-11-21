@@ -36,7 +36,7 @@ import org.neo4j.kernel.impl.transaction.state.Loaders;
 import org.neo4j.kernel.impl.transaction.state.TokenCreator;
 import org.neo4j.unsafe.batchinsert.DirectRecordAccess;
 
-class NonIndexedConflictResolver implements PrimitiveLongObjectVisitor<List<DuplicateCluster>>
+class NonIndexedConflictResolver implements PrimitiveLongObjectVisitor<List<DuplicateCluster>, IOException>
 {
     private final PropertyKeyTokenStore keyTokenStore;
     private final Map<String, Integer> propertyTokenMap;
@@ -62,15 +62,16 @@ class NonIndexedConflictResolver implements PrimitiveLongObjectVisitor<List<Dupl
     }
 
     @Override
-    public void visited( long key, List<DuplicateCluster> duplicateClusters )
+    public boolean visited( long key, List<DuplicateCluster> duplicateClusters ) throws IOException
     {
         for ( DuplicateCluster duplicateCluster : duplicateClusters )
         {
             resolveConflict( duplicateCluster );
         }
+        return false;
     }
 
-    private void resolveConflict( final DuplicateCluster duplicateCluster )
+    private void resolveConflict( final DuplicateCluster duplicateCluster ) throws IOException
     {
         assert duplicateCluster.size() > 0;
 
@@ -97,7 +98,7 @@ class NonIndexedConflictResolver implements PrimitiveLongObjectVisitor<List<Dupl
         return propertyKeyTokenId;
     }
 
-    private class DuplicateNameAssigner implements PrimitiveLongVisitor
+    private class DuplicateNameAssigner implements PrimitiveLongVisitor<IOException>
     {
         private final DuplicateCluster duplicateCluster;
         private final String oldName;
@@ -110,31 +111,25 @@ class NonIndexedConflictResolver implements PrimitiveLongObjectVisitor<List<Dupl
         }
 
         @Override
-        public void visited( long propertyRecordId )
+        public boolean visited( long propertyRecordId ) throws IOException
         {
             PropertyRecord record = store.getRecord( propertyRecordId );
-            try
+            for ( PropertyBlock block : record.getPropertyBlocks() )
             {
-                for ( PropertyBlock block : record.getPropertyBlocks() )
+                if ( block.getKeyIndexId() == duplicateCluster.propertyKeyId )
                 {
-                    if ( block.getKeyIndexId() == duplicateCluster.propertyKeyId )
+                    if ( index == 0 )
                     {
-                        if ( index == 0 )
-                        {
-                            index += 1;
-                        }
-                        else
-                        {
-                            block.setKeyIndexId( getNewPropertyKeyId() );
-                        }
+                        index += 1;
+                    }
+                    else
+                    {
+                        block.setKeyIndexId( getNewPropertyKeyId() );
                     }
                 }
             }
-            catch ( IOException e )
-            {
-                throw new InnerIterationIOException( e );
-            }
             store.updateRecord( record );
+            return false;
         }
 
         int getNewPropertyKeyId() throws IOException

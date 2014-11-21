@@ -73,17 +73,16 @@ public class PrimitiveIntObjectHashMap<VALUE> extends AbstractIntHopScotchCollec
     }
 
     @Override
-    public void visitEntries( PrimitiveIntObjectVisitor<VALUE> visitor )
+    public <E extends Exception> void visitEntries( PrimitiveIntObjectVisitor<VALUE, E> visitor ) throws E
     {
         long nullKey = table.nullKey();
         int capacity = table.capacity();
         for ( int i = 0; i < capacity; i++ )
         {
             int key = (int) table.key( i );
-            if ( key != nullKey )
+            if ( key != nullKey && visitor.visited( key, table.value( i ) ) )
             {
-                VALUE value = table.value( i );
-                visitor.visited( key, value );
+                return;
             }
         }
     }
