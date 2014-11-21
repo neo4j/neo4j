@@ -30,7 +30,7 @@ neo.layout = do ->
         maxStepsPerTick = 100
         maxAnimationFramesPerSecond = 60
         maxComputeTime = 1000 / maxAnimationFramesPerSecond
-        now = if window.performance
+        now = if window.performance and window.performance.now
           () ->
             window.performance.now()
         else
