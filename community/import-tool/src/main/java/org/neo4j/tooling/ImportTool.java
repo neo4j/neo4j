@@ -84,22 +84,24 @@ public class ImportTool
         STORE_DIR( "into", "<store-dir>", "Database directory to import into. " + "Must not contain existing database." ),
         NODE_DATA(
                 "nodes",
-                "<file1>" + MULTI_FILE_DELIMITER + "<file2>" + MULTI_FILE_DELIMITER + "...",
+                "\"<file1>" + MULTI_FILE_DELIMITER + "<file2>" + MULTI_FILE_DELIMITER + "...\"",
                 "Node CSV header and data. "
                         + "Multiple files will be logically seen as one big file "
                         + "from the perspective of the importer. "
                         + "The first line must contain the header. "
-                        + "Multiple input groups like these can be specified in one import, "
-                        + "where each group has its own header." ),
+                        + "Multiple data sources like these can be specified in one import, "
+                        + "where each data source has its own header. "
+                        + "Note that file groups must be enclosed in quotation marks." ),
         RELATIONSHIP_DATA(
                 "relationships",
-                "<file1>" + MULTI_FILE_DELIMITER + "<file2>" + MULTI_FILE_DELIMITER + "...",
+                "\"<file1>" + MULTI_FILE_DELIMITER + "<file2>" + MULTI_FILE_DELIMITER + "...\"",
                 "Relationship CSV header and data. "
                 + "Multiple files will be logically seen as one big file "
                         + "from the perspective of the importer. "
                         + "The first line must contain the header. "
-                        + "Multiple input groups like these can be specified in one import, "
-                        + "where each group has its own header." ),
+                        + "Multiple data sources like these can be specified in one import, "
+                        + "where each data source has its own header. "
+                        + "Note that file groups must be enclosed in quotation marks." ),
         DELIMITER( "delimiter", "<delimiter-character>", "Delimiter character between values in CSV data." ),
         ARRAY_DELIMITER( "array-delimiter", "<array-delimiter-character>",
                 "Delimiter character between array elements within a value in CSV data." ),
