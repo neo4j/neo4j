@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assu
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast.LabelName
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.{QueryGraphCardinalityInput, QueryGraphCardinalityModel}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{VarPatternLength, SimplePatternLength, IdName}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, Selectivity}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryGraph, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
@@ -34,19 +34,17 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics,
   private val expressionSelectivityEstimator = ExpressionSelectivityCalculator(stats, combiner)
   private val patternSelectivityEstimator = PatternSelectivityCalculator(stats, combiner)
 
+  /**
+   * When there are optional matches, the cardinality is always the maximum of any matches that exist,
+   * because no matches are limiting. So we need to calculate cardinality of all possible combinations
+   * of matches, and then take the max.
+   */
   def apply(queryGraph: QueryGraph, input: QueryGraphCardinalityInput): Cardinality = {
     val combinations: Seq[QueryGraph] = findQueryGraphCombinations(queryGraph, semanticTable)
     val cardinalities = combinations.map(cardinalityForQueryGraph(_, input)(semanticTable))
-    cardinalities.foldLeft(Cardinality.EMPTY) {
-      case (acc, curr) => if (curr > acc) curr else acc
-    }
+    cardinalities.max
   }
 
-  /**
-   * Finds all combinations of a querygraph with its optional matches,
-   * e.g. Given QueryGraph QG with optional matches [opt1, opt2, opt3] we get
-   * [QG, QG ++ opt1, QG ++ opt2, QG ++ opt3, QG ++ opt1 ++ opt2, QG ++ opt2 ++ opt3, QG ++ opt1 ++ opt2 ++ opt3]
-   */
   private def findQueryGraphCombinations(queryGraph: QueryGraph, semanticTable: SemanticTable): Seq[QueryGraph] = {
     (0 to queryGraph.optionalMatches.length)
       .map(queryGraph.optionalMatches.combinations)
@@ -56,9 +54,19 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics,
       .map(queryGraph.withOptionalMatches(Seq.empty) ++ _)
   }
 
-  private def cardinalityForQueryGraph(qg: QueryGraph, input: QueryGraphCardinalityInput)(implicit semanticTable: SemanticTable): Cardinality = {
+  private def calculcateNumberOfPatternNodes(qg: QueryGraph) = {
+    val intermediateNodes = qg.patternRelationships.map(_.length match {
+      case SimplePatternLength            => 0
+      case VarPatternLength(_, optMax)    => Math.max(Math.min(optMax.getOrElse(PatternSelectivityCalculator.MAX_VAR_LENGTH), PatternSelectivityCalculator.MAX_VAR_LENGTH) - 1, 0)
+    }).sum
+
+    qg.patternNodes.count(!qg.argumentIds.contains(_)) + intermediateNodes
+  }
+
+  private def cardinalityForQueryGraph(qg: QueryGraph, input: QueryGraphCardinalityInput)
+                                      (implicit semanticTable: SemanticTable): Cardinality = {
     val selectivity = calculateSelectivity(qg, input.labelInfo)
-    val numberOfPatternNodes = qg.patternNodes.count(!qg.argumentIds.contains(_))
+    val numberOfPatternNodes = calculcateNumberOfPatternNodes(qg)
     val numberOfGraphNodes = stats.nodesWithLabelCardinality(None)
 
     val c = if (qg.argumentIds.nonEmpty)
@@ -69,13 +77,14 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics,
     c * (numberOfGraphNodes ^ numberOfPatternNodes) * selectivity
   }
 
-  private def calculateSelectivity(qg: QueryGraph, labels: Map[IdName, Set[LabelName]])(implicit semanticTable: SemanticTable) = {
+  private def calculateSelectivity(qg: QueryGraph, labels: Map[IdName, Set[LabelName]])
+                                  (implicit semanticTable: SemanticTable) = {
     implicit val selections = qg.selections
 
     val expressionSelectivities = selections.flatPredicates.map(expressionSelectivityEstimator(_))
     val patternSelectivities = qg.patternRelationships.toSeq.map(patternSelectivityEstimator(_, labels))
 
-    val selectivity: Option[Selectivity] = combiner.andTogetherSelectivities(expressionSelectivities ++ patternSelectivities)
+    val selectivity = combiner.andTogetherSelectivities(expressionSelectivities ++ patternSelectivities)
 
     selectivity.
       getOrElse(Selectivity(1))

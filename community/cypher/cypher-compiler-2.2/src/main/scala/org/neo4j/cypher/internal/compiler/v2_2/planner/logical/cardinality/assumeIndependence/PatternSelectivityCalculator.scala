@@ -20,47 +20,90 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assumeIndependence
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{LabelName, RelTypeName}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, PatternRelationship}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, Selectivity}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{Selections, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 import org.neo4j.cypher.internal.compiler.v2_2.{InternalException, LabelId, NameId, RelTypeId}
 import org.neo4j.graphdb.Direction
 
+import scala.collection.immutable.IndexedSeq
+
 trait Pattern2Selectivity {
   def apply(pattern: PatternRelationship, labels: Map[IdName, Set[LabelName]])(implicit semanticTable: SemanticTable, selections: Selections): Selectivity
 }
 
+object PatternSelectivityCalculator {
+  val MAX_VAR_LENGTH = 32
+}
+
 case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: SelectivityCombiner) extends Pattern2Selectivity {
 
-  def apply(pattern: PatternRelationship, labels: Map[IdName, Set[LabelName]])(implicit semanticTable: SemanticTable, selections: Selections): Selectivity = {
+  import PatternSelectivityCalculator._
+
+  def apply(pattern: PatternRelationship, labels: Map[IdName, Set[LabelName]])
+           (implicit semanticTable: SemanticTable, selections: Selections): Selectivity = {
+    val allNodes = stats.nodesWithLabelCardinality(None)
     val lhs = pattern.nodes._1
     val rhs = pattern.nodes._2
     val labelsOnLhs: Seq[TokenSpec[LabelId]] = mapToLabelTokenSpecs(selections.labelsOnNode(lhs).toSeq ++ labels.getOrElse(lhs, Seq.empty))
     val labelsOnRhs: Seq[TokenSpec[LabelId]] = mapToLabelTokenSpecs(selections.labelsOnNode(rhs).toSeq ++ labels.getOrElse(rhs, Seq.empty))
 
-    val lhsCardinality = stats.nodesWithLabelCardinality(None) * calculateLabelSelectivity(
-      mapToLabelTokenSpecs(selections.labelsOnNode(lhs).toSeq))
-    val rhsCardinality = stats.nodesWithLabelCardinality(None) * calculateLabelSelectivity(
-      mapToLabelTokenSpecs(selections.labelsOnNode(rhs).toSeq))
-    val maxRelCount = lhsCardinality * rhsCardinality
-    val types = mapToRelTokenSpecs(pattern.types)
+    val lhsCardinality = allNodes * calculateLabelSelectivity(labelsOnLhs)
+    val rhsCardinality = allNodes * calculateLabelSelectivity(labelsOnRhs)
 
-    if (maxRelCount == Cardinality.EMPTY)
+    // If either side of our pattern is empty, it's all empty
+    if (lhsCardinality == Cardinality.EMPTY || lhsCardinality == Cardinality.EMPTY)
       Selectivity(1)
-    else
-      calculateRelSelectivity(types, labelsOnLhs, labelsOnRhs, pattern.dir, maxRelCount)
+    else {
+      val types = mapToRelTokenSpecs(pattern.types)
+
+      pattern.length match {
+        case SimplePatternLength              =>
+          calculateSelectivityForSingleRelHop(types, labelsOnLhs, labelsOnRhs, pattern.dir, lhsCardinality * rhsCardinality)
+
+        case VarPatternLength(min, optMax) =>
+
+          val max = Math.min(optMax.getOrElse(MAX_VAR_LENGTH), MAX_VAR_LENGTH)
+
+          /*
+          How to calculate var-length path selectivity can be exemplified like this
+
+          SELECTIVITY( (a:A)-[:T*3..3]->(b:B) ) =
+
+          ( CARDINALITY( (a:A)-[:T]->(b:B) ) +
+            CARDINALITY( (a:A)-[:T]->()-[:T]->(b:B) ) +
+            CARDINALITY( (a:A)-[:T]->()-[:T]->()-[:T]->(b:B) ) / crossProductOfNodes
+           */
+          val maxRelCount = lhsCardinality * rhsCardinality * Cardinality(Math.pow(allNodes.amount, max - 1))
+
+          val selectivityPerLengthAndStep: Seq[Seq[Selectivity]] =
+            for {
+              length <- min to max
+            }
+            yield
+              for (i <- 1 to length)
+              yield {
+                val labelsOnL = if (i == 1) labelsOnLhs else Seq(Unspecified())
+                val labelsOnR = if (i == length) labelsOnRhs else Seq(Unspecified())
+                calculateSelectivityForSingleRelHop(types, labelsOnL, labelsOnR, pattern.dir, maxRelCount)
+              }
+          val selectivityPerLength = selectivityPerLengthAndStep.flatMap(combiner.andTogetherSelectivities)
+          combiner.orTogetherSelectivities(selectivityPerLength).getOrElse(throw new InternalException("There is no spoon."))
+      }
+    }
   }
 
-  private def calculateRelSelectivity(types: Seq[TokenSpec[RelTypeId]],
+  private def calculateSelectivityForSingleRelHop(types: Seq[TokenSpec[RelTypeId]],
                                       labelsOnLhs: Seq[TokenSpec[LabelId]],
                                       labelsOnRhs: Seq[TokenSpec[LabelId]],
                                       dir: Direction,
                                       maxRelCount: Cardinality): Selectivity = {
-    val selectivities = (types map { typ =>
+
+    val selectivitiesPerTypeAndLabel: Seq[Seq[Selectivity]] = types map { typ =>
       for {
         lhsLabel <- labelsOnLhs
-        rhsLabel <- labelsOnRhs
+        rhsLabel <- labelsOnRhs                         // (a:A:B)-[r:T1|T2]->(c:C:D)    WHERE a:A AND a:B and type(r) = "T1" OR type(r) = "T2"
       } yield {
         (lhsLabel, typ, rhsLabel) match {
           //          If the rel-type or either label are unknown to the schema, we know no matches will be had
@@ -74,15 +117,17 @@ case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: Select
             stats.cardinalityByLabelsAndRelationshipType(rhsLabel.id, typ.id, lhsLabel.id) / maxRelCount
 
           case _ if dir == Direction.BOTH =>
-            combiner.orTogetherSelectivities(Seq(
-              stats.cardinalityByLabelsAndRelationshipType(lhsLabel.id, typ.id, rhsLabel.id) / maxRelCount,
-              stats.cardinalityByLabelsAndRelationshipType(rhsLabel.id, typ.id, lhsLabel.id) / maxRelCount
-            )).get
+            combiner.orTogetherSelectivities(
+              Seq(stats.cardinalityByLabelsAndRelationshipType(lhsLabel.id, typ.id, rhsLabel.id) / maxRelCount,
+              stats.cardinalityByLabelsAndRelationshipType(rhsLabel.id, typ.id, lhsLabel.id) / maxRelCount)
+            ).get
         }
       }
-    }).map(combiner.andTogetherSelectivities).flatten
+    }
 
-    combiner.orTogetherSelectivities(selectivities).getOrElse(Selectivity(1))
+    val selectivitiesPerType = selectivitiesPerTypeAndLabel.flatMap(combiner.andTogetherSelectivities)
+    val combinedSelectivity = combiner.orTogetherSelectivities(selectivitiesPerType).get
+    combinedSelectivity
   }
 
   private def calculateLabelSelectivity(specs: Seq[TokenSpec[LabelId]]): Selectivity = {

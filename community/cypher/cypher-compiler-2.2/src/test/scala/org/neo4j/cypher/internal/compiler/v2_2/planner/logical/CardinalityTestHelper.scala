@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{Query, Statement}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{Identifier, Query, Statement}
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.{QueryGraphCardinalityInput, QueryGraphCardinalityModel}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
@@ -85,8 +85,10 @@ trait CardinalityTestHelper extends QueryGraphProducer {
 
     def withRelationshipCardinality(relationship: (((Symbol, Symbol), Symbol), Double)): TestUnit = {
       val (((lhs, relType), rhs), cardinality) = relationship
+      val key = (lhs.name, relType.name, rhs.name)
+      assert(!knownRelationshipCardinality.contains(key), "This label/type/label combo is already known")
       copy (
-        knownRelationshipCardinality = knownRelationshipCardinality + ((lhs.name, relType.name, rhs.name) -> cardinality)
+        knownRelationshipCardinality = knownRelationshipCardinality + (key -> cardinality)
       )
     }
 
@@ -141,49 +143,21 @@ trait CardinalityTestHelper extends QueryGraphProducer {
         def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
           (fromLabel, relTypeId, toLabel) match {
             case (_, Some(id), _) if getRelationshipName(id).isEmpty => Cardinality(0)
-            case (Some(lhsId), Some(id), Some(rhsId)) =>
-            val lhsName = getLabelName(lhsId).get
-              val rhsName = getLabelName(rhsId).get
-              getRelationshipName(id)
-                .map(relName => Cardinality(getCardinality(lhsName, relName, rhsName)))
-                .getOrElse(Cardinality(0))
-            case (Some(lhsId), Some(id), None) =>
-              val lhsName = getLabelName(lhsId).get
-              val relName = getRelationshipName(id).get
-              val relationshipCounts = knownRelationshipCardinality.collect {
-                case ((x, y, _), cardinality) if x == lhsName && y == relName => cardinality
-              }
-              Cardinality(relationshipCounts.sum)
+            case (Some(id), _, _) if getLabelName(id).isEmpty        => Cardinality(0)
+            case (_, _, Some(id)) if getLabelName(id).isEmpty        => Cardinality(0)
 
-            case (Some(lhsId), None, Some(rhsId)) =>
-              val lhsName = getLabelName(lhsId).get
-              val rhsName = getLabelName(rhsId).get
-              Cardinality(knownRelationshipCardinality.collect {
-                case ((a, _, c), value) if a == lhsName && c == rhsName => value
-              }.sum)
-            case (None, Some(id), Some(rhsId)) =>
-              val rhsName = getLabelName(rhsId).get
-              val relName = getRelationshipName(id).get
-              Cardinality(knownRelationshipCardinality.collect {
-                case ((_, b, c), value) if c == rhsName && b == relName => value
-              }.sum)
-            case (None, None, Some(rhsId)) =>
-              val rhsName = getLabelName(rhsId).get
-              Cardinality(knownRelationshipCardinality.collect {
-                case ((_, _, c), value) if c == rhsName => value
-              }.sum)
-            case (None, Some(id), None) =>
-              val relName = getRelationshipName(id).get
-              Cardinality(knownRelationshipCardinality.collect {
-                case ((_, b, _), value) if b == relName => value
-              }.sum)
-            case (Some(lhsId), None, None) =>
-              val lhsName = getLabelName(lhsId).get
-              Cardinality(knownRelationshipCardinality.collect {
-                case ((a, _, _), value) if a == lhsName => value
-              }.sum)
-            case (None, None, None) =>
-              Cardinality(knownRelationshipCardinality.values.sum)
+            case (l1, t1, r1) =>
+              val matchingCardinalities = knownRelationshipCardinality collect {
+                case ((l2, t2, r2), c) if
+                l1.forall(x => getLabelName(x).get == l2) &&
+                  t1.forall(x => getRelationshipName(x).get == t2) &&
+                  r1.forall(x => getLabelName(x).get == r2) => c
+              }
+
+              if (matchingCardinalities.isEmpty)
+                Cardinality(0)
+              else
+                Cardinality(matchingCardinalities.sum)
           }
 
         private def getLabelName(labelId: LabelId) = labelIds.collectFirst {
@@ -199,7 +173,9 @@ trait CardinalityTestHelper extends QueryGraphProducer {
         }
       }
 
-      val semanticTable: SemanticTable = new SemanticTable()
+      val semanticTable: SemanticTable = new SemanticTable() {
+        override def isRelationship(expr: Identifier): Boolean = true
+      }
       fill(semanticTable.resolvedLabelIds, labelIds, LabelId.apply)
       fill(semanticTable.resolvedPropertyKeyNames, propertyIds, PropertyKeyId.apply)
       fill(semanticTable.resolvedRelTypeNames, relTypeIds, RelTypeId.apply)
@@ -246,5 +222,6 @@ trait CardinalityTestHelper extends QueryGraphProducer {
   }
 
   val DEFAULT_PREDICATE_SELECTIVITY = GraphStatistics.DEFAULT_PREDICATE_SELECTIVITY.factor
-  val DEFAULT_EQUALITY_SELECTIVITY = .1
+  val DEFAULT_EQUALITY_SELECTIVITY = GraphStatistics.DEFAULT_EQUALITY_SELECTIVITY.factor
+  val DEFAULT_REL_UNIQUENESS_SELECTIVITY = GraphStatistics.DEFAULT_REL_UNIQUENESS_SELECTIVITY.factor
 }
