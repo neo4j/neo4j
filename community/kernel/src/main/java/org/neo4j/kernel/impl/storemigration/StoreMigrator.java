@@ -553,8 +553,8 @@ public class StoreMigrator implements StoreMigrationParticipant
                         StoreFile.PROPERTY_KEY_TOKEN_STORE,
                         StoreFile.PROPERTY_KEY_TOKEN_NAMES_STORE,
                         StoreFile.SCHEMA_STORE,
-                        StoreFile.COUNTS_STORE_ALPHA,
-                        StoreFile.COUNTS_STORE_BETA );
+                        StoreFile.COUNTS_STORE_ONE,
+                        StoreFile.COUNTS_STORE_TWO );
                 idFilesToDelete = allExcept(
                         StoreFile.RELATIONSHIP_GROUP_STORE
                 );
@@ -565,8 +565,8 @@ public class StoreMigrator implements StoreMigrationParticipant
                         StoreFile.NODE_STORE,
                         StoreFile.RELATIONSHIP_STORE,
                         StoreFile.RELATIONSHIP_GROUP_STORE,
-                        StoreFile.COUNTS_STORE_ALPHA,
-                        StoreFile.COUNTS_STORE_BETA );
+                        StoreFile.COUNTS_STORE_ONE,
+                        StoreFile.COUNTS_STORE_TWO );
                 idFilesToDelete = allExcept(
                         StoreFile.RELATIONSHIP_GROUP_STORE
                 );
@@ -574,8 +574,8 @@ public class StoreMigrator implements StoreMigrationParticipant
             case Legacy21Store.LEGACY_VERSION:
                 filesToMove = Arrays.asList(
                         StoreFile.NODE_STORE,
-                        StoreFile.COUNTS_STORE_ALPHA,
-                        StoreFile.COUNTS_STORE_BETA,
+                        StoreFile.COUNTS_STORE_ONE,
+                        StoreFile.COUNTS_STORE_TWO,
                         StoreFile.PROPERTY_STORE,
                         StoreFile.PROPERTY_KEY_TOKEN_STORE,
                         StoreFile.PROPERTY_KEY_TOKEN_NAMES_STORE );
@@ -613,7 +613,7 @@ public class StoreMigrator implements StoreMigrationParticipant
     private void ensureStoreVersions( File dir ) throws IOException
     {
         final Iterable<StoreFile> versionedStores =
-                iterable( allExcept( StoreFile.COUNTS_STORE_ALPHA, StoreFile.COUNTS_STORE_BETA ) );
+                iterable( allExcept( StoreFile.COUNTS_STORE_ONE, StoreFile.COUNTS_STORE_TWO ) );
         StoreFile.ensureStoreVersion( fileSystem, dir, versionedStores );
     }
 

@@ -48,7 +48,7 @@ import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.with
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 /**
- * {@link CountsTracker} maintains two files, the {@link #alphaFile} and the {@link #betaFile} that it rotates between.
+ * {@link CountsTracker} maintains two files, the {@link #oneFile} and the {@link #twoFile} that it rotates between.
  * {@link #updateLock} is used to ensure that no updates happen while we rotate from one file to another. Reads are
  * still ok though, they just read whatever the current state is. The state is assigned atomically at the end of
  * rotation.
@@ -57,8 +57,8 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
 {
     public static final String STORE_DESCRIPTOR = SortedKeyValueStore.class.getSimpleName();
 
-    public static final String ALPHA = ".alpha", BETA = ".beta";
-    private final File alphaFile, betaFile;
+    public static final String ONE = ".1", TWO = ".2";
+    private final File oneFile, twoFile;
     private final ReadWriteLock updateLock = new ReentrantReadWriteLock( /*fair=*/true );
     private final StringLogger logger;
     private volatile CountsTrackerState state;
@@ -67,9 +67,9 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
                           File storeFileBase, long neoStoreTxId )
     {
         this.logger = logger;
-        this.alphaFile = storeFile( storeFileBase, ALPHA );
-        this.betaFile = storeFile( storeFileBase, BETA );
-        CountsStore store = openStore( logger, fs, pageCache, this.alphaFile, this.betaFile );
+        this.oneFile = storeFile( storeFileBase, ONE );
+        this.twoFile = storeFile( storeFileBase, TWO );
+        CountsStore store = openStore( logger, fs, pageCache, this.oneFile, this.twoFile );
         if ( store.lastTxId() < neoStoreTxId )
         {
             IOException exOnClose = safelyCloseTheStore( store );
@@ -81,56 +81,56 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     }
 
     private static CountsStore openStore( StringLogger logger, FileSystemAbstraction fs, PageCache pageCache,
-                                          File alpha, File beta )
+                                          File oneFile, File twoFile )
     {
         try
         {
-            CountsStore alphaStore = openVerifiedCountsStore( fs, pageCache, alpha );
-            CountsStore betaStore = openVerifiedCountsStore( fs, pageCache, beta );
+            CountsStore oneStore = openVerifiedCountsStore( fs, pageCache, oneFile );
+            CountsStore twoStore = openVerifiedCountsStore( fs, pageCache, twoFile );
 
-            boolean isAlphaCorrupted = alphaStore == null;
-            boolean isBetaCorrupted = betaStore == null;
-            if ( isAlphaCorrupted && isBetaCorrupted )
+            boolean isOneCorrupted = oneStore == null;
+            boolean isTwoCorrupted = twoStore == null;
+            if ( isOneCorrupted && isTwoCorrupted )
             {
                 throw new UnderlyingStorageException(
                         "Both counts store files are corrupted. Please shut down the database and delete them " +
                         "to have the database recreate the counts store on next startup" );
             }
 
-            if ( isAlphaCorrupted )
+            if ( isOneCorrupted )
             {
-                logger.debug( "CountsStore picked beta since alpha store file is corrupted " +
-                              "(txId=" + betaStore.lastTxId() +
-                              ", minorVersion=" + betaStore.minorVersion() + ")" );
-                return betaStore;
+                logger.debug( "CountsStore picked 'two-store' since 'one-store' file is corrupted " +
+                              "(txId=" + twoStore.lastTxId() +
+                              ", minorVersion=" + twoStore.minorVersion() + ")" );
+                return twoStore;
             }
 
-            if ( isBetaCorrupted )
+            if ( isTwoCorrupted )
             {
-                logger.debug( "CountsStore picked alpha store file since beta is corrupted " +
-                              "(txId=" + alphaStore.lastTxId() +
-                              ", minorVersion=" + alphaStore.minorVersion() + ")" );
-                return alphaStore;
+                logger.debug( "CountsStore picked 'one-store' store file since 'two-store' is corrupted " +
+                              "(txId=" + oneStore.lastTxId() +
+                              ", minorVersion=" + oneStore.minorVersion() + ")" );
+                return oneStore;
             }
 
             // default case
-            if ( isAlphaStoreMoreRecent( alphaStore, betaStore ) )
+            if ( isOneStoreMoreRecent( oneStore, twoStore ) )
             {
-                logger.debug( "CountsStore picked alpha store file (txId=" + alphaStore.lastTxId() +
-                              ", minorVersion=" + alphaStore.minorVersion() +
-                              "), against beta (txId=" + betaStore.lastTxId() +
-                              ", minorVersion=" + betaStore.minorVersion() + ")" );
-                betaStore.close();
-                return alphaStore;
+                logger.debug( "CountsStore picked 'one-store' file (txId=" + oneStore.lastTxId() +
+                              ", minorVersion=" + oneStore.minorVersion() +
+                              "), against 'two-store' (txId=" + twoStore.lastTxId() +
+                              ", minorVersion=" + twoStore.minorVersion() + ")" );
+                twoStore.close();
+                return oneStore;
             }
             else
             {
-                logger.debug( "CountsStore picked beta store file (txId=" + betaStore.lastTxId() +
-                              ", minorVersion=" + betaStore.minorVersion() +
-                              "), against alpha (txId=" + alphaStore.lastTxId() +
-                              ", minorVersion=" + alphaStore.minorVersion() + ")" );
-                alphaStore.close();
-                return betaStore;
+                logger.debug( "CountsStore picked 'two-store' file (txId=" + twoStore.lastTxId() +
+                              ", minorVersion=" + twoStore.minorVersion() +
+                              "), against 'one-store' (txId=" + oneStore.lastTxId() +
+                              ", minorVersion=" + oneStore.minorVersion() + ")" );
+                oneStore.close();
+                return twoStore;
             }
         }
         catch ( IOException e )
@@ -163,40 +163,40 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
 
     public static boolean countsStoreExists( FileSystemAbstraction fs, File storeFileBase )
     {
-        final File alpha = storeFile( storeFileBase, ALPHA );
-        final File beta = storeFile( storeFileBase, BETA );
-        return fs.fileExists( alpha ) || fs.fileExists( beta );
+        final File oneFile = storeFile( storeFileBase, ONE );
+        final File twoFile = storeFile( storeFileBase, TWO );
+        return fs.fileExists( oneFile ) || fs.fileExists( twoFile );
     }
 
-    private static boolean isAlphaStoreMoreRecent( CountsStore alphaStore, CountsStore betaStore )
+    private static boolean isOneStoreMoreRecent( CountsStore oneStore, CountsStore twoStore )
     {
-        long alphaTxId = alphaStore.lastTxId(), betaTxId = betaStore.lastTxId();
-        long alphaVersion = alphaStore.minorVersion(), betaVersion = betaStore.minorVersion();
-        if ( alphaTxId == betaTxId )
+        long oneTxId = oneStore.lastTxId(), twoTxId = twoStore.lastTxId();
+        long oneMinorVersion = oneStore.minorVersion(), twoMinorVersion = twoStore.minorVersion();
+        if ( oneTxId == twoTxId )
         {
-            if ( alphaVersion == betaVersion )
+            if ( oneMinorVersion == twoMinorVersion )
             {
                 throw new UnderlyingStorageException( "Found two storage files with same tx id and minor version" );
             }
-            return alphaVersion > betaVersion;
+            return oneMinorVersion > twoMinorVersion;
         }
         else
         {
-            return alphaTxId > betaTxId;
+            return oneTxId > twoTxId;
         }
     }
 
     public static void createEmptyCountsStore( PageCache pageCache, File file, String storeVersion )
     {
         // create both files initially to avoid problems with unflushed metadata
-        // increase alpha minor version by 1 to ensure that we use alpha after creating the store
+        // increase one-file minor version by 1 to ensure that we use one-file after creating the store
 
-        File alpha = storeFile( file, ALPHA );
-        CountsStore.createEmpty( pageCache, alpha,
+        File oneFile = storeFile( file, ONE );
+        CountsStore.createEmpty( pageCache, oneFile,
                 with( RECORD_SIZE, storeVersion, BASE_TX_ID, BASE_MINOR_VERSION + 1 ) );
 
-        File beta = storeFile( file, BETA );
-        CountsStore.createEmpty( pageCache, beta,
+        File twoFile = storeFile( file, TWO );
+        CountsStore.createEmpty( pageCache, twoFile,
                 with( RECORD_SIZE, storeVersion, BASE_TX_ID, BASE_MINOR_VERSION ) );
     }
 
@@ -340,13 +340,13 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     CountsStore.Writer<CountsKey,CopyableDoubleLongRegister> nextWriter( CountsTrackerState state, long lastTxId )
             throws IOException
     {
-        if ( alphaFile.equals( state.storeFile() ) )
+        if ( oneFile.equals( state.storeFile() ) )
         {
-            return state.newWriter( betaFile, lastTxId );
+            return state.newWriter( twoFile, lastTxId );
         }
         else
         {
-            return state.newWriter( alphaFile, lastTxId );
+            return state.newWriter( oneFile, lastTxId );
         }
     }
 

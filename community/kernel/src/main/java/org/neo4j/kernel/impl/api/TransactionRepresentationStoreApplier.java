@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.CacheInvalidationTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.HighIdTransactionApplier;
@@ -109,12 +110,14 @@ public class TransactionRepresentationStoreApplier
 
     private NeoCommandHandler getCountsStoreApplier( long transactionId, TransactionApplicationMode mode )
     {
-        if ( TransactionApplicationMode.RECOVERY == mode && !neoStore.getCounts().acceptTx( transactionId ) )
+        CountsTracker counts = neoStore.getCounts();
+        if ( TransactionApplicationMode.RECOVERY == mode && !counts.acceptTx( transactionId ) )
         {
             return NeoCommandHandler.EMPTY;
         }
 
-        assert neoStore.getCounts().acceptTx( transactionId );
-        return new CountsStoreApplier( neoStore.getCounts(), neoStore.getNodeStore() );
+        assert counts.acceptTx( transactionId )
+                : "Expected to apply tx with id " + transactionId + ", but store has greater tx id";
+        return new CountsStoreApplier( counts, neoStore.getNodeStore() );
     }
 }

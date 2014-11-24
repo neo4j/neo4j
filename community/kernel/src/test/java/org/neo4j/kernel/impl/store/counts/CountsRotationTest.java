@@ -68,10 +68,10 @@ public class CountsRotationTest
         db.shutdown();
 
         // THEN
-        assertTrue( fs.fileExists( alphaStoreFile() ) );
-        assertTrue( fs.fileExists( betaStoreFile() ) );
+        assertTrue( fs.fileExists( oneStoreFile() ) );
+        assertTrue( fs.fileExists( twoStoreFile() ) );
 
-        try ( CountsStore store = CountsStore.open( fs, pageCache, alphaStoreFile() ) )
+        try ( CountsStore store = CountsStore.open( fs, pageCache, oneStoreFile() ) )
         {
             assertEquals( BASE_TX_ID, store.lastTxId() );
 //            assertEquals( BASE_MINOR_VERSION + 1, store.minorVersion() );
@@ -79,7 +79,7 @@ public class CountsRotationTest
             assertEquals( 0, allRecords( store ).size() );
         }
 
-        try ( CountsStore store = CountsStore.open( fs, pageCache, betaStoreFile() ) )
+        try ( CountsStore store = CountsStore.open( fs, pageCache, twoStoreFile() ) )
         {
             assertEquals( BASE_TX_ID, store.lastTxId() );
             assertEquals( BASE_MINOR_VERSION, store.minorVersion() );
@@ -103,10 +103,10 @@ public class CountsRotationTest
         db.shutdown();
 
         // THEN
-        assertTrue( fs.fileExists( alphaStoreFile() ) );
-        assertTrue( fs.fileExists( betaStoreFile() ) );
+        assertTrue( fs.fileExists( oneStoreFile() ) );
+        assertTrue( fs.fileExists( twoStoreFile() ) );
 
-        try ( CountsStore store = CountsStore.open( fs, pageCache, betaStoreFile() ) )
+        try ( CountsStore store = CountsStore.open( fs, pageCache, twoStoreFile() ) )
         {
             // a transaction for creating the label and a transaction for the node
             assertEquals( BASE_TX_ID + 1 + 1, store.lastTxId() );
@@ -138,11 +138,11 @@ public class CountsRotationTest
         }
 
         // THEN
-        assertTrue( fs.fileExists( alphaStoreFile() ) );
-        assertTrue( fs.fileExists( betaStoreFile() ) );
+        assertTrue( fs.fileExists( oneStoreFile() ) );
+        assertTrue( fs.fileExists( twoStoreFile() ) );
 
         final PageCache pageCache = db.getDependencyResolver().resolveDependency( PageCache.class );
-        try ( CountsStore store = CountsStore.open( fs, pageCache, alphaStoreFile() ) )
+        try ( CountsStore store = CountsStore.open( fs, pageCache, oneStoreFile() ) )
         {
             // NOTE since the rotation happens before the second transaction is committed we do not see those changes
             // in the stats
@@ -193,14 +193,14 @@ public class CountsRotationTest
 
     private static final String COUNTS_STORE_BASE = NeoStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE;
 
-    private File alphaStoreFile()
+    private File oneStoreFile()
     {
-        return new File( dir.getPath(), COUNTS_STORE_BASE + CountsTracker.ALPHA );
+        return new File( dir.getPath(), COUNTS_STORE_BASE + CountsTracker.ONE );
     }
 
-    private File betaStoreFile()
+    private File twoStoreFile()
     {
-        return new File( dir.getPath(), COUNTS_STORE_BASE + CountsTracker.BETA );
+        return new File( dir.getPath(), COUNTS_STORE_BASE + CountsTracker.TWO );
     }
 
 
