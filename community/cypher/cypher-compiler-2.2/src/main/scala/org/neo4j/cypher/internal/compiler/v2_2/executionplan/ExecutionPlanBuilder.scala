@@ -75,10 +75,10 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, queryPlanTTL: Long, cloc
       def profile(queryContext: QueryContext, params: Map[String, Any]) = func(new UpdateCountingQueryContext(queryContext), params, true)
       def isPeriodicCommit = periodicCommitInfo.isDefined
       def plannerUsed = planner
-      def isStale(lastTxId: Long, statistics: GraphStatistics): Boolean = {
+      def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean = {
         fingerprint.fold(false) { fingerprint =>
-          lastTxId != fingerprint.txId &&
-            fingerprint.creationTimeMillis + queryPlanTTL <= clock.currentTimeMillis() &&
+          fingerprint.creationTimeMillis + queryPlanTTL <= clock.currentTimeMillis() &&
+            lastTxId() != fingerprint.txId &&
             fingerprint.snapshot.diverges(fingerprint.snapshot.recompute(statistics), MIN_DIVERGENCE)
         }
       }

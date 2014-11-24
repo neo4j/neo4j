@@ -32,11 +32,10 @@ import org.neo4j.cypher.internal.compiler.v2_2.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.compiler.v2_2.{CypherCompilerFactory, Legacy, PlannerName, Ronja, CypherException => CypherException_v2_2}
 import org.neo4j.cypher.internal.spi.v2_2.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.ProfilerStatistics
-import org.neo4j.graphdb.{ResourceIterator, GraphDatabaseService}
+import org.neo4j.graphdb.{GraphDatabaseService, ResourceIterator}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.{KernelAPI, Statement}
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
 import org.neo4j.kernel.impl.util.StringLogger
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 
@@ -149,11 +148,8 @@ trait CompatibilityFor2_2 {
       case Ronja => CypherVersion.v2_2_cost
     }
 
-    def isStale(graph: GraphDatabaseAPI, statement: Statement) = {
-      val lastTxId = graph.getDependencyResolver.resolveDependency(classOf[TransactionIdStore]).getLastCommittedTransactionId
-      val statistics = new TransactionBoundGraphStatistics(statement)
-      inner.isStale(lastTxId, statistics)
-    }
+    def isStale(lastTxId: () => Long, statement: Statement) =
+      inner.isStale(lastTxId, new TransactionBoundGraphStatistics(statement))
   }
 
 }

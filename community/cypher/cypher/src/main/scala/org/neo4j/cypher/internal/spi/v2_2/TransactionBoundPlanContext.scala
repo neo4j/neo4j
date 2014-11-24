@@ -89,8 +89,8 @@ class TransactionBoundPlanContext(statement: Statement, val gdb: GraphDatabaseSe
   val statistics: GraphStatistics =
     InstrumentedGraphStatistics(new TransactionBoundGraphStatistics(statement), MutableGraphStatisticsSnapshot())
 
-  def getLastCommittedTransactionId: Long = {
-    val resolver = gdb.asInstanceOf[GraphDatabaseAPI].getDependencyResolver
-    resolver.resolveDependency(classOf[TransactionIdStore]).getLastCommittedTransactionId
-  }
+  val txIdProvider: () => Long = gdb.asInstanceOf[GraphDatabaseAPI]
+    .getDependencyResolver
+    .resolveDependency(classOf[TransactionIdStore])
+    .getLastCommittedTransactionId
 }

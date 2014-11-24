@@ -136,7 +136,7 @@ case class CypherCompiler(parser: CypherParser,
         executionPlanBuilder.build(context, parsedQuery)
       })
     }.flatMap { plan =>
-      if ( !planned && plan.isStale(context.getLastCommittedTransactionId, context.statistics) ) {
+      if ( !planned && plan.isStale(context.txIdProvider, context.statistics) ) {
         cacheAccessor.remove(cache)(parsedQuery)
         None
       } else {

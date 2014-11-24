@@ -33,5 +33,5 @@ trait ExecutionPlan {
 
   def isPeriodicCommit: Boolean
 
-  def isStale(graph: GraphDatabaseAPI, statement: Statement): Boolean
+  def isStale(lastTxId: () => Long, statement: Statement): Boolean
 }

@@ -29,6 +29,7 @@ import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
 import org.neo4j.kernel.impl.util.StringLogger
 import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase, api}
 
@@ -44,6 +45,8 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   protected val isServer = false
   protected val graphAPI = graph.asInstanceOf[GraphDatabaseAPI]
   protected val kernel = graphAPI.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.api.KernelAPI])
+  private val lastTxId: () => Long =
+      graphAPI.getDependencyResolver.resolveDependency( classOf[TransactionIdStore]).getLastCommittedTransactionId
   protected val kernelMonitors = graphAPI.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])
   protected val compiler = createCompiler(logger)
 
@@ -110,7 +113,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
             parsedQuery.plan(kernelStatement)
           })
         }.flatMap { case (plan, params) =>
-          if ( !touched && plan.isStale(graphAPI, kernelStatement)) {
+          if ( !touched && plan.isStale(lastTxId, kernelStatement)) {
             cacheAccessor.remove(cache)(queryText)
             None
           } else {

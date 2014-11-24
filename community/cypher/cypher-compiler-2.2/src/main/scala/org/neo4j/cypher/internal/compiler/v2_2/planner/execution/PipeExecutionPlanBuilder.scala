@@ -245,7 +245,7 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
 
     val fingerprint = planContext.statistics match {
       case igs: InstrumentedGraphStatistics =>
-        Some(PlanFingerprint(clock.currentTimeMillis(), planContext.getLastCommittedTransactionId, igs.snapshot.freeze))
+        Some(PlanFingerprint(clock.currentTimeMillis(), planContext.txIdProvider(), igs.snapshot.freeze))
       case _ =>
         None
     }
