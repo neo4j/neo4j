@@ -120,8 +120,13 @@ class IndexLookup implements AutoCloseable
 
     public Index getAnyIndexOrNull( final long[] labelIds, final int propertyKeyId ) throws IOException {
         List<IndexRule> indexRules = indexRuleIndex.get( propertyKeyId );
-        IndexRule rule = findRelevantIndexRule(indexRules, propertyKeyId, labelIds );
-        if (rule == null) {
+        if( indexRules == null )
+        {
+            return null;
+        }
+        IndexRule rule = findRelevantIndexRule( indexRules, propertyKeyId, labelIds );
+        if (rule == null)
+        {
             return null;
         }
         final IndexReader reader = getIndexReader( rule );

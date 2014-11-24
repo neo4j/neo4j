@@ -19,13 +19,13 @@
  */
 package org.neo4j.test;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URISyntaxException;
-
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -207,6 +207,10 @@ public class TargetDirectory
     public File directoryForDescription( Description description )
     {
         String test = description.getMethodName();
+        if ( test == null )
+        {
+            test = "static";
+        }
         String dir = Digests.md5Hex( test );
         register( test, dir );
         return cleanDirectory( dir );

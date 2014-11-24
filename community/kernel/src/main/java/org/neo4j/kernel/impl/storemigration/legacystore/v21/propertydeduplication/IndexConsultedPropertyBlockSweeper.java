@@ -50,9 +50,9 @@ class IndexConsultedPropertyBlockSweeper implements PrimitiveLongVisitor<IOExcep
     }
 
     @Override
-    public boolean visited( long recordId ) throws IOException
+    public boolean visited( long propRecordId ) throws IOException
     {
-        PropertyRecord record = propertyStore.getRecord( recordId );
+        PropertyRecord record = propertyStore.getRecord( propRecordId );
         boolean changed = false;
 
         List<PropertyBlock> blocks = record.getPropertyBlocks();
@@ -63,9 +63,9 @@ class IndexConsultedPropertyBlockSweeper implements PrimitiveLongVisitor<IOExcep
 
             if ( block.getKeyIndexId() == propertyKeyId )
             {
-                Object lastPropertyValue = propertyStore.getValue( block );
+                Object propertyValue = propertyStore.getValue( block );
 
-                if ( !foundExact && index.contains( nodeRecord.getId(), lastPropertyValue ) )
+                if ( !foundExact && index.contains( nodeRecord.getId(), propertyValue ) )
                 {
                     foundExact = true;
                 }

@@ -27,15 +27,15 @@ class DuplicateCluster
     final int propertyKeyId;
     final PrimitiveLongSet propertyRecordIds;
 
-    DuplicateCluster(int propertyKeyId)
+    DuplicateCluster( int propertyKeyId )
     {
         this.propertyKeyId = propertyKeyId;
         this.propertyRecordIds = Primitive.longSet();
     }
 
-    public void add(long record)
+    public void add( long record )
     {
-        this.propertyRecordIds.add(record);
+        this.propertyRecordIds.add( record );
     }
 
     public int size()
