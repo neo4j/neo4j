@@ -29,7 +29,6 @@ import com.sun.jersey.api.core.ResourceConfig;
 import com.sun.jersey.spi.container.servlet.ServletContainer;
 import org.eclipse.jetty.servlet.ServletHolder;
 
-import org.neo4j.server.XForwardFilter;
 import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.plugins.Injectable;

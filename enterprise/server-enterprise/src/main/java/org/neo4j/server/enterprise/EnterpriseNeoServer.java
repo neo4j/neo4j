@@ -29,7 +29,6 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.InterruptThreadTimer;
-import org.neo4j.server.NeoServerSettings;
 import org.neo4j.server.advanced.AdvancedNeoServer;
 import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.database.Database;
@@ -40,7 +39,7 @@ import org.neo4j.server.preflight.PerformRecoveryIfNecessary;
 import org.neo4j.server.preflight.PerformUpgradeIfNecessary;
 import org.neo4j.server.preflight.PreFlightTasks;
 import org.neo4j.server.web.ServerInternalSettings;
-import org.neo4j.server.webadmin.rest.AdvertisableService;
+import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.webadmin.rest.MasterInfoServerModule;
 import org.neo4j.server.webadmin.rest.MasterInfoService;
 
@@ -75,7 +74,7 @@ public class EnterpriseNeoServer extends AdvancedNeoServer
 
     protected static Database.Factory createDbFactory( Config config )
     {
-        final String mode = config.get( NeoServerSettings.legacy_db_mode ).toUpperCase();
+        final String mode = config.get( ServerInternalSettings.legacy_db_mode ).toUpperCase();
         return mode.equals( HA ) ? lifecycleManagingDatabase( HA_FACTORY ) : lifecycleManagingDatabase( EMBEDDED );
     }
 
@@ -105,7 +104,7 @@ public class EnterpriseNeoServer extends AdvancedNeoServer
         // If we are in HA mode, database startup can take a very long time, so
         // we default to disabling the startup timeout here, unless explicitly overridden
         // by configuration.
-        if ( getConfig().get( NeoServerSettings.legacy_db_mode ).equalsIgnoreCase( "ha" ) )
+        if ( getConfig().get( ServerInternalSettings.legacy_db_mode ).equalsIgnoreCase( "ha" ) )
         {
             final long startupTimeout = getStartTimeoutFromPropertiesOrSetToZeroIfNoKeyFound();
             InterruptThreadTimer stopStartupTimer;

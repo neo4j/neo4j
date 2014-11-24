@@ -17,28 +17,34 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.scripting;
+package org.neo4j.server.rest.management;
 
-import java.util.Collections;
-import java.util.Map;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 
-public class ScriptExecutorFactoryRepository
+import org.neo4j.server.NeoServer;
+import org.neo4j.server.rest.repr.OutputFormat;
+import org.neo4j.server.rest.management.repr.ServerRootRepresentation;
+
+@Path("/")
+public class RootService
 {
-    private final Map<String, ScriptExecutor.Factory> languages;
+    private final NeoServer neoServer;
 
-    public ScriptExecutorFactoryRepository( Map<String, ScriptExecutor.Factory> languages )
+    public RootService( @Context NeoServer neoServer )
     {
-        this.languages = Collections.unmodifiableMap( languages );
+        this.neoServer = neoServer;
     }
 
-    public ScriptExecutor.Factory getFactory( String language )
+    @GET
+    public Response getServiceDefinition( @Context UriInfo uriInfo, @Context OutputFormat output )
     {
-        if(languages.containsKey( language ))
-        {
-            return languages.get( language );
-        } else
-        {
-            throw new NoSuchScriptLanguageException( "Unknown scripting language '" + language + "'." );
-        }
+        ServerRootRepresentation representation =
+                new ServerRootRepresentation( uriInfo.getBaseUri(), neoServer.getServices() );
+
+        return output.ok( representation );
     }
 }

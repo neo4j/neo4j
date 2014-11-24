@@ -17,28 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.scripting;
+package org.neo4j.server.rest.management.console;
 
-import java.util.Collections;
-import java.util.Map;
+import org.neo4j.server.database.CypherExecutor;
+import org.neo4j.server.database.Database;
+import org.neo4j.server.webadmin.console.ConsoleSessionCreator;
+import org.neo4j.server.webadmin.console.ScriptSession;
 
-public class ScriptExecutorFactoryRepository
+public class ShellSessionCreator implements ConsoleSessionCreator
 {
-    private final Map<String, ScriptExecutor.Factory> languages;
-
-    public ScriptExecutorFactoryRepository( Map<String, ScriptExecutor.Factory> languages )
+    public static final String NAME = "SHELL";
+    
+    @Override
+    public String name()
     {
-        this.languages = Collections.unmodifiableMap( languages );
+        return NAME;
     }
 
-    public ScriptExecutor.Factory getFactory( String language )
+    @Override
+    public ScriptSession newSession( Database database, CypherExecutor cypherExecutor )
     {
-        if(languages.containsKey( language ))
-        {
-            return languages.get( language );
-        } else
-        {
-            throw new NoSuchScriptLanguageException( "Unknown scripting language '" + language + "'." );
-        }
+        return new ShellSession( database.getGraph() );
     }
 }
