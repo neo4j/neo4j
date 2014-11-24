@@ -5,8 +5,6 @@ The import tool is used to create a new Neo4j database from data in CSV files.
 
 This chapter will give the details on the format of the input data together with an example.
 
-_For the command line parameters of the tool, see <<neo4j-import-manpage, the manpage>>._
-
 * Fields default to be comma separated, but a different delimiter can be specified.
 * All files must use the same delimiter.
 * Multiple data sources can be used for both nodes and relationships.
@@ -64,6 +62,11 @@ START_ID::
   The id of the start node of the relationship to create.
 END_ID::
   The id of the end node of the relationship to create.
+
+[[import-tool-options]]
+== Command Line Arguments
+
+include::../man/options.adoc[]
 
 [[import-tool-examples]]
 == Import Tool Examples

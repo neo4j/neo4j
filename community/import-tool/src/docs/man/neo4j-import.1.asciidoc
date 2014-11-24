@@ -17,7 +17,7 @@ DESCRIPTION
 -----------
 
 *neo4j-import* is used to create a new Neo4j database from data in CSV files.
-See the chapter "Import Tool" in the Neo4j Manual for details on the CSV file format -- a special kind of headers are required.
+See the chapter "Import Tool" in the Neo4j Manual for details on the CSV file format -- a special kind of header is required.
 
 [[neo4j-import-manpage-options]]
 OPTIONS
@@ -35,8 +35,32 @@ The *`Neo4jImport.bat`* script is used in the same way.
 EXAMPLES
 --------
 
+Below is a basic example, where we import movies, actors and roles from three files.
+
+.movies.csv
+[source]
+----
+include::../ops/movies.csv[]
+----
+
+.actors.csv
+[source]
+----
+include::../ops/actors.csv[]
+----
+
+.roles.csv
+[source]
+----
+include::../ops/roles.csv[]
+----
+
+The command will look like this:
+
 [source]
 ----
 include::../ops/example-command.adoc[]
 ----
+
+See the Neo4j Manual for further examples.
 
