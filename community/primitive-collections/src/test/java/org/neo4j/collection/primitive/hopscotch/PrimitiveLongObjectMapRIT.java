@@ -51,12 +51,13 @@ public class PrimitiveLongObjectMapRIT
     @Test
     public void thoroughlyTestIt() throws Exception
     {
-        long endTime = currentTimeMillis() + SECONDS.toMillis( 5 );
+        long endTime = currentTimeMillis() + SECONDS.toMillis( 20 );
         while ( currentTimeMillis() < endTime )
         {
             long seed = currentTimeMillis();
             final Random random = new Random( seed );
-            int max = random.nextInt( 10_000 ) + 100;
+            int max = random.nextInt( 100_000 ) + 100;
+            System.out.println( "run: seed: " + seed + ", #ops: " + max );
             RandomizedTester<Maps,String> actions =
                     new RandomizedTester<>( mapFactory(), actionFactory( random ) );
 
@@ -68,7 +69,7 @@ public class PrimitiveLongObjectMapRIT
                 System.out.println( "Actually, minimal reproducible test of that is..." );
                 actions.findMinimalReproducible().testCaseWriter( "shouldOnlyContainAddedValues",
                         given() ).print( System.out );
-                fail( "Failed, see printed test case for how to reproduce. Seed:" + seed );
+                fail( "Failed, see printed test case for how to reproduce" );
             }
 
             fullVerification( result.getTarget(), random );

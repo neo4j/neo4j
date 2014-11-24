@@ -25,7 +25,7 @@ public class LongKeyIntValueTable extends IntArrayBasedKeyTable<int[]>
 
     public LongKeyIntValueTable( int capacity )
     {
-        super( capacity, 3 + 1, 32, new int[] { NULL } );
+        super( capacity, 3 + 1, capacity, new int[] { NULL } );
     }
 
     @Override

@@ -96,14 +96,11 @@ public abstract class IntArrayBasedKeyTable<VALUE> extends PowerOfTwoQuantizedTa
     public long move( int fromIndex, int toIndex )
     {
         long key = key( fromIndex );
+        VALUE value = value( fromIndex );
         int actualFromIndex = index( fromIndex );
+        internalRemove( actualFromIndex );
         int actualToIndex = index( toIndex );
-        for ( int i = 0; i < itemsPerEntry-1; i++ )
-        {
-            int tempValue = table[actualFromIndex+i];
-            table[actualFromIndex+i] = table[actualToIndex+i];
-            table[actualToIndex+i] = tempValue;
-        }
+        internalPut( actualToIndex, key, value );
         return key;
     }
 
