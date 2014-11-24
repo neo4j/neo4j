@@ -388,7 +388,7 @@ public class DataFactories
     {
         public DefaultNodeFileHeaderParser( HeaderCharSeekerFactory headerCharSeekerFactory )
         {
-            super( headerCharSeekerFactory, Type.ID );
+            super( headerCharSeekerFactory );
         }
 
         @Override

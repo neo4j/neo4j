@@ -255,6 +255,48 @@ public class CsvInputTest
         }
     }
 
+    @Test
+    public void shouldAllowNodesWithoutIdHeader() throws Exception
+    {
+        // GIVEN
+        DataFactory<InputNode> data = data(
+                "name:string,level:int\n" +
+                "Mattias,1\n" +
+                "Johan,2\n" );
+        Iterable<DataFactory<InputNode>> dataIterable = dataIterable( data );
+        Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), null, null, IdType.STRING, COMMAS );
+
+        // WHEN
+        try ( ResourceIterator<InputNode> nodes = input.nodes().iterator() )
+        {
+            // THEN
+            assertNode( nodes.next(), null, new Object[] {"name", "Mattias", "level", 1}, labels() );
+            assertNode( nodes.next(), null, new Object[] {"name", "Johan", "level", 2}, labels() );
+            assertFalse( nodes.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldAllowSomeNodesToBeAnonymous() throws Exception
+    {
+        // GIVEN
+        DataFactory<InputNode> data = data(
+                ":ID,name:string,level:int\n" +
+                "abc,Mattias,1\n" +
+                ",Johan,2\n" ); // this node is anonymous
+        Iterable<DataFactory<InputNode>> dataIterable = dataIterable( data );
+        Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), null, null, IdType.STRING, COMMAS );
+
+        // WHEN
+        try ( ResourceIterator<InputNode> nodes = input.nodes().iterator() )
+        {
+            // THEN
+            assertNode( nodes.next(), "abc", new Object[] {"name", "Mattias", "level", 1}, labels() );
+            assertNode( nodes.next(), null, new Object[] {"name", "Johan", "level", 2}, labels() );
+            assertFalse( nodes.hasNext() );
+        }
+    }
+
     private <ENTITY extends InputEntity> DataFactory<ENTITY> given( final CharSeeker data )
     {
         return new DataFactory<ENTITY>()

@@ -69,7 +69,12 @@ public final class NodeEncoderStep extends ExecutorServiceStep<List<InputNode>>
         for ( InputNode batchNode : batch )
         {
             long nodeId = idGenerator.generate( batchNode.id() );
-            idMapper.put( batchNode.id(), nodeId );
+            if ( batchNode.id() != null )
+            {
+                // Nodes are allowed to be anonymous, they just can't be found when creating relationships
+                // later on, that's all. Anonymous nodes have null id.
+                idMapper.put( batchNode.id(), nodeId );
+            }
             NodeRecord nodeRecord = new NodeRecord( nodeId, false,
                     NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() );
             nodeRecord.setInUse( true );

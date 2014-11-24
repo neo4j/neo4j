@@ -32,7 +32,6 @@ import org.neo4j.function.Factory;
 import org.neo4j.function.Functions;
 import org.neo4j.unsafe.impl.batchimport.input.DuplicateHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.MissingHeaderException;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -159,21 +158,19 @@ public class DataFactoriesTest
     }
 
     @Test
-    public void shouldFailForMissingIdHeaderEntry() throws Exception
+    public void shouldAllowMissingIdHeaderEntry() throws Exception
     {
         // GIVEN
         CharSeeker seeker = new BufferedCharSeeker( wrap( new StringReader( "one\ttwo" ) ) );
+        Extractors extractors = new Extractors( ';' );
 
         // WHEN
-        try
-        {
-            DataFactories.defaultFormatNodeFileHeader().create( seeker, TABS, IdType.ACTUAL );
-            fail( "Should fail" );
-        }
-        catch ( MissingHeaderException e )
-        {
-            assertEquals( Type.ID, e.getMissingType() );
-        }
+        Header header = DataFactories.defaultFormatNodeFileHeader().create( seeker, TABS, IdType.ACTUAL );
+
+        // THEN
+        assertArrayEquals( array(
+                entry( "one", Type.PROPERTY, extractors.string() ),
+                entry( "two", Type.PROPERTY, extractors.string() ) ), header.entries() );
         seeker.close();
     }
 
