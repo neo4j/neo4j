@@ -22,6 +22,7 @@ package org.neo4j.helpers;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +36,7 @@ import org.neo4j.kernel.impl.util.Validator;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -49,7 +51,7 @@ public class TestArgs
     public void testInterleavedParametersWithValuesAndNot()
     {
         String[] line = { "-host", "machine.foo.com", "-port", "1234", "-v", "-name", "othershell" };
-        Args args = new Args( line );
+        Args args = Args.parse( line );
         assertEquals( "machine.foo.com", args.get( "host", null ) );
         assertEquals( "1234", args.get( "port", null ) );
         assertEquals( 1234, args.getNumber( "port", null ).intValue() );
@@ -62,7 +64,7 @@ public class TestArgs
     public void testInterleavedEqualsArgsAndSplitKeyValue()
     {
         String[] line = { "-host=localhost", "-v", "--port", "1234", "param1", "-name=Something", "param2" };
-        Args args = new Args( line );
+        Args args = Args.parse( line );
         assertEquals( "localhost", args.get( "host", null ) );
         assertTrue( args.has( "v" ) );
         assertEquals( 1234, args.getNumber( "port", null ).intValue() );
@@ -77,7 +79,7 @@ public class TestArgs
     public void testParameterWithDashValue()
     {
         String [] line = { "-file", "-" };
-        Args args = new Args ( line );
+        Args args = Args.parse( line );
         assertEquals( 1, args.asMap().size() );
         assertEquals( "-", args.get ( "file", null ) );
         assertTrue( args.orphans().isEmpty() );
@@ -87,7 +89,7 @@ public class TestArgs
     public void testEnum()
     {
         String[] line = { "--enum=" + MyEnum.second.name() };
-        Args args = new Args( line );
+        Args args = Args.parse( line );
         Enum<MyEnum> result = args.getEnum( MyEnum.class, "enum", MyEnum.first );
         assertEquals( MyEnum.second, result );
     }
@@ -96,7 +98,7 @@ public class TestArgs
     public void testEnumWithDefault()
     {
         String[] line = {};
-        Args args = new Args( line );
+        Args args = Args.parse( line );
         MyEnum result = args.getEnum( MyEnum.class, "enum", MyEnum.third );
         assertEquals( MyEnum.third, result );
     }
@@ -105,7 +107,7 @@ public class TestArgs
     public void testEnumWithInvalidValue() throws Exception
     {
         String[] line = { "--myenum=something" };
-        Args args = new Args( line );
+        Args args = Args.parse( line );
         args.getEnum( MyEnum.class, "myenum", MyEnum.third );
     }
 
@@ -114,7 +116,7 @@ public class TestArgs
     {
         // GIVEN
         int expectedValue = 42;
-        Args args = new Args( "--arg", String.valueOf( expectedValue ) );
+        Args args = Args.parse( "--arg", String.valueOf( expectedValue ));
         @SuppressWarnings( "unchecked" )
         Validator<Integer> validator = mock( Validator.class );
 
@@ -131,7 +133,7 @@ public class TestArgs
     {
         // GIVEN
         int expectedValue = 42;
-        Args args = new Args( String.valueOf( expectedValue ) );
+        Args args = Args.parse( String.valueOf( expectedValue ) );
         @SuppressWarnings( "unchecked" )
         Validator<Integer> validator = mock( Validator.class );
 
@@ -155,7 +157,7 @@ public class TestArgs
             argList.add( "--" + key );
             argList.add( String.valueOf( value ) );
         }
-        Args args = new Args( argList.toArray( new String[argList.size()] ) );
+        Args args = Args.parse( argList.toArray( new String[argList.size()] ) );
 
         // WHEN
         try
@@ -178,7 +180,7 @@ public class TestArgs
     public void testBooleanWithDefault() throws Exception
     {
         // Given
-        Args args = new Args( "--no_value" );
+        Args args = Args.parse( "--no_value" );
 
         // When & then
         assertThat(args.getBoolean( "not_set", true, true ), equalTo(true));
@@ -196,7 +198,7 @@ public class TestArgs
     public void shouldGetAsMap() throws Exception
     {
         // GIVEN
-        Args args = new Args( "--with-value", "value", "--without-value" );
+        Args args = Args.parse( "--with-value", "value", "--without-value" );
 
         // WHEN
         Map<String,String> map = args.asMap();
@@ -209,7 +211,7 @@ public class TestArgs
     public void shouldInterpretOptionMetadata() throws Exception
     {
         // GIVEN
-        Args args = new Args( "--my-option:Meta", "my value", "--my-option:Other", "other value" );
+        Args args = Args.parse( "--my-option:Meta", "my value", "--my-option:Other", "other value" );
 
         // WHEN
         Collection<Option<String>> options = args.interpretOptionsWithMetadata( "my-option",
@@ -224,6 +226,70 @@ public class TestArgs
         Option<String> second = optionIterator.next();
         assertEquals( "other value", second.value() );
         assertEquals( "Other", second.metadata() );
+    }
+
+    @Test
+    public void shouldHandleLastOrphanParam()
+    {
+        // Given
+        Args args = Args.withFlags("recovery").parse( "--recovery", "/tmp/graph.db" );
+
+        // When
+        List<String> orphans = args.orphans();
+
+        // Then
+        assertEquals( Arrays.asList( "/tmp/graph.db" ), orphans );
+    }
+
+    @Test
+    public void shouldHandleOnlyFlagsAndNoArgs()
+    {
+        // Given
+        Args args = Args.withFlags( "foo", "bar" ).parse("-foo", "--bar");
+
+        // When
+        List<String> orphans = args.orphans();
+
+        // Then
+        assertEquals( Collections.<String>emptyList(), orphans );
+        assertTrue( args.getBoolean( "foo", false, false ) );
+        assertTrue( args.getBoolean( "bar", false, false ) );
+    }
+
+    @Test
+    public void shouldStillAllowExplicitValuesForFlags()
+    {
+        // Given
+        Args args = Args.withFlags( "foo", "bar" ).parse("-foo=false", "--bar");
+
+        // When
+        List<String> orphans = args.orphans();
+
+        // Then
+        assertEquals( Arrays.<String>asList() , orphans );
+        assertFalse( args.getBoolean( "foo", false, false ) );
+        assertTrue( args.getBoolean( "bar", false, false ) );
+    }
+
+    @Test
+    public void shouldHandleMixtureOfFlagsAndOrphanParams()
+    {
+        // Given
+        Args args = Args.withFlags( "big", "soft", "saysMeow" ).parse(
+                "-big", "-size=120", "-soft=true", "withStripes", "-saysMeow=false", "-name=ShereKhan", "badTiger" );
+
+        // When
+        List<String> orphans = args.orphans();
+
+        // Then
+        assertEquals( Arrays.asList( "withStripes", "badTiger" ), orphans );
+
+        assertEquals( 120, args.getNumber( "size", 0 ).intValue() );
+        assertEquals( "ShereKhan", args.get( "name" ) );
+
+        assertTrue( args.getBoolean( "big", false, false ) );
+        assertTrue( args.getBoolean( "soft", false, false ) );
+        assertFalse( args.getBoolean( "saysMeow", true, true ) );
     }
 
     private static enum MyEnum

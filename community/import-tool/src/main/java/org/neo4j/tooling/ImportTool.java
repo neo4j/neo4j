@@ -155,7 +155,7 @@ public class ImportTool
 
     public static void main( String[] incomingArguments )
     {
-        Args args = new Args( incomingArguments );
+        Args args = Args.parse( incomingArguments );
         if ( asksForUsage( args ) )
         {
             printUsage();

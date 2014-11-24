@@ -205,7 +205,7 @@ public class CsvDataGenerator
 
     public static void main( String[] arguments ) throws IOException
     {
-        Args args = new Args( arguments );
+        Args args = Args.parse( arguments );
         int nodeCount = args.getNumber( "nodes", null ).intValue();
         int relationshipCount = args.getNumber( "relationships", null ).intValue();
 

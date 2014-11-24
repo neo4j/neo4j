@@ -35,7 +35,7 @@ public class StartInstanceInAnotherJvm
         String dir = args[0];
         GraphDatabaseAPI newSlave = (GraphDatabaseAPI) new HighlyAvailableGraphDatabaseFactory()
                 .newHighlyAvailableDatabaseBuilder( dir )
-                .setConfig( new Args( args ).asMap() )
+                .setConfig( Args.parse( args ).asMap() )
                 .newGraphDatabase();
     }
 

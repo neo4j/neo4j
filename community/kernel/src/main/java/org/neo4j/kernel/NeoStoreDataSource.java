@@ -535,6 +535,10 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
                 @Override
                 public void start()
                 {
+                    if ( startupStatistics.numberOfRecoveredTransactions() > 0 )
+                    {
+                        neoStore.rebuildIdGenerators();
+                    }
                     neoStore.makeStoreOk();
                 }
             } );

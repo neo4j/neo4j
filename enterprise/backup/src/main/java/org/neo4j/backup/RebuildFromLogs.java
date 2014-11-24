@@ -62,6 +62,8 @@ import static org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel.DEFAULT_
 
 class RebuildFromLogs
 {
+    private static final String FULL_CHECK = "full";
+
     private static final FileSystemAbstraction FS = new DefaultFileSystemAbstraction();
 
     private final StoreAccess stores;
@@ -107,9 +109,9 @@ class RebuildFromLogs
             printUsage();
             return;
         }
-        Args params = new Args( args );
+        Args params = Args.withFlags( FULL_CHECK ).parse( args );
         @SuppressWarnings("boxing")
-        boolean full = params.getBoolean( "full", false, true );
+        boolean full = params.getBoolean( FULL_CHECK, false, true );
         List<String> orphans = params.orphans();
         args = orphans.toArray( new String[orphans.size()] );
         if ( args.length != 2 )

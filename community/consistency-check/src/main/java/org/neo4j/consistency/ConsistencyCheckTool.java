@@ -41,6 +41,21 @@ public class ConsistencyCheckTool
 {
     private static final String RECOVERY = "recovery";
     private static final String CONFIG = "config";
+    private static final String PROP_OWNER = "propowner";
+
+    static interface ExitHandle
+    {
+        static final ExitHandle SYSTEM_EXIT = new ExitHandle()
+        {
+            @Override
+            public void pull()
+            {
+                System.exit( 1 );
+            }
+        };
+
+        void pull();
+    }
 
     public static void main( String[] args )
     {
@@ -51,22 +66,35 @@ public class ConsistencyCheckTool
         }
         catch ( ToolFailureException e )
         {
-            e.haltJVM();
+            e.exitTool();
         }
     }
 
     private final ConsistencyCheckService consistencyCheckService;
+    private final StoreRecoverer recoveryChecker;
+    private final GraphDatabaseFactory dbFactory;
     private final PrintStream systemError;
+    private final ExitHandle exitHandle;
 
     ConsistencyCheckTool( ConsistencyCheckService consistencyCheckService, PrintStream systemError )
     {
+        this( consistencyCheckService, new StoreRecoverer(), new GraphDatabaseFactory(), systemError,
+                ExitHandle.SYSTEM_EXIT );
+    }
+
+    ConsistencyCheckTool( ConsistencyCheckService consistencyCheckService, StoreRecoverer recoveryChecker,
+            GraphDatabaseFactory dbFactory, PrintStream systemError, ExitHandle exitHandle )
+    {
         this.consistencyCheckService = consistencyCheckService;
+        this.recoveryChecker = recoveryChecker;
+        this.dbFactory = dbFactory;
         this.systemError = systemError;
+        this.exitHandle = exitHandle;
     }
 
     void run( String... args ) throws ToolFailureException
     {
-        Args arguments = new Args( args );
+        Args arguments = Args.withFlags( RECOVERY, PROP_OWNER ).parse( args );
         String storeDir = determineStoreDirectory( arguments );
         Config tuningConfiguration = readTuningConfiguration( storeDir, arguments );
 
@@ -92,11 +120,10 @@ public class ConsistencyCheckTool
     {
         if ( arguments.getBoolean( RECOVERY, false, true ) )
         {
-            new GraphDatabaseFactory().newEmbeddedDatabase( storeDir ).shutdown();
+            dbFactory.newEmbeddedDatabase( storeDir ).shutdown();
         }
         else
         {
-            StoreRecoverer recoveryChecker = new StoreRecoverer();
             try
             {
                 if ( recoveryChecker.recoveryNeededAt( new File( storeDir ) ) )
@@ -106,6 +133,8 @@ public class ConsistencyCheckTool
                             "Consider allowing the database to recover before running the consistency check.",
                             "Consistency checking will continue, abort if you wish to perform recovery first.",
                             "To perform recovery before checking consistency, use the '--recovery' flag." ) );
+
+                    exitHandle.pull();
                 }
             }
             catch ( IOException e )
@@ -132,7 +161,7 @@ public class ConsistencyCheckTool
 
     private Config readTuningConfiguration( String storeDir, Args arguments ) throws ToolFailureException
     {
-        Map<String, String> specifiedProperties = stringMap();
+        Map<String,String> specifiedProperties = stringMap();
 
         String propertyFilePath = arguments.get( CONFIG, null );
         if ( propertyFilePath != null )
@@ -173,7 +202,7 @@ public class ConsistencyCheckTool
         return result.toString();
     }
 
-    static class ToolFailureException extends Exception
+    class ToolFailureException extends Exception
     {
         ToolFailureException( String message )
         {
@@ -185,14 +214,15 @@ public class ConsistencyCheckTool
             super( message, cause );
         }
 
-        void haltJVM()
+        void exitTool()
         {
             System.err.println( getMessage() );
             if ( getCause() != null )
             {
                 getCause().printStackTrace( System.err );
             }
-            System.exit( 1 );
+
+            exitHandle.pull();
         }
     }
 }

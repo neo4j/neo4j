@@ -100,7 +100,7 @@ public class StandaloneClusterClient
             }
             config = readFromConfigConfig( config, dbProperties );
         }
-        config.putAll( new Args( args ).asMap() );
+        config.putAll( Args.parse( args ).asMap() );
         verifyConfig( config );
         try
         {

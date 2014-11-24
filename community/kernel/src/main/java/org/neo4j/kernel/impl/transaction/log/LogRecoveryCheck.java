@@ -23,6 +23,8 @@ import java.io.IOException;
 
 import org.neo4j.io.fs.StoreChannel;
 
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
+
 public class LogRecoveryCheck
 {
     private final StoreChannel fileChannel;
@@ -34,6 +36,6 @@ public class LogRecoveryCheck
 
     public boolean recoveryRequired() throws IOException
     {
-        return fileChannel.size() > 16;
+        return fileChannel.size() > LOG_HEADER_SIZE;
     }
 }
