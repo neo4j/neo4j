@@ -19,6 +19,9 @@
  */
 package org.neo4j.server.rest.transactional.integration;
 
+import org.codehaus.jackson.JsonNode;
+import org.junit.Test;
+
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
@@ -31,9 +34,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-
-import org.codehaus.jackson.JsonNode;
-import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -51,7 +51,6 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.containsNoErrors;
@@ -210,6 +209,27 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
 
         assertThat( begin.status(), equalTo( 200 ) );
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 1 ) );
+    }
+
+    @Test
+    public void returned_rest_urls_must_be_useable() throws Exception
+    {
+        // begin and execute and commit "resultDataContents":["REST"]
+        HTTP.RawPayload payload = quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n {a: 1}) return n', " +
+                                              "'resultDataContents' : ['REST'] } ] }" );
+        Response begin = http.POST( "/db/data/transaction/commit", payload );
+
+        assertThat( begin.status(), equalTo( 200 ) );
+        JsonNode results = begin.get( "results" );
+        JsonNode result = results.get( 0 );
+        JsonNode data = result.get( "data" );
+        JsonNode firstDataSegment = data.get( 0 );
+        JsonNode restData = firstDataSegment.get( "rest" );
+        JsonNode firstRestSegment = restData.get( 0 );
+        String propertiesUri = firstRestSegment.get( "properties" ).asText();
+
+        Response propertiesResponse = http.GET( propertiesUri );
+        assertThat( propertiesResponse.status(), is( 200 ) );
     }
 
     @Test
