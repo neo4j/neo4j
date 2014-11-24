@@ -41,10 +41,11 @@ import org.neo4j.cypher.internal.compiler.v2_2.spi.{InstrumentedGraphStatistics,
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.helpers.Eagerly
 import org.neo4j.graphdb.Relationship
+import org.neo4j.helpers.Clock
 
 case class PipeExecutionBuilderContext(cardinality: Metrics.CardinalityModel, semanticTable: SemanticTable)
 
-class PipeExecutionPlanBuilder(monitors: Monitors) {
+class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
 
   val entityProducerFactory = new EntityProducerFactory
   val resolver = new KeyTokenResolver
@@ -244,10 +245,11 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
 
     val fingerprint = planContext.statistics match {
       case igs: InstrumentedGraphStatistics =>
-        Some(PlanFingerprint(new Date(), planContext.getLastCommittedTransactionId, igs.snapshot.freeze))
+        Some(PlanFingerprint(clock.currentTimeMillis(), planContext.getLastCommittedTransactionId, igs.snapshot.freeze))
       case _ =>
         None
     }
+
     PipeInfo(topLevelPipe, updating, None, fingerprint, Ronja)
   }
 }

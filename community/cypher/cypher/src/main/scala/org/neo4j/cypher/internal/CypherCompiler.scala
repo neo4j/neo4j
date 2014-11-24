@@ -23,6 +23,7 @@ import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compatability._
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.helpers.Clock
 import org.neo4j.kernel.InternalAbstractGraphDatabase
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.impl.util.StringLogger
@@ -31,6 +32,7 @@ import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 object CypherCompiler {
   val DEFAULT_QUERY_CACHE_SIZE: Int = 128
   val DEFAULT_QUERY_PLAN_TTL: Long = 1000 // 1 second
+  val CLOCK = Clock.SYSTEM_CLOCK
 }
 
 case class PreParsedQuery(statement: String, version: CypherVersion, planType: PlanType)
@@ -42,15 +44,17 @@ class CypherCompiler(graph: GraphDatabaseService,
                      defaultVersion: CypherVersion = CypherVersion.vDefault,
                      optionParser: CypherOptionParser,
                      logger: StringLogger) {
+  import CypherCompiler._
+
   private val queryCacheSize: Int = getQueryCacheSize
   private val queryPlanTTL: Long = getQueryPlanTTL
   private val compatibilityFor1_9 = CompatibilityFor1_9(graph, queryCacheSize)
   private val compatibilityFor2_0 = CompatibilityFor2_0(graph, queryCacheSize)
   private val compatibilityFor2_1 = CompatibilityFor2_1(graph, queryCacheSize, kernelMonitors, kernelAPI)
   private val compatibilityFor2_2Rule =
-    CompatibilityFor2_2Rule(graph, queryCacheSize, queryPlanTTL, kernelMonitors, kernelAPI)
+    CompatibilityFor2_2Rule(graph, queryCacheSize, queryPlanTTL, CLOCK,  kernelMonitors, kernelAPI)
   private val compatibilityFor2_2Cost =
-    CompatibilityFor2_2Cost(graph, queryCacheSize, queryPlanTTL, kernelMonitors, kernelAPI, logger)
+    CompatibilityFor2_2Cost(graph, queryCacheSize, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger)
 
   @throws(classOf[SyntaxException])
   def parseQuery(queryText: String): ParsedQuery = {
@@ -107,13 +111,13 @@ class CypherCompiler(graph: GraphDatabaseService,
   private def getQueryCacheSize : Int =
     optGraphAs[InternalAbstractGraphDatabase]
       .andThen(_.getConfig.get(GraphDatabaseSettings.query_cache_size).intValue())
-      .applyOrElse(graph, (_: GraphDatabaseService) => CypherCompiler.DEFAULT_QUERY_CACHE_SIZE)
+      .applyOrElse(graph, (_: GraphDatabaseService) => DEFAULT_QUERY_CACHE_SIZE)
 
 
   private def getQueryPlanTTL: Long = {
     optGraphAs[InternalAbstractGraphDatabase]
       .andThen(_.getConfig.get(GraphDatabaseSettings.query_plan_ttl).longValue())
-      .applyOrElse(graph, (_: GraphDatabaseService) => CypherCompiler.DEFAULT_QUERY_PLAN_TTL)
+      .applyOrElse(graph, (_: GraphDatabaseService) => DEFAULT_QUERY_PLAN_TTL)
   }
 
 

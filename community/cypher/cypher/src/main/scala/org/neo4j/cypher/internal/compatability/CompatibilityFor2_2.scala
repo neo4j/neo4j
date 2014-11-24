@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.{CypherCompilerFactory, Legacy, P
 import org.neo4j.cypher.internal.spi.v2_2.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.ProfilerStatistics
 import org.neo4j.graphdb.{ResourceIterator, GraphDatabaseService}
+import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.{KernelAPI, Statement}
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
@@ -271,18 +272,20 @@ case class CompatibilityPlanDescription(inner: InternalPlanDescription, version:
 case class CompatibilityFor2_2Cost(graph: GraphDatabaseService,
                                    queryCacheSize: Int,
                                    queryPlanTTL: Long,
+                                   clock: Clock,
                                    kernelMonitors: KernelMonitors,
                                    kernelAPI: KernelAPI,
                                    logger: StringLogger) extends CompatibilityFor2_2 {
   protected val compiler =
-    CypherCompilerFactory.ronjaCompiler(graph, queryCacheSize, queryPlanTTL, kernelMonitors, logger)
+    CypherCompilerFactory.ronjaCompiler(graph, queryCacheSize, queryPlanTTL, clock, kernelMonitors, logger)
 }
 
 case class CompatibilityFor2_2Rule(graph: GraphDatabaseService,
                                    queryCacheSize: Int,
                                    queryPlanTTL: Long,
+                                   clock: Clock,
                                    kernelMonitors: KernelMonitors,
                                    kernelAPI: KernelAPI) extends CompatibilityFor2_2 {
   protected val compiler =
-    CypherCompilerFactory.legacyCompiler(graph, queryCacheSize, queryPlanTTL, kernelMonitors)
+    CypherCompilerFactory.legacyCompiler(graph, queryCacheSize, queryPlanTTL, clock, kernelMonitors)
 }

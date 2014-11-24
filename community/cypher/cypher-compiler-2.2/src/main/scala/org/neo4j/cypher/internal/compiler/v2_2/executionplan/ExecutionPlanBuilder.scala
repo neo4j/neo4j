@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 
-import java.util.Date
-
 import org.neo4j.cypher.internal.Profiled
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
@@ -32,8 +30,9 @@ import org.neo4j.cypher.internal.compiler.v2_2.profiler.Profiler
 import org.neo4j.cypher.internal.compiler.v2_2.spi._
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.helpers.Clock
 
-case class PlanFingerprint(creationDate: Date, txId: Long, snapshot: GraphStatisticsSnapshot)
+case class PlanFingerprint(creationTimeMillis: Long, txId: Long, snapshot: GraphStatisticsSnapshot)
 
 case class PipeInfo(pipe: Pipe,
                     updating: Boolean,
@@ -54,9 +53,9 @@ trait PipeBuilder {
   def producePlan(inputQuery: PreparedQuery, planContext: PlanContext): PipeInfo
 }
 
-class ExecutionPlanBuilder(graph: GraphDatabaseService, queryPlanTTL: Long,
+class ExecutionPlanBuilder(graph: GraphDatabaseService, queryPlanTTL: Long, clock: Clock,
                            pipeBuilder: PipeBuilder) extends PatternGraphBuilder {
-  val MIN_DIVERGENCE = 0.5
+  private val MIN_DIVERGENCE = 0.5
 
   def build(planContext: PlanContext, inputQuery: PreparedQuery): ExecutionPlan = {
     val abstractQuery = inputQuery.abstractQuery
@@ -71,16 +70,15 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, queryPlanTTL: Long,
     val profileMarker = inputQuery.planType == Profiled
 
     new ExecutionPlan {
-      val fingerprint: Option[PlanFingerprint] = fp
+      private val fingerprint: Option[PlanFingerprint] = fp
       def execute(queryContext: QueryContext, params: Map[String, Any]) = func(queryContext, params, profileMarker)
       def profile(queryContext: QueryContext, params: Map[String, Any]) = func(new UpdateCountingQueryContext(queryContext), params, true)
       def isPeriodicCommit = periodicCommitInfo.isDefined
       def plannerUsed = planner
       def isStale(lastTxId: Long, statistics: GraphStatistics): Boolean = {
-        val date = new Date()
         fingerprint.fold(false) { fingerprint =>
           lastTxId != fingerprint.txId &&
-            fingerprint.creationDate.getTime + queryPlanTTL <= date.getTime &&
+            fingerprint.creationTimeMillis + queryPlanTTL <= clock.currentTimeMillis() &&
             fingerprint.snapshot.diverges(fingerprint.snapshot.recompute(statistics), MIN_DIVERGENCE)
         }
       }

@@ -30,17 +30,20 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.{ApplyRewriter, RewriterStepSequencer}
+import org.neo4j.helpers.Clock
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
 case class Planner(monitors: Monitors,
                    metricsFactory: MetricsFactory,
                    monitor: PlanningMonitor,
+                   clock: Clock,
                    tokenResolver: SimpleTokenResolver = new SimpleTokenResolver(),
                    maybeExecutionPlanBuilder: Option[PipeExecutionPlanBuilder] = None,
                    strategy: PlanningStrategy = new QueryPlanningStrategy(),
                    queryGraphSolver: QueryGraphSolver = new GreedyQueryGraphSolver()) extends PipeBuilder {
 
-  val executionPlanBuilder: PipeExecutionPlanBuilder = maybeExecutionPlanBuilder.getOrElse(new PipeExecutionPlanBuilder(monitors))
+  val executionPlanBuilder: PipeExecutionPlanBuilder =
+    maybeExecutionPlanBuilder.getOrElse(new PipeExecutionPlanBuilder(clock, monitors))
 
   def producePlan(inputQuery: PreparedQuery, planContext: PlanContext): PipeInfo = {
     Planner.rewriteStatement(inputQuery.statement, inputQuery.scopeTree) match {

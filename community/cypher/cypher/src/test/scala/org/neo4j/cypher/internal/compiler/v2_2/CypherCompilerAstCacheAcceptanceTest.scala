@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.Normal
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.ExecutionPlan
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.helpers.{FrozenClock, Clock}
 import org.neo4j.kernel.impl.util.StringLogger.DEV_NULL
 import org.neo4j.kernel.impl.util.TestLogger.LogCall
 import org.neo4j.kernel.impl.util.{StringLogger, TestLogger}
@@ -31,8 +32,9 @@ import org.neo4j.kernel.impl.util.{StringLogger, TestLogger}
 import scala.collection.Map
 
 class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
-  def createCompiler(queryCacheSize: Int = 128, queryPlanTTL: Long = 1000, logger: StringLogger = DEV_NULL) =
-    CypherCompilerFactory.ronjaCompiler(graph, queryCacheSize, queryPlanTTL, kernelMonitors, logger)
+  def createCompiler(queryCacheSize: Int = 128, queryPlanTTL: Long = 1000, clock: Clock = Clock.SYSTEM_CLOCK,
+                     logger: StringLogger = DEV_NULL) =
+    CypherCompilerFactory.ronjaCompiler(graph, queryCacheSize, queryPlanTTL, clock, kernelMonitors, logger)
 
   case class CacheCounts(hits: Int = 0, misses: Int = 0, flushes: Int = 0, evicted: Int = 0) {
     override def toString = s"hits = $hits, misses = $misses, flushes = $flushes, evicted = $evicted"
@@ -114,7 +116,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     // given
     val counter = new CacheCounter()
     val logger: TestLogger = new TestLogger()
-    val compiler = createCompiler(queryPlanTTL = 0, logger = logger)
+    val clock: Clock = new FrozenClock(1000)
+    val compiler = createCompiler(queryPlanTTL = 0, clock = clock, logger = logger)
     compiler.monitors.addMonitorListener(counter)
     val query: String = "match (n:Person:Dog) return n"
 

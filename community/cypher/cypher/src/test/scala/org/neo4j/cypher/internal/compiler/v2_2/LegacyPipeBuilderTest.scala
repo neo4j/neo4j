@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.spi.v2_2.TransactionBoundQueryContext
 import org.neo4j.graphdb.DynamicLabel
+import org.neo4j.helpers.Clock
 import org.scalatest.mock.MockitoSugar
 
 import scala.collection.Seq
@@ -50,7 +51,7 @@ class LegacyPipeBuilderTest
   with Timed
   with MockitoSugar {
   val ast = mock[Statement]
-  val planner = new Planner(mock[Monitors], SimpleMetricsFactory, mock[PlanningMonitor])
+  val planner = new Planner(mock[Monitors], SimpleMetricsFactory, mock[PlanningMonitor], Clock.SYSTEM_CLOCK)
 
   class FakePreparedQuery(q: AbstractQuery)
     extends PreparedQuery(mock[Statement], "q", Map.empty, Normal)(SemanticTable(), Scope(Map.empty, Seq.empty)) {

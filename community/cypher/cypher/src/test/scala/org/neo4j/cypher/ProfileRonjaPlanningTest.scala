@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.spi.v2_2.{TransactionBoundPlanContext, Transact
 import org.neo4j.cypher.internal.{LRUCache, Profiled}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
+import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 
@@ -44,6 +45,9 @@ import scala.text.Document
 class ProfileRonjaPlanningTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
   val monitorTag = "APA"
+  val clock = Clock.SYSTEM_CLOCK
+  val queryCacheSize = 100
+  val queryPlanTTL = 1000
 
   def buildCompiler(metricsFactoryInput: MetricsFactory = SimpleMetricsFactory)(graph: GraphDatabaseService) = {
     val kernelMonitors = new KernelMonitors()
@@ -55,10 +59,10 @@ class ProfileRonjaPlanningTest extends ExecutionEngineFunSuite with QueryStatist
     val planningMonitor = monitors.newMonitor[PlanningMonitor](monitorTag)
     val events = new LoggingState()
     val metricsFactory = LoggingMetricsFactory(metricsFactoryInput, events)
-    val planner = new Planner(monitors, metricsFactory, planningMonitor)
+    val planner = new Planner(monitors, metricsFactory, planningMonitor, clock)
     val pipeBuilder = new LegacyVsNewPipeBuilder(new LegacyPipeBuilder(monitors), planner, planBuilderMonitor)
-    val execPlanBuilder = new ExecutionPlanBuilder(graph, 1000, pipeBuilder)
-    val planCacheFactory = () => new LRUCache[PreparedQuery, ExecutionPlan](100)
+    val execPlanBuilder = new ExecutionPlanBuilder(graph, queryPlanTTL, clock, pipeBuilder)
+    val planCacheFactory = () => new LRUCache[PreparedQuery, ExecutionPlan](queryCacheSize)
     val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
     val cache = new MonitoringCacheAccessor[PreparedQuery, ExecutionPlan](cacheMonitor)
 
