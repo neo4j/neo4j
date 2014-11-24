@@ -121,6 +121,7 @@
         <exclude>org.parboiled:*</exclude>
         <exclude>org.neo4j.app:windows-service-wrapper:*</exclude>
         <exclude>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</exclude>
+        <exclude>net.sf.opencsv:opencsv</exclude>
       </excludes>
     </dependencySet>
  </dependencySets>
