@@ -90,11 +90,16 @@ public class TransactionFacade
         return new ExecutionResultSerializer( output, baseUri( requestUri ), log );
     }
 
-    private URI baseUri( URI requestUri )
+    static URI baseUri( URI requestUri )
     {
         try
         {
-            return new URI( requestUri + "db/data" );
+            String scheme = requestUri.getScheme();
+            String userInfo = requestUri.getUserInfo();
+            String host = requestUri.getHost();
+            int port = requestUri.getPort();
+            String path = "/db/data";
+            return new URI( scheme, userInfo, host, port, path, null, null );
         }
         catch ( URISyntaxException e )
         {

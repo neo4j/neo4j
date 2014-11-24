@@ -19,11 +19,12 @@
  */
 package org.neo4j.test.server;
 
-import java.util.concurrent.Callable;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
+
+import java.util.concurrent.Callable;
+
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.test.Mute;
@@ -62,7 +63,7 @@ public class SharedServerTestBase
 
 	@Rule
 	public Mute mute = muteAll();
-	
+
     @BeforeClass
     public static void allocateServer() throws Throwable
     {
