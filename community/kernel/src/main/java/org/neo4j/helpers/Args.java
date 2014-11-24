@@ -504,7 +504,11 @@ public class Args
         Collection<Option<T>> values = new ArrayList<>();
         if ( !hasNonNull( key ) )
         {
-            values.add( new Option<>( validated( defaultValue.apply( key ), validators ), null ) );
+            T defaultItem = defaultValue.apply( key );
+            if ( defaultItem != null )
+            {
+                values.add( new Option<>( validated( defaultItem, validators ), null ) );
+            }
         }
         else
         {
