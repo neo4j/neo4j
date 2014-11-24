@@ -43,9 +43,9 @@ import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadRule;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
@@ -123,7 +123,7 @@ public class UniqueConstraintStressIT extends AbstractClusterTest
                 Future<Object> constraintCreation = masterWork.execute( createConstraint( master ) );
 
                 // Concurrently start violating the data via the slave
-                Future<Object> constraintViolation = slaveWork.execute( performInsert( slave ) );
+                Future<Integer> constraintViolation = slaveWork.execute( performInsert( slave ) );
 
                 // And then ensure all is well
                 assertConstraintsNotViolated( constraintCreation, constraintViolation, master );
@@ -134,9 +134,11 @@ public class UniqueConstraintStressIT extends AbstractClusterTest
         assertThat( successfulAttempts, greaterThan( 0 ) );
     }
 
-    private void assertConstraintsNotViolated( Future<Object> constraintCreation, Future<Object> constraintViolation,
+    private void assertConstraintsNotViolated( Future<Object> constraintCreation, Future<Integer> constraintViolation,
                                                HighlyAvailableGraphDatabase master ) throws InterruptedException, ExecutionException
     {
+        boolean constraintCreationFailed = false;
+
         try
         {
             constraintCreation.get();
@@ -144,26 +146,28 @@ public class UniqueConstraintStressIT extends AbstractClusterTest
         catch(ExecutionException e)
         {
             assertThat(e.getCause(), instanceOf( ConstraintViolationException.class));
-
-            // Constraint creation failed. Then the violating operations should have been successful
-            constraintViolation.get();
+            constraintCreationFailed = true;
         }
 
-        // If the constraint creation was successful, the violating operations should have failed, and the graph
-        // should not contain duplicates
-        try
+        int txSuccessCount = constraintViolation.get();
+
+        if ( constraintCreationFailed )
         {
-            constraintViolation.get();
-            fail( "Constraint violating operations succeeded, even though they were violating a successfully created constraint." );
+            // Constraint creation failed, some of the violating operations should have been successful.
+            assertThat( txSuccessCount, greaterThan( 0 ) );
+            // And the graph should contain some duplicates.
+            assertThat( allPropertiesAreUnique( master, label, property ), equalTo( false ) );
         }
-        catch(ExecutionException e)
+        else
         {
-            assertThat(e.getCause(), instanceOf( TransactionFailureException.class));
-            assertAllPropertiesAreUnique( master, label, property );
+            // Constraint creation was successful, all the violating operations should have failed.
+            assertThat( txSuccessCount, equalTo( 0 ) );
+            // And the graph should not contain duplicates.
+            assertThat( allPropertiesAreUnique( master, label, property ), equalTo( true ) );
         }
     }
 
-    private void assertAllPropertiesAreUnique( HighlyAvailableGraphDatabase master, Label label, String property )
+    private boolean allPropertiesAreUnique( HighlyAvailableGraphDatabase master, Label label, String property )
     {
         try( Transaction tx = master.beginTx() )
         {
@@ -173,13 +177,14 @@ public class UniqueConstraintStressIT extends AbstractClusterTest
                 Object value = node.getProperty( property );
                 if ( values.contains( value ) )
                 {
-                    throw new AssertionError( label + ":" + property + " contained duplicate property value '" + value + "', despite constraint existing." );
+                    return false;
                 }
                 values.add( value );
             }
 
             tx.success();
         }
+        return true;
     }
 
     private OtherThreadExecutor.WorkerCommand<Object, Object> createConstraint( final HighlyAvailableGraphDatabase master )
@@ -204,22 +209,38 @@ public class UniqueConstraintStressIT extends AbstractClusterTest
      * running this method twice will insert nodes with duplicate property values, assuming propertykey or label has not
      * changed.
      */
-    private OtherThreadExecutor.WorkerCommand<Object, Object> performInsert( final HighlyAvailableGraphDatabase slave )
+    private OtherThreadExecutor.WorkerCommand<Object, Integer> performInsert( final HighlyAvailableGraphDatabase slave )
     {
-        return new OtherThreadExecutor.WorkerCommand<Object, Object>()
+        return new OtherThreadExecutor.WorkerCommand<Object, Integer>()
         {
             @Override
-            public Object doWork( Object state ) throws Exception
+            public Integer doWork( Object state ) throws Exception
             {
-                for ( int i = 0; i < 1000; i++ )
+                int i = 0;
+
+                try
                 {
-                    try( Transaction tx = slave.beginTx() )
+                    for ( ; i < 1000; i++ )
                     {
-                        slave.createNode( label ).setProperty( property, "value-" + i );
-                        tx.success();
+                        try( Transaction tx = slave.beginTx() )
+                        {
+                            slave.createNode( label ).setProperty( property, "value-" + i );
+                            tx.success();
+                        }
                     }
                 }
-                return null;
+                catch ( TransactionFailureException e )
+                {
+                    // Swallowed on purpose, we except it to fail sometimes due to either
+                    //  - constraint violation
+                    //  - concurrent schema operation on master
+                }
+                catch ( ComException e )
+                {
+                    // Happens sometimes, cause:
+                    // - The lock session requested to start is already in use. Please retry your request in a few seconds.
+                }
+                return i;
             }
         };
     }
