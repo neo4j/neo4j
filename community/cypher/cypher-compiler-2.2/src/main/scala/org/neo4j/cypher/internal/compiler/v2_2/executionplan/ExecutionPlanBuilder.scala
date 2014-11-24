@@ -32,8 +32,6 @@ import org.neo4j.cypher.internal.compiler.v2_2.profiler.Profiler
 import org.neo4j.cypher.internal.compiler.v2_2.spi._
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.kernel.InternalAbstractGraphDatabase
 
 case class PlanFingerprint(creationDate: Date, txId: Long, snapshot: GraphStatisticsSnapshot)
 
@@ -56,7 +54,7 @@ trait PipeBuilder {
   def producePlan(inputQuery: PreparedQuery, planContext: PlanContext): PipeInfo
 }
 
-class ExecutionPlanBuilder(graph: GraphDatabaseService,
+class ExecutionPlanBuilder(graph: GraphDatabaseService, queryPlanTTL: Long,
                            pipeBuilder: PipeBuilder) extends PatternGraphBuilder {
   val MIN_DIVERGENCE = 0.5
 
@@ -70,8 +68,8 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService,
     val resultBuilderFactory = new DefaultExecutionResultBuilderFactory(pipeInfo, columns, inputQuery.planType)
     val func = getExecutionPlanFunction(periodicCommitInfo, abstractQuery.getQueryText, updating, resultBuilderFactory)
 
-    val TTL = getQueryPlanTTL
     val profileMarker = inputQuery.planType == Profiled
+
     new ExecutionPlan {
       val fingerprint: Option[PlanFingerprint] = fp
       def execute(queryContext: QueryContext, params: Map[String, Any]) = func(queryContext, params, profileMarker)
@@ -82,19 +80,10 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService,
         val date = new Date()
         fingerprint.fold(false) { fingerprint =>
           lastTxId != fingerprint.txId &&
-            fingerprint.creationDate.getTime + TTL <= date.getTime &&
+            fingerprint.creationDate.getTime + queryPlanTTL <= date.getTime &&
             fingerprint.snapshot.diverges(fingerprint.snapshot.recompute(statistics), MIN_DIVERGENCE)
         }
       }
-    }
-  }
-
-  private def getQueryPlanTTL: Integer = {
-    graph match {
-      case iagdb: InternalAbstractGraphDatabase =>
-        iagdb.getConfig.get(GraphDatabaseSettings.query_plan_ttl)
-      case _ =>
-        GraphDatabaseSettings.query_plan_ttl.getDefaultValue.toInt
     }
   }
 

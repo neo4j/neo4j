@@ -30,6 +30,7 @@ import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 
 object CypherCompiler {
   val DEFAULT_QUERY_CACHE_SIZE: Int = 128
+  val DEFAULT_QUERY_PLAN_TTL: Long = 1000 // 1 second
 }
 
 case class PreParsedQuery(statement: String, version: CypherVersion, planType: PlanType)
@@ -42,12 +43,14 @@ class CypherCompiler(graph: GraphDatabaseService,
                      optionParser: CypherOptionParser,
                      logger: StringLogger) {
   private val queryCacheSize: Int = getQueryCacheSize
+  private val queryPlanTTL: Long = getQueryPlanTTL
   private val compatibilityFor1_9 = CompatibilityFor1_9(graph, queryCacheSize)
   private val compatibilityFor2_0 = CompatibilityFor2_0(graph, queryCacheSize)
   private val compatibilityFor2_1 = CompatibilityFor2_1(graph, queryCacheSize, kernelMonitors, kernelAPI)
-  private val compatibilityFor2_2Rule = CompatibilityFor2_2Rule(graph, queryCacheSize, kernelMonitors, kernelAPI)
+  private val compatibilityFor2_2Rule =
+    CompatibilityFor2_2Rule(graph, queryCacheSize, queryPlanTTL, kernelMonitors, kernelAPI)
   private val compatibilityFor2_2Cost =
-    CompatibilityFor2_2Cost(graph, queryCacheSize, kernelMonitors, kernelAPI, logger)
+    CompatibilityFor2_2Cost(graph, queryCacheSize, queryPlanTTL, kernelMonitors, kernelAPI, logger)
 
   @throws(classOf[SyntaxException])
   def parseQuery(queryText: String): ParsedQuery = {
@@ -103,12 +106,16 @@ class CypherCompiler(graph: GraphDatabaseService,
 
   private def getQueryCacheSize : Int =
     optGraphAs[InternalAbstractGraphDatabase]
-      .andThen(_.getConfig.get(GraphDatabaseSettings.query_cache_size))
-      .andThen({
-      case v: java.lang.Integer => v.intValue()
-      case _                    => CypherCompiler.DEFAULT_QUERY_CACHE_SIZE
-    })
+      .andThen(_.getConfig.get(GraphDatabaseSettings.query_cache_size).intValue())
       .applyOrElse(graph, (_: GraphDatabaseService) => CypherCompiler.DEFAULT_QUERY_CACHE_SIZE)
+
+
+  private def getQueryPlanTTL: Long = {
+    optGraphAs[InternalAbstractGraphDatabase]
+      .andThen(_.getConfig.get(GraphDatabaseSettings.query_plan_ttl).longValue())
+      .applyOrElse(graph, (_: GraphDatabaseService) => CypherCompiler.DEFAULT_QUERY_PLAN_TTL)
+  }
+
 
   private def optGraphAs[T <: GraphDatabaseService : Manifest]: PartialFunction[GraphDatabaseService, T] = {
     case (db: T) => db

@@ -59,7 +59,7 @@ trait AstCacheMonitor extends CypherCacheMonitor[PreparedQuery, CacheAccessor[Pr
 object CypherCompilerFactory {
   val monitorTag = "cypher2.2"
 
-  def ronjaCompiler(graph: GraphDatabaseService, queryCacheSize: Int,
+  def ronjaCompiler(graph: GraphDatabaseService, queryCacheSize: Int, queryPlanTTL: Long,
                     kernelMonitors: KernelMonitors, logger: StringLogger): CypherCompiler = {
     val monitors = new Monitors(kernelMonitors)
     val parser = new CypherParser(monitors.newMonitor[ParserMonitor[Statement]](monitorTag))
@@ -70,7 +70,7 @@ object CypherCompilerFactory {
     val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
     val planner = new Planner(monitors, metricsFactory, planningMonitor)
     val pipeBuilder = new LegacyVsNewPipeBuilder(new LegacyPipeBuilder(monitors), planner, planBuilderMonitor)
-    val execPlanBuilder = new ExecutionPlanBuilder(graph, pipeBuilder)
+    val execPlanBuilder = new ExecutionPlanBuilder(graph, queryPlanTTL, pipeBuilder)
     val planCacheFactory = () => new LRUCache[PreparedQuery, ExecutionPlan](queryCacheSize)
     val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
     monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), monitorTag)
@@ -85,13 +85,14 @@ object CypherCompilerFactory {
     }
   }
 
-  def legacyCompiler(graph: GraphDatabaseService, queryCacheSize: Int, kernelMonitors: KernelMonitors): CypherCompiler = {
+  def legacyCompiler(graph: GraphDatabaseService, queryCacheSize: Int, queryPlanTTL: Long,
+                     kernelMonitors: KernelMonitors): CypherCompiler = {
     val monitors = new Monitors(kernelMonitors)
     val parser = new CypherParser(monitors.newMonitor[ParserMonitor[ast.Statement]](monitorTag))
     val checker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
     val rewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag))
     val pipeBuilder = new LegacyPipeBuilder(monitors)
-    val execPlanBuilder = new ExecutionPlanBuilder(graph, pipeBuilder)
+    val execPlanBuilder = new ExecutionPlanBuilder(graph, queryPlanTTL, pipeBuilder)
     val planCacheFactory = () => new LRUCache[PreparedQuery, ExecutionPlan](queryCacheSize)
     val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
     val cache = new MonitoringCacheAccessor[PreparedQuery, ExecutionPlan](cacheMonitor)

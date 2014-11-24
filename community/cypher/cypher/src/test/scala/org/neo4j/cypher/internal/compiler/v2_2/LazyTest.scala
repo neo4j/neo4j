@@ -19,31 +19,33 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
-import commands.expressions.{Literal, Identifier}
-import commands.{GreaterThan, True}
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.Argument
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
-import pipes._
-import pipes.matching._
-import symbols.CTInteger
-import org.neo4j.cypher.internal.{CypherCompiler => Compiler, ExecutionPlan, LRUCache}
-import org.neo4j.cypher._
-import org.neo4j.graphdb._
-import org.neo4j.graphdb.Traverser.Order
-import org.neo4j.kernel.GraphDatabaseAPI
-import org.neo4j.kernel.api.{Statement, ReadOperations}
-import org.neo4j.kernel.impl.core.{ThreadToStatementContextBridge, NodeManager, NodeProxy}
-import org.neo4j.tooling.GlobalGraphOperations
-import org.neo4j.collection.primitive.PrimitiveLongCollections
-import java.util.{Iterator => JIterator}
 import java.lang.{Iterable => JIterable}
+import java.util.{Iterator => JIterator}
+
 import org.junit.Assert._
-import collection.JavaConverters._
-import org.mockito.Mockito._
 import org.mockito.Matchers._
-import org.neo4j.kernel.impl.api.OperationsFacade
-import org.mockito.stubbing.Answer
+import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.Answer
+import org.neo4j.collection.primitive.PrimitiveLongCollections
+import org.neo4j.cypher._
+import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Identifier, Literal}
+import org.neo4j.cypher.internal.compiler.v2_2.commands.{GreaterThan, True}
+import org.neo4j.cypher.internal.compiler.v2_2.pipes._
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.matching._
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.Argument
+import org.neo4j.cypher.internal.compiler.v2_2.symbols.CTInteger
+import org.neo4j.cypher.internal.{ExecutionPlan, LRUCache, CypherCompiler => Compiler}
+import org.neo4j.graphdb.Traverser.Order
+import org.neo4j.graphdb._
+import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.api.{ReadOperations, Statement}
+import org.neo4j.kernel.impl.api.OperationsFacade
+import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy, ThreadToStatementContextBridge}
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
+import org.neo4j.tooling.GlobalGraphOperations
+
+import scala.collection.JavaConverters._
 
 class LazyTest extends ExecutionEngineFunSuite {
 
@@ -194,7 +196,7 @@ class LazyTest extends ExecutionEngineFunSuite {
     val fakeStatement = mock[Statement]
     val idStore = mock[TransactionIdStore]
 
-    when(idStore.getLastCommittedTransactionId()).thenReturn(0)
+    when(idStore.getLastCommittedTransactionId).thenReturn(0)
     when(nodeManager.newNodeProxyById(anyLong())).thenAnswer( new Answer[NodeProxy] {
       def answer( invocation: InvocationOnMock ): NodeProxy = new NodeProxy( invocation.getArguments()(0).asInstanceOf[Long], null, null, null )
     })
@@ -225,7 +227,7 @@ class LazyTest extends ExecutionEngineFunSuite {
     }
 
     //Then:
-    assert( nodesIterator.hasNext() == true )
+    assert( nodesIterator.hasNext )
     assert( nodesIterator.next() === 5L )
   }
 
