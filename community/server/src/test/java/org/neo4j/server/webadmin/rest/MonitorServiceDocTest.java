@@ -36,6 +36,7 @@ import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.RrdDbWrapper;
 import org.neo4j.server.database.WrappedDatabase;
+import org.neo4j.server.rest.management.MonitorService;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.rrd.JobScheduler;
 import org.neo4j.server.rrd.RrdFactory;

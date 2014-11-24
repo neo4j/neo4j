@@ -33,19 +33,18 @@ import org.neo4j.server.modules.Neo4jBrowserModule;
 import org.neo4j.server.modules.RESTApiModule;
 import org.neo4j.server.modules.SecurityRulesModule;
 import org.neo4j.server.modules.ServerModule;
-import org.neo4j.server.modules.StatisticModule;
 import org.neo4j.server.modules.ThirdPartyJAXRSModule;
 import org.neo4j.server.modules.WebAdminModule;
 import org.neo4j.server.preflight.EnsurePreparedForHttpLogging;
 import org.neo4j.server.preflight.PerformRecoveryIfNecessary;
 import org.neo4j.server.preflight.PerformUpgradeIfNecessary;
 import org.neo4j.server.preflight.PreFlightTasks;
+import org.neo4j.server.rest.management.AdvertisableService;
+import org.neo4j.server.rest.management.JmxService;
+import org.neo4j.server.rest.management.MonitorService;
+import org.neo4j.server.rest.management.console.ConsoleService;
 import org.neo4j.server.web.Jetty9WebServer;
 import org.neo4j.server.web.WebServer;
-import org.neo4j.server.webadmin.rest.AdvertisableService;
-import org.neo4j.server.webadmin.rest.JmxService;
-import org.neo4j.server.webadmin.rest.MonitorService;
-import org.neo4j.server.webadmin.rest.console.ConsoleService;
 
 import static org.neo4j.server.database.LifecycleManagingDatabase.EMBEDDED;
 import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
@@ -90,7 +89,6 @@ public class CommunityNeoServer extends AbstractNeoServer
                 new ThirdPartyJAXRSModule(webServer, configurator, logging, this),
                 new WebAdminModule(webServer, logging),
                 new Neo4jBrowserModule(webServer, configurator.configuration(), logging, database),
-                new StatisticModule(webServer, statisticsCollector, configurator.configuration()),
                 new SecurityRulesModule(webServer, configurator.configuration(), logging));
     }
 

@@ -28,11 +28,11 @@ import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.web.WebServer;
-import org.neo4j.server.webadmin.rest.JmxService;
-import org.neo4j.server.webadmin.rest.MonitorService;
-import org.neo4j.server.webadmin.rest.RootService;
-import org.neo4j.server.webadmin.rest.VersionAndEditionService;
-import org.neo4j.server.webadmin.rest.console.ConsoleService;
+import org.neo4j.server.rest.management.JmxService;
+import org.neo4j.server.rest.management.MonitorService;
+import org.neo4j.server.rest.management.RootService;
+import org.neo4j.server.rest.management.VersionAndEditionService;
+import org.neo4j.server.rest.management.console.ConsoleService;
 
 import static org.neo4j.server.JAXRSHelper.listFrom;
 

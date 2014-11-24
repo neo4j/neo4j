@@ -37,6 +37,7 @@ import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RESTDocsGenerator;
 import org.neo4j.server.rest.RestRequest;
+import org.neo4j.server.rest.management.VersionAndEditionService;
 import org.neo4j.test.TestData;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
