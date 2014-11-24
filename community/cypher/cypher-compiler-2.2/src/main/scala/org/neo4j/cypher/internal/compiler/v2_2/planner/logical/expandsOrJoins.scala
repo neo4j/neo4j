@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.{projectEndpoints, join, expand}
-import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.{expand, join, projectEndpoints}
 
 object expandsOrJoins extends CandidateGenerator[PlanTable] {
   def apply(planTable: PlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): CandidateList = {
