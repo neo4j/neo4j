@@ -280,7 +280,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     )))
   }
 
-  test("match (a)-[r:Type*]-(b) return a,r") {
+  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
+  ignore("match (a)-[r:Type*]-(b) return a,r") {
     val UnionQuery(query :: Nil, _) = buildPlannerQuery("match (a)-[r:Type*]-(b) return a,r")
     query.graph.patternRelationships should equal(Set(
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.BOTH, Seq(relType("Type")), VarPatternLength(1, None))))
@@ -292,7 +293,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     )))
   }
 
-  test("match (a)-[r1:CONTAINS*0..1]->b-[r2:FRIEND*0..1]->c return a,b,c") {
+  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
+  ignore("match (a)-[r1:CONTAINS*0..1]->b-[r2:FRIEND*0..1]->c return a,b,c") {
     val UnionQuery(query :: Nil, _) = buildPlannerQuery("match (a)-[r1:CONTAINS*0..1]->b-[r2:FRIEND*0..1]->c return a,b,c")
     query.graph.patternRelationships should equal(Set(
       PatternRelationship(IdName("r1"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq(relType("CONTAINS")), VarPatternLength(0, Some(1))),
@@ -306,7 +308,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     )))
   }
 
-  test("match (a)-[r:Type*3..]-(b) return a,r") {
+  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
+  ignore("match (a)-[r:Type*3..]-(b) return a,r") {
     val UnionQuery(query :: Nil, _) = buildPlannerQuery("match (a)-[r:Type*3..]-(b) return a,r")
     query.graph.patternRelationships should equal(Set(
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.BOTH, Seq(relType("Type")), VarPatternLength(3, None))))
@@ -318,7 +321,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     )))
   }
 
-  test("match (a)-[r:Type*5]-(b) return a,r") {
+  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
+  ignore("match (a)-[r:Type*5]-(b) return a,r") {
     val UnionQuery(query :: Nil, _) = buildPlannerQuery("match (a)-[r:Type*5]-(b) return a,r")
     query.graph.patternRelationships should equal(Set(
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.BOTH, Seq(relType("Type")), VarPatternLength.fixed(5))))
@@ -330,7 +334,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     )))
   }
 
-  test("match (a)<-[r*]-(b)-[r2*]-(c) return a,r") {
+  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
+  ignore("match (a)<-[r*]-(b)-[r2*]-(c) return a,r") {
     val UnionQuery(query :: Nil, _) = buildPlannerQuery("match (a)<-[r*]-(b)-[r2*]-(c) return a,r")
     query.graph.patternRelationships should equal(Set(
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.INCOMING, Seq.empty, VarPatternLength(1, None)),

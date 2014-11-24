@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.docgen
 
-import org.junit.Test
-import org.junit.Assert._
 import org.hamcrest.CoreMatchers._
-import org.scalatest.Ignore
+import org.junit.Assert._
+import org.junit.Test
 
 class QueryPlanTest extends DocumentingTestBase {
   override val setupQueries = List(
@@ -236,7 +235,8 @@ class QueryPlanTest extends DocumentingTestBase {
           |The following query will return my friends of friends.
         """.stripMargin,
       queryText = """MATCH (p:Person {name: "me"})-[:FRIENDS_WITH*2]->(fof) RETURN fof""",
-      assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("expand"))
+      // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
+      assertion = (p) => true //assertThat(p.executionPlanDescription().toString, containsString("expand"))
     )
   }
 
@@ -393,7 +393,8 @@ class QueryPlanTest extends DocumentingTestBase {
            OPTIONAL MATCH (p)-[:WORKS_IN*1..2]->(city)
            RETURN p, city
         """.stripMargin,
-      assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("Apply"))
+      // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
+      assertion = (p) => true // assertThat(p.executionPlanDescription().toString, containsString("Apply"))
     )
   }
 

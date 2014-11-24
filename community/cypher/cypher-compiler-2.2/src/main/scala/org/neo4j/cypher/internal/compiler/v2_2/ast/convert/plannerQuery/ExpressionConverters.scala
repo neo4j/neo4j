@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{LabelPredicateNormalizer, MatchPredicateNormalizerChain, PropertyPredicateNormalizer}
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.UnNamedNameGenerator._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{PatternLength, VarPatternLength, SimplePatternLength, IdName}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, PatternLength, SimplePatternLength, VarPatternLength}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{Predicate, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v2_2.{Rewriter, topDown}
 
@@ -116,7 +116,7 @@ object ExpressionConverters {
     def idNames: Set[IdName] = exp.dependencies.map(id => IdName(id.name))
   }
 
-  implicit class RangeConvertor(val length: Option[Option[Range]]) extends AnyVal {
+  implicit class RangeConverter(val length: Option[Option[Range]]) extends AnyVal {
     def asPatternLength: PatternLength = length match {
       case Some(Some(Range(Some(left), Some(right)))) => VarPatternLength(left.value.toInt, Some(right.value.toInt))
       case Some(Some(Range(Some(left), None))) => VarPatternLength(left.value.toInt, None)

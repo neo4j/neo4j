@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.CantHandleQueryException
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, PatternRelationship, ShortestPathPattern}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{SimplePatternLength, IdName, PatternRelationship, ShortestPathPattern}
 
 object PatternConverters {
 
@@ -30,7 +30,12 @@ object PatternConverters {
 
   case class DestructResult(nodeIds: Seq[IdName], rels: Seq[PatternRelationship], shortestPaths: Seq[ShortestPathPattern]) {
     def addNodeId(newId: IdName*) = copy(nodeIds = nodeIds ++ newId)
-    def addRel(r: PatternRelationship*) = copy(rels = rels ++ r)
+
+    def addRel(newRelationships: PatternRelationship*) = if (newRelationships.exists(_.length != SimplePatternLength))
+      throw new CantHandleQueryException("We don't want to handle var-length in Ronja yet.")
+    else
+      copy(rels = rels ++ newRelationships)
+
     def addShortestPaths(r: ShortestPathPattern*) = copy(shortestPaths = shortestPaths ++ r)
   }
 
