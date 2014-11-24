@@ -267,13 +267,6 @@ public class NeoStoreTransaction extends XaTransaction
             context.getNodeCommands().put( record.getId(), command );
             commands.add( command );
         }
-        if ( context.getUpgradedDenseNodes() != null )
-        {
-            for ( NodeRecord node : context.getUpgradedDenseNodes() )
-            {
-                removeNodeFromCache( node.getId() );
-            }
-        }
         for ( RecordProxy<Long, RelationshipRecord, Void> record : context.getRelRecords().changes() )
         {
             Command.RelationshipCommand command = new Command.RelationshipCommand();
@@ -686,11 +679,11 @@ public class NeoStoreTransaction extends XaTransaction
             java.util.Collections.sort( context.getRelCommands(), sorter );
             java.util.Collections.sort( context.getPropCommands(), sorter );
             executeCreated( lockGroup, isRecovered, context.getPropCommands(), context.getRelCommands(),
-                    context.getNodeCommands().values(), context.getRelGroupCommands() );
+                    context.getRelGroupCommands(), context.getNodeCommands().values() );
             executeModified( lockGroup, isRecovered, context.getPropCommands(), context.getRelCommands(),
-                    context.getNodeCommands().values(), context.getRelGroupCommands() );
+                    context.getRelGroupCommands(), context.getNodeCommands().values() );
             executeDeleted( lockGroup, context.getPropCommands(), context.getRelCommands(),
-                    context.getNodeCommands().values(), context.getRelGroupCommands() );
+                    context.getRelGroupCommands(), context.getNodeCommands().values() );
 
             // property change set for index updates
             Collection<NodeLabelUpdate> labelUpdates = gatherLabelUpdatesSortedByNodeId();
@@ -741,7 +734,7 @@ public class NeoStoreTransaction extends XaTransaction
             if ( !isRecovered )
             {
                 context.updateFirstRelationships();
-                context.commitCows(); // updates the cached primitives
+                context.commitCows( cacheAccess ); // updates the cached primitives
             }
             neoStore.setLastCommittedTx( getCommitTxId() );
             if ( isRecovered )
@@ -1508,7 +1501,12 @@ public class NeoStoreTransaction extends XaTransaction
         Map<DirectionWrapper, Iterable<RelationshipRecord>> result = new EnumMap<>( DirectionWrapper.class );
         result.put( DirectionWrapper.OUTGOING, out );
         result.put( DirectionWrapper.INCOMING, in );
+
+        // Clone the position so that changes to it aren't visible as we go. This is necessary since
+        // there are checks whether or not there are more relationships to load happening outside synchronization
+        // blocks in NodeImpl.
         RelationshipLoadingPosition loadPosition = originalPosition.clone();
+
         long position = loadPosition.position( direction, types );
         for ( int i = 0; i < grabSize && position != Record.NO_NEXT_RELATIONSHIP.intValue(); i++ )
         {
@@ -1625,8 +1623,10 @@ public class NeoStoreTransaction extends XaTransaction
         }
         if ( !node.isDense() )
         {
-            assert type == -1;
-            assert direction == DirectionWrapper.BOTH;
+            assert type == -1 : node + " isn't dense and so getRelationshipCount shouldn't have been called " +
+                    "with a specific type";
+            assert direction == DirectionWrapper.BOTH : node + " isn't dense and so getRelationshipCount " +
+                    "shouldn't have been called with a specific direction";
             return getRelationshipCount( node, nextRel );
         }
 

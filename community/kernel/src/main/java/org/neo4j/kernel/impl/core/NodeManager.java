@@ -21,8 +21,12 @@ package org.neo4j.kernel.impl.core;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
+
 import static org.neo4j.helpers.collection.Iterables.cast;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.legacyIndexResourceId;
+import static org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper.BOTH;
+import static org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper.INCOMING;
+import static org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper.OUTGOING;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -54,8 +58,6 @@ import org.neo4j.kernel.impl.cache.AutoLoadingCache;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
-import org.neo4j.kernel.impl.locking.Lock;
-import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -84,7 +86,6 @@ public class NodeManager implements Lifecycle, EntityFactory
     private final AutoLoadingCache<NodeImpl> nodeCache;
     private final AutoLoadingCache<RelationshipImpl> relCache;
     private final CacheProvider cacheProvider;
-    private final LockService locks;
     private final AbstractTransactionManager transactionManager;
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
     private final LabelTokenHolder labelTokenHolder;
@@ -98,7 +99,7 @@ public class NodeManager implements Lifecycle, EntityFactory
     private final RelationshipProxy.RelationshipLookups relationshipLookups;
 
     private final RelationshipLoader relationshipLoader;
-    private PropertyChainVerifier propertyChainVerifier;
+    private final PropertyChainVerifier propertyChainVerifier;
 
     private final List<PropertyTracker<Node>> nodePropertyTrackers;
     private final List<PropertyTracker<Relationship>> relationshipPropertyTrackers;
@@ -136,7 +137,7 @@ public class NodeManager implements Lifecycle, EntityFactory
     };
 
     public NodeManager( Logging logging, GraphDatabaseService graphDb,
-                        LockService locks, AbstractTransactionManager transactionManager,
+                        AbstractTransactionManager transactionManager,
                         PersistenceManager persistenceManager, EntityIdGenerator idGenerator,
                         RelationshipTypeTokenHolder relationshipTypeTokenHolder, CacheProvider cacheProvider,
                         PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
@@ -147,7 +148,6 @@ public class NodeManager implements Lifecycle, EntityFactory
         this.logging = logging;
         this.logger = logging.getMessagesLog( NodeManager.class );
         this.graphDbService = graphDb;
-        this.locks = locks;
         this.transactionManager = transactionManager;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.persistenceManager = persistenceManager;
@@ -566,22 +566,32 @@ public class NodeManager implements Lifecycle, EntityFactory
         relCache.remove( id );
     }
 
-    public void patchDeletedRelationshipNodes( long relId, long firstNodeId, long firstNodeNextRelId, long secondNodeId,
-                                               long secondNodeNextRelId )
+    public void patchDeletedRelationshipNodes( long relId, int type,
+            long firstNodeId, long firstNodeNextRelId,
+            long secondNodeId, long secondNodeNextRelId )
     {
-        invalidateNode( firstNodeId, relId, firstNodeNextRelId );
-        invalidateNode( secondNodeId, relId, secondNodeNextRelId );
+        boolean loop = firstNodeId == secondNodeId;
+        invalidateNode( firstNodeId, loop ? BOTH : OUTGOING, type, relId, firstNodeNextRelId );
+        if ( !loop )
+        {
+            invalidateNode( secondNodeId, INCOMING, type, relId, secondNodeNextRelId );
+        }
     }
 
-    private void invalidateNode( long nodeId, long relIdDeleted, long nextRelId )
+    private void invalidateNode( long nodeId, DirectionWrapper direction, int type, long relIdDeleted, long nextRelId )
     {
         NodeImpl node = nodeCache.getIfCached( nodeId );
         if ( node != null )
         {
             RelationshipLoadingPosition position = node.getRelChainPosition();
-            if ( position != null )
+            if ( position != null && position.atPosition( direction, type, relIdDeleted ) )
             {
-                position.compareAndAdvance( relIdDeleted, nextRelId );
+                synchronized ( node )
+                {
+                    // Double-checked locking. The second check will happen inside compareAndAdvance
+                    position = node.getRelChainPosition();
+                    position.compareAndAdvance( direction, type, relIdDeleted, nextRelId );
+                }
             }
         }
     }
@@ -939,11 +949,6 @@ public class NodeManager implements Lifecycle, EntityFactory
     public Iterator<Integer> getRelationshipTypes( DenseNodeImpl node )
     {
         return asList( persistenceManager.getRelationshipTypes( node.getId() ) ).iterator();
-    }
-
-    public Lock lowLevelNodeReadLock( long nodeId )
-    {
-        return locks.acquireNodeLock( nodeId, LockService.LockType.READ_LOCK );
     }
 
     public PropertyChainVerifier getPropertyChainVerifier()

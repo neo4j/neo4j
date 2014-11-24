@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
@@ -89,14 +90,9 @@ public class NeoStoreTransactionContext
         relationshipCreator.relationshipCreate( id, typeId, startNodeId, endNodeId, recordChangeSet );
     }
 
-    public Collection<NodeRecord> getUpgradedDenseNodes()
+    public void commitCows( CacheAccessBackDoor cacheAccess )
     {
-        return relationshipCreator.getUpgradedDenseNodes();
-    }
-
-    public void commitCows()
-    {
-        txState.commitCows();
+        txState.commitCows( cacheAccess );
     }
 
     public void updateFirstRelationships()
@@ -104,7 +100,13 @@ public class NeoStoreTransactionContext
         for ( RecordProxy<Long, NodeRecord, Void> change : recordChangeSet.getNodeRecords().changes() )
         {
             NodeRecord record = change.forReadingLinkage();
-            txState.setFirstIds( record.getId(), record.getNextRel(), record.getNextProp() );
+            long firstRelId = record.getNextRel();
+            txState.setFirstIds( record.getId(), record.isDense(), firstRelId, record.getNextProp() );
+        }
+        for ( RecordProxy<Long,RelationshipGroupRecord,Integer> change : recordChangeSet.getRelGroupRecords().changes() )
+        {
+            RelationshipGroupRecord record = change.forReadingLinkage();
+            txState.addRelationshipGroupChange( record.getOwningNode(), record );
         }
     }
 

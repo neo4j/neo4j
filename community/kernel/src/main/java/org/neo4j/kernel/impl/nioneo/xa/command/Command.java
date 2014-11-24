@@ -211,22 +211,21 @@ public abstract class Command extends XaCommand
         public void applyToCache( CacheAccessBackDoor cacheAccess )
         {
             cacheAccess.removeRelationshipFromCache( getKey() );
-            /*
-             * If isRecovered() then beforeUpdate is the correct one UNLESS this is the second time this command
-             * is executed, where it might have been actually written out to disk so the fields are already -1. So
-             * we still need to check.
-             * If !isRecovered() then beforeUpdate is the same as record, so we are still ok.
-             * We don't check for !inUse() though because that is implicit in the call of this method.
-             * The above is a hand waiving proof that the conditions that lead to the patchDeletedRelationshipNodes()
-             * in the if below are the same as in RelationshipCommand.execute() so it should be safe.
-             */
-            if ( beforeUpdate.getFirstNode() != -1 || beforeUpdate.getSecondNode() != -1 )
-            {
-                cacheAccess.patchDeletedRelationshipNodes( getKey(), beforeUpdate.getFirstNode(),
-                        beforeUpdate.getFirstNextRel(), beforeUpdate.getSecondNode(), beforeUpdate.getSecondNextRel() );
-            }
             if ( !record.inUse() )
             { // the relationship was deleted - invalidate the cached versions of the related nodes
+                /*
+                 * If isRecovered() then beforeUpdate is the correct one UNLESS this is the second time this command
+                 * is executed, where it might have been actually written out to disk so the fields are already -1. So
+                 * we still need to check.
+                 * If !isRecovered() then beforeUpdate is the same as record, so we are still ok.
+                 * The above is a hand waiving proof that the conditions that lead to the patchDeletedRelationshipNodes()
+                 * in the if below are the same as in RelationshipCommand.execute() so it should be safe.
+                 */
+                if ( beforeUpdate.getFirstNode() != -1 || beforeUpdate.getSecondNode() != -1 )
+                {
+                    cacheAccess.patchDeletedRelationshipNodes( getKey(), beforeUpdate.getType(), beforeUpdate.getFirstNode(),
+                            beforeUpdate.getFirstNextRel(), beforeUpdate.getSecondNode(), beforeUpdate.getSecondNextRel() );
+                }
                 if ( before != null )
                 { // reading from the log
                     cacheAccess.removeNodeFromCache( before.getFirstNode() );

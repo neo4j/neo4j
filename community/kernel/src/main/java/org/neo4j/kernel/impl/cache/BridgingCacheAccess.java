@@ -118,11 +118,12 @@ public class BridgingCacheAccess implements CacheAccessBackDoor
     }
 
     @Override
-    public void patchDeletedRelationshipNodes( long relId, long firstNodeId, long firstNodeNextRelId,
+    public void patchDeletedRelationshipNodes( long relId, int type,
+            long firstNodeId, long firstNodeNextRelId,
             long secondNodeId, long secondNodeNextRelId )
     {
-        nodeManager.patchDeletedRelationshipNodes( relId, firstNodeId, firstNodeNextRelId, secondNodeId,
-                secondNodeNextRelId );
+        nodeManager.patchDeletedRelationshipNodes( relId, type,
+                firstNodeId, firstNodeNextRelId, secondNodeId, secondNodeNextRelId );
     }
 
     @Override

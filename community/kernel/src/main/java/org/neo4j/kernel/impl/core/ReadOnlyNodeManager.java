@@ -24,7 +24,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
-import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
@@ -34,7 +33,7 @@ import org.neo4j.kernel.logging.Logging;
 
 public class ReadOnlyNodeManager extends NodeManager
 {
-    public ReadOnlyNodeManager( Logging logging, GraphDatabaseService graphDb, LockService locks,
+    public ReadOnlyNodeManager( Logging logging, GraphDatabaseService graphDb,
                                 AbstractTransactionManager transactionManager, PersistenceManager persistenceManager,
                                 EntityIdGenerator idGenerator, RelationshipTypeTokenHolder relationshipTypeTokenHolder,
                                 CacheProvider cacheType, PropertyKeyTokenHolder propertyKeyTokenHolder,
@@ -44,7 +43,7 @@ public class ReadOnlyNodeManager extends NodeManager
                                 Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache, XaDataSourceManager xaDsm,
                                 ThreadToStatementContextBridge statementCtxProvider )
     {
-        super( logging, graphDb, locks, transactionManager, persistenceManager, idGenerator,
+        super( logging, graphDb, transactionManager, persistenceManager, idGenerator,
                 relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder, nodeLookup, relationshipLookups,
                 nodeCache, relCache, xaDsm, statementCtxProvider );
     }
