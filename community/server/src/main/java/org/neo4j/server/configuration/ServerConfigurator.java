@@ -25,8 +25,8 @@ import java.util.Map;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.server.NeoServerSettings;
 import org.neo4j.server.WrappingNeoServerBootstrapper;
+import org.neo4j.server.web.ServerInternalSettings;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -55,7 +55,7 @@ public class ServerConfigurator implements ConfigurationBuilder
 
     public ServerConfigurator( GraphDatabaseAPI db )
     {
-        configParams.put( NeoServerSettings.legacy_db_location.name(), db.getStoreDir() );
+        configParams.put( ServerInternalSettings.legacy_db_location.name(), db.getStoreDir() );
         config = new Config( configParams );
         PropertyFileConfigurator.setServerSettingsClasses( config );
     }

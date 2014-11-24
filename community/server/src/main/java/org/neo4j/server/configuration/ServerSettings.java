@@ -27,7 +27,6 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Settings;
-import org.neo4j.server.webadmin.console.ShellSessionCreator;
 
 import static org.neo4j.helpers.Settings.ANY;
 import static org.neo4j.helpers.Settings.BOOLEAN;
@@ -77,7 +76,7 @@ public interface ServerSettings
 
     @Description( "Console engines for the legacy webadmin administr" )
     public static final Setting<List<String>> management_console_engines = setting(
-            "org.neo4j.server.manage.console_engines", STRING_LIST, ShellSessionCreator.NAME );
+            "org.neo4j.server.manage.console_engines", STRING_LIST, "SHELL" );
 
     @Description( "Comma-separated list of <classname>=<mount point> for unmanaged extensions." )
     public static final Setting<List<ThirdPartyJaxRsPackage>> third_party_packages = setting( "org.neo4j.server.thirdparty_jaxrs_classes",

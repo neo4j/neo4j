@@ -30,6 +30,7 @@ import static org.neo4j.helpers.Settings.FALSE;
 import static org.neo4j.helpers.Settings.NORMALIZED_RELATIVE_URI;
 import static org.neo4j.helpers.Settings.PATH;
 import static org.neo4j.helpers.Settings.TRUE;
+import static org.neo4j.helpers.Settings.STRING;
 import static org.neo4j.helpers.Settings.setting;
 
 /**
@@ -76,4 +77,10 @@ public class ServerInternalSettings
 
     public static final Setting<File> authorization_store = setting("dbms.security.authorization_location", PATH, "data/dbms/authorization");
 
+    public static final Setting<File> legacy_db_location = setting( "org.neo4j.server.database.location", PATH, "data/graph.db" );
+
+    public static final Setting<File> legacy_db_config = setting( "org.neo4j.server.db.tuning.properties",
+            PATH, File.separator + "etc" + File.separator + "neo" + File.separator + ServerInternalSettings.DB_TUNING_CONFIG_FILE_NAME );
+
+    public static final Setting<String> legacy_db_mode = setting( "org.neo4j.server.database.mode", STRING, "SINGLE" );
 }

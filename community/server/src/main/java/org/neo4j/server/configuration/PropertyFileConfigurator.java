@@ -29,7 +29,6 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.server.NeoServerSettings;
 import org.neo4j.server.web.ServerInternalSettings;
 
 import static java.util.Arrays.asList;
@@ -85,7 +84,7 @@ public class PropertyFileConfigurator implements ConfigurationBuilder
 
     public static void setServerSettingsClasses( Config config )
     {
-        config.registerSettingsClasses( asList( ServerSettings.class, NeoServerSettings.class,
+        config.registerSettingsClasses( asList( ServerSettings.class,
                 ServerInternalSettings.class, GraphDatabaseSettings.class ) );
     }
 
@@ -103,13 +102,13 @@ public class PropertyFileConfigurator implements ConfigurationBuilder
 
     private void loadDatabaseTuningProperties( File configFile, ConsoleLogger log )
     {
-        String databaseTuningPropertyPath = serverProperties.get( NeoServerSettings.legacy_db_config.name() );
+        String databaseTuningPropertyPath = serverProperties.get( ServerInternalSettings.legacy_db_config.name() );
         if ( databaseTuningPropertyPath == null )
         {
             // try to find the db config file
             databaseTuningPropertyPath =
                     configFile.getParent() + File.separator + ServerInternalSettings.DB_TUNING_CONFIG_FILE_NAME;
-            serverProperties.put( NeoServerSettings.legacy_db_config.name(), databaseTuningPropertyPath );
+            serverProperties.put( ServerInternalSettings.legacy_db_config.name(), databaseTuningPropertyPath );
             log.warn( String.format( "No database tuning file explicitly set, defaulting to [%s]",
                     databaseTuningPropertyPath ) );
         }
@@ -179,7 +178,7 @@ public class PropertyFileConfigurator implements ConfigurationBuilder
         // TODO Should use the same key if they represent the same thing.
         // warning: db_location key used by GraphDatabaseSettings and store_dir key used by NeoServerSettings are
         // different.
-        String db_location = serverConfig.get( NeoServerSettings.legacy_db_location ).getAbsolutePath();
+        String db_location = serverConfig.get( ServerInternalSettings.legacy_db_location ).getAbsolutePath();
         databaseTuningProperties.put( GraphDatabaseSettings.store_dir.name(), db_location );
     }
 

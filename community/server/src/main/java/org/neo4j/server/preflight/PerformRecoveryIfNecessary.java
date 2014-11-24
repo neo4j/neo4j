@@ -28,7 +28,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.recovery.StoreRecoverer;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.server.NeoServerSettings;
+import org.neo4j.server.web.ServerInternalSettings;
 
 public class PerformRecoveryIfNecessary implements PreflightTask
 {
@@ -54,7 +54,7 @@ public class PerformRecoveryIfNecessary implements PreflightTask
     {
         try
         {
-            File dbLocation = config.get( NeoServerSettings.legacy_db_location );
+            File dbLocation = config.get( ServerInternalSettings.legacy_db_location );
 
             if ( dbLocation.exists() )
             {

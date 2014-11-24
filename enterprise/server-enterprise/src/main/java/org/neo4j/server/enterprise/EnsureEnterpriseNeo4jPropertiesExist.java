@@ -27,7 +27,6 @@ import java.util.Properties;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.server.NeoServerSettings;
 import org.neo4j.server.preflight.EnsureNeo4jPropertiesExist;
 import org.neo4j.server.web.ServerInternalSettings;
 
@@ -45,7 +44,7 @@ public class EnsureEnterpriseNeo4jPropertiesExist extends EnsureNeo4jPropertiesE
     @Override
     protected boolean validateProperties( Config config )
     {
-        String dbMode = config.get( NeoServerSettings.legacy_db_mode );
+        String dbMode = config.get( ServerInternalSettings.legacy_db_mode );
         dbMode = dbMode.toUpperCase();
         if ( dbMode.equals( EnterpriseNeoServer.SINGLE ) )
         {
@@ -53,12 +52,12 @@ public class EnsureEnterpriseNeo4jPropertiesExist extends EnsureNeo4jPropertiesE
         }
         if ( !dbMode.equals( EnterpriseNeoServer.HA ) )
         {
-            failureMessage = String.format( "Illegal value for %s \"%s\" in %s", NeoServerSettings.legacy_db_mode.name(), dbMode,
+            failureMessage = String.format( "Illegal value for %s \"%s\" in %s", ServerInternalSettings.legacy_db_mode.name(), dbMode,
                     ServerInternalSettings.SERVER_CONFIG_FILE_KEY );
             return false;
         }
 
-        final File dbTuningFile = config.get( NeoServerSettings.legacy_db_config );
+        final File dbTuningFile = config.get( ServerInternalSettings.legacy_db_config );
         if ( !dbTuningFile.exists() )
         {
             failureMessage = String.format( "No database tuning file at [%s]", dbTuningFile.getAbsoluteFile() );

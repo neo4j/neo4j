@@ -19,6 +19,8 @@
  */
 package org.neo4j.server;
 
+import org.apache.commons.configuration.Configuration;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -27,10 +29,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.servlet.Filter;
 
-import org.apache.commons.configuration.Configuration;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.internal.ServerExecutionEngine;
 import org.neo4j.graphdb.DependencyResolver;
@@ -88,7 +88,6 @@ import org.neo4j.server.security.auth.SecurityCentral;
 import org.neo4j.server.security.ssl.KeyStoreFactory;
 import org.neo4j.server.security.ssl.KeyStoreInformation;
 import org.neo4j.server.security.ssl.SslCertificateFactory;
-import org.neo4j.server.statistic.StatisticCollector;
 import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
@@ -123,7 +122,6 @@ public abstract class AbstractNeoServer implements NeoServer
     protected CypherExecutor cypherExecutor;
     protected ConfigurationBuilder configurator;
     protected WebServer webServer;
-    protected final StatisticCollector statisticsCollector = new StatisticCollector();
 
     protected SecurityCentral security;
 
@@ -263,7 +261,7 @@ public abstract class AbstractNeoServer implements NeoServer
     {
         Map<String, String> result = new HashMap<>( configurator.getDatabaseTuningProperties() );
         result.put( GraphDatabaseSettings.store_dir.name(), configurator.configuration()
-                .get( NeoServerSettings.legacy_db_location ).getAbsolutePath() );
+                .get( ServerInternalSettings.legacy_db_location ).getAbsolutePath() );
 
         putIfAbsent( result, ShellSettings.remote_shell_enabled.name(), Settings.TRUE );
 
