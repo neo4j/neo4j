@@ -267,7 +267,8 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result shouldBe 'nonEmpty
   }
 
-  test("should be able to filter on path nodes") {
+  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
+  ignore("should be able to filter on path nodes") {
     val a = createNode(Map("foo" -> "bar"))
     val b = createNode(Map("foo" -> "bar"))
     val c = createNode(Map("foo" -> "bar"))
@@ -282,7 +283,8 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result.columnAs("pB").toList should equal(List(d))
   }
 
-  test("should return relationships by fetching them from the path - starting from the end") {
+  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
+  ignore("should return relationships by fetching them from the path - starting from the end") {
     val a = createNode()
     val b = createNode()
     val c = createLabeledNode("End")
@@ -295,7 +297,8 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result.columnAs[Node]("RELATIONSHIPS(p)").toList.head should equal(List(r1, r2))
   }
 
-  test("should return relationships by fetching them from the path") {
+  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
+  ignore("should return relationships by fetching them from the path") {
     val a = createLabeledNode("Start")
     val b = createNode()
     val c = createNode()
@@ -308,7 +311,8 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result.columnAs[Node]("RELATIONSHIPS(p)").toList.head should equal(List(r1, r2))
   }
 
-  test("should return relationships by collecting them as a list - wrong way") {
+  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
+  ignore("should return relationships by collecting them as a list - wrong way") {
     val a = createNode()
     val b = createNode()
     val c = createLabeledNode("End")
@@ -321,7 +325,8 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result.columnAs[List[Relationship]]("r").toList.head should equal(List(r1, r2))
   }
 
-  test("should return relationships by collecting them as a list - undirected") {
+  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
+  ignore("should return relationships by collecting them as a list - undirected") {
     val a = createLabeledNode("End")
     val b = createNode()
     val c = createLabeledNode("End")
@@ -335,7 +340,8 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     relationships should equal(Set(List(r1, r2), List(r2, r1)))
   }
 
-  test("should return relationships by collecting them as a list") {
+  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
+  ignore("should return relationships by collecting them as a list") {
     val a = createLabeledNode("Start")
     val b = createNode()
     val c = createNode()
@@ -348,7 +354,8 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result.columnAs[List[Relationship]]("r").toList.head should equal(List(r1, r2))
   }
 
-  test("should return a var length path") {
+  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
+  ignore("should return a var length path") {
     createNodes("A", "B", "C")
     val r1 = relate("A" -> "KNOWS" -> "B")
     val r2 = relate("B" -> "KNOWS" -> "C")
@@ -362,7 +369,8 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     }
   }
 
-  test("a var length path of length zero") {
+  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
+  ignore("a var length path of length zero") {
     val a = createNode()
     val b = createNode()
     relate(a, b)
@@ -376,7 +384,8 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
         Map("a" -> a, "b" -> b, "l" -> 1)))
   }
 
-  test("a named var length path of length zero") {
+  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
+  ignore("a named var length path of length zero") {
     createNodes("A", "B", "C")
     val r1 = relate("A" -> "KNOWS" -> "B")
     val r2 = relate("B" -> "FRIEND" -> "C")
@@ -393,7 +402,8 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     }
   }
 
-  test("test zero length var len path in the middle") {
+  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
+  ignore("test zero length var len path in the middle") {
     createNodes("A", "B", "C", "D", "E")
     relate("A" -> "CONTAINS" -> "B")
     relate("B" -> "FRIEND" -> "C")
@@ -408,7 +418,8 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       )
   }
 
-  test("simple var length acceptance test") {
+  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
+  ignore("simple var length acceptance test") {
     createNodes("A", "B", "C", "D")
     relate("A" -> "CONTAINS" -> "B")
     relate("B" -> "CONTAINS" -> "C")
@@ -425,7 +436,8 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       )
   }
 
-  test("should return a var length path without minimal length") {
+  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
+  ignore("should return a var length path without minimal length") {
     createNodes("A", "B", "C")
     val r1 = relate("A" -> "KNOWS" -> "B")
     val r2 = relate("B" -> "KNOWS" -> "C")
@@ -438,7 +450,8 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     ))
   }
 
-  test("should return a var length path with unbound max") {
+  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
+  ignore("should return a var length path with unbound max") {
     createNodes("A", "B", "C")
     val r1 = relate("A" -> "KNOWS" -> "B")
     val r2 = relate("B" -> "KNOWS" -> "C")
@@ -633,7 +646,8 @@ return x, p""").toSet
     ) === result))
   }
 
-  test("should handle optional paths from a combo") {
+  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
+  ignore("should handle optional paths from a combo") {
     val a = createNode("A")
     val b = createNode("B")
     relate(a, b, "X")
@@ -648,7 +662,8 @@ return p""")
     ) === result.toSet)
   }
 
-  test("should handle optional paths from a combo with MATCH") {
+  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
+  ignore("should handle optional paths from a combo with MATCH") {
     val a = createNode("A")
     val b = createNode("B")
     relate(a, b, "X")
@@ -663,7 +678,8 @@ return p""")
     ) === result.toSet)
   }
 
-  test("should handle optional paths from var length path") {
+  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
+  ignore("should handle optional paths from var length path") {
     val a = createNode("A")
     val b = createNode("B")
     val c = createNode("C")
@@ -680,7 +696,8 @@ return r, x, p""")
     ) === result.toSet)
   }
 
-  test("should return an iterable with all relationships from a var length") {
+  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
+  ignore("should return an iterable with all relationships from a var length") {
     val a = createNode()
     val b = createNode()
     val c = createNode()
@@ -706,7 +723,8 @@ return p""")
     result.toList.size should equal (2)
   }
 
-  test("should collect leafs") {
+  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
+  ignore("should collect leafs") {
     val a = createNode()
     val b = createNode()
     val c = createNode()
@@ -840,7 +858,8 @@ RETURN a.name""")
     result should equal (List(Map("a" -> a)))
   }
 
-  test("nullable var length path should work") {
+  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
+  ignore("nullable var length path should work") {
     createNode()
     val b = createNode()
 
@@ -1210,7 +1229,8 @@ return b
     ))
   }
 
-  test("should match fixed-size var length pattern") {
+  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
+  ignore("should match fixed-size var length pattern") {
     val a = createNode()
     val b = createNode()
     val r = relate(a, b)
@@ -1279,7 +1299,8 @@ return b
     result.toList should equal (List(Map("p"->new PathImpl(node))))
   }
 
-  test("match p = (a)-[r*0..]->(b) return p") {
+  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
+  ignore("match p = (a)-[r*0..]->(b) return p") {
     // given a single node
     val node = createNode()
 
@@ -1438,7 +1459,8 @@ return b
     actual shouldNot be(empty)
   }
 
-  test("MATCH (a)-[r1]->()-[r2]->(b) WITH [r1, r2] AS rs LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second") {
+  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
+  ignore("MATCH (a)-[r1]->()-[r2]->(b) WITH [r1, r2] AS rs LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second") {
     val node1 = createNode()
     val node2 = createNode()
     val node3 = createNode()
@@ -1455,7 +1477,8 @@ return b
     ))
   }
 
-  test("MATCH (a)-[r1]->()-[r2]->(b) WITH [r1, r2] AS rs, a AS first, b AS second LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second") {
+  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
+  ignore("MATCH (a)-[r1]->()-[r2]->(b) WITH [r1, r2] AS rs, a AS first, b AS second LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second") {
     val node1 = createNode()
     val node2 = createNode()
     val node3 = createNode()
@@ -1472,7 +1495,8 @@ return b
     ))
   }
 
-  test("MATCH (a)-[r1]->()-[r2]->(b) WITH [r1, r2] AS rs, a AS second, b AS first LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second") {
+  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
+  ignore("MATCH (a)-[r1]->()-[r2]->(b) WITH [r1, r2] AS rs, a AS second, b AS first LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second") {
     val node1 = createNode()
     val node2 = createNode()
     val node3 = createNode()
@@ -1546,7 +1570,8 @@ return b
     ))
   }
 
-  test("MATCH (a:Artist)-[:WORKED_WITH* { year: 1988 }]->(b:Artist) RETURN *") {
+  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
+  ignore("MATCH (a:Artist)-[:WORKED_WITH* { year: 1988 }]->(b:Artist) RETURN *") {
     val a = createLabeledNode("Artist")
     val b = createLabeledNode("Artist")
     val c = createLabeledNode("Artist")
