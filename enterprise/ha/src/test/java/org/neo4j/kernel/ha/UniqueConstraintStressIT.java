@@ -41,6 +41,7 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.test.AbstractClusterTest;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadRule;
+import org.neo4j.test.RepeatRule;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.Matchers.equalTo;
@@ -55,6 +56,9 @@ import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
  */
 public class UniqueConstraintStressIT extends AbstractClusterTest
 {
+    private final int REPETITIONS = 1;
+    public final @Rule RepeatRule repeater = new RepeatRule();
+
     @Before
     public void setUp()
     {
@@ -78,8 +82,96 @@ public class UniqueConstraintStressIT extends AbstractClusterTest
 
     private final AtomicInteger roundNo = new AtomicInteger(0);
 
+    private abstract class Operation
+    {
+        HighlyAvailableGraphDatabase master = cluster.getMaster();
+        HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
+
+        Future<Object> constraintCreation = null;
+        Future<Integer> constraintViolation = null;
+
+        abstract void perform();
+    }
+
+    @RepeatRule.Repeat ( times = REPETITIONS )
     @Test
-    public void shouldNotAllowUniquenessViolationsUnderStress() throws Exception
+    public void shouldNotAllowUniquenessViolationsUnderStress_A() throws Exception
+    {
+        shouldNotAllowUniquenessViolationsUnderStress( new Operation()
+        {
+            @Override
+            void perform()
+            {
+                constraintCreation = masterWork.execute( createConstraint( master ) );
+                constraintViolation = slaveWork.execute( performInsert( slave ) );
+            }
+        } );
+    }
+
+    @RepeatRule.Repeat ( times = REPETITIONS )
+    @Test
+    public void shouldNotAllowUniquenessViolationsUnderStress_B() throws Exception
+    {
+        shouldNotAllowUniquenessViolationsUnderStress( new Operation()
+        {
+            @Override
+            void perform()
+            {
+                constraintViolation = slaveWork.execute( performInsert( slave ) );
+                constraintCreation = masterWork.execute( createConstraint( master ) );
+            }
+        } );
+    }
+
+    @RepeatRule.Repeat ( times = REPETITIONS )
+    @Test
+    public void shouldNotAllowUniquenessViolationsUnderStress_C() throws Exception
+    {
+        shouldNotAllowUniquenessViolationsUnderStress( new Operation()
+        {
+            @Override
+            void perform()
+            {
+                constraintCreation = masterWork.execute( createConstraint( master ) );
+
+                try
+                {
+                    Thread.sleep( 10 );
+                }
+                catch ( InterruptedException e )
+                {
+                }
+
+                constraintViolation = slaveWork.execute( performInsert( slave ) );
+            }
+        } );
+    }
+
+    @RepeatRule.Repeat ( times = REPETITIONS )
+    @Test
+    public void shouldNotAllowUniquenessViolationsUnderStress_D() throws Exception
+    {
+        shouldNotAllowUniquenessViolationsUnderStress( new Operation()
+        {
+            @Override
+            void perform()
+            {
+                constraintViolation = slaveWork.execute( performInsert( slave ) );
+
+                try
+                {
+                    Thread.sleep( 10 );
+                }
+                catch ( InterruptedException e )
+                {
+                }
+
+                constraintCreation = masterWork.execute( createConstraint( master ) );
+            }
+        } );
+    }
+
+    public void shouldNotAllowUniquenessViolationsUnderStress(Operation ops) throws Exception
     {
         // Given
         HighlyAvailableGraphDatabase master = cluster.getMaster();
@@ -119,14 +211,10 @@ public class UniqueConstraintStressIT extends AbstractClusterTest
 
             stress :
             {
-                // Create the constraint on the master
-                Future<Object> constraintCreation = masterWork.execute( createConstraint( master ) );
-
-                // Concurrently start violating the data via the slave
-                Future<Integer> constraintViolation = slaveWork.execute( performInsert( slave ) );
+                ops.perform();
 
                 // And then ensure all is well
-                assertConstraintsNotViolated( constraintCreation, constraintViolation, master );
+                assertConstraintsNotViolated( ops.constraintCreation, ops.constraintViolation, master );
                 successfulAttempts++;
             }
         }
@@ -220,7 +308,7 @@ public class UniqueConstraintStressIT extends AbstractClusterTest
 
                 try
                 {
-                    for ( ; i < 1000; i++ )
+                    for ( ; i < 100; i++ )
                     {
                         try( Transaction tx = slave.beginTx() )
                         {
