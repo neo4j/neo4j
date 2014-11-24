@@ -19,6 +19,14 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static java.lang.System.arraycopy;
+import static java.util.Arrays.binarySearch;
+import static org.neo4j.kernel.impl.cache.SizeOfs.REFERENCE_SIZE;
+import static org.neo4j.kernel.impl.cache.SizeOfs.sizeOfArray;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverheadIncludingReferences;
+import static org.neo4j.kernel.impl.util.RelIdArray.empty;
+import static org.neo4j.kernel.impl.util.RelIdArray.wrap;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -27,7 +35,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
@@ -41,22 +48,12 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.store.CacheLoader;
 import org.neo4j.kernel.impl.api.store.CacheUpdateListener;
+import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
-import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdIterator;
-import org.neo4j.kernel.impl.util.RelationshipFilter;
-
-import static java.lang.System.arraycopy;
-import static java.util.Arrays.binarySearch;
-
-import static org.neo4j.kernel.impl.cache.SizeOfs.REFERENCE_SIZE;
-import static org.neo4j.kernel.impl.cache.SizeOfs.sizeOfArray;
-import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverheadIncludingReferences;
-import static org.neo4j.kernel.impl.util.RelIdArray.empty;
-import static org.neo4j.kernel.impl.util.RelIdArray.wrap;
 
 /**
  * This class currently has multiple responsibilities, and a very complex set of interrelationships with the world
@@ -64,44 +61,6 @@ import static org.neo4j.kernel.impl.util.RelIdArray.wrap;
  *
  * Responsibilities inside this class are slowly being moved over to {@link org.neo4j.kernel.impl.api.Kernel} and its
  * friends.
- *
- * As for the cache parts of this class the following can be said:
- *
- * The node cache is a combination of the node state itself together with state information regarding the
- * completeness of what is cached. The cached state is kept for performance reasons and the uncached state
- * information is necessary for completeness/correctness so that the missing parts can and will be fetched
- * from the disk store on demand.
- *
- * The cached state for a node is carried in the NodeImpl class and apart from node specific state,
- * it also carries some high-level properties of its related relationships, like relationship id, type and direction.
- * This is carried in the associated RelIdArray{WithLoops} classes.
- *
- * The uncached state information is kept by a set of relationship chain loading positions.
- * All other relationship metadata is carried in the relationship cache and not detailed here.
- *
- * Updating the node cache
- * -----------------------
- *
- * The node cache should be updated when changes are performed. Avoiding updates can lead to two problems:
- * <ul>
- * <li>lesser performance</li>
- * <li>incorrect state</li>
- * </ul>
- * The updates must cover the correctness both of the cached as well as the uncached state.
- * Most of the complexities in node cache updating are due to relationship changes, since they are much more dynamic
- * (can be added/removed) and also since only parts of the relationship state may be cached.
- * Failure to update properly can lead to cache poisoning, such as missing or duplicate relationships, f.ex. due to:
- * <ul>
- * <li>not adding to cached state</li>
- * <li>not updating uncached state information correctly</li>
- * <li>mismatch between cached state and uncached state info</li>
- * </ul>
- *
- * The node cache is updated when a:
- * <ul>
- * <li>transaction is committed, see {@link WritableTransactionState}</li>
- * <li>reader loads relationships (as part of getRelationships)</li>
- * </ul>
  */
 public class NodeImpl extends ArrayBasedPrimitive
 {
@@ -120,6 +79,7 @@ public class NodeImpl extends ArrayBasedPrimitive
     private volatile RelationshipLoadingPosition relChainPosition;
     private final long id;
 
+    // newNode will only be true for NodeManager.createNode
     public NodeImpl( long id )
     {
         this.id = id;
@@ -295,27 +255,30 @@ public class NodeImpl extends ArrayBasedPrimitive
             int[] types, CacheUpdateListener cacheUpdateListener )
     {
         Triplet<ArrayMap<Integer, RelIdArray>, List<RelationshipImpl>, RelationshipLoadingPosition> rels = null;
-        synchronized ( this )
+        try ( Lock ignored = relationshipLoader.lowLevelNodeReadLock( id ) )
         {
-            if ( relationships == null ||
-                 (relationships.length == 0 && relChainPosition.hasMore( direction, types )) )
+            synchronized ( this )
             {
-                try
+                if ( relationships == null ||
+                     (relationships.length == 0 && relChainPosition.hasMore( direction, types )) )
                 {
-                    relChainPosition = relationshipLoader.getRelationshipChainPosition( getId() );
-                }
-                catch ( InvalidRecordException e )
-                {
-                    throw new NotFoundException( "Node[" + id + "]" +
-                                                 " concurrently deleted while loading its relationships?", e );
-                }
+                    try
+                    {
+                        relChainPosition = relationshipLoader.getRelationshipChainPosition( getId() );
+                    }
+                    catch ( InvalidRecordException e )
+                    {
+                        throw new NotFoundException( "Node[" + id + "]" +
+                                                     " concurrently deleted while loading its relationships?", e );
+                    }
 
-                ArrayMap<Integer, RelIdArray> tmpRelMap = new ArrayMap<>();
-                rels = getMoreRelationships( relationshipLoader, tmpRelMap, direction, types );
-                this.relationships = toRelIdArray( tmpRelMap );
-                this.relChainPosition = rels == null ? RelationshipLoadingPosition.EMPTY : rels.third();
-                moreRelationshipsLoaded();
-                cacheUpdateListener.newSize( this, sizeOfObjectInBytesIncludingOverhead() );
+                    ArrayMap<Integer, RelIdArray> tmpRelMap = new ArrayMap<>();
+                    rels = getMoreRelationships( relationshipLoader, tmpRelMap, direction, types );
+                    this.relationships = toRelIdArray( tmpRelMap );
+                    this.relChainPosition = rels == null ? RelationshipLoadingPosition.EMPTY : rels.third();
+                    moreRelationshipsLoaded();
+                    cacheUpdateListener.newSize( this, sizeOfObjectInBytesIncludingOverhead() );
+                }
             }
         }
         if ( rels != null && rels.second().size() > 0 )
@@ -451,40 +414,43 @@ public class NodeImpl extends ArrayBasedPrimitive
             return LoadStatus.NOTHING;
         }
         boolean more;
-        synchronized ( this )
+        try ( Lock ignored = relationshipLoader.lowLevelNodeReadLock( id ) )
         {
-            if ( !hasMoreRelationshipsToLoad( direction, types ) )
+            synchronized ( this )
             {
-                return LoadStatus.NOTHING;
-            }
-            rels = loadMoreRelationships( relationshipLoader, direction, types );
-            ArrayMap<Integer, RelIdArray> addMap = rels.first();
-            if ( addMap.size() == 0 )
-            {
-                return LoadStatus.NOTHING;
-            }
-            for ( int type : addMap.keySet() )
-            {
-                RelIdArray addRels = addMap.get( type );
-                RelIdArray srcRels = getRelIdArray( type );
-                if ( srcRels == null )
+                if ( !hasMoreRelationshipsToLoad( direction, types ) )
                 {
-                    putRelIdArray( addRels );
+                    return LoadStatus.NOTHING;
                 }
-                else
+                rels = loadMoreRelationships( relationshipLoader, direction, types );
+                ArrayMap<Integer, RelIdArray> addMap = rels.first();
+                if ( addMap.size() == 0 )
                 {
-                    RelIdArray newSrcRels = srcRels.addAll( addRels );
-                    // This can happen if srcRels gets upgraded to a RelIdArrayWithLoops
-                    if ( newSrcRels != srcRels )
+                    return LoadStatus.NOTHING;
+                }
+                for ( int type : addMap.keySet() )
+                {
+                    RelIdArray addRels = addMap.get( type );
+                    RelIdArray srcRels = getRelIdArray( type );
+                    if ( srcRels == null )
                     {
-                        putRelIdArray( newSrcRels );
+                        putRelIdArray( addRels );
+                    }
+                    else
+                    {
+                        RelIdArray newSrcRels = srcRels.addAll( addRels );
+                        // This can happen if srcRels gets upgraded to a RelIdArrayWithLoops
+                        if ( newSrcRels != srcRels )
+                        {
+                            putRelIdArray( newSrcRels );
+                        }
                     }
                 }
+                relChainPosition = rels.third();
+                moreRelationshipsLoaded();
+                more = hasMoreRelationshipsToLoad( direction, types );
+                cacheUpdateListener.newSize( this, sizeOfObjectInBytesIncludingOverhead() );
             }
-            relChainPosition = rels.third();
-            moreRelationshipsLoaded();
-            more = hasMoreRelationshipsToLoad( direction, types );
-            cacheUpdateListener.newSize( this, sizeOfObjectInBytesIncludingOverhead() );
         }
         relationshipLoader.putAllInRelCache( rels.second() );
         return more ? LoadStatus.LOADED_MORE : LoadStatus.LOADED_END;
@@ -540,146 +506,54 @@ public class NodeImpl extends ArrayBasedPrimitive
         relationships = array;
     }
 
-    protected boolean isDense()
-    {
-        return false;
-    }
-
-    /**
-     * @param dense {@code true} if this node, including the changes in this change set, should be dense,
-     * otherwise {@code false}.
-     * @return {@code true} if this node should be evicted, due to upgrade to dense node for example,
-     * otherwise {@code false}.
-     */
-    public synchronized boolean commitRelationshipMaps(
+    public void commitRelationshipMaps(
             PrimitiveIntObjectMap<RelIdArray> cowRelationshipAddMap,
-            PrimitiveIntObjectMap<PrimitiveLongSet> removeMap,
-            FirstRelationshipIds firstRelationshipIds, boolean dense )
+            PrimitiveIntObjectMap<PrimitiveLongSet> removeMap )
     {
-        if ( dense != isDense() )
-        {
-            return true;
-        }
-
         if ( relationships == null )
         {
             // we will load full in some other tx
-            return false;
+            return;
         }
 
-        if ( cowRelationshipAddMap != null )
+        synchronized ( this )
         {
-            // Instantiate the filter which additions go through. Must be instantiated before we start
-            // adding any relationships as part of this change set.
-            RelationshipFilter filter = filterForAddingRelationships( firstRelationshipIds, relChainPosition );
-
-            PrimitiveIntIterator typeIterator = cowRelationshipAddMap.iterator();
-            while ( typeIterator.hasNext() )
+            if ( cowRelationshipAddMap != null )
             {
-                int type = typeIterator.next();
-                RelIdArray add = cowRelationshipAddMap.get( type );
-                PrimitiveLongSet remove = null;
-                if ( removeMap != null )
+                PrimitiveIntIterator typeIterator = cowRelationshipAddMap.iterator();
+                while ( typeIterator.hasNext() )
                 {
-                    remove = removeMap.get( type );
-                }
-                RelIdArray src = getRelIdArray( type );
-                putRelIdArray( RelIdArray.from( src, add, remove, filter ) );
-            }
-        }
-        if ( removeMap != null )
-        {
-            PrimitiveIntIterator typeIterator = removeMap.iterator();
-            while ( typeIterator.hasNext() )
-            {
-                int type = typeIterator.next();
-                if ( cowRelationshipAddMap != null &&
-                        cowRelationshipAddMap.get( type ) != null )
-                {
-                    continue;
-                }
-                RelIdArray src = getRelIdArray( type );
-                if ( src != null )
-                {
-                    PrimitiveLongSet remove = removeMap.get( type );
-                    putRelIdArray( RelIdArray.from( src, null, remove ) );
+                    int type = typeIterator.next();
+                    RelIdArray add = cowRelationshipAddMap.get( type );
+                    PrimitiveLongSet remove = null;
+                    if ( removeMap != null )
+                    {
+                        remove = removeMap.get( type );
+                    }
+                    RelIdArray src = getRelIdArray( type );
+                    putRelIdArray( RelIdArray.from( src, add, remove ) );
                 }
             }
-        }
-        return false;
-    }
-
-    /**
-     * Instantiates a filter which relationships that committers apply to this cached node must pass
-     * before being added. This filter is needed since there is no synchronization between committers and
-     * regular readers which loads relationships.
-     *
-     * Specifically this filter guards for the following scenario:
-     * <ol>
-     * <li>COMMITTER: updates records as part of commit, and completes that work.</li>
-     * <li>READER: comes in before COMMITTER applies its changes to cache and either loads the node fresh if it
-     * has been evicted, or starts loading relationships if no relationships have been loaded yet. It will then see
-     * the new changes made by COMMITTER. By the way, relationship chain additions are atomically visible,
-     * as a result of the order that records are committed. Also, for clarification, loading relationships
-     * implies also adding them to the relationship id cache on each node.</li>
-     * <li>COMMITTER: adds the created relationships to the cached nodes and no duplication detection is made,
-     * since that would be expensive and wouldn't scale.</li>
-     * <li>At this point the relationships that COMMITTER created now exists two times in the cache.</li>
-     * </ol>
-     *
-     * This all assumes that applying a commit means writing record changes to store first,
-     * and then updating the cache. Doing it the other way around would have solved some tricky races that
-     * we guard for here below, but fails in the face of random cache eviction.
-     *
-     * Solution presented here is to make the COMMITTER aware of this problem and let it have the ability to
-     * not add its created relationships to cache where any READER has already loaded the very same relationships.
-     * There's further documentation in each specific check within the implementation of this filter.
-     *
-     * @param firstRelationshipIdsToCommit object that is able to provide information about which relationship
-     * ids will be the first in each changed relationship chain, as part of this commit.
-     */
-    protected RelationshipFilter filterForAddingRelationships( final FirstRelationshipIds firstRelationshipIdsToCommit,
-            RelationshipLoadingPosition relChainPosition )
-    {
-        // Before we start to add any relationships as part of this commit, find and keep all first ids for every chain
-        final PrimitiveLongSet cachedFirstIds = gatherFirstIds();
-        return new RelationshipFilter()
-        {
-            @Override
-            public boolean accept( int type, DirectionWrapper direction, long firstCachedId )
+            if ( removeMap != null )
             {
-                long firstIdToCommit = firstRelationshipIdsToCommit.firstIdOf( type, direction );
-                assert firstIdToCommit != Record.NO_NEXT_RELATIONSHIP.intValue() :
-                        "About to add relationships of " + type + " " + direction +
-                        " to node " + getId() + ", but apparently the tx state says that no such relationships " +
-                        "are to be added " + firstRelationshipIdsToCommit;
-
-                // For sparse nodes there's a mismatch between how the relationship chain is laid out on disk
-                // and how it's represented in the cache. On disk all relationships sits in one long chain,
-                // but in cache relationships are split up by type and direction. The information about which
-                // relationship is the first in the chain is lost after relationships have been loaded, and se
-                // we need to check all cached chains and if any of them has that id as its first one then
-                // we can tell that a READER has already loaded the relationship(s) we're about to commit.
-                return !cachedFirstIds.contains( firstIdToCommit );
-            }
-        };
-    }
-
-    protected PrimitiveLongSet gatherFirstIds()
-    {
-        PrimitiveLongSet result = Primitive.longSet( relationships.length * 3 );
-        for ( RelIdArray ids : relationships )
-        {
-            for ( DirectionWrapper direction : DirectionWrapper.values() )
-            {
-                long firstId = direction.firstId( ids );
-                if ( firstId != Record.NO_NEXT_RELATIONSHIP.intValue() )
+                PrimitiveIntIterator typeIterator = removeMap.iterator();
+                while ( typeIterator.hasNext() )
                 {
-                    result.add( firstId );
+                    int type = typeIterator.next();
+                    if ( cowRelationshipAddMap != null &&
+                            cowRelationshipAddMap.get( type ) != null )
+                    {
+                        continue;
+                    }
+                    RelIdArray src = getRelIdArray( type );
+                    if ( src != null )
+                    {
+                        PrimitiveLongSet remove = removeMap.get( type );
+                        putRelIdArray( RelIdArray.from( src, null, remove ) );
+                    }
                 }
             }
         }
-        return result;
     }
 
     public RelationshipLoadingPosition getRelChainPosition()

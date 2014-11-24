@@ -40,7 +40,7 @@ import org.neo4j.kernel.impl.util.statistics.LocalIntCounter;
  */
 public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RECORD,ADDITIONAL>
 {
-    private Map<KEY, RecordProxy<KEY,RECORD,ADDITIONAL>> recordChanges = new HashMap<>();
+    private Map<KEY, RecordChange<KEY,RECORD,ADDITIONAL>> recordChanges = new HashMap<>();
     private final Loader<KEY,RECORD,ADDITIONAL> loader;
     private final boolean manageBeforeState;
     private final IntCounter changeCounter;
@@ -52,16 +52,15 @@ public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RE
         this.changeCounter = new LocalIntCounter( globalCounter );
     }
 
-    @Override
-    public RecordProxy<KEY, RECORD, ADDITIONAL> getIfLoaded( KEY key )
+    public RecordChange<KEY, RECORD, ADDITIONAL> getIfLoaded( KEY key )
     {
         return recordChanges.get( key );
     }
 
     @Override
-    public RecordProxy<KEY, RECORD, ADDITIONAL> getOrLoad( KEY key, ADDITIONAL additionalData )
+    public RecordChange<KEY, RECORD, ADDITIONAL> getOrLoad( KEY key, ADDITIONAL additionalData )
     {
-        RecordProxy<KEY, RECORD, ADDITIONAL> result = recordChanges.get( key );
+        RecordChange<KEY, RECORD, ADDITIONAL> result = recordChanges.get( key );
         if ( result == null )
         {
             result = new RecordChange<>( recordChanges, changeCounter, key,
@@ -70,7 +69,6 @@ public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RE
         return result;
     }
 
-    @Override
     public void setTo( KEY key, RECORD newRecord, ADDITIONAL additionalData )
     {
         RecordChange<KEY, RECORD, ADDITIONAL> recordChange = new RecordChange<>( recordChanges, changeCounter,
@@ -79,7 +77,6 @@ public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RE
         recordChange.forChangingData();
     }
 
-    @Override
     public int changeSize()
     {
         return changeCounter.value();
@@ -115,13 +112,12 @@ public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RE
         return change;
     }
 
-    @Override
-    public Iterable<RecordProxy<KEY,RECORD,ADDITIONAL>> changes()
+    public Iterable<RecordChange<KEY,RECORD,ADDITIONAL>> changes()
     {
-        return Iterables.filter( new Predicate<RecordProxy<KEY,RECORD,ADDITIONAL>>()
+        return Iterables.filter( new Predicate<RecordChange<KEY,RECORD,ADDITIONAL>>()
         {
             @Override
-            public boolean accept( RecordProxy<KEY, RECORD, ADDITIONAL> item )
+            public boolean accept( RecordChange<KEY, RECORD, ADDITIONAL> item )
             {
                 return item.isChanged();
             }
@@ -130,7 +126,7 @@ public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RE
 
     public static class RecordChange<KEY,RECORD,ADDITIONAL> implements RecordProxy<KEY, RECORD, ADDITIONAL>
     {
-        private final Map<KEY, RecordProxy<KEY, RECORD, ADDITIONAL>> allChanges;
+        private final Map<KEY, RecordChange<KEY, RECORD, ADDITIONAL>> allChanges;
         private final IntCounter changeCounter;
         private final Loader<KEY,RECORD,ADDITIONAL> loader;
 
@@ -143,7 +139,7 @@ public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RE
         private RECORD before;
         private boolean changed;
 
-        public RecordChange(Map<KEY, RecordProxy<KEY, RECORD, ADDITIONAL>> allChanges, IntCounter changeCounter,
+        public RecordChange(Map<KEY, RecordChange<KEY, RECORD, ADDITIONAL>> allChanges, IntCounter changeCounter,
                             KEY key, RECORD record,
                             Loader<KEY, RECORD, ADDITIONAL> loader, boolean manageBeforeState, boolean created, ADDITIONAL additionalData)
         {
@@ -181,9 +177,9 @@ public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RE
             ensureHasBeforeRecordImage();
             if ( !this.changed )
             {
-                RecordProxy<KEY, RECORD, ADDITIONAL> previous = this.allChanges.put( key, this );
+                RecordChange<KEY, RECORD, ADDITIONAL> previous = this.allChanges.put( key, this );
 
-                if( previous == null || !previous.isChanged() )
+                if(previous == null || !previous.changed)
                 {
                     changeCounter.increment();
                 }
@@ -218,7 +214,6 @@ public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RE
             return this.record;
         }
 
-        @Override
         public boolean isChanged()
         {
             return this.changed;
@@ -235,6 +230,7 @@ public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RE
             return before;
         }
 
+        @SuppressWarnings( "unchecked" )
         private void ensureHasBeforeRecordImage()
         {
             if ( manageBeforeState && this.before == null )

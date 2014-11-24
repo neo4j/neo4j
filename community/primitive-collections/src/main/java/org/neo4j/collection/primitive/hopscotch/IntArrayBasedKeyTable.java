@@ -19,8 +19,6 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
-import java.util.Arrays;
-
 import static java.util.Arrays.fill;
 
 /**
@@ -59,21 +57,6 @@ public abstract class IntArrayBasedKeyTable<VALUE> extends PowerOfTwoQuantizedTa
         fill( table, -1 );
     }
 
-    protected long putLong( int actualIndex, long value )
-    {
-        long previous = getLong( actualIndex );
-        table[actualIndex] = (int)value;
-        table[actualIndex+1] = (int)((value&0xFFFFFFFF00000000L) >>> 32);
-        return previous;
-    }
-
-    protected long getLong( int actualIndex )
-    {
-        long low = table[actualIndex]&0xFFFFFFFFL;
-        long high = table[actualIndex+1]&0xFFFFFFFFL;
-        return (high << 32) | low;
-    }
-
     @Override
     public void put( int index, long key, VALUE value )
     {
@@ -104,10 +87,7 @@ public abstract class IntArrayBasedKeyTable<VALUE> extends PowerOfTwoQuantizedTa
         return key;
     }
 
-    protected void internalRemove( int actualIndex )
-    {
-        Arrays.fill( table, actualIndex, actualIndex + itemsPerEntry - 1 /*leave the hop bits alone*/, -1 );
-    }
+    protected abstract void internalRemove( int actualIndex );
 
     protected abstract void internalPut( int actualIndex, long key, VALUE value );
 

@@ -96,10 +96,10 @@ public class NeoStoreTransactionApplier extends NeoCommandHandler.Adapter
          * in the if below are the same as in RelationshipCommand.execute() so it should be safe.
          */
         boolean relationshipHasBeenDeletedButNotPreviouslyAppliedToStore =
-                !record.inUse() && (record.getFirstNode() != -1 || record.getSecondNode() != -1);
+                record.getFirstNode() != -1 || record.getSecondNode() != -1;
         if ( relationshipHasBeenDeletedButNotPreviouslyAppliedToStore )
         {   // ... then we can use the fields in that record to patch the cache
-            cacheAccess.patchDeletedRelationshipNodes( command.getKey(), record.getType(), record.getFirstNode(),
+            cacheAccess.patchDeletedRelationshipNodes( command.getKey(), record.getFirstNode(),
                     record.getFirstNextRel(), record.getSecondNode(), record.getSecondNextRel() );
         }
         return false;

@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.transaction.state.RecordAccess;
  */
 public abstract class BatchingRecordAccess<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RECORD,ADDITIONAL>
 {
-    private final List<RecordProxy<KEY,RECORD,ADDITIONAL>> proxies = new ArrayList<>();
+    private final List<BatchingRecordProxy<KEY,RECORD,ADDITIONAL>> proxies = new ArrayList<>();
 
     @Override
     public RecordProxy<KEY,RECORD,ADDITIONAL> getOrLoad( KEY key, ADDITIONAL additionalData )
@@ -54,38 +54,14 @@ public abstract class BatchingRecordAccess<KEY,RECORD,ADDITIONAL> implements Rec
 
     public Iterable<RECORD> records()
     {
-        return new IterableWrapper<RECORD,RecordProxy<KEY,RECORD,ADDITIONAL>>( proxies )
+        return new IterableWrapper<RECORD,BatchingRecordProxy<KEY,RECORD,ADDITIONAL>>( proxies )
         {
             @Override
-            protected RECORD underlyingObjectToObject( RecordProxy<KEY,RECORD,ADDITIONAL> object )
+            protected RECORD underlyingObjectToObject( BatchingRecordProxy<KEY,RECORD,ADDITIONAL> object )
             {
-                return object.forReadingLinkage();
+                return object.record;
             }
         };
-    }
-
-    @Override
-    public RecordProxy<KEY,RECORD,ADDITIONAL> getIfLoaded( KEY key )
-    {
-        throw new UnsupportedOperationException( "Not supported" );
-    }
-
-    @Override
-    public void setTo( KEY key, RECORD newRecord, ADDITIONAL additionalData )
-    {
-        throw new UnsupportedOperationException( "Not supported" );
-    }
-
-    @Override
-    public int changeSize()
-    {
-        return proxies.size();
-    }
-
-    @Override
-    public Iterable<RecordProxy<KEY,RECORD,ADDITIONAL>> changes()
-    {
-        return proxies;
     }
 
     @Override
@@ -98,7 +74,6 @@ public abstract class BatchingRecordAccess<KEY,RECORD,ADDITIONAL> implements Rec
         private final KEY key;
         private final RECORD record;
         private final ADDITIONAL additional;
-        private boolean changed;
 
         private BatchingRecordProxy( KEY key, RECORD record, ADDITIONAL additional )
         {
@@ -147,12 +122,6 @@ public abstract class BatchingRecordAccess<KEY,RECORD,ADDITIONAL> implements Rec
         public RECORD getBefore()
         {
             return null;
-        }
-
-        @Override
-        public boolean isChanged()
-        {
-            return true;
         }
     }
 }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.kernel.impl.transaction.state.RecordAccess;
 import org.neo4j.kernel.impl.transaction.state.RelationshipCreatorTest.Tracker;
 
 public class TrackingRecordAccess<RECORD, ADDITIONAL> implements RecordAccess<Long, RECORD, ADDITIONAL>
@@ -49,39 +49,5 @@ public class TrackingRecordAccess<RECORD, ADDITIONAL> implements RecordAccess<Lo
     public void close()
     {
         delegate.close();
-    }
-
-    @Override
-    public RecordProxy<Long,RECORD,ADDITIONAL> getIfLoaded( Long key )
-    {
-        RecordProxy<Long,RECORD,ADDITIONAL> actual = delegate.getIfLoaded( key );
-        return actual == null ? null : new TrackingRecordProxy<>( actual, false, tracker );
-    }
-
-    @Override
-    public void setTo( Long key, RECORD newRecord, ADDITIONAL additionalData )
-    {
-        delegate.setTo( key, newRecord, additionalData );
-    }
-
-    @Override
-    public int changeSize()
-    {
-        return delegate.changeSize();
-    }
-
-    @Override
-    public Iterable<RecordProxy<Long,RECORD,ADDITIONAL>> changes()
-    {
-        return new IterableWrapper<RecordProxy<Long,RECORD,ADDITIONAL>,RecordProxy<Long,RECORD,ADDITIONAL>>(
-                delegate.changes() )
-        {
-            @Override
-            protected RecordProxy<Long,RECORD,ADDITIONAL> underlyingObjectToObject(
-                    RecordProxy<Long,RECORD,ADDITIONAL> actual )
-            {
-                return new TrackingRecordProxy<>( actual, false, tracker );
-            }
-        };
     }
 }

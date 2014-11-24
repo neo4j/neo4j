@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import static org.neo4j.kernel.impl.api.store.CacheUpdateListener.NO_UPDATES;
+
 import java.util.Collection;
 import java.util.Iterator;
 
@@ -37,7 +39,6 @@ import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
-import org.neo4j.kernel.impl.api.RecordStateForCacheAccessor;
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode;
 import org.neo4j.kernel.impl.cache.AutoLoadingCache;
 import org.neo4j.kernel.impl.core.EntityFactory;
@@ -56,11 +57,6 @@ import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdArrayWithLoops;
-
-import static org.neo4j.kernel.impl.api.store.CacheUpdateListener.NO_UPDATES;
-import static org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper.BOTH;
-import static org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper.INCOMING;
-import static org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper.OUTGOING;
 
 /**
  * This is a cache for the {@link KernelAPI}. Currently it piggy-backs on NodeImpl/RelationshipImpl
@@ -162,7 +158,7 @@ public class PersistenceCache
      * NeoCommandVisitor where each visited command would update the cache accordingly. But for the time being
      * we just do this and invalidate data made by "other" machines.
      */
-    public void apply( TxState txState, final RecordStateForCacheAccessor recordState )
+    public void apply( TxState txState )
     {
         // Apply everything except labels, which is done in the other apply method. TODO sort this out later.
         txState.accept( new TxState.VisitorAdapter()
@@ -213,14 +209,8 @@ public class PersistenceCache
                 NodeImpl node = nodeCache.getIfCached( id );
                 if ( node != null )
                 {
-                    if ( node.commitRelationshipMaps(
-                            translateAddedRelationships( added ),
-                            translateRemovedRelationships( removed ),
-                            recordState.firstRelationshipIdsOf( id ),
-                            recordState.isDense( id ) ) )
-                    {
-                        evictNode( id );
-                    }
+                    node.commitRelationshipMaps( translateAddedRelationships( added ),
+                            translateRemovedRelationships( removed ) );
                 }
             }
 
@@ -496,18 +486,14 @@ public class PersistenceCache
         labelTokenHolder.addToken( token );
     }
 
-    public void patchDeletedRelationshipNodes( long relId, int type, long firstNodeId, long firstNodeNextRelId,
+    public void patchDeletedRelationshipNodes( long relId, long firstNodeId, long firstNodeNextRelId,
             long secondNodeId, long secondNodeNextRelId )
     {
-        boolean loop = firstNodeId == secondNodeId;
-        invalidateNode( firstNodeId, loop ? BOTH : OUTGOING, type, relId, firstNodeNextRelId );
-        if ( !loop )
-        {
-            invalidateNode( secondNodeId, INCOMING, type, relId, secondNodeNextRelId );
-        }
+        invalidateNode( firstNodeId, relId, firstNodeNextRelId );
+        invalidateNode( secondNodeId, relId, secondNodeNextRelId );
     }
 
-    private void invalidateNode( long nodeId, DirectionWrapper direction, int type, long relIdDeleted, long nextRelId )
+    private void invalidateNode( long nodeId, long relIdDeleted, long nextRelId )
     {
         NodeImpl node = nodeCache.getIfCached( nodeId );
         if ( node != null )
@@ -515,15 +501,7 @@ public class PersistenceCache
             RelationshipLoadingPosition position = node.getRelChainPosition();
             if ( position != null )
             {
-                if ( position.atPosition( direction, type, relIdDeleted ) )
-                {
-                    synchronized ( node )
-                    {
-                        // Double-checked locking. The second check will happen inside compareAndAdvance
-                        position = node.getRelChainPosition();
-                        position.compareAndAdvance( direction, type, relIdDeleted, nextRelId );
-                    }
-                }
+                position.compareAndAdvance( relIdDeleted, nextRelId );
             }
         }
     }

@@ -25,7 +25,6 @@ import java.util.NoSuchElementException;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.impl.cache.SizeOfObject;
-import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
 import static java.lang.System.arraycopy;
@@ -160,20 +159,15 @@ public class RelIdArray implements SizeOfObject
 
     public RelIdArray addAll( RelIdArray source )
     {
-        return addAll( source, RelationshipFilter.TRUE );
-    }
-
-    public RelIdArray addAll( RelIdArray source, RelationshipFilter filter )
-    {
         if ( !accepts( source ) )
         {
-            return upgradeIfNeeded( source ).addAll( source, filter );
+            return upgradeIfNeeded( source ).addAll( source );
         }
         else
         {
-            appendFrom( source, DirectionWrapper.OUTGOING, filter );
-            appendFrom( source, DirectionWrapper.INCOMING, filter );
-            appendFrom( source, DirectionWrapper.BOTH, filter );
+            appendFrom( source, DirectionWrapper.OUTGOING );
+            appendFrom( source, DirectionWrapper.INCOMING );
+            appendFrom( source, DirectionWrapper.BOTH );
             return this;
         }
     }
@@ -213,15 +207,15 @@ public class RelIdArray implements SizeOfObject
         return this;
     }
 
-    protected void appendFrom( RelIdArray source, DirectionWrapper direction, RelationshipFilter filter )
+    protected void appendFrom( RelIdArray source, DirectionWrapper direction )
     {
+        IdBlock toBlock = direction.getBlock( this );
         IdBlock fromBlock = direction.getBlock( source );
-        if ( fromBlock == null || !filter.accept( type, direction, direction.firstId( this ) ) )
+        if ( fromBlock == null )
         {
             return;
         }
 
-        IdBlock toBlock = direction.getBlock( this );
         if ( toBlock == null )
         {   // We've got no ids for that direction, just pop it right in (a copy of it)
             direction.setBlock( this, fromBlock.copyAndShrink() );
@@ -371,12 +365,6 @@ public class RelIdArray implements SizeOfObject
             this.direction = direction;
         }
 
-        public long firstId( RelIdArray ids )
-        {
-            IdBlock block = getBlock( ids );
-            return block != null && block.length() > 0 ? block.get( 0 ) : Record.NO_NEXT_RELATIONSHIP.intValue();
-        }
-
         RelIdIterator iterator( RelIdArray ids )
         {
             return new RelIdIteratorImpl( ids, allDirections() );
@@ -475,26 +463,6 @@ public class RelIdArray implements SizeOfObject
         protected abstract long get( int index );
 
         protected abstract void set( long id, int index );
-
-        @Override
-        public String toString()
-        {
-            StringBuilder builder = new StringBuilder( "[" );
-            int len = length();
-            for ( int i = 0; i < len; i++ )
-            {
-                if ( i > 0 )
-                {
-                    builder.append( "," );
-                    if ( i % 10 == 0 )
-                    {
-                        builder.append( "\n" );
-                    }
-                }
-                builder.append( get( i ) );
-            }
-            return builder.append( "]" ).toString();
-        }
     }
 
     private static class LowIdBlock extends IdBlock
@@ -885,27 +853,15 @@ public class RelIdArray implements SizeOfObject
 
     public static RelIdArray from( RelIdArray src, RelIdArray add, PrimitiveLongSet remove )
     {
-        return from( src, add, remove, RelationshipFilter.TRUE );
-    }
-
-    public static RelIdArray from( RelIdArray src, RelIdArray add, PrimitiveLongSet remove,
-            RelationshipFilter filter )
-    {
         if ( remove == null )
         {
             if ( src == null )
             {
-                assert add != null;
-
-                // We create a new array here since we always want to go through the filter
-                // and addAll in this case will be a simple "setBlock", no copy, so that's fine
-                RelIdArray newArray = add.downgradeIfPossible().newSimilarInstance();
-                newArray.addAll( add, filter );
-                return newArray;
+                return add.downgradeIfPossible();
             }
             if ( add != null )
             {
-                src = src.addAll( add, filter );
+                src = src.addAll( add );
                 return src.downgradeIfPossible();
             }
             return src;
@@ -929,8 +885,15 @@ public class RelIdArray implements SizeOfObject
         if ( add != null )
         {
             newArray = newArray.upgradeIfNeeded( add );
-            evictExcluded( add, remove );
-            newArray.addAll( add, filter );
+            for ( RelIdIteratorImpl fromIterator = (RelIdIteratorImpl) add.iterator( DirectionWrapper.BOTH );
+                  fromIterator.hasNext();)
+            {
+                long value = fromIterator.next();
+                if ( !remove.contains( value ) )
+                {
+                    newArray.add( value, fromIterator.currentDirection );
+                }
+            }
         }
         return newArray;
     }
@@ -978,15 +941,5 @@ public class RelIdArray implements SizeOfObject
             }
         }
         return result;
-    }
-
-    @Override
-    public String toString()
-    {
-        IdBlock loopBlock = DirectionWrapper.BOTH.getBlock( this );
-        return "RelIdArray for type " + type + ":\n" +
-                "  out: " + (outBlock != null ? outBlock.toString() : "" ) + "\n" +
-                "  in:  " + (inBlock != null ? inBlock.toString() : "" ) + "\n" +
-                "  loop:" + (loopBlock != null ? loopBlock.toString() : "" ) + "\n";
     }
 }

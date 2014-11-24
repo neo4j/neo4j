@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.junit.Test;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -26,8 +28,6 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-
-import org.junit.Test;
 
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
@@ -50,7 +50,6 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.transaction.state.RecordChanges.RecordChange;
 
 import static org.junit.Assert.assertFalse;
@@ -189,7 +188,7 @@ public class WriteTransactionCommandOrderingTest
         when( context.getRelGroupRecords() ).thenReturn( relationshipGroupChanges );
         when( context.getSchemaRuleChanges() ).thenReturn( schemaRuleChanges );
 
-        List<RecordProxy<Long,NodeRecord,Void>> nodeChanges = new LinkedList<>();
+        List<RecordChange<Long,NodeRecord,Void>> nodeChanges = new LinkedList<>();
 
         RecordChange<Long,NodeRecord,Void> deletedNode = mock( RecordChange.class );
         when( deletedNode.getBefore() ).thenReturn( inUseNode() );
@@ -210,19 +209,19 @@ public class WriteTransactionCommandOrderingTest
         when( nodeRecordChanges.changeSize() ).thenReturn( 3 );
 
         when( labelTokenChanges.changes() )
-                .thenReturn( Collections.<RecordProxy<Integer,LabelTokenRecord,Void>>emptyList() );
+                .thenReturn( Collections.<RecordChanges.RecordChange<Integer,LabelTokenRecord,Void>>emptyList() );
         when( relationshipTypeTokenChanges.changes() ).thenReturn(
-                Collections.<RecordProxy<Integer,RelationshipTypeTokenRecord,Void>>emptyList() );
+                Collections.<RecordChanges.RecordChange<Integer,RelationshipTypeTokenRecord,Void>>emptyList() );
         when( propertyKeyTokenChanges.changes() )
-                .thenReturn( Collections.<RecordProxy<Integer,PropertyKeyTokenRecord,Void>>emptyList() );
+                .thenReturn( Collections.<RecordChanges.RecordChange<Integer,PropertyKeyTokenRecord,Void>>emptyList() );
         when( relationshipRecordChanges.changes() )
-                .thenReturn( Collections.<RecordProxy<Long,RelationshipRecord,Void>>emptyList() );
+                .thenReturn( Collections.<RecordChanges.RecordChange<Long,RelationshipRecord,Void>>emptyList() );
         when( propertyRecordChanges.changes() )
-                .thenReturn( Collections.<RecordProxy<Long,PropertyRecord,PrimitiveRecord>>emptyList() );
+                .thenReturn( Collections.<RecordChanges.RecordChange<Long,PropertyRecord,PrimitiveRecord>>emptyList() );
         when( relationshipGroupChanges.changes() ).thenReturn(
-                Collections.<RecordProxy<Long,RelationshipGroupRecord,Integer>>emptyList() );
+                Collections.<RecordChanges.RecordChange<Long,RelationshipGroupRecord,Integer>>emptyList() );
         when( schemaRuleChanges.changes() ).thenReturn(
-                Collections.<RecordProxy<Long,Collection<DynamicRecord>,SchemaRule>>emptyList() );
+                Collections.<RecordChanges.RecordChange<Long,Collection<DynamicRecord>,SchemaRule>>emptyList() );
 
         return new TransactionRecordState( mock( NeoStore.class ), mock( IntegrityValidator.class ), context );
 

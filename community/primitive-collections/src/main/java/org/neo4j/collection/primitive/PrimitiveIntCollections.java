@@ -19,7 +19,6 @@
  */
 package org.neo4j.collection.primitive;
 
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -635,13 +634,22 @@ public class PrimitiveIntCollections
         return array;
     }
 
-    public static int[] asArray( Collection<Integer> values )
+    public static int[] asArray( Iterator<Integer> iterator )
     {
-        int[] array = new int[values.size()];
+        int[] array = new int[8];
         int i = 0;
-        for ( int value : values )
+        for ( ; iterator.hasNext(); i++ )
         {
-            array[i++] = value;
+            if ( i >= array.length )
+            {
+                array = copyOf( array, i << 1 );
+            }
+            array[i] = iterator.next();
+        }
+
+        if ( i < array.length )
+        {
+            array = copyOf( array, i );
         }
         return array;
     }

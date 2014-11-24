@@ -20,7 +20,6 @@
 package org.neo4j.collection.primitive.hopscotch;
 
 import static java.lang.Integer.highestOneBit;
-import static java.lang.Math.max;
 import static java.lang.String.format;
 
 /**
@@ -36,13 +35,17 @@ public abstract class PowerOfTwoQuantizedTable<VALUE> implements Table<VALUE>
 
     protected PowerOfTwoQuantizedTable( int capacity, int h )
     {
+        if ( capacity <= 0 )
+        {
+            throw new IllegalArgumentException( "Illegal capacity " + capacity );
+        }
         if ( h < 4 || h > 32 )
         {
             throw new IllegalArgumentException( "h needs to be 4 <= h <= 32, was " + h );
         }
 
         this.h = h;
-        this.capacity = quantize( max( capacity, 2 ) );
+        this.capacity = quantize( capacity );
         this.tableMask = highestOneBit( this.capacity )-1;
     }
 

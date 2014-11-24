@@ -58,12 +58,11 @@ public interface CacheAccessBackDoor
      * {@link #removeRelationshipFromCache(long)} for that purpose before calling this method.
      *
      * @param relId The relId of the relationship deleted
-     * @param type type of the relationship deleted
      * @param firstNodeId The relId of the first node
      * @param firstNodeNextRelId The next relationship relId of the first node in its relationship chain
      * @param secondNodeId The relId of the second node
      * @param secondNodeNextRelId The next relationship relId of the second node in its relationship chain
      */
-    void patchDeletedRelationshipNodes( long relId, int type,
-            long firstNodeId, long firstNodeNextRelId, long secondNodeId, long secondNodeNextRelId );
+    void patchDeletedRelationshipNodes( long relId, long firstNodeId, long firstNodeNextRelId, long secondNodeId,
+                                      long secondNodeNextRelId );
 }

@@ -32,6 +32,13 @@ public class SingleChainPosition implements RelationshipLoadingPosition
     }
 
     @Override
+    public void updateFirst( long first )
+    {
+        // TODO assert that it's the first position in the chain
+        this.position = first;
+    }
+
+    @Override
     public long position( DirectionWrapper direction, int[] types )
     {
         return this.position;
@@ -51,13 +58,7 @@ public class SingleChainPosition implements RelationshipLoadingPosition
     }
 
     @Override
-    public boolean atPosition( DirectionWrapper direction, int type, long position )
-    {
-        return this.position == position;
-    }
-
-    @Override
-    public void compareAndAdvance( DirectionWrapper direction, int type, long relIdDeleted, long nextRelId )
+    public void compareAndAdvance( long relIdDeleted, long nextRelId )
     {
         if ( position == relIdDeleted )
         {
