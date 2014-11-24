@@ -34,6 +34,7 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsAccessor;
+import org.neo4j.kernel.impl.pagecache.StandalonePageCache;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -190,7 +191,7 @@ public class StoreFactory
         life.start();
         try
         {
-            final PageCache pageCache = createPageCache( fileSystemAbstraction, "build-counts", life );
+            final StandalonePageCache pageCache = createPageCache( fileSystemAbstraction, new Config(), "build-counts" );
             final File storeFileBase = storeFileName( COUNTS_STORE );
             CountsTracker.createEmptyCountsStore( pageCache, storeFileBase,
                     buildTypeDescriptorAndVersion( CountsTracker.STORE_DESCRIPTOR ) );

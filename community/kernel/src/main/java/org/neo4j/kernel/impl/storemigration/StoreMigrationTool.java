@@ -23,24 +23,21 @@ import java.io.File;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
-import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensions;
-import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
+import org.neo4j.kernel.impl.pagecache.StandalonePageCache;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.SystemOutLogging;
 
 import static java.lang.String.format;
-
 import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.ignore;
+import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.storemigration.StoreUpgrader.NO_MONITOR;
 
 /**
@@ -63,10 +60,6 @@ public class StoreMigrationTool
         StoreUpgrader migrationProcess = new StoreUpgrader( upgradeConfiguration, fs, monitor, logging );
 
         LifeSupport life = new LifeSupport();
-        Neo4jJobScheduler jobScheduler = life.add( new Neo4jJobScheduler() );
-        SingleFilePageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs );
-        LifecycledPageCache pageCache = life.add(
-                new LifecycledPageCache( swapperFactory, jobScheduler, config, PageCacheMonitor.NULL ) );
 
         // Add participants from kernel extensions...
         KernelExtensions kernelExtensions = life.add( new KernelExtensions(
@@ -90,7 +83,7 @@ public class StoreMigrationTool
         }
 
         // Perform the migration
-        try
+        try ( StandalonePageCache pageCache = createPageCache( fs, config, "migration-tool" ) )
         {
             long startTime = System.currentTimeMillis();
             migrationProcess.migrateIfNeeded( new File( legacyStoreDirectory ), schemaIndexProvider, pageCache );

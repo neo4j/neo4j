@@ -19,12 +19,15 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
+import java.io.File;
+import java.io.IOException;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
+import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -36,22 +39,87 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
  * All other places where a "proper" page cache is available, e.g. in store migration, should have that one injected.
  * And tests should use the PageCacheRule.
  */
-public class StandalonePageCacheFactory
+public final class StandalonePageCacheFactory
 {
-    public static PageCache createPageCache( FileSystemAbstraction fileSystem, String schedulerName,
-            LifeSupport life )
+    private StandalonePageCacheFactory()
     {
-        final int pageSize = 8192;
-        final int maxPages = 1000;
-        Config config = new Config( MapUtil.stringMap(
-                GraphDatabaseSettings.mapped_memory_page_size.name(), "" + pageSize,
-                GraphDatabaseSettings.mapped_memory_total_size.name(), "" + (pageSize * maxPages) )
-        );
-        Neo4jJobScheduler scheduler = life.add( new Neo4jJobScheduler( schedulerName ) );
-        return life.add( new LifecycledPageCache(
-                new SingleFilePageSwapperFactory( fileSystem ),
-                scheduler,
-                config,
-                PageCacheMonitor.NULL ) );
+        // Not constructable.
+    }
+
+    public static StandalonePageCache createPageCache(
+            FileSystemAbstraction fileSystem, String pageCacheName )
+    {
+        return createPageCache( fileSystem, new Config(), pageCacheName );
+    }
+
+    public static StandalonePageCache createPageCache(
+            FileSystemAbstraction fileSystem, Config config, String pageCacheName )
+    {
+        final LifeSupport life = new LifeSupport();
+        final String qualifiedPageCacheName = "StandalonePageCache[" + pageCacheName + "]";
+
+        Neo4jJobScheduler scheduler = life.add( new Neo4jJobScheduler( qualifiedPageCacheName ) );
+        SingleFilePageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fileSystem );
+
+        Config baseConfig = new Config( MapUtil.stringMap(
+                GraphDatabaseSettings.mapped_memory_total_size.name(), "8M" ) );
+        Config finalConfig = baseConfig.with( config.getParams() );
+        final LifecycledPageCache delegate = life.add(
+                new LifecycledPageCache( swapperFactory, scheduler, finalConfig, PageCacheMonitor.NULL ) );
+
+        return new DelegatingStandalonePageCache( delegate, life, qualifiedPageCacheName );
+    }
+
+    private static final class DelegatingStandalonePageCache implements StandalonePageCache
+    {
+        private final LifecycledPageCache delegate;
+        private final LifeSupport life;
+        private final String pageCacheName;
+
+        private DelegatingStandalonePageCache(
+                LifecycledPageCache delegate,
+                LifeSupport life,
+                String pageCacheName )
+        {
+            this.delegate = delegate;
+            this.life = life;
+            this.pageCacheName = pageCacheName;
+        }
+
+        @Override
+        public PagedFile map( File file, int pageSize ) throws IOException
+        {
+            return delegate.map( file, pageSize );
+        }
+
+        @Override
+        public void unmap( File file ) throws IOException
+        {
+            delegate.unmap( file );
+        }
+
+        @Override
+        public void flush() throws IOException
+        {
+            delegate.flush();
+        }
+
+        @Override
+        public void close()
+        {
+            life.shutdown();
+        }
+
+        @Override
+        public int pageSize()
+        {
+            return delegate.pageSize();
+        }
+
+        @Override
+        public int maxCachedPages()
+        {
+            return delegate.maxCachedPages();
+        }
     }
 }
