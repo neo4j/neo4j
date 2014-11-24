@@ -50,7 +50,7 @@ public class KernelTransactionFactory
 
         return new KernelTransactionImplementation( mock( StatementOperationParts.class ),
                 mock( SchemaWriteGuard.class ), null, null,
-                null, mock( TransactionRecordState.class ),
+                null, mock( TransactionRecordState.class ), null,
                 null, mock( NeoStore.class ), new NoOpClient(), new TransactionHooks(),
                 mock( ConstraintIndexCreator.class ), headerInformationFactory,
                 mock( TransactionRepresentationCommitProcess.class ), mock( TransactionMonitor.class ),

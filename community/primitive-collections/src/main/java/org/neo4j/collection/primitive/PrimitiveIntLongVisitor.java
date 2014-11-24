@@ -17,31 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.collection.primitive.hopscotch;
+package org.neo4j.collection.primitive;
 
-public class LongKeyTable<VALUE>
-        extends IntArrayBasedKeyTable<VALUE>
+public interface PrimitiveIntLongVisitor
 {
-    public LongKeyTable( int capacity, VALUE singleValue )
-    {
-        super( capacity, 3, 32, singleValue );
-    }
-
-    @Override
-    public long key( int index )
-    {
-        return getLong( index( index ) );
-    }
-
-    @Override
-    protected void internalPut( int actualIndex, long key, VALUE value )
-    {
-        putLong( actualIndex, key );
-    }
-
-    @Override
-    protected LongKeyTable<VALUE> newInstance( int newCapacity )
-    {
-        return new LongKeyTable<>( newCapacity, singleValue );
-    }
+    void visited( int key, long value );
 }

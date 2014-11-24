@@ -48,7 +48,6 @@ import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.Mode;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
-import org.neo4j.kernel.impl.transaction.state.RecordChanges.RecordChange;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.statistics.IntCounter;
 
@@ -156,7 +155,7 @@ public class TransactionRecordState implements RecordState
 
         // Collect nodes, relationships, properties
         List<Command> nodeCommands = new ArrayList<>( context.getNodeRecords().changeSize() );
-        for ( RecordChange<Long, NodeRecord, Void> change : context.getNodeRecords().changes() )
+        for ( RecordProxy<Long, NodeRecord, Void> change : context.getNodeRecords().changes() )
         {
             NodeRecord record = change.forReadingLinkage();
             integrityValidator.validateNodeRecord( record );
@@ -176,7 +175,7 @@ public class TransactionRecordState implements RecordState
         Collections.sort( relCommands, COMMAND_SORTER );
 
         List<Command> propCommands = new ArrayList<>( context.getPropertyRecords().changeSize() );
-        for ( RecordChange<Long, PropertyRecord, PrimitiveRecord> change : context.getPropertyRecords().changes() )
+        for ( RecordProxy<Long, PropertyRecord, PrimitiveRecord> change : context.getPropertyRecords().changes() )
         {
             Command.PropertyCommand command = new Command.PropertyCommand();
             command.init( change.getBefore(), change.forReadingLinkage() );
@@ -193,9 +192,9 @@ public class TransactionRecordState implements RecordState
         }
         Collections.sort( relGroupCommands, COMMAND_SORTER );
 
-        addFiltered( commands, Mode.CREATE, propCommands, relCommands, nodeCommands, relGroupCommands );
-        addFiltered( commands, Mode.UPDATE, propCommands, relCommands, nodeCommands, relGroupCommands );
-        addFiltered( commands, Mode.DELETE, propCommands, relCommands, nodeCommands, relGroupCommands );
+        addFiltered( commands, Mode.CREATE, propCommands, relCommands, relGroupCommands, nodeCommands );
+        addFiltered( commands, Mode.UPDATE, propCommands, relCommands, relGroupCommands, nodeCommands );
+        addFiltered( commands, Mode.DELETE, propCommands, relCommands, relGroupCommands, nodeCommands );
 
         if ( neoStoreRecord != null )
         {
@@ -206,7 +205,7 @@ public class TransactionRecordState implements RecordState
                 commands.add( command );
             }
         }
-        for ( RecordChange<Long, Collection<DynamicRecord>, SchemaRule> change : context.getSchemaRuleChanges().changes() )
+        for ( RecordProxy<Long, Collection<DynamicRecord>, SchemaRule> change : context.getSchemaRuleChanges().changes() )
         {
             integrityValidator.validateSchemaRule( change.getAdditionalData() );
             Command.SchemaRuleCommand command = new Command.SchemaRuleCommand();

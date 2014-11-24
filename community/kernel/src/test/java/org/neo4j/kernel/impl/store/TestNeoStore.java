@@ -19,13 +19,6 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -36,6 +29,13 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Node;
@@ -112,6 +112,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;
@@ -482,12 +483,6 @@ public class TestNeoStore
         }
 
         @Override
-        public void updateFirst( long first )
-        {
-            actual.updateFirst( first );
-        }
-
-        @Override
         public long position( DirectionWrapper direction, int[] types )
         {
             return actual.position( direction, types );
@@ -506,15 +501,21 @@ public class TestNeoStore
         }
 
         @Override
-        public void compareAndAdvance( long relIdDeleted, long nextRelId )
+        public boolean atPosition( DirectionWrapper direction, int type, long position )
         {
-            actual.compareAndAdvance( relIdDeleted, nextRelId );
+            return actual.atPosition( direction, type, position );
+        }
+
+        @Override
+        public void compareAndAdvance( DirectionWrapper direction, int type, long relIdDeleted, long nextRelId )
+        {
+            actual.compareAndAdvance( direction, type, relIdDeleted, nextRelId );
         }
 
         @Override
         public RelationshipLoadingPosition clone()
         {
-            return actual.clone();
+            return new MutableRelationshipLoadingPosition( actual.clone() );
         }
     }
 

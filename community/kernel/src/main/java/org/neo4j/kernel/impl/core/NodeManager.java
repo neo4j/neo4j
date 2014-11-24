@@ -19,16 +19,15 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-
-import static java.lang.System.currentTimeMillis;
-
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.PropertyTracker;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+
+import static java.lang.System.currentTimeMillis;
 
 public class NodeManager extends LifecycleAdapter implements EntityFactory
 {

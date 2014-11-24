@@ -370,7 +370,7 @@ public class KernelTransactionImplementationTest
 
     private KernelTransactionImplementation newTransaction()
     {
-        return new KernelTransactionImplementation( null, null, null, null, null, recordState,
+        return new KernelTransactionImplementation( null, null, null, null, null, recordState, null,
                 null, neoStore, new NoOpClient(), hooks, null, headerInformationFactory, commitProcess, transactionMonitor,
                 null, null, legacyIndexState, mock(Pool.class), clock );
     }
