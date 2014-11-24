@@ -38,9 +38,3 @@ include::ql/query-plan/sort.asciidoc[]
 include::ql/query-plan/sorted-limit.asciidoc[]
 include::ql/query-plan/undirected-relationship-by-id-seek.asciidoc[]
 include::ql/query-plan/union.asciidoc[]
-
-////
-24-11-2014: Andrés - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
-include::ql/query-plan/apply.asciidoc[]
-include::ql/query-plan/expand.asciidoc[]
-////
