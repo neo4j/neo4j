@@ -48,6 +48,7 @@ class ProfileRonjaPlanningTest extends ExecutionEngineFunSuite with QueryStatist
   val clock = Clock.SYSTEM_CLOCK
   val queryCacheSize = 100
   val queryPlanTTL = 1000
+  val statsDivergenceThreshold = 0.5
 
   def buildCompiler(metricsFactoryInput: MetricsFactory = SimpleMetricsFactory)(graph: GraphDatabaseService) = {
     val kernelMonitors = new KernelMonitors()
@@ -61,7 +62,7 @@ class ProfileRonjaPlanningTest extends ExecutionEngineFunSuite with QueryStatist
     val metricsFactory = LoggingMetricsFactory(metricsFactoryInput, events)
     val planner = new Planner(monitors, metricsFactory, planningMonitor, clock)
     val pipeBuilder = new LegacyVsNewPipeBuilder(new LegacyPipeBuilder(monitors), planner, planBuilderMonitor)
-    val execPlanBuilder = new ExecutionPlanBuilder(graph, queryPlanTTL, clock, pipeBuilder)
+    val execPlanBuilder = new ExecutionPlanBuilder(graph, statsDivergenceThreshold, queryPlanTTL, clock, pipeBuilder)
     val planCacheFactory = () => new LRUCache[PreparedQuery, ExecutionPlan](queryCacheSize)
     val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
     val cache = new MonitoringCacheAccessor[PreparedQuery, ExecutionPlan](cacheMonitor)

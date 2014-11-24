@@ -267,21 +267,23 @@ case class CompatibilityPlanDescription(inner: InternalPlanDescription, version:
 
 case class CompatibilityFor2_2Cost(graph: GraphDatabaseService,
                                    queryCacheSize: Int,
+                                   statsDivergenceThreshold: Double,
                                    queryPlanTTL: Long,
                                    clock: Clock,
                                    kernelMonitors: KernelMonitors,
                                    kernelAPI: KernelAPI,
                                    logger: StringLogger) extends CompatibilityFor2_2 {
-  protected val compiler =
-    CypherCompilerFactory.ronjaCompiler(graph, queryCacheSize, queryPlanTTL, clock, kernelMonitors, logger)
+  protected val compiler = CypherCompilerFactory.ronjaCompiler(
+    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, kernelMonitors, logger)
 }
 
 case class CompatibilityFor2_2Rule(graph: GraphDatabaseService,
                                    queryCacheSize: Int,
+                                   statsDivergenceThreshold: Double,
                                    queryPlanTTL: Long,
                                    clock: Clock,
                                    kernelMonitors: KernelMonitors,
                                    kernelAPI: KernelAPI) extends CompatibilityFor2_2 {
-  protected val compiler =
-    CypherCompilerFactory.legacyCompiler(graph, queryCacheSize, queryPlanTTL, clock, kernelMonitors)
+  protected val compiler = CypherCompilerFactory.legacyCompiler(
+    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, kernelMonitors)
 }

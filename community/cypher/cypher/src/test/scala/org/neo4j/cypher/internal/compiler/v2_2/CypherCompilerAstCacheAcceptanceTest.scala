@@ -32,9 +32,10 @@ import org.neo4j.kernel.impl.util.{StringLogger, TestLogger}
 import scala.collection.Map
 
 class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
-  def createCompiler(queryCacheSize: Int = 128, queryPlanTTL: Long = 1000, clock: Clock = Clock.SYSTEM_CLOCK,
-                     logger: StringLogger = DEV_NULL) =
-    CypherCompilerFactory.ronjaCompiler(graph, queryCacheSize, queryPlanTTL, clock, kernelMonitors, logger)
+  def createCompiler(queryCacheSize: Int = 128, statsDivergenceThreshold: Double = 0.5, queryPlanTTL: Long = 1000,
+                     clock: Clock = Clock.SYSTEM_CLOCK, logger: StringLogger = DEV_NULL) =
+    CypherCompilerFactory.ronjaCompiler(
+      graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, kernelMonitors, logger)
 
   case class CacheCounts(hits: Int = 0, misses: Int = 0, flushes: Int = 0, evicted: Int = 0) {
     override def toString = s"hits = $hits, misses = $misses, flushes = $flushes, evicted = $evicted"

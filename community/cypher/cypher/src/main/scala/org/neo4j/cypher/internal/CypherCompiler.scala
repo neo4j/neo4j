@@ -33,6 +33,7 @@ object CypherCompiler {
   val DEFAULT_QUERY_CACHE_SIZE: Int = 128
   val DEFAULT_QUERY_PLAN_TTL: Long = 1000 // 1 second
   val CLOCK = Clock.SYSTEM_CLOCK
+  val STATISTICS_DIVERGENCE_THRESHOLD = 0.5
 }
 
 case class PreParsedQuery(statement: String, version: CypherVersion, planType: PlanType)
@@ -52,9 +53,11 @@ class CypherCompiler(graph: GraphDatabaseService,
   private val compatibilityFor2_0 = CompatibilityFor2_0(graph, queryCacheSize)
   private val compatibilityFor2_1 = CompatibilityFor2_1(graph, queryCacheSize, kernelMonitors, kernelAPI)
   private val compatibilityFor2_2Rule =
-    CompatibilityFor2_2Rule(graph, queryCacheSize, queryPlanTTL, CLOCK,  kernelMonitors, kernelAPI)
+    CompatibilityFor2_2Rule(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK,
+      kernelMonitors, kernelAPI)
   private val compatibilityFor2_2Cost =
-    CompatibilityFor2_2Cost(graph, queryCacheSize, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger)
+    CompatibilityFor2_2Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK,
+      kernelMonitors, kernelAPI, logger)
 
   @throws(classOf[SyntaxException])
   def parseQuery(queryText: String): ParsedQuery = {

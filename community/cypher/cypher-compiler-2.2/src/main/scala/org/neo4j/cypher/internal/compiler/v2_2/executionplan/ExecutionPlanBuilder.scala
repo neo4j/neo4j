@@ -53,10 +53,8 @@ trait PipeBuilder {
   def producePlan(inputQuery: PreparedQuery, planContext: PlanContext): PipeInfo
 }
 
-class ExecutionPlanBuilder(graph: GraphDatabaseService, queryPlanTTL: Long, clock: Clock,
-                           pipeBuilder: PipeBuilder) extends PatternGraphBuilder {
-  private val MIN_DIVERGENCE = 0.5
-
+class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold: Double, queryPlanTTL: Long,
+                           clock: Clock, pipeBuilder: PipeBuilder) extends PatternGraphBuilder {
   def build(planContext: PlanContext, inputQuery: PreparedQuery): ExecutionPlan = {
     val abstractQuery = inputQuery.abstractQuery
 
@@ -79,7 +77,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, queryPlanTTL: Long, cloc
         fingerprint.fold(false) { fingerprint =>
           fingerprint.creationTimeMillis + queryPlanTTL <= clock.currentTimeMillis() &&
             lastTxId() != fingerprint.txId &&
-            fingerprint.snapshot.diverges(fingerprint.snapshot.recompute(statistics), MIN_DIVERGENCE)
+            fingerprint.snapshot.diverges(fingerprint.snapshot.recompute(statistics), statsDivergenceThreshold)
         }
       }
     }
