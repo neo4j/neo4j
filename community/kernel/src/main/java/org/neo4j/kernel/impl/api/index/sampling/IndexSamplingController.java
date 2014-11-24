@@ -38,18 +38,18 @@ import static org.neo4j.kernel.impl.util.JobScheduler.Group.indexSamplingControl
 public class IndexSamplingController
 {
     private final IndexSamplingJobFactory jobFactory;
-    private final IndexSamplingJobQueue jobQueue;
+    private final IndexSamplingJobQueue<IndexDescriptor> jobQueue;
     private final IndexSamplingJobTracker jobTracker;
     private final IndexMapSnapshotProvider indexMapSnapshotProvider;
     private final JobScheduler scheduler;
     private final Predicate<IndexDescriptor> indexRecoveryCondition;
-    private final Lock emptyLock = new ReentrantLock( true );
     private final boolean backgroundSampling;
+    private final Lock samplingLock = new ReentrantLock( true );
 
     // use IndexSamplingControllerFactory.create do not instantiate directly
     IndexSamplingController( IndexSamplingConfig config,
                              IndexSamplingJobFactory jobFactory,
-                             IndexSamplingJobQueue jobQueue,
+                             IndexSamplingJobQueue<IndexDescriptor> jobQueue,
                              IndexSamplingJobTracker jobTracker,
                              IndexMapSnapshotProvider indexMapSnapshotProvider,
                              JobScheduler scheduler,
@@ -67,40 +67,20 @@ public class IndexSamplingController
     public void sampleIndexes( IndexSamplingMode mode )
     {
         IndexMap indexMap = indexMapSnapshotProvider.indexMapSnapshot();
-        fillQueue( mode, indexMap );
-
-        if ( mode.blockUntilAllScheduled )
-        {
-            // Wait until last sampling job has been started
-            emptyQueue( indexMap );
-        }
-        else
-        {
-            // Try to schedule as many sampling jobs as possible
-            tryEmptyQueue( indexMap );
-        }
+        jobQueue.addAll( !mode.sampleOnlyIfUpdated, indexMap.descriptors() );
+        scheduleSampling( mode, indexMap );
     }
 
     public void sampleIndex( IndexDescriptor descriptor, IndexSamplingMode mode )
     {
         IndexMap indexMap = indexMapSnapshotProvider.indexMapSnapshot();
-        jobQueue.sampleIndex( mode, descriptor );
-
-        if ( mode.blockUntilAllScheduled )
-        {
-            // Wait until last sampling job has been started
-            emptyQueue( indexMap );
-        }
-        else
-        {
-            // Try to schedule as many sampling jobs as possible
-            tryEmptyQueue( indexMap );
-        }
+        jobQueue.add( !mode.sampleOnlyIfUpdated, descriptor );
+        scheduleSampling( mode, indexMap );
     }
 
     public void recoverIndexSamples()
     {
-        emptyLock.lock();
+        samplingLock.lock();
         try
         {
             IndexMap indexMap = indexMapSnapshotProvider.indexMapSnapshot();
@@ -116,20 +96,26 @@ public class IndexSamplingController
         }
         finally
         {
-            emptyLock.unlock();
+            samplingLock.unlock();
         }
     }
 
-    private void fillQueue( IndexSamplingMode mode, IndexMap indexMap )
+    private void scheduleSampling( IndexSamplingMode mode, IndexMap indexMap )
     {
-        Iterator<IndexDescriptor> descriptors = indexMap.descriptors();
-        while ( descriptors.hasNext() )
+        if ( mode.blockUntilAllScheduled )
         {
-            jobQueue.sampleIndex( mode, descriptors.next() );
+            // Wait until last sampling job has been started
+            scheduleAllSampling( indexMap );
+        }
+        else
+        {
+            // Try to schedule as many sampling jobs as possible
+            tryScheduleSampling( indexMap );
         }
     }
 
-    private void tryEmptyQueue( IndexMap indexMap )
+
+    private void tryScheduleSampling( IndexMap indexMap )
     {
         if ( tryEmptyLock() )
         {
@@ -148,7 +134,7 @@ public class IndexSamplingController
             }
             finally
             {
-                emptyLock.unlock();
+                samplingLock.unlock();
             }
         }
     }
@@ -157,7 +143,7 @@ public class IndexSamplingController
     {
         try
         {
-            return emptyLock.tryLock( 0, SECONDS );
+            return samplingLock.tryLock( 0, SECONDS );
         }
         catch ( InterruptedException ex )
         {
@@ -166,9 +152,9 @@ public class IndexSamplingController
         }
     }
 
-    private void emptyQueue( IndexMap indexMap )
+    private void scheduleAllSampling( IndexMap indexMap )
     {
-        emptyLock.lock();
+        samplingLock.lock();
         try
         {
             Iterable<IndexDescriptor> descriptors = jobQueue.pollAll();
@@ -181,7 +167,7 @@ public class IndexSamplingController
         }
         finally
         {
-            emptyLock.unlock();
+            samplingLock.unlock();
         }
     }
 
@@ -206,16 +192,11 @@ public class IndexSamplingController
     private IndexSamplingJob createSamplingJob( IndexMap indexMap, IndexDescriptor descriptor )
     {
         IndexProxy proxy = indexMap.getIndexProxy( descriptor );
-        IndexSamplingJob job;
         if ( proxy == null || proxy.getState() != InternalIndexState.ONLINE )
         {
-            job = null;
+            return null;
         }
-        else
-        {
-            job = jobFactory.create( proxy );
-        }
-        return job;
+        return jobFactory.create( proxy );
     }
 
     public void start()
