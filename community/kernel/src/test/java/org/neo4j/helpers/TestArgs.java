@@ -292,6 +292,20 @@ public class TestArgs
         assertFalse( args.getBoolean( "saysMeow", true, true ) );
     }
 
+    @Test
+    public void shouldReturnEmptyCollectionForOptionalMissingOption() throws Exception
+    {
+        // Given
+        Args args = Args.withFlags().parse();
+
+        // When
+        Collection<String> interpreted = args.interpretOptions( "something", Converters.<String>optional(),
+                Functions.<String>identity() );
+
+        // Then
+        assertTrue( interpreted.isEmpty() );
+    }
+
     private static enum MyEnum
     {
         first,

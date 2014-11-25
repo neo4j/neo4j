@@ -46,8 +46,8 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
 import static java.lang.System.currentTimeMillis;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.alwaysTrue;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.ArrayUtil.join;
@@ -174,6 +174,39 @@ public class ImportToolTest
                         }
                     }
                 } );
+    }
+
+    @Test
+    public void shouldImportOnlyNodes() throws Exception
+    {
+        // GIVEN
+        List<String> nodeIds = nodeIds();
+        Configuration config = Configuration.COMMAS;
+
+        // WHEN
+        ImportTool.main( arguments(
+                "--into",          directory.absolutePath(),
+                "--nodes",         nodeData( true, config, nodeIds, alwaysTrue() ).getAbsolutePath() ) );
+                // no relationships
+
+        // THEN
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );
+        try ( Transaction tx = db.beginTx() )
+        {
+            int nodeCount = 0;
+            for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+            {
+                assertTrue( node.hasProperty( "name" ) );
+                nodeCount++;
+                assertFalse( node.hasRelationship() );
+            }
+            assertEquals( NODE_COUNT, nodeCount );
+            tx.success();
+        }
+        finally
+        {
+            db.shutdown();
+        }
     }
 
     protected void assertNodeHasLabels( Node node, String[] names )
