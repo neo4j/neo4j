@@ -77,11 +77,13 @@ public class ImportToolTest
     {
         // GIVEN
         List<String> nodeIds = nodeIds();
-        Configuration config = Configuration.COMMAS;
+        Configuration config = Configuration.TABS;
 
         // WHEN
         ImportTool.main( arguments(
                 "--into", directory.absolutePath(),
+                "--delimiter", "TAB",
+                "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
                 "--nodes",
                     nodeHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
                     nodeData( false, config, nodeIds, alwaysTrue() ).getAbsolutePath(),
