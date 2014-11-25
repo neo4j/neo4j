@@ -91,7 +91,7 @@ public class LuceneLabelScanStoreChaosIT
             // THEN
             @SuppressWarnings( "unchecked" )
             Throwable ioe = peel( e, exceptionsOfType( RuntimeException.class ) );
-            assertThat( ioe.getMessage(), containsString( "Label scan store is corrupted" ) );
+            assertThat( ioe.getMessage(), containsString( "Label scan store could not be read" ) );
         }
     }
 

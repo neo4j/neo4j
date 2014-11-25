@@ -74,7 +74,9 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
         {
             IOException exOnClose = safelyCloseTheStore( store );
             throw new UnderlyingStorageException(
-                "Corrupted counts store. Please shut down the database and manually delete the counts store files " +
+                "Counts store seems to be out of date ( last count store txid is " + store.lastTxId() +
+                        " but database wide last txid is " + neoStoreTxId +
+                        " ). Please shut down the database and manually delete the counts store files " +
                 "to have the database recreate them on next startup", exOnClose );
         }
         this.state = new ConcurrentCountsTrackerState( store );
@@ -93,13 +95,13 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
             if ( isAlphaCorrupted && isBetaCorrupted )
             {
                 throw new UnderlyingStorageException(
-                        "Both counts store files are corrupted. Please shut down the database and delete them " +
+                        "Neither of the two store files could be properly opened. Please shut down the database and delete them " +
                         "to have the database recreate the counts store on next startup" );
             }
 
             if ( isAlphaCorrupted )
             {
-                logger.debug( "CountsStore picked beta since alpha store file is corrupted " +
+                logger.debug( "CountsStore picked beta store file since alpha store file could not be opened " +
                               "(txId=" + betaStore.lastTxId() +
                               ", minorVersion=" + betaStore.minorVersion() + ")" );
                 return betaStore;
@@ -107,7 +109,7 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
 
             if ( isBetaCorrupted )
             {
-                logger.debug( "CountsStore picked alpha store file since beta is corrupted " +
+                logger.debug( "CountsStore picked alpha store file since beta store file could not be opened " +
                               "(txId=" + alphaStore.lastTxId() +
                               ", minorVersion=" + alphaStore.minorVersion() + ")" );
                 return alphaStore;

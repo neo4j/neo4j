@@ -281,7 +281,7 @@ public class CountsStoreTest
         catch ( UnderlyingStorageException  ex )
         {
             // then
-            assertEquals( "Counts store contains corrupted values", ex.getMessage() );
+            assertEquals( "Counts store contains unexpected value (0,0)", ex.getMessage() );
         }
     }
 

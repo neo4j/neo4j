@@ -107,7 +107,8 @@ public class NodeRangeDocumentLabelScanStorageStrategy implements LabelScanStora
             }
             else if ( topDocs.scoreDocs.length > 1 )
             {
-                throw new RuntimeException( "This label scan store is corrupted" );
+                throw new RuntimeException( "This label scan store seems to contain an incorrect number of entries ("
+                        + topDocs.scoreDocs.length + ")" );
             }
 
             int doc = topDocs.scoreDocs[0].doc;
