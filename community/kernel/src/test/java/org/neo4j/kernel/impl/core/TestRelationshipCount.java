@@ -19,19 +19,19 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.EnumMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.EnumMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -48,23 +48,21 @@ import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static java.lang.Integer.parseInt;
 import static java.util.Arrays.asList;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 @RunWith( Parameterized.class )
 public class TestRelationshipCount
 {
-    @Parameterized.Parameters
+    @Parameterized.Parameters(name = "denseNodeThreshold={0}")
     public static Collection<Object[]> data()
     {
         Collection<Object[]> data = new ArrayList<>();
         int max = parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() );
         for ( int i = 1; i < max; i++ )
         {
-            data.add( new Object[] { Integer.valueOf( i ) } );
+            data.add( new Object[] {i} );
         }
         return data;
     }

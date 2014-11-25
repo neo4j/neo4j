@@ -107,12 +107,6 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     }
 
     @Override
-    public void flushIndexCounts() throws IOException
-    {
-        counts.rotate( txIdStore.getLastCommittedTransactionId() );
-    }
-
-    @Override
     public <FAILURE extends Exception> StoreScan<FAILURE> visitNodesWithPropertyAndLabel(
             IndexDescriptor descriptor, final Visitor<NodePropertyUpdate, FAILURE> visitor )
     {

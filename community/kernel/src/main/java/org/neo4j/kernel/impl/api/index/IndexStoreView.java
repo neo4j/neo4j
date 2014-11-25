@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.io.IOException;
-
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -58,6 +56,4 @@ public interface IndexStoreView extends PropertyAccessor
     void replaceIndexCounts( IndexDescriptor descriptor, long uniqueElements, long maxUniqueElements, long indexSize );
 
     void incrementIndexUpdates( IndexDescriptor descriptor, long updatesDelta );
-
-    void flushIndexCounts() throws IOException;
 }

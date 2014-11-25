@@ -55,9 +55,9 @@ public class IndexSamplingControllerFactory
         OnlineIndexSamplingJobFactory jobFactory =
                 new OnlineIndexSamplingJobFactory( storeView, tokenNameLookup, logging );
         Predicate<IndexDescriptor> samplingUpdatePredicate = createSamplingPredicate();
-        IndexSamplingJobQueue jobQueue = new IndexSamplingJobQueue( samplingUpdatePredicate );
+        IndexSamplingJobQueue<IndexDescriptor> jobQueue = new IndexSamplingJobQueue<>( samplingUpdatePredicate );
         IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( config, scheduler );
-        Predicate<IndexDescriptor> indexRecoveryCondition = createIndexDescriptorPredicate( logging, tokenNameLookup );
+        Predicate<IndexDescriptor> indexRecoveryCondition = createIndexRecoveryCondition( logging, tokenNameLookup );
         return new IndexSamplingController(
                 config, jobFactory, jobQueue, jobTracker, snapshotProvider, scheduler, indexRecoveryCondition
         );
@@ -81,8 +81,8 @@ public class IndexSamplingControllerFactory
         };
     }
 
-    private Predicate<IndexDescriptor> createIndexDescriptorPredicate( final Logging logging,
-                                                                       final TokenNameLookup tokenNameLookup )
+    private Predicate<IndexDescriptor> createIndexRecoveryCondition( final Logging logging,
+                                                                     final TokenNameLookup tokenNameLookup )
     {
         return new Predicate<IndexDescriptor>()
         {

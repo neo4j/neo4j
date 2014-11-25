@@ -136,7 +136,6 @@ public class IndexPopulationJob implements Runnable
                         storeView.replaceIndexCounts( descriptor, result.readFirst(), result.readSecond(),
                                 indexSize );
 
-                        storeView.flushIndexCounts();
                         populator.close( true );
                         updateableSchemaState.clear();
                         return null;
