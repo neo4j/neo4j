@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import static org.neo4j.kernel.impl.api.store.CacheUpdateListener.NO_UPDATES;
-
 import java.util.Collection;
 import java.util.Iterator;
 
@@ -39,24 +37,28 @@ import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
+import org.neo4j.kernel.impl.api.RecordStateForCacheAccessor;
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode;
 import org.neo4j.kernel.impl.cache.AutoLoadingCache;
 import org.neo4j.kernel.impl.core.EntityFactory;
 import org.neo4j.kernel.impl.core.GraphPropertiesImpl;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeImpl;
-import org.neo4j.kernel.impl.core.NodeImplReservation;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.Primitive;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
 import org.neo4j.kernel.impl.core.RelationshipLoader;
-import org.neo4j.kernel.impl.core.RelationshipLoadingPosition;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdArrayWithLoops;
+
+import static org.neo4j.kernel.impl.api.store.CacheUpdateListener.NO_UPDATES;
+import static org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper.BOTH;
+import static org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper.INCOMING;
+import static org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper.OUTGOING;
 
 /**
  * This is a cache for the {@link KernelAPI}. Currently it piggy-backs on NodeImpl/RelationshipImpl
@@ -133,7 +135,7 @@ public class PersistenceCache
     public NodeImpl getNode( long nodeId ) throws EntityNotFoundException
     {
         NodeImpl node = nodeCache.get( nodeId );
-        if ( node == null || node instanceof NodeImplReservation )
+        if ( node == null )
         {
             throw new EntityNotFoundException( EntityType.NODE, nodeId );
         }
@@ -158,7 +160,7 @@ public class PersistenceCache
      * NeoCommandVisitor where each visited command would update the cache accordingly. But for the time being
      * we just do this and invalidate data made by "other" machines.
      */
-    public void apply( TxState txState )
+    public void apply( TxState txState, final RecordStateForCacheAccessor recordState )
     {
         // Apply everything except labels, which is done in the other apply method. TODO sort this out later.
         txState.accept( new TxState.VisitorAdapter()
@@ -168,13 +170,7 @@ public class PersistenceCache
 
             @Override
             public void visitCreatedNode( long id )
-            {
-                NodeImpl node = nodeCache.getIfCached( id );
-                if ( node instanceof NodeImplReservation )
-                {
-                    // Cache in the reservation
-                    nodeCache.put( node = new NodeImpl( id ), true );
-                }
+            {   // Let readers cache this node later
             }
 
             @Override
@@ -209,8 +205,14 @@ public class PersistenceCache
                 NodeImpl node = nodeCache.getIfCached( id );
                 if ( node != null )
                 {
-                    node.commitRelationshipMaps( translateAddedRelationships( added ),
-                            translateRemovedRelationships( removed ) );
+                    if ( node.commitRelationshipMaps(
+                            translateAddedRelationships( added ),
+                            translateRemovedRelationships( removed ),
+                            recordState.firstRelationshipIdsOf( id ),
+                            recordState.isDense( id ) ) )
+                    {
+                        evictNode( id );
+                    }
                 }
             }
 
@@ -486,34 +488,24 @@ public class PersistenceCache
         labelTokenHolder.addToken( token );
     }
 
-    public void patchDeletedRelationshipNodes( long relId, long firstNodeId, long firstNodeNextRelId,
+    public void patchDeletedRelationshipNodes( long relId, int type, long firstNodeId, long firstNodeNextRelId,
             long secondNodeId, long secondNodeNextRelId )
     {
-        invalidateNode( firstNodeId, relId, firstNodeNextRelId );
-        invalidateNode( secondNodeId, relId, secondNodeNextRelId );
+        boolean loop = firstNodeId == secondNodeId;
+        invalidateNode( firstNodeId, loop ? BOTH : OUTGOING, type, relId, firstNodeNextRelId );
+        if ( !loop )
+        {
+            invalidateNode( secondNodeId, INCOMING, type, relId, secondNodeNextRelId );
+        }
     }
 
-    private void invalidateNode( long nodeId, long relIdDeleted, long nextRelId )
+    private void invalidateNode( long nodeId, DirectionWrapper direction, int type, long relIdDeleted, long nextRelId )
     {
         NodeImpl node = nodeCache.getIfCached( nodeId );
         if ( node != null )
         {
-            RelationshipLoadingPosition position = node.getRelChainPosition();
-            if ( position != null )
-            {
-                position.compareAndAdvance( relIdDeleted, nextRelId );
-            }
+            node.updateRelationshipChainPosition( direction, type, relIdDeleted, nextRelId );
         }
-    }
-
-    public void reserveNode( long nodeId )
-    {
-        nodeCache.put( new NodeImplReservation( nodeId ) );
-    }
-
-    public void releaseNode(long nodeId)
-    {
-        nodeCache.remove( nodeId );
     }
 
     /**

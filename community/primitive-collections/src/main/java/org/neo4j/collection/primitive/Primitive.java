@@ -19,6 +19,7 @@
  */
 package org.neo4j.collection.primitive;
 
+import org.neo4j.collection.primitive.hopscotch.IntKeyLongValueTable;
 import org.neo4j.collection.primitive.hopscotch.IntKeyObjectValueTable;
 import org.neo4j.collection.primitive.hopscotch.IntKeyTable;
 import org.neo4j.collection.primitive.hopscotch.IntKeyUnsafeTable;
@@ -28,6 +29,7 @@ import org.neo4j.collection.primitive.hopscotch.LongKeyObjectValueTable;
 import org.neo4j.collection.primitive.hopscotch.LongKeyTable;
 import org.neo4j.collection.primitive.hopscotch.LongKeyUnsafeTable;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveIntHashSet;
+import org.neo4j.collection.primitive.hopscotch.PrimitiveIntLongHashMap;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveIntObjectHashMap;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveLongHashSet;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveLongIntHashMap;
@@ -137,6 +139,16 @@ public class Primitive
     public static <VALUE> PrimitiveIntObjectMap<VALUE> intObjectMap( int initialCapacity )
     {
         return new PrimitiveIntObjectHashMap<>( new IntKeyObjectValueTable<VALUE>( initialCapacity ), NO_MONITOR );
+    }
+
+    public static PrimitiveIntLongMap intLongMap()
+    {
+        return intLongMap( DEFAULT_HEAP_CAPACITY );
+    }
+
+    public static PrimitiveIntLongMap intLongMap( int initialCapacity )
+    {
+        return new PrimitiveIntLongHashMap( new IntKeyLongValueTable( initialCapacity ), NO_MONITOR );
     }
 
     public static PrimitiveLongIterator iterator( final long... longs )

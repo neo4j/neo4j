@@ -21,15 +21,12 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.core.RelationshipLoadingPosition;
 import org.neo4j.kernel.impl.locking.Locks.Client;
 import org.neo4j.kernel.impl.store.NeoStore;
-import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -57,7 +54,7 @@ public class NeoStoreTransactionContext
     private final RelationshipGroupGetter relationshipGroupGetter;
     private final RelationshipChainLoader relationshipLoader;
 
-    private final RecordChangeSet recordChangeSet;
+    private final RecordAccessSet recordChangeSet;
     private final NeoStore neoStore;
 
     public NeoStoreTransactionContext( NeoStoreTransactionContextSupplier supplier, NeoStore neoStore )
@@ -77,6 +74,11 @@ public class NeoStoreTransactionContext
         relationshipLoader = new RelationshipChainLoader( neoStore );
     }
 
+    public RecordAccessSet getRecordChangeSet()
+    {
+        return recordChangeSet;
+    }
+
     public ArrayMap<Integer, DefinedProperty> relationshipDelete( long relId )
     {
         return relationshipDeleter.relDelete( relId, recordChangeSet );
@@ -87,7 +89,7 @@ public class NeoStoreTransactionContext
         relationshipCreator.relationshipCreate( id, typeId, startNodeId, endNodeId, recordChangeSet );
     }
 
-    public ArrayMap<Integer, DefinedProperty>  getAndDeletePropertyChain( NodeRecord nodeRecord )
+    public ArrayMap<Integer, DefinedProperty> getAndDeletePropertyChain( NodeRecord nodeRecord )
     {
         return propertyDeleter.getAndDeletePropertyChain( nodeRecord,
                 recordChangeSet.getPropertyRecords() );
@@ -149,42 +151,42 @@ public class NeoStoreTransactionContext
         supplier.release( this );
     }
 
-    public RecordChanges<Long, NodeRecord, Void> getNodeRecords()
+    public RecordAccess<Long, NodeRecord, Void> getNodeRecords()
     {
         return recordChangeSet.getNodeRecords();
     }
 
-    public RecordChanges<Long, RelationshipRecord, Void> getRelRecords()
+    public RecordAccess<Long, RelationshipRecord, Void> getRelRecords()
     {
         return recordChangeSet.getRelRecords();
     }
 
-    public RecordChanges<Long, Collection<DynamicRecord>, SchemaRule> getSchemaRuleChanges()
+    public RecordAccess<Long, Collection<DynamicRecord>, SchemaRule> getSchemaRuleChanges()
     {
         return recordChangeSet.getSchemaRuleChanges();
     }
 
-    public RecordChanges<Long, PropertyRecord, PrimitiveRecord> getPropertyRecords()
+    public RecordAccess<Long, PropertyRecord, PrimitiveRecord> getPropertyRecords()
     {
         return recordChangeSet.getPropertyRecords();
     }
 
-    public RecordChanges<Long, RelationshipGroupRecord, Integer> getRelGroupRecords()
+    public RecordAccess<Long, RelationshipGroupRecord, Integer> getRelGroupRecords()
     {
         return recordChangeSet.getRelGroupRecords();
     }
 
-    public RecordChanges<Integer,PropertyKeyTokenRecord,Void> getPropertyKeyTokenRecords()
+    public RecordAccess<Integer,PropertyKeyTokenRecord,Void> getPropertyKeyTokenRecords()
     {
         return recordChangeSet.getPropertyKeyTokenChanges();
     }
 
-    public RecordChanges<Integer,LabelTokenRecord,Void> getLabelTokenRecords()
+    public RecordAccess<Integer,LabelTokenRecord,Void> getLabelTokenRecords()
     {
         return recordChangeSet.getLabelTokenChanges();
     }
 
-    public RecordChanges<Integer,RelationshipTypeTokenRecord,Void> getRelationshipTypeTokenRecords()
+    public RecordAccess<Integer,RelationshipTypeTokenRecord,Void> getRelationshipTypeTokenRecords()
     {
         return recordChangeSet.getRelationshipTypeTokenChanges();
     }
@@ -214,13 +216,6 @@ public class NeoStoreTransactionContext
     public boolean hasChanges()
     {
         return recordChangeSet.hasChanges();
-    }
-
-    public Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, RelationshipLoadingPosition> getMoreRelationships(
-            long nodeId, RelationshipLoadingPosition position, DirectionWrapper direction,
-            int[] types, RelationshipStore relationshipStore )
-    {
-        return relationshipLoader.getMoreRelationships( nodeId, position, direction, types );
     }
 
     public int getRelationshipCount( long id, int type, DirectionWrapper direction )

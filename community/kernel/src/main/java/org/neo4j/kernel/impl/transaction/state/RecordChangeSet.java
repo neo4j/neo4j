@@ -32,88 +32,102 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
+import org.neo4j.kernel.impl.transaction.state.RecordAccess.Loader;
 import org.neo4j.kernel.impl.util.statistics.IntCounter;
 
 public class RecordChangeSet implements RecordAccessSet
 {
-    private final RecordChanges<Long, NodeRecord, Void> nodeRecords;
-    private final RecordChanges<Long, PropertyRecord, PrimitiveRecord> propertyRecords;
-    private final RecordChanges<Long, RelationshipRecord, Void> relRecords;
-    private final RecordChanges<Long, RelationshipGroupRecord, Integer> relGroupRecords;
-    private final RecordChanges<Long, Collection<DynamicRecord>, SchemaRule> schemaRuleChanges;
-    private final RecordChanges<Integer, PropertyKeyTokenRecord, Void> propertyKeyTokenChanges;
-    private final RecordChanges<Integer, LabelTokenRecord, Void> labelTokenChanges;
-    private final RecordChanges<Integer, RelationshipTypeTokenRecord, Void> relationshipTypeTokenChanges;
+    private final RecordAccess<Long, NodeRecord, Void> nodeRecords;
+    private final RecordAccess<Long, PropertyRecord, PrimitiveRecord> propertyRecords;
+    private final RecordAccess<Long, RelationshipRecord, Void> relRecords;
+    private final RecordAccess<Long, RelationshipGroupRecord, Integer> relGroupRecords;
+    private final RecordAccess<Long, Collection<DynamicRecord>, SchemaRule> schemaRuleChanges;
+    private final RecordAccess<Integer, PropertyKeyTokenRecord, Void> propertyKeyTokenChanges;
+    private final RecordAccess<Integer, LabelTokenRecord, Void> labelTokenChanges;
+    private final RecordAccess<Integer, RelationshipTypeTokenRecord, Void> relationshipTypeTokenChanges;
     private final IntCounter changeCounter = new IntCounter();
 
     public RecordChangeSet( NeoStore neoStore )
     {
-        this.nodeRecords = new RecordChanges<>(
-                Loaders.nodeLoader( neoStore.getNodeStore() ), true, changeCounter );
-        this.propertyRecords = new RecordChanges<>(
-                Loaders.propertyLoader( neoStore.getPropertyStore() ), true, changeCounter );
-        this.relRecords = new RecordChanges<>(
-                Loaders.relationshipLoader( neoStore.getRelationshipStore() ), false, changeCounter );
-        this.relGroupRecords = new RecordChanges<>(
-                Loaders.relationshipGroupLoader( neoStore.getRelationshipGroupStore() ), false, changeCounter );
-        this.schemaRuleChanges = new RecordChanges<>(
-                Loaders.schemaRuleLoader( neoStore.getSchemaStore() ), true, changeCounter );
-        this.propertyKeyTokenChanges = new RecordChanges<>(
-                Loaders.propertyKeyTokenLoader( neoStore.getPropertyKeyTokenStore() ), false, changeCounter );
-        this.labelTokenChanges = new RecordChanges<>(
-                Loaders.labelTokenLoader( neoStore.getLabelTokenStore() ), false, changeCounter );
-        this.relationshipTypeTokenChanges = new RecordChanges<>(
-                Loaders.relationshipTypeTokenLoader( neoStore.getRelationshipTypeTokenStore() ), false, changeCounter );
+        this(   Loaders.nodeLoader( neoStore.getNodeStore() ),
+                Loaders.propertyLoader( neoStore.getPropertyStore() ),
+                Loaders.relationshipLoader( neoStore.getRelationshipStore() ),
+                Loaders.relationshipGroupLoader( neoStore.getRelationshipGroupStore() ),
+                Loaders.schemaRuleLoader( neoStore.getSchemaStore() ),
+                Loaders.propertyKeyTokenLoader( neoStore.getPropertyKeyTokenStore() ),
+                Loaders.labelTokenLoader( neoStore.getLabelTokenStore() ),
+                Loaders.relationshipTypeTokenLoader( neoStore.getRelationshipTypeTokenStore() ) );
+    }
+
+    public RecordChangeSet(
+            Loader<Long,NodeRecord,Void> nodeLoader,
+            Loader<Long,PropertyRecord,PrimitiveRecord> propertyLoader,
+            Loader<Long,RelationshipRecord,Void> relationshipLoader,
+            Loader<Long,RelationshipGroupRecord,Integer> relationshipGroupLoader,
+            Loader<Long,Collection<DynamicRecord>,SchemaRule> schemaRuleLoader,
+            Loader<Integer,PropertyKeyTokenRecord,Void> propertyKeyTokenLoader,
+            Loader<Integer,LabelTokenRecord,Void> labelTokenLoader,
+            Loader<Integer,RelationshipTypeTokenRecord,Void> relationshipTypeTokenLoader )
+    {
+        this.nodeRecords = new RecordChanges<>( nodeLoader, true, changeCounter );
+        this.propertyRecords = new RecordChanges<>( propertyLoader, true, changeCounter );
+        this.relRecords = new RecordChanges<>( relationshipLoader, false, changeCounter );
+        this.relGroupRecords = new RecordChanges<>( relationshipGroupLoader, false, changeCounter );
+        this.schemaRuleChanges = new RecordChanges<>( schemaRuleLoader, true, changeCounter );
+        this.propertyKeyTokenChanges = new RecordChanges<>( propertyKeyTokenLoader, false, changeCounter );
+        this.labelTokenChanges = new RecordChanges<>( labelTokenLoader, false, changeCounter );
+        this.relationshipTypeTokenChanges = new RecordChanges<>( relationshipTypeTokenLoader, false, changeCounter );
     }
 
     @Override
-    public RecordChanges<Long, NodeRecord, Void> getNodeRecords()
+    public RecordAccess<Long, NodeRecord, Void> getNodeRecords()
     {
         return nodeRecords;
     }
 
     @Override
-    public RecordChanges<Long, PropertyRecord, PrimitiveRecord> getPropertyRecords()
+    public RecordAccess<Long, PropertyRecord, PrimitiveRecord> getPropertyRecords()
     {
         return propertyRecords;
     }
 
     @Override
-    public RecordChanges<Long, RelationshipRecord, Void> getRelRecords()
+    public RecordAccess<Long, RelationshipRecord, Void> getRelRecords()
     {
         return relRecords;
     }
 
     @Override
-    public RecordChanges<Long, RelationshipGroupRecord, Integer> getRelGroupRecords()
+    public RecordAccess<Long, RelationshipGroupRecord, Integer> getRelGroupRecords()
     {
         return relGroupRecords;
     }
 
     @Override
-    public RecordChanges<Long, Collection<DynamicRecord>, SchemaRule> getSchemaRuleChanges()
+    public RecordAccess<Long, Collection<DynamicRecord>, SchemaRule> getSchemaRuleChanges()
     {
         return schemaRuleChanges;
     }
 
     @Override
-    public RecordChanges<Integer, PropertyKeyTokenRecord, Void> getPropertyKeyTokenChanges()
+    public RecordAccess<Integer, PropertyKeyTokenRecord, Void> getPropertyKeyTokenChanges()
     {
         return propertyKeyTokenChanges;
     }
 
     @Override
-    public RecordChanges<Integer, LabelTokenRecord, Void> getLabelTokenChanges()
+    public RecordAccess<Integer, LabelTokenRecord, Void> getLabelTokenChanges()
     {
         return labelTokenChanges;
     }
 
     @Override
-    public RecordChanges<Integer, RelationshipTypeTokenRecord, Void> getRelationshipTypeTokenChanges()
+    public RecordAccess<Integer, RelationshipTypeTokenRecord, Void> getRelationshipTypeTokenChanges()
     {
         return relationshipTypeTokenChanges;
     }
 
+    @Override
     public boolean hasChanges()
     {
         return changeCounter.value() > 0;
