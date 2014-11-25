@@ -18,28 +18,20 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-'use strict'
+'use strict';
 
-angular.module('neo4jApp.controllers', ['neo4jApp.utils'])
-angular.module('neo4jApp.directives', ['ui.bootstrap.dialog'])
-angular.module('neo4jApp.filters', [])
-angular.module('neo4jApp.services', ['LocalStorageModule', 'neo4jApp.settings', 'neo4jApp.utils', 'base64'])
+angular.module('neo4jApp.services')
+  .factory('RequestInterceptor', [
+    'AuthDataService'
+    (AuthDataService) ->
+      interceptor = 
+        request: (config) ->
+          header = AuthDataService.getAuthData()
+          if header then config.headers['Authorization'] = "Basic #{header}"
+          config
+      interceptor
+])
 
-app = angular.module('neo4jApp', [
-  'ngAnimate'
-  'neo4jApp.controllers'
-  'neo4jApp.directives'
-  'neo4jApp.filters'
-  'neo4jApp.services'
-  'neo4jApp.animations'
-  'ui.bootstrap.dropdownToggle'
-  'ui.bootstrap.position'
-  'ui.bootstrap.tooltip'
-  'ui.bootstrap.popover'
-  'ui.bootstrap.tabs'
-  'ui.bootstrap.carousel'
-  'ui.codemirror'
-  'ui.sortable'
-  'angularMoment'
-  'ngSanitize'
+angular.module('neo4jApp.services').config(['$httpProvider', ($httpProvider) ->
+  $httpProvider.interceptors.push 'RequestInterceptor'
 ])

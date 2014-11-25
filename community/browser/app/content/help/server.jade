@@ -1,0 +1,31 @@
+article.help
+  .container-fluid
+    section.row-fluid.summary
+      .summary.span3
+        h3 Server
+        p.lead Server connection management
+      .details.span9
+        p
+          | The &nbsp;
+          code :server
+          |  command lets you manage the connection to Neo4j, such as authenticating and viewing metadata for the current connection.
+        table.table-condensed.table-help
+          tr
+            th Usage:
+            td
+              code :server &lt;action&gt;
+          tr
+            th Actions:
+            td
+              a(server-topic="status") :server status
+              | &nbsp;
+              a(server-topic="change-password") :server change-password
+              | &nbsp;
+              a(server-topic="invalidate-token") :server invalidate-token
+          tr
+            th Authentication:
+            td
+              a(server-topic="connect") :server connect
+              | &nbsp;
+              a(server-topic="disconnect") :server disconnect
+

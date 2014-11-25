@@ -1,0 +1,43 @@
+div(ng-controller="GenerateTokenCtrl")
+  .outer
+    include partials/frame-common-actions
+    .inner
+      .view-result
+        article.guide
+          div
+            .row(ng-show="static_is_authenticated && static_user")
+              .span4
+                h3 Invalidate authorization token
+                p.lead
+                  | This will make your current token invalid and generate a new one.
+              .span1
+              .span5(ng-hide="token_changed")
+                .form
+                  p
+                    | Your Password
+                    br
+                    input(type='password', ng-model="current_password", style="margin: 0", focus-on="1", on-enter="click", on-enter-target-id="invalidate_token_button")
+                  p
+                    button.btn(id="invalidate_token_button", ng-click="generateToken()", style="margin: 0") Invalidate authorization token
+              .span5(ng-show="token_changed")
+                br
+                br
+                p Your new authorization token is now in effect.
+            .row(ng-if="static_is_authenticated && !static_user")
+              .span4
+                h3 Invalidate authorization token
+                p.lead This is not available.
+              .span1
+              .span5
+                p You can't invalidate a token when server authentication is disabled.
+            .row(ng-if="!static_is_authenticated")
+              .span4
+                h3 Invalidate authorization token
+                p.lead This is not available.
+              .span1
+              .span5
+                p You can't invalidate a token when not authenticated.
+      .status-bar(ng-class='{error: error_text, loading: frame.isLoading}')
+        div(ng-show="error_text")
+          .icon-warning-sign
+          {{error_text}}

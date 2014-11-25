@@ -26,8 +26,7 @@ angular.module('neo4jApp.services')
     'Frame'
     'Settings'
     'localStorageService'
-    'motdService'
-    (Document, Frame, Settings, localStorageService, motdService) ->
+    (Document, Frame, Settings, localStorageService) ->
       storageKey = 'history'
       class Editor
         constructor: ->
@@ -37,11 +36,15 @@ angular.module('neo4jApp.services')
           @current = ''
           @cursor = -1
           @document = null
-          # @setMessage("#{motdService.quote.text}.")
 
-        execScript: (input) ->
+        execScript: (input, no_duplicates = false) ->
           @showMessage = no
-          frame = Frame.create(input: input)
+
+          if no_duplicates 
+            frame = Frame.createOne(input: input)
+            return unless frame
+          else
+            frame = Frame.create(input: input)
 
           if !frame and input != ''
             @setMessage("<b>Unrecognized:</b> <i>#{input}</i>.", 'error')
