@@ -17,13 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.index.impl.lucene;
+package org.neo4j.index.impl.util;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.TimeZone;
 
 import org.neo4j.helpers.Args;
+import org.neo4j.index.impl.lucene.LuceneDataSource;
+import org.neo4j.index.impl.lucene.LuceneDataSource.LuceneCommandReaderFactory;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
@@ -34,7 +36,7 @@ public class DumpLogicalLog extends org.neo4j.kernel.impl.util.DumpLogicalLog
     {
         super( fileSystem );
     }
-    
+
     public static void main( String[] args ) throws IOException
     {
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
