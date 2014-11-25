@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{CachedMetricsFac
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
 import org.neo4j.cypher.internal.{LRUCache, PlanType}
 import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.helpers.Clock
 import org.neo4j.kernel.impl.util.StringLogger
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 
@@ -59,8 +60,9 @@ trait AstCacheMonitor extends CypherCacheMonitor[PreparedQuery, CacheAccessor[Pr
 object CypherCompilerFactory {
   val monitorTag = "cypher2.2"
 
-  def ronjaCompiler(graph: GraphDatabaseService, queryCacheSize: Int,
-                    kernelMonitors: KernelMonitors, logger: StringLogger): CypherCompiler = {
+  def ronjaCompiler(graph: GraphDatabaseService, queryCacheSize: Int, statsDivergenceThreshold: Double,
+                    queryPlanTTL: Long, clock: Clock, kernelMonitors: KernelMonitors,
+                    logger: StringLogger): CypherCompiler = {
     val monitors = new Monitors(kernelMonitors)
     val parser = new CypherParser(monitors.newMonitor[ParserMonitor[Statement]](monitorTag))
     val checker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
@@ -68,9 +70,9 @@ object CypherCompilerFactory {
     val planBuilderMonitor = monitors.newMonitor[NewLogicalPlanSuccessRateMonitor](monitorTag)
     val planningMonitor = monitors.newMonitor[PlanningMonitor](monitorTag)
     val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
-    val planner = new Planner(monitors, metricsFactory, planningMonitor)
+    val planner = new Planner(monitors, metricsFactory, planningMonitor, clock)
     val pipeBuilder = new LegacyVsNewPipeBuilder(new LegacyPipeBuilder(monitors), planner, planBuilderMonitor)
-    val execPlanBuilder = new ExecutionPlanBuilder(graph, pipeBuilder)
+    val execPlanBuilder = new ExecutionPlanBuilder(graph, statsDivergenceThreshold, queryPlanTTL, clock, pipeBuilder)
     val planCacheFactory = () => new LRUCache[PreparedQuery, ExecutionPlan](queryCacheSize)
     val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
     monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), monitorTag)
@@ -85,13 +87,14 @@ object CypherCompilerFactory {
     }
   }
 
-  def legacyCompiler(graph: GraphDatabaseService, queryCacheSize: Int, kernelMonitors: KernelMonitors): CypherCompiler = {
+  def legacyCompiler(graph: GraphDatabaseService, queryCacheSize: Int, statsDivergenceThreshold: Double,
+                     queryPlanTTL: Long, clock: Clock, kernelMonitors: KernelMonitors): CypherCompiler = {
     val monitors = new Monitors(kernelMonitors)
     val parser = new CypherParser(monitors.newMonitor[ParserMonitor[ast.Statement]](monitorTag))
     val checker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
     val rewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag))
     val pipeBuilder = new LegacyPipeBuilder(monitors)
-    val execPlanBuilder = new ExecutionPlanBuilder(graph, pipeBuilder)
+    val execPlanBuilder = new ExecutionPlanBuilder(graph, statsDivergenceThreshold, queryPlanTTL, clock, pipeBuilder)
     val planCacheFactory = () => new LRUCache[PreparedQuery, ExecutionPlan](queryCacheSize)
     val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
     val cache = new MonitoringCacheAccessor[PreparedQuery, ExecutionPlan](cacheMonitor)
@@ -134,7 +137,7 @@ case class CypherCompiler(parser: CypherParser,
         executionPlanBuilder.build(context, parsedQuery)
       })
     }.flatMap { plan =>
-      if ( !planned && plan.isStale(context.getLastCommittedTransactionId, context.statistics) ) {
+      if ( !planned && plan.isStale(context.txIdProvider, context.statistics) ) {
         cacheAccessor.remove(cache)(parsedQuery)
         None
       } else {

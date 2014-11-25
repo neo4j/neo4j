@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.commons.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.StatementConverters._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{normalizeWithClauses, normalizeReturnClauses}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.compiler.v2_2.parser.{CypherParser, ParserMonitor}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
@@ -239,7 +239,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       def getPropertyKeyId(propertyKeyName: String): Int = ???
       def getPropertyKeyName(id: Int): String = ???
       def getLabelId(labelName: String): Int = ???
-      def getLastCommittedTransactionId: Long = 0
+      def txIdProvider: () => Long = ???
     }
 
     def planFor(queryString: String): SemanticPlan = {

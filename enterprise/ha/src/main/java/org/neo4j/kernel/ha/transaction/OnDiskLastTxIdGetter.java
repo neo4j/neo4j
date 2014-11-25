@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.ha.transaction;
 
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.core.LastTxIdGetter;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -27,9 +27,9 @@ import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
 
 public class OnDiskLastTxIdGetter implements LastTxIdGetter
 {
-    private final InternalAbstractGraphDatabase graphdb;
+    private final GraphDatabaseAPI graphdb;
 
-    public OnDiskLastTxIdGetter( InternalAbstractGraphDatabase graphdb )
+    public OnDiskLastTxIdGetter( GraphDatabaseAPI graphdb )
     {
         this.graphdb = graphdb;
     }

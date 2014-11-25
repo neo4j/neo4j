@@ -56,6 +56,6 @@ case class CompatibilityFor1_9(graph: GraphDatabaseService, queryCacheSize: Int)
 
     def isPeriodicCommit = false
 
-    def isStale(graph: GraphDatabaseAPI, statement: Statement): Boolean = false
+    def isStale(lastTxId: () => Long, statement: Statement): Boolean = false
   }
 }

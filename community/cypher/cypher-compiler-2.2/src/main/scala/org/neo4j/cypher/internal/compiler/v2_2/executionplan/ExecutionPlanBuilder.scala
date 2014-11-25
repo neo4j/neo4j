@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 
-import java.util.Date
-
 import org.neo4j.cypher.internal.Profiled
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
@@ -32,10 +30,9 @@ import org.neo4j.cypher.internal.compiler.v2_2.profiler.Profiler
 import org.neo4j.cypher.internal.compiler.v2_2.spi._
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.kernel.InternalAbstractGraphDatabase
+import org.neo4j.helpers.Clock
 
-case class PlanFingerprint(creationDate: Date, txId: Long, snapshot: GraphStatisticsSnapshot)
+case class PlanFingerprint(creationTimeMillis: Long, txId: Long, snapshot: GraphStatisticsSnapshot)
 
 case class PipeInfo(pipe: Pipe,
                     updating: Boolean,
@@ -56,10 +53,8 @@ trait PipeBuilder {
   def producePlan(inputQuery: PreparedQuery, planContext: PlanContext): PipeInfo
 }
 
-class ExecutionPlanBuilder(graph: GraphDatabaseService,
-                           pipeBuilder: PipeBuilder) extends PatternGraphBuilder {
-  val MIN_DIVERGENCE = 0.5
-
+class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold: Double, queryPlanTTL: Long,
+                           clock: Clock, pipeBuilder: PipeBuilder) extends PatternGraphBuilder {
   def build(planContext: PlanContext, inputQuery: PreparedQuery): ExecutionPlan = {
     val abstractQuery = inputQuery.abstractQuery
 
@@ -70,31 +65,21 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService,
     val resultBuilderFactory = new DefaultExecutionResultBuilderFactory(pipeInfo, columns, inputQuery.planType)
     val func = getExecutionPlanFunction(periodicCommitInfo, abstractQuery.getQueryText, updating, resultBuilderFactory)
 
-    val TTL = getQueryPlanTTL
     val profileMarker = inputQuery.planType == Profiled
+
     new ExecutionPlan {
-      val fingerprint: Option[PlanFingerprint] = fp
+      private val fingerprint: Option[PlanFingerprint] = fp
       def execute(queryContext: QueryContext, params: Map[String, Any]) = func(queryContext, params, profileMarker)
       def profile(queryContext: QueryContext, params: Map[String, Any]) = func(new UpdateCountingQueryContext(queryContext), params, true)
       def isPeriodicCommit = periodicCommitInfo.isDefined
       def plannerUsed = planner
-      def isStale(lastTxId: Long, statistics: GraphStatistics): Boolean = {
-        val date = new Date()
+      def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean = {
         fingerprint.fold(false) { fingerprint =>
-          lastTxId != fingerprint.txId &&
-            fingerprint.creationDate.getTime + TTL <= date.getTime &&
-            fingerprint.snapshot.diverges(fingerprint.snapshot.recompute(statistics), MIN_DIVERGENCE)
+          fingerprint.creationTimeMillis + queryPlanTTL <= clock.currentTimeMillis() &&
+            lastTxId() != fingerprint.txId &&
+            fingerprint.snapshot.diverges(fingerprint.snapshot.recompute(statistics), statsDivergenceThreshold)
         }
       }
-    }
-  }
-
-  private def getQueryPlanTTL: Integer = {
-    graph match {
-      case iagdb: InternalAbstractGraphDatabase =>
-        iagdb.getConfig.get(GraphDatabaseSettings.query_plan_ttl)
-      case _ =>
-        GraphDatabaseSettings.query_plan_ttl.getDefaultValue.toInt
     }
   }
 

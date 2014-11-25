@@ -27,5 +27,5 @@ abstract class ExecutionPlan {
   def profile(queryContext: QueryContext, params: Map[String, Any]): InternalExecutionResult
   def isPeriodicCommit: Boolean
   def plannerUsed: PlannerName
-  def isStale(lastTxId: Long, statistics: GraphStatistics): Boolean
+  def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean
 }

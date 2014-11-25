@@ -28,11 +28,12 @@ import org.neo4j.cypher.internal.compiler.v2_2.parser.{CypherParser, ParserMonit
 import org.neo4j.cypher.internal.compiler.v2_2.planner.execution.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{GraphStatistics, PlanContext}
 import org.neo4j.graphdb.Direction
-import collection.mutable
+import org.neo4j.helpers.Clock
+
+import scala.collection.mutable
 
 trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionTestSupport {
   self: CypherFunSuite =>
@@ -155,7 +156,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   }
 
   def newPlanner(metricsFactory: MetricsFactory): Planner =
-    new Planner(monitors, metricsFactory, monitors.newMonitor[PlanningMonitor]())
+    new Planner(monitors, metricsFactory, monitors.newMonitor[PlanningMonitor](), Clock.SYSTEM_CLOCK)
 
   def produceLogicalPlan(queryText: String)(implicit planner: Planner, planContext: PlanContext): LogicalPlan = {
     val parsedStatement = parser.parse(queryText)

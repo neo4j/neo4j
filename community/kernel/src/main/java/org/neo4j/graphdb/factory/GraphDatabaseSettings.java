@@ -19,41 +19,20 @@
  */
 package org.neo4j.graphdb.factory;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
-import org.neo4j.kernel.configuration.ConfigurationMigrator;
-import org.neo4j.kernel.configuration.GraphDatabaseConfigurationMigrator;
-import org.neo4j.kernel.configuration.Internal;
-import org.neo4j.kernel.configuration.Migrator;
-import org.neo4j.kernel.configuration.Obsoleted;
-import org.neo4j.kernel.configuration.Title;
+import org.neo4j.kernel.configuration.*;
 import org.neo4j.kernel.impl.api.store.CacheLayer;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.MonitorGc;
 
-import static org.neo4j.helpers.Settings.ANY;
-import static org.neo4j.helpers.Settings.BOOLEAN;
-import static org.neo4j.helpers.Settings.BYTES;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.neo4j.helpers.Settings.*;
 import static org.neo4j.helpers.Settings.DirectMemoryUsage.directMemoryUsage;
-import static org.neo4j.helpers.Settings.FALSE;
-import static org.neo4j.helpers.Settings.INTEGER;
-import static org.neo4j.helpers.Settings.NO_DEFAULT;
-import static org.neo4j.helpers.Settings.PATH;
-import static org.neo4j.helpers.Settings.STRING;
-import static org.neo4j.helpers.Settings.TRUE;
-import static org.neo4j.helpers.Settings.basePath;
-import static org.neo4j.helpers.Settings.illegalValueMessage;
-import static org.neo4j.helpers.Settings.matches;
-import static org.neo4j.helpers.Settings.max;
-import static org.neo4j.helpers.Settings.min;
-import static org.neo4j.helpers.Settings.options;
-import static org.neo4j.helpers.Settings.port;
-import static org.neo4j.helpers.Settings.setting;
 
 /**
  * Settings for Neo4j. Use this with {@link GraphDatabaseBuilder}.
@@ -100,7 +79,7 @@ public abstract class GraphDatabaseSettings
     public static Setting<Integer> query_cache_size = setting( "query_cache_size", INTEGER, "100", min( 0 ) );
 
     @Description("The minimum lifetime of a query plan before a query is considered for replanning")
-    public static Setting<Integer> query_plan_ttl = setting( "query_plan_ttl", INTEGER, "1000", min( 0 ) );
+    public static Setting<Long> query_plan_ttl = setting( "query_plan_ttl", DURATION, "1s" );
 
     @Description( "Determines if Cypher will allow using file URLs when loading data using `LOAD CSV`. Setting this "
                   + "value to `false` will cause Neo4j to fail `LOAD CSV` clauses that load data from the file system." )

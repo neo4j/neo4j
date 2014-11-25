@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_2.spi
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.index.IndexDescriptor
 
-
 /**
  * PlanContext is an internal access layer to the graph that is solely used during plan building
  *
@@ -44,7 +43,7 @@ trait PlanContext extends TokenContext {
 
   def getOrCreateFromSchemaState[T](key: Any, f: => T): T
 
-  def getLastCommittedTransactionId: Long
+  def txIdProvider: () => Long
 
   def statistics: GraphStatistics
 }

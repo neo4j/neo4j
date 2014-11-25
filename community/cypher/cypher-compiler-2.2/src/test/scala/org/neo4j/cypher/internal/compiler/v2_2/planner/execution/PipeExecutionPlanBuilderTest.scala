@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.pipes.{EntityByIdExprs => PipeEnt
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{EntityByIdExprs => PlanEntityByIdExprs, _}
 import org.neo4j.graphdb.Direction
+import org.neo4j.helpers.Clock
 
 class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -38,7 +39,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
   implicit val pipeBuildContext = newMockedPipeExecutionPlanBuilderContext
   val patternRel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
 
-  val planBuilder = new PipeExecutionPlanBuilder(monitors)
+  val planBuilder = new PipeExecutionPlanBuilder(Clock.SYSTEM_CLOCK, monitors)
 
   def build(f: PlannerQuery => LogicalPlan): PipeInfo =
     planBuilder.build(f(solved))
