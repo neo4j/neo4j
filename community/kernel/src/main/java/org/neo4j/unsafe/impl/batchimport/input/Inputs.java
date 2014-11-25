@@ -23,7 +23,8 @@ import java.io.File;
 
 import org.neo4j.function.Functions;
 import org.neo4j.graphdb.ResourceIterable;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapping;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.CsvInput;
 import org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories;
@@ -36,7 +37,7 @@ import static org.neo4j.helpers.collection.Iterables.iterable;
 public class Inputs
 {
     public static Input input( final Iterable<InputNode> nodes, final Iterable<InputRelationship> relationships,
-            final IdMapping idMapping )
+            final IdMapper idMapper, final IdGenerator idGenerator )
     {
         final ResourceIterable<InputNode> resourceNodes = asResourceIterable( nodes );
         final ResourceIterable<InputRelationship> resourceRelationships = asResourceIterable( relationships );
@@ -55,9 +56,15 @@ public class Inputs
             }
 
             @Override
-            public IdMapping idMapping()
+            public IdMapper idMapper()
             {
-                return idMapping;
+                return idMapper;
+            }
+
+            @Override
+            public IdGenerator idGenerator()
+            {
+                return idGenerator;
             }
         };
     }

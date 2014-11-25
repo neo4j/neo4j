@@ -23,7 +23,8 @@ import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapping;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
@@ -41,7 +42,6 @@ public class CsvInput implements Input
     private final Iterable<DataFactory<InputRelationship>> relationshipDataFactory;
     private final Header.Factory relationshipHeaderFactory;
     private final IdType idType;
-    private final IdMapping idMapping;
     private final Configuration config;
     private final int[] delimiter;
     private final BatchingIdSequence relationshipIds = new BatchingIdSequence();
@@ -68,7 +68,6 @@ public class CsvInput implements Input
         this.relationshipDataFactory = relationshipDataFactory;
         this.relationshipHeaderFactory = relationshipHeaderFactory;
         this.idType = idType;
-        this.idMapping = idType.idMapping();
         this.config = config;
 
         this.delimiter = new int[] {config.delimiter()};
@@ -89,7 +88,8 @@ public class CsvInput implements Input
                     protected ResourceIterator<InputNode> entityDeserializer( CharSeeker dataStream, Header dataHeader,
                                                                               Function<InputNode,InputNode> decorator )
                     {
-                        return new InputNodeDeserializer( dataHeader, dataStream, delimiter, decorator );
+                        return new InputNodeDeserializer( dataHeader, dataStream, delimiter, decorator,
+                                idType.idsAreExternal() );
                     }
                 };
             }
@@ -121,8 +121,14 @@ public class CsvInput implements Input
     }
 
     @Override
-    public IdMapping idMapping()
+    public IdMapper idMapper()
     {
-        return idMapping;
+        return idType.idMapper();
+    }
+
+    @Override
+    public IdGenerator idGenerator()
+    {
+        return idType.idGenerator();
     }
 }

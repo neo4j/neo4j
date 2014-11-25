@@ -41,7 +41,6 @@ import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLinkImpl;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapping;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
@@ -121,9 +120,8 @@ public class ParallelBatchImporter implements BatchImporter
                 writeMonitor, logging, monitors, writerFactory, highTokenIds ) )
         {
             // Some temporary caches and indexes in the import
-            final IdMapping idMapping = input.idMapping();
-            IdMapper idMapper = idMapping.idMapper();
-            IdGenerator idGenerator = idMapping.idGenerator();
+            IdMapper idMapper = input.idMapper();
+            IdGenerator idGenerator = input.idGenerator();
             NodeRelationshipLink nodeRelationshipLink =
                     new NodeRelationshipLinkImpl( LongArrayFactory.AUTO, config.denseNodeThreshold() );
             final ResourceIterable<InputNode> nodes = input.nodes();

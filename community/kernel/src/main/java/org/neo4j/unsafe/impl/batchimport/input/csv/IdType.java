@@ -21,21 +21,36 @@ package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
-import org.neo4j.unsafe.impl.batchimport.cache.LongArrayFactory;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapping;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappings;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
+
+import static org.neo4j.unsafe.impl.batchimport.cache.LongArrayFactory.AUTO;
 
 public enum IdType
 {
     /**
      * Used when node ids int input data are any string identifier.
      */
-    STRING( IdMappings.strings( LongArrayFactory.AUTO ) )
+    STRING( true )
     {
         @Override
         public Extractor<?> extractor( Extractors extractors )
         {
             return extractors.string();
+        }
+
+        @Override
+        public IdMapper idMapper()
+        {
+            return IdMappers.strings( AUTO );
+        }
+
+        @Override
+        public IdGenerator idGenerator()
+        {
+            return IdGenerators.startingFromTheBeginning();
         }
     },
 
@@ -43,12 +58,24 @@ public enum IdType
      * Used when node ids int input data are any integer identifier. It uses 8b longs for storage,
      * but as a user facing enum a better name is integer
      */
-    INTEGER( IdMappings.longs( LongArrayFactory.AUTO ) )
+    INTEGER( true )
     {
         @Override
         public Extractor<?> extractor( Extractors extractors )
         {
             return extractors.long_();
+        }
+
+        @Override
+        public IdMapper idMapper()
+        {
+            return IdMappers.longs( AUTO );
+        }
+
+        @Override
+        public IdGenerator idGenerator()
+        {
+            return IdGenerators.startingFromTheBeginning();
         }
     },
 
@@ -56,25 +83,41 @@ public enum IdType
      * Used when node ids int input data are specified as long values and points to actual record ids.
      * ADVANCED usage. Performance advantage, but requires carefully planned input data.
      */
-    ACTUAL( IdMappings.actual() )
+    ACTUAL( false )
     {
         @Override
         public Extractor<?> extractor( Extractors extractors )
         {
             return extractors.long_();
         }
+
+        @Override
+        public IdMapper idMapper()
+        {
+            return IdMappers.actual();
+        }
+
+        @Override
+        public IdGenerator idGenerator()
+        {
+            return IdGenerators.fromInput();
+        }
     };
 
-    private final IdMapping idMapping;
+    private final boolean idsAreExternal;
 
-    private IdType( IdMapping idMapping )
+    private IdType( boolean idsAreExternal )
     {
-        this.idMapping = idMapping;
+        this.idsAreExternal = idsAreExternal;
     }
 
-    public IdMapping idMapping()
+    public abstract IdMapper idMapper();
+
+    public abstract IdGenerator idGenerator();
+
+    public boolean idsAreExternal()
     {
-        return idMapping;
+        return idsAreExternal;
     }
 
     public abstract Extractor<?> extractor( Extractors extractors );

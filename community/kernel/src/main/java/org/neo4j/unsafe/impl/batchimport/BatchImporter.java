@@ -21,12 +21,10 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import java.io.IOException;
 
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapping;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 
 /**
- * Imports graph data accepting node data separated from relationship data and an {@link IdMapping}
- * specifying how the node ids specified by the input relates to actual node ids in the resulting store.
+ * Imports graph data given as {@link Input}.
  */
 public interface BatchImporter
 {

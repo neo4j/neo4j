@@ -77,7 +77,8 @@ import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappings;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.Inputs;
@@ -288,7 +289,7 @@ public class StoreMigrator implements StoreMigrationParticipant
                 parallel(), readHighTokenIds( storeDir, lastTxId ) );
         Iterable<InputNode> nodes = legacyNodesAsInput( legacyStore );
         Iterable<InputRelationship> relationships = legacyRelationshipsAsInput( legacyStore );
-        importer.doImport( Inputs.input( nodes, relationships, IdMappings.actual() ) );
+        importer.doImport( Inputs.input( nodes, relationships, IdMappers.actual(), IdGenerators.fromInput() ) );
 
         // During migration the batch importer only writes node, relationship, relationship group and counts stores.
         // Delete the property store files from the batch import migration so that even if we won't
