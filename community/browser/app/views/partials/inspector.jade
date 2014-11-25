@@ -1,6 +1,6 @@
 .inspector-footer(ng-if="Inspector.length > 0", ng-class="{contracted: inspectorContracted}")
   .row-toggle(update-ui='inspectorChanged', overflow-with-toggle='', ng-click="inspectorContracted = !inspectorContracted")
-    .fa(ng-class="inspectorContracted ? 'fa-caret-left' : 'fa-caret-down'")
+    .fa(ng-class="inspectorContracted ? 'fa-caret-left' : 'fa-caret-down'", class="overflow-indicator")
   ul.list-unstyled.list-items
     li.inspector-footer-row(ng-repeat="row in Inspector.items", ng-include="row.tmpl", onload ="item = row.data")
 
