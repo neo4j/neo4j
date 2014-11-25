@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -31,17 +31,19 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.recovery.StoreRecoverer;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertTrue;
 
-import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
-
 public class TestStoreAccess
 {
-    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @Rule
+    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
+
     private final File storeDir = new File( "dir" ).getAbsoluteFile();
 
     @Test
@@ -51,20 +53,10 @@ public class TestStoreAccess
         assertTrue( "Store should be unclean", isUnclean( snapshot ) );
         File messages = new File( storeDir, "messages.log" );
         snapshot.deleteFile( messages );
-        LifeSupport life = new LifeSupport();
-        life.start();;
 
-        PageCache pageCache = createPageCache( snapshot, getClass().getName(), life );
-        try
-        {
-            new StoreAccess( snapshot, pageCache, storeDir.getPath() ).close();
-            assertTrue( "Store should be unclean", isUnclean( snapshot ) );
-        }
-        finally
-        {
-            pageCache.close();
-            life.shutdown();
-        }
+        PageCache pageCache = pageCacheRule.getPageCache( snapshot );
+        new StoreAccess( snapshot, pageCache, storeDir.getPath() ).close();
+        assertTrue( "Store should be unclean", isUnclean( snapshot ) );
     }
 
     private EphemeralFileSystemAbstraction produceUncleanStore()

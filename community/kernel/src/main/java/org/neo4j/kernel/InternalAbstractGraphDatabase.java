@@ -905,7 +905,7 @@ public abstract class InternalAbstractGraphDatabase
                 storeMigrationProcess, transactionMonitor, kernelHealth,
                 monitors.newMonitor( PhysicalLogFile.Monitor.class ),
                 createHeaderInformationFactory(), startupStatistics, caches, nodeManager, guard, indexStore,
-                getCommitProcessFactory(), monitors );
+                getCommitProcessFactory(), pageCache, monitors );
         dataSourceManager.register( neoDataSource );
     }
 

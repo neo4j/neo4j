@@ -160,7 +160,7 @@ public class RelationshipGroupStoreTest
 
     private StoreFactory factory( Integer customThreshold )
     {
-        return factory( customThreshold, pageCacheRule.getPageCache( fs, new Config() ) );
+        return factory( customThreshold, pageCacheRule.getPageCache( fs ) );
     }
 
     private StoreFactory factory( Integer customThreshold, PageCache pageCache )
@@ -316,7 +316,7 @@ public class RelationshipGroupStoreTest
     public void checkingIfRecordIsInUseMustHappenAfterConsistentRead()
     {
         AtomicBoolean nextReadIsInconsistent = new AtomicBoolean( false );
-        PageCache pageCache = pageCacheRule.getPageCache( fs, new Config() );
+        PageCache pageCache = pageCacheRule.getPageCache( fs );
         pageCache = pageCacheRule.withInconsistentReads( pageCache, nextReadIsInconsistent );
         StoreFactory factory = factory( null, pageCache );
 

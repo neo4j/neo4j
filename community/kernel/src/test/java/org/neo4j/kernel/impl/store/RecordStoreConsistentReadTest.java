@@ -70,7 +70,7 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
 
     private NeoStore storeFixture()
     {
-        PageCache pageCache = pageCacheRule.getPageCache( fs, new Config() );
+        PageCache pageCache = pageCacheRule.getPageCache( fs );
         pageCache = pageCacheRule.withInconsistentReads( pageCache, nextReadIsInconsistent );
         File storeDir = new File( "stores" );
         StringLogger logger = StringLogger.DEV_NULL;

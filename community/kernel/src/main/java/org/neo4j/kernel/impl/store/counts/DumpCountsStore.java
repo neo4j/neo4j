@@ -24,14 +24,13 @@ import java.io.IOException;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
+import org.neo4j.kernel.impl.pagecache.StandalonePageCache;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.register.Register.CopyableDoubleLongRegister;
 import org.neo4j.register.Register.DoubleLongRegister;
 
+import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 
 public class DumpCountsStore
@@ -47,10 +46,7 @@ public class DumpCountsStore
         final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         final File storeFile = new File( args[0] );
 
-        final LifeSupport life = new LifeSupport();
-        final PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs, "counts-store-dump", life );
-
-        try
+        try ( final StandalonePageCache pageCache = createPageCache( fs, "counts-store-dump" ) )
         {
             CountsStore counts = CountsStore.open( fs, pageCache, storeFile );
             System.out.println( "Counts Store: " + counts.file() );
@@ -70,10 +66,6 @@ public class DumpCountsStore
                     System.out.println( "\t" + key + ": (" + tmp.readFirst() + ", " + tmp.readSecond() + ")" );
                 }
             }, newDoubleLongRegister() );
-        }
-        finally
-        {
-            life.shutdown();
         }
     }
 }

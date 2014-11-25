@@ -25,9 +25,9 @@ import java.nio.ByteBuffer;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.pagecache.StandalonePageCache;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -36,7 +36,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 
@@ -49,50 +48,56 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
             System.err.println( "WARNING: no files specified..." );
             return;
         }
-        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        LifeSupport life = new LifeSupport();
-        life.start();
-        PageCache pageCache = createPageCache( fs, "dump-store-tool", life );
-        StoreFactory storeFactory = new StoreFactory(new Config(), idGeneratorFactory, pageCache, fs, logger(), null );
-        for ( String arg : args )
+        try ( StandalonePageCache pageCache = createPageCache( fs, "dump-store-tool" ) )
         {
-            File file = new File( arg );
-            if ( !file.isFile() )
+            DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
+            StoreFactory storeFactory = new StoreFactory(
+                    new Config(), idGeneratorFactory, pageCache, fs, logger(), null );
+
+            for ( String arg : args )
             {
-                throw new IllegalArgumentException( "No such file: " + arg );
-            }
-            switch ( file.getName() )
-            {
-            case "neostore.nodestore.db":
-                dumpNodeStore( file, storeFactory );
-                break;
-            case "neostore.relationshipstore.db":
-                dumpRelationshipStore( file, storeFactory );
-                break;
-            case "neostore.propertystore.db":
-                dumpPropertyStore( file, storeFactory );
-                break;
-            case "neostore.schemastore.db":
-                dumpSchemaStore( file, storeFactory );
-                break;
-            case "neostore.propertystore.db.index":
-                dumpPropertyKeys( file, storeFactory );
-                break;
-            case "neostore.labeltokenstore.db":
-                dumpLabels( file, storeFactory );
-                break;
-            case "neostore.relationshiptypestore.db":
-                dumpRelationshipTypes( file, storeFactory );
-                break;
-            case "neostore.relationshipgroupstore.db":
-                dumpRelationshipGroups( file, storeFactory );
-                break;
-            default:
-                throw new IllegalArgumentException( "Unknown store file: " + arg );
+                dumpFile( storeFactory, arg );
             }
         }
-        life.shutdown();
+    }
+
+    private static void dumpFile( StoreFactory storeFactory, String arg ) throws Exception
+    {
+        File file = new File( arg );
+        if ( !file.isFile() )
+        {
+            throw new IllegalArgumentException( "No such file: " + arg );
+        }
+        switch ( file.getName() )
+        {
+        case "neostore.nodestore.db":
+            dumpNodeStore( file, storeFactory );
+            break;
+        case "neostore.relationshipstore.db":
+            dumpRelationshipStore( file, storeFactory );
+            break;
+        case "neostore.propertystore.db":
+            dumpPropertyStore( file, storeFactory );
+            break;
+        case "neostore.schemastore.db":
+            dumpSchemaStore( file, storeFactory );
+            break;
+        case "neostore.propertystore.db.index":
+            dumpPropertyKeys( file, storeFactory );
+            break;
+        case "neostore.labeltokenstore.db":
+            dumpLabels( file, storeFactory );
+            break;
+        case "neostore.relationshiptypestore.db":
+            dumpRelationshipTypes( file, storeFactory );
+            break;
+        case "neostore.relationshipgroupstore.db":
+            dumpRelationshipGroups( file, storeFactory );
+            break;
+        default:
+            throw new IllegalArgumentException( "Unknown store file: " + arg );
+        }
     }
 
     private static StringLogger logger()

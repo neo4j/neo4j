@@ -238,7 +238,7 @@ public class NodeStoreTest
         StoreFactory factory = new StoreFactory(
                 config,
                 idGeneratorFactory,
-                pageCacheRule.getPageCache( fs, config ),
+                pageCacheRule.getPageCache( fs ),
                 fs,
                 DEV_NULL,
                 monitors );

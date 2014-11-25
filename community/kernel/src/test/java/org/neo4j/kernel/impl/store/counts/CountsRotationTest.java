@@ -37,7 +37,6 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -189,7 +188,7 @@ public class CountsRotationTest
         fs = fsRule.get();
         dir = testDir.directory( "dir" ).getAbsoluteFile();
         dbBuilder = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabaseBuilder( dir.getPath() );
-        pageCache = pcRule.getPageCache( fs, new Config() );
+        pageCache = pcRule.getPageCache( fs );
     }
 
     private static final String COUNTS_STORE_BASE = NeoStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE;

@@ -160,7 +160,7 @@ public class SchemaStoreTest
         storeFactory = new StoreFactory(
                 config,
                 idGeneratorFactory,
-                pageCacheRule.getPageCache( fs.get(), config ),
+                pageCacheRule.getPageCache( fs.get() ),
                 fs.get(),
                 DEV_NULL,
                 monitors );

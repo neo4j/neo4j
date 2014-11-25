@@ -140,7 +140,7 @@ public class RelationshipChainExplorerTest
             transaction.finish();
         }
         database.shutdown();
-        PageCache pageCache = pageCacheRule.getPageCache( new DefaultFileSystemAbstraction(), new Config() );
+        PageCache pageCache = pageCacheRule.getPageCache( new DefaultFileSystemAbstraction() );
         return new StoreAccess( pageCache, storeDirectory.getPath() );
     }
 }

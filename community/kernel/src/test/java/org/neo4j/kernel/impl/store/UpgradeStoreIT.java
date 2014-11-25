@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -27,10 +32,6 @@ import java.nio.channels.FileChannel;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -45,31 +46,30 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.NotCurrentStoreVersionException;
-import org.neo4j.kernel.impl.store.StoreVersionMismatchHandler;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.test.PageCacheRule;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
-import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 
 @Ignore
 public class UpgradeStoreIT
 {
     private static final String PATH = "target/var/upgrade";
+
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
 
     @Before
     public void doBefore()
@@ -323,9 +323,7 @@ public class UpgradeStoreIT
         Monitors monitors = new Monitors();
         Config config = new Config();
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        LifeSupport life = new LifeSupport();
-        life.start();
-        PageCache pageCache = createPageCache( fs, getClass().getName(), life );
+        PageCache pageCache = pageCacheRule.getPageCache( fs );
         DynamicStringStore stringStore = new DynamicStringStore(
                 new File( fileName.getPath() + ".names"),
                 config,
@@ -351,7 +349,6 @@ public class UpgradeStoreIT
             store.updateRecord( record );
         }
         store.close();
-        life.shutdown();
     }
 
     private static class RelationshipTypeTokenStoreWithOneOlderVersion extends RelationshipTypeTokenStore
@@ -399,7 +396,7 @@ public class UpgradeStoreIT
 
     private static class NoLimitIdGeneratorFactory implements IdGeneratorFactory
     {
-        private final Map<IdType, IdGenerator> generators = new HashMap<IdType, IdGenerator>();
+        private final Map<IdType, IdGenerator> generators = new HashMap<>();
 
         @Override
         public IdGenerator open( FileSystemAbstraction fs, File fileName, int grabSize, IdType idType, long highId )

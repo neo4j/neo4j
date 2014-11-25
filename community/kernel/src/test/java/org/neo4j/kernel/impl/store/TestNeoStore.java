@@ -98,7 +98,6 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -113,7 +112,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;
 
 public class TestNeoStore
@@ -142,7 +140,7 @@ public class TestNeoStore
         Config config = StoreFactory.configForStoreDir(
                 new Config( new HashMap<String, String>(), GraphDatabaseSettings.class ), path );
         Monitors monitors = new Monitors();
-        pageCache = pageCacheRule.getPageCache( fs.get(), config );
+        pageCache = pageCacheRule.getPageCache( fs.get() );
         StoreFactory sf = new StoreFactory(
                 config,
                 new DefaultIdGeneratorFactory(),
@@ -225,7 +223,8 @@ public class TestNeoStore
                 mock( StoreUpgrader.class ), mock( TransactionMonitor.class ), kernelHealth,
                 mock( PhysicalLogFile.Monitor.class ),
                 TransactionHeaderInformationFactory.DEFAULT, new StartupStatisticsProvider(), caches, nodeManager,
-                null, null, InternalAbstractGraphDatabase.defaultCommitProcessFactory, mock(Monitors.class) );
+                null, null, InternalAbstractGraphDatabase.defaultCommitProcessFactory, pageCache,
+                mock( Monitors.class ) );
         ds.init();
         ds.start();
 
@@ -1236,12 +1235,10 @@ public class TestNeoStore
         // given
         Monitors monitors = new Monitors();
         Config config = new Config( new HashMap<String, String>(), GraphDatabaseSettings.class );
-        LifeSupport life = new LifeSupport();
-        life.start();
         StoreFactory sf = new StoreFactory(
                 configForStoreDir( config, dir.directory() ),
                 new DefaultIdGeneratorFactory(),
-                createPageCache( fs.get(), getClass().getName(), life ),
+                pageCacheRule.getPageCache( fs.get() ),
                 fs.get(),
                 StringLogger.DEV_NULL,
                 monitors );
@@ -1266,7 +1263,6 @@ public class TestNeoStore
         // then the value should have been stored
         assertEquals( 10l, neoStore.getLatestConstraintIntroducingTx() );
         neoStore.close();
-        life.shutdown();
     }
 
     @Test

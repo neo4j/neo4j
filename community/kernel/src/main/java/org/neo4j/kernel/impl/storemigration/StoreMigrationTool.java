@@ -28,6 +28,7 @@ import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensions;
+import org.neo4j.kernel.impl.pagecache.StandalonePageCache;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -35,8 +36,8 @@ import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.SystemOutLogging;
 
 import static java.lang.String.format;
-
 import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.ignore;
+import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.storemigration.StoreUpgrader.NO_MONITOR;
 
 /**
@@ -58,8 +59,9 @@ public class StoreMigrationTool
         ConfigMapUpgradeConfiguration upgradeConfiguration = new ConfigMapUpgradeConfiguration( config );
         StoreUpgrader migrationProcess = new StoreUpgrader( upgradeConfiguration, fs, monitor, logging );
 
-        // Add participants from kernel extensions...
         LifeSupport life = new LifeSupport();
+
+        // Add participants from kernel extensions...
         KernelExtensions kernelExtensions = life.add( new KernelExtensions(
                 GraphDatabaseDependencies.newDependencies().kernelExtensions(), config,
                 kernelExtensionDependencyResolver( fs, config ), ignore() ) );
@@ -81,10 +83,10 @@ public class StoreMigrationTool
         }
 
         // Perform the migration
-        try
+        try ( StandalonePageCache pageCache = createPageCache( fs, config, "migration-tool" ) )
         {
             long startTime = System.currentTimeMillis();
-            migrationProcess.migrateIfNeeded( new File( legacyStoreDirectory ), schemaIndexProvider );
+            migrationProcess.migrateIfNeeded( new File( legacyStoreDirectory ), schemaIndexProvider, pageCache );
             long duration = System.currentTimeMillis() - startTime;
             logging.getMessagesLog( StoreMigrationTool.class )
                     .info( format( "Migration completed in %d s%n", duration / 1000 ) );

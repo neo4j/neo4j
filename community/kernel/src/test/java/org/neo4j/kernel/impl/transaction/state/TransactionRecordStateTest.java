@@ -19,17 +19,16 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommandApplierFacade;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
@@ -62,7 +61,6 @@ import org.neo4j.test.PageCacheRule;
 
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
-
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 
 public class TransactionRecordStateTest
@@ -134,7 +132,7 @@ public class TransactionRecordStateTest
         File storeDir = new File( "dir" );
         fsr.get().mkdirs( storeDir );
         StoreFactory storeFactory = new StoreFactory( fsr.get(), storeDir,
-                pageCacheRule.getPageCache( fsr.get(), new Config() ), StringLogger.DEV_NULL, new Monitors() );
+                pageCacheRule.getPageCache( fsr.get() ), StringLogger.DEV_NULL, new Monitors() );
         return cleanup.add( storeFactory.newNeoStore( true, false ) );
     }
 

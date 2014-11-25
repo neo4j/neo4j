@@ -27,15 +27,14 @@ import java.util.Set;
 
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.pagecache.StandalonePageCache;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 
@@ -97,26 +96,27 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
 
     void dump( File storeFile ) throws IOException
     {
-        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        LifeSupport life = new LifeSupport();
-        life.start();
-        PageCache pageCache = createPageCache( fs, "dump-store-chain-tool", life );
-        StoreFactory storeFactory = new StoreFactory( new Config(), idGeneratorFactory, pageCache, fs, logger(), null );
-        RecordStore<RECORD> store = store( storeFactory, storeFile );
-        try
+
+        try ( StandalonePageCache pageCache = createPageCache( fs, "dump-store-chain-tool" ) )
         {
-            for ( long next = first; next != -1; )
+            DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
+            Config config = new Config();
+            StoreFactory storeFactory = new StoreFactory( config, idGeneratorFactory, pageCache, fs, logger(), null );
+            RecordStore<RECORD> store = store( storeFactory, storeFile );
+            try
             {
-                RECORD record = store.forceGetRecord( next );
-                System.out.println( record );
-                next = next( record );
+                for ( long next = first; next != -1; )
+                {
+                    RECORD record = store.forceGetRecord( next );
+                    System.out.println( record );
+                    next = next( record );
+                }
             }
-        }
-        finally
-        {
-            store.close();
-            life.shutdown();
+            finally
+            {
+                store.close();
+            }
         }
     }
 
@@ -175,14 +175,9 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
 
     private static NodeRecord nodeRecord( StoreFactory factory, File storeDir, long id )
     {
-        NodeStore store = factory.newNodeStore( new File( storeDir, NODESTORE ) );
-        try
+        try ( NodeStore store = factory.newNodeStore( new File( storeDir, NODESTORE ) ) )
         {
             return store.forceGetRecord( id );
-        }
-        finally
-        {
-            store.close();
         }
     }
 

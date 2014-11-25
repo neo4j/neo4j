@@ -32,7 +32,6 @@ public class ImpermanentDatabaseRule extends DatabaseRule
 
     public ImpermanentDatabaseRule()
     {
-
     }
 
     public ImpermanentDatabaseRule( Logging logging )

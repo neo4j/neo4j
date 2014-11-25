@@ -53,9 +53,9 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 
@@ -77,7 +77,6 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
-import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveVersion;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.changeVersionNumber;
@@ -123,9 +122,10 @@ public class StoreUpgraderTest
     {
         // Given
         assertTrue( allStoreFilesHaveVersion( fileSystem, dbDirectory, version ) );
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
 
         // When
-        newUpgrader( ALLOW_UPGRADE ).migrateIfNeeded( dbDirectory, schemaIndexProvider );
+        newUpgrader( ALLOW_UPGRADE ).migrateIfNeeded( dbDirectory, schemaIndexProvider, pageCache );
 
         // Then
         assertTrue( allStoreFilesHaveVersion( fileSystem, dbDirectory, ALL_STORES_VERSION ) );
@@ -139,6 +139,7 @@ public class StoreUpgraderTest
     @Test
     public void shouldHaltUpgradeIfUpgradeConfigurationVetoesTheProcess()
     {
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         UpgradeConfiguration vetoingUpgradeConfiguration = new UpgradeConfiguration()
         {
             @Override
@@ -150,7 +151,7 @@ public class StoreUpgraderTest
 
         try
         {
-            newUpgrader( vetoingUpgradeConfiguration ).migrateIfNeeded( dbDirectory, schemaIndexProvider );
+            newUpgrader( vetoingUpgradeConfiguration ).migrateIfNeeded( dbDirectory, schemaIndexProvider, pageCache );
             fail( "Should throw exception" );
         }
         catch ( UpgradeNotAllowedByConfigurationException e )
@@ -169,10 +170,11 @@ public class StoreUpgraderTest
         changeVersionNumber( fileSystem, new File( dbDirectory, "neostore.nodestore.db" ), "v0.9.5" );
         fileSystem.deleteRecursively( comparisonDirectory );
         fileSystem.copyRecursively( dbDirectory, comparisonDirectory );
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
 
         try
         {
-            newUpgrader( ALLOW_UPGRADE ).migrateIfNeeded( dbDirectory, schemaIndexProvider );
+            newUpgrader( ALLOW_UPGRADE ).migrateIfNeeded( dbDirectory, schemaIndexProvider, pageCache );
             fail( "Should throw exception" );
         }
         catch ( StoreUpgrader.UnexpectedUpgradingStoreVersionException e )
@@ -194,9 +196,11 @@ public class StoreUpgraderTest
                 "StringPropertyStore v0.9.9" );
         fileSystem.deleteRecursively( comparisonDirectory );
         fileSystem.copyRecursively( dbDirectory, comparisonDirectory );
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
+
         try
         {
-            newUpgrader( ALLOW_UPGRADE ).migrateIfNeeded( dbDirectory, schemaIndexProvider );
+            newUpgrader( ALLOW_UPGRADE ).migrateIfNeeded( dbDirectory, schemaIndexProvider, pageCache );
             fail( "Should throw exception" );
         }
         catch ( StoreUpgrader.UnableToUpgradeException e )
@@ -217,10 +221,11 @@ public class StoreUpgraderTest
         truncateAllFiles( fileSystem, dbDirectory, version );
         fileSystem.deleteRecursively( comparisonDirectory );
         fileSystem.copyRecursively( dbDirectory, comparisonDirectory );
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
 
         try
         {
-            newUpgrader( ALLOW_UPGRADE ).migrateIfNeeded( dbDirectory, schemaIndexProvider );
+            newUpgrader( ALLOW_UPGRADE ).migrateIfNeeded( dbDirectory, schemaIndexProvider, pageCache );
             fail( "Should throw exception" );
         }
         catch ( StoreUpgrader.UnableToUpgradeException e )
@@ -238,11 +243,12 @@ public class StoreUpgraderTest
         StoreUpgrader upgrader = newUpgrader( ALLOW_UPGRADE );
         String failureMessage = "Just failing";
         upgrader.addParticipant( participantThatWillFailWhenMoving( failureMessage ) );
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
 
         // WHEN
         try
         {
-            upgrader.migrateIfNeeded( dbDirectory, schemaIndexProvider );
+            upgrader.migrateIfNeeded( dbDirectory, schemaIndexProvider, pageCache );
         }
         catch ( UnableToUpgradeException e )
         {   // THEN
@@ -256,11 +262,11 @@ public class StoreUpgraderTest
         StoreMigrationParticipant observingParticipant = Mockito.mock( StoreMigrationParticipant.class );
         when( observingParticipant.needsMigration( any( File.class ) ) ).thenReturn( true );
         upgrader.addParticipant( observingParticipant );
-        upgrader.migrateIfNeeded( dbDirectory, schemaIndexProvider );
+        upgrader.migrateIfNeeded( dbDirectory, schemaIndexProvider, pageCache );
 
         // THEN
         verify( observingParticipant, Mockito.times( 0 ) ).migrate(
-                any( File.class ), any( File.class ), any( SchemaIndexProvider.class ) );
+                any( File.class ), any( File.class ), any( SchemaIndexProvider.class ), any( PageCache.class ) );
         verify( observingParticipant, Mockito.times( 1 ) ).moveMigratedFiles( any( File.class ), any( File.class ) );
         verify( observingParticipant, Mockito.times( 1 ) ).cleanup( any( File.class ) );
         verify( monitor ).migrationCompleted();
@@ -271,30 +277,21 @@ public class StoreUpgraderTest
     {
         // Given
         fileSystem.deleteFile( new File( dbDirectory, StringLogger.DEFAULT_NAME ) );
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
 
         // When
-        newUpgrader( ALLOW_UPGRADE ).migrateIfNeeded( dbDirectory, schemaIndexProvider );
+        newUpgrader( ALLOW_UPGRADE ).migrateIfNeeded( dbDirectory, schemaIndexProvider, pageCache );
 
         // Then
-        LifeSupport life = new LifeSupport();
-        life.start();
-        PageCache pageCache = createPageCache( fileSystem, getClass().getName(), life );
-        try
-        {
-            NeoStore neoStore = new StoreFactory( fileSystem, dbDirectory, pageCache,
-                    StringLogger.DEV_NULL, mock( Monitors.class ) ).newNeoStore( false, false );
+        NeoStore neoStore = new StoreFactory( fileSystem, dbDirectory, pageCache,
+                StringLogger.DEV_NULL, mock( Monitors.class ) ).newNeoStore( false, false );
 
-            assertThat( neoStore.getUpgradeId(), not( equalTo( NeoStore.FIELD_NOT_INITIALIZED ) ) );
-            assertThat( neoStore.getUpgradeTime(), not( equalTo( NeoStore.FIELD_NOT_INITIALIZED ) ) );
+        assertThat( neoStore.getUpgradeId(), not( equalTo( NeoStore.FIELD_NOT_INITIALIZED ) ) );
+        assertThat( neoStore.getUpgradeTime(), not( equalTo( NeoStore.FIELD_NOT_INITIALIZED ) ) );
 
-            long minuteAgo = System.currentTimeMillis() - MINUTES.toMillis( 1 );
-            assertThat( neoStore.getUpgradeTime(), greaterThan( minuteAgo ) );
-            neoStore.close();
-        }
-        finally
-        {
-            life.shutdown();
-        }
+        long minuteAgo = System.currentTimeMillis() - MINUTES.toMillis( 1 );
+        assertThat( neoStore.getUpgradeTime(), greaterThan( minuteAgo ) );
+        neoStore.close();
     }
 
     @Test
@@ -302,9 +299,10 @@ public class StoreUpgraderTest
     {
         // Given
         fileSystem.deleteFile( new File( dbDirectory, StringLogger.DEFAULT_NAME ) );
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
 
         // When
-        newUpgrader( ALLOW_UPGRADE ).migrateIfNeeded( dbDirectory, schemaIndexProvider );
+        newUpgrader( ALLOW_UPGRADE ).migrateIfNeeded( dbDirectory, schemaIndexProvider, pageCache );
 
         // Then
         assertThat( migrationHelperDirs(), is( emptyCollectionOf( File.class ) ) );
@@ -320,12 +318,13 @@ public class StoreUpgraderTest
         fileSystem.mkdir( new File( dbDirectory, StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY + "_1" ) );
         fileSystem.mkdir( new File( dbDirectory, StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY + "_2" ) );
         fileSystem.mkdir( new File( dbDirectory, StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY + "_42" ) );
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
 
         // When
         StoreMigrator migrator = spy( new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem, DEV_NULL ) );
         when( migrator.needsMigration( dbDirectory ) ).thenReturn( false );
         newUpgrader( ALLOW_UPGRADE, migrator, StoreUpgrader.NO_MONITOR ).migrateIfNeeded( dbDirectory,
-                schemaIndexProvider );
+                schemaIndexProvider, pageCache );
 
         // Then
         assertThat( migrationHelperDirs(), is( emptyCollectionOf( File.class ) ) );
@@ -342,7 +341,8 @@ public class StoreUpgraderTest
             }
 
             @Override
-            public void migrate( File storeDir, File migrationDir, SchemaIndexProvider schemaIndexProvider ) throws IOException
+            public void migrate( File storeDir, File migrationDir, SchemaIndexProvider schemaIndexProvider,
+                                 PageCache pageCache ) throws IOException
             {  // Do nothing in particular
             }
 
@@ -366,6 +366,8 @@ public class StoreUpgraderTest
 
     @Rule
     public final TestDirectory directory = TargetDirectory.forTest( getClass() ).testDirectory();
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
     private File dbDirectory;
     private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
 

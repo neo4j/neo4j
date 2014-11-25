@@ -19,27 +19,27 @@
  */
 package org.neo4j.index;
 
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 
@@ -136,7 +136,16 @@ public class IndexTxStateLookupTest
         return result;
     }
 
-    public final @Rule DatabaseRule db = new ImpermanentDatabaseRule();
+    @Rule
+    public final DatabaseRule db = new ImpermanentDatabaseRule()
+    {
+        @Override
+        protected void configure( GraphDatabaseBuilder builder )
+        {
+            super.configure( builder );
+            builder.setConfig( GraphDatabaseSettings.cache_type, "none" );
+        }
+    };
 
     private final Object store;
     private final Object lookup;

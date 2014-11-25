@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -91,7 +91,7 @@ public class TestIdGeneratorRebuilding
                 storeFile,
                 config,
                 new DefaultIdGeneratorFactory(),
-                pageCacheRule.getPageCache( fs, config ),
+                pageCacheRule.getPageCache( fs ),
                 fs,
                 StringLogger.DEV_NULL,
                 labelStore,
@@ -148,7 +148,7 @@ public class TestIdGeneratorRebuilding
         StoreFactory storeFactory = new StoreFactory(
                 config,
                 new DefaultIdGeneratorFactory(),
-                pageCacheRule.getPageCache( fs, config ),
+                pageCacheRule.getPageCache( fs ),
                 fs,
                 StringLogger.DEV_NULL,
                 new Monitors() );
@@ -212,7 +212,7 @@ public class TestIdGeneratorRebuilding
                 storeFile,
                 config,
                 new DefaultIdGeneratorFactory(),
-                pageCacheRule.getPageCache( fs, config ),
+                pageCacheRule.getPageCache( fs ),
                 fs,
                 StringLogger.DEV_NULL,
                 labelStore,

@@ -69,7 +69,7 @@ public class TestDynamicStore
     @Before
     public void setUp()
     {
-        pageCache = pageCacheRule.getPageCache( fs.get(), config() );
+        pageCache = pageCacheRule.getPageCache( fs.get() );
     }
 
     private File path()

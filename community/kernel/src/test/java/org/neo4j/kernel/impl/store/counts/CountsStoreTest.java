@@ -301,7 +301,7 @@ public class CountsStoreTest
     public void setup()
     {
         fs = fsRule.get();
-        pageCache = pageCacheRule.getPageCache( fs, new Config() );
+        pageCache = pageCacheRule.getPageCache( fs );
     }
 
     private long get( CountsStore store, CountsKey key )

@@ -32,7 +32,6 @@ import org.neo4j.helpers.Function;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.CountsOracle;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
@@ -294,7 +293,6 @@ public class CountsTrackerTest
     public final @Rule TestName testName = new TestName();
     public final @Rule PageCacheRule pageCache = new PageCacheRule();
     public final @Rule ThreadingRule threading = new ThreadingRule();
-    private final Config config = new Config();
 
     public CountsOracle oracle()
     {
@@ -330,7 +328,7 @@ public class CountsTrackerTest
 
     private PageCache pageCache()
     {
-        return pageCache.getPageCache( fs.get(), config );
+        return pageCache.getPageCache( fs.get() );
     }
 
     private void createStoreFile( EphemeralFileSystemAbstraction fs, PageCache pageCache, File file, long lastTxId ) throws IOException

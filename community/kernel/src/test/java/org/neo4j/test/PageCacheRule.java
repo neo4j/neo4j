@@ -21,9 +21,12 @@ package org.neo4j.test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
@@ -51,8 +54,21 @@ public class PageCacheRule extends ExternalResource
         this.automaticallyProduceInconsistentReads = automaticallyProduceInconsistentReads;
     }
 
+    public PageCache getPageCache( FileSystemAbstraction fs )
+    {
+        Map<String,String> settings = new HashMap<>();
+        settings.put( GraphDatabaseSettings.mapped_memory_total_size.name(), "8M" );
+        return getPageCache( fs, new Config( settings ) );
+    }
+
     public PageCache getPageCache( FileSystemAbstraction fs, Config config )
     {
+        if ( jobScheduler == null )
+        {
+            jobScheduler = new Neo4jJobScheduler();
+            jobScheduler.init();
+        }
+
         if ( pageCache != null )
         {
             try
@@ -78,13 +94,6 @@ public class PageCacheRule extends ExternalResource
     }
 
     @Override
-    protected void before() throws Throwable
-    {
-        jobScheduler = new Neo4jJobScheduler();
-        jobScheduler.init();
-    }
-
-    @Override
     protected void after()
     {
         if ( pageCache != null )
@@ -99,7 +108,12 @@ public class PageCacheRule extends ExternalResource
             }
             pageCache = null;
         }
-        jobScheduler.shutdown();
+
+        if ( jobScheduler != null )
+        {
+            jobScheduler.shutdown();
+            jobScheduler = null;
+        }
     }
 
     /**

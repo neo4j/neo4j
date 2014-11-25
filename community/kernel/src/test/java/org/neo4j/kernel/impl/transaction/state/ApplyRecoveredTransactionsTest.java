@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
 
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -51,7 +51,6 @@ import org.neo4j.test.PageCacheRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
-
 import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
@@ -117,7 +116,7 @@ public class ApplyRecoveredTransactionsTest
         File storeDir = new File( "dir" );
         Config config = configForStoreDir( new Config(), storeDir );
         StoreFactory storeFactory = new StoreFactory( config, new DefaultIdGeneratorFactory(),
-                pageCacheRule.getPageCache( fsr.get(), config ), fsr.get(), DEV_NULL, new Monitors() );
+                pageCacheRule.getPageCache( fsr.get() ), fsr.get(), DEV_NULL, new Monitors() );
         neoStore = storeFactory.newNeoStore( true, false );
     }
 

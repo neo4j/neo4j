@@ -86,7 +86,6 @@ import static org.neo4j.helpers.UTF8.encode;
 import static org.neo4j.helpers.collection.Iterables.iterable;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
-import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.store.NeoStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.store.StoreFactory.buildTypeDescriptorAndVersion;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
@@ -160,7 +159,7 @@ public class StoreMigrator implements StoreMigrationParticipant
      * Doing that initialization here is good because we do this check when
      * {@link #moveMigratedFiles(File, File) moving migrated files}, which might be done
      * as part of a resumed migration, i.e. run even if
-     * {@link StoreMigrationParticipant#migrate(java.io.File, java.io.File, org.neo4j.kernel.api.index.SchemaIndexProvider)}
+     * {@link StoreMigrationParticipant#migrate(java.io.File, java.io.File, org.neo4j.kernel.api.index.SchemaIndexProvider, org.neo4j.io.pagecache.PageCache)}
      * hasn't been run.
      */
     private String versionToUpgradeFrom( FileSystemAbstraction fileSystem, File storeDir )
@@ -173,7 +172,8 @@ public class StoreMigrator implements StoreMigrationParticipant
     }
 
     @Override
-    public void migrate( File storeDir, File migrationDir, SchemaIndexProvider schemaIndexProvider ) throws IOException
+    public void migrate( File storeDir, File migrationDir, SchemaIndexProvider schemaIndexProvider,
+                         PageCache pageCache ) throws IOException
     {
         progressMonitor.started();
 
@@ -190,7 +190,6 @@ public class StoreMigrator implements StoreMigrationParticipant
             life.start();
             try
             {
-                final PageCache pageCache = createPageCache( fileSystem, "build-counts", life );
                 removeDuplicateEntityProperties( storeDir, migrationDir, pageCache, schemaIndexProvider );
                 rebuildCountsFromScratch( storeDir, migrationDir, lastTxId, pageCache );
             }
@@ -202,7 +201,7 @@ public class StoreMigrator implements StoreMigrationParticipant
         else
         {
             // migrate stores
-            migrateWithBatchImporter( storeDir, migrationDir, lastTxId );
+            migrateWithBatchImporter( storeDir, migrationDir, lastTxId, pageCache );
 
             // don't create counters from scratch, since the batch importer just did
         }
@@ -265,7 +264,7 @@ public class StoreMigrator implements StoreMigrationParticipant
         }
     }
 
-    private void migrateWithBatchImporter( File storeDir, File migrationDir, long lastTxId )
+    private void migrateWithBatchImporter( File storeDir, File migrationDir, long lastTxId, PageCache pageCache )
             throws IOException
     {
         prepareBatchImportMigration( storeDir, migrationDir );
@@ -297,16 +296,9 @@ public class StoreMigrator implements StoreMigrationParticipant
         {
             // we may need to upgrade the property keys
             Legacy19Store legacy19Store = (Legacy19Store) legacyStore;
-            LifeSupport life = new LifeSupport();
-            life.start();
-            PageCache pageCache = createPageCache( fileSystem, "migrator-dedup-properties", life );
             try ( PropertyStore propertyStore = storeFactory( pageCache, migrationDir ).newPropertyStore() )
             {
                 migratePropertyKeys( legacy19Store, propertyStore );
-            }
-            finally
-            {
-                life.shutdown();
             }
         }
         // Close

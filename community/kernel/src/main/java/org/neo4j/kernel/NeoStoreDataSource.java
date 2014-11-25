@@ -39,6 +39,7 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -229,6 +230,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
     private final Caches cacheProvider;
     private final NodeManager nodeManager;
     private final CommitProcessFactory commitProcessFactory;
+    private final PageCache pageCache;
     private final AtomicInteger recoveredCount = new AtomicInteger();
     private final Guard guard;
     private final Map<String,IndexImplementation> indexProviders = new HashMap<>();
@@ -284,6 +286,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
                                StartupStatisticsProvider startupStatistics,
                                Caches cacheProvider, NodeManager nodeManager, Guard guard,
                                IndexConfigStore indexConfigStore, CommitProcessFactory commitProcessFactory,
+                               PageCache pageCache,
                                Monitors monitors )
     {
         this.config = config;
@@ -341,6 +344,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
         };
 
         this.commitProcessFactory = commitProcessFactory;
+        this.pageCache = pageCache;
     }
 
     @Override
@@ -366,7 +370,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, LogRotat
         storeMigrationProcess.addParticipant( indexProvider.storeMigrationParticipant() );
         // TODO: Build a real provider map
         final DefaultSchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( indexProvider );
-        storeMigrationProcess.migrateIfNeeded( store.getParentFile(), indexProvider );
+        storeMigrationProcess.migrateIfNeeded( store.getParentFile(), indexProvider, pageCache );
         neoStore = dependencies.satisfyDependency( storeFactory.newNeoStore( false, true ) );
         dependencies.satisfyDependency( neoStore );
 
