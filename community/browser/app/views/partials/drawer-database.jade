@@ -10,7 +10,7 @@ h4 Neo4j {{ neo4j.version }}
   span(ng-repeat='relationship in relationships')
     a.label.relationship(ng-click="editor.execScript('MATCH (a)-[:`'+relationship+'`]->(b) RETURN a,b LIMIT 25')") {{relationship}}
 
-  span(ng-show='propertyKeys')
+  div(ng-show='propertyKeys')
     h5 Property keys
     span(ng-repeat='propertyKey in propertyKeys')
       a.label.property(ng-click="editor.execScript('MATCH (n) WHERE has(n.`'+propertyKey+'`) RETURN DISTINCT \"node\" as element, n.`'+propertyKey+'` AS `'+propertyKey+'` LIMIT 25 UNION ALL MATCH ()-[r]-() WHERE has(r.`'+propertyKey+'`) RETURN DISTINCT \"relationship\" AS element, r.`'+propertyKey+'` AS `'+propertyKey+'` LIMIT 25')") {{propertyKey}}
