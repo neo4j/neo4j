@@ -97,7 +97,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   test("should monitor cache remove") {
     // given
     val counter = new CacheCounter()
-    val compiler = createCompiler()
+    val clock: Clock = new FrozenClock(1000)
+    val compiler = createCompiler(queryPlanTTL = 0, clock = clock)
     compiler.monitors.addMonitorListener(counter)
     val query: String = "match (n:Person:Dog) return n"
 
