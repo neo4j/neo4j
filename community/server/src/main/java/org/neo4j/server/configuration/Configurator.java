@@ -48,6 +48,7 @@ public interface Configurator
 {
     String SECURITY_RULES_KEY = ServerSettings.security_rules.name();
 
+    String AUTHORIZATION_STORE_FILE_KEY = ServerInternalSettings.authorization_store.name();
     String DB_TUNING_PROPERTY_FILE_KEY = ServerInternalSettings.legacy_db_config.name();
     String DEFAULT_CONFIG_DIR = File.separator + "etc" + File.separator + "neo";
     String DATABASE_LOCATION_PROPERTY_KEY = ServerInternalSettings.legacy_db_location.name();

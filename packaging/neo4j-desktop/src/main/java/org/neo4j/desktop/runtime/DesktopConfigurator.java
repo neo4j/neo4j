@@ -79,6 +79,7 @@ public class DesktopConfigurator implements ConfigurationBuilder
     public void setDatabaseDirectory( File directory ) {
         File neo4jProperties = new File( directory, Installation.NEO4J_PROPERTIES_FILENAME );
 
+        map.put( Configurator.AUTHORIZATION_STORE_FILE_KEY, new File( directory, "./dbms/authorization" ).getAbsolutePath() );
         map.put( Configurator.DATABASE_LOCATION_PROPERTY_KEY, directory.getAbsolutePath() );
         map.put( Configurator.DB_TUNING_PROPERTY_FILE_KEY, neo4jProperties.getAbsolutePath() );
     }
