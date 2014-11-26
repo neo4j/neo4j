@@ -611,4 +611,29 @@ public class TestAutoIndexing
         assertThat( graphDb.index().forRelationships( "relationship_auto_index" ).query( "_id_:*" ).size(),
                 equalTo( 0 ) );
     }
+
+    @Test
+    public void testDeletingNodeRemovesItFromAutoIndex() throws Exception
+    {
+        AutoIndexer<Node> nodeAutoIndexer = graphDb.index().getNodeAutoIndexer();
+        nodeAutoIndexer.startAutoIndexingProperty( "foo" );
+        nodeAutoIndexer.setEnabled( true );
+
+        newTransaction();
+
+        Node node1 = graphDb.createNode();
+        node1.setProperty( "foo", "bar" );
+
+        newTransaction();
+
+        assertThat( graphDb.index().forNodes( "node_auto_index" ).query( "_id_:*" ).size(),
+                equalTo( 1 ) );
+
+        node1.delete();
+
+        newTransaction();
+
+        assertThat( graphDb.index().forNodes( "node_auto_index" ).query( "_id_:*" ).size(),
+                equalTo( 0 ) );
+    }
 }
