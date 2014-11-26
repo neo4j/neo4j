@@ -113,7 +113,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
             parsedQuery.plan(kernelStatement)
           })
         }.flatMap { case (plan, params) =>
-          if ( !touched && plan.isStale(lastTxId, kernelStatement)) {
+          if (!touched && plan.isStale(lastTxId, kernelStatement)) {
             cacheAccessor.remove(cache)(queryText)
             None
           } else {

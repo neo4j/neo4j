@@ -32,8 +32,6 @@ import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.helpers.Clock
 
-case class PlanFingerprint(creationTimeMillis: Long, txId: Long, snapshot: GraphStatisticsSnapshot)
-
 case class PipeInfo(pipe: Pipe,
                     updating: Boolean,
                     periodicCommit: Option[PeriodicCommitInfo] = None,
@@ -68,18 +66,12 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold
     val profileMarker = inputQuery.planType == Profiled
 
     new ExecutionPlan {
-      private val fingerprint: Option[PlanFingerprint] = fp
+      private val fingerprint = PlanFingerprintReference(clock, queryPlanTTL, statsDivergenceThreshold, fp)
       def execute(queryContext: QueryContext, params: Map[String, Any]) = func(queryContext, params, profileMarker)
       def profile(queryContext: QueryContext, params: Map[String, Any]) = func(new UpdateCountingQueryContext(queryContext), params, true)
       def isPeriodicCommit = periodicCommitInfo.isDefined
       def plannerUsed = planner
-      def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean = {
-        fingerprint.fold(false) { fingerprint =>
-          fingerprint.creationTimeMillis + queryPlanTTL <= clock.currentTimeMillis() &&
-            lastTxId() != fingerprint.txId &&
-            fingerprint.snapshot.diverges(fingerprint.snapshot.recompute(statistics), statsDivergenceThreshold)
-        }
-      }
+      def isStale(lastTxId: () => Long, statistics: GraphStatistics) = fingerprint.isStale(lastTxId, statistics)
     }
   }
 

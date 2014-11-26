@@ -30,8 +30,7 @@ case class CardinalityByLabelsAndRelationshipType(lhs: Option[LabelId], relType:
 case class IndexSelectivity(labelId: LabelId, propertyKeyId: PropertyKeyId) extends StatisticsKey
 
 case class MutableGraphStatisticsSnapshot(map: mutable.Map[StatisticsKey, Double] = mutable.Map.empty) {
-  def freeze: GraphStatisticsSnapshot =
-    GraphStatisticsSnapshot(map.toMap)
+  def freeze: GraphStatisticsSnapshot = GraphStatisticsSnapshot(map.toMap)
 }
 
 case class GraphStatisticsSnapshot(map: Map[StatisticsKey, Double] = Map.empty) {
@@ -60,9 +59,9 @@ case class GraphStatisticsSnapshot(map: Map[StatisticsKey, Double] = Map.empty) 
       .map(_.map(_._2).product)
       .kahanSum
 
-    val cosa = dotProduct / (vectorLength(map) * vectorLength(snapshot.map))
-    val divergence = Math.acos(cosa) * 2 / Math.PI
-    divergence > minThreshold
+    val cosine = dotProduct / (vectorLength(map) * vectorLength(snapshot.map))
+    val divergence = Math.acos(cosine) * 2 / Math.PI
+    divergence >= minThreshold
   }
 
   implicit class RichDoubleIterable(xs: Iterable[Double]) {

@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.execution
 
-import java.util.Date
-
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.OtherConverters._
@@ -216,18 +214,6 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
       result.withEstimatedCardinality(cardinality.amount.toLong)
     }
 
-    def buildExpression(expr: ast.Expression): CommandExpression = {
-      val rewrittenExpr = expr.endoRewrite(buildPipeExpressions)
-
-      rewrittenExpr.asCommandExpression.rewrite(resolver.resolveExpressions(_, planContext))
-    }
-
-    def buildPredicate(expr: ast.Expression): CommandPredicate = {
-      val rewrittenExpr: Expression = expr.endoRewrite(buildPipeExpressions)
-
-      rewrittenExpr.asCommandPredicate.rewrite(resolver.resolveExpressions(_, planContext)).asInstanceOf[CommandPredicate]
-    }
-
     object buildPipeExpressions extends Rewriter {
       val instance = Rewriter.lift {
         case ast.NestedPlanExpression(patternPlan, pattern) =>
@@ -239,6 +225,18 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
       }
 
       def apply(that: AnyRef): AnyRef = bottomUp(instance).apply(that)
+    }
+
+    def buildExpression(expr: ast.Expression): CommandExpression = {
+      val rewrittenExpr = expr.endoRewrite(buildPipeExpressions)
+
+      rewrittenExpr.asCommandExpression.rewrite(resolver.resolveExpressions(_, planContext))
+    }
+
+    def buildPredicate(expr: ast.Expression): CommandPredicate = {
+      val rewrittenExpr: Expression = expr.endoRewrite(buildPipeExpressions)
+
+      rewrittenExpr.asCommandPredicate.rewrite(resolver.resolveExpressions(_, planContext)).asInstanceOf[CommandPredicate]
     }
 
     val topLevelPipe = buildPipe(plan, QueryGraphCardinalityInput.empty)
