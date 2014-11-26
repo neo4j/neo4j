@@ -1,6 +1,5 @@
 [[tutorials-java-embedded-tx-terminate]]
-Terminateing a running transaction
-==================================
+= Terminating a running transaction
 
 Sometimes you may want to terminate (abort) a long running transaction from another thread.
 
@@ -40,8 +39,11 @@ classifier=sources
 tag=terminateTx
 ----
 
-Running this will execute the long running transaction for roundabout one second and prints the maximum depth of the tree that was created before the transaction was terminateed.
-Nothing is actually saved to the database - because the transaction has been terminated, and transactions are atomic, the end result is as if no part of the query ran.
+Running this will execute the long running transaction for about one second and prints the maximum depth of the tree that was created before the transaction was terminated.
+No changes are actually made to the data -- because the transaction has been terminated, the end result is as if no operations were performed.
+
+.Example output
+include::terminate-tx-java-result.asciidoc[]
 
 Finally, let's shut down the database again.
 
