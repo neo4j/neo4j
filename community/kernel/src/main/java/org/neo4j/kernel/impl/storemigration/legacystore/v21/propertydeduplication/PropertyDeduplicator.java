@@ -96,7 +96,7 @@ public class PropertyDeduplicator
             PropertyRecord record = store.forceGetRecord( headRecordId );
             // Skip property propertyRecordIds that are not in use.
             // Skip property propertyRecordIds that are not at the start of a chain.
-            if ( !record.inUse() || record.getPrevProp() != -1 )
+            if ( !record.inUse() || record.getPrevProp() != Record.NO_NEXT_PROPERTY.intValue() )
             {
                 continue;
             }
@@ -194,7 +194,7 @@ public class PropertyDeduplicator
             }
         }
 
-        // Initially resolve all duplicateClusters by changing the propertyKey for the first conflicting property block, to
+        // Then resolve all duplicateClusters by changing the propertyKey for the first conflicting property block, to
         // one that is prefixed with "__DUPLICATE_<key>".
         PropertyKeyTokenStore keyTokenStore = propertyStore.getPropertyKeyTokenStore();
         NonIndexedConflictResolver resolver = new NonIndexedConflictResolver( keyTokenStore, propertyStore );
