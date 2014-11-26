@@ -30,11 +30,13 @@ script(id="inspector/label.html", type="text/ng-template")
       ul.list-inline
         li Caption:
         li
-          a.attribute(ng-click='selectCaption(item, "id")') id
+          a.attribute(ng-click='selectCaption(item, "id")'
+            ng-class="{selected: isSelectedCaption(item, 'id')}") id
         li(ng-repeat='property in item.attrs')
           a.attribute(
             ng-click='selectCaption(item, property)'
-            ng-bind="property")
+            ng-bind="property"
+            ng-class="{selected: isSelectedCaption(item, property)}")
 
 script(id="inspector/relationshipType.html", type="text/ng-template")
   ul.list-inline
@@ -58,8 +60,10 @@ script(id="inspector/relationshipType.html", type="text/ng-template")
       ul.list-inline
         li Caption:
         li
-          a.attribute(ng-click='selectCaption(item, "type")') type
+          a.attribute(ng-click='selectCaption(item, "type")'
+            ng-class="{selected: isSelectedCaption(item, 'type')}") type
         li(ng-repeat='property in item.attrs')
           a.attribute(
             ng-click='selectCaption(item, property)'
-            ng-bind="property")
+            ng-bind="property"
+            ng-class="{selected: isSelectedCaption(item, property)}")
