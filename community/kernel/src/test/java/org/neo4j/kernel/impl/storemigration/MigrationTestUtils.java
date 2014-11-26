@@ -269,7 +269,7 @@ public class MigrationTestUtils
         @Override
         public boolean accept( StoreFile item )
         {
-            return item != StoreFile.COUNTS_STORE_ALPHA && item != StoreFile.COUNTS_STORE_BETA;
+            return item != StoreFile.COUNTS_STORE_ONE && item != StoreFile.COUNTS_STORE_TWO;
         }
     };
 }

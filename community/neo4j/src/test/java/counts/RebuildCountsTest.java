@@ -105,10 +105,10 @@ public class RebuildCountsTest
         EphemeralFileSystemAbstraction snapshot = fsRule.get().snapshot();
 
         final File storeFileBase = new File( storeDir, NeoStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE );
-        File alpha = new File( storeFileBase + CountsTracker.ALPHA );
-        File beta = new File( storeFileBase + CountsTracker.BETA );
-        assertTrue( snapshot.deleteFile( alpha ) );
-        assertTrue( snapshot.deleteFile( beta ) );
+        File oneFile = new File( storeFileBase + CountsTracker.ONE );
+        File twoFile = new File( storeFileBase + CountsTracker.TWO );
+        assertTrue( snapshot.deleteFile( oneFile ) );
+        assertTrue( snapshot.deleteFile( twoFile ) );
         setupDb( snapshot );
     }
 

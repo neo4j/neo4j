@@ -71,7 +71,7 @@ public class CountsComputerTest
 
         rebuildCounts( countsState, lastCommittedTransactionId );
 
-        try ( CountsStore store = CountsStore.open( fs, pageCache, alphaStoreFile() ) )
+        try ( CountsStore store = CountsStore.open( fs, pageCache, oneStoreFile() ) )
         {
             // a transaction for creating the label and a transaction for the node
             assertEquals( BASE_TX_ID, store.lastTxId() );
@@ -100,7 +100,7 @@ public class CountsComputerTest
 
         rebuildCounts( countsState, lastCommittedTransactionId );
 
-        try ( CountsStore store = CountsStore.open( fs, pageCache, betaStoreFile() ) )
+        try ( CountsStore store = CountsStore.open( fs, pageCache, twoStoreFile() ) )
         {
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1, store.lastTxId() );
             assertEquals( 4, store.totalRecordsStored() );
@@ -134,7 +134,7 @@ public class CountsComputerTest
 
         rebuildCounts( countsState, lastCommittedTransactionId );
 
-        try ( CountsStore store = CountsStore.open( fs, pageCache, betaStoreFile() ) )
+        try ( CountsStore store = CountsStore.open( fs, pageCache, twoStoreFile() ) )
         {
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1, store.lastTxId() );
             assertEquals( 3, store.totalRecordsStored() );
@@ -168,7 +168,7 @@ public class CountsComputerTest
 
         rebuildCounts( countsState, lastCommittedTransactionId );
 
-        try ( CountsStore store = CountsStore.open( fs, pageCache, betaStoreFile() ) )
+        try ( CountsStore store = CountsStore.open( fs, pageCache, twoStoreFile() ) )
         {
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1 + 1, store.lastTxId() );
 //            assertEquals( 11, store.totalRecordsStored() ); // we do not support yet (label,type,label) counts
@@ -207,7 +207,7 @@ public class CountsComputerTest
 
         rebuildCounts( countsState, lastCommittedTransactionId );
 
-        try ( CountsStore store = CountsStore.open( fs, pageCache, betaStoreFile() ) )
+        try ( CountsStore store = CountsStore.open( fs, pageCache, twoStoreFile() ) )
         {
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1 + 1 + 1, store.lastTxId() );
 //            assertEquals( 15, store.totalRecordsStored() ); // we do not support yet (label,type,label) counts
@@ -253,7 +253,7 @@ public class CountsComputerTest
 
         rebuildCounts( countsState, lastCommittedTransactionId );
 
-        try ( CountsStore store = CountsStore.open( fs, pageCache, betaStoreFile() ) )
+        try ( CountsStore store = CountsStore.open( fs, pageCache, twoStoreFile() ) )
         {
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1, store.lastTxId() );
             assertEquals( 22, store.totalRecordsStored() );
@@ -302,14 +302,14 @@ public class CountsComputerTest
 
     private static final String COUNTS_STORE_BASE = NeoStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE;
 
-    private File alphaStoreFile()
+    private File oneStoreFile()
     {
-        return new File( dir, COUNTS_STORE_BASE + CountsTracker.ALPHA );
+        return new File( dir, COUNTS_STORE_BASE + CountsTracker.ONE );
     }
 
-    private File betaStoreFile()
+    private File twoStoreFile()
     {
-        return new File( dir, COUNTS_STORE_BASE + CountsTracker.BETA );
+        return new File( dir, COUNTS_STORE_BASE + CountsTracker.TWO );
     }
 
     private long getLastTxId( @SuppressWarnings( "deprecation" ) GraphDatabaseAPI db )
@@ -320,8 +320,8 @@ public class CountsComputerTest
 
     private void cleanupCountsForRebuilding()
     {
-        fs.deleteFile( alphaStoreFile() );
-        fs.deleteFile( betaStoreFile() );
+        fs.deleteFile( oneStoreFile() );
+        fs.deleteFile( twoStoreFile() );
         CountsTracker.createEmptyCountsStore( pageCache, new File( dir, COUNTS_STORE_BASE ),
                 buildTypeDescriptorAndVersion( CountsTracker.STORE_DESCRIPTOR ) );
     }

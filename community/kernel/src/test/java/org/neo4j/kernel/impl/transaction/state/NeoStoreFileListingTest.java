@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-
-import org.junit.Before;
-import org.junit.Test;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.index.IndexImplementation;
@@ -42,7 +42,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asResourceIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
@@ -59,8 +58,8 @@ public class NeoStoreFileListingTest
             "messages.log",
             "neostore",
             "neostore.id",
-            "neostore.counts.db.alpha",
-            "neostore.counts.db.beta",
+            "neostore.counts.db.1",
+            "neostore.counts.db.2",
             "neostore.labeltokenstore.db",
             "neostore.labeltokenstore.db.id",
             "neostore.labeltokenstore.db.names",
@@ -121,8 +120,8 @@ public class NeoStoreFileListingTest
         assertThat( asSetOfPaths( result ), equalTo( asSet(
                 "neostore.labeltokenstore.db",
                 "neostore.labeltokenstore.db.names",
-                "neostore.counts.db.alpha",
-                "neostore.counts.db.beta",
+                "neostore.counts.db.1",
+                "neostore.counts.db.2",
                 "neostore.nodestore.db",
                 "neostore.nodestore.db.labels",
                 "neostore.propertystore.db",
@@ -154,8 +153,8 @@ public class NeoStoreFileListingTest
         assertThat( pathSet, equalTo( asSet(
                 "neostore.labeltokenstore.db",
                 "neostore.labeltokenstore.db.names",
-                "neostore.counts.db.alpha",
-                "neostore.counts.db.beta",
+                "neostore.counts.db.1",
+                "neostore.counts.db.2",
                 "neostore.nodestore.db",
                 "neostore.nodestore.db.labels",
                 "neostore.propertystore.db",
@@ -187,8 +186,8 @@ public class NeoStoreFileListingTest
         assertThat( pathSet, equalTo( asSet(
                 "neostore.labeltokenstore.db",
                 "neostore.labeltokenstore.db.names",
-                "neostore.counts.db.alpha",
-                "neostore.counts.db.beta",
+                "neostore.counts.db.1",
+                "neostore.counts.db.2",
                 "neostore.nodestore.db",
                 "neostore.nodestore.db.labels",
                 "neostore.propertystore.db",
@@ -223,8 +222,8 @@ public class NeoStoreFileListingTest
                 "schema/index/their.index",
                 "neostore.labeltokenstore.db",
                 "neostore.labeltokenstore.db.names",
-                "neostore.counts.db.alpha",
-                "neostore.counts.db.beta",
+                "neostore.counts.db.1",
+                "neostore.counts.db.2",
                 "neostore.nodestore.db",
                 "neostore.nodestore.db.labels",
                 "neostore.propertystore.db",
