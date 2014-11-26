@@ -85,7 +85,7 @@ public class CountsStore extends SortedKeyValueStore<CountsKey, CopyableDoubleLo
                 {
                     if ( register.hasValues( 0, 0 ) )
                     {
-                        throw new UnderlyingStorageException( "Counts store contains corrupted values" );
+                        throw new UnderlyingStorageException( "Counts store contains unexpected value (0,0)" );
                     }
                     keys.increment( 1 );
                 }

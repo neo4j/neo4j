@@ -306,7 +306,7 @@ public class LuceneLabelScanStoreTest
         {
             assertThat(e.getCause(), instanceOf( IOException.class ));
             assertThat(e.getCause().getMessage(), equalTo(
-                    "Label scan store is corrupted, and needs to be rebuilt. To trigger a rebuild, ensure the " +
+                    "Label scan store could not be read, and needs to be rebuilt. To trigger a rebuild, ensure the " +
                             "database is stopped, delete the files in '"+dir.getAbsolutePath()+"', and then start the " +
                             "database again." ));
         }

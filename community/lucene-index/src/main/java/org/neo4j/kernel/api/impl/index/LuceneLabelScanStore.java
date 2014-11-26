@@ -104,7 +104,7 @@ public class LuceneLabelScanStore
             @Override
             public void corruptIndex( IOException corruptionException )
             {
-                logger.warn( "Corrupt lucene scan store index found. Preparing to rebuild.",
+                logger.warn( "Lucene scan store index could not be read. Preparing to rebuild.",
                         corruptionException );
             }
 
@@ -266,7 +266,7 @@ public class LuceneLabelScanStore
         {
             // The index was somehow corrupted, fail
             monitor.corruptIndex( e );
-            throw new IOException( "Label scan store is corrupted, and needs to be rebuilt. " +
+            throw new IOException( "Label scan store could not be read, and needs to be rebuilt. " +
                     "To trigger a rebuild, ensure the database is stopped, delete the files in '" +
                     directoryLocation.getAbsolutePath() + "', and then start the database again." );
         }
