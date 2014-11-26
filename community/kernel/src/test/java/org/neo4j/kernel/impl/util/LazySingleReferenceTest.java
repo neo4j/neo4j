@@ -69,7 +69,7 @@ public class LazySingleReferenceTest
     }
     
     @Test
-    public void shouldMutexAccessBetweenInvalidateAndEvaluate() throws Exception
+    public void shouldMutexAccessBetweenInvalidateAndinstance() throws Exception
     {
         // GIVEN
         final CountDownLatch latch = new CountDownLatch( 1 );
@@ -110,11 +110,11 @@ public class LazySingleReferenceTest
                 return initCalls.incrementAndGet();
             }
         };
-        assertEquals( "First evaluation", 1, ref.evaluate().intValue() );
+        assertEquals( "First evaluation", 1, ref.instance().intValue() );
         
         // WHEN
         ref.invalidate();
-        int e2 = ref.evaluate();
+        int e2 = ref.instance();
         
         // THEN
         assertEquals( "Second evaluation", 2, e2 );
@@ -135,11 +135,11 @@ public class LazySingleReferenceTest
         
         // WHEN
         boolean firstResult = ref.isCreated();
-        ref.evaluate();
+        ref.instance();
         boolean secondResult = ref.isCreated();
         ref.invalidate();
         boolean thirdResult = ref.isCreated();
-        ref.evaluate();
+        ref.instance();
         boolean fourthResult = ref.isCreated();
         
         // THEN
@@ -172,7 +172,7 @@ public class LazySingleReferenceTest
             @Override
             public Integer doWork( Void state ) throws Exception
             {
-                return ref.evaluate();
+                return ref.instance();
             }
         };
     }

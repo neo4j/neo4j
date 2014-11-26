@@ -32,12 +32,15 @@ import org.junit.Test;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.Recovery;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogFileRecoverer;
+import org.neo4j.kernel.impl.transaction.log.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.LogRotationControl;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
+import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
@@ -46,7 +49,6 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
@@ -63,7 +65,6 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.DEFAULT_NAME;
-import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.NO_PRUNING;
 import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
 import static org.neo4j.test.TargetDirectory.testDirForTest;
 
@@ -91,10 +92,9 @@ public class PhysicalLogicalTransactionStoreTest
         LifeSupport life = new LifeSupport();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( testDir, DEFAULT_NAME, fs );
         Monitor monitor = new Monitors().newMonitor( PhysicalLogFile.Monitor.class );
-        LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000, NO_PRUNING,
-                transactionIdStore, mock( LogVersionRepository.class ), monitor, logRotationControl,
-                positionCache, noRecoveryAsserter() ) );
-        life.add( new PhysicalLogicalTransactionStore( logFile, positionCache,
+        LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000,
+                transactionIdStore, mock( LogVersionRepository.class ), monitor, positionCache ) );
+        life.add( new PhysicalLogicalTransactionStore( logFile, LogRotation.NO_ROTATION, positionCache,
                 transactionIdStore, BYPASS, true ) );
 
         try
@@ -112,18 +112,16 @@ public class PhysicalLogicalTransactionStoreTest
     public void shouldOpenAndRecoverExistingData() throws Exception
     {
         // GIVEN
-        LogRotationControl logRotationControl = mock( LogRotationControl.class );
-        TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 0l, 0 );
+        TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 0l, 0l );
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
         final byte[] additionalHeader = new byte[]{1, 2, 5};
         final int masterId = 2, authorId = 1;
         final long timeStarted = 12345, latestCommittedTxWhenStarted = 4545, timeCommitted = timeStarted + 10;
         LifeSupport life = new LifeSupport();
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( testDir, DEFAULT_NAME, fs );
+        final PhysicalLogFiles logFiles = new PhysicalLogFiles( testDir, DEFAULT_NAME, fs );
         Monitor monitor = new Monitors().newMonitor( PhysicalLogFile.Monitor.class );
-        LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000, NO_PRUNING,
-                transactionIdStore, mock( LogVersionRepository.class ), monitor, logRotationControl,
-                positionCache, emptyRecoveryVisitor() ) );
+        LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000, transactionIdStore,
+                mock( LogVersionRepository.class ), monitor, positionCache ) );
 
         life.start();
         try
@@ -156,12 +154,38 @@ public class PhysicalLogicalTransactionStoreTest
                         return false;
                     }
                 } );
-        logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000, NO_PRUNING,
-                transactionIdStore, mock( LogVersionRepository.class ), monitor, logRotationControl,
-                positionCache, recoverer ) );
+        logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000, transactionIdStore, mock( LogVersionRepository.class ), monitor, positionCache ) );
 
-        life.add( new PhysicalLogicalTransactionStore( logFile, positionCache,
-                transactionIdStore, BYPASS, true ) );
+
+        PhysicalLogicalTransactionStore store = new PhysicalLogicalTransactionStore( logFile,
+                LogRotation.NO_ROTATION, positionCache,
+                transactionIdStore, BYPASS, true );
+        life.add( store );
+        life.add(new Recovery(new Recovery.SPI()
+        {
+            @Override
+            public void forceEverything()
+            {
+            }
+
+            @Override
+            public long getCurrentLogVersion()
+            {
+                return 0;
+            }
+
+            @Override
+            public Visitor<LogVersionedStoreChannel, IOException> getRecoverer()
+            {
+                return recoverer;
+            }
+
+            @Override
+            public LogVersionedStoreChannel getLogFile( long recoveryVersion ) throws IOException
+            {
+                return PhysicalLogFile.openForVersion( logFiles, fs,recoveryVersion );
+            }
+        }, mock(Recovery.Monitor.class)));
 
         // WHEN
         try
@@ -181,8 +205,7 @@ public class PhysicalLogicalTransactionStoreTest
     public void shouldExtractMetadataFromExistingTransaction() throws Exception
     {
         // GIVEN
-        LogRotationControl logRotationControl = mock( LogRotationControl.class );
-        TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 0l, 0 );
+        TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 0l, 0l );
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
         final byte[] additionalHeader = new byte[]{1, 2, 5};
         final int masterId = 2, authorId = 1;
@@ -190,9 +213,9 @@ public class PhysicalLogicalTransactionStoreTest
         LifeSupport life = new LifeSupport();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( testDir, DEFAULT_NAME, fs );
         Monitor monitor = new Monitors().newMonitor( PhysicalLogFile.Monitor.class );
-        LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000, NO_PRUNING,
-                transactionIdStore, mock( LogVersionRepository.class ), monitor, logRotationControl,
-                positionCache, emptyRecoveryVisitor() ) );
+        LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000,
+                transactionIdStore, mock( LogVersionRepository.class ), monitor,
+                positionCache ) );
 
         life.start();
         try
@@ -225,17 +248,19 @@ public class PhysicalLogicalTransactionStoreTest
                         return false;
                     }
                 } );
-        logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000, NO_PRUNING,
-                transactionIdStore, mock( LogVersionRepository.class ), monitor, logRotationControl,
-                positionCache, recoverer ) );
+        logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000,
+                transactionIdStore, mock( LogVersionRepository.class ), monitor,
+                positionCache ) );
 
-        LogicalTransactionStore store = life.add( new PhysicalLogicalTransactionStore( logFile,
+        LogicalTransactionStore store = life.add( new PhysicalLogicalTransactionStore( logFile, LogRotation.NO_ROTATION,
                 positionCache, transactionIdStore, BYPASS, true ) );
 
         // WHEN
         life.start();
         try
         {
+            recoverer.visit(PhysicalLogFile.openForVersion( logFiles, fs, 0 ));
+
             positionCache.clear();
 
             assertThat( store.getMetadataFor( transactionIdStore.getLastCommittedTransactionId() ).toString(),
@@ -257,7 +282,7 @@ public class PhysicalLogicalTransactionStoreTest
         TransactionMetadataCache cache = new TransactionMetadataCache( 10, 10 );
         TransactionIdStore txIdStore = mock( TransactionIdStore.class );
         LogicalTransactionStore txStore =
-                new PhysicalLogicalTransactionStore( logFile, cache, txIdStore, BYPASS, false );
+                new PhysicalLogicalTransactionStore( logFile, LogRotation.NO_ROTATION, cache, txIdStore, BYPASS, false );
 
         // WHEN
         try
@@ -277,7 +302,7 @@ public class PhysicalLogicalTransactionStoreTest
                                            long latestCommittedTxWhenStarted, long timeCommitted ) throws IOException
     {
         TransactionAppender appender = new PhysicalTransactionAppender(
-                logFile, positionCache, transactionIdStore, BYPASS );
+                logFile, LogRotation.NO_ROTATION, positionCache, transactionIdStore, BYPASS );
         PhysicalTransactionRepresentation transaction =
                 new PhysicalTransactionRepresentation( singleCreateNodeCommand() );
         transaction.setHeader( additionalHeader, masterId, authorId, timeStarted, latestCommittedTxWhenStarted,
@@ -298,31 +323,5 @@ public class PhysicalLogicalTransactionStoreTest
 
         commands.add( command );
         return commands;
-    }
-
-    private Visitor<ReadableVersionableLogChannel,IOException> noRecoveryAsserter()
-    {
-        return new Visitor<ReadableVersionableLogChannel,IOException>()
-        {
-            @Override
-            public boolean visit( ReadableVersionableLogChannel channel ) throws IOException
-            {
-                // THEN
-                fail( "Should be nothing to recover" );
-                return false;
-            }
-        };
-    }
-
-    private Visitor<ReadableVersionableLogChannel,IOException> emptyRecoveryVisitor()
-    {
-        return new Visitor<ReadableVersionableLogChannel,IOException>()
-        {
-            @Override
-            public boolean visit( ReadableVersionableLogChannel element ) throws IOException
-            {
-                return false;
-            }
-        };
     }
 }

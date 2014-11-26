@@ -585,7 +585,7 @@ public class IndexPopulationJobTest
         db = (ImpermanentGraphDatabase) new TestGraphDatabaseFactory().newImpermanentDatabase();
         ctxProvider = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
         counts = db.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate().getCounts();
-        stateHolder = new KernelSchemaStateStore( DevNullLoggingService.DEV_NULL );
+        stateHolder = new KernelSchemaStateStore( DevNullLoggingService.DEV_NULL.getMessagesLog( KernelSchemaStateStore.class ) );
         indexStoreView = newStoreView();
 
         try ( Transaction tx = db.beginTx() )

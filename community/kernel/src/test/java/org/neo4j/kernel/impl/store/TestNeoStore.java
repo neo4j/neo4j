@@ -62,7 +62,6 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
@@ -217,7 +216,6 @@ public class TestNeoStore
         NodeManager nodeManager = new NodeManager( null, null, new ThreadToStatementContextBridge() );
         ds = new NeoStoreDataSource(config, sf, StringLogger.DEV_NULL,
                 mock( JobScheduler.class ), DevNullLoggingService.DEV_NULL,
-                new KernelSchemaStateStore( DevNullLoggingService.DEV_NULL ),
                 mock(TokenNameLookup.class),
                 dependencyResolverForNoIndexProvider(),
                 mock( PropertyKeyTokenHolder.class ), mock(LabelTokenHolder.class),

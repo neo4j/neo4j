@@ -248,13 +248,13 @@ public class BackupServiceIT
         }
 
         File oldLog = db.getDependencyResolver().resolveDependency( LogFile.class ).currentLogFile();
-        db.getDependencyResolver().resolveDependency( PhysicalLogFile.class ).forceRotate();
+        db.getDependencyResolver().resolveDependency( PhysicalLogFile.class ).rotate();
 
         for ( int i = 0; i < 1; i++ )
         {
             createAndIndexNode( db, i );
         }
-        db.getDependencyResolver().resolveDependency( PhysicalLogFile.class ).forceRotate();
+        db.getDependencyResolver().resolveDependency( PhysicalLogFile.class ).rotate();
 
         long lastCommittedTxBefore = db.getDependencyResolver().resolveDependency( NeoStore.class )
                 .getLastCommittedTransactionId();

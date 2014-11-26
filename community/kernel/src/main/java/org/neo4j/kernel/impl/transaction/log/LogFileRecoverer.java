@@ -26,7 +26,10 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 
-public class LogFileRecoverer implements Visitor<ReadableVersionableLogChannel,IOException>
+import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
+import static org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE;
+
+public class LogFileRecoverer implements Visitor<LogVersionedStoreChannel,IOException>
 {
     private final LogEntryReader<ReadableVersionableLogChannel> logEntryReader;
     private final Visitor<CommittedTransactionRepresentation,IOException> visitor;
@@ -39,16 +42,26 @@ public class LogFileRecoverer implements Visitor<ReadableVersionableLogChannel,I
     }
 
     @Override
-    public boolean visit( ReadableVersionableLogChannel channel ) throws IOException
+    public boolean visit( LogVersionedStoreChannel channel ) throws IOException
     {
-        // Intentionally don't close the cursor here since after recovery the channel is still used.
-        // I dislike this exception to the rule though.
-        PhysicalTransactionCursor<ReadableVersionableLogChannel> physicalTransactionCursor =
-                new PhysicalTransactionCursor<>( channel, logEntryReader );
-        while ( physicalTransactionCursor.next() && !visitor.visit( physicalTransactionCursor.get() ) )
+        ReadableVersionableLogChannel recoveredDataChannel =
+                new ReadAheadLogChannel( channel, NO_MORE_CHANNELS, DEFAULT_READ_AHEAD_SIZE );
+
+        try (PhysicalTransactionCursor<ReadableVersionableLogChannel> physicalTransactionCursor =
+                new PhysicalTransactionCursor<>( recoveredDataChannel, logEntryReader ))
         {
-            ;
+            long lastKnownGoodPosition = channel.position();
+            while ( physicalTransactionCursor.next() && !visitor.visit( physicalTransactionCursor.get() ) )
+            {
+                lastKnownGoodPosition = channel.position();
+            }
+
+            // Now that all ok transactions have been read, if needed truncate the position to cut
+            // off any potentially broken transactions
+            if (channel.position() > lastKnownGoodPosition)
+                channel.truncate( lastKnownGoodPosition );
         }
+
         if ( visitor instanceof Closeable )
         {
             ((Closeable) visitor).close();

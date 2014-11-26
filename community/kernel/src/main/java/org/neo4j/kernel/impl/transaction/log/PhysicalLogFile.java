@@ -20,19 +20,15 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategy;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
@@ -44,42 +40,53 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LO
  */
 public class PhysicalLogFile extends LifecycleAdapter implements LogFile
 {
+    public interface Monitor
+    {
+        void opened( File logFile, long logVersion, long lastTransactionId, boolean clean );
+
+        void failureToTruncate( File logFile, IOException e );
+
+        public class Adapter implements Monitor
+        {
+            @Override
+            public void opened( File logFile, long logVersion, long lastTransactionId, boolean clean )
+            {
+            }
+
+            @Override
+            public void failureToTruncate( File logFile, IOException e )
+            {
+            }
+        }
+    }
+
     public static final String DEFAULT_NAME = "neostore.transaction.db";
     public static final String REGEX_DEFAULT_NAME = "neostore\\.transaction\\.db";
     public static final String DEFAULT_VERSION_SUFFIX = ".";
     public static final String REGEX_DEFAULT_VERSION_SUFFIX = "\\.";
     private final long rotateAtSize;
     private final FileSystemAbstraction fileSystem;
-    private final LogPruneStrategy pruneStrategy;
     private final TransactionIdStore transactionIdStore;
     private final PhysicalLogFiles logFiles;
     private final TransactionMetadataCache transactionMetadataCache;
-    private final Visitor<ReadableVersionableLogChannel, IOException> recoveredDataVisitor;
     private final Monitor monitor;
     private final ByteBuffer headerBuffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
-    private final LogRotationControl logRotationControl;
     private PhysicalWritableLogChannel writer;
     private final LogVersionRepository logVersionRepository;
     private PhysicalLogVersionedStoreChannel channel;
     private final LogVersionBridge readerLogVersionBridge;
-    private final Lock pruneLock = new ReentrantLock();
 
     public PhysicalLogFile( FileSystemAbstraction fileSystem, PhysicalLogFiles logFiles, long rotateAtSize,
-                            LogPruneStrategy pruneStrategy, TransactionIdStore transactionIdStore,
+                            TransactionIdStore transactionIdStore,
                             LogVersionRepository logVersionRepository, Monitor monitor,
-                            LogRotationControl logRotationControl,
-                            TransactionMetadataCache transactionMetadataCache,
-                            Visitor<ReadableVersionableLogChannel, IOException> recoveredDataVisitor )
+                            TransactionMetadataCache transactionMetadataCache )
     {
         this.fileSystem = fileSystem;
         this.rotateAtSize = rotateAtSize;
-        this.pruneStrategy = pruneStrategy;
         this.transactionIdStore = transactionIdStore;
         this.logVersionRepository = logVersionRepository;
         this.monitor = monitor;
-        this.logRotationControl = logRotationControl;
         this.transactionMetadataCache = transactionMetadataCache;
-        this.recoveredDataVisitor = recoveredDataVisitor;
         this.logFiles = logFiles;
         this.readerLogVersionBridge = new ReaderLogVersionBridge( fileSystem, logFiles );
     }
@@ -87,135 +94,52 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     @Override
     public void init() throws Throwable
     {
+        // Make sure at least a bare bones log file is available before recovery
         long lastLogVersionUsed = logVersionRepository.getCurrentLogVersion();
         channel = openLogChannelForVersion( lastLogVersionUsed );
-        writer = new PhysicalWritableLogChannel( channel );
+        channel.close();
     }
 
     @Override
     public void start() throws Throwable
     {
-        doRecoveryOn( channel, recoveredDataVisitor );
+        // Recovery has taken place before this, so the log file has been truncated to last known good tx
+        // Just read header and move to the end
+
+        long lastLogVersionUsed = logVersionRepository.getCurrentLogVersion();
+        channel = openLogChannelForVersion( lastLogVersionUsed );
+        // Move to the end
+        channel.position( channel.size() );
+
+        writer = new PhysicalWritableLogChannel( channel );
     }
 
     @Override
-    public synchronized void stop() throws Throwable
-    {
-        logRotationControl.awaitAllTransactionsClosed();
-        logRotationControl.forceEverything();
-        /*
-         * We simply increment the version, essentially "rotating" away
-         * the current active log file, to avoid having a recovery on
-         * next startup. Not necessary, simply speeds up the startup
-         * process.
-         */
-        logVersionRepository.incrementAndGetVersion();
-    }
-
-    @Override
-    public synchronized void shutdown() throws Throwable
+    public void stop() throws Throwable
     {
         writer.close();
         channel.close();
     }
 
-    private PhysicalLogVersionedStoreChannel openLogChannelForVersion( long forVersion ) throws IOException
+    @Override
+    public void shutdown() throws Throwable
     {
-        File toOpen = logFiles.getLogFileForVersion( forVersion );
-        StoreChannel storeChannel = fileSystem.open( toOpen, "rw" );
-        LogHeader header = readLogHeader( headerBuffer, storeChannel, false );
-        if ( header == null )
-        {
-            // Either the header is not there in full or the file was new. Don't care
-            long lastTxId = transactionIdStore.getLastCommittedTransactionId();
-            writeLogHeader( headerBuffer, forVersion, lastTxId );
-            transactionMetadataCache.putHeader( forVersion, lastTxId );
-            storeChannel.writeAll( headerBuffer );
-            monitor.opened( toOpen, forVersion, lastTxId, true );
-        }
-        byte formatVersion = header == null ? CURRENT_LOG_VERSION : header.logFormatVersion;
-        return new PhysicalLogVersionedStoreChannel( storeChannel, forVersion, formatVersion );
-    }
-
-    private void doRecoveryOn( PhysicalLogVersionedStoreChannel toRecover,
-                               Visitor<ReadableVersionableLogChannel, IOException> recoveredDataVisitor )
-            throws IOException
-    {
-        if ( new LogRecoveryCheck( toRecover ).recoveryRequired() )
-        {   // There's already data in here, which means recovery will need to be performed.
-            monitor.recoveryRequired( toRecover.getVersion() );
-            ReadableVersionableLogChannel recoveredDataChannel =
-                    new ReadAheadLogChannel( toRecover, NO_MORE_CHANNELS, DEFAULT_READ_AHEAD_SIZE );
-            recoveredDataVisitor.visit( recoveredDataChannel );
-            // intentionally keep it open since we're continuing using the underlying channel for the writer below
-            logRotationControl.forceEverything();
-            monitor.recoveryCompleted();
-        }
     }
 
     @Override
-    public boolean checkRotation() throws IOException
+    public synchronized boolean rotationNeeded() throws IOException
     {
         /*
          * Whereas channel.size() should be fine, we're safer calling position() due to possibility
          * of this file being memory mapped or whatever.
          */
-        if ( channel.position() >= rotateAtSize )
-        {
-            synchronized ( this )
-            {
-                if ( channel.position() >= rotateAtSize )
-                {
-                    doRotate();
-                    return true;
-                }
-            }
-        }
-        return false;
+        return (channel.position() >= rotateAtSize);
     }
 
-    @Override
-    public void prune()
+    public synchronized void rotate() throws IOException
     {
-        // Only one is allowed to do pruning at any given time,
-        // and it's OK to skip pruning if another one is doing so right now.
-        if ( pruneLock.tryLock() )
-        {
-            try
-            {
-                pruneStrategy.prune();
-            }
-            finally
-            {
-                pruneLock.unlock();
-            }
-        }
-    }
-
-    // Do not expose this through the interface; only used in robustness testing.
-    public synchronized void forceRotate() throws IOException
-    {
-        doRotate();
-    }
-
-    private void doRotate() throws IOException
-    {
-        /* We synchronize on the writer because we want to have a monitor that another thread
-         * doing force (think batching of writes), such that it can't see a bad state of the writer
-         * even when rotating underlying channels.
-         */
-        synchronized ( writer )
-        {
-            /*
-             * First we flush the store. If we fail now or during the flush, on recovery we'll discover
-             * the current log file and replay it. Everything will be ok.
-             */
-            logRotationControl.awaitAllTransactionsClosed();
-            logRotationControl.forceEverything();
-
-            channel = rotate( channel );
-            writer.setChannel( channel );
-        }
+        channel = rotate( channel );
+        writer.setChannel( channel );
     }
 
     private PhysicalLogVersionedStoreChannel rotate( LogVersionedStoreChannel currentLog )
@@ -239,6 +163,24 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
         return newLog;
     }
 
+    private PhysicalLogVersionedStoreChannel openLogChannelForVersion( long forVersion ) throws IOException
+    {
+        File toOpen = logFiles.getLogFileForVersion( forVersion );
+        StoreChannel storeChannel = fileSystem.open( toOpen, "rw" );
+        LogHeader header = readLogHeader( headerBuffer, storeChannel, false );
+        if ( header == null )
+        {
+            // Either the header is not there in full or the file was new. Don't care
+            long lastTxId = transactionIdStore.getLastCommittedTransactionId();
+            writeLogHeader( headerBuffer, forVersion, lastTxId );
+            transactionMetadataCache.putHeader( forVersion, lastTxId );
+            storeChannel.writeAll( headerBuffer );
+            monitor.opened( toOpen, forVersion, lastTxId, true );
+        }
+        byte formatVersion = header == null ? CURRENT_LOG_VERSION : header.logFormatVersion;
+        return new PhysicalLogVersionedStoreChannel( storeChannel, forVersion, formatVersion );
+    }
+
     @Override
     public WritableLogChannel getWriter()
     {
@@ -258,45 +200,16 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
                                                                    long version ) throws IOException
     {
         final File fileToOpen = logFiles.getLogFileForVersion( version );
-        final StoreChannel rawChannel = fileSystem.open( fileToOpen, "r" );
+
+        if (!fileSystem.fileExists( fileToOpen ))
+            throw new FileNotFoundException(  );
+
+        final StoreChannel rawChannel = fileSystem.open( fileToOpen, "rw" );
         ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
         LogHeader header = readLogHeader( buffer, rawChannel, true );
         assert header.logVersion == version;
+
         return new PhysicalLogVersionedStoreChannel( rawChannel, version, header.logFormatVersion );
-    }
-
-    public interface Monitor
-    {
-        void recoveryRequired( long recoveredLogVersion );
-
-        void recoveryCompleted();
-
-        void opened( File logFile, long logVersion, long lastTransactionId, boolean clean );
-
-        void failureToTruncate( File logFile, IOException e );
-
-        public class Adapter implements Monitor
-        {
-            @Override
-            public void recoveryRequired( long recoveredLogVersion )
-            {
-            }
-
-            @Override
-            public void recoveryCompleted()
-            {
-            }
-
-            @Override
-            public void opened( File logFile, long logVersion, long lastTransactionId, boolean clean )
-            {
-            }
-
-            @Override
-            public void failureToTruncate( File logFile, IOException e )
-            {
-            }
-        }
     }
 
     @Override

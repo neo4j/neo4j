@@ -41,7 +41,6 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
-import org.neo4j.kernel.impl.transaction.log.LogRotationControl;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyLogVersionRepository;
@@ -58,7 +57,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
-import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.NO_PRUNING;
 
 /**
  * Client-side store copier. Deals with issuing a request to a source of a database, which will
@@ -156,10 +154,9 @@ public class StoreCopyClient
             TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 10, 100 );
             ReadOnlyLogVersionRepository logVersionRepository = new ReadOnlyLogVersionRepository( fs, storeDir );
             LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, Long.MAX_VALUE /*don't rotate*/,
-                    NO_PRUNING, new ReadOnlyTransactionIdStore( fs, storeDir ), logVersionRepository,
+                    new ReadOnlyTransactionIdStore( fs, storeDir ), logVersionRepository,
                     new Monitors().newMonitor( PhysicalLogFile.Monitor.class ),
-                    LogRotationControl.NO_ROTATION_CONTROL,
-                    transactionMetadataCache, new NoRecoveryAssertingVisitor() ) );
+                    transactionMetadataCache ) );
             life.start();
 
             // Just write all transactions to the active log version. Remember that this is after a store copy

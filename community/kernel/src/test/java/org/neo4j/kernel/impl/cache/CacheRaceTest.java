@@ -101,7 +101,6 @@ public class CacheRaceTest
     private final NodeCache nodeCache = new NodeCache();
     private final long seed = currentTimeMillis();
     private final Random random = new Random( seed );
-    public final @Rule RepeatRule repeater = new RepeatRule();
     public final @Rule DatabaseRule db = new ImpermanentDatabaseRule()
     {
         @Override
@@ -136,6 +135,7 @@ public class CacheRaceTest
         }
     };
     public final @Rule ThreadingRule threading = new ThreadingRule();
+    public final @Rule RepeatRule repeater = new RepeatRule();
 
     @Test
     public void shouldNotGetDuplicateRelationshipsForNewNode() throws Exception
@@ -192,7 +192,7 @@ public class CacheRaceTest
         assertEquals( join( "\n\t", after ), before.size(), after.size() );
     }
 
-    @Repeat( times = 100 )
+    @Repeat( times = 10 )
     @Test
     public void shouldNotCacheDuplicateRelationshipsStressTest() throws Exception
     {

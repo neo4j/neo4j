@@ -49,14 +49,11 @@ public interface LogFile
     void accept( LogHeaderVisitor visitor ) throws IOException;
 
     /**
-     * @return {@code true} if a rotation indeed happened.
+     * @return {@code true} if a rotation is needed.
      */
-    boolean checkRotation() throws IOException;
+    boolean rotationNeeded() throws IOException;
 
-    /**
-     * Prunes historical log versions.
-     */
-    void prune();
+    public void rotate() throws IOException;
 
     File currentLogFile();
 }

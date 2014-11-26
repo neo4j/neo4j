@@ -31,8 +31,6 @@ import java.util.concurrent.TimeoutException;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
@@ -44,6 +42,7 @@ import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
 import org.neo4j.kernel.impl.transaction.log.InMemoryVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
@@ -60,8 +59,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.test.CleanupRule;
-import org.neo4j.test.DoubleLatch;
-import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -75,7 +72,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyInt;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -102,7 +98,7 @@ public class PhysicalTransactionAppenderTest
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( txId );
-        TransactionAppender appender = new PhysicalTransactionAppender( logFile, positionCache,
+        TransactionAppender appender = new PhysicalTransactionAppender( logFile, LogRotation.NO_ROTATION, positionCache,
                 transactionIdStore, BYPASS );
 
         // WHEN
@@ -143,7 +139,7 @@ public class PhysicalTransactionAppenderTest
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( nextTxId );
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
         TransactionAppender appender = new PhysicalTransactionAppender(
-                logFile, positionCache, transactionIdStore, BYPASS );
+                logFile, LogRotation.NO_ROTATION, positionCache, transactionIdStore, BYPASS );
 
         // WHEN
         final byte[] additionalHeader = new byte[]{1, 2, 5};
@@ -188,7 +184,7 @@ public class PhysicalTransactionAppenderTest
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         TransactionAppender appender = new PhysicalTransactionAppender(
-                logFile, positionCache, transactionIdStore, BYPASS );
+                logFile, LogRotation.NO_ROTATION, positionCache, transactionIdStore, BYPASS );
 
         // WHEN
         final byte[] additionalHeader = new byte[]{1, 2, 5};
@@ -231,7 +227,7 @@ public class PhysicalTransactionAppenderTest
         TransactionMetadataCache metadataCache = new TransactionMetadataCache( 10, 10 );
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( txId );
-        TransactionAppender appender = new PhysicalTransactionAppender( logFile,
+        TransactionAppender appender = new PhysicalTransactionAppender( logFile, LogRotation.NO_ROTATION,
                 metadataCache, transactionIdStore, BYPASS );
 
         // WHEN
@@ -263,7 +259,7 @@ public class PhysicalTransactionAppenderTest
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( 1L, 2L, 3L, 4L, 5L );
         IdOrderingQueue legacyIndexOrdering = new SynchronizedArrayIdOrderingQueue( 5 );
-        TransactionAppender appender = new BatchingPhysicalTransactionAppender( logFile,
+        TransactionAppender appender = new BatchingPhysicalTransactionAppender( logFile, LogRotation.NO_ROTATION,
                 metadataCache, transactionIdStore, legacyIndexOrdering, ATOMIC_LONG, DEFAULT_WAIT_STRATEGY );
 
         // WHEN appending 5 simultaneous transaction, of which 3 has legacy index changes [1*,2,3*,4,5*]
@@ -311,44 +307,6 @@ public class PhysicalTransactionAppenderTest
             assertNotNull( "None done this round", doneTx );
             legacyIndexOrdering.removeChecked( doneTx );
         }
-    }
-
-    @Test
-    public void shouldLetOtherTransactionsAppendEvenIfPruningIsHappening() throws Exception
-    {
-        // GIVEN
-        final DoubleLatch pruneLatch = new DoubleLatch();
-        LogFile logFile = mock( LogFile.class );
-        // Signal that the we indeed made a rotation
-        when( logFile.checkRotation() ).thenReturn( true ).thenReturn( false );
-        // Simulate an awfully (and controllably) slow prune
-        doAnswer( new Answer<Void>()
-        {
-            @Override
-            public Void answer( InvocationOnMock invocation ) throws Throwable
-            {
-                pruneLatch.startAndAwaitFinish();
-                return null;
-            }
-        } ).when( logFile ).prune();
-        WritableLogChannel channel = new InMemoryLogChannel();
-        when( logFile.getWriter() ).thenReturn( channel );
-        TransactionMetadataCache metadataCache = new TransactionMetadataCache( 10, 100 );
-        TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
-        when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( 1L, 2L, 3L, 4L, 5L );
-        IdOrderingQueue legacyIndexOrdering = new SynchronizedArrayIdOrderingQueue( 5 );
-        TransactionAppender appender = new PhysicalTransactionAppender( logFile,
-                metadataCache, transactionIdStore, legacyIndexOrdering );
-        OtherThreadExecutor<Void> otherThread = cleanup.add( new OtherThreadExecutor<Void>( "T2", null ) );
-
-        // WHEN appending a transaction that requires log rotation and where the pruning is slow as heck
-        Future<Object> appendFuture = otherThread.executeDontWait( append( appender, mockedTransaction() ) );
-        pruneLatch.awaitStart();
-
-        // THEN that pruning should not hold up other transactions appending
-        appender.append( mockedTransaction() );
-        pruneLatch.finish();
-        appendFuture.get();
     }
 
     private TransactionRepresentation mockedTransaction()

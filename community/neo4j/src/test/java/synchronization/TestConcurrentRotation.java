@@ -25,13 +25,11 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.lucene.index.IndexWriter;
 import org.junit.Test;
 
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
+import org.neo4j.kernel.impl.transaction.log.LogRotation;
 import org.neo4j.test.AbstractSubProcessTestBase;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.DebugInterface;
@@ -192,10 +190,7 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
 
         private void rotateLogicalLog( GraphDatabaseAPI graphdb ) throws IOException
         {
-            NeoStoreDataSource dataSource = graphdb.getDependencyResolver().resolveDependency( NeoStoreDataSource.class );
-            DependencyResolver dependencyResolver = dataSource.getDependencyResolver();
-            PhysicalLogFile physicalLogFile = dependencyResolver.resolveDependency( PhysicalLogFile.class );
-            physicalLogFile.forceRotate();
+            graphdb.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
         }
 
         private void setSuccess( GraphDatabaseAPI graphdb, boolean success )

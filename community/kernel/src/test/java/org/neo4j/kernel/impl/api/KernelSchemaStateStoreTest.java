@@ -67,7 +67,7 @@ public class KernelSchemaStateStoreTest
     @Before
     public void before()
     {
-        this.stateStore = new KernelSchemaStateStore( logging );
+        this.stateStore = new KernelSchemaStateStore( logging.getMessagesLog( KernelSchemaStateStore.class ) );
     }
 
     private TestLogger logger()

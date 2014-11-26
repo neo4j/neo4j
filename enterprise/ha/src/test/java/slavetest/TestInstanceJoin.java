@@ -33,7 +33,6 @@ import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePullerClient;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -74,7 +73,7 @@ public class TestInstanceJoin
             long nodeId = createNode( master, key, value );
             createNode( master, "something", "unimportant" );
             // Rotating, moving the above transactions away so they are removed on shutdown.
-            master.getDependencyResolver().resolveDependency(NeoStoreDataSource.class).getDependencyResolver().resolveDependency(PhysicalLogFile.class).forceRotate();
+            master.getDependencyResolver().resolveDependency(NeoStoreDataSource.class).rotateLogFile();
 
             /*
              * We need to shutdown - rotating is not enough. The problem is that log positions are cached and they

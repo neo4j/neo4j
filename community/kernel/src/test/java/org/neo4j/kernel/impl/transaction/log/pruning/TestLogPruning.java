@@ -19,28 +19,25 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
+import java.io.File;
+import java.io.IOException;
+
 import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.LogFileRecoverer;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
+import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
@@ -48,10 +45,10 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_log_rotation_threshold;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
 
 public class TestLogPruning
@@ -236,18 +233,7 @@ public class TestLogPruning
             @Override
             public int extract( File from ) throws IOException
             {
-                final AtomicInteger counter = new AtomicInteger();
-                LogFileRecoverer reader = new LogFileRecoverer(
-                        new LogEntryReaderFactory().versionable(),
-                        new Visitor<CommittedTransactionRepresentation,IOException>()
-                        {
-                            @Override
-                            public boolean visit( CommittedTransactionRepresentation element ) throws IOException
-                            {
-                                counter.incrementAndGet();
-                                return false;
-                            }
-                        } );
+                int counter = 0;
                 LogVersionBridge bridge = new LogVersionBridge()
                 {
                     @Override
@@ -257,15 +243,21 @@ public class TestLogPruning
                     }
                 };
                 StoreChannel storeChannel = fs.open( from, "r" );
-                PhysicalLogVersionedStoreChannel versionedStoreChannel =
+                LogVersionedStoreChannel versionedStoreChannel = PhysicalLogFile.openForVersion( files, fs, CURRENT_LOG_VERSION );
                         new PhysicalLogVersionedStoreChannel( storeChannel, -1 /* ignored */, CURRENT_LOG_VERSION );
-                versionedStoreChannel.position( LOG_HEADER_SIZE );
                 try ( ReadableVersionableLogChannel channel =
                               new ReadAheadLogChannel( versionedStoreChannel, bridge, 1000 ) )
                 {
-                    reader.visit( channel );
+                    try (PhysicalTransactionCursor<ReadableVersionableLogChannel> physicalTransactionCursor =
+                            new PhysicalTransactionCursor<>( channel, new LogEntryReaderFactory().versionable() ))
+                    {
+                        while ( physicalTransactionCursor.next())
+                        {
+                            counter++;
+                        }
+                    }
                 }
-                return counter.get();
+                return counter;
             }
         } );
     }

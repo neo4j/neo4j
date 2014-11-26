@@ -129,7 +129,7 @@ public class IndexCreationTest
         NeoStoreDataSource ds = db.getDependencyResolver().resolveDependency( NeoStoreDataSource.class );
         PhysicalLogFile pLogFile = ds.getDependencyResolver().resolveDependency( PhysicalLogFile.class );
         long version = ds.getCurrentLogVersion();
-        pLogFile.forceRotate();
+        ds.rotateLogFile();
 
         ReadableVersionableLogChannel logChannel =pLogFile.getReader( new LogPosition( version, LOG_HEADER_SIZE ) );
 

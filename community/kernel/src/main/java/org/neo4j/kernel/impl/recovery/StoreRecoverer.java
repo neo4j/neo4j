@@ -81,7 +81,7 @@ public class StoreRecoverer
         }
         try ( StoreChannel logChannel = fs.open( log, "r" ) )
         {
-            return new LogRecoveryCheck( logChannel ).recoveryRequired();
+            return LogRecoveryCheck.recoveryRequired(logChannel);
         }
     }
 

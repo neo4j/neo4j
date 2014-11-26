@@ -83,7 +83,6 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
-import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.ReadOnlyTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
@@ -91,7 +90,6 @@ import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
-import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
@@ -279,7 +277,6 @@ public abstract class InternalAbstractGraphDatabase
     protected ThreadToStatementContextBridge threadToTransactionBridge;
     protected BridgingCacheAccess cacheBridge;
     protected JobScheduler jobScheduler;
-    protected UpdateableSchemaState updateableSchemaState;
     protected Monitors monitors;
     protected TransactionCounters transactionMonitor;
     protected PageCacheMonitor pageCacheMonitor;
@@ -524,8 +521,6 @@ public abstract class InternalAbstractGraphDatabase
 
         guard = config.get( Configuration.execution_guard_enabled ) ? new Guard( msgLog ) : null;
 
-        updateableSchemaState = new KernelSchemaStateStore( newSchemaStateMap(), logging );
-
         lockManager = createLockManager();
 
         idGeneratorFactory = createIdGeneratorFactory();
@@ -634,11 +629,6 @@ public abstract class InternalAbstractGraphDatabase
     @Override
     public void assertSchemaWritesAllowed() throws InvalidTransactionTypeKernelException
     {
-    }
-
-    private Map<Object,Object> newSchemaStateMap()
-    {
-        return new HashMap<>();
     }
 
     @Override
@@ -871,7 +861,7 @@ public abstract class InternalAbstractGraphDatabase
     {
         neoDataSource = new NeoStoreDataSource( config,
                 storeFactory, logging.getMessagesLog( NeoStoreDataSource.class ), jobScheduler, logging,
-                updateableSchemaState, new NonTransactionalTokenNameLookup( labelTokenHolder, propertyKeyTokenHolder ),
+                new NonTransactionalTokenNameLookup( labelTokenHolder, propertyKeyTokenHolder ),
                 dependencyResolver, propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder,
                 lockManager, this, transactionEventHandlers,
                 monitors.newMonitor( IndexingService.Monitor.class ), fileSystem,

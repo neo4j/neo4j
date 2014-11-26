@@ -22,11 +22,9 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.TransactionMetadata;
-import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -46,20 +44,11 @@ public class ReadOnlyTransactionStore extends LifecycleAdapter implements Logica
         PhysicalLogFiles logFiles = new PhysicalLogFiles( fromPath, fs );
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 10, 100 );
         final ReadOnlyTransactionIdStore transactionIdStore = new ReadOnlyTransactionIdStore( fs, fromPath );
-        PhysicalLogFile logFile = life.add(new PhysicalLogFile( fs, logFiles, 0, LogPruneStrategyFactory.NO_PRUNING,
+        PhysicalLogFile logFile = life.add(new PhysicalLogFile( fs, logFiles, 0,
                 transactionIdStore, new ReadOnlyLogVersionRepository(fs, fromPath),
-                monitors.newMonitor( PhysicalLogFile.Monitor.class ), LogRotationControl.NO_ROTATION_CONTROL,
-                transactionMetadataCache, new Visitor<ReadableVersionableLogChannel, IOException>()
-        {
-            @Override
-            public boolean visit( ReadableVersionableLogChannel readableLogChannel ) throws IOException
-            {
-                return true;
-            }
-        } ));
+                monitors.newMonitor( PhysicalLogFile.Monitor.class ), transactionMetadataCache));
 
-        physicalStore = life.add( new PhysicalLogicalTransactionStore( logFile,
-                transactionMetadataCache, transactionIdStore, BYPASS, false ) );
+        physicalStore = life.add( new PhysicalLogicalTransactionStore( logFile, LogRotation.NO_ROTATION, transactionMetadataCache, transactionIdStore, BYPASS, false ) );
     }
 
     @Override

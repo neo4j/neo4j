@@ -266,7 +266,7 @@ public class LuceneIndexRecoveryIT
     {
         final NeoStoreDataSource ds = db.getDependencyResolver().resolveDependency( NeoStoreDataSource.class );
         final PhysicalLogFile pLogFile = ds.getDependencyResolver().resolveDependency( PhysicalLogFile.class );
-        pLogFile.forceRotate();
+        pLogFile.rotate();
     }
 
     private IndexDefinition createIndex( Label label )

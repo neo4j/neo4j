@@ -19,9 +19,6 @@
  */
 package org.neo4j.helpers.collection;
 
-import static java.util.Arrays.asList;
-import static org.neo4j.helpers.collection.IteratorUtil.asResourceIterator;
-
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,6 +35,10 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.function.Function;
 import org.neo4j.helpers.Predicate;
+
+import static java.util.Arrays.asList;
+
+import static org.neo4j.helpers.collection.IteratorUtil.asResourceIterator;
 
 /**
  * TODO: Combine this and {@link IteratorUtil} into one class
@@ -179,9 +180,27 @@ public final class Iterables
 
     public static <T, C extends Collection<T>> C addAll( C collection, Iterable<? extends T> iterable )
     {
-        for ( T item : iterable )
+        Iterator<? extends T> iterator = iterable.iterator();
+        try
         {
-            collection.add( item );
+            while (iterator.hasNext())
+            {
+                collection.add( iterator.next() );
+            }
+        }
+        finally
+        {
+            if (iterator instanceof AutoCloseable)
+            {
+                try
+                {
+                    ((AutoCloseable)iterator).close();
+                }
+                catch ( Exception e )
+                {
+                    // Ignore
+                }
+            }
         }
 
         return collection;
@@ -534,6 +553,16 @@ public final class Iterables
     public static <T> List<T> toList( Iterable<T> iterable )
     {
         return addAll( new ArrayList<T>(), iterable );
+    }
+
+    public static <T> List<T> toList( Iterator<T> iterator)
+    {
+        List<T> list = new ArrayList<>(  );
+        while ( iterator.hasNext() )
+        {
+            list.add(iterator.next());
+        }
+        return list;
     }
 
     public static Object[] toArray( Iterable<Object> iterable )

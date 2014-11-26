@@ -19,15 +19,14 @@
  */
 package recovery;
 
+import java.io.IOException;
+import java.util.Collections;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.util.Collections;
-
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -42,13 +41,14 @@ import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.test.EphemeralFileSystemRule.shutdownDb;
@@ -260,10 +260,7 @@ public class TestRecoveryScenarios
 
     private void rotateLog() throws IOException
     {
-        NeoStoreDataSource dataSource = db.getDependencyResolver().resolveDependency( NeoStoreDataSource.class );
-        DependencyResolver dependencyResolver = dataSource.getDependencyResolver();
-        PhysicalLogFile physicalLogFile = dependencyResolver.resolveDependency( PhysicalLogFile.class );
-        physicalLogFile.forceRotate();
+        db.getDependencyResolver().resolveDependency( NeoStoreDataSource.class ).rotateLogFile();
     }
 
     private void flushAll()

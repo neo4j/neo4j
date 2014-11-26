@@ -50,7 +50,7 @@ public class BatchingPhysicalTransactionAppenderTest
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         LimitedCounterFactory counters = new LimitedCounterFactory( highestValueBeforeWrappingAround, 0 );
         ControlledParkStrategy forceThreadControl = new ControlledParkStrategy();
-        BatchingPhysicalTransactionAppender appender = new BatchingPhysicalTransactionAppender( logFile, cache,
+        BatchingPhysicalTransactionAppender appender = new BatchingPhysicalTransactionAppender( logFile, mock(LogRotation.class), cache,
                 transactionIdStore, BYPASS, counters, forceThreadControl );
         Counter appendCounter = counters.createdCounters.get( 0 );
         OtherThreadExecutor<Void> t2 = cleanup.add( new OtherThreadExecutor<Void>( "T2", null ) );
@@ -71,7 +71,7 @@ public class BatchingPhysicalTransactionAppenderTest
         LimitedCounterFactory counters = new LimitedCounterFactory(
                 highestValueBeforeWrappingAround, highestValueBeforeWrappingAround );
         ControlledParkStrategy forceThreadControl = new ControlledParkStrategy();
-        BatchingPhysicalTransactionAppender appender = new BatchingPhysicalTransactionAppender( logFile, cache,
+        BatchingPhysicalTransactionAppender appender = new BatchingPhysicalTransactionAppender( logFile, mock(LogRotation.class), cache,
                 transactionIdStore, BYPASS, counters, forceThreadControl );
         Counter appendCounter = counters.createdCounters.get( 0 );
         OtherThreadExecutor<Void> t2 = cleanup.add( new OtherThreadExecutor<Void>( "T2", null ) );

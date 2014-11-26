@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
 
@@ -38,7 +37,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 import org.neo4j.kernel.impl.transaction.state.RecoveryVisitor.Monitor;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
@@ -56,16 +54,13 @@ public class RecoveryVisitorTest
     private final TransactionRepresentationStoreApplier storeApplier =
             mock( TransactionRepresentationStoreApplier.class );
 
-    private final AtomicInteger recoveredCount = new AtomicInteger();
-    private final LogEntryStart startEntry = new LogEntryStart( 1, 2, 123, 456, "tx".getBytes(),
-            new LogPosition( 1, 198 ) );
+    private final LogEntryStart startEntry = null;
     private final LogEntryCommit commitEntry = new OnePhaseCommit( 42, 0 );
 
     @Test
     public void shouldNotSetLastCommittedAndClosedTransactionIdWhenNoRecoveryHappened() throws IOException
     {
-        final RecoveryVisitor visitor = new RecoveryVisitor( store, storeApplier, recoveredCount,
-                mock( RecoveryVisitor.Monitor.class ) );
+        final RecoveryVisitor visitor = new RecoveryVisitor( store, storeApplier, mock( RecoveryVisitor.Monitor.class ) );
 
         visitor.close();
 
@@ -76,8 +71,7 @@ public class RecoveryVisitorTest
     public void shouldApplyVisitedTransactionToTheStoreAndSetLastCommittedAndClosedTransactionId() throws IOException
     {
         Monitor monitor = mock( RecoveryVisitor.Monitor.class );
-        final RecoveryVisitor visitor = new RecoveryVisitor( store, storeApplier, recoveredCount,
-                monitor );
+        final RecoveryVisitor visitor = new RecoveryVisitor( store, storeApplier, monitor );
 
         final TransactionRepresentation representation =
                 new PhysicalTransactionRepresentation( Collections.<Command>emptySet() );
@@ -90,7 +84,6 @@ public class RecoveryVisitorTest
         assertFalse( result );
         verify( storeApplier, times( 1 ) ).apply( eq( representation ), any( LockGroup.class ),
                 eq( commitEntry.getTxId() ), eq( RECOVERY ) );
-        assertEquals( 1l, recoveredCount.get() );
         verify( monitor ).transactionRecovered( commitEntry.getTxId() );
 
         visitor.close();

@@ -84,6 +84,7 @@ public class LabelRecoveryTest
             node = database.getNodeById( node.getId() );
             for ( Label label : labels )
             {
+                System.out.println(label.name());
                 assertTrue( node.hasLabel( label ) );
             }
         }

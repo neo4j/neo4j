@@ -37,12 +37,12 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.log.BatchingPhysicalTransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
+import org.neo4j.kernel.impl.transaction.log.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.LogRotationControl;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
@@ -65,7 +65,6 @@ import static org.mockito.Mockito.mock;
 
 import static org.neo4j.kernel.impl.transaction.log.BatchingPhysicalTransactionAppender.DEFAULT_WAIT_STRATEGY;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
-import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.NO_PRUNING;
 import static org.neo4j.kernel.impl.util.Counter.ATOMIC_LONG;
 import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
 
@@ -96,8 +95,7 @@ public class AppendAndRotationRaceIT
         long rotateAtSize = forceRotate ? Integer.MAX_VALUE : 3_000;
         @SuppressWarnings( "unchecked" )
         PhysicalLogFile logFile = life.add( new PhysicalLogFile( fsr.get(), logFiles, rotateAtSize,
-                NO_PRUNING, transactionIdStore, logVersionRepository, monitor, logRotationControl, metadataCache,
-                mock( Visitor.class ) ) );
+                transactionIdStore, logVersionRepository, monitor, metadataCache ) );
         life.start();
         TransactionAppender appender = appenderFactory.create(
                 logFile, metadataCache, transactionIdStore );
@@ -114,7 +112,7 @@ public class AppendAndRotationRaceIT
             while ( !doneSignal.get() )
             {
                 LockSupport.parkNanos( random.nextInt( 200 ) * 1_000_000 );
-                logFile.forceRotate();
+                logFile.rotate();
             }
         }
 
@@ -304,7 +302,7 @@ public class AppendAndRotationRaceIT
         public TransactionAppender create( LogFile logFile,
                 TransactionMetadataCache metadataCache, TransactionIdStore transactionIdStore )
         {
-            return new PhysicalTransactionAppender( logFile,
+            return new PhysicalTransactionAppender( logFile, LogRotation.NO_ROTATION,
                     metadataCache, transactionIdStore, IdOrderingQueue.BYPASS );
         }
     };
@@ -315,7 +313,7 @@ public class AppendAndRotationRaceIT
         public TransactionAppender create( LogFile logFile,
                 TransactionMetadataCache metadataCache, TransactionIdStore transactionIdStore )
         {
-            return new BatchingPhysicalTransactionAppender( logFile,
+            return new BatchingPhysicalTransactionAppender( logFile, LogRotation.NO_ROTATION,
                     metadataCache, transactionIdStore, BYPASS, ATOMIC_LONG, DEFAULT_WAIT_STRATEGY );
         }
     };

@@ -39,7 +39,7 @@ public class GenerateConfigDocumentation
         	
         	if(args.length > 1) 
         	{
-        		output = new File(args[1]);
+        		output = new File(args[1]).getAbsoluteFile();
         	}
         	
         } else 

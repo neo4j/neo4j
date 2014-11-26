@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
@@ -40,18 +39,15 @@ public class RecoveryVisitor implements Visitor<CommittedTransactionRepresentati
 
     private final TransactionIdStore store;
     private final TransactionRepresentationStoreApplier storeApplier;
-    private final AtomicInteger recoveredCount;
     private final Monitor monitor;
     private long lastTransactionIdApplied = -1;
     private long lastTransactionChecksum;
 
     public RecoveryVisitor( TransactionIdStore store,
-                            TransactionRepresentationStoreApplier storeApplier,
-                            AtomicInteger recoveredCount, Monitor monitor )
+                            TransactionRepresentationStoreApplier storeApplier, Monitor monitor )
     {
         this.store = store;
         this.storeApplier = storeApplier;
-        this.recoveredCount = recoveredCount;
         this.monitor = monitor;
     }
 
@@ -64,7 +60,6 @@ public class RecoveryVisitor implements Visitor<CommittedTransactionRepresentati
             storeApplier.apply( transaction.getTransactionRepresentation(), locks, txId,
                     TransactionApplicationMode.RECOVERY );
         }
-        recoveredCount.incrementAndGet();
         lastTransactionIdApplied = txId;
         lastTransactionChecksum = LogEntryStart.checksum( transaction.getStartEntry() );
         monitor.transactionRecovered( txId );

@@ -33,6 +33,9 @@ import org.junit.runners.model.Statement;
  * something wrong.
  *
  * However, as a temporary measure used locally, it serves as an excellent tool to trigger errors in flaky tests.
+ *
+ * If used together with other TestRules, usually you need to make sure that this is placed as the LAST field in the
+ * test class. This is to ensure that all other rules run inside of this rule, for example to start/stop databases and other resources.
  */
 public class RepeatRule implements TestRule
 {

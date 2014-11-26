@@ -26,7 +26,6 @@ import java.util.Arrays;
 import org.junit.Test;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.record.NeoStoreUtil;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -36,14 +35,13 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
-import org.neo4j.kernel.impl.transaction.log.LogRotationControl;
+import org.neo4j.kernel.impl.transaction.log.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
-import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -107,15 +105,14 @@ public class TestStoreRecoverer
         DeadSimpleTransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 2, 0 );
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 10 );
         PhysicalLogFiles logFiles = new PhysicalLogFiles( store, PhysicalLogFile.DEFAULT_NAME, fileSystem );
-        LogFile logFile = life.add( new PhysicalLogFile( fileSystem, logFiles, 1000,
-                LogPruneStrategyFactory.NO_PRUNING, transactionIdStore,
+        LogFile logFile = life.add( new PhysicalLogFile( fileSystem, logFiles, 1000, transactionIdStore,
                 new DeadSimpleLogVersionRepository( util.getLogVersion() ), mock( PhysicalLogFile.Monitor.class ),
-                mock( LogRotationControl.class ), positionCache, mock( Visitor.class ) ) );
+                positionCache ) );
         life.start();
 
         try
         {
-            TransactionAppender appender = new PhysicalTransactionAppender( logFile, positionCache,
+            TransactionAppender appender = new PhysicalTransactionAppender( logFile, LogRotation.NO_ROTATION, positionCache,
                     transactionIdStore, null );
             appender.append( singleNodeTransaction() );
         }

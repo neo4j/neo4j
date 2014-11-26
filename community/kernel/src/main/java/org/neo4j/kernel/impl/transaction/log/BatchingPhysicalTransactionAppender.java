@@ -77,13 +77,13 @@ public class BatchingPhysicalTransactionAppender extends AbstractPhysicalTransac
     private boolean shutDown;
     private final BatchingForceThread forceThread;
 
-    public BatchingPhysicalTransactionAppender( final LogFile logFile,
+    public BatchingPhysicalTransactionAppender( final LogFile logFile, final LogRotation logRotation,
             TransactionMetadataCache transactionMetadataCache, final TransactionIdStore transactionIdStore,
             IdOrderingQueue legacyIndexTransactionOrdering,
             Factory<Counter> counting,
             ParkStrategy idleBackoffStrategy )
     {
-        super( logFile, transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering );
+        super( logFile, logRotation, transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering );
         appenderTicket = counting.newInstance();
         forceTicket = counting.newInstance();
         forceThread = new BatchingForceThread( new BatchingForceThread.Operation()

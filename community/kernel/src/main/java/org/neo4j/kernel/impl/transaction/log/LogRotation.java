@@ -17,20 +17,42 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.helpers;
+package org.neo4j.kernel.impl.transaction.log;
 
-public class Thunks
+import java.io.IOException;
+
+/**
+ * Used to check if a log rotation is needed, and also to execute a log rotation.
+ *
+ * The implementation also makes sure that stores are forced to disk.
+ *
+ */
+public interface LogRotation
 {
-    private Thunks()
-    {
-    }
-
-    public static final Thunk<Boolean> TRUE = new Thunk<Boolean>()
+    public static LogRotation NO_ROTATION = new LogRotation()
     {
         @Override
-        public Boolean evaluate()
+        public boolean rotateLogIfNeeded() throws IOException
         {
-            return Boolean.TRUE;
+            return false;
+        }
+
+        @Override
+        public void rotateLogFile() throws IOException
+        {
+
         }
     };
+
+    /**
+     * @return {@code true} if a rotation is needed, and performs one if needed.
+     */
+    boolean rotateLogIfNeeded() throws IOException;
+
+    /**
+     * Force a log rotation.
+     *
+     * @throws IOException
+     */
+    void rotateLogFile() throws IOException;
 }

@@ -19,18 +19,18 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import org.neo4j.helpers.Thunk;
+import org.neo4j.helpers.Provider;
 
 /**
  * Manages a lazy initialized single reference that can be {@link #invalidate() invalidated}.
- * Concurrent {@link #evaluate() access} is supported and only a single instance will be {@link #create() created}.
+ * Concurrent {@link #instance() access} is supported and only a single instance will be {@link #create() created}.
  */
-public abstract class LazySingleReference<T> implements Thunk<T>
+public abstract class LazySingleReference<T> implements Provider<T>
 {
     private volatile T reference;
     
     /**
-     * @return whether or not the managed reference has been initialized, i.e {@link #evaluate() evaluated}
+     * @return whether or not the managed reference has been initialized, i.e {@link #instance() evaluated}
      * for the first time, or after {@link #invalidate() invalidated}.
      */
     public boolean isCreated()
@@ -42,7 +42,7 @@ public abstract class LazySingleReference<T> implements Thunk<T>
      * Returns the reference, initializing it if need be.
      */
     @Override
-    public T evaluate()
+    public T instance()
     {
         T result;
         if ( (result = reference) == null )
@@ -59,7 +59,7 @@ public abstract class LazySingleReference<T> implements Thunk<T>
     }
     
     /**
-     * Invalidates any initialized reference. A future call to {@link #evaluate()} will have it initialized again.
+     * Invalidates any initialized reference. A future call to {@link #instance()} will have it initialized again.
      */
     public synchronized void invalidate()
     {

@@ -32,6 +32,7 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
     protected final WritableLogChannel channel;
     private final TransactionMetadataCache transactionMetadataCache;
     protected final LogFile logFile;
+    private LogRotation logRotation;
     private final TransactionIdStore transactionIdStore;
     private final TransactionLogWriter transactionLogWriter;
     private final LogPositionMarker positionMarker = new LogPositionMarker();
@@ -43,11 +44,12 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
     // is introduced to manage just that and is only used for transactions that contain any legacy index changes.
     protected final IdOrderingQueue legacyIndexTransactionOrdering;
 
-    protected AbstractPhysicalTransactionAppender( LogFile logFile,
+    protected AbstractPhysicalTransactionAppender( LogFile logFile, LogRotation logRotation,
             TransactionMetadataCache transactionMetadataCache, TransactionIdStore transactionIdStore,
             IdOrderingQueue legacyIndexTransactionOrdering )
     {
         this.logFile = logFile;
+        this.logRotation = logRotation;
         this.transactionIdStore = transactionIdStore;
         this.legacyIndexTransactionOrdering = legacyIndexTransactionOrdering;
         this.channel = logFile.getWriter();
@@ -89,20 +91,20 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
     {
         long transactionId = -1;
         long ticket;
-        boolean hasLegacyIndexChanges, rotated;
+        boolean hasLegacyIndexChanges;
+        // We put log rotation check outside the private append method since it must happen before
+        // we generate the next transaction id
+        logRotation.rotateLogIfNeeded();
+
         // Synchronized with logFile to get absolute control over concurrent rotations happening
         synchronized ( logFile )
         {
-            // We put log rotation check outside the private append method since it must happen before
-            // we generate the next transaction id
-            rotated = logFile.checkRotation();
             transactionId = transactionIdStore.nextCommittingTransactionId();
             hasLegacyIndexChanges = append0( transaction, transactionId );
             ticket = getNextTicket();
         }
 
         forceAfterAppend( ticket );
-        pruneIfRotated( rotated );
         coordinateMultipleThreadsApplyingLegacyIndexChanges( hasLegacyIndexChanges, transactionId );
         return transactionId;
     }
@@ -163,14 +165,6 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
             {
                 throw new IOException( "Interrupted while waiting for applying legacy index updates", e );
             }
-        }
-    }
-
-    private void pruneIfRotated( boolean rotated )
-    {
-        if ( rotated )
-        {
-            logFile.prune();
         }
     }
 

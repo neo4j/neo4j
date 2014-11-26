@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.NestingIterable;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -158,6 +159,15 @@ public class SchemaCache
         rulesByIdMap.clear();
         constraints.clear();
         indexDescriptors.clear();
+    }
+
+    public void load( Iterator<SchemaRule> schemaRuleIterator )
+    {
+        clear();
+        for ( SchemaRule schemaRule : Iterables.toList( schemaRuleIterator ) )
+        {
+            addSchemaRule( schemaRule );
+        }
     }
 
     // We could have had this class extend IndexDescriptor instead. That way we could have gotten the id

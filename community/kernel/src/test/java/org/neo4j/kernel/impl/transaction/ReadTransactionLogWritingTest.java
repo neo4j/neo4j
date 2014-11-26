@@ -99,7 +99,7 @@ public class ReadTransactionLogWritingTest
             relationship.setProperty( "long", longString( 300 ) );
             tx.success();
         }
-        db.getDependencyResolver().resolveDependency( PhysicalLogFile.class ).checkRotation();
+        db.getDependencyResolver().resolveDependency( PhysicalLogFile.class ).rotationNeeded();
         logEntriesWrittenBeforeReadOperations = countLogEntries();
     }
 
