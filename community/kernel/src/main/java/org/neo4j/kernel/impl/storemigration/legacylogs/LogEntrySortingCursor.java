@@ -107,13 +107,6 @@ class LogEntrySortingCursor implements IOCursor<LogEntry>
                 break;
             }
         }
-
-        // if we have read all, but we missed some commits then throw!
-        if ( idToFetchFrom < 0 && !idToEntries.isEmpty() )
-        {
-            // this should not happen, but better safe than sorry...
-            throw new IllegalStateException( "Missing commit entry for several entries" );
-        }
     }
 
     private List<LogEntry> provideList( Map<Integer, List<LogEntry>> idToEntries, int identifier )
