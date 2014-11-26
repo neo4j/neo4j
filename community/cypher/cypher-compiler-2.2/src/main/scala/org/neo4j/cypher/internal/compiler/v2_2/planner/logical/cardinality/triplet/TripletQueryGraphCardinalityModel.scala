@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.trip
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.triplet.TripletQueryGraphCardinalityModel.NodeCardinalities
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.{ExpressionSelectivityEstimator, NodeCardinalityEstimator, SelectivityCombiner}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, Selectivity}
@@ -39,7 +40,7 @@ case class TripletQueryGraphCardinalityModel(stats: GraphStatistics,
 
   def apply(qg: QueryGraph, input: QueryGraphCardinalityInput): Cardinality = {
     if (qg.optionalMatches.nonEmpty)
-      throw new IllegalArgumentException("OPTIONAL MATCH is unsupported")
+      throw new IllegalArgumentException("OPTIONAL MATCH is unsupported in this cardinality model")
 
     val allNodes = stats.nodesWithLabelCardinality(None)
     val inputCardinality = if (qg.argumentIds.isEmpty) Cardinality(1.0) else input.inboundCardinality
@@ -53,7 +54,7 @@ case class TripletQueryGraphCardinalityModel(stats: GraphStatistics,
 
     // UNTESTED BELOW
 
-    val estimateTriplets = TripletCardinalityEstimator(nodeCardinalities, stats)
+    val estimateTriplets = newTripletCardinalityEstimator(allNodes, nodeCardinalities, stats)
     val tripletCardinalities = triplets.map(estimateTriplets)
     val tripletCardinality = tripletCardinalities.foldLeft(Cardinality.SINGLE)(_ * _)
 
@@ -71,6 +72,12 @@ case class TripletQueryGraphCardinalityModel(stats: GraphStatistics,
 
     resultCardinality
   }
+
+  private def newTripletCardinalityEstimator(allNodes: Cardinality, nodeCardinalities: NodeCardinalities, stats: GraphStatistics) =
+    VariableTripletCardinalityEstimator(
+      allNodes,
+      SimpleTripletCardinalityEstimator(allNodes, nodeCardinalities, stats)
+    )
 }
 
 

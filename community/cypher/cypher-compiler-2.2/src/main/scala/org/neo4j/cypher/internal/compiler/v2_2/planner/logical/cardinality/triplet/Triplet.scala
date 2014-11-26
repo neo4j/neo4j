@@ -24,20 +24,22 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.Token
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 import org.neo4j.cypher.internal.compiler.v2_2.{RelTypeId, LabelId}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.TokenSpec
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{PatternRelationship, IdName}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{SimplePatternLength, PatternLength, PatternRelationship, IdName}
 import org.neo4j.graphdb.Direction
 
 case class Triplet(name: IdName,
                    left: IdName, leftLabels: Set[TokenSpec[LabelId]],
                    right: IdName, rightLabels: Set[TokenSpec[LabelId]],
                    relTypes: Set[TokenSpec[RelTypeId]],
-                   directed: Boolean) {
+                   directed: Boolean,
+                   length: PatternLength = SimplePatternLength) {
 
   def reverse =
     copy(
       left = right, leftLabels = rightLabels,
       right = left, rightLabels = leftLabels,
-      directed = directed
+      directed = directed,
+      length = length
     )
 }
 

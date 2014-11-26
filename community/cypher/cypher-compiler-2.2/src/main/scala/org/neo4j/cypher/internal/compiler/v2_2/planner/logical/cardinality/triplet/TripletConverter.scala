@@ -45,7 +45,8 @@ case class TripletConverter(qg: QueryGraph, input: QueryGraphCardinalityInput, s
       right = right,
       rightLabels = labelSpecs(right),
       relTypes = relTypeSpecs(name),
-      directed = pattern.dir != Direction.BOTH
+      directed = pattern.dir != Direction.BOTH,
+      length = pattern.length
     )
   }
 

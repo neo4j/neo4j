@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.helpers.RandomizedTestSupport
 
 import scala.language.implicitConversions
 
-class TripletCardinalityEstimatorTest
+class SimpleTripletCardinalityEstimatorTest
   extends CypherFunSuite
   with RandomizedTestSupport
   with LogicalPlanningTestSupport
@@ -131,7 +131,7 @@ class TripletCardinalityEstimatorTest
       val (stats, semanticTable) = testUnit.prepareTestContext
       val qg = testUnit.createQueryGraph()
       val converter = TripletConverter(qg, input, semanticTable)
-      val estimator = TripletCardinalityEstimator(nodeCardinalities, stats)
+      val estimator = SimpleTripletCardinalityEstimator(N, nodeCardinalities, stats)
 
       qg.patternRelationships.collect {
         case pattern =>
