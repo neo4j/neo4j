@@ -29,9 +29,9 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.graphdb.TransactionTerminatedException;
 
 public class TerminateTransactions
 {
@@ -61,9 +61,11 @@ public class TerminateTransactions
             Node rootNode = graphDb.createNode();
             nodes.add( rootNode );
 
+            // END SNIPPET: mkTree
             Terminator terminator = new Terminator(tx);
             terminator.terminateAfter( 1000 );
 
+            // START SNIPPET: mkTree
             for (; true; depth++) {
                 int nodesToExpand = nodes.size();
                 for (int i = 0; i < nodesToExpand; ++i) {
@@ -123,7 +125,6 @@ public class TerminateTransactions
                     while ( (System.currentTimeMillis() - startTime) < millis );
 
                     // START SNIPPET: terminateTx
-                    // terminate transaction
                     tx.terminate();
                     // END SNIPPET: terminateTx
                 }
