@@ -21,6 +21,7 @@ package org.neo4j.tooling;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.Arrays;
 import java.util.Collection;
@@ -55,6 +56,7 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
+import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.util.Converters.withDefault;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
@@ -133,12 +135,12 @@ public class ImportTool
             return key;
         }
 
-        void printUsage()
+        void printUsage( PrintStream out )
         {
-            System.out.println( "--" + key + " " + usage );
+            out.println( "--" + key + " " + usage );
             for ( String line : Args.splitLongLine( description.replace( "`", "" ), 80 ) )
             {
-                System.out.println( "\t" + line );
+                out.println( "\t" + line );
             }
         }
 
@@ -158,7 +160,7 @@ public class ImportTool
         Args args = Args.parse( incomingArguments );
         if ( asksForUsage( args ) )
         {
-            printUsage();
+            printUsage( System.out );
             return;
         }
 
@@ -182,15 +184,7 @@ public class ImportTool
         }
         catch ( IllegalArgumentException e )
         {
-            printUsage();
-            Thread.currentThread().setUncaughtExceptionHandler( new UncaughtExceptionHandler()
-            {
-                @Override
-                public void uncaughtException( Thread t, Throwable e )
-                {   // Shhhh
-                }
-            } );
-            throw e; // throw in order to have process exit with !0
+            throw andPrintError( "Input error", e, false );
         }
 
         LifeSupport life = new LifeSupport();
@@ -217,7 +211,7 @@ public class ImportTool
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( e );
+            throw andPrintError( "Import error", e, true );
         }
         finally
         {
@@ -236,6 +230,34 @@ public class ImportTool
                 }
             }
         }
+    }
+
+    /**
+     * Method name looks strange, but look at how it's used and you'll see why it's named like that.
+     * @param stackTrace whether or not to also print the stack trace of the error.
+     */
+    private static RuntimeException andPrintError( String typeOfError, Exception e, boolean stackTrace )
+    {
+        System.err.println( typeOfError + ": " + e.getMessage() );
+        if ( stackTrace )
+        {
+            e.printStackTrace( System.err );
+        }
+        System.err.println();
+        printUsage( System.err );
+
+        // Mute the stack trace that the default exception handler would have liked to print.
+        // Calling System.exit( 1 ) or similar would be convenient on one hand since we can set
+        // a specific exit code. On the other hand It's very inconvenient to have any System.exit
+        // call in code that is tested.
+        Thread.currentThread().setUncaughtExceptionHandler( new UncaughtExceptionHandler()
+        {
+            @Override
+            public void uncaughtException( Thread t, Throwable e )
+            {   // Shhhh
+            }
+        } );
+        return launderedException( e ); // throw in order to have process exit with !0
     }
 
     private static Iterable<DataFactory<InputRelationship>>
@@ -266,20 +288,20 @@ public class ImportTool
         };
     }
 
-    private static void printUsage()
+    private static void printUsage( PrintStream out )
     {
-        System.out.println( "Neo4j Import Tool" );
+        out.println( "Neo4j Import Tool" );
         for ( String line : Args.splitLongLine( "neo4j-import is used to create a new Neo4j database "
                 + "from data in CSV files. "
                 + "See the chapter \"Import Tool\" in the Neo4j Manual for details on the CSV file format "
                 + "- a special kind of header is required.", 80 ) )
         {
-            System.out.println( "\t" + line );
+            out.println( "\t" + line );
         }
-        System.out.println( "Usage:" );
+        out.println( "Usage:" );
         for ( Options option : Options.values() )
         {
-            option.printUsage();
+            option.printUsage( out );
         }
     }
 
