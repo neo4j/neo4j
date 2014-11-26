@@ -115,7 +115,7 @@ angular.module('neo4jApp.controllers')
       $scope.arrowDisplayWidth = (idx) ->
         width: arrowDisplayWidths[idx]
 
-      nodeDisplaySizes = ("#{15 + 5*i}px" for i in [0..10])
+      nodeDisplaySizes = ("#{12 + 2*i}px" for i in [0..10])
       $scope.nodeDisplaySize = (idx) ->
         width: nodeDisplaySizes[idx]
         height: nodeDisplaySizes[idx]
