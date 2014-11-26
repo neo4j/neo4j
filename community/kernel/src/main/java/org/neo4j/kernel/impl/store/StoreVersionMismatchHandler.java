@@ -23,20 +23,39 @@ public interface StoreVersionMismatchHandler
 {
     void mismatch( String expected, String found );
 
-    public static final StoreVersionMismatchHandler THROW_EXCEPTION = new StoreVersionMismatchHandler()
+    /**
+     * @param currentVersionTrailer the version trailer that would be the version of the current store format.
+     * @param readVersionTrailer the version previously read when opening the store.
+     * @return which version trailer to write to the end of store files at shut down.
+     */
+    String trailerToWrite( String currentVersionTrailer, String readVersionTrailer );
+
+    public static final StoreVersionMismatchHandler FORCE_CURRENT_VERSION = new StoreVersionMismatchHandler()
     {
         @Override
         public void mismatch( String expected, String found )
         {
             throw new NotCurrentStoreVersionException( expected, found, "", false );
         }
+
+        @Override
+        public String trailerToWrite( String currentVersionTrailer, String readVersionTrailer )
+        {
+            return currentVersionTrailer;
+        }
     };
 
-    public static final StoreVersionMismatchHandler ACCEPT = new StoreVersionMismatchHandler()
+    public static final StoreVersionMismatchHandler ALLOW_OLD_VERSION = new StoreVersionMismatchHandler()
     {
         @Override
         public void mismatch( String expected, String found )
         {   // Dangerous, but used for dependency satisfaction during store migration
+        }
+
+        @Override
+        public String trailerToWrite( String currentVersionTrailer, String readVersionTrailer )
+        {
+            return readVersionTrailer;
         }
     };
 }

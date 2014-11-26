@@ -23,7 +23,6 @@ import java.util.List;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
@@ -32,9 +31,10 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.tooling.GlobalGraphOperations;
 
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.assertThat;
 
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.makeLongArray;
@@ -45,10 +45,12 @@ public class DatabaseContentVerifier
     private final String longString = makeLongString();
     private final int[] longArray = makeLongArray();
     private final GraphDatabaseService database;
+    private final int numberOfUnrelatedNodes;
 
-    public DatabaseContentVerifier( GraphDatabaseService database )
+    public DatabaseContentVerifier( GraphDatabaseService database, int numberOfUnrelatedNodes )
     {
         this.database = database;
+        this.numberOfUnrelatedNodes = numberOfUnrelatedNodes;
     }
 
     public void verifyRelationships( int expectedCount )
@@ -74,7 +76,7 @@ public class DatabaseContentVerifier
             for ( Node node : GlobalGraphOperations.at( database ).getAllNodes() )
             {
                 nodeCount++;
-                if ( node.getId() > 0 )
+                if ( node.getId() >= numberOfUnrelatedNodes )
                 {
                     verifyProperties( node );
                 }
@@ -101,19 +103,10 @@ public class DatabaseContentVerifier
 
     public void verifyNodeIdsReused()
     {
-        try ( Transaction ignore = database.beginTx() )
-        {
-            database.getNodeById( 1 );
-            fail( "Node 1 should not exist" );
-        }
-        catch ( NotFoundException e )
-        {   // expected
-        }
-
         try ( Transaction transaction = database.beginTx() )
         {
             Node newNode = database.createNode();
-            assertEquals( 1, newNode.getId() );
+            assertThat( newNode.getId(), lessThanOrEqualTo( 10L ) );
             transaction.success();
         }
     }

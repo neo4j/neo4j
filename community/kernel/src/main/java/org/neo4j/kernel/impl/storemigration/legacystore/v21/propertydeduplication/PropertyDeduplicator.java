@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.StoreVersionMismatchHandler;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -53,8 +54,8 @@ public class PropertyDeduplicator
     private final File propertyStorePath;
     private final File nodeStorePath;
     private final File schemaStorePath;
-    private PrimitiveIntObjectMap<Long> seenPropertyKeys;
-    private PrimitiveIntObjectMap<DuplicateCluster> localDuplicateClusters;
+    private final PrimitiveIntObjectMap<Long> seenPropertyKeys;
+    private final PrimitiveIntObjectMap<DuplicateCluster> localDuplicateClusters;
 
     public PropertyDeduplicator( FileSystemAbstraction fileSystem, File workingDir, PageCache pageCache,
                                  SchemaIndexProvider schemaIndexProvider )
@@ -75,7 +76,7 @@ public class PropertyDeduplicator
     public void deduplicateProperties() throws IOException
     {
         final StoreFactory storeFactory = new StoreFactory(
-                fileSystem, workingDir, pageCache, DEV_NULL, new Monitors() );
+                fileSystem, workingDir, pageCache, DEV_NULL, new Monitors(), StoreVersionMismatchHandler.ALLOW_OLD_VERSION );
 
         try ( PropertyStore propertyStore = storeFactory.newPropertyStore( propertyStorePath );
               NodeStore nodeStore = storeFactory.newNodeStore( nodeStorePath );

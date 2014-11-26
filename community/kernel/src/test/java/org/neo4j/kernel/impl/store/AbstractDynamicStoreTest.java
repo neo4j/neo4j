@@ -78,7 +78,7 @@ public class AbstractDynamicStoreTest
     {
         return new AbstractDynamicStore( fileName, new Config(), IdType.ARRAY_BLOCK, new DefaultIdGeneratorFactory(),
                 new BatchingPageCache( fsr.get(), 1000, BatchingPageCache.SYNCHRONOUS, mock( Monitor.class ), Mode.UPDATE ),
-                fsr.get(), StringLogger.DEV_NULL, StoreVersionMismatchHandler.ACCEPT, new Monitors() )
+                fsr.get(), StringLogger.DEV_NULL, StoreVersionMismatchHandler.ALLOW_OLD_VERSION, new Monitors() )
         {
             @Override
             public void accept( Processor processor, DynamicRecord record )

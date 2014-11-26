@@ -87,7 +87,7 @@ public class TestGrowingFileMemoryMapping
                 fileSystemAbstraction,
                 StringLogger.DEV_NULL,
                 null,
-                StoreVersionMismatchHandler.THROW_EXCEPTION,
+                StoreVersionMismatchHandler.FORCE_CURRENT_VERSION,
                 monitors );
 
         // when

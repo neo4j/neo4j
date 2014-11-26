@@ -27,7 +27,7 @@ import java.util.regex.Pattern;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.test.CleanupRule;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.ha.ClusterManager;
 
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
@@ -41,7 +41,7 @@ public class StoreMigratorTestUtil
 
     public static ClusterManager.ManagedCluster buildClusterWithMasterDirIn( FileSystemAbstraction fs,
                                                                              final File legacyStoreDir,
-                                                                             CleanupRule cleanup )
+                                                                             LifeSupport life )
             throws Throwable
     {
         File haRootDir = new File( legacyStoreDir.getParentFile(), "ha-migration" );
@@ -62,9 +62,8 @@ public class StoreMigratorTestUtil
                 .withProvider( clusterOfSize( 3 ) )
                 .build();
 
-        clusterManager.start();
-
-        cleanup.add( clusterManager );
+        life.add( clusterManager );
+        life.start();
 
         return clusterManager.getDefaultCluster();
     }

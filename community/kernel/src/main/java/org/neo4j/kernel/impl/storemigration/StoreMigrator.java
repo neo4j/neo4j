@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.StoreVersionMismatchHandler;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -181,10 +182,6 @@ public class StoreMigrator implements StoreMigrationParticipant
 
         if ( versionToUpgradeFrom( fileSystem, storeDir ).equals( Legacy21Store.LEGACY_VERSION ) )
         {
-            // ensure the stores have the new versions set before reading them to create a counts store
-            ensureStoreVersions( storeDir );
-
-
             // create counters from scratch
             final LifeSupport life = new LifeSupport();
             life.start();
@@ -252,7 +249,8 @@ public class StoreMigrator implements StoreMigrationParticipant
                 buildTypeDescriptorAndVersion( CountsTracker.STORE_DESCRIPTOR ) );
 
         final StoreFactory storeFactory =
-                new StoreFactory( fileSystem, storeDir, pageCache, DEV_NULL, new Monitors() );
+                new StoreFactory( fileSystem, storeDir, pageCache, DEV_NULL, new Monitors(),
+                        StoreVersionMismatchHandler.ALLOW_OLD_VERSION );
         try ( NodeStore nodeStore = storeFactory.newNodeStore();
               RelationshipStore relationshipStore = storeFactory.newRelationshipStore();
               CountsTracker tracker = new CountsTracker( logging.getMessagesLog( CountsTracker.class ),
@@ -289,7 +287,6 @@ public class StoreMigrator implements StoreMigrationParticipant
         Iterable<InputNode> nodes = legacyNodesAsInput( legacyStore );
         Iterable<InputRelationship> relationships = legacyRelationshipsAsInput( legacyStore );
         importer.doImport( Inputs.input( nodes, relationships, IdMappings.actual() ) );
-        progressMonitor.finished();
 
         // Finish the import of nodes and relationships
         if ( legacyStore instanceof Legacy19Store )
@@ -596,11 +593,7 @@ public class StoreMigrator implements StoreMigrationParticipant
                 StoreFileType.values() );
 
         // ensure the store version is correct
-        if ( !versionToUpgradeFrom.equals( Legacy21Store.LEGACY_VERSION ) )
-        {
-            // we fix the store versions earlier on in order to create counts store for 2.1
-            ensureStoreVersions( storeDir );
-        }
+        ensureStoreVersions( storeDir );
 
         // update or add upgrade id and time
         updateOrAddUpgradeIdAndUpgradeTime( storeDir );

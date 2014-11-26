@@ -19,14 +19,15 @@
  */
 package upgrade;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -49,18 +50,20 @@ import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.test.CleanupRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.Integer.MAX_VALUE;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
@@ -70,6 +73,7 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.find19Form
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.find19FormatStoreDirectory;
 import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UPGRADE;
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
+
 import static upgrade.StoreMigratorTestUtil.buildClusterWithMasterDirIn;
 
 public class StoreMigratorFrom19IT
@@ -88,9 +92,7 @@ public class StoreMigratorFrom19IT
         assertTrue( monitor.isStarted() );
         assertTrue( monitor.isFinished() );
 
-        GraphDatabaseService database = cleanup.add(
-                new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.absolutePath() )
-        );
+        GraphDatabaseService database = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.absolutePath() );
 
         try
         {
@@ -102,9 +104,10 @@ public class StoreMigratorFrom19IT
             database.shutdown();
         }
 
-        NeoStore neoStore = cleanup.add( storeFactory.newNeoStore( true, false ) );
-        verifyNeoStore( neoStore );
-        neoStore.close();
+        try ( NeoStore neoStore = storeFactory.newNeoStore( true, false ) )
+        {
+            verifyNeoStore( neoStore );
+        }
 
         assertConsistentStore( storeDir.directory() );
     }
@@ -118,8 +121,7 @@ public class StoreMigratorFrom19IT
         // When
         newStoreUpgrader().migrateIfNeeded( legacyStoreDir, schemaIndexProvider, pageCache );
 
-        ClusterManager.ManagedCluster cluster =
-                cleanup.add( buildClusterWithMasterDirIn( fs, legacyStoreDir, cleanup ) );
+        ClusterManager.ManagedCluster cluster = buildClusterWithMasterDirIn( fs, legacyStoreDir, life );
         cluster.await( allSeesAllAsAvailable() );
         cluster.sync();
 
@@ -165,17 +167,18 @@ public class StoreMigratorFrom19IT
 
         // THEN
         // verify that there are no duplicate keys in the store
-        PropertyKeyTokenStore tokenStore = cleanup.add( storeFactory.newPropertyKeyTokenStore() );
-        Token[] tokens = tokenStore.getTokens( MAX_VALUE );
-        tokenStore.close();
-        assertNoDuplicates( tokens );
+        try ( PropertyKeyTokenStore tokenStore = storeFactory.newPropertyKeyTokenStore() )
+        {
+            Token[] tokens = tokenStore.getTokens( MAX_VALUE );
+            assertNoDuplicates( tokens );
+        }
 
         assertConsistentStore( storeDir.directory() );
     }
 
     private static void verifyDatabaseContents( GraphDatabaseService db )
     {
-        DatabaseContentVerifier verifier = new DatabaseContentVerifier( db );
+        DatabaseContentVerifier verifier = new DatabaseContentVerifier( db, 1 );
         verifyNumberOfNodesAndRelationships( verifier );
         verifier.verifyNodeIdsReused();
         verifier.verifyRelationshipIdsReused();
@@ -184,7 +187,7 @@ public class StoreMigratorFrom19IT
 
     private static void verifySlaveContents( HighlyAvailableGraphDatabase haDb )
     {
-        DatabaseContentVerifier verifier = new DatabaseContentVerifier( haDb );
+        DatabaseContentVerifier verifier = new DatabaseContentVerifier( haDb, 1 );
         verifyNumberOfNodesAndRelationships( verifier );
         verifier.verifyLegacyIndex();
     }
@@ -233,8 +236,6 @@ public class StoreMigratorFrom19IT
     @Rule
     public final TargetDirectory.TestDirectory storeDir = TargetDirectory.testDirForTest( getClass() );
     @Rule
-    public final CleanupRule cleanup = new CleanupRule();
-    @Rule
     public final PageCacheRule pageCacheRule = new PageCacheRule();
 
     private StoreUpgrader newStoreUpgrader()
@@ -245,11 +246,12 @@ public class StoreMigratorFrom19IT
         return upgrader;
     }
 
-    private SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
+    private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     private final ListAccumulatorMigrationProgressMonitor monitor = new ListAccumulatorMigrationProgressMonitor();
     private PageCache pageCache;
     private StoreFactory storeFactory;
+    private final LifeSupport life = new LifeSupport();
 
     @Before
     public void setUp()
@@ -264,5 +266,11 @@ public class StoreMigratorFrom19IT
                 fs,
                 StringLogger.DEV_NULL,
                 new Monitors() );
+    }
+
+    @After
+    public void tearDown()
+    {
+        life.shutdown();
     }
 }
