@@ -232,6 +232,7 @@ public class CommunityServerBuilder
             Map<String, String> properties = MapUtil.stringMap(
                     "neostore.nodestore.db.mapped_memory", "25M",
                     "neostore.relationshipstore.db.mapped_memory", "50M",
+                    "neostore.relationshipgroupstore.db.mapped_memory", "10M",
                     "neostore.propertystore.db.mapped_memory", "90M",
                     "neostore.propertystore.db.strings.mapped_memory", "130M",
                     "neostore.propertystore.db.arrays.mapped_memory", "130M" );

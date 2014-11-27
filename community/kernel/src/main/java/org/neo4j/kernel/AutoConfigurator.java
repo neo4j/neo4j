@@ -34,6 +34,8 @@ import org.neo4j.kernel.logging.ConsoleLogger;
 @Deprecated
 public class AutoConfigurator
 {
+    public static final int NUMBER_OF_STORES_FOR_MEMORY_MAPPING = 6;
+
     private final int totalPhysicalMemMb;
     private final int maxVmUsageMb;
     private final File dbPath;
@@ -125,9 +127,9 @@ public class AutoConfigurator
         }
         else if ( canExpand )
         {
-            if ( storeSize * expand * 5 < memLeft * use )
+            if ( storeSize * expand * NUMBER_OF_STORES_FOR_MEMORY_MAPPING < memLeft * use )
             {
-                size = (int) (memLeft * use / 5);
+                size = (int) ( memLeft * use / NUMBER_OF_STORES_FOR_MEMORY_MAPPING );
             }
             else
             {
@@ -145,11 +147,12 @@ public class AutoConfigurator
     {
         int nodeStore = getFileSizeMb( "nodestore.db" );
         int relStore = getFileSizeMb( "relationshipstore.db" );
+        int relGroupStore = getFileSizeMb( "relationshipgroupstore.db" );
         int propStore = getFileSizeMb( "propertystore.db" );
         int stringStore = getFileSizeMb( "propertystore.db.strings" );
         int arrayStore = getFileSizeMb( "propertystore.db.arrays" );
 
-        int totalSize = nodeStore + relStore + propStore + stringStore + arrayStore;
+        int totalSize = nodeStore + relStore + relGroupStore + propStore + stringStore + arrayStore;
         boolean expand = false;
         if ( totalSize * 1.15f < availableMem )
         {
@@ -160,6 +163,8 @@ public class AutoConfigurator
         memLeft -= relStore;
         nodeStore = calculate( memLeft, nodeStore, 0.2f, 1.1f, expand );
         memLeft -= nodeStore;
+        relGroupStore = calculate( memLeft, relGroupStore, 0.0001f, 1.1f, expand ); // around 0.03% size of nodestore
+        memLeft -= relGroupStore;
         propStore = calculate( memLeft, propStore, 0.75f, 1.1f, expand );
         memLeft -= propStore;
         stringStore = calculate( memLeft, stringStore, 0.75f, 1.1f, expand );
@@ -169,6 +174,7 @@ public class AutoConfigurator
 
         configPut( config, "nodestore.db", nodeStore );
         configPut( config, "relationshipstore.db", relStore );
+        configPut( config, "relationshipgroupstore.db", relGroupStore );
         configPut( config, "propertystore.db", propStore );
         configPut( config, "propertystore.db.strings", stringStore );
         configPut( config, "propertystore.db.arrays", arrayStore );

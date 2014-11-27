@@ -266,6 +266,7 @@ public class StoreAccess
         params.put( GraphDatabaseSettings.strings_mapped_memory_size.name(), "130M" );
         params.put( GraphDatabaseSettings.arrays_mapped_memory_size.name(), "130M" );
         params.put( GraphDatabaseSettings.relationshipstore_mapped_memory_size.name(), "100M" );
+        params.put( GraphDatabaseSettings.relationshipgroupstore_mapped_memory_size.name(), "10M" );
         // if on windows, default no memory mapping
         if ( osIsWindows() )
         {

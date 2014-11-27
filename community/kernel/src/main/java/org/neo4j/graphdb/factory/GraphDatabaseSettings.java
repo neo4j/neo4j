@@ -212,6 +212,9 @@ public abstract class GraphDatabaseSettings
     @Description("The size to allocate for memory mapping the relationship store.")
     public static final Setting<Long> relationshipstore_mapped_memory_size = setting("neostore.relationshipstore.db.mapped_memory", BYTES, "100M" );
 
+    @Description("The size to allocate for memory mapping the relationship group store.")
+    public static final Setting<Long> relationshipgroupstore_mapped_memory_size = setting( "neostore.relationshipgroupstore.db.mapped_memory", BYTES, "10M" );
+
 
     @Description("How many relationships to read at a time during iteration")
     public static final Setting<Integer> relationship_grab_size = setting("relationship_grab_size", INTEGER, "100", min( 1 ));

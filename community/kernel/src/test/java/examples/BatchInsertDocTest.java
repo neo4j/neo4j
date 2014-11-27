@@ -111,6 +111,7 @@ public class BatchInsertDocTest
         {
             fw.append( "neostore.nodestore.db.mapped_memory=90M\n"
                        + "neostore.relationshipstore.db.mapped_memory=3G\n"
+                       + "neostore.relationshipgroupstore.db.mapped_memory=10M\n"
                        + "neostore.propertystore.db.mapped_memory=50M\n"
                        + "neostore.propertystore.db.strings.mapped_memory=100M\n"
                        + "neostore.propertystore.db.arrays.mapped_memory=0M" );
