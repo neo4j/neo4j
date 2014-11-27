@@ -7,6 +7,7 @@
   padding-top: 24px
   position: relative
   overflow-y: auto
+  overflow-x: hidden
 
   .frame
     overflow: hidden
@@ -33,6 +34,23 @@
         height: auto
         background: #F8F9FB
         z-index: 10
+        &.fade
+          transition: .6s all linear
+          opacity: 1
+          &.ng-hide-remove
+            display: block !important
+          &.ng-hide-remove, &.ng-hide-add.ng-hide-add-active
+            opacity: 0
+          &.ng-hide-remove.ng-hide-remove-active, &.ng-hide-add
+            opacity: 1
+     
+
+        .form-info
+          font-size: 12px
+
+        .center-tbl-left-col
+          width: 175px
+          display: inline-block
 
         a[class^="icon-"]
           color: color-default-text
@@ -91,6 +109,8 @@
     background-color: #81C0EB
   .label-help
     background-color: #D2A8E9
+  .label-auth
+    background-color: #3498DB
 
   .code
     text-shadow: 0 1px 0 rgba(255,255,255,0.7)
