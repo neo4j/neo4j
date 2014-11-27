@@ -36,10 +36,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientRequest;
-import com.sun.jersey.api.client.ClientRequest.Builder;
-import com.sun.jersey.api.client.ClientResponse;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
@@ -49,7 +45,13 @@ import org.neo4j.test.GraphDefinition;
 import org.neo4j.test.TestData.Producer;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
-import static org.junit.Assert.*;
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientRequest;
+import com.sun.jersey.api.client.ClientRequest.Builder;
+import com.sun.jersey.api.client.ClientResponse;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Generate asciidoc-formatted documentation from HTTP requests and responses.
@@ -581,10 +583,11 @@ public class RESTDocsGenerator extends AsciiDocGenerator
             line( fw, "" );
             line( fw, "_Example response_" );
             line( fw, "" );
+            int statusCode = data.status;
             sb.append( "* *+" )
-                    .append( data.status )
+                    .append( statusCode )
                     .append( ":+* +" )
-                    .append( Response.Status.fromStatusCode( data.status ) )
+                    .append( statusNameFromStatusCode( statusCode ) )
                     .append( "+\n" );
             if ( data.responseHeaders != null )
             {
@@ -607,6 +610,26 @@ public class RESTDocsGenerator extends AsciiDocGenerator
             e.printStackTrace();
             fail();
         }
+    }
+
+    private String statusNameFromStatusCode( int statusCode )
+    {
+        Object name = Response.Status.fromStatusCode( statusCode );
+        if ( name == null )
+        {
+            switch ( statusCode )
+            {
+            case 405:
+                name = "Method Not Allowed";
+                break;
+            case 422:
+                name = "Unprocessable Entity";
+                break;
+            default:
+                throw new RuntimeException( "Missing name for status code: [" + statusCode + "]." );
+            }
+        }
+        return String.valueOf( name );
     }
 
     private String getAsciidocHeading( final String heading )
