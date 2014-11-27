@@ -104,9 +104,9 @@ public class ImportTool
                         + "Multiple data sources like these can be specified in one import, "
                         + "where each data source has its own header. "
                         + "Note that file groups must be enclosed in quotation marks." ),
-        DELIMITER( "delimiter", "<delimiter-character>", "Delimiter character between values in CSV data." ),
+        DELIMITER( "delimiter", "<delimiter-character>", "Delimiter character, or 'TAB', between values in CSV data." ),
         ARRAY_DELIMITER( "array-delimiter", "<array-delimiter-character>",
-                "Delimiter character between array elements within a value in CSV data." ),
+                "Delimiter character, or 'TAB', between array elements within a value in CSV data." ),
         QUOTE( "quote", "<quotation-character>", "Character to treat as quotation character for values in CSV data. "
                 + "Quotes inside quotes escaped like `\"\"\"Go away\"\", he said.\"` and "
                 + "`\"\\\"Go away\\\", he said.\"` are supported. "
@@ -334,9 +334,9 @@ public class ImportTool
     {
         final Configuration defaultConfiguration = COMMAS;
         final Character specificDelimiter =
-                args.interpretOption( Options.DELIMITER.key(), Converters.<Character>optional(), Converters.toCharacter() );
+                args.interpretOption( Options.DELIMITER.key(), Converters.<Character>optional(), DELIMITER_CONVERTER );
         final Character specificArrayDelimiter =
-                args.interpretOption( Options.ARRAY_DELIMITER.key(), Converters.<Character>optional(), Converters.toCharacter() );
+                args.interpretOption( Options.ARRAY_DELIMITER.key(), Converters.<Character>optional(), DELIMITER_CONVERTER );
         final Character specificQuote =
                 args.interpretOption( Options.QUOTE.key(), Converters.<Character>optional(), Converters.toCharacter() );
         return new Configuration()
@@ -366,4 +366,19 @@ public class ImportTool
             }
         };
     }
+
+    private static final Function<String,Character> DELIMITER_CONVERTER = new Function<String,Character>()
+    {
+        private final Function<String,Character> fallback = Converters.toCharacter();
+
+        @Override
+        public Character apply( String value ) throws RuntimeException
+        {
+            if ( value.equals( "TAB" ) )
+            {
+                return '\t';
+            }
+            return fallback.apply( value );
+        }
+    };
 }
