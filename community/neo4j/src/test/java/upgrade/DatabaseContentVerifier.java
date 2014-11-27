@@ -26,6 +26,7 @@ import java.util.Set;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
@@ -92,17 +93,24 @@ public class DatabaseContentVerifier
 
     public void verifyProperties( PropertyContainer node )
     {
-        assertEquals( Integer.MAX_VALUE, node.getProperty( PropertyType.INT.name() ) );
-        assertEquals( longString, node.getProperty( PropertyType.STRING.name() ) );
-        assertEquals( true, node.getProperty( PropertyType.BOOL.name() ) );
-        assertEquals( Double.MAX_VALUE, node.getProperty( PropertyType.DOUBLE.name() ) );
-        assertEquals( Float.MAX_VALUE, node.getProperty( PropertyType.FLOAT.name() ) );
-        assertEquals( Long.MAX_VALUE, node.getProperty( PropertyType.LONG.name() ) );
-        assertEquals( Byte.MAX_VALUE, node.getProperty( PropertyType.BYTE.name() ) );
-        assertEquals( Character.MAX_VALUE, node.getProperty( PropertyType.CHAR.name() ) );
-        assertArrayEquals( longArray, (int[]) node.getProperty( PropertyType.ARRAY.name() ) );
-        assertEquals( Short.MAX_VALUE, node.getProperty( PropertyType.SHORT.name() ) );
-        assertEquals( "short", node.getProperty( PropertyType.SHORT_STRING.name() ) );
+        try
+        {
+            assertEquals( Integer.MAX_VALUE, node.getProperty( PropertyType.INT.name() ) );
+            assertEquals( longString, node.getProperty( PropertyType.STRING.name() ) );
+            assertEquals( true, node.getProperty( PropertyType.BOOL.name() ) );
+            assertEquals( Double.MAX_VALUE, node.getProperty( PropertyType.DOUBLE.name() ) );
+            assertEquals( Float.MAX_VALUE, node.getProperty( PropertyType.FLOAT.name() ) );
+            assertEquals( Long.MAX_VALUE, node.getProperty( PropertyType.LONG.name() ) );
+            assertEquals( Byte.MAX_VALUE, node.getProperty( PropertyType.BYTE.name() ) );
+            assertEquals( Character.MAX_VALUE, node.getProperty( PropertyType.CHAR.name() ) );
+            assertArrayEquals( longArray, (int[]) node.getProperty( PropertyType.ARRAY.name() ) );
+            assertEquals( Short.MAX_VALUE, node.getProperty( PropertyType.SHORT.name() ) );
+            assertEquals( "short", node.getProperty( PropertyType.SHORT_STRING.name() ) );
+        }
+        catch ( NotFoundException e )
+        {
+            throw new NotFoundException( e.getMessage() + " for " + node, e.getCause() );
+        }
     }
 
     public void verifyNodeIdsReused()
