@@ -24,6 +24,8 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -45,8 +47,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydeduplication.PropertyDeduplicatorTestUtil
-        .findTokenFor;
+import static org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydeduplication.PropertyDeduplicatorTestUtil.findTokenFor;
 
 public class IndexLookupTest
 {
@@ -87,6 +88,7 @@ public class IndexLookupTest
 
         try ( Transaction transaction = db.beginTx() )
         {
+            db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
             indexedNodePropertyValue = "value1";
             notIndexedNodePropertyValue = "value2";
 
