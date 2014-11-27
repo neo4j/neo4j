@@ -19,28 +19,27 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.Set;
-
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.Set;
+
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
-import org.neo4j.kernel.impl.util.DiffSets;
+import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 
 import static java.util.Arrays.asList;
-
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
@@ -50,7 +49,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedState;
@@ -95,7 +93,7 @@ public class StateHandlingStatementOperationsTest
     {
         // given
         UniquenessConstraint constraint = new UniquenessConstraint( 10, 66 );
-        TxState txState = mock( TxState.class );
+        TransactionState txState = mock( TransactionState.class );
         when( txState.nodesWithLabelChanged( anyInt() ) ).thenReturn( DiffSets.<Long>emptyDiffSets() );
         KernelStatement state = mockedState( txState );
         when( inner.constraintsGetForLabelAndPropertyKey( 10, 66 ) )
@@ -114,7 +112,7 @@ public class StateHandlingStatementOperationsTest
     {
         // given
         UniquenessConstraint constraint = new UniquenessConstraint( 10, 66 );
-        TxState txState = new TxStateImpl( mock( LegacyIndexTransactionState.class ) );
+        TransactionState txState = new TxState();
         KernelStatement state = mockedState( txState );
         when( inner.constraintsGetForLabelAndPropertyKey( 10, 66 ) )
             .thenAnswer( asAnswer( Collections.emptyList() ) );
@@ -136,7 +134,7 @@ public class StateHandlingStatementOperationsTest
         UniquenessConstraint constraint1 = new UniquenessConstraint( 11, 66 );
         UniquenessConstraint constraint2 = new UniquenessConstraint( 11, 99 );
 
-        TxState txState = new TxStateImpl( mock( LegacyIndexTransactionState.class ) );
+        TransactionState txState = new TxState();
         KernelStatement state = mockedState( txState );
         when( inner.constraintsGetForLabelAndPropertyKey( 10, 66 ) )
             .thenAnswer( asAnswer( Collections.emptyList() ) );
@@ -164,7 +162,7 @@ public class StateHandlingStatementOperationsTest
         UniquenessConstraint constraint1 = new UniquenessConstraint( 10, 66 );
         UniquenessConstraint constraint2 = new UniquenessConstraint( 11, 99 );
 
-        TxState txState = new TxStateImpl( mock( LegacyIndexTransactionState.class ) );
+        TransactionState txState = new TxState();
         KernelStatement state = mockedState( txState );
         when( inner.constraintsGetForLabelAndPropertyKey( 10, 66 ) )
             .thenAnswer( asAnswer( Collections.emptyList() ) );

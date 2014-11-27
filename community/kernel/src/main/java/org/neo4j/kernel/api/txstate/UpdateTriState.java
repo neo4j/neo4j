@@ -17,12 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.state;
+package org.neo4j.kernel.api.txstate;
 
-class GraphState extends PropertyContainerState.Mutable
+/**
+ * Represents the three states that updates can assume in a transaction:
+ * <ul>
+ * <li>Either the data can be {@linkplain #ADDED added} in this transaction,</li>
+ * <li>the data can be {@linkplain #REMOVED removed} by this transaction, or</li>
+ * <li>the data can be {@linkplain #UNTOUCHED untouched} by this transaction,
+ *     having whatever state it has in the underlying store.</li>
+ * </ul>
+ */
+public enum UpdateTriState
 {
-    GraphState()
-    {
-        super( -1 );
-    }
+    ADDED,
+    REMOVED,
+    UNTOUCHED;
 }

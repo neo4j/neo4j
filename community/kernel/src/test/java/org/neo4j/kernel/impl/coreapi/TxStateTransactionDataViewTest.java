@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.coreapi;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import org.junit.Before;
-import org.junit.Test;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.graphdb.Node;
@@ -34,23 +34,20 @@ import org.neo4j.graphdb.event.LabelEntry;
 import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionState;
-import org.neo4j.kernel.impl.api.state.TxStateImpl;
+import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
 
@@ -59,8 +56,7 @@ public class TxStateTransactionDataViewTest
     private final ThreadToStatementContextBridge bridge = mock(ThreadToStatementContextBridge.class);
     private final Statement stmt = mock(Statement.class);
     private final StoreReadLayer ops = mock(StoreReadLayer.class);
-    private final TxState state = new TxStateImpl(
-            mock( LegacyIndexTransactionState.class) );
+    private final TransactionState state = new TxState();
 
 
     @Before

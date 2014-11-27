@@ -19,26 +19,33 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TestRule;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.impl.util.DiffSets;
+import org.neo4j.kernel.api.txstate.TxStateVisitor;
+import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.impl.util.diffsets.ReadableDiffSets;
+import org.neo4j.test.RandomizedTestRule;
+import org.neo4j.test.RepeatRule;
 
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.iterator;
 import static org.neo4j.graphdb.Direction.BOTH;
@@ -51,6 +58,14 @@ import static org.neo4j.kernel.impl.util.PrimitiveIteratorMatchers.containsLongs
 
 public class TxStateTest
 {
+    public final RandomizedTestRule random = new RandomizedTestRule();
+
+    @Rule
+    public final TestRule repeatWithDifferentRandomization()
+    {
+        return RuleChain.outerRule( new RepeatRule() ).around( random );
+    }
+
     @Test
     public void shouldGetAddedLabels() throws Exception
     {
@@ -112,23 +127,6 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldMapFromAddedLabelToNodes() throws Exception
-    {
-        // GIVEN
-        state.nodeDoAddLabel( 1, 0 );
-        state.nodeDoAddLabel( 2, 0 );
-        state.nodeDoAddLabel( 1, 1 );
-        state.nodeDoAddLabel( 3, 1 );
-        state.nodeDoAddLabel( 2, 2 );
-
-        // WHEN
-        Set<Long> nodes = state.nodesWithLabelAdded( 2 );
-
-        // THEN
-        assertEquals( asSet( 0L, 2L ), asSet( nodes ) );
-    }
-
-    @Test
     public void shouldMapFromRemovedLabelToNodes() throws Exception
     {
         // GIVEN
@@ -186,7 +184,7 @@ public class TxStateTest
                 propertyKey, propValue ) );
 
         // When
-        DiffSets<Long> diff = state.nodesWithChangedProperty( propertyKey, propValue );
+        ReadableDiffSets<Long> diff = state.nodesWithChangedProperty( propertyKey, propValue );
 
         // Then
         assertThat( diff.getAdded(), equalTo( asSet( nodeId ) ) );
@@ -204,7 +202,7 @@ public class TxStateTest
         state.nodeDoRemoveProperty( nodeId, stringProperty( propertyKey, propValue ) );
 
         // When
-        DiffSets<Long> diff = state.nodesWithChangedProperty( propertyKey, propValue );
+        ReadableDiffSets<Long> diff = state.nodesWithChangedProperty( propertyKey, propValue );
 
         // Then
         assertThat( diff.getAdded(), equalTo( emptySet ) );
@@ -232,7 +230,8 @@ public class TxStateTest
         state.constraintDoAdd( constraint, 7 );
 
         // then
-        DiffSets<UniquenessConstraint> diff = state.constraintsChangesForLabel( 1 );
+        ReadableDiffSets<UniquenessConstraint> diff = state.constraintsChangesForLabel( 1 );
+
         assertEquals( Collections.singleton( constraint ), diff.getAdded() );
         assertTrue( diff.getRemoved().isEmpty() );
     }
@@ -299,9 +298,9 @@ public class TxStateTest
         assertThat( state.augmentRelationships( endNode, BOTH, iterator( otherRel ) ),
                 containsLongs( relId, otherRel ) );
         assertThat( state.addedRelationships( endNode, new int[]{relType}, BOTH ),
-                containsLongs( relId ) );
-        assertThat( state.addedRelationships( endNode, new int[]{relType+1}, BOTH ),
-                containsLongs() );
+                    containsLongs( relId ) );
+        assertThat( state.addedRelationships( endNode, new int[]{relType + 1}, BOTH ),
+                    containsLongs() );
     }
 
     @Test
@@ -364,7 +363,8 @@ public class TxStateTest
         state.relationshipDoDelete( relC, relType + 1, startNode, endNode );
 
         // Then
-        assertThat( IteratorUtil.asList( state.nodeRelationshipTypes( startNode ) ), equalTo( Arrays.asList(relType)));
+        assertThat( IteratorUtil.asList( state.nodeRelationshipTypes( startNode ) ),
+                    equalTo( Arrays.asList( relType ) ) );
     }
 
     @Test
@@ -376,7 +376,7 @@ public class TxStateTest
         state.nodeDoCreate( 1 );
 
         // WHEN
-        state.accept( new TxState.VisitorAdapter()
+        state.accept( new TxStateVisitor.Adapter()
         {
             @Override
             public void visitCreatedNode( long id )
@@ -401,7 +401,7 @@ public class TxStateTest
         state.relationshipDoCreate( 1, 0, 2, 3 );
 
         // WHEN
-        state.accept( new TxState.VisitorAdapter()
+        state.accept( new TxStateVisitor.Adapter()
         {
             @Override
             public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
@@ -410,20 +410,241 @@ public class TxStateTest
             }
 
             @Override
-            public void visitDeletedRelationship( long id, int type, long startNode, long endNode )
+            public void visitDeletedRelationship( long id )
             {
                 fail( "Should not delete any relationship" );
             }
         } );
     }
 
-    private TxState state;
+    @Test
+    @RepeatRule.Repeat(times = 100)
+    public void shouldVisitCreatedNodesBeforeDeletedNodes() throws Exception
+    {
+        // when
+        state.accept( new VisitationOrder( random.nextInt( 100 ) )
+        {
+            // given
+
+            @Override
+            void createEarlyState()
+            {
+                state.nodeDoCreate( /*id=*/random.nextInt( 1 << 20 ) );
+            }
+
+            @Override
+            void createLateState()
+            {
+                state.nodeDoDelete( /*id=*/random.nextInt( 1 << 20 ) );
+            }
+
+            // then
+
+            @Override
+            public void visitCreatedNode( long id )
+            {
+                visitEarly();
+            }
+
+            @Override
+            public void visitDeletedNode( long id )
+            {
+                visitLate();
+            }
+        } );
+    }
+
+    @Test
+    @RepeatRule.Repeat(times = 100)
+    public void shouldVisitCreatedNodesBeforeCreatedRelationships() throws Exception
+    {
+        // when
+        state.accept( new VisitationOrder( random.nextInt( 100 ) )
+        {
+            // given
+
+            @Override
+            void createEarlyState()
+            {
+                state.nodeDoCreate( /*id=*/random.nextInt( 1 << 20 ) );
+            }
+
+            @Override
+            void createLateState()
+            {
+                state.relationshipDoCreate( /*id=*/random.nextInt( 1 << 20 ),
+                                            /*type=*/random.nextInt( 128 ),
+                                            /*startNode=*/random.nextInt( 1 << 20 ),
+                                            /*endNode=*/random.nextInt( 1 << 20 ) );
+            }
+
+            // then
+
+            @Override
+            public void visitCreatedNode( long id )
+            {
+                visitEarly();
+            }
+
+            @Override
+            public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
+            {
+                visitLate();
+            }
+        } );
+    }
+
+    @Test
+    @RepeatRule.Repeat(times = 100)
+    public void shouldVisitCreatedRelationshipsBeforeDeletedRelationships() throws Exception
+    {
+        // when
+        state.accept( new VisitationOrder( random.nextInt( 100 ) )
+        {
+            // given
+
+            @Override
+            void createEarlyState()
+            {
+                state.relationshipDoCreate( /*id=*/random.nextInt( 1 << 20 ),
+                                            /*type=*/random.nextInt( 128 ),
+                                            /*startNode=*/random.nextInt( 1 << 20 ),
+                                            /*endNode=*/random.nextInt( 1 << 20 ) );
+            }
+
+            @Override
+            void createLateState()
+            {
+                state.relationshipDoDelete( /*id=*/random.nextInt( 1 << 20 ),
+                                            /*type=*/random.nextInt( 128 ),
+                                            /*startNode=*/random.nextInt( 1 << 20 ),
+                                            /*endNode=*/random.nextInt( 1 << 20 ) );
+            }
+
+            // then
+            @Override
+            public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
+            {
+                visitEarly();
+            }
+
+            @Override
+            public void visitDeletedRelationship( long id )
+            {
+                visitLate();
+            }
+        } );
+    }
+
+    @Test
+    @RepeatRule.Repeat(times = 100)
+    public void shouldVisitDeletedNodesAfterDeletedRelationships() throws Exception
+    {
+        // when
+        state.accept( new VisitationOrder( random.nextInt( 100 ) )
+        {
+            // given
+
+            @Override
+            void createEarlyState()
+            {
+                state.relationshipDoCreate( /*id=*/random.nextInt( 1 << 20 ),
+                                            /*type=*/random.nextInt( 128 ),
+                                            /*startNode=*/random.nextInt( 1 << 20 ),
+                                            /*endNode=*/random.nextInt( 1 << 20 ) );
+            }
+
+            @Override
+            void createLateState()
+            {
+                state.nodeDoDelete( /*id=*/random.nextInt( 1 << 20 ) );
+            }
+
+            // then
+
+            @Override
+            public void visitDeletedRelationship( long id )
+            {
+                visitEarly();
+            }
+
+            @Override
+            public void visitDeletedNode( long id )
+            {
+                visitLate();
+            }
+        } );
+    }
+
+    abstract class VisitationOrder extends TxStateVisitor.Adapter
+    {
+        private final Set<String> visitMethods = new HashSet<>();
+
+        VisitationOrder( int size )
+        {
+            for ( Method method : getClass().getDeclaredMethods() )
+            {
+                if ( method.getName().startsWith( "visit" ) )
+                {
+                    visitMethods.add( method.getName() );
+                }
+            }
+            assertEquals( "should implement exactly two visit*(...) methods", 2, visitMethods.size() );
+            do
+            {
+                if ( random.nextBoolean() )
+                {
+                    createEarlyState();
+                }
+                else
+                {
+                    createLateState();
+                }
+            } while ( size-- > 0 );
+        }
+
+        abstract void createEarlyState();
+
+        abstract void createLateState();
+
+        private boolean late;
+
+        final void visitEarly()
+        {
+            if ( late )
+            {
+                String early = "the early visit*-method", late = "the late visit*-method";
+                for ( StackTraceElement trace : Thread.currentThread().getStackTrace() )
+                {
+                    if ( visitMethods.contains( trace.getMethodName() ) )
+                    {
+                        early = trace.getMethodName();
+                        for ( String method : visitMethods )
+                        {
+                            if ( !method.equals( early ) )
+                            {
+                                late = method;
+                            }
+                        }
+                        break;
+                    }
+                }
+                fail( early + "(...) should not be invoked after " + late + "(...)" );
+            }
+        }
+
+        final void visitLate()
+        {
+            late = true;
+        }
+    }
+
+    private TransactionState state;
     private final Set<Long> emptySet = Collections.emptySet();
 
     @Before
     public void before() throws Exception
     {
-        state = new TxStateImpl( mock( LegacyIndexTransactionState.class )
-        );
+        state = new TxState();
     }
 }

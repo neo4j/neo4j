@@ -23,7 +23,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.ThisShouldNotHappenError;
-import org.neo4j.kernel.api.TxState;
+import org.neo4j.kernel.api.txstate.ReadableTxState;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.util.register.NeoRegister;
@@ -121,7 +121,7 @@ public class AugmentWithLocalStateExpandCursor implements Cursor
     private final Cursor storeCursor;
     private final Cursor inputCursor;
 
-    private final TxState txState;
+    private final ReadableTxState txState;
 
     private final NeoRegister.Node.In nodeId;
     private final Register.Object.In<int[]> relTypes;
@@ -138,7 +138,7 @@ public class AugmentWithLocalStateExpandCursor implements Cursor
     private State state = State.DELEGATING_TO_STORE;
     private PrimitiveLongIterator txLocalRels;
 
-    public AugmentWithLocalStateExpandCursor( StoreReadLayer store, TxState state, Cursor inputCursor,
+    public AugmentWithLocalStateExpandCursor( StoreReadLayer store, ReadableTxState state, Cursor inputCursor,
                                               NeoRegister.Node.In nodeId,
                                               Register.Object.In<int[]> relTypes,
                                               Register.Object.In<Direction> expandDirection, NeoRegister.Relationship.Out relId,

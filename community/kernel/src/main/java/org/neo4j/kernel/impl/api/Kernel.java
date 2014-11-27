@@ -54,9 +54,9 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  *
  * There are several sources of pain around the current state, which we hope to refactor away down the line.
  *
- * One pain is transaction state, which is maintained in the {@link org.neo4j.kernel.api.TxState} class. This class is
- * huge and complicated, as it has been used as a gathering point for consolidating all transaction state management
- * in one place. This is now done, and the TxState class should now be refactored to be easier to understand.
+ * One pain is transaction state, which is maintained in the {@link org.neo4j.kernel.impl.api.state.TxState} class.
+ * This class is huge and complicated, as it has been used as a gathering point for consolidating all transaction state
+ * management in one place. This is now done, and the TxState class should now be refactored to be easier to understand.
  *
  * Please expand and update this as you learn things or find errors in the text above.
  */

@@ -214,7 +214,7 @@ public class RelationshipChangesForNode
 
     public PrimitiveLongIterator augmentRelationships( Direction direction, int[] types, PrimitiveLongIterator rels )
     {
-        return augmentRelationships( direction, rels, typeFilter(types) );
+        return augmentRelationships( direction, rels, typeFilter( types ) );
     }
 
     public PrimitiveLongIterator augmentRelationships( Direction direction, PrimitiveLongIterator rels,

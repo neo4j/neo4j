@@ -31,29 +31,29 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.event.LabelEntry;
 import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
-import org.neo4j.helpers.Function;
+import org.neo4j.function.Function;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.api.txstate.ReadableTxState;
 import org.neo4j.kernel.impl.api.state.NodeState;
 import org.neo4j.kernel.impl.api.state.RelationshipState;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.util.DiffSets;
+import org.neo4j.kernel.impl.util.diffsets.ReadableDiffSets;
 
 /**
- * Transform for {@link org.neo4j.kernel.api.TxState} to make it accessible as {@link TransactionData}.
+ * Transform for {@link org.neo4j.kernel.api.txstate.ReadableTxState} to make it accessible as {@link TransactionData}.
  */
 public class TxStateTransactionDataSnapshot implements TransactionData
 {
-    private final TxState state;
+    private final ReadableTxState state;
     private final NodeProxy.NodeLookup nodeLookup;
     private final RelationshipProxy.RelationshipLookups relLookup;
 
@@ -66,7 +66,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
     private final Collection<LabelEntry> removedLabels = new ArrayList<>();
     private final ThreadToStatementContextBridge bridge;
 
-    public TxStateTransactionDataSnapshot( TxState state, NodeProxy.NodeLookup nodeLookup,
+    public TxStateTransactionDataSnapshot( ReadableTxState state, NodeProxy.NodeLookup nodeLookup,
             RelationshipProxy.RelationshipLookups relLookup, ThreadToStatementContextBridge bridge,
             StoreReadLayer storeReadLayer )
     {
@@ -94,13 +94,13 @@ public class TxStateTransactionDataSnapshot implements TransactionData
     @Override
     public Iterable<Relationship> createdRelationships()
     {
-        return map2Rels( state.addedAndRemovedRels().getAdded() );
+        return map2Rels( state.addedAndRemovedRelationships().getAdded() );
     }
 
     @Override
     public Iterable<Relationship> deletedRelationships()
     {
-        return map2Rels( state.addedAndRemovedRels().getRemoved() );
+        return map2Rels( state.addedAndRemovedRelationships().getRemoved() );
     }
 
     @Override
@@ -151,7 +151,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         return assignedLabels;
     }
 
-    private void takeSnapshot( TxState state, StoreReadLayer storeReadLayer )
+    private void takeSnapshot( ReadableTxState state, StoreReadLayer storeReadLayer )
     {
         try
         {
@@ -172,7 +172,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                 }
 
             }
-            for ( Long relId : state.addedAndRemovedRels().getRemoved() )
+            for ( Long relId : state.addedAndRemovedRelationships().getRemoved() )
             {
                 Iterator<DefinedProperty> props = storeReadLayer.relationshipGetAllProperties( relId );
                 while(props.hasNext())
@@ -200,7 +200,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                             storeReadLayer.propertyKeyGetName( property ), null,
                             committedValue( storeReadLayer, nodeState, property ) ) );
                 }
-                DiffSets<Integer> labels = nodeState.labelDiffSets();
+                ReadableDiffSets<Integer> labels = nodeState.labelDiffSets();
                 for ( Integer label : labels.getAdded() )
                 {
                     assignedLabels.add( new LabelEntryView( nodeState.getId(), storeReadLayer.labelGetName( label ) ) );
