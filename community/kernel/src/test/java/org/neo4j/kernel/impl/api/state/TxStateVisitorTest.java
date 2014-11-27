@@ -19,26 +19,24 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import org.hamcrest.Matcher;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import org.hamcrest.Matcher;
-import org.junit.Before;
-import org.junit.Test;
-
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.api.txstate.TxStateVisitor;
+import org.neo4j.kernel.api.txstate.WritableTxState;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
 
 public class TxStateVisitorTest
@@ -71,17 +69,17 @@ public class TxStateVisitorTest
     }
 
 
-    private TxState state;
+    private WritableTxState state;
     private final Collection<DefinedProperty> noProperty = Collections.emptySet();
     private final Collection<Integer> noRemoved = Collections.emptySet();
 
     @Before
     public void before() throws Exception
     {
-        state = new TxStateImpl( mock( LegacyIndexTransactionState.class ) );
+        state = new TxState();
     }
 
-    static class GatheringVisitor extends TxState.VisitorAdapter
+    static class GatheringVisitor extends TxStateVisitor.Adapter
     {
         static class PropertyChange
         {

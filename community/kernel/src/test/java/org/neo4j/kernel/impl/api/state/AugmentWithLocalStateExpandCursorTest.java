@@ -27,10 +27,11 @@ import com.sun.xml.internal.xsom.impl.scd.Iterators;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.kernel.api.TxState;
+import org.neo4j.kernel.api.txstate.ReadableTxState;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.util.Cursors;
@@ -39,9 +40,14 @@ import org.neo4j.kernel.impl.util.register.NeoRegisters;
 import org.neo4j.register.Register;
 
 import static java.util.Arrays.asList;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.kernel.impl.util.ExpandTestUtils.Row;
 import static org.neo4j.kernel.impl.util.ExpandTestUtils.row;
@@ -67,7 +73,7 @@ public class AugmentWithLocalStateExpandCursorTest
     {
         // Given
         StoreReadLayer store = mock( StoreReadLayer.class );
-        TxState txState = mock( TxState.class );
+        ReadableTxState txState = mock( ReadableTxState.class );
 
         when(txState.relationshipIsDeletedInThisTx( 3l )).thenReturn( true );
 
@@ -88,7 +94,7 @@ public class AugmentWithLocalStateExpandCursorTest
     {
         // Given
         StoreReadLayer store = mock( StoreReadLayer.class );
-        TxState txState = mock( TxState.class );
+        ReadableTxState txState = mock( ReadableTxState.class );
         long node = nodeId.read();
 
         givenTxRels( txState, node,
@@ -115,7 +121,7 @@ public class AugmentWithLocalStateExpandCursorTest
     {
         // Given
         StoreReadLayer store = mock( StoreReadLayer.class );
-        TxState txState = mock( TxState.class );
+        ReadableTxState txState = mock( ReadableTxState.class );
         long node = nodeId.read();
 
         givenTxRels( txState, node,
@@ -134,12 +140,12 @@ public class AugmentWithLocalStateExpandCursorTest
                 row( 1338, 2, INCOMING, 1, 3)) ));
     }
 
-    private AugmentWithLocalStateExpandCursor newAugmentingExpandCursor( StoreReadLayer store, TxState txState )
+    private AugmentWithLocalStateExpandCursor newAugmentingExpandCursor( StoreReadLayer store, ReadableTxState txState )
     {
         return new AugmentWithLocalStateExpandCursor( store, txState, Cursors.countDownCursor( 1 ), nodeId, relTypes, expandDirection, relId, relType, direction, startNodeId, neighborNodeId);
     }
 
-    private void givenTxRels( TxState state, long nodeId, Row ... rows) throws Exception
+    private void givenTxRels( ReadableTxState state, long nodeId, Row ... rows) throws Exception
     {
         Set<Long> relIds = new HashSet<>();
         for ( Row row : rows )

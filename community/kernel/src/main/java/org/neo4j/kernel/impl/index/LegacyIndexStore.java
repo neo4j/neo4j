@@ -28,7 +28,6 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.index.IndexImplementation;
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.KernelAPI;
@@ -62,23 +61,18 @@ public class LegacyIndexStore
 
     public Map<String, String> getOrCreateNodeIndexConfig( String indexName, Map<String, String> customConfiguration )
     {
-        Pair<Map<String, String>, Boolean> config = getOrCreateIndexConfig( IndexEntityType.Node,
-                indexName, customConfiguration );
-        return config.first();
+        return getOrCreateIndexConfig( IndexEntityType.Node, indexName, customConfiguration );
     }
 
     public Map<String, String> getOrCreateRelationshipIndexConfig( String indexName,
             Map<String, String> customConfiguration )
     {
-        Pair<Map<String, String>, Boolean> config = getOrCreateIndexConfig( IndexEntityType.Relationship,
-                indexName, customConfiguration );
-        return config.first();
+        return getOrCreateIndexConfig( IndexEntityType.Relationship, indexName, customConfiguration );
     }
 
-    private Pair<Map<String, String>, Boolean/*true=needs to be set*/> findIndexConfig( Class<? extends
-            PropertyContainer> cls,
-                                                                                        String indexName, Map<String,
-            String> suppliedConfig, Map<?, ?> dbConfig )
+    private Map<String, String> findIndexConfig(
+            Class<? extends PropertyContainer> cls, String indexName,
+            Map<String, String> suppliedConfig, Map<?, ?> dbConfig )
     {
         // Check stored config (has this index been created previously?)
         Map<String, String> storedConfig = indexStore.get( cls, indexName );
@@ -90,14 +84,14 @@ public class LegacyIndexStore
             {
                 indexStore.set( cls, indexName, newConfig );
             }
-            return Pair.of( newConfig, Boolean.FALSE );
+            return newConfig;
         }
 
         Map<String, String> configToUse = suppliedConfig;
 
         // Check db config properties for provider
-        String provider = null;
-        IndexImplementation indexProvider = null;
+        String provider;
+        IndexImplementation indexProvider;
         if ( configToUse == null )
         {
             provider = getDefaultProvider( indexName, dbConfig );
@@ -125,8 +119,7 @@ public class LegacyIndexStore
             configToUse = newConfig;
         }
 
-        boolean needsToBeSet = !indexStore.has( cls, indexName );
-        return Pair.of( Collections.unmodifiableMap( configToUse ), needsToBeSet );
+        return Collections.unmodifiableMap( configToUse );
     }
 
     private void assertConfigMatches( IndexImplementation indexProvider, String indexName,
@@ -172,50 +165,49 @@ public class LegacyIndexStore
         return provider;
     }
 
-    private Pair<Map<String, String>, /*was it created now?*/Boolean> getOrCreateIndexConfig(
+    private Map<String, String> getOrCreateIndexConfig(
             IndexEntityType entityType, String indexName, Map<String, String> suppliedConfig )
     {
-        Pair<Map<String, String>, Boolean> result = findIndexConfig( entityType.entityClass(),
-                indexName, suppliedConfig, config.getParams() );
-        boolean createdNow = false;
-        if ( result.other() )
+        Map<String,String> config = findIndexConfig(
+                entityType.entityClass(), indexName, suppliedConfig, this.config.getParams() );
+        if ( !indexStore.has( entityType.entityClass(), indexName ) )
         {   // Ok, we need to create this config
             synchronized ( this )
             {   // Were we the first ones to get here?
-                Map<String, String> existing = indexStore.get( entityType.entityClass(), indexName );
+                Map<String,String> existing = indexStore.get( entityType.entityClass(), indexName );
                 if ( existing != null )
                 {
                     // No, someone else made it before us, cool
-                    assertConfigMatches( indexProviders.lookup( existing.get( PROVIDER ) ), indexName,
-                            existing, result.first() );
-                    return Pair.of( result.first(), false );
+                    assertConfigMatches(
+                            indexProviders.lookup( existing.get( PROVIDER ) ), indexName, existing, config );
+                    return config;
                 }
 
                 // We were the first one here, let's create this config
                 try ( KernelTransaction transaction = kernel.instance().newTransaction();
                       Statement statement = transaction.acquireStatement() )
                 {
-                    switch (entityType)
+                    switch ( entityType )
                     {
-                        case Node:
-                            statement.dataWriteOperations().nodeLegacyIndexCreate( indexName, result.first() );
-                            break;
+                    case Node:
+                        statement.dataWriteOperations().nodeLegacyIndexCreate( indexName, config );
+                        break;
 
-                        case Relationship:
-                            statement.dataWriteOperations().relationshipLegacyIndexCreate( indexName, result.first() );
-                            break;
+                    case Relationship:
+                        statement.dataWriteOperations().relationshipLegacyIndexCreate( indexName, config );
+                        break;
                     }
 
                     transaction.success();
-                    createdNow = true;
-                } catch (Exception ex)
+                }
+                catch ( Exception ex )
                 {
-                    throw new TransactionFailureException( "Index creation failed for " + indexName +
-                            ", " + result.first(), ex );
+                    throw new TransactionFailureException(
+                            "Index creation failed for " + indexName + ", " + config, ex );
                 }
             }
         }
-        return Pair.of( result.first(), createdNow );
+        return config;
     }
 
     public String setNodeIndexConfiguration( String indexName, String key, String value )

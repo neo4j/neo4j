@@ -28,7 +28,7 @@ import java.util.Iterator;
 
 import org.junit.Test;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.kernel.impl.util.DiffSets;
+import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 
 public class LongDiffSetsTest
 {

@@ -28,7 +28,7 @@ import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TransactionHook;
-import org.neo4j.kernel.api.TxState;
+import org.neo4j.kernel.api.txstate.WritableTxState;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
@@ -126,12 +126,12 @@ public class ConstraintIndexCreatorTest
                           e.getMessage() );
         }
         assertEquals( 2, kernel.statements.size() );
-        TxState tx1 = kernel.statements.get( 0 ).txState();
+        WritableTxState tx1 = kernel.statements.get( 0 ).txState();
         verify( tx1 ).constraintIndexRuleDoAdd( new IndexDescriptor( 123, 456 ) );
         verifyNoMoreInteractions( tx1 );
         verify( constraintCreationContext.schemaReadOperations() ).indexGetCommittedId( state, descriptor, CONSTRAINT );
         verifyNoMoreInteractions( constraintCreationContext.schemaReadOperations() );
-        TxState tx2 = kernel.statements.get( 1 ).txState();
+        WritableTxState tx2 = kernel.statements.get( 1 ).txState();
         verify( tx2 ).constraintIndexDoDrop( new IndexDescriptor( 123, 456 ) );
         verifyNoMoreInteractions( tx2 );
     }

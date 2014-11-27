@@ -88,7 +88,6 @@ import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.ReadOnlyTransactionCommitProcess;
-import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
@@ -764,25 +763,6 @@ public abstract class InternalAbstractGraphDatabase
     {
         return new RelationshipProxy.RelationshipLookups()
         {
-            private final ThreadLocal<RelationshipData> relationshipData = new ThreadLocal<RelationshipData>()
-            {
-                @Override
-                protected RelationshipData initialValue()
-                {
-                    return new RelationshipData();
-                }
-            };
-
-            private final RelationshipVisitor<RuntimeException> visitor =
-                    new RelationshipVisitor<RuntimeException>()
-                    {
-                        @Override
-                        public void visit( long relId, int type, long startNode, long endNode )
-                        {
-                            relationshipData.get().set( startNode, endNode, type );
-                        }
-                    };
-
             @Override
             public GraphDatabaseService getGraphDatabaseService()
             {
@@ -801,8 +781,9 @@ public abstract class InternalAbstractGraphDatabase
             {
                 try ( Statement statement = threadToTransactionBridge.instance() )
                 {
-                    statement.readOperations().relationshipVisit( relationshipId, visitor );
-                    return relationshipData.get();
+                    RelationshipData data = new RelationshipData();
+                    statement.readOperations().relationshipVisit( relationshipId, data );
+                    return data;
                 }
                 catch ( EntityNotFoundException e )
                 {

@@ -19,8 +19,13 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import org.hamcrest.Matcher;
 import org.junit.Test;
-import org.neo4j.kernel.impl.util.DiffSets;
+
+import java.util.Set;
+
+import org.neo4j.kernel.impl.util.diffsets.DiffSets;
+import org.neo4j.kernel.impl.util.diffsets.ReadableDiffSets;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -38,14 +43,16 @@ public class PropertyChangesTest
         changes.removeProperty( 2l, 2, "to" );
 
         // When & Then
-        assertThat( changes.changesForProperty( 2, "to" ), equalTo( new DiffSets<>(   asSet( 1l ),
-                                                                                      asSet( 2l ))) );
+        assertThat( changes.changesForProperty( 2, "to" ), isDiffSets( asSet( 1l ), asSet( 2l ) ) );
 
-        assertThat( changes.changesForProperty( 3, "from" ), equalTo( new DiffSets<>( asSet( 1l ),
-                                                                                      null)));
+        assertThat( changes.changesForProperty( 3, "from" ), isDiffSets( asSet( 1l ), null ) );
 
-        assertThat( changes.changesForProperty( 2, "from" ), equalTo( new DiffSets<>( null,
-                                                                                      asSet(1l))) );
+        assertThat( changes.changesForProperty( 2, "from" ), isDiffSets( null, asSet( 1l ) ) );
     }
 
+    @SuppressWarnings( "unchecked" )
+    private Matcher<? super ReadableDiffSets<Long>> isDiffSets( Set<Long> added, Set<Long> removed )
+    {
+        return (Matcher) equalTo( new DiffSets<Long>( added, removed ) );
+    }
 }

@@ -38,7 +38,6 @@ import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.LegacyIndex;
 import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
@@ -59,6 +58,9 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
+import org.neo4j.kernel.api.txstate.ReadableTxState;
+import org.neo4j.kernel.api.txstate.WritableTxState;
+import org.neo4j.kernel.api.txstate.UpdateTriState;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
@@ -74,8 +76,8 @@ import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
-import org.neo4j.kernel.impl.util.DiffSets;
 import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
+import org.neo4j.kernel.impl.util.diffsets.ReadableDiffSets;
 import org.neo4j.kernel.impl.util.register.NeoRegister;
 import org.neo4j.register.Register;
 
@@ -159,7 +161,7 @@ public class StateHandlingStatementOperations implements
         // call returns modified properties, which node manager uses to update legacy tx state. This will be cleaned up
         // once we've removed legacy tx state.
         legacyPropertyTrackers.relationshipDelete( relationshipId );
-        final TxState txState = state.txState();
+        final WritableTxState txState = state.txState();
         if ( txState.relationshipIsAddedInThisTx( relationshipId ) )
         {
             txState.relationshipDoDeleteAddedInThisTx( relationshipId );
@@ -235,11 +237,11 @@ public class StateHandlingStatementOperations implements
 
             if ( state.txState().nodeIsAddedInThisTx( nodeId ) )
             {
-                TxState.UpdateTriState labelState = state.txState().labelState( nodeId, labelId );
+                UpdateTriState labelState = state.txState().labelState( nodeId, labelId );
                 return labelState.isTouched() && labelState.isAdded();
             }
 
-            TxState.UpdateTriState labelState = state.txState().labelState( nodeId, labelId );
+            UpdateTriState labelState = state.txState().labelState( nodeId, labelId );
             if ( labelState.isTouched() )
             {
                 return labelState.isAdded();
@@ -259,7 +261,7 @@ public class StateHandlingStatementOperations implements
         return storeLayer.nodeGetLabels( nodeId );
     }
 
-    public static PrimitiveIntIterator nodeGetLabels( StoreReadLayer storeLayer, TxState txState, long nodeId )
+    public static PrimitiveIntIterator nodeGetLabels( StoreReadLayer storeLayer, ReadableTxState txState, long nodeId )
             throws EntityNotFoundException
     {
         if ( txState.nodeIsDeletedInThisTx( nodeId ) )
@@ -366,10 +368,9 @@ public class StateHandlingStatementOperations implements
             IndexDescriptor index = new IndexDescriptor( labelId, propertyKeyId );
             if ( state.txState().constraintIndexDoUnRemove( index ) ) // ..., DROP, *CREATE*
             { // creation is undoing a drop
-                state.txState().constraintIndexDiffSetsByLabel( labelId ).unRemove( index );
                 if ( !state.txState().constraintDoUnRemove( constraint ) ) // CREATE, ..., DROP, *CREATE*
                 { // ... the drop we are undoing did itself undo a prior create...
-                    state.txState().constraintsChangesForLabel( labelId ).unRemove( constraint );
+                    // TODO: remove - state.txState().constraintsChangesForLabel( labelId ).unRemove( constraint );
                     state.txState().constraintDoAdd(
                             constraint, state.txState().indexCreatedForConstraint( constraint ) );
                 }
@@ -422,14 +423,8 @@ public class StateHandlingStatementOperations implements
     {
         if ( state.hasTxStateWithChanges() )
         {
-            DiffSets<UniquenessConstraint> diff =
-                    state.txState().constraintsChangesForLabelAndProperty( labelId, propertyKeyId );
-            if ( diff != null )
-            {
-                return diff.apply( constraints );
-            }
+            return state.txState().constraintsChangesForLabelAndProperty( labelId, propertyKeyId ).apply( constraints );
         }
-
         return constraints;
     }
 
@@ -439,13 +434,8 @@ public class StateHandlingStatementOperations implements
     {
         if ( state.hasTxStateWithChanges() )
         {
-            DiffSets<UniquenessConstraint> diff = state.txState().constraintsChangesForLabel( labelId );
-            if ( diff != null )
-            {
-                return diff.apply( constraints );
-            }
+            return state.txState().constraintsChangesForLabel( labelId ).apply( constraints );
         }
-
         return constraints;
     }
 
@@ -454,13 +444,8 @@ public class StateHandlingStatementOperations implements
     {
         if ( state.hasTxStateWithChanges() )
         {
-            DiffSets<UniquenessConstraint> diff = state.txState().constraintsChanges();
-            if ( diff != null )
-            {
-                return diff.apply( constraints );
-            }
+            return state.txState().constraintsChanges().apply( constraints );
         }
-
         return constraints;
     }
 
@@ -475,14 +460,13 @@ public class StateHandlingStatementOperations implements
     {
         IndexDescriptor indexDescriptor = storeLayer.indexesGetForLabelAndPropertyKey( labelId, propertyKey );
 
-        Iterator<IndexDescriptor> committedRule = iterator( indexDescriptor );
-
-        DiffSets<IndexDescriptor> ruleDiffSet = state.txState().indexDiffSetsByLabel( labelId );
-
-        boolean hasTxStateWithChanges = state.hasTxStateWithChanges();
-        Iterator<IndexDescriptor> rules = hasTxStateWithChanges ?
-                filterByPropertyKeyId( ruleDiffSet.apply( committedRule ), propertyKey ) :
-                committedRule;
+        Iterator<IndexDescriptor> rules = iterator( indexDescriptor );
+        if ( state.hasTxStateWithChanges() )
+        {
+            rules = filterByPropertyKeyId(
+                    state.txState().indexDiffSetsByLabel( labelId ).apply( rules ),
+                    propertyKey );
+        }
         return singleOrNull( rules );
     }
 
@@ -512,8 +496,9 @@ public class StateHandlingStatementOperations implements
             {
                 return InternalIndexState.POPULATING;
             }
-            if ( checkIndexState( descriptor, state.txState().constraintIndexDiffSetsByLabel( descriptor.getLabelId()
-            ) ) )
+            ReadableDiffSets<IndexDescriptor> changes =
+                    state.txState().constraintIndexDiffSetsByLabel( descriptor.getLabelId() );
+            if ( checkIndexState( descriptor, changes ) )
             {
                 return InternalIndexState.POPULATING;
             }
@@ -522,7 +507,7 @@ public class StateHandlingStatementOperations implements
         return storeLayer.indexGetState( descriptor );
     }
 
-    private boolean checkIndexState( IndexDescriptor indexRule, DiffSets<IndexDescriptor> diffSet )
+    private boolean checkIndexState( IndexDescriptor indexRule, ReadableDiffSets<IndexDescriptor> diffSet )
             throws IndexNotFoundKernelException
     {
         if ( diffSet.isAdded( indexRule ) )
@@ -653,8 +638,8 @@ public class StateHandlingStatementOperations implements
     {
         if ( state.hasTxStateWithChanges() )
         {
-            DiffSets<Long> labelPropertyChanges = state.txState().indexUpdates( index, value );
-            DiffSets<Long> nodes = state.txState().addedAndRemovedNodes();
+            ReadableDiffSets<Long> labelPropertyChanges = state.txState().indexUpdates( index, value );
+            ReadableDiffSets<Long> nodes = state.txState().addedAndRemovedNodes();
 
             // Apply to actual index lookup
             return nodes.augmentWithRemovals( labelPropertyChanges.augment( nodeIds ) );
@@ -762,7 +747,7 @@ public class StateHandlingStatementOperations implements
         IndexDescriptor descriptor = indexesGetForLabelAndPropertyKey( state, labelId, propertyKey );
         if ( descriptor != null )
         {
-            state.txState().indexUpdateProperty( descriptor, nodeId, before, after );
+            state.txState().indexDoUpdateProperty( descriptor, nodeId, before, after );
         }
     }
 
@@ -861,7 +846,7 @@ public class StateHandlingStatementOperations implements
         {
             if ( state.txState().relationshipIsAddedInThisTx( relationshipId ) )
             {
-                return state.txState().addedAndChangedRelProperties( relationshipId );
+                return state.txState().addedAndChangedRelationshipProperties( relationshipId );
             }
             if ( state.txState().relationshipIsDeletedInThisTx( relationshipId ) )
             {
@@ -869,7 +854,7 @@ public class StateHandlingStatementOperations implements
                 // EntityDeletedException instead and use it instead of returning empty values in similar places
                 throw new IllegalStateException( "Relationship " + relationshipId + " has been deleted" );
             }
-            return state.txState().augmentRelProperties( relationshipId,
+            return state.txState().augmentRelationshipProperties( relationshipId,
                     storeLayer.relationshipGetAllProperties( relationshipId ) );
         }
         else
@@ -942,7 +927,7 @@ public class StateHandlingStatementOperations implements
 
         if ( state.hasTxStateWithChanges() )
         {
-            TxState txState = state.txState();
+            ReadableTxState txState = state.txState();
             PrimitiveLongIterator stored;
             if( txState.nodeIsAddedInThisTx( nodeId ) )
             {
@@ -962,7 +947,7 @@ public class StateHandlingStatementOperations implements
     {
         if ( state.hasTxStateWithChanges() )
         {
-            TxState txState = state.txState();
+            ReadableTxState txState = state.txState();
             PrimitiveLongIterator stored;
             if( txState.nodeIsAddedInThisTx( nodeId ) )
             {
@@ -1031,7 +1016,7 @@ public class StateHandlingStatementOperations implements
     {
         if(state.hasTxStateWithChanges() && state.txState().nodeModifiedInThisTx(nodeId))
         {
-            TxState tx = state.txState();
+            ReadableTxState tx = state.txState();
             if(tx.nodeIsDeletedInThisTx( nodeId ))
             {
                 return PrimitiveIntCollections.emptyIterator();
@@ -1169,20 +1154,20 @@ public class StateHandlingStatementOperations implements
     public void labelCreateForName( KernelStatement state, String labelName,
                                     int id ) throws IllegalTokenNameException, TooManyLabelsException
     {
-        state.txState().labelCreateForName( labelName, id );
+        state.txState().labelDoCreateForName( labelName, id );
     }
 
     @Override
     public void propertyKeyCreateForName( KernelStatement state, String propertyKeyName, int id ) throws IllegalTokenNameException
     {
-        state.txState().propertyKeyCreateForName( propertyKeyName, id );
+        state.txState().propertyKeyDoCreateForName( propertyKeyName, id );
 
     }
 
     @Override
     public void relationshipTypeCreateForName( KernelStatement state, String relationshipTypeName, int id ) throws IllegalTokenNameException
     {
-        state.txState().relationshipTypeCreateForName( relationshipTypeName, id );
+        state.txState().relationshipTypeDoCreateForName( relationshipTypeName, id );
     }
 
     private static int[] deduplicate( int[] types )
@@ -1218,8 +1203,7 @@ public class StateHandlingStatementOperations implements
     {
         if ( statement.hasTxStateWithChanges() )
         {
-            TxState txState = statement.txState();
-            if ( txState.relationshipVisit( relId, visitor ) )
+            if ( statement.txState().relationshipVisit( relId, visitor ) )
             {
                 return;
             }
@@ -1247,28 +1231,28 @@ public class StateHandlingStatementOperations implements
     public LegacyIndexHits nodeLegacyIndexGet( KernelStatement statement, String indexName, String key, Object value )
             throws LegacyIndexNotFoundKernelException
     {
-        return statement.txState().getNodeLegacyIndexChanges( indexName ).get( key, value );
+        return statement.legacyIndexTxState().nodeChanges( indexName ).get( key, value );
     }
 
     @Override
     public LegacyIndexHits nodeLegacyIndexQuery( KernelStatement statement, String indexName, String key,
             Object queryOrQueryObject ) throws LegacyIndexNotFoundKernelException
     {
-        return statement.txState().getNodeLegacyIndexChanges( indexName ).query( key, queryOrQueryObject );
+        return statement.legacyIndexTxState().nodeChanges( indexName ).query( key, queryOrQueryObject );
     }
 
     @Override
     public LegacyIndexHits nodeLegacyIndexQuery( KernelStatement statement, String indexName, Object queryOrQueryObject )
             throws LegacyIndexNotFoundKernelException
     {
-        return statement.txState().getNodeLegacyIndexChanges( indexName ).query( queryOrQueryObject );
+        return statement.legacyIndexTxState().nodeChanges( indexName ).query( queryOrQueryObject );
     }
 
     @Override
     public LegacyIndexHits relationshipLegacyIndexGet( KernelStatement statement, String indexName, String key,
             Object value, long startNode, long endNode ) throws LegacyIndexNotFoundKernelException
     {
-        LegacyIndex index = statement.txState().getRelationshipLegacyIndexChanges( indexName );
+        LegacyIndex index = statement.legacyIndexTxState().relationshipChanges( indexName );
         if ( startNode != -1 || endNode != -1 )
         {
             return index.get( key, value, startNode, endNode );
@@ -1280,7 +1264,7 @@ public class StateHandlingStatementOperations implements
     public LegacyIndexHits relationshipLegacyIndexQuery( KernelStatement statement, String indexName, String key,
             Object queryOrQueryObject, long startNode, long endNode ) throws LegacyIndexNotFoundKernelException
     {
-        LegacyIndex index = statement.txState().getRelationshipLegacyIndexChanges( indexName );
+        LegacyIndex index = statement.legacyIndexTxState().relationshipChanges( indexName );
         if ( startNode != -1 || endNode != -1 )
         {
             return index.query( key, queryOrQueryObject, startNode, endNode );
@@ -1292,7 +1276,7 @@ public class StateHandlingStatementOperations implements
     public LegacyIndexHits relationshipLegacyIndexQuery( KernelStatement statement, String indexName,
             Object queryOrQueryObject, long startNode, long endNode ) throws LegacyIndexNotFoundKernelException
     {
-        LegacyIndex index = statement.txState().getRelationshipLegacyIndexChanges( indexName );
+        LegacyIndex index = statement.legacyIndexTxState().relationshipChanges( indexName );
         if ( startNode != -1 || endNode != -1 )
         {
             return index.query( queryOrQueryObject, startNode, endNode );
@@ -1330,28 +1314,28 @@ public class StateHandlingStatementOperations implements
     public void nodeAddToLegacyIndex( KernelStatement statement, String indexName, long node, String key, Object value )
             throws LegacyIndexNotFoundKernelException
     {
-        statement.txState().getNodeLegacyIndexChanges( indexName ).addNode( node, key, value );
+        statement.legacyIndexTxState().nodeChanges( indexName ).addNode( node, key, value );
     }
 
     @Override
     public void nodeRemoveFromLegacyIndex( KernelStatement statement, String indexName, long node, String key,
             Object value ) throws LegacyIndexNotFoundKernelException
     {
-        statement.txState().getNodeLegacyIndexChanges( indexName ).remove( node, key, value );
+        statement.legacyIndexTxState().nodeChanges( indexName ).remove( node, key, value );
     }
 
     @Override
     public void nodeRemoveFromLegacyIndex( KernelStatement statement, String indexName, long node, String key )
             throws LegacyIndexNotFoundKernelException
     {
-        statement.txState().getNodeLegacyIndexChanges( indexName ).remove( node, key );
+        statement.legacyIndexTxState().nodeChanges( indexName ).remove( node, key );
     }
 
     @Override
     public void nodeRemoveFromLegacyIndex( KernelStatement statement, String indexName, long node )
             throws LegacyIndexNotFoundKernelException
     {
-        statement.txState().getNodeLegacyIndexChanges( indexName ).remove( node );
+        statement.legacyIndexTxState().nodeChanges( indexName ).remove( node );
     }
 
     @Override
@@ -1365,7 +1349,7 @@ public class StateHandlingStatementOperations implements
             public void visit( long relId, int type, long startNode, long endNode )
                     throws LegacyIndexNotFoundKernelException
             {
-                statement.txState().getRelationshipLegacyIndexChanges( indexName ).addRelationship(
+                statement.legacyIndexTxState().relationshipChanges( indexName ).addRelationship(
                         relationship, key, value, startNode, endNode );
             }
         } );
@@ -1375,36 +1359,36 @@ public class StateHandlingStatementOperations implements
     public void relationshipRemoveFromLegacyIndex( KernelStatement statement, String indexName, long relationship,
             String key, Object value ) throws LegacyIndexNotFoundKernelException
     {
-        statement.txState().getRelationshipLegacyIndexChanges( indexName ).remove( relationship, key, value );
+        statement.legacyIndexTxState().relationshipChanges( indexName ).remove( relationship, key, value );
     }
 
     @Override
     public void relationshipRemoveFromLegacyIndex( KernelStatement statement, String indexName, long relationship,
             String key ) throws LegacyIndexNotFoundKernelException
     {
-        statement.txState().getRelationshipLegacyIndexChanges( indexName ).remove( relationship, key );
+        statement.legacyIndexTxState().relationshipChanges( indexName ).remove( relationship, key );
     }
 
     @Override
     public void relationshipRemoveFromLegacyIndex( KernelStatement statement, String indexName, long relationship )
             throws LegacyIndexNotFoundKernelException
     {
-        statement.txState().getRelationshipLegacyIndexChanges( indexName ).remove( relationship );
+        statement.legacyIndexTxState().relationshipChanges( indexName ).remove( relationship );
     }
 
     @Override
     public void nodeLegacyIndexDrop( KernelStatement statement, String indexName ) throws LegacyIndexNotFoundKernelException
     {
-        statement.txState().getNodeLegacyIndexChanges( indexName ).drop();
-        statement.legacyIndexTransactionState().deleteIndex( IndexEntityType.Node, indexName );
+        statement.legacyIndexTxState().nodeChanges( indexName ).drop();
+        statement.legacyIndexTxState().deleteIndex( IndexEntityType.Node, indexName );
     }
 
     @Override
     public void relationshipLegacyIndexDrop( KernelStatement statement, String indexName )
             throws LegacyIndexNotFoundKernelException
     {
-        statement.txState().getRelationshipLegacyIndexChanges( indexName ).drop();
-        statement.legacyIndexTransactionState().deleteIndex( IndexEntityType.Relationship, indexName );
+        statement.legacyIndexTxState().relationshipChanges( indexName ).drop();
+        statement.legacyIndexTxState().deleteIndex( IndexEntityType.Relationship, indexName );
     }
 
     @Override

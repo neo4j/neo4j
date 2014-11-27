@@ -17,12 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.state;
+package org.neo4j.kernel.impl.util.diffsets;
 
-class GraphState extends PropertyContainerState.Mutable
+public interface DiffSetsVisitor<T>
 {
-    GraphState()
+    void visitAdded( T element );
+
+    void visitRemoved( T element );
+
+    class Adapter<T> implements DiffSetsVisitor<T>
     {
-        super( -1 );
+        @Override
+        public void visitAdded( T element )
+        {   // Ignore
+        }
+
+        @Override
+        public void visitRemoved( T element )
+        {   // Ignore
+        }
     }
 }

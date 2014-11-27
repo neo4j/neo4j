@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -26,14 +29,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
-
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.api.txstate.WritableTxState;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
@@ -47,7 +47,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsIteratorFrom;
 import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsPrimitiveIntIteratorFrom;
 import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsPrimitiveLongIteratorFrom;
@@ -266,7 +265,7 @@ public class LabelTransactionStateTest
     private final long nodeId = 20;
 
     private StoreReadLayer store;
-    private TxState txState;
+    private WritableTxState txState;
     private StateHandlingStatementOperations txContext;
 
     private KernelStatement state;
@@ -283,8 +282,7 @@ public class LabelTransactionStateTest
               when( store.nodeGetAllProperties( anyLong() ) )
                       .thenReturn( asResourceIterator( IteratorUtil.<DefinedProperty>emptyIterator() ) );
 
-        txState = new TxStateImpl(
-                mock( LegacyIndexTransactionState.class ) );
+        txState = new TxState();
         state = StatementOperationsTestHelper.mockedState( txState );
         txContext = new StateHandlingStatementOperations( store, mock( LegacyPropertyTrackers.class ),
                 mock( ConstraintIndexCreator.class ), mock( LegacyIndexStore.class ) );

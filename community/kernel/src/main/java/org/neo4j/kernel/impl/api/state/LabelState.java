@@ -20,38 +20,143 @@
 package org.neo4j.kernel.impl.api.state;
 
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.impl.util.DiffSets;
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.util.diffsets.DiffSets;
+import org.neo4j.kernel.impl.util.diffsets.ReadableDiffSets;
 
-public final class LabelState extends EntityState
+public abstract class LabelState
 {
-    private final DiffSets<Long> nodeDiffSets = new DiffSets<Long>();
-    private final DiffSets<IndexDescriptor> indexChanges = new DiffSets<IndexDescriptor>();
-    private final DiffSets<IndexDescriptor> constraintIndexChanges = new DiffSets<IndexDescriptor>();
-    private final DiffSets<UniquenessConstraint> constraintsChanges = new DiffSets<UniquenessConstraint>();
+    public abstract ReadableDiffSets<Long> nodeDiffSets();
 
-    public LabelState( long id )
+    public abstract ReadableDiffSets<IndexDescriptor> indexChanges();
+
+    public abstract ReadableDiffSets<IndexDescriptor> constraintIndexChanges();
+
+    public abstract ReadableDiffSets<UniquenessConstraint> constraintsChanges();
+
+    public static class Mutable extends LabelState
     {
-        super( id );
+        private DiffSets<Long> nodeDiffSets = new DiffSets<>();
+        private DiffSets<IndexDescriptor> indexChanges = new DiffSets<>();
+        private DiffSets<IndexDescriptor> constraintIndexChanges = new DiffSets<>();
+        private DiffSets<UniquenessConstraint> constraintsChanges = new DiffSets<>();
+        private final int labelId;
+
+        private Mutable( int labelId )
+        {
+            this.labelId = labelId;
+        }
+
+        public int getLabelId()
+        {
+            return labelId;
+        }
+
+        @Override
+        public ReadableDiffSets<Long> nodeDiffSets()
+        {
+            return ReadableDiffSets.Empty.ifNull( nodeDiffSets );
+        }
+
+        public DiffSets<Long> getOrCreateNodeDiffSets()
+        {
+            if ( nodeDiffSets == null )
+            {
+                nodeDiffSets = new DiffSets<>();
+            }
+            return nodeDiffSets;
+        }
+
+        @Override
+        public ReadableDiffSets<IndexDescriptor> indexChanges()
+        {
+            return ReadableDiffSets.Empty.ifNull( indexChanges );
+        }
+
+        public DiffSets<IndexDescriptor> getOrCreateIndexChanges()
+        {
+            if ( indexChanges == null )
+            {
+                indexChanges = new DiffSets<>();
+            }
+            return indexChanges;
+        }
+
+        @Override
+        public ReadableDiffSets<IndexDescriptor> constraintIndexChanges()
+        {
+            return ReadableDiffSets.Empty.ifNull( constraintIndexChanges );
+        }
+
+        public DiffSets<IndexDescriptor> getOrCreateConstraintIndexChanges()
+        {
+            if ( constraintIndexChanges == null )
+            {
+                constraintIndexChanges = new DiffSets<>();
+            }
+            return constraintIndexChanges;
+        }
+
+        @Override
+        public ReadableDiffSets<UniquenessConstraint> constraintsChanges()
+        {
+            return ReadableDiffSets.Empty.ifNull( constraintsChanges );
+        }
+
+        public DiffSets<UniquenessConstraint> getOrCreateConstraintsChanges()
+        {
+            if ( constraintsChanges == null )
+            {
+                constraintsChanges = new DiffSets<>();
+            }
+            return constraintsChanges;
+        }
     }
 
-    public DiffSets<Long> getNodeDiffSets()
+    static abstract class Defaults extends StateDefaults<Integer, LabelState, Mutable>
     {
-        return nodeDiffSets;
+        @Override
+        Mutable createValue( Integer key )
+        {
+            return new Mutable( key );
+        }
+
+        @Override
+        LabelState defaultValue()
+        {
+            return DEFAULT;
+        }
     }
 
-    public DiffSets<IndexDescriptor> indexChanges()
+    private static final LabelState DEFAULT = new LabelState()
     {
-        return indexChanges;
-    }
+        @Override
+        public ReadableDiffSets<Long> nodeDiffSets()
+        {
+            return ReadableDiffSets.Empty.instance();
+        }
 
-    public DiffSets<IndexDescriptor> constraintIndexChanges()
-    {
-        return constraintIndexChanges;
-    }
+        @Override
+        public ReadableDiffSets<IndexDescriptor> indexChanges()
+        {
+            return ReadableDiffSets.Empty.instance();
+        }
 
-    public DiffSets<UniquenessConstraint> constraintsChanges()
+        @Override
+        public ReadableDiffSets<IndexDescriptor> constraintIndexChanges()
+        {
+            return ReadableDiffSets.Empty.instance();
+        }
+
+        @Override
+        public ReadableDiffSets<UniquenessConstraint> constraintsChanges()
+        {
+            return ReadableDiffSets.Empty.instance();
+        }
+    };
+
+    private LabelState()
     {
-        return constraintsChanges;
+        // limited subclasses
     }
 }
