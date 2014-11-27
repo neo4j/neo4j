@@ -62,14 +62,14 @@ public class UserSerializationTest
 
         // When
         List<User> deserialized = serialization.deserializeUsers(
-                ("Steve:12345:SomeAlgo,1234321,SomeSalt:false\n" +
-                 "Bob:54321:OtherAlgo,0987654,OtherSalt:false") .getBytes( Charsets.UTF_8 ) );
+                ("Steve:12345:SomeAlgo,1234321,SomeSalt:\n" +
+                 "Bob::OtherAlgo,0987654,OtherSalt:password_change_required") .getBytes( Charsets.UTF_8 ) );
 
         // Then
         assertThat( deserialized, equalTo( asList(
                 new User( "Steve", "12345", Privileges.ADMIN, new Credentials( "SomeSalt", "SomeAlgo", "1234321" ),
                         false ),
-                new User( "Bob", "54321", Privileges.ADMIN, new Credentials( "OtherSalt", "OtherAlgo", "0987654" ),
-                        false ) ) ) );
+                new User( "Bob", null, Privileges.ADMIN, new Credentials( "OtherSalt", "OtherAlgo", "0987654" ),
+                        true ) ) ) );
     }
 }

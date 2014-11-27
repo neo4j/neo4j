@@ -38,6 +38,7 @@ import static org.neo4j.helpers.Settings.EMPTY;
 import static org.neo4j.helpers.Settings.PATH;
 import static org.neo4j.helpers.Settings.STRING;
 import static org.neo4j.helpers.Settings.STRING_LIST;
+import static org.neo4j.helpers.Settings.TRUE;
 import static org.neo4j.helpers.Settings.illegalValueMessage;
 import static org.neo4j.helpers.Settings.matches;
 import static org.neo4j.helpers.Settings.min;
@@ -154,5 +155,6 @@ public interface ServerSettings
     public static final Setting<Long> transaction_timeout = setting( "org.neo4j.server.transaction.timeout", DURATION, "60s" );
 
     @Description( "Enable authorization requirement to access Neo4j." )
-    public static final Setting<Boolean> authorization_enabled = setting("dbms.security.authorization_enabled", BOOLEAN, FALSE);
+    public static final Setting<Boolean> authorization_enabled = setting("dbms.security.authorization_enabled",
+            BOOLEAN, TRUE);
 }

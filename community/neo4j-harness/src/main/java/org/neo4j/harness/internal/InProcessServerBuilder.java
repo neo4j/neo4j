@@ -34,6 +34,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.logging.ClassicLoggingService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.CommunityNeoServer;
+import org.neo4j.server.configuration.ServerSettings;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -56,6 +57,7 @@ public class InProcessServerBuilder implements TestServerBuilder
     public InProcessServerBuilder( File workingDir )
     {
         setDirectory( workingDir );
+        withConfig( ServerSettings.authorization_enabled, "false" );
         withConfig( WEBSERVER_PORT_PROPERTY_KEY, Integer.toString( freePort() ) );
     }
 

@@ -59,15 +59,7 @@ public class WrappingNeoServerBootstrapper extends Bootstrapper
         this( db, new ConfiguratorWrappingConfigurationBuilder( configurator ) );
     }
 
-    /**
-     * Create an instance with custom documentation.
-     * {@link org.neo4j.server.configuration.ServerConfigurator} is written to fit well here, see its'
-     * documentation.
-     *
-     * @param db
-     * @param configurator
-     */
-    public WrappingNeoServerBootstrapper( GraphDatabaseAPI db, ConfigurationBuilder configurator )
+    private WrappingNeoServerBootstrapper( GraphDatabaseAPI db, ConfigurationBuilder configurator )
     {
         this.db = db;
         this.configurator = configurator;
