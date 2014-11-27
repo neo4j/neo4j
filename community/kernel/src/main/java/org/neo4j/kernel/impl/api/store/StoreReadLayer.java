@@ -71,8 +71,7 @@ public interface StoreReadLayer
     int nodeGetDegree( long nodeId, Direction direction, int relType )
             throws EntityNotFoundException;
 
-    void nodeVisitDegrees( long nodeId, DegreeVisitor visitor )
-            throws EntityNotFoundException;
+    boolean nodeVisitDegrees( long nodeId, DegreeVisitor visitor );
 
     PrimitiveIntIterator nodeGetRelationshipTypes( long nodeId )
             throws EntityNotFoundException;

@@ -469,9 +469,9 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
-    public void nodeVisitDegrees( long nodeId, DegreeVisitor visitor ) throws EntityNotFoundException
+    public boolean nodeVisitDegrees( long nodeId, DegreeVisitor visitor )
     {
-        persistenceCache.nodeVisitDegrees( nodeId, visitor );
+        return persistenceCache.nodeVisitDegrees( nodeId, visitor );
     }
 
     @Override

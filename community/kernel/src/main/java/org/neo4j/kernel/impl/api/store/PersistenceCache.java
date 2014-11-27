@@ -461,9 +461,15 @@ public class PersistenceCache
         return getNode( nodeId ).getDegree( relationshipLoader, type, direction, NODE_CACHE_SIZE_LISTENER );
     }
 
-    public void nodeVisitDegrees( long nodeId, DegreeVisitor visitor ) throws EntityNotFoundException
+    public boolean nodeVisitDegrees( long nodeId, DegreeVisitor visitor )
     {
-        getNode( nodeId ).visitDegrees( relationshipLoader, visitor, NODE_CACHE_SIZE_LISTENER );
+        NodeImpl node = nodeCache.get( nodeId );
+        if ( node != null )
+        {
+            node.visitDegrees( relationshipLoader, visitor, NODE_CACHE_SIZE_LISTENER );
+            return true;
+        }
+        return false;
     }
 
     public PrimitiveIntIterator nodeGetRelationshipTypes( long nodeId )
