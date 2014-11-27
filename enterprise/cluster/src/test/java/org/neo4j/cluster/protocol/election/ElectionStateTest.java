@@ -19,6 +19,10 @@
  */
 package org.neo4j.cluster.protocol.election;
 
+import org.junit.Test;
+import org.mockito.Matchers;
+import org.mockito.Mockito;
+
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,26 +30,27 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Test;
-import org.mockito.Matchers;
-import org.mockito.Mockito;
-
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.com.message.MessageType;
+import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AtomicBroadcastMessage;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
+import org.neo4j.cluster.protocol.cluster.ClusterMessage;
 import org.neo4j.cluster.protocol.omega.MessageArgumentMatcher;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-
+import static org.neo4j.cluster.protocol.cluster.ClusterConfiguration.COORDINATOR;
 import static org.neo4j.cluster.protocol.election.ElectionMessage.demote;
 import static org.neo4j.cluster.protocol.election.ElectionMessage.performRoleElections;
 import static org.neo4j.cluster.protocol.election.ElectionMessage.voted;
@@ -256,5 +261,57 @@ public class ElectionStateTest
         assertEquals( ElectionMessage.voted, response.getMessageType() );
         ElectionMessage.VersionedVotedData payload = (ElectionMessage.VersionedVotedData) response.getPayload();
         assertEquals( version, payload.getVersion() );
+    }
+
+    @Test
+    public void shouldSendAtomicBroadcastOnJoiningAClusterWithAnEstablishedCoordinator() throws Throwable
+    {
+        // Given
+        String winnerURI = "some://winner";
+        InstanceId winner = new InstanceId( 2 );
+
+        final List<Message<?>> messages = new ArrayList<>( 1 );
+        MessageHolder holder = new MessageHolder()
+        {
+            @Override
+            public void offer( Message<? extends MessageType> message )
+            {
+                messages.add( message );
+            }
+        };
+        Comparable<Object> voteCredentialComparable = new Comparable<Object>()
+        {
+            @Override
+            public int compareTo( Object o )
+            {
+                return 0;
+            }
+        };
+
+        ElectionContext electionContext = mock( ElectionContext.class );
+        when( electionContext.voted( eq( COORDINATOR ), eq( new InstanceId( 1 ) ), eq( voteCredentialComparable ),
+                anyLong() ) ).thenReturn( true );
+        when( electionContext.getVoteCount( COORDINATOR ) ).thenReturn( 3 );
+        when( electionContext.getNeededVoteCount() ).thenReturn( 3 );
+        when( electionContext.getElectionWinner( COORDINATOR ) ).thenReturn( winner );
+
+        when( electionContext.getLogger( any( Class.class ) ) ).thenReturn( StringLogger.DEV_NULL );
+        when( electionContext.newConfigurationStateChange() )
+                .thenReturn( mock( ClusterMessage.VersionedConfigurationStateChange.class ) );
+
+        when( electionContext.getUriForId( winner ) ).thenReturn( URI.create( winnerURI ) );
+
+        // When
+        Message<ElectionMessage> votedMessage = Message.to(
+                ElectionMessage.voted, URI.create( "some://instance" ),
+                new ElectionMessage.VotedData( COORDINATOR, new InstanceId( 1 ), voteCredentialComparable ) );
+        votedMessage.setHeader( Message.FROM, "some://other" );
+
+        election.handle( electionContext, votedMessage, holder );
+
+        // Then
+        assertEquals( 1, messages.size() );
+        Message<?> message = messages.get( 0 );
+        assertEquals( AtomicBroadcastMessage.broadcast, message.getMessageType() );
     }
 }

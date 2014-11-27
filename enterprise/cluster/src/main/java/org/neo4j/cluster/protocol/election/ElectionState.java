@@ -27,6 +27,7 @@ import java.util.Map;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
+import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AtomicBroadcastMessage;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerMessage;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
 import org.neo4j.cluster.statemachine.State;
@@ -304,7 +305,8 @@ public enum ElectionState
                                     ClusterMessage.VersionedConfigurationStateChange configurationChangeState =
                                             context.newConfigurationStateChange();
                                     configurationChangeState.elected( data.getRole(), winner );
-                                    outgoing.offer( Message.internal( ProposerMessage.propose,
+
+                                    outgoing.offer( Message.internal( AtomicBroadcastMessage.broadcast,
                                             configurationChangeState ) );
                                 }
                                 else

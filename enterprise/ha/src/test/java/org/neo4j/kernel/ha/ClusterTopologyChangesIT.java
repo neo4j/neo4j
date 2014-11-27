@@ -19,28 +19,44 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.util.concurrent.CountDownLatch;
-
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
+
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.com.NetworkReceiver;
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
+import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
+import org.neo4j.cluster.protocol.cluster.ClusterListener;
+import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
+import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
+import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.AbstractClusterTest;
+import org.neo4j.test.CleanupRule;
 import org.neo4j.test.ha.ClusterManager.RepairKit;
 import org.neo4j.tooling.GlobalGraphOperations;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-
+import static org.neo4j.cluster.protocol.cluster.ClusterConfiguration.COORDINATOR;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.Predicates.not;
 import static org.neo4j.test.ReflectionUtil.getPrivateField;
@@ -51,6 +67,9 @@ import static org.neo4j.test.ha.ClusterManager.masterSeesSlavesAsAvailable;
 public class ClusterTopologyChangesIT extends AbstractClusterTest
 {
     private static final int TEST_NODE_COUNT = 100;
+
+    @Rule
+    public final CleanupRule cleanup = new CleanupRule();
 
     @Before
     public void setUp()
@@ -83,12 +102,7 @@ public class ClusterTopologyChangesIT extends AbstractClusterTest
         // Given
         HighlyAvailableGraphDatabase master = cluster.getMaster();
 
-        Node theNode;
-        try ( Transaction tx = master.beginTx() )
-        {
-            theNode = master.createNode( label( "TheNode" ) );
-            tx.success();
-        }
+        Node theNode = createNodeOn( master );
         cluster.sync();
 
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
@@ -171,6 +185,43 @@ public class ClusterTopologyChangesIT extends AbstractClusterTest
         assertNotNull( createNodeOn( slave2 ) );
     }
 
+    @Test
+    public void failedInstanceShouldReceiveCorrectCoordinatorIdUponRejoiningCluster() throws Throwable
+    {
+        // Given
+        HighlyAvailableGraphDatabase initialMaster = cluster.getMaster();
+
+        // When
+        cluster.shutdown( initialMaster );
+        cluster.await( masterAvailable( initialMaster ) );
+        cluster.await( masterSeesSlavesAsAvailable( 1 ) );
+
+        // create node on new master to ensure that it has the greatest tx id
+        createNodeOn( cluster.getMaster() );
+        cluster.sync();
+
+        ClusterClient clusterClient = cleanup.add( newClusterClient( new InstanceId( 1 ) ) );
+
+        final AtomicReference<InstanceId> coordinatorIdWhenReJoined = new AtomicReference<>();
+        final CountDownLatch latch = new CountDownLatch( 1 );
+        clusterClient.addClusterListener( new ClusterListener.Adapter()
+        {
+            @Override
+            public void enteredCluster( ClusterConfiguration clusterConfiguration )
+            {
+                coordinatorIdWhenReJoined.set( clusterConfiguration.getElected( COORDINATOR ) );
+                latch.countDown();
+            }
+        } );
+
+        clusterClient.init();
+        clusterClient.start();
+
+        // Then
+        latch.await( 2, SECONDS );
+        assertEquals( new InstanceId( 2 ), coordinatorIdWhenReJoined.get() );
+    }
+
     @Override
     protected void configureClusterMember( GraphDatabaseBuilder builder, String clusterName, InstanceId serverId )
     {
@@ -180,7 +231,7 @@ public class ClusterTopologyChangesIT extends AbstractClusterTest
         builder.setConfig( HaSettings.com_chunk_size, "1024" );
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     private static void repairUsing( RepairKit kit ) throws Throwable
     {
         Iterable<Lifecycle> stoppedServices = getPrivateField( kit, "stoppedServices", Iterable.class );
@@ -208,7 +259,7 @@ public class ClusterTopologyChangesIT extends AbstractClusterTest
             return Iterables.count( GlobalGraphOperations.at( db ).getAllNodes() );
         }
     }
-    
+
     private static ClusterClient clusterClientOf( HighlyAvailableGraphDatabase db )
     {
         return db.getDependencyResolver().resolveDependency( ClusterClient.class );
@@ -221,18 +272,26 @@ public class ClusterTopologyChangesIT extends AbstractClusterTest
 
     private static Node createNodeOn( HighlyAvailableGraphDatabase db )
     {
-        Node node;
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
-            node = db.createNode();
+            Node node = db.createNode();
             node.setProperty( "key", String.valueOf( System.currentTimeMillis() ) );
             tx.success();
+            return node;
         }
-        finally
-        {
-            tx.finish();
-        }
-        return node;
+    }
+
+    private ClusterClient newClusterClient( InstanceId id )
+    {
+        Map<String,String> configMap = MapUtil.stringMap(
+                ClusterSettings.initial_hosts.name(), cluster.getInitialHostsConfigString(),
+                ClusterSettings.server_id.name(), String.valueOf( id.toIntegerIndex() ),
+                ClusterSettings.cluster_server.name(), "0.0.0.0:8888" );
+
+        Config config = new Config( configMap, InternalAbstractGraphDatabase.Configuration.class,
+                GraphDatabaseSettings.class );
+
+        return new ClusterClient( new Monitors(), ClusterClient.adapt( config ), new DevNullLoggingService(),
+                new NotElectableElectionCredentialsProvider(), new ObjectStreamFactory(), new ObjectStreamFactory() );
     }
 }
