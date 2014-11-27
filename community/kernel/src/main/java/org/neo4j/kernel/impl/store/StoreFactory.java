@@ -35,6 +35,7 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCache;
+import org.neo4j.kernel.impl.store.NeoStore.Position;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -158,7 +159,7 @@ public class StoreFactory
 
         if ( txId == -1)
         {
-            txId = NeoStore.getTxId( fileSystemAbstraction, neoStoreFileName );
+            txId = NeoStore.getRecord( fileSystemAbstraction, neoStoreFileName, Position.LAST_TRANSACTION );
         }
 
         if ( storeExists && allowRebuild && !countsStoreExists() )

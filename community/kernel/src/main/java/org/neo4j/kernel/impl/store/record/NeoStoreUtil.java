@@ -22,12 +22,16 @@ package org.neo4j.kernel.impl.store.record;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
 
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStore.Position;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.storemigration.StoreFileType;
 
 import static java.lang.String.format;
 
@@ -35,12 +39,7 @@ import static org.neo4j.kernel.impl.store.NeoStore.RECORD_SIZE;
 
 public class NeoStoreUtil
 {
-    private final long creationTime;
-    private final long randomId;
-    private final long txId;
-    private final long logVersion;
-    private final long storeVersion;
-    private final long firstGraphProp;
+    private final Map<Position,Long> values = new HashMap<>();
 
     public static void main( String[] args )
     {
@@ -54,7 +53,7 @@ public class NeoStoreUtil
 
     public static boolean neoStoreExists( FileSystemAbstraction fs, File storeDir )
     {
-        return fs.fileExists( neoStoreFile( storeDir ) );
+        return fs.fileExists( neoStoreFile( storeDir, StoreFileType.STORE ) );
     }
 
     public NeoStoreUtil( File storeDir )
@@ -64,24 +63,16 @@ public class NeoStoreUtil
 
     public NeoStoreUtil( File storeDir, FileSystemAbstraction fs )
     {
-        try ( StoreChannel channel = fs.open( neoStoreFile( storeDir ), "r" ) )
+        try ( StoreChannel channel = fs.open( neoStoreFile( storeDir, StoreFileType.STORE ), "r" ) )
         {
-            int recordsToRead = 6;
-            ByteBuffer buf = ByteBuffer.allocate( recordsToRead*RECORD_SIZE );
-            int readBytes = channel.read( buf );
-            if ( readBytes != recordsToRead*RECORD_SIZE )
-            {
-                throw new RuntimeException( format( "Unable to read neo store header information. " +
-                        "Wanted to read %d records, %d bytes each, but could only read %d bytes i.e. %f records",
-                        recordsToRead, RECORD_SIZE, readBytes, (double)(readBytes/RECORD_SIZE) ) );
-            }
+            ByteBuffer buf = ByteBuffer.allocate( Position.values().length * RECORD_SIZE );
+            channel.read( buf );
             buf.flip();
-            creationTime = nextRecord( buf );
-            randomId = nextRecord( buf );
-            logVersion = nextRecord( buf );
-            txId = nextRecord( buf );
-            storeVersion = nextRecord( buf );
-            firstGraphProp = nextRecord( buf );
+
+            for ( int i = 0; buf.remaining() >= RECORD_SIZE && i < Position.values().length; i++ )
+            {
+                values.put( Position.values()[i], nextRecord( buf ) );
+            }
         }
         catch ( IOException e )
         {
@@ -95,55 +86,69 @@ public class NeoStoreUtil
         return buf.getLong();
     }
 
+    public long getValue( Position position )
+    {
+        Long value = values.get( position );
+        if ( value == null )
+        {
+            throw new IllegalStateException( "Wanted record " + position +
+                    ", but this record wasn't read since the neostore didn't contain it" );
+        }
+        return value.longValue();
+    }
+
     public long getCreationTime()
     {
-        return creationTime;
+        return getValue( Position.TIME );
     }
 
     public long getStoreId()
     {
-        return randomId;
+        return getValue( Position.RANDOM_NUMBER );
     }
 
     public long getLastCommittedTx()
     {
-        return txId;
+        return getValue( Position.LAST_TRANSACTION );
     }
 
     public long getLogVersion()
     {
-        return logVersion;
+        return getValue( Position.LOG_VERSION );
     }
 
     public long getStoreVersion()
     {
-        return storeVersion;
+        return getValue( Position.STORE_VERSION );
     }
 
     public long getFirstGraphProp()
     {
-        return firstGraphProp;
+        return getValue( Position.FIRST_GRAPH_PROPERTY );
+    }
+
+    public long getLastCommittedTxChecksum()
+    {
+        return getValue( Position.LAST_TRANSACTION_CHECKSUM );
     }
 
     @Override
     public String toString()
     {
-        return format( "Neostore contents:%n" +
-                        "0: creation time: %s%n" +
-                "1: random id: %s%n" +
-                "2: log version: %s%n" +
-                "3: tx id: %s%n" +
-                "4: store version: %s%n" +
-                "5: first graph prop: %s%n" +
-                " => store id: %s",
-
-                creationTime,
-                randomId,
-                logVersion,
-                txId,
-                storeVersion,
-                firstGraphProp,
-                new StoreId( creationTime, randomId, storeVersion, -1, -1 ) );
+        StringBuilder builder = new StringBuilder( "Neostore contents:%n" );
+        int i = 0;
+        for ( Position position : Position.values() )
+        {
+            Long value = values.get( position );
+            if ( value != null )
+            {
+                builder.append( i++ ).append( ": " ).append( position.description() )
+                       .append( ": " ).append( value ).append( "%n" );
+            }
+        }
+        builder.append( "=> store id: " )
+               .append( new StoreId( getCreationTime(), getStoreId(), getStoreVersion(), -1, -1 ) );
+        return format( builder.toString() );
     }
 
     public static boolean storeExists( File storeDir )
@@ -153,11 +158,11 @@ public class NeoStoreUtil
 
     public static boolean storeExists( File storeDir, FileSystemAbstraction fs )
     {
-        return fs.fileExists( neoStoreFile( storeDir ) );
+        return fs.fileExists( neoStoreFile( storeDir, StoreFileType.STORE ) );
     }
 
-    private static File neoStoreFile( File storeDir )
+    private static File neoStoreFile( File storeDir, StoreFileType type )
     {
-        return new File( storeDir, NeoStore.DEFAULT_NAME );
+        return new File( storeDir, type.augment( NeoStore.DEFAULT_NAME ) );
     }
 }

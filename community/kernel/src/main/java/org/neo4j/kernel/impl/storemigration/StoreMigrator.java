@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStore.Position;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -181,7 +182,8 @@ public class StoreMigrator implements StoreMigrationParticipant
     {
         progressMonitor.started();
 
-        long lastTxId = NeoStore.getTxId( fileSystem, new File( storeDir, NeoStore.DEFAULT_NAME ) );
+        long lastTxId = NeoStore.getRecord( fileSystem, new File( storeDir, NeoStore.DEFAULT_NAME ),
+                Position.LAST_TRANSACTION );
 
         if ( versionToUpgradeFrom( fileSystem, storeDir ).equals( Legacy21Store.LEGACY_VERSION ) )
         {

@@ -19,20 +19,21 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.ClassRule;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.HashMap;
 
+import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.NeoStore.Position;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -43,6 +44,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;
 
@@ -122,8 +124,8 @@ public class StoreVersionTest
         assertEquals( CommonAbstractStore.ALL_STORES_VERSION,
                 NeoStore.versionLongToString( neoStore.getStoreVersion() ) );
         assertEquals( CommonAbstractStore.ALL_STORES_VERSION,
-                NeoStore.versionLongToString( NeoStore.getStoreVersion( fs.get(),
-                        new File( outputDir, NeoStore.DEFAULT_NAME ) ) ) );
+                NeoStore.versionLongToString( NeoStore.getRecord( fs.get(),
+                        new File( outputDir, NeoStore.DEFAULT_NAME ), Position.STORE_VERSION ) ) );
         neoStore.close();
     }
 
