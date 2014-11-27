@@ -19,9 +19,12 @@
  */
 package upgrade;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -35,6 +38,7 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.makeLongArray;
@@ -147,6 +151,26 @@ public class DatabaseContentVerifier
             String[] relationshipIndexes = database.index().relationshipIndexNames();
             assertArrayEquals( new String[]{"testIndex", "nodekey"}, nodeIndexes );
             assertArrayEquals( new String[]{"relkey"}, relationshipIndexes );
+            tx.success();
+        }
+    }
+
+    public void verifyJohnnyLabels()
+    {
+        // Johnny labels has got a bunch of alter egos
+        try ( Transaction tx = database.beginTx() )
+        {
+            Node johhnyLabels = database.getNodeById( 1 );
+            Set<String> expectedLabels = new HashSet<>();
+            for ( int i = 0; i < 30; i++ )
+            {
+                expectedLabels.add( "AlterEgo" + i );
+            }
+            for ( Label label : johhnyLabels.getLabels() )
+            {
+                assertTrue( expectedLabels.remove( label.name() ) );
+            }
+            assertTrue( expectedLabels.isEmpty() );
             tx.success();
         }
     }

@@ -126,6 +126,7 @@ public class StoreMigratorFrom20IT
         verifier.verifyRelationshipIdsReused();
         verifier.verifyLegacyIndex();
         verifier.verifyIndex();
+        verifier.verifyJohnnyLabels();
     }
 
     private static void verifySlaveContents( HighlyAvailableGraphDatabase haDb )
