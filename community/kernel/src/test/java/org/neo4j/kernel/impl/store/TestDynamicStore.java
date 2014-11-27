@@ -155,7 +155,7 @@ public class TestDynamicStore
                 pageCache,
                 fs.get(),
                 StringLogger.DEV_NULL,
-                StoreVersionMismatchHandler.THROW_EXCEPTION,
+                StoreVersionMismatchHandler.FORCE_CURRENT_VERSION,
                 new Monitors() );
     }
 

@@ -179,7 +179,7 @@ public class TestStore
                     pageCache,
                     FILE_SYSTEM,
                     StringLogger.DEV_NULL,
-                    StoreVersionMismatchHandler.THROW_EXCEPTION,
+                    StoreVersionMismatchHandler.FORCE_CURRENT_VERSION,
                     new Monitors() );
         }
 

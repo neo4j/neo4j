@@ -289,8 +289,9 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
      * @param neoStore the NeoStore file.
      * @param version the version to set.
      * @return the previous version before writing.
+     * @throws IOException
      */
-    public static long setVersion( FileSystemAbstraction fileSystem, File neoStore, long version )
+    public static long setVersion( FileSystemAbstraction fileSystem, File neoStore, long version ) throws IOException
     {
         return setRecord( fileSystem, neoStore, VERSION_POSITION, version );
     }
@@ -300,8 +301,10 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
      * @param neoStore the NeoStore file.
      * @param storeVersion the version to set.
      * @return the previous version before writing.
+     * @throws IOException
      */
     public static long setStoreVersion( FileSystemAbstraction fileSystem, File neoStore, long storeVersion )
+            throws IOException
     {
         return setRecord( fileSystem, neoStore, STORE_VERSION_POSITION, storeVersion );
     }
@@ -312,8 +315,10 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
      * @param neoStore the NeoStore file.
      * @param id       the version to set.
      * @return the previous version before writing.
+     * @throws IOException
      */
     public static long setOrAddUpgradeIdOnMigration( FileSystemAbstraction fileSystem, File neoStore, long id )
+            throws IOException
     {
         return setRecord( fileSystem, neoStore, UPGRADE_ID_POSITION, id );
     }
@@ -324,13 +329,16 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
      * @param neoStore the NeoStore file.
      * @param time     the version to set.
      * @return the previous version before writing.
+     * @throws IOException
      */
     public static long setOrAddUpgradeTimeOnMigration( FileSystemAbstraction fileSystem, File neoStore, long time )
+            throws IOException
     {
         return setRecord( fileSystem, neoStore, UPGRADE_TIME_POSITION, time );
     }
 
     private static long setRecord( FileSystemAbstraction fileSystem, File neoStore, int position, long value )
+            throws IOException
     {
         int trailerSize = UTF8.encode( buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ) ).length;
         try ( StoreChannel channel = fileSystem.open( neoStore, "rw" ) )
@@ -371,10 +379,6 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
                 channel.write( trailerBuffer );
             }
             return previous;
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
         }
     }
 

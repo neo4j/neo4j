@@ -96,7 +96,7 @@ public class StoreVersionTest
                     fs.get(),
                     StringLogger.DEV_NULL,
                     null,
-                    StoreVersionMismatchHandler.THROW_EXCEPTION,
+                    StoreVersionMismatchHandler.FORCE_CURRENT_VERSION,
                     monitors );
             fail( "Should have thrown exception" );
         }

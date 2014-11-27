@@ -332,7 +332,7 @@ public class UpgradeStoreIT
                 pageCache,
                 fs,
                 StringLogger.DEV_NULL,
-                StoreVersionMismatchHandler.THROW_EXCEPTION,
+                StoreVersionMismatchHandler.FORCE_CURRENT_VERSION,
                 monitors );
         RelationshipTypeTokenStore store = new RelationshipTypeTokenStoreWithOneOlderVersion(
                 fileName, stringStore, monitors, fs, pageCache );
@@ -370,7 +370,7 @@ public class UpgradeStoreIT
                     fs,
                     StringLogger.DEV_NULL,
                     stringStore,
-                    StoreVersionMismatchHandler.THROW_EXCEPTION,
+                    StoreVersionMismatchHandler.FORCE_CURRENT_VERSION,
                     monitors );
         }
 

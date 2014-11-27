@@ -101,7 +101,6 @@ public class LogEntrySortingCursorTest
         final LogEntrySortingCursor cursor = new LogEntrySortingCursor( reader, channel );
 
         // then
-
         final List<LogEntry> expected = Arrays.asList( start2, command2, commit2, start1, command1, commit1 );
         assertCursorContains( expected, cursor );
     }
@@ -132,13 +131,12 @@ public class LogEntrySortingCursorTest
         final LogEntrySortingCursor cursor = new LogEntrySortingCursor( reader, channel );
 
         // then
-
         final List<LogEntry> expected = Arrays.asList( start2, command2, commit2, start1, command1, commit1 );
         assertCursorContains( expected, cursor );
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void shouldThrowIfThereAreEntriesWithoutACommit() throws IOException
+    @Test
+    public void shouldBeFineIfThereAreEntriesWithoutACommit() throws IOException
     {
         // given
         final LogEntry start1 = start( 3 );
@@ -161,10 +159,8 @@ public class LogEntrySortingCursorTest
         final LogEntrySortingCursor cursor = new LogEntrySortingCursor( reader, channel );
 
         // then
-        while ( cursor.next() )
-        {
-            cursor.get();
-        }
+        final List<LogEntry> expected = Arrays.asList( start2, command2, commit2 );
+        assertCursorContains( expected, cursor );
     }
 
     private void assertCursorContains( Iterable<LogEntry> entries, LogEntrySortingCursor cursor ) throws IOException

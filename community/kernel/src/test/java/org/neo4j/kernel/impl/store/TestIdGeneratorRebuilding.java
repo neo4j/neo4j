@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -95,7 +95,7 @@ public class TestIdGeneratorRebuilding
                 fs,
                 StringLogger.DEV_NULL,
                 labelStore,
-                null,
+                StoreVersionMismatchHandler.FORCE_CURRENT_VERSION,
                 new Monitors() );
         store.makeStoreOk();
 
@@ -216,7 +216,7 @@ public class TestIdGeneratorRebuilding
                 fs,
                 StringLogger.DEV_NULL,
                 labelStore,
-                null,
+                StoreVersionMismatchHandler.FORCE_CURRENT_VERSION,
                 new Monitors() );
         store.makeStoreOk();
 

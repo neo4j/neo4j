@@ -27,9 +27,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorWrapper;
@@ -49,6 +51,7 @@ import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.StoreVersionMismatchHandler;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -181,10 +184,6 @@ public class StoreMigrator implements StoreMigrationParticipant
 
         if ( versionToUpgradeFrom( fileSystem, storeDir ).equals( Legacy21Store.LEGACY_VERSION ) )
         {
-            // ensure the stores have the new versions set before reading them to create a counts store
-            ensureStoreVersions( storeDir );
-
-
             // create counters from scratch
             final LifeSupport life = new LifeSupport();
             life.start();
@@ -252,7 +251,8 @@ public class StoreMigrator implements StoreMigrationParticipant
                 buildTypeDescriptorAndVersion( CountsTracker.STORE_DESCRIPTOR ) );
 
         final StoreFactory storeFactory =
-                new StoreFactory( fileSystem, storeDir, pageCache, DEV_NULL, new Monitors() );
+                new StoreFactory( fileSystem, storeDir, pageCache, DEV_NULL, new Monitors(),
+                        StoreVersionMismatchHandler.ALLOW_OLD_VERSION );
         try ( NodeStore nodeStore = storeFactory.newNodeStore();
               RelationshipStore relationshipStore = storeFactory.newRelationshipStore();
               CountsTracker tracker = new CountsTracker( logging.getMessagesLog( CountsTracker.class ),
@@ -289,17 +289,23 @@ public class StoreMigrator implements StoreMigrationParticipant
         Iterable<InputNode> nodes = legacyNodesAsInput( legacyStore );
         Iterable<InputRelationship> relationships = legacyRelationshipsAsInput( legacyStore );
         importer.doImport( Inputs.input( nodes, relationships, IdMappings.actual() ) );
-        progressMonitor.finished();
+
+        // During migration the batch importer only writes node, relationship, relationship group and counts stores.
+        // Delete the property store files from the batch import migration so that even if we won't
+        // migrate property stores as part of deduplicating property key tokens or properties then
+        // we won't move these empty property store files to the store directory, overwriting the old ones.
+        StoreFile.fileOperation( DELETE, fileSystem, migrationDir, null, Iterables.<StoreFile,StoreFile>iterable(
+                StoreFile.PROPERTY_STORE,
+                StoreFile.PROPERTY_STRING_STORE,
+                StoreFile.PROPERTY_ARRAY_STORE,
+                StoreFile.PROPERTY_KEY_TOKEN_STORE,
+                StoreFile.PROPERTY_KEY_TOKEN_NAMES_STORE ), true, false, StoreFileType.values() );
 
         // Finish the import of nodes and relationships
         if ( legacyStore instanceof Legacy19Store )
         {
-            // we may need to upgrade the property keys
-            Legacy19Store legacy19Store = (Legacy19Store) legacyStore;
-            try ( PropertyStore propertyStore = storeFactory( pageCache, migrationDir ).newPropertyStore() )
-            {
-                migratePropertyKeys( legacy19Store, propertyStore );
-            }
+            // we may need to upgrade the property tokens
+            migratePropertyKeys( (Legacy19Store) legacyStore, pageCache, migrationDir );
         }
         // Close
         legacyStore.close();
@@ -393,15 +399,37 @@ public class StoreMigrator implements StoreMigrationParticipant
                 fileSystem, DEV_NULL, new Monitors() );
     }
 
-    private void migratePropertyKeys( Legacy19Store legacyStore, PropertyStore propertyStore ) throws IOException
+    private void migratePropertyKeys( Legacy19Store legacyStore, PageCache pageCache, File migrationDir )
+            throws IOException
     {
         Token[] tokens = legacyStore.getPropertyIndexReader().readTokens();
+        if ( containsAnyDuplicates( tokens ) )
+        {   // The legacy property key token store contains duplicates, copy over and deduplicate
+            // property key token store and go through property store with the new token ids.
+            StoreFactory storeFactory = storeFactory( pageCache, migrationDir );
+            storeFactory.createPropertyStore();
+            try ( PropertyStore propertyStore = storeFactory.newPropertyStore() )
+            {
+                // dedup and write new property key token store (incl. names)
+                Map<Integer, Integer> propertyKeyTranslation = dedupAndWritePropertyKeyTokenStore( propertyStore, tokens );
 
-        // dedup and write new property key token store (incl. names)
-        Map<Integer, Integer> propertyKeyTranslation = dedupAndWritePropertyKeyTokenStore( propertyStore, tokens );
+                // read property store, replace property key ids
+                migratePropertyStore( legacyStore, propertyKeyTranslation, propertyStore );
+            }
+        }
+    }
 
-        // read property store, replace property key ids
-        migratePropertyStore( legacyStore, propertyKeyTranslation, propertyStore );
+    private boolean containsAnyDuplicates( Token[] tokens )
+    {
+        Set<String> names = new HashSet<>();
+        for ( Token token : tokens )
+        {
+            if ( !names.add( token.name() ) )
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     private Map<Integer, Integer> dedupAndWritePropertyKeyTokenStore(
@@ -596,11 +624,7 @@ public class StoreMigrator implements StoreMigrationParticipant
                 StoreFileType.values() );
 
         // ensure the store version is correct
-        if ( !versionToUpgradeFrom.equals( Legacy21Store.LEGACY_VERSION ) )
-        {
-            // we fix the store versions earlier on in order to create counts store for 2.1
-            ensureStoreVersions( storeDir );
-        }
+        ensureStoreVersions( storeDir );
 
         // update or add upgrade id and time
         updateOrAddUpgradeIdAndUpgradeTime( storeDir );
@@ -617,7 +641,7 @@ public class StoreMigrator implements StoreMigrationParticipant
         StoreFile.ensureStoreVersion( fileSystem, dir, versionedStores );
     }
 
-    private void updateOrAddUpgradeIdAndUpgradeTime( File storeDirectory )
+    private void updateOrAddUpgradeIdAndUpgradeTime( File storeDirectory ) throws IOException
     {
         final File neostore = new File( storeDirectory, NeoStore.DEFAULT_NAME );
         NeoStore.setOrAddUpgradeIdOnMigration( fileSystem, neostore, new SecureRandom().nextLong() );

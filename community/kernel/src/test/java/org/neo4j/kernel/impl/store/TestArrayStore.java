@@ -88,7 +88,7 @@ public class TestArrayStore
                 pageCache,
                 fs,
                 StringLogger.DEV_NULL,
-                StoreVersionMismatchHandler.THROW_EXCEPTION,
+                StoreVersionMismatchHandler.FORCE_CURRENT_VERSION,
                 monitors );
     }
 

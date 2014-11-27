@@ -19,9 +19,12 @@
  */
 package upgrade;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
@@ -32,9 +35,11 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.tooling.GlobalGraphOperations;
 
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.makeLongArray;
@@ -45,10 +50,12 @@ public class DatabaseContentVerifier
     private final String longString = makeLongString();
     private final int[] longArray = makeLongArray();
     private final GraphDatabaseService database;
+    private final int numberOfUnrelatedNodes;
 
-    public DatabaseContentVerifier( GraphDatabaseService database )
+    public DatabaseContentVerifier( GraphDatabaseService database, int numberOfUnrelatedNodes )
     {
         this.database = database;
+        this.numberOfUnrelatedNodes = numberOfUnrelatedNodes;
     }
 
     public void verifyRelationships( int expectedCount )
@@ -74,7 +81,7 @@ public class DatabaseContentVerifier
             for ( Node node : GlobalGraphOperations.at( database ).getAllNodes() )
             {
                 nodeCount++;
-                if ( node.getId() > 0 )
+                if ( node.getId() >= numberOfUnrelatedNodes )
                 {
                     verifyProperties( node );
                 }
@@ -86,34 +93,32 @@ public class DatabaseContentVerifier
 
     public void verifyProperties( PropertyContainer node )
     {
-        assertEquals( Integer.MAX_VALUE, node.getProperty( PropertyType.INT.name() ) );
-        assertEquals( longString, node.getProperty( PropertyType.STRING.name() ) );
-        assertEquals( true, node.getProperty( PropertyType.BOOL.name() ) );
-        assertEquals( Double.MAX_VALUE, node.getProperty( PropertyType.DOUBLE.name() ) );
-        assertEquals( Float.MAX_VALUE, node.getProperty( PropertyType.FLOAT.name() ) );
-        assertEquals( Long.MAX_VALUE, node.getProperty( PropertyType.LONG.name() ) );
-        assertEquals( Byte.MAX_VALUE, node.getProperty( PropertyType.BYTE.name() ) );
-        assertEquals( Character.MAX_VALUE, node.getProperty( PropertyType.CHAR.name() ) );
-        assertArrayEquals( longArray, (int[]) node.getProperty( PropertyType.ARRAY.name() ) );
-        assertEquals( Short.MAX_VALUE, node.getProperty( PropertyType.SHORT.name() ) );
-        assertEquals( "short", node.getProperty( PropertyType.SHORT_STRING.name() ) );
+        try
+        {
+            assertEquals( Integer.MAX_VALUE, node.getProperty( PropertyType.INT.name() ) );
+            assertEquals( longString, node.getProperty( PropertyType.STRING.name() ) );
+            assertEquals( true, node.getProperty( PropertyType.BOOL.name() ) );
+            assertEquals( Double.MAX_VALUE, node.getProperty( PropertyType.DOUBLE.name() ) );
+            assertEquals( Float.MAX_VALUE, node.getProperty( PropertyType.FLOAT.name() ) );
+            assertEquals( Long.MAX_VALUE, node.getProperty( PropertyType.LONG.name() ) );
+            assertEquals( Byte.MAX_VALUE, node.getProperty( PropertyType.BYTE.name() ) );
+            assertEquals( Character.MAX_VALUE, node.getProperty( PropertyType.CHAR.name() ) );
+            assertArrayEquals( longArray, (int[]) node.getProperty( PropertyType.ARRAY.name() ) );
+            assertEquals( Short.MAX_VALUE, node.getProperty( PropertyType.SHORT.name() ) );
+            assertEquals( "short", node.getProperty( PropertyType.SHORT_STRING.name() ) );
+        }
+        catch ( NotFoundException e )
+        {
+            throw new NotFoundException( e.getMessage() + " for " + node, e.getCause() );
+        }
     }
 
     public void verifyNodeIdsReused()
     {
-        try ( Transaction ignore = database.beginTx() )
-        {
-            database.getNodeById( 1 );
-            fail( "Node 1 should not exist" );
-        }
-        catch ( NotFoundException e )
-        {   // expected
-        }
-
         try ( Transaction transaction = database.beginTx() )
         {
             Node newNode = database.createNode();
-            assertEquals( 1, newNode.getId() );
+            assertThat( newNode.getId(), lessThanOrEqualTo( 10L ) );
             transaction.success();
         }
     }
@@ -154,6 +159,26 @@ public class DatabaseContentVerifier
             String[] relationshipIndexes = database.index().relationshipIndexNames();
             assertArrayEquals( new String[]{"testIndex", "nodekey"}, nodeIndexes );
             assertArrayEquals( new String[]{"relkey"}, relationshipIndexes );
+            tx.success();
+        }
+    }
+
+    public void verifyJohnnyLabels()
+    {
+        // Johnny labels has got a bunch of alter egos
+        try ( Transaction tx = database.beginTx() )
+        {
+            Node johhnyLabels = database.getNodeById( 1 );
+            Set<String> expectedLabels = new HashSet<>();
+            for ( int i = 0; i < 30; i++ )
+            {
+                expectedLabels.add( "AlterEgo" + i );
+            }
+            for ( Label label : johhnyLabels.getLabels() )
+            {
+                assertTrue( expectedLabels.remove( label.name() ) );
+            }
+            assertTrue( expectedLabels.isEmpty() );
             tx.success();
         }
     }

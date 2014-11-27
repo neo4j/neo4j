@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.nio.ByteBuffer.wrap;
+
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.UTF8.encode;
 import static org.neo4j.io.fs.FileUtils.windowsSafeIOOperation;
@@ -74,6 +75,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     private boolean storeOk = true;
     private Throwable causeOfStoreNotOk;
     private FileLock fileLock;
+    private String readTypeDescriptorAndVersion;
 
     /**
      * Opens and validates the store contained in <CODE>fileName</CODE>
@@ -311,18 +313,18 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
             return;
         }
         getFileChannel().read( buffer );
-        String foundTypeDescriptorAndVersion = UTF8.decode( bytes );
+        readTypeDescriptorAndVersion = UTF8.decode( bytes );
 
-        if ( !expectedTypeDescriptorAndVersion.equals( foundTypeDescriptorAndVersion ) )
+        if ( !expectedTypeDescriptorAndVersion.equals( readTypeDescriptorAndVersion ) )
         {
-            if ( foundTypeDescriptorAndVersion.startsWith( getTypeDescriptor() ) )
+            if ( readTypeDescriptorAndVersion.startsWith( getTypeDescriptor() ) )
             {
-                versionMismatchHandler.mismatch( ALL_STORES_VERSION, foundTypeDescriptorAndVersion );
+                versionMismatchHandler.mismatch( ALL_STORES_VERSION, readTypeDescriptorAndVersion );
             }
             else
             {
                 setStoreNotOk( new IllegalStateException(
-                        "Unexpected version " + foundTypeDescriptorAndVersion + ", expected " +
+                        "Unexpected version " + readTypeDescriptorAndVersion + ", expected " +
                         expectedTypeDescriptorAndVersion ) );
             }
         }
@@ -719,7 +721,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
                 public void perform() throws IOException
                 {
                     fileChannel.position( highId * recordSize );
-                    ByteBuffer buffer = wrap( encode( getTypeAndVersionDescriptor() ) );
+                    ByteBuffer buffer = wrap( encode( versionMismatchHandler.trailerToWrite( getTypeAndVersionDescriptor(), readTypeDescriptorAndVersion ) ) );
                     fileChannel.write( buffer );
                     stringLogger.debug( "Closing " + storageFileName + ", truncating at " + fileChannel.position() +
                                         " vs file size " + fileChannel.size() );

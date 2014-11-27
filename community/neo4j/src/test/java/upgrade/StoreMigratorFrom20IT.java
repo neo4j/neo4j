@@ -19,12 +19,14 @@
  */
 package upgrade;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -43,26 +45,28 @@ import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.test.CleanupRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.store.NeoStore.versionLongToString;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.find20FormatStoreDirectory;
 import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UPGRADE;
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
+
 import static upgrade.StoreMigratorTestUtil.buildClusterWithMasterDirIn;
 
 public class StoreMigratorFrom20IT
 {
-    private SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
+    private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
 
     @Test
     public void shouldMigrate() throws IOException, ConsistencyCheckIncompleteException
@@ -77,10 +81,7 @@ public class StoreMigratorFrom20IT
         assertTrue( monitor.isStarted() );
         assertTrue( monitor.isFinished() );
 
-        GraphDatabaseService database = cleanup.add(
-                new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.absolutePath() )
-        );
-
+        GraphDatabaseService database = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.absolutePath() );
         try
         {
             verifyDatabaseContents( database );
@@ -91,12 +92,14 @@ public class StoreMigratorFrom20IT
             database.shutdown();
         }
 
-        NeoStore neoStore = cleanup.add( storeFactory.newNeoStore( true, false ) );
-        verifyNeoStore( neoStore );
-        neoStore.close();
+        try ( NeoStore neoStore = storeFactory.newNeoStore( true, false ) )
+        {
+            verifyNeoStore( neoStore );
+        }
         assertConsistentStore( storeDir.directory() );
     }
 
+    @Ignore( "TODO Temporarily disabled" )
     @Test
     public void shouldMigrateCluster() throws Throwable
     {
@@ -106,8 +109,7 @@ public class StoreMigratorFrom20IT
         // When
         upgrader( new StoreMigrator( monitor, fs, DevNullLoggingService.DEV_NULL ) ).migrateIfNeeded(
                 legacyStoreDir, schemaIndexProvider, pageCache );
-        ClusterManager.ManagedCluster cluster =
-                cleanup.add( buildClusterWithMasterDirIn( fs, legacyStoreDir, cleanup ) );
+        ClusterManager.ManagedCluster cluster = buildClusterWithMasterDirIn( fs, legacyStoreDir, life );
         cluster.await( allSeesAllAsAvailable() );
         cluster.sync();
 
@@ -120,23 +122,24 @@ public class StoreMigratorFrom20IT
 
     private static void verifyDatabaseContents( GraphDatabaseService database )
     {
-        DatabaseContentVerifier verifier = new DatabaseContentVerifier( database );
+        DatabaseContentVerifier verifier = new DatabaseContentVerifier( database, 2 );
         verifyNumberOfNodesAndRelationships( verifier );
         verifier.verifyNodeIdsReused();
         verifier.verifyRelationshipIdsReused();
         verifier.verifyLegacyIndex();
         verifier.verifyIndex();
+        verifier.verifyJohnnyLabels();
     }
 
     private static void verifySlaveContents( HighlyAvailableGraphDatabase haDb )
     {
-        DatabaseContentVerifier verifier = new DatabaseContentVerifier( haDb );
+        DatabaseContentVerifier verifier = new DatabaseContentVerifier( haDb, 2 );
         verifyNumberOfNodesAndRelationships( verifier );
     }
 
     private static void verifyNumberOfNodesAndRelationships( DatabaseContentVerifier verifier )
     {
-        verifier.verifyNodes( 501 );
+        verifier.verifyNodes( 502 );
         verifier.verifyRelationships( 500 );
     }
 
@@ -144,9 +147,9 @@ public class StoreMigratorFrom20IT
     {
         assertEquals( 1317392957120L, neoStore.getCreationTime() );
         assertEquals( -472309512128245482l, neoStore.getRandomNumber() );
-        assertEquals( 5l, neoStore.getCurrentLogVersion() );
+        assertEquals( 6l, neoStore.getCurrentLogVersion() );
         assertEquals( ALL_STORES_VERSION, versionLongToString( neoStore.getStoreVersion() ) );
-        assertEquals( 1010l, neoStore.getLastCommittedTransactionId() );
+        assertEquals( 1042l, neoStore.getLastCommittedTransactionId() );
     }
 
     private StoreUpgrader upgrader( StoreMigrator storeMigrator )
@@ -160,14 +163,13 @@ public class StoreMigratorFrom20IT
     @Rule
     public final TargetDirectory.TestDirectory storeDir = TargetDirectory.testDirForTest( getClass() );
     @Rule
-    public final CleanupRule cleanup = new CleanupRule();
-    @Rule
     public final PageCacheRule pageCacheRule = new PageCacheRule();
 
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     private final ListAccumulatorMigrationProgressMonitor monitor = new ListAccumulatorMigrationProgressMonitor();
     private StoreFactory storeFactory;
     private PageCache pageCache;
+    private final LifeSupport life = new LifeSupport();
 
     @Before
     public void setUp()
@@ -182,5 +184,11 @@ public class StoreMigratorFrom20IT
                 fs,
                 StringLogger.DEV_NULL,
                 new Monitors() );
+    }
+
+    @After
+    public void tearDown()
+    {
+        life.shutdown();
     }
 }

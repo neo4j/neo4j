@@ -82,13 +82,19 @@ public class StoreFactory
     private final Monitors monitors;
     private final PageCache pageCache;
 
+    public StoreFactory( FileSystemAbstraction fileSystem, File storeDir, PageCache pageCache, StringLogger logger,
+            Monitors monitors )
+    {
+        this( fileSystem, storeDir, pageCache, logger, monitors, StoreVersionMismatchHandler.FORCE_CURRENT_VERSION );
+    }
+
     @SuppressWarnings( "deprecation" )
     public StoreFactory( FileSystemAbstraction fileSystem, File storeDir, PageCache pageCache, StringLogger logger,
-                         Monitors monitors )
+                         Monitors monitors, StoreVersionMismatchHandler versionMismatchHandler )
     {
         this( configForStoreDir( new Config(), storeDir ),
                 new DefaultIdGeneratorFactory(), pageCache, fileSystem,
-                logger, monitors, StoreVersionMismatchHandler.THROW_EXCEPTION );
+                logger, monitors, versionMismatchHandler );
     }
 
     public StoreFactory( Config config, @SuppressWarnings( "deprecation" ) IdGeneratorFactory idGeneratorFactory,
@@ -96,7 +102,7 @@ public class StoreFactory
                          Monitors monitors )
     {
         this( config, idGeneratorFactory, pageCache, fileSystemAbstraction, stringLogger,
-                monitors, StoreVersionMismatchHandler.THROW_EXCEPTION );
+                monitors, StoreVersionMismatchHandler.FORCE_CURRENT_VERSION );
     }
 
     public StoreFactory( Config config, @SuppressWarnings( "deprecation" ) IdGeneratorFactory idGeneratorFactory,

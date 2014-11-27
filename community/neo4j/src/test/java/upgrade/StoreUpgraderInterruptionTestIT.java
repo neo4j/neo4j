@@ -19,15 +19,16 @@
  */
 package upgrade;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -50,7 +51,7 @@ import org.neo4j.test.TargetDirectory.TestDirectory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.junit.runners.Parameterized.Parameters;
+
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveVersion;
@@ -59,8 +60,8 @@ import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UP
 @RunWith(Parameterized.class)
 public class StoreUpgraderInterruptionTestIT
 {
-    private String version;
-    private SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
+    private final String version;
+    private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
 
     public StoreUpgraderInterruptionTestIT( String version )
     {
@@ -109,6 +110,7 @@ public class StoreUpgraderInterruptionTestIT
         }
         catch ( RuntimeException e )
         {
+            e.printStackTrace();
             assertEquals( "This upgrade is failing", e.getMessage() );
         }
 
