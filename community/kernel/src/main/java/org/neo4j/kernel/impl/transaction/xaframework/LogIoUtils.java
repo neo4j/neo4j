@@ -69,7 +69,7 @@ public class LogIoUtils
             throw new IllegalLogFormatException( CURRENT_FORMAT_VERSION, logFormatVersion );
         }
         version = version & 0x00FFFFFFFFFFFFFFL;
-        return new long[] { version, previousCommittedTx };
+        return new long[] { version, previousCommittedTx, logFormatVersion };
     }
 
     public static ByteBuffer writeLogHeader( ByteBuffer buffer, long logVersion,
