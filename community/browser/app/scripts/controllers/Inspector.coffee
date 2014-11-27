@@ -101,6 +101,10 @@ angular.module('neo4jApp.controllers')
       $scope.selectCaption = (item, caption) ->
         item.style = graphStyle.changeForSelector(item.style.selector, { caption: '{' + caption + '}'})
 
+      $scope.isSelectedCaption = (item, caption) ->
+        grassProps = graphStyle.findRule(item.style.selector).props
+        grassProps.caption is "{#{caption}}" or (!grassProps.caption and caption is "id")
+
       $scope.selectScheme = (item, scheme) ->
         item.style = graphStyle.changeForSelector(item.style.selector, angular.copy(scheme))
 
@@ -111,7 +115,7 @@ angular.module('neo4jApp.controllers')
       $scope.arrowDisplayWidth = (idx) ->
         width: arrowDisplayWidths[idx]
 
-      nodeDisplaySizes = ("#{15 + 5*i}px" for i in [0..10])
+      nodeDisplaySizes = ("#{12 + 2*i}px" for i in [0..10])
       $scope.nodeDisplaySize = (idx) ->
         width: nodeDisplaySizes[idx]
         height: nodeDisplaySizes[idx]
