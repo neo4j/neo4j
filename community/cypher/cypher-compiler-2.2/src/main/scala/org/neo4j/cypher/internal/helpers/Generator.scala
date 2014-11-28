@@ -20,37 +20,38 @@
 package org.neo4j.cypher.internal.helpers
 
 abstract class Generator[+T] extends Iterator[T] {
-  private var needsComputeNext = true
-  private var hasNextResult: Boolean = true
+  private var preparing = true
+  private var open: Boolean = true
 
-  protected def nextResult: T
+  protected def prepareNext(): Unit
+  protected def deliverNext: T
 
-  def hasNext = {
-    if (needsComputeNext) {
-      needsComputeNext = false
-      computeNext()
+  final def hasNext = {
+    if (preparing) {
+      prepareNext()
+      preparing = false
     }
-    hasNextResult
+    open
   }
 
-  def next() = {
-    if (needsComputeNext) {
-      needsComputeNext = false
-      computeNext()
+  final def next() = {
+    if (preparing) {
+      prepareNext()
+      preparing = false
     }
 
-    if (hasNextResult) {
-      needsComputeNext = true
-      nextResult
+    if (open) {
+      preparing = true
+      deliverNext
     }
     else {
       Iterator.empty.next()
     }
   }
 
-  protected def computeNext(): Unit
+  protected final def isOpen: Boolean = open
 
-  protected def endOfComputation(): Unit = {
-    hasNextResult = false
+  protected final def close(): Unit = {
+    open = false
   }
 }

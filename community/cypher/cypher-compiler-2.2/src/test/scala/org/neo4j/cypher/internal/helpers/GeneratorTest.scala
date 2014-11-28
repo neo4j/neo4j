@@ -57,14 +57,14 @@ class GeneratorTest extends CypherFunSuite {
   }
 
   final case class TestGenerator(maxCount: Int) extends Generator[Int] {
-    protected var nextResult: Int = 0
+    protected var deliverNext: Int = 0
 
-    override protected def computeNext(): Unit = {
-      if (nextResult < maxCount) {
-        nextResult += 1
+    override protected def prepareNext(): Unit = {
+      if (deliverNext < maxCount) {
+        deliverNext += 1
         return
       }
-      endOfComputation()
+      close()
     }
   }
 }

@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.cypher.internal.compiler.v2_2.{ExecutionContext, InternalException}
+import org.neo4j.cypher.internal.helpers.Generator
 import org.neo4j.graphdb.{Direction, Node, Relationship}
 
 sealed abstract class ExpandPipe[T](source: Pipe,
@@ -54,7 +55,7 @@ case class ExpandPipeForIntTypes(source: Pipe,
   extends ExpandPipe[Int](source, from, relName, to, dir, types, pipeMonitor) {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) =
-    new ExpandPipeIteratorForIntTypes(input, from, relName, to, dir, types)(state.query).createResults
+    new ExpandPipeIteratorForIntTypes(input, from, relName, to, dir, types)(state.query)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources
@@ -75,7 +76,7 @@ case class ExpandPipeForStringTypes(source: Pipe,
   extends ExpandPipe[String](source, from, relName, to, dir, types, pipeMonitor) {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) =
-    new ExpandPipeIteratorForStringTypes(input, from, relName, to, dir, types)(state.query).createResults
+    new ExpandPipeIteratorForStringTypes(input, from, relName, to, dir, types)(state.query)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources
@@ -90,26 +91,46 @@ class ExpandPipeIterator[T](input: Iterator[ExecutionContext],
                             from: String,
                             relName: String,
                             to: String,
-                            dir: Direction)(implicit qtx: QueryContext) {
+                            dir: Direction)(implicit qtx: QueryContext)
+  extends Generator[ExecutionContext] {
 
-  final def createResults: Iterator[ExecutionContext] =
-    input.flatMap {
-      row =>
-        getFromNode(row) match {
-          case n: Node =>
-            val relationships: Iterator[Relationship] = getRelationships(n)
-            relationships.map {
-              case r =>
-                row.newWith2(relName, r, to, r.getOtherNode(n))
-            }
+  private var row: ExecutionContext = null
+  private var node: Node = null
+  private var relationships: Iterator[Relationship] = Iterator.empty
 
-          case null =>
-            None
+  protected final def prepareNext(): Unit =
+    do {
+      if (relationships.hasNext) {
+        return
+      } else {
+        prepareNextRelationships()
+      }
+    } while (isOpen)
 
-          case value =>
-            throw new InternalException(s"Expected to find a node at $from but found $value instead")
-        }
+
+  private final def prepareNextRelationships(): Unit = {
+    while (input.hasNext) {
+      row = input.next()
+      getFromNode(row) match {
+        case nextNode: Node =>
+          node = nextNode
+          relationships = getRelationships(nextNode)
+          return
+
+        case null =>
+          // just loop
+
+        case value =>
+          throw new InternalException(s"Expected to find a node at $from but found $value instead")
+      }
     }
+    close()
+  }
+
+  protected final def deliverNext: ExecutionContext = {
+    val resultRel = relationships.next()
+    row.newWith2(relName, resultRel, to, resultRel.getOtherNode(node))
+  }
 
   private final def getFromNode(row: ExecutionContext): Any =
     row.getOrElse(from, throw new InternalException(s"Expected to find a node at $from but found nothing"))

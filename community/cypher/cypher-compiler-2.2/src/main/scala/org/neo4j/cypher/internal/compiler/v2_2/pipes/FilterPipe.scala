@@ -43,17 +43,21 @@ case class FilterPipe(source: Pipe, predicate: Predicate)(val estimatedCardinali
   def withEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 }
 
-final class FilterPipeIterator(input: Iterator[ExecutionContext], predicate: Predicate)(implicit state: QueryState) extends Generator[ExecutionContext] {
-  protected var nextResult: ExecutionContext = null
+final class FilterPipeIterator(input: Iterator[ExecutionContext], predicate: Predicate)(implicit state: QueryState)
+  extends Generator[ExecutionContext] {
 
-  protected def computeNext() {
+  private var row: ExecutionContext = null
+
+  protected def prepareNext() {
     while (input.hasNext) {
-      nextResult = input.next()
-      if (predicate.isTrue(nextResult))
+      row = input.next()
+      if (predicate.isTrue(deliverNext))
         return
     }
-    endOfComputation()
+    close()
   }
+
+  protected def deliverNext = row
 }
 
 
