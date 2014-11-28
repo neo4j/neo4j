@@ -20,6 +20,7 @@
 package org.neo4j.csv.reader;
 
 import java.io.DataInputStream;
+import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
@@ -155,6 +156,10 @@ public class Readables
             try ( DataInputStream in = new DataInputStream( new FileInputStream( file ) ) )
             {
                 return in.readInt();
+            }
+            catch ( EOFException e )
+            {
+                return -1;
             }
         }
     };

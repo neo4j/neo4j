@@ -108,8 +108,16 @@ public abstract class AbstractStep<T> implements Step<T>
 
     protected void issuePanic( Throwable cause )
     {
+        issuePanic( cause, true );
+    }
+
+    protected void issuePanic( Throwable cause, boolean rethrow )
+    {
         control.panic( cause );
-        throw Exceptions.launderedException( cause );
+        if ( rethrow )
+        {
+            throw Exceptions.launderedException( cause );
+        }
     }
 
     protected long await( PrimitiveLongPredicate predicate, long value )

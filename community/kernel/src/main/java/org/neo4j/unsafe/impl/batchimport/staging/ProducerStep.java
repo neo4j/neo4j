@@ -56,7 +56,7 @@ public abstract class ProducerStep<T> extends AbstractStep<Void>
                 }
                 catch ( Throwable e )
                 {
-                    issuePanic( e );
+                    issuePanic( e, false );
                 }
             }
         }.start();
