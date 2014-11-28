@@ -36,7 +36,6 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.impl.api.legacyindex.AbstractIndexHits;
-import org.neo4j.kernel.impl.core.EntityFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 
 import static java.lang.Math.max;
@@ -59,9 +58,9 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
                     }
 
                     @Override
-                    Node entity( long id, EntityFactory entityFactory )
+                    Node entity( long id, GraphDatabaseService graphDatabaseService )
                     {
-                        return entityFactory.newNodeProxyById( id );
+                        return graphDatabaseService.getNodeById( id );
                     }
 
                     @Override
@@ -137,9 +136,9 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
                     }
 
                     @Override
-                    Relationship entity( long id, EntityFactory entityFactory )
+                    Relationship entity( long id, GraphDatabaseService graphDatabaseService )
                     {
-                        return entityFactory.newRelationshipProxyById( id );
+                        return graphDatabaseService.getRelationshipById( id );
                     }
 
                     @Override
@@ -210,7 +209,7 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
 
         abstract <T extends PropertyContainer> Class<T> getEntityType();
 
-        abstract <T extends PropertyContainer> T entity( long id, EntityFactory entityFactory );
+        abstract <T extends PropertyContainer> T entity( long id, GraphDatabaseService graphDatabaseService );
 
         abstract LegacyIndexHits get( ReadOperations operations, String name, String key, Object value )
                 throws LegacyIndexNotFoundKernelException;
@@ -243,8 +242,6 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
     public interface Lookup
     {
         GraphDatabaseService getGraphDatabaseService();
-
-        EntityFactory getEntityFactory();
     }
 
     protected final String name;
@@ -325,7 +322,15 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
                         }
                         catch ( NotFoundException e )
                         {   // By contract this is OK. So just skip it.
-                            // TODO this is probably the place to hook in "abandoned id read-repair as well"
+                            // But first, let's try to repair the index so this doesn't happen again.
+                            try ( Statement statement = statementContextBridge.instance() )
+                            {
+                                internalRemove( statement, id );
+                            }
+                            catch ( LegacyIndexNotFoundKernelException | InvalidTransactionTypeKernelException ignore )
+                            {
+                                // Ignore these failures because we are going to skip the entity anyway
+                            }
                         }
                     }
                 }
@@ -336,7 +341,7 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
 
     private T entityOf( long id )
     {
-        return type.entity( id, lookup.getEntityFactory() );
+        return type.entity( id, lookup.getGraphDatabaseService() );
     }
 
     @Override
@@ -437,7 +442,7 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
     {
         try ( Statement statement = statementContextBridge.instance() )
         {
-            type.remove( statement.dataWriteOperations(), name, type.id( entity ) );
+            internalRemove( statement, type.id( entity ) );
         }
         catch ( InvalidTransactionTypeKernelException e )
         {
@@ -447,6 +452,12 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
         {
             throw new NotFoundException( type + " index '" + name + "' doesn't exist" );
         }
+    }
+
+    private void internalRemove( Statement statement, long id )
+            throws InvalidTransactionTypeKernelException, LegacyIndexNotFoundKernelException
+    {
+        type.remove( statement.dataWriteOperations(), name, id );
     }
 
     @Override
