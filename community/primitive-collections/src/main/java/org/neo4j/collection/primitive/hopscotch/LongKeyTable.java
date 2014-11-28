@@ -19,6 +19,8 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
+import static java.util.Arrays.fill;
+
 public class LongKeyTable<VALUE>
         extends IntArrayBasedKeyTable<VALUE>
 {
@@ -30,13 +32,23 @@ public class LongKeyTable<VALUE>
     @Override
     public long key( int index )
     {
-        return getLong( index( index ) );
+        int actualIndex = index( index );
+        long low = table[actualIndex]&0xFFFFFFFFL;
+        long high = table[actualIndex+1]&0xFFFFFFFFL;
+        return (high << 32) | low;
     }
 
     @Override
     protected void internalPut( int actualIndex, long key, VALUE value )
     {
-        putLong( actualIndex, key );
+        table[actualIndex] = (int)key;
+        table[actualIndex+1] = (int)((key&0xFFFFFFFF00000000L) >>> 32);
+    }
+
+    @Override
+    protected void internalRemove( int actualIndex )
+    {
+        fill( table, actualIndex, actualIndex+2 /*2 bytes, i.e. leave the hop bits as is*/, -1 );
     }
 
     @Override

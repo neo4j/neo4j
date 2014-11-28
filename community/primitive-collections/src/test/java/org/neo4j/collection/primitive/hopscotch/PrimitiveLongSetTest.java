@@ -19,11 +19,11 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
+import org.junit.Test;
+
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.junit.Test;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
@@ -40,7 +40,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-
 import static org.neo4j.collection.primitive.Primitive.VALUE_MARKER;
 import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.NO_MONITOR;
 
@@ -447,15 +446,4 @@ public class PrimitiveLongSetTest
         // THEN
         assertThat( counter.get(), is( 3 ) );
     }
-
-    @Test
-    public void shouldHandleEmptySet() throws Exception
-    {
-        // GIVEN
-        PrimitiveLongSet set = Primitive.longSet( 0 );
-
-        // THEN
-        assertFalse( set.contains( 564 ) );
-    }
-
 }

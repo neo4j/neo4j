@@ -538,7 +538,9 @@ public class CacheLayer implements StoreReadLayer
     @Override
     public long reserveNode()
     {
-        return diskLayer.reserveNode();
+        long nodeId = diskLayer.reserveNode();
+        persistenceCache.reserveNode( nodeId );
+        return nodeId;
     }
 
     @Override
@@ -551,6 +553,7 @@ public class CacheLayer implements StoreReadLayer
     public void releaseNode( long id )
     {
         diskLayer.releaseNode( id );
+        persistenceCache.releaseNode(id);
     }
 
     @Override

@@ -27,14 +27,12 @@ public class TrackingRecordProxy<RECORD, ADDITIONAL> implements RecordProxy<Long
     private final RecordProxy<Long, RECORD, ADDITIONAL> delegate;
     private final Tracker tracker;
     private final boolean created;
-    private boolean changed;
 
     public TrackingRecordProxy( RecordProxy<Long, RECORD, ADDITIONAL> delegate, boolean created, Tracker tracker )
     {
         this.delegate = delegate;
         this.created = created;
         this.tracker = tracker;
-        this.changed = created;
     }
 
     @Override
@@ -52,10 +50,9 @@ public class TrackingRecordProxy<RECORD, ADDITIONAL> implements RecordProxy<Long
 
     private void trackChange()
     {
-        if ( !created && !changed )
+        if ( !created )
         {
             tracker.changingRelationship( getKey() );
-            changed = true;
         }
     }
 
@@ -88,11 +85,5 @@ public class TrackingRecordProxy<RECORD, ADDITIONAL> implements RecordProxy<Long
     public RECORD getBefore()
     {
         return delegate.getBefore();
-    }
-
-    @Override
-    public boolean isChanged()
-    {
-        return changed;
     }
 }

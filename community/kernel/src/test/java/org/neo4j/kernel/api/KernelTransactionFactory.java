@@ -22,7 +22,6 @@ package org.neo4j.kernel.api;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
-import org.neo4j.kernel.impl.api.RecordStateForCacheAccessor;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
@@ -52,7 +51,6 @@ public class KernelTransactionFactory
         return new KernelTransactionImplementation( mock( StatementOperationParts.class ),
                 mock( SchemaWriteGuard.class ), null, null,
                 null, mock( TransactionRecordState.class ),
-                mock( RecordStateForCacheAccessor.class ),
                 null, mock( NeoStore.class ), new NoOpClient(), new TransactionHooks(),
                 mock( ConstraintIndexCreator.class ), headerInformationFactory,
                 mock( TransactionRepresentationCommitProcess.class ), mock( TransactionMonitor.class ),

@@ -25,11 +25,9 @@ import java.util.TreeMap;
 
 import org.neo4j.collection.pool.LinkedQueuePool;
 import org.neo4j.function.Factory;
-import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.impl.store.AbstractRecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess;
-import org.neo4j.kernel.impl.util.statistics.IntCounter;
 
 /**
  * Provides direct access to records in a store. Changes are batched up and written whenever {@link #commit()}
@@ -48,8 +46,8 @@ public class DirectRecordAccess<KEY extends Comparable<KEY>,RECORD extends Abstr
             return -o1.compareTo( o2 );
         }
     });
+    private boolean changed;
     private final LinkedQueuePool<DirectRecordProxy> proxyFlyweightPool;
-    private final IntCounter changeCounter = new IntCounter();
 
     public DirectRecordAccess( AbstractRecordStore<RECORD> store, Loader<KEY, RECORD, ADDITIONAL> loader )
     {
@@ -74,7 +72,7 @@ public class DirectRecordAccess<KEY extends Comparable<KEY>,RECORD extends Abstr
         {
             return loaded;
         }
-        return putInBatch( key, proxy( key, loader.load( key, additionalData ), additionalData, false ) );
+        return putInBatch( key, proxy( key, loader.load( key, additionalData ), additionalData ) );
     }
 
     private RecordProxy<KEY, RECORD, ADDITIONAL> putInBatch( KEY key, DirectRecordProxy proxy )
@@ -87,45 +85,13 @@ public class DirectRecordAccess<KEY extends Comparable<KEY>,RECORD extends Abstr
     @Override
     public RecordProxy<KEY, RECORD, ADDITIONAL> create( KEY key, ADDITIONAL additionalData )
     {
-        return putInBatch( key, proxy( key, loader.newUnused( key, additionalData ), additionalData, true ) );
+        return putInBatch( key, proxy( key, loader.newUnused( key, additionalData ), additionalData ) );
     }
 
-    @Override
-    public RecordProxy<KEY,RECORD,ADDITIONAL> getIfLoaded( KEY key )
-    {
-        return batch.get( key );
-    }
-
-    @Override
-    public void setTo( KEY key, RECORD newRecord, ADDITIONAL additionalData )
-    {
-        throw new UnsupportedOperationException( "Not supported" );
-    }
-
-    @Override
-    public int changeSize()
-    {
-        return changeCounter.value();
-    }
-
-    @Override
-    public Iterable<RecordProxy<KEY,RECORD,ADDITIONAL>> changes()
-    {
-        return new IterableWrapper<RecordProxy<KEY,RECORD,ADDITIONAL>,DirectRecordProxy>(
-                batch.values() )
-        {
-            @Override
-            protected RecordProxy<KEY,RECORD,ADDITIONAL> underlyingObjectToObject( DirectRecordProxy object )
-            {
-                return object;
-            }
-        };
-    }
-
-    private DirectRecordProxy proxy( final KEY key, final RECORD record, final ADDITIONAL additionalData, boolean created )
+    private DirectRecordProxy proxy( final KEY key, final RECORD record, final ADDITIONAL additionalData )
     {
         DirectRecordProxy result = proxyFlyweightPool.acquire();
-        result.bind( key, record, additionalData, created );
+        result.bind( key, record, additionalData );
         return result;
     }
 
@@ -136,16 +102,11 @@ public class DirectRecordAccess<KEY extends Comparable<KEY>,RECORD extends Abstr
         private ADDITIONAL additionalData;
         private boolean changed;
 
-        public void bind( KEY key, RECORD record, ADDITIONAL additionalData, boolean created )
+        public void bind( KEY key, RECORD record, ADDITIONAL additionalData )
         {
-            this.changed = false;
             this.key = key;
             this.record = record;
             this.additionalData = additionalData;
-            if ( created )
-            {
-                prepareChange();
-            }
         }
 
         @Override
@@ -163,11 +124,8 @@ public class DirectRecordAccess<KEY extends Comparable<KEY>,RECORD extends Abstr
 
         private void prepareChange()
         {
-            if ( !changed )
-            {
-                changed = true;
-                changeCounter.increment();
-            }
+            changed = true;
+            DirectRecordAccess.this.changed = true;
         }
 
         @Override
@@ -216,12 +174,6 @@ public class DirectRecordAccess<KEY extends Comparable<KEY>,RECORD extends Abstr
                 store.updateRecord( record );
             }
         }
-
-        @Override
-        public boolean isChanged()
-        {
-            return changed;
-        }
     }
 
     @Override
@@ -232,7 +184,7 @@ public class DirectRecordAccess<KEY extends Comparable<KEY>,RECORD extends Abstr
 
     public void commit()
     {
-        if ( changeCounter.value() == 0 )
+        if ( !changed )
         {
             return;
         }
@@ -242,7 +194,6 @@ public class DirectRecordAccess<KEY extends Comparable<KEY>,RECORD extends Abstr
             proxy.store();
             proxyFlyweightPool.release( proxy );
         }
-        changeCounter.clear();
         batch.clear();
     }
 }

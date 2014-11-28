@@ -46,6 +46,12 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.RecordAccess;
+import org.neo4j.kernel.impl.transaction.state.RecordAccessSet;
+import org.neo4j.kernel.impl.transaction.state.RelationshipCreator;
+import org.neo4j.kernel.impl.transaction.state.RelationshipGroupGetter;
+import org.neo4j.kernel.impl.transaction.state.RelationshipLocker;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.unsafe.batchinsert.DirectRecordAccessSet;
@@ -152,7 +158,7 @@ public class RelationshipCreatorTest
         {
             return delegate.getSchemaRuleChanges();
         }
-
+        
         @Override
         public RecordAccess<Integer, PropertyKeyTokenRecord, Void> getPropertyKeyTokenChanges()
         {
@@ -175,12 +181,6 @@ public class RelationshipCreatorTest
         public void close()
         {
             delegate.close();
-        }
-
-        @Override
-        public boolean hasChanges()
-        {
-            return delegate.hasChanges();
         }
     }
 

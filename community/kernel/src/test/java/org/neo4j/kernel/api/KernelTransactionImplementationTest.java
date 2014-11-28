@@ -30,7 +30,6 @@ import org.neo4j.collection.pool.Pool;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
-import org.neo4j.kernel.impl.api.RecordStateForCacheAccessor;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.TransactionHooks;
@@ -354,7 +353,6 @@ public class KernelTransactionImplementationTest
     private final NeoStore neoStore = mock( NeoStore.class );
     private final TransactionHooks hooks = new TransactionHooks();
     private final TransactionRecordState recordState = mock( TransactionRecordState.class );
-    private final RecordStateForCacheAccessor recordStateAccessor = mock( RecordStateForCacheAccessor.class );
     private final LegacyIndexTransactionState legacyIndexState = mock( LegacyIndexTransactionState.class );
     private final TransactionMonitor transactionMonitor = mock( TransactionMonitor.class );
     private final CapturingCommitProcess commitProcess = new CapturingCommitProcess();
@@ -372,7 +370,7 @@ public class KernelTransactionImplementationTest
 
     private KernelTransactionImplementation newTransaction()
     {
-        return new KernelTransactionImplementation( null, null, null, null, null, recordState, recordStateAccessor,
+        return new KernelTransactionImplementation( null, null, null, null, null, recordState,
                 null, neoStore, new NoOpClient(), hooks, null, headerInformationFactory, commitProcess, transactionMonitor,
                 null, null, legacyIndexState, mock(Pool.class), clock );
     }

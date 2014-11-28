@@ -20,65 +20,42 @@
 package org.neo4j.kernel.impl.cache;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
-import java.util.concurrent.locks.LockSupport;
 
 import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.api.store.PersistenceCache;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
-import org.neo4j.kernel.impl.store.NeoStore;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.NamedFunction;
-import org.neo4j.test.RepeatRule;
-import org.neo4j.test.RepeatRule.Repeat;
 import org.neo4j.test.ThreadingRule;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.String.format;
-import static java.lang.System.currentTimeMillis;
 import static java.lang.Thread.currentThread;
 import static java.util.Arrays.asList;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.helpers.collection.Iterables.toList;
 
 public class CacheRaceTest
 {
@@ -99,9 +76,6 @@ public class CacheRaceTest
         }
     };
     private final NodeCache nodeCache = new NodeCache();
-    private final long seed = currentTimeMillis();
-    private final Random random = new Random( seed );
-    public final @Rule RepeatRule repeater = new RepeatRule();
     public final @Rule DatabaseRule db = new ImpermanentDatabaseRule()
     {
         @Override
@@ -190,299 +164,6 @@ public class CacheRaceTest
         // if before < after: we have managed to read the state before the transaction was written,
         //    and the cache needs to be cleared later.
         assertEquals( join( "\n\t", after ), before.size(), after.size() );
-    }
-
-    @Repeat( times = 100 )
-    @Test
-    public void shouldNotCacheDuplicateRelationshipsStressTest() throws Exception
-    {
-        final GraphDatabaseAPI graphDb = db.getGraphDatabaseAPI();
-        final CountDownLatch prepareLatch = new CountDownLatch( 2 );
-        final CountDownLatch startSignal = new CountDownLatch( 1 );
-        final Node node = createNode( graphDb );
-        Relationship[] initialRels = createRelationships( graphDb, node, 1000, null );
-        db.clearCache();
-
-        ControlledThread reader = new ControlledThread( "Reader", prepareLatch, startSignal, seed+1 )
-        {
-            @Override
-            protected void perform()
-            {
-                try ( Transaction tx = graphDb.beginTx() )
-                {
-                    IteratorUtil.count( node.getRelationships() );
-                    tx.success();
-                }
-                catch ( NotFoundException e )
-                {
-                    // Expected, although perhaps not every single time?
-                }
-            }
-        };
-        ControlledThread evictor = new ControlledThread( "Evictor", prepareLatch, startSignal, seed+2 )
-        {
-            @Override
-            protected void perform()
-            {
-                db.clearCache();
-            }
-        };
-        prepareLatch.await();
-
-        Pair<Relationship[],Relationship[]> modification = modifyRelationships( graphDb, node, 100, startSignal );
-        Relationship[] additionalRels = modification.first();
-        Relationship[] removedRels = modification.other();
-
-        // Allow the other threads to speak freely about any error that may have occurred as well
-        reader.awaitCompletion();
-        evictor.awaitCompletion();
-
-        // Verify that no duplicates exist and that the number of relationships add up
-        Relationship[] rels = null;
-        try ( Transaction tx = graphDb.beginTx() )
-        {
-            try
-            {
-                rels = duplicateSafeCountRelationships( node );
-                if ( rels.length != initialRels.length + additionalRels.length - removedRels.length )
-                {
-                    throw new IllegalStateException( "Relationship count mismatch" );
-                }
-                tx.success();
-            }
-            catch ( IllegalStateException e )
-            {
-                fail( e.getMessage() + ":\n" +
-                        "  initial:    " + Arrays.toString( initialRels ) + "\n" +
-                        "  additional: " + Arrays.toString( additionalRels ) + "\n" +
-                        "  removed:    " + Arrays.toString( removedRels ) + "\n" +
-        (rels != null ? "  rels:       " + Arrays.toString( rels ) + "\n" : "") +
-        (rels != null ? "  missing:    " + Arrays.toString( missingRels( initialRels, additionalRels, removedRels, rels ) ) + "\n" : "") +
-                        "  on-disk:\n"   + onDiskChain( graphDb, node.getId() ) + "\n" +
-                        "  seed:       " + seed );
-            }
-        }
-    }
-
-    private Relationship[] missingRels( Relationship[] initialRels, Relationship[] additionalRels, Relationship[] removedRels,
-            Relationship[] rels )
-    {
-        Set<Relationship> set = new HashSet<>();
-        set.addAll( Arrays.asList( initialRels ) );
-        set.addAll( Arrays.asList( additionalRels ) );
-        set.removeAll( Arrays.asList( removedRels ) );
-        set.removeAll( Arrays.asList( rels ) );
-        return set.toArray( new Relationship[set.size()] );
-    }
-
-    private String onDiskChain( GraphDatabaseAPI graphDb, long nodeId )
-    {
-        StringBuilder builder = new StringBuilder();
-        NeoStore neoStore = graphDb.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate();
-        NodeRecord node = neoStore.getNodeStore().getRecord( nodeId );
-        if ( node.isDense() )
-        {
-            RelationshipGroupRecord group = neoStore.getRelationshipGroupStore().getRecord( node.getNextRel() );
-            do
-            {
-                builder.append( "group " + group );
-                builder.append( "out:\n" );
-                printRelChain( builder, neoStore, nodeId, group.getFirstOut() );
-                builder.append( "in:\n" );
-                printRelChain( builder, neoStore, nodeId, group.getFirstIn() );
-                builder.append( "loop:\n" );
-                printRelChain( builder, neoStore, nodeId, group.getFirstLoop() );
-                group = group.getNext() != -1 ? neoStore.getRelationshipGroupStore().getRecord( group.getNext() ) : null;
-            } while ( group != null );
-        }
-        else
-        {
-            printRelChain( builder, neoStore, nodeId, node.getNextRel() );
-        }
-        return builder.toString();
-    }
-
-    private void printRelChain( StringBuilder builder, NeoStore access, long nodeId, long firstRelId )
-    {
-        for ( long rel = firstRelId; rel != Record.NO_NEXT_RELATIONSHIP.intValue(); )
-        {
-            RelationshipRecord record = access.getRelationshipStore().getRecord( rel );
-            builder.append( rel + "\t" + record + "\n" );
-            if ( record.getFirstNode() == nodeId )
-            {
-                rel = record.getFirstNextRel();
-            }
-            else
-            {
-                rel = record.getSecondNextRel();
-            }
-        }
-    }
-
-    private Relationship[] duplicateSafeCountRelationships( final Node node )
-    {
-        Set<Relationship> relationships = new HashSet<>();
-        List<Relationship> result = new ArrayList<>();
-        for ( Relationship relationship : node.getRelationships() )
-        {
-            if ( !relationships.add( relationship ) )
-            {
-                throw new IllegalStateException( "Spotted duplication relationship " + relationship );
-            }
-            result.add( relationship );
-        }
-
-        return result.toArray( new Relationship[result.size()] );
-    }
-
-    private Node createNode( GraphDatabaseService db )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            Node node = db.createNode();
-            tx.success();
-            return node;
-        }
-    }
-
-    private Relationship[] createRelationships( GraphDatabaseAPI graphDb, Node node, int relsBound,
-            CountDownLatch startLatch )
-    {
-        try ( Transaction tx = graphDb.beginTx() )
-        {
-            Node other = graphDb.createNode();
-
-            int nbrRels = random.nextInt( relsBound );
-            Relationship[] result = new Relationship[nbrRels];
-            for ( int i = 0; i < nbrRels; i++ )
-            {
-                result[i] = createRandomRelationship( node, other );
-            }
-
-            tx.success();
-
-            if ( startLatch != null )
-            {
-                startLatch.countDown();
-            }
-
-            return result;
-        }
-    }
-
-    private Relationship createRandomRelationship( Node node, Node other )
-    {
-        int dir = random.nextInt( 3 );
-        RelationshipType type = withName( "TYPE_" + random.nextInt( 4 ) );
-        Relationship rel;
-        if ( dir == 0 )
-        {   // OUTGOING
-            rel = node.createRelationshipTo( other, type );
-        }
-        else if ( dir == 1 )
-        {   // INCOMING
-            rel = other.createRelationshipTo( node, type );
-        }
-        else
-        {   // LOOP
-            rel = node.createRelationshipTo( node, type );
-        }
-        return rel;
-    }
-
-    private Pair<Relationship[],Relationship[]> modifyRelationships( GraphDatabaseAPI graphDb, Node node,
-            int maxNumberOfChanges, CountDownLatch startLatch )
-    {
-        try ( Transaction tx = graphDb.beginTx() )
-        {
-            List<Relationship> createdRelationships = new ArrayList<>();
-            List<Relationship> deletedRelationships = new ArrayList<>();
-            Node other = graphDb.createNode();
-            int changes = random.nextInt( maxNumberOfChanges );
-            for ( int i = 0; i < changes; i++ )
-            {
-                if ( random.nextFloat() < 0.8f ) // 1/5 or so
-                {
-                    createdRelationships.add( createRandomRelationship( node, other ) );
-                }
-                else
-                {
-                    Relationship deletedRelationship = deleteRandomRelationship( node );
-                    if ( deletedRelationship != null )
-                    {
-                        deletedRelationships.add( deletedRelationship );
-                    }
-                }
-            }
-
-            tx.success();
-
-            if ( startLatch != null )
-            {
-                startLatch.countDown();
-            }
-
-            return Pair.of(
-                    createdRelationships.toArray( new Relationship[createdRelationships.size()] ),
-                    deletedRelationships.toArray( new Relationship[deletedRelationships.size()] ) );
-        }
-    }
-
-    private Relationship deleteRandomRelationship( Node node )
-    {
-        List<Relationship> rels = toList( node.getRelationships() );
-        if ( !rels.isEmpty() )
-        {
-            Relationship relationship = rels.get( random.nextInt( rels.size() ) );
-            relationship.delete();
-            return relationship;
-        }
-        return null;
-    }
-
-    private static abstract class ControlledThread extends Thread
-    {
-        private final Random random;
-        private final CountDownLatch prepareLatch;
-        private final CountDownLatch startSignal;
-        private volatile Exception error;
-
-        ControlledThread( String name, CountDownLatch prepareLatch, CountDownLatch startSignal, long seed )
-        {
-            super( name );
-            this.random = new Random( seed );
-            this.prepareLatch = prepareLatch;
-            this.startSignal = startSignal;
-            start();
-        }
-
-        @Override
-        public void run()
-        {
-            try
-            {
-                prepareLatch.countDown();
-                startSignal.await();
-                LockSupport.parkNanos( random.nextInt( 20_000_000 ) );
-                perform();
-            }
-            catch ( Exception e )
-            {
-                error = e;
-                throw Exceptions.launderedException( e );
-            }
-        }
-
-        protected abstract void perform();
-
-        protected void awaitCompletion() throws Exception
-        {
-            join();
-            if ( error != null )
-            {
-                throw error;
-            }
-        }
     }
 
     private Function<GraphDatabaseService, Node> createNode( final Barrier done )
