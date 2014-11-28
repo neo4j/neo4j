@@ -29,12 +29,27 @@ package org.neo4j.kernel.impl.util;
  */
 public interface OutOfOrderSequence
 {
-    void offer( long number );
+    /**
+     * Offers a number to this sequence.
+     *
+     * @param number number to offer this sequence
+     * @param meta meta data about the number
+     * @return {@code true} if highest gap-free number changed as part of this call, otherwise {@code false}.
+     */
+    boolean offer( long number, long meta );
 
-    long get();
+    /**
+     * @return {@code long[]} with the highest offered gap-free number and its meta data.
+     */
+    long[] get();
+
+    /**
+     * @return the highest gap-free number, without its meta data.
+     */
+    long getHighestGapFreeNumber();
 
     /**
      * Used in recovery. I don't like the visibility of this method at all.
      */
-    void set( long number );
+    void set( long number, long meta );
 }

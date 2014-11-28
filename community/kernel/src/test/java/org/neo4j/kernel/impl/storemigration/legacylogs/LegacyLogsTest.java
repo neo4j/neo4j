@@ -33,6 +33,7 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.storemigration.FileOperation;
 import org.neo4j.kernel.impl.transaction.log.IOCursor;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
@@ -124,7 +125,7 @@ public class LegacyLogsTest
         }
 
         // when
-        new LegacyLogs( fs, reader, writer ).moveLogs( migrationDir, storeDir );
+        new LegacyLogs( fs, reader, writer ).operate( FileOperation.MOVE, migrationDir, storeDir );
 
         // then
         assertEquals( logsInStoreDir, new HashSet<>( Arrays.asList( fs.listFiles( storeDir ) ) ) );

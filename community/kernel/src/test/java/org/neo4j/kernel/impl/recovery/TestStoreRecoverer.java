@@ -104,7 +104,7 @@ public class TestStoreRecoverer
         NeoStoreUtil util = new NeoStoreUtil( store, fileSystem );
 
         LifeSupport life = new LifeSupport();
-        DeadSimpleTransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 2 );
+        DeadSimpleTransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 2, 0 );
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 10 );
         PhysicalLogFiles logFiles = new PhysicalLogFiles( store, PhysicalLogFile.DEFAULT_NAME, fileSystem );
         LogFile logFile = life.add( new PhysicalLogFile( fileSystem, logFiles, 1000,

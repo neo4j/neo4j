@@ -113,7 +113,7 @@ public final class BranchedStoreBean extends ManagementBeanProvider
         private BranchedStoreInfo parseBranchedStore( File branchDirectory )
         {
             final File neoStoreFile = new File( branchDirectory, NeoStore.DEFAULT_NAME );
-            long txId = NeoStore.getRecord( new DefaultFileSystemAbstraction(), neoStoreFile, Position.LAST_TRANSACTION );
+            long txId = NeoStore.getRecord( new DefaultFileSystemAbstraction(), neoStoreFile, Position.LAST_TRANSACTION_ID );
             long timestamp = Long.parseLong( branchDirectory.getName() );
             return new BranchedStoreInfo( branchDirectory.getName(), txId, timestamp );
         }

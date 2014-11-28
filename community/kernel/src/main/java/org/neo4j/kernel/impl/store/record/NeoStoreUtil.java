@@ -37,6 +37,10 @@ import static java.lang.String.format;
 
 import static org.neo4j.kernel.impl.store.NeoStore.RECORD_SIZE;
 
+/**
+ * Reads the contents of a {@link NeoStore neostore} store. Namely all of its {@link Position records}
+ * and makes those {@link #getValue(Position) available} for viewing.
+ */
 public class NeoStoreUtil
 {
     private final Map<Position,Long> values = new HashMap<>();
@@ -86,6 +90,14 @@ public class NeoStoreUtil
         return buf.getLong();
     }
 
+    /**
+     * Returns the record value for the given {@link Position position}.
+     *
+     * @param position record to return value for.
+     * @return the {@code long} value read from the record specified by {@code position}.
+     * @throws IllegalStateException if the neostore that these values were read from didn't have
+     * the record specified by {@link Position position}.
+     */
     public long getValue( Position position )
     {
         Long value = values.get( position );
@@ -109,7 +121,7 @@ public class NeoStoreUtil
 
     public long getLastCommittedTx()
     {
-        return getValue( Position.LAST_TRANSACTION );
+        return getValue( Position.LAST_TRANSACTION_ID );
     }
 
     public long getLogVersion()

@@ -19,7 +19,10 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
 
 import static java.lang.Math.max;
 import static java.lang.String.format;
@@ -61,6 +64,37 @@ public class HexPrinter
         checkNewLine();
         addHexValue( value );
         return this;
+    }
+
+    public void append( ReadableByteChannel source ) throws IOException
+    {
+        append( source, -1 );
+    }
+
+    public void append( ReadableByteChannel source, int atMost ) throws IOException
+    {
+        boolean indefinite = atMost == -1;
+        ByteBuffer buffer = ByteBuffer.allocate( 4*1024 );
+        while ( true )
+        {
+            buffer.clear();
+            if ( !indefinite )
+            {
+                buffer.limit( Math.min( buffer.capacity(), atMost ) );
+            }
+            int read = source.read( buffer );
+            if ( read == -1 )
+            {
+                break;
+            }
+
+            atMost -= read;
+            buffer.flip();
+            while ( buffer.hasRemaining() )
+            {
+                append( buffer.get() );
+            }
+        }
     }
 
     private void addHexValue( byte value )

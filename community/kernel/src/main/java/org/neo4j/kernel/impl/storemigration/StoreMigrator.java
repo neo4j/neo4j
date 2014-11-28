@@ -22,7 +22,8 @@ package org.neo4j.kernel.impl.storemigration;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.security.SecureRandom;
+import java.io.Reader;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -31,6 +32,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 import org.neo4j.helpers.collection.Iterables;
@@ -182,8 +184,12 @@ public class StoreMigrator implements StoreMigrationParticipant
     {
         progressMonitor.started();
 
-        long lastTxId = NeoStore.getRecord( fileSystem, new File( storeDir, NeoStore.DEFAULT_NAME ),
-                Position.LAST_TRANSACTION );
+        // Extract information about the last transaction from legacy neostore
+        NeoStoreUtil neoStoreAccess = new NeoStoreUtil( storeDir, fileSystem );
+        long lastTxId = neoStoreAccess.getLastCommittedTx();
+        long lastTxChecksum = extractTransactionChecksum( neoStoreAccess, storeDir, lastTxId );
+        // Write the tx checksum to file in migrationDir, because we need it later when moving files into storeDir
+        writeLastTxChecksum( migrationDir, lastTxChecksum );
 
         if ( versionToUpgradeFrom( fileSystem, storeDir ).equals( Legacy21Store.LEGACY_VERSION ) )
         {
@@ -203,15 +209,64 @@ public class StoreMigrator implements StoreMigrationParticipant
         else
         {
             // migrate stores
-            migrateWithBatchImporter( storeDir, migrationDir, lastTxId, pageCache );
+            migrateWithBatchImporter( storeDir, migrationDir, lastTxId, lastTxChecksum, pageCache );
 
             // don't create counters from scratch, since the batch importer just did
         }
 
-        // migrate logs
-        legacyLogs.migrateLogs( storeDir, migrationDir );
+        // DO NOT migrate logs. LegacyLogs is able to migrate logs, but only changes its format, not any
+        // contents of it, and since the record format has changed there would be a mismatch between the
+        // commands in the log and the contents in the store. If log migration is to be performed there
+        // must be a proper translation happening while doing so.
 
         progressMonitor.finished();
+    }
+
+    private void writeLastTxChecksum( File migrationDir, long lastTxChecksum ) throws IOException
+    {
+        try ( Writer writer = fileSystem.openAsWriter( lastTxChecksumFile( migrationDir ), "utf-8", false ) )
+        {
+            writer.write( String.valueOf( lastTxChecksum ) );
+        }
+    }
+
+    private long readLastTxChecksum( File migrationDir ) throws IOException
+    {
+        try ( Reader reader = fileSystem.openAsReader( lastTxChecksumFile( migrationDir ), "utf-8" ) )
+        {
+            char[] buffer = new char[100];
+            int chars = reader.read( buffer );
+            return Long.parseLong( String.valueOf( buffer, 0, chars ) );
+        }
+    }
+
+    private File lastTxChecksumFile( File migrationDir )
+    {
+        return new File( migrationDir, "lastxchecksum" );
+    }
+
+    private long extractTransactionChecksum( NeoStoreUtil neoStoreAccess, File storeDir, long txId )
+    {
+        try
+        {
+            return neoStoreAccess.getLastCommittedTxChecksum();
+        }
+        catch ( IllegalStateException e )
+        {
+            // The legacy store we're migrating doesn't have this record in neostore so try to extract it from tx log
+            try
+            {
+                return legacyLogs.getTransactionChecksum( storeDir, txId );
+            }
+            catch ( IOException ioe )
+            {
+                // OK, so the legacy store didn't even have this transaction checksum in its transaction logs,
+                // so just generate a random new one. I don't think it matters since we know that in a
+                // multi-database scenario there can only be one of them upgrading, the other ones will have to
+                // copy that database.
+                return Math.abs( new Random().nextLong() );
+            }
+        }
     }
 
     private void copyStores( File storeDir, File migrationDir, String... suffixes ) throws IOException {
@@ -267,8 +322,8 @@ public class StoreMigrator implements StoreMigrationParticipant
         }
     }
 
-    private void migrateWithBatchImporter( File storeDir, File migrationDir, long lastTxId, PageCache pageCache )
-            throws IOException
+    private void migrateWithBatchImporter( File storeDir, File migrationDir, long lastTxId, long lastTxChecksum,
+            PageCache pageCache ) throws IOException
     {
         prepareBatchImportMigration( storeDir, migrationDir );
 
@@ -288,7 +343,7 @@ public class StoreMigrator implements StoreMigrationParticipant
         BatchImporter importer = new ParallelBatchImporter( migrationDir.getAbsolutePath(), fileSystem,
                 new Configuration.OverrideFromConfig( config ), logging,
                 migrationBatchImporterMonitor( legacyStore, progressMonitor ),
-                parallel(), readHighTokenIds( storeDir, lastTxId ) );
+                parallel(), readAdditionalIds( storeDir, lastTxId, lastTxChecksum ) );
         Iterable<InputNode> nodes = legacyNodesAsInput( legacyStore );
         Iterable<InputRelationship> relationships = legacyRelationshipsAsInput( legacyStore );
         importer.doImport( Inputs.input( nodes, relationships, IdMappers.actual(), IdGenerators.fromInput() ) );
@@ -331,7 +386,8 @@ public class StoreMigrator implements StoreMigrationParticipant
         StoreFile.ensureStoreVersion( fileSystem, migrationDir, storeFiles );
     }
 
-    private AdditionalInitialIds readHighTokenIds( File storeDir, final long lastTxId ) throws IOException
+    private AdditionalInitialIds readAdditionalIds( File storeDir, final long lastTxId, final long lastTxChecksum )
+            throws IOException
     {
         final int propertyKeyTokenHighId =
                 readHighIdFromIdFileIfExists( storeDir, StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME );
@@ -363,6 +419,12 @@ public class StoreMigrator implements StoreMigrationParticipant
             public long lastCommittedTransactionId()
             {
                 return lastTxId;
+            }
+
+            @Override
+            public long lastCommittedTransactionChecksum()
+            {
+                return lastTxChecksum;
             }
         };
     }
@@ -629,12 +691,12 @@ public class StoreMigrator implements StoreMigrationParticipant
         // ensure the store version is correct
         ensureStoreVersions( storeDir );
 
-        // update or add upgrade id and time
-        updateOrAddUpgradeIdAndUpgradeTime( storeDir );
+        // update or add upgrade id and time and other necessary neostore records
+        updateOrAddNeoStoreFieldsAsPartOfMigration( migrationDir, storeDir );
 
-        // move logs
-        legacyLogs.moveLogs( migrationDir, storeDir );
-        legacyLogs.renameLogFiles( storeDir );
+        // delete old logs
+        legacyLogs.operate( DELETE, storeDir, null );
+        legacyLogs.deleteUnusedLogFiles( storeDir );
     }
 
     private void ensureStoreVersions( File dir ) throws IOException
@@ -644,11 +706,29 @@ public class StoreMigrator implements StoreMigrationParticipant
         StoreFile.ensureStoreVersion( fileSystem, dir, versionedStores );
     }
 
-    private void updateOrAddUpgradeIdAndUpgradeTime( File storeDirectory ) throws IOException
+    private void updateOrAddNeoStoreFieldsAsPartOfMigration( File migrationDir, File storeDir )
+            throws IOException
     {
-        final File neostore = new File( storeDirectory, NeoStore.DEFAULT_NAME );
-        NeoStore.setOrAddUpgradeIdOnMigration( fileSystem, neostore, new SecureRandom().nextLong() );
-        NeoStore.setOrAddUpgradeTimeOnMigration( fileSystem, neostore, System.currentTimeMillis() );
+        final File storeDirNeoStore = new File( storeDir, NeoStore.DEFAULT_NAME );
+        NeoStore.setRecord( fileSystem, storeDirNeoStore, Position.UPGRADE_TRANSACTION_ID,
+                NeoStore.getRecord( fileSystem, storeDirNeoStore, Position.LAST_TRANSACTION_ID ) );
+        NeoStore.setRecord( fileSystem, storeDirNeoStore, Position.UPGRADE_TIME, System.currentTimeMillis() );
+
+        // Store the checksum of the transaction id the upgrade is at right now. Store it both as
+        // LAST_TRANSACTION_CHECKSUM and UPGRADE_TRANSACTION_CHECKSUM. Initially the last transaction and the
+        // upgrade transaction will be the same, but imagine this scenario:
+        //  - legacy store is migrated on instance A at transaction T
+        //  - upgraded store is copied, via backup or HA or whatever to instance B
+        //  - instance A performs a transaction
+        //  - instance B would like to communicate with A where B's last transaction checksum
+        //    is verified on A. A, at this point not having logs from pre-migration era, will need to
+        //    know the checksum of transaction T to accommodate for this request from B. A will be able
+        //    to look up checksums for transactions succeeding T by looking at its transaction logs,
+        //    but T needs to be stored in neostore to be accessible. Obvioously this scenario is only
+        //    problematic as long as we don't migrate and translate old logs.
+        long lastTxChecksum = readLastTxChecksum( migrationDir );
+        NeoStore.setRecord( fileSystem, storeDirNeoStore, Position.LAST_TRANSACTION_CHECKSUM, lastTxChecksum );
+        NeoStore.setRecord( fileSystem, storeDirNeoStore, Position.UPGRADE_TRANSACTION_CHECKSUM, lastTxChecksum );
     }
 
     @Override

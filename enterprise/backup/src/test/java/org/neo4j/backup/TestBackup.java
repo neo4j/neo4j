@@ -20,9 +20,9 @@
 package org.neo4j.backup;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
@@ -30,7 +30,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -39,13 +38,14 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.Settings;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
 import org.neo4j.kernel.StoreLockException;
+import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
+import org.neo4j.kernel.impl.store.NeoStore.Position;
 import org.neo4j.kernel.impl.store.record.NeoStoreUtil;
-import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TargetDirectory;
@@ -56,7 +56,6 @@ import static java.lang.Integer.parseInt;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -132,9 +131,8 @@ public class TestBackup
     }
 
     @Test
-    public void backupLeavesLastTxInLog() throws Exception
+    public void backedUpDatabaseContainsChecksumOfLastTx() throws Exception
     {
-        GraphDatabaseAPI db = null;
         ServerInterface server = null;
         try
         {
@@ -146,7 +144,8 @@ public class TestBackup
             shutdownServer( server );
             server = null;
 
-            assertMetadataAboutLastTransactionExists( backupPath );
+            long firstChecksum = lastTxChecksumOf( serverPath );
+            assertEquals( firstChecksum, lastTxChecksumOf( backupPath ) );
 
             addMoreData( serverPath );
             server = startServer( serverPath );
@@ -155,14 +154,12 @@ public class TestBackup
             shutdownServer( server );
             server = null;
 
-            assertMetadataAboutLastTransactionExists( backupPath );
+            long secondChecksum = lastTxChecksumOf( serverPath );
+            assertEquals( secondChecksum, lastTxChecksumOf( backupPath ) );
+            assertTrue( firstChecksum != secondChecksum );
         }
         finally
         {
-            if ( db != null )
-            {
-                db.shutdown();
-            }
             if ( server != null )
             {
                 shutdownServer( server );
@@ -516,32 +513,10 @@ public class TestBackup
         return new File( directory, StringLogger.DEFAULT_NAME ).exists();
     }
 
-    private void assertMetadataAboutLastTransactionExists( File storeDir )
+    private long lastTxChecksumOf( File storeDir )
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.getPath() );
-        long lastCommittedTransactionId = -1;
-        try
-        {
-            DependencyResolver resolver = db.getDependencyResolver();
-            LogicalTransactionStore transactionStore = resolver.resolveDependency( LogicalTransactionStore.class );
-            TransactionIdStore transactionIdStore = resolver.resolveDependency( TransactionIdStore.class );
-            lastCommittedTransactionId = transactionIdStore.getLastCommittedTransactionId();
-            assertNotNull( transactionStore.getMetadataFor( lastCommittedTransactionId ) );
-            // Good, we got the metadata. If it's missing a NoSuchTransactionException should have been thrown
-            // the not-null check is just because it looks better.
-        }
-        catch ( NoSuchTransactionException e )
-        {
-            fail( "Transaction metadata for " + lastCommittedTransactionId + " not found: " + e );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-        finally
-        {
-            db.shutdown();
-        }
+        NeoStoreUtil neoStore = new NeoStoreUtil( storeDir );
+        return neoStore.getValue( Position.LAST_TRANSACTION_CHECKSUM );
     }
 
     private ServerInterface startServer( File path ) throws Exception
@@ -580,8 +555,30 @@ public class TestBackup
 
     private GraphDatabaseService startGraphDatabase( File path, boolean withOnlineBackup )
     {
-        return new GraphDatabaseFactory().
-            newEmbeddedDatabaseBuilder( path.getPath() ).
+        GraphDatabaseFactory dbFactory = new GraphDatabaseFactory()
+        {
+            @Override
+            protected GraphDatabaseService newDatabase( String path, Map<String,String> config,
+                    Dependencies dependencies )
+            {
+                return new EmbeddedGraphDatabase( path, config, dependencies )
+                {
+                    @Override
+                    protected TransactionHeaderInformationFactory createHeaderInformationFactory()
+                    {
+                        return new TransactionHeaderInformationFactory.WithRandomBytes()
+                        {
+                            @Override
+                            protected TransactionHeaderInformation createUsing( byte[] additionalHeader )
+                            {
+                                return new TransactionHeaderInformation( 1, 2, additionalHeader );
+                            }
+                        };
+                    }
+                };
+            }
+        };
+        return dbFactory.newEmbeddedDatabaseBuilder( path.getPath() ).
             setConfig( OnlineBackupSettings.online_backup_enabled, String.valueOf( withOnlineBackup ) ).
             setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE ).
             newGraphDatabase();

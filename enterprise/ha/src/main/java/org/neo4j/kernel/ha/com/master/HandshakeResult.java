@@ -21,13 +21,11 @@ package org.neo4j.kernel.ha.com.master;
 
 public class HandshakeResult
 {
-    private final int txAuthor;
     private final long txChecksum;
     private final long epoch;
 
-    public HandshakeResult( int txAuthor, long txChecksum, long epoch )
+    public HandshakeResult( long txChecksum, long epoch )
     {
-        this.txAuthor = txAuthor;
         this.txChecksum = txChecksum;
         this.epoch = epoch;
     }
@@ -37,20 +35,14 @@ public class HandshakeResult
         return epoch;
     }
 
-    public int txAuthor()
-    {
-        return txAuthor;
-    }
-
     public long txChecksum()
     {
         return txChecksum;
     }
-    
+
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[author:" + txAuthor + ", checksum:" + txChecksum +
-                ", epoch:" + epoch + "]";
+        return getClass().getSimpleName() + "[checksum:" + txChecksum + ", epoch:" + epoch + "]";
     }
 }

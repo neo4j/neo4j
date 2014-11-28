@@ -189,7 +189,6 @@ public enum HaRequestType210 implements RequestType<Master>
         @Override
         public void write( HandshakeResult responseObject, ChannelBuffer result ) throws IOException
         {
-            result.writeInt( responseObject.txAuthor() );
             result.writeLong( responseObject.txChecksum() );
             result.writeLong( responseObject.epoch() );
         }

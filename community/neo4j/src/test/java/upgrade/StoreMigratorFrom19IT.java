@@ -26,7 +26,6 @@ import java.util.Set;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -113,12 +112,11 @@ public class StoreMigratorFrom19IT
         assertConsistentStore( storeDir.directory() );
     }
 
-    @Ignore( "TODO Temporarily disabled" )
     @Test
     public void shouldMigrateCluster() throws Throwable
     {
         // Given
-        File legacyStoreDir = find19FormatStoreDirectory( storeDir.directory() );
+        File legacyStoreDir = find19FormatHugeStoreDirectory( storeDir.directory() );
 
         // When
         newStoreUpgrader().migrateIfNeeded( legacyStoreDir, schemaIndexProvider, pageCache );
@@ -187,7 +185,7 @@ public class StoreMigratorFrom19IT
         verifier.verifyLegacyIndex();
     }
 
-    private static void verifySlaveContents( HighlyAvailableGraphDatabase haDb )
+    private static void verifySlaveContents( GraphDatabaseService haDb )
     {
         DatabaseContentVerifier verifier = new DatabaseContentVerifier( haDb, 1 );
         verifyNumberOfNodesAndRelationships( verifier );

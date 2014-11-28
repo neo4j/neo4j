@@ -19,19 +19,19 @@
  */
 package upgrade;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.mockito.Mockito;
-
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.mockito.Mockito;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -60,6 +60,7 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+
 import static org.hamcrest.Matchers.emptyCollectionOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
@@ -76,6 +77,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveVersion;
@@ -93,7 +95,7 @@ import static org.neo4j.kernel.logging.DevNullLoggingService.DEV_NULL;
 public class StoreUpgraderTest
 {
     private final String version;
-    private SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
+    private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
 
     public StoreUpgraderTest( String version )
     {
@@ -286,7 +288,7 @@ public class StoreUpgraderTest
         NeoStore neoStore = new StoreFactory( fileSystem, dbDirectory, pageCache,
                 StringLogger.DEV_NULL, mock( Monitors.class ) ).newNeoStore( false, false );
 
-        assertThat( neoStore.getUpgradeId(), not( equalTo( NeoStore.FIELD_NOT_INITIALIZED ) ) );
+        assertThat( neoStore.getUpgradeTransaction(), equalTo( neoStore.getLastCommittedTransaction() ) );
         assertThat( neoStore.getUpgradeTime(), not( equalTo( NeoStore.FIELD_NOT_INITIALIZED ) ) );
 
         long minuteAgo = System.currentTimeMillis() - MINUTES.toMillis( 1 );

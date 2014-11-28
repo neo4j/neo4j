@@ -19,14 +19,11 @@
  */
 package org.neo4j.kernel.ha.com;
 
-import java.io.IOException;
-
 import org.neo4j.com.RequestContext;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class RequestContextFactory extends LifecycleAdapter
@@ -37,9 +34,9 @@ public class RequestContextFactory extends LifecycleAdapter
     private LogicalTransactionStore txStore;
     private TransactionIdStore txIdStore;
 
-    public static final int VOID_EVENT_IDENTIFIER = -3; 
+    public static final int VOID_EVENT_IDENTIFIER = -3;
     public static final int DEFAULT_EVENT_IDENTIFIER = -1;
-    
+
     public RequestContextFactory( int serverId, DependencyResolver resolver )
     {
         this.resolver = resolver;
@@ -68,30 +65,10 @@ public class RequestContextFactory extends LifecycleAdapter
 
     public RequestContext newRequestContext( long epoch, int machineId, int eventIdentifier )
     {
-        long latestTxId = txIdStore.getLastCommittedTransactionId();
-        if ( latestTxId == 0 )
-        {
-            return new RequestContext( epoch, machineId, eventIdentifier, 0, -1, -1 );
-        }
-        TransactionMetadataCache.TransactionMetadata txMetadata = null;
-        try
-        {
-            txMetadata = txStore.getMetadataFor( latestTxId );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-        if ( txMetadata != null )
-        {
-            return new RequestContext(
-                    epoch, machineId, eventIdentifier, latestTxId, txMetadata.getMasterId(), txMetadata.getChecksum() );
-        }
-        else
-        {
-            return new RequestContext(
-                    epoch, machineId, eventIdentifier, latestTxId, -1, -1 );
-        }
+        long[] lastTx = txIdStore.getLastCommittedTransaction();
+        // TODO beware, there's a race between getting tx id and checksum, and changes to last tx
+        // it must be fixed
+        return new RequestContext( epoch, machineId, eventIdentifier, lastTx[0], lastTx[1] );
     }
 
     public RequestContext newRequestContext( int eventIdentifier )

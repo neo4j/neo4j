@@ -89,7 +89,6 @@ import org.neo4j.kernel.impl.api.ReadOnlyTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
-import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
@@ -287,7 +286,6 @@ public abstract class InternalAbstractGraphDatabase
     protected AvailabilityGuard availabilityGuard;
     protected long transactionStartTimeout;
     protected StoreUpgrader storeMigrationProcess;
-    protected TransactionHeaderInformation transactionHeaderInformation;
     protected DataSourceManager dataSourceManager;
     private StartupStatisticsProvider startupStatistics;
     private QueryExecutionEngine queryExecutor = QueryEngineProvider.noEngine();
@@ -578,7 +576,6 @@ public abstract class InternalAbstractGraphDatabase
 
         startupStatistics = new StartupStatisticsProvider();
 
-        transactionHeaderInformation = createTransactionHeaderInformation();
         createNeoDataSource();
 
         life.add( new MonitorGc( config, msgLog ) );
@@ -627,11 +624,6 @@ public abstract class InternalAbstractGraphDatabase
                 return InternalAbstractGraphDatabase.this;
             }
         };
-    }
-
-    protected TransactionHeaderInformation createTransactionHeaderInformation()
-    {
-        return new TransactionHeaderInformation( -1, -1, new byte[0] );
     }
 
     protected Monitors createMonitors()

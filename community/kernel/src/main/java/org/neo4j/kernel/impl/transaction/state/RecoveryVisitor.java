@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 
 public class RecoveryVisitor implements Visitor<CommittedTransactionRepresentation,IOException>, Closeable
 {
@@ -42,6 +43,7 @@ public class RecoveryVisitor implements Visitor<CommittedTransactionRepresentati
     private final AtomicInteger recoveredCount;
     private final Monitor monitor;
     private long lastTransactionIdApplied = -1;
+    private long lastTransactionChecksum;
 
     public RecoveryVisitor( TransactionIdStore store,
                             TransactionRepresentationStoreApplier storeApplier,
@@ -64,6 +66,7 @@ public class RecoveryVisitor implements Visitor<CommittedTransactionRepresentati
         }
         recoveredCount.incrementAndGet();
         lastTransactionIdApplied = txId;
+        lastTransactionChecksum = LogEntryStart.checksum( transaction.getStartEntry() );
         monitor.transactionRecovered( txId );
         return false;
     }
@@ -73,7 +76,7 @@ public class RecoveryVisitor implements Visitor<CommittedTransactionRepresentati
     {
         if ( lastTransactionIdApplied != -1 )
         {
-            store.setLastCommittedAndClosedTransactionId( lastTransactionIdApplied );
+            store.setLastCommittedAndClosedTransactionId( lastTransactionIdApplied, lastTransactionChecksum );
         }
     }
 }

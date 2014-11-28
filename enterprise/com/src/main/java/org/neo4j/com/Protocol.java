@@ -19,17 +19,17 @@
  */
 package org.neo4j.com;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.LinkedList;
+import java.util.List;
+
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder;
 import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.LinkedList;
-import java.util.List;
 
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.helpers.collection.Visitor;
@@ -278,7 +278,6 @@ public abstract class Protocol
         targetBuffer.writeInt( context.getEventIdentifier() );
         long tx = context.lastAppliedTransaction();
         targetBuffer.writeLong( tx );
-        targetBuffer.writeInt( context.getMasterId() );
         targetBuffer.writeLong( context.getChecksum() );
     }
 

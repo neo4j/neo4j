@@ -19,8 +19,6 @@
  */
 package org.neo4j.backup;
 
-import java.io.IOException;
-
 import org.jboss.netty.channel.Channel;
 
 import org.neo4j.backup.BackupClient.BackupRequestType;
@@ -46,7 +44,7 @@ class BackupServer extends Server<TheBackupInterface, Object>
     static final int FRAME_LENGTH = Protocol.MEGA * 4;
 
     public BackupServer( TheBackupInterface requestTarget, final HostnamePort server,
-                         Logging logging, ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor ) throws IOException
+                         Logging logging, ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
     {
         super( requestTarget, new Configuration()
         {
@@ -73,9 +71,9 @@ class BackupServer extends Server<TheBackupInterface, Object>
             {
                 return server;
             }
-                }, logging, FRAME_LENGTH, new ProtocolVersion( PROTOCOL_VERSION,
-                        ProtocolVersion.INTERNAL_PROTOCOL_VERSION ),
-                TxChecksumVerifier.ALWAYS_MATCH, SYSTEM_CLOCK, byteCounterMonitor, requestMonitor );
+        }, logging, FRAME_LENGTH, new ProtocolVersion( PROTOCOL_VERSION,
+                ProtocolVersion.INTERNAL_PROTOCOL_VERSION ),
+        TxChecksumVerifier.ALWAYS_MATCH, SYSTEM_CLOCK, byteCounterMonitor, requestMonitor );
     }
 
     @Override

@@ -44,11 +44,9 @@ public class ToFileStoreWriter implements StoreWriter
             temporaryBuffer.clear();
             File file = new File( basePath, path );
 
-            RandomAccessFile randomAccessFile = null;
-            try
+            file.getParentFile().mkdirs();
+            try ( RandomAccessFile randomAccessFile = new RandomAccessFile( file, "rw" ) )
             {
-                file.getParentFile().mkdirs();
-                randomAccessFile = new RandomAccessFile( file, "rw" );
                 int totalWritten = 0;
                 if ( hasData )
                 {
@@ -62,13 +60,6 @@ public class ToFileStoreWriter implements StoreWriter
                     }
                 }
                 return totalWritten;
-            }
-            finally
-            {
-                if ( randomAccessFile != null )
-                {
-                    randomAccessFile.close();
-                }
             }
         }
         catch ( Throwable t )

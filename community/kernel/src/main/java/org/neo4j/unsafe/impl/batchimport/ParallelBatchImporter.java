@@ -81,7 +81,7 @@ public class ParallelBatchImporter implements BatchImporter
     private final StringLogger logger;
     private final Monitors monitors;
     private final WriterFactory writerFactory;
-    private final AdditionalInitialIds highTokenIds;
+    private final AdditionalInitialIds additionalInitialIds;
 
     /**
      * Advanced usage of the parallel batch importer, for special and very specific cases. Please use
@@ -89,13 +89,13 @@ public class ParallelBatchImporter implements BatchImporter
      */
     public ParallelBatchImporter( String storeDir, FileSystemAbstraction fileSystem, Configuration config,
             Logging logging, ExecutionMonitor executionMonitor, Function<Configuration,WriterFactory> writerFactory,
-            AdditionalInitialIds highTokenIds )
+            AdditionalInitialIds additionalInitialIds )
     {
         this.storeDir = storeDir;
         this.fileSystem = fileSystem;
         this.config = config;
         this.logging = logging;
-        this.highTokenIds = highTokenIds;
+        this.additionalInitialIds = additionalInitialIds;
         this.logger = logging.getMessagesLog( getClass() );
         this.executionPoller = new ExecutionSupervisor( Clock.SYSTEM_CLOCK, new MultiExecutionMonitor(
                 executionMonitor, new DynamicProcessorAssigner( config, config.maxNumberOfProcessors() ) ) );
@@ -121,7 +121,7 @@ public class ParallelBatchImporter implements BatchImporter
         NodeLabelsCache nodeLabelsCache = null;
         long startTime = currentTimeMillis();
         try ( BatchingNeoStore neoStore = new BatchingNeoStore( fileSystem, storeDir, config,
-                writeMonitor, logging, monitors, writerFactory, highTokenIds ) )
+                writeMonitor, logging, monitors, writerFactory, additionalInitialIds ) )
         {
             // Some temporary caches and indexes in the import
             IdMapper idMapper = input.idMapper();

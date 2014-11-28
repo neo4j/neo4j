@@ -292,7 +292,7 @@ public class MasterClient210 extends Client<Master> implements MasterClient
                     public HandshakeResult read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws
                             IOException
                     {
-                        return new HandshakeResult( buffer.readInt(), buffer.readLong(), buffer.readLong() );
+                        return new HandshakeResult( buffer.readLong(), buffer.readLong() );
                     }
                 }, storeId, ResponseUnpacker.NO_OP_TX_HANDLER
         );
@@ -309,7 +309,7 @@ public class MasterClient210 extends Client<Master> implements MasterClient
     private RequestContext stripFromTransactions( RequestContext context )
     {
         return new RequestContext( context.getEpoch(), context.machineId(), context.getEventIdentifier(),
-                0, context.getMasterId(), context.getChecksum() );
+                0, context.getChecksum() );
     }
 
     @Override

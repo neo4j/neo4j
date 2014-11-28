@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.io.IOException;
-
 import org.junit.Before;
 import org.junit.Test;
 
@@ -44,7 +42,7 @@ public class AbstractTokenCreatorTest
     private final Master master = mock( Master.class );
     private final RequestContextFactory requestContextFactory = mock( RequestContextFactory.class );
 
-    private final RequestContext context = new RequestContext( 1, 2, 3, 4, 5, 6 );
+    private final RequestContext context = new RequestContext( 1, 2, 3, 4, 5 );
 
     private final String label = "A";
     private final Response<Integer> response = new TransactionStreamResponse<>( 42, null, null, null );
@@ -68,7 +66,7 @@ public class AbstractTokenCreatorTest
     }
 
     @Test
-    public void shouldCreateALabelOnMasterAndApplyItLocally() throws IOException
+    public void shouldCreateALabelOnMasterAndApplyItLocally()
     {
         // GIVEN
         int responseValue = response.response();
@@ -81,7 +79,7 @@ public class AbstractTokenCreatorTest
     }
 
     @Test
-    public void shouldThrowIfCreateThrowsAnException() throws IOException
+    public void shouldThrowIfCreateThrowsAnException()
     {
         // GIVEN
         RuntimeException re = new RuntimeException( "IO" );

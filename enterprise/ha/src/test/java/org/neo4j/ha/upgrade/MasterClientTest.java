@@ -38,7 +38,6 @@ import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.MasterClient214;
@@ -102,7 +101,7 @@ public class MasterClientTest
     {
         // Given
         MasterImpl.SPI masterImplSPI = MasterImplTest.mockedSpi( new StoreId( 1, 2, 3, 4 ) );
-        when( masterImplSPI.getMasterIdForCommittedTx( anyLong() ) ).thenReturn( Pair.of( 1, 5L ) );
+        when( masterImplSPI.getTransactionChecksum( anyLong() ) ).thenReturn( 5L );
 
         cleanupRule.add( newMasterServer( masterImplSPI ) );
 
@@ -140,11 +139,11 @@ public class MasterClientTest
         MasterClient masterClient = cleanupRule.add( newMasterClient214( StoreId.DEFAULT, unpacker ) );
 
         // When
-        masterClient.newLockSession( new RequestContext( 1, 2, 3, 4, 5, 6 ) );
+        masterClient.newLockSession( new RequestContext( 1, 2, 3, 4, 5 ) );
 
         // Then
         verify( txAppender, times( TX_LOG_COUNT ) ).append( any( TransactionRepresentation.class ), anyLong() );
-        verify( txIdStore, times( TX_LOG_COUNT ) ).transactionCommitted( anyLong() );
+        verify( txIdStore, times( TX_LOG_COUNT ) ).transactionCommitted( anyLong(), anyLong() );
         verify( txApplier, times( TX_LOG_COUNT ) )
                 .apply( any( TransactionRepresentation.class ), any( LockGroup.class ), anyLong(),
                         any( TransactionApplicationMode.class ) );

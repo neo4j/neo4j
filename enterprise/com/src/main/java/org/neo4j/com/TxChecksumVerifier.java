@@ -24,10 +24,10 @@ public interface TxChecksumVerifier
     public static final TxChecksumVerifier ALWAYS_MATCH = new TxChecksumVerifier()
     {
         @Override
-        public void assertMatch( long txId, int masterId, long checksum )
+        public void assertMatch( long txId, long checksum )
         {
         }
     };
-    
-    public void assertMatch( long txId, int masterId, long checksum );
+
+    public void assertMatch( long txId, long checksum );
 }

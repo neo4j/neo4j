@@ -36,8 +36,7 @@ import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.anyLong;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -57,9 +56,9 @@ public class ServerTest
     {
         // Given
         Server<Object, Object> server = newServer( checksumVerifier );
-        RequestContext ctx = new RequestContext( 0, 1, 0, 1, -1, 12 );
+        RequestContext ctx = new RequestContext( 0, 1, 0, 1, 12 );
 
-        doThrow(new IllegalStateException("123")).when(checksumVerifier).assertMatch( anyLong(), anyInt(), anyLong() );
+        doThrow(new IllegalStateException("123")).when(checksumVerifier).assertMatch( anyLong(), anyLong() );
 
         // When
         try

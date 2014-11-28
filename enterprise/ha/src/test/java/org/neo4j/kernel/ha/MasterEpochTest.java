@@ -23,7 +23,6 @@ import org.junit.Test;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.RequestContext;
-import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.master.HandshakeResult;
@@ -54,7 +53,7 @@ public class MasterEpochTest
         SPI spi = MasterImplTest.mockedSpi();
         IdAllocation servedIdAllocation = idAllocation( 0, 999 );
         when( spi.allocateIds( any( IdType.class ) ) ).thenReturn( servedIdAllocation );
-        when( spi.getMasterIdForCommittedTx( anyLong() ) ).thenReturn( Pair.of( 1, 10L ) );
+        when( spi.getTransactionChecksum( anyLong() ) ).thenReturn( 10L );
         StoreId storeId = new StoreId();
         MasterImpl master = new MasterImpl( spi,
                 mock( MasterImpl.Monitor.class ), new TestLogging(),
@@ -82,6 +81,6 @@ public class MasterEpochTest
 
     private RequestContext context( long epoch )
     {
-        return new RequestContext( epoch, 0, 0, 0, 0, 0 );
+        return new RequestContext( epoch, 0, 0, 0, 0 );
     }
 }

@@ -201,24 +201,6 @@ public class StoreCopyClient
             writeLogHeader( fs,
                     logFiles.getLogFileForVersion( logVersionRepository.getCurrentLogVersion() ),
                     logVersionRepository.getCurrentLogVersion(), firstTxId.get() != -1 ? firstTxId.get() - 1 : 0 );
-
-            if ( firstTxId.get() == -1 )
-            {
-                console.warn( "Important: There are no available transaction logs on the target database, which " +
-                              "means the backup could not save a point-in-time reference. This means you cannot use " +
-                              "this " +
-                              "backup for incremental backups, and it means you cannot use it directly to seed an HA " +
-                              "cluster. The next time you perform a backup, a full backup will be done. If you wish " +
-                              "to " +
-                              "use this backup as a seed for a cluster, you need to start a stand-alone database on " +
-                              "it, and commit one write transaction, to create the transaction log needed to seed the" +
-                              " " +
-                              "cluster. To avoid this happening, make sure you never manually delete transaction log " +
-                              "files (" + PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX +
-                              "XXX), " +
-                              "and that you configure the database to keep at least a few days worth of transaction " +
-                              "logs." );
-            }
         }
         finally
         {

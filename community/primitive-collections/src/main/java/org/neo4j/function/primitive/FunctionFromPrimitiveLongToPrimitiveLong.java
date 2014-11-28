@@ -17,26 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.collection.primitive;
+package org.neo4j.function.primitive;
 
-public interface PrimitiveLongVisitor<E extends Exception>
+public interface FunctionFromPrimitiveLongToPrimitiveLong<EXCEPTION extends Exception>
 {
-    /**
-     * Visit the given entry.
-     *
-     * @param value A distinct value from the set.
-     * @return 'true' to signal that the iteration should be stopped, 'false' to signal that the iteration should
-     * continue if there are more entries to look at.
-     * @throws E any thrown exception of type 'E' will bubble up through the 'visit' method.
-     */
-    boolean visited( long value ) throws E;
-
-    public static final PrimitiveLongVisitor<RuntimeException> EMPTY = new PrimitiveLongVisitor<RuntimeException>()
-    {
-        @Override
-        public boolean visited( long value ) throws RuntimeException
-        {
-            return false;
-        }
-    };
+    long apply( long value ) throws EXCEPTION;
 }

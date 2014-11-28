@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
 import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStore.Position;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -46,10 +47,11 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 
+import static org.neo4j.helpers.Exceptions.withMessage;
 import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.store.CommonAbstractStore.buildTypeDescriptorAndVersion;
 import static org.neo4j.kernel.impl.store.NeoStore.DEFAULT_NAME;
-import static org.neo4j.kernel.impl.store.NeoStore.setStoreVersion;
+import static org.neo4j.kernel.impl.store.NeoStore.setRecord;
 import static org.neo4j.kernel.impl.store.NeoStore.versionStringToLong;
 
 public enum StoreFile
@@ -236,19 +238,8 @@ public enum StoreFile
             for ( StoreFileType type : types )
             {
                 String fileName = storeFile.fileName( type );
-                File sourceFile = new File( fromDirectory, fileName );
-                if ( allowSkipNonExistentFiles && !fs.fileExists( sourceFile ) )
-                {   // The source file doesn't exist and we allow skipping, so return
-                    continue;
-                }
-
-                File toFile = new File( toDirectory, fileName );
-                if ( allowOverwriteTarget && fs.fileExists( toFile ) )
-                {   // We allow overwriting the file, so deleted it if it exists.
-                    fs.deleteFile( toFile );
-                }
-
-                operation.perform( fs, fileName, fromDirectory, toDirectory );
+                operation.perform( fs, fileName,
+                        fromDirectory, allowSkipNonExistentFiles, toDirectory, allowOverwriteTarget );
             }
         }
     }
@@ -267,7 +258,7 @@ public enum StoreFile
             setStoreVersionTrailer( fs, new File( storeDir, file.storeFileName() ),
                     buildTypeDescriptorAndVersion( file.typeDescriptor(), version ) );
         }
-        setStoreVersion( fs, new File( storeDir, DEFAULT_NAME ), versionStringToLong( version ) );
+        setRecord( fs, new File( storeDir, DEFAULT_NAME ), Position.STORE_VERSION, versionStringToLong( version ) );
     }
 
     private static void setStoreVersionTrailer( FileSystemAbstraction fs,
@@ -283,7 +274,7 @@ public enum StoreFile
         }
         catch ( IllegalArgumentException e )
         {
-            throw new IllegalArgumentException( "size:" + fileSize + ", trailer:" + trailer.length +
+            throw withMessage( e, e.getMessage() + " | " + "size:" + fileSize + ", trailer:" + trailer.length +
                     " for " + targetStoreFileName );
         }
     }

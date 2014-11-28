@@ -29,13 +29,13 @@ import org.junit.Test;
 import org.mockito.Matchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.com.TransactionNotPresentOnMasterException;
 import org.neo4j.com.TransactionObligationResponse;
-import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.com.master.MasterImpl.Monitor;
@@ -53,10 +53,15 @@ import org.neo4j.test.OtherThreadRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class MasterImplTest
 {
@@ -76,7 +81,7 @@ public class MasterImplTest
         // When
         try
         {
-            instance.newLockSession( new RequestContext( 0, 1, 2, 0, 1, 0 ) );
+            instance.newLockSession( new RequestContext( 0, 1, 2, 0, 0 ) );
             fail();
         }
         catch ( org.neo4j.kernel.api.exceptions.TransactionFailureException e )
@@ -94,7 +99,7 @@ public class MasterImplTest
         Config config = config( 20 );
 
         when( spi.isAccessible() ).thenReturn( true );
-        when( spi.getMasterIdForCommittedTx( anyLong() ) ).thenReturn( Pair.of( 1, 1L ) );
+        when( spi.getTransactionChecksum( anyLong() ) ).thenReturn( 1L );
 
         MasterImpl instance = new MasterImpl( spi, mock( MasterImpl.Monitor.class ), logging, config );
         instance.start();
@@ -103,7 +108,7 @@ public class MasterImplTest
         // When
         try
         {
-            instance.newLockSession( new RequestContext( handshake.epoch(), 1, 2, 0, 1, 0 ) );
+            instance.newLockSession( new RequestContext( handshake.epoch(), 1, 2, 0, 0 ) );
         }
         catch ( Exception e )
         {
@@ -120,7 +125,7 @@ public class MasterImplTest
 
         when( spi.isAccessible() ).thenReturn( true );
         when( spi.acquireClient() ).thenThrow( new RuntimeException( "Nope" ) );
-        when( spi.getMasterIdForCommittedTx( anyLong() ) ).thenReturn( Pair.of( 1, 1L ) );
+        when( spi.getTransactionChecksum( anyLong() ) ).thenReturn( 1L );
         mockEmptyResponse( spi );
 
         MasterImpl instance = new MasterImpl( spi, mock( MasterImpl.Monitor.class ),
@@ -132,7 +137,7 @@ public class MasterImplTest
         // When
         try
         {
-            instance.newLockSession( new RequestContext( handshake.epoch(), 1, 2, 0, 1, 0 ) );
+            instance.newLockSession( new RequestContext( handshake.epoch(), 1, 2, 0, 0 ) );
             fail("Should have failed.");
         }
         catch ( Exception e )
@@ -183,7 +188,7 @@ public class MasterImplTest
             HandshakeResult handshake = master.handshake( 1, new StoreId() ).response();
 
             // WHEN
-            final RequestContext context = new RequestContext( handshake.epoch(), 1, 2, 0, 1, 0 );
+            final RequestContext context = new RequestContext( handshake.epoch(), 1, 2, 0, 0 );
             master.newLockSession( context );
             Future<Void> acquireFuture = otherThread.execute( new WorkerCommand<Void, Void>()
             {
@@ -217,7 +222,7 @@ public class MasterImplTest
         Config config = config( 20 );
 
         when( spi.isAccessible() ).thenReturn( true );
-        when( spi.getMasterIdForCommittedTx( anyLong() ) ).thenReturn( Pair.of( 1, 1L ) );
+        when( spi.getTransactionChecksum( anyLong() ) ).thenReturn( 1L );
         mockEmptyResponse( spi );
 
         MasterImpl master = new MasterImpl( spi, mock( MasterImpl.Monitor.class ),
@@ -225,7 +230,7 @@ public class MasterImplTest
         master.start();
         HandshakeResult handshake = master.handshake( 1, new StoreId() ).response();
 
-        RequestContext ctx = new RequestContext( handshake.epoch(), 1, 2, 0, 1, 0 );
+        RequestContext ctx = new RequestContext( handshake.epoch(), 1, 2, 0, 0 );
 
         // When
         try
@@ -251,7 +256,7 @@ public class MasterImplTest
         when(locks.trySharedLock( ResourceTypes.SCHEMA, ResourceTypes.schemaResource() ) ).thenReturn( true );
 
         when( spi.isAccessible() ).thenReturn( true );
-        when( spi.getMasterIdForCommittedTx( anyLong() ) ).thenReturn( Pair.of( 1, 1L ) );
+        when( spi.getTransactionChecksum( anyLong() ) ).thenReturn( 1L );
         when( spi.acquireClient()).thenReturn( locks );
         mockEmptyResponse( spi );
 
@@ -260,7 +265,7 @@ public class MasterImplTest
         HandshakeResult handshake = master.handshake( 1, new StoreId() ).response();
 
         int no_lock_session = -1;
-        RequestContext ctx = new RequestContext( handshake.epoch(), 1, no_lock_session, 0, 1, 0 );
+        RequestContext ctx = new RequestContext( handshake.epoch(), 1, no_lock_session, 0, 0 );
         TransactionRepresentation tx = mock( TransactionRepresentation.class );
 
         // When
@@ -269,12 +274,12 @@ public class MasterImplTest
         // Then
         verify(spi).applyPreparedTransaction( tx );
     }
-    
+
     public final @Rule OtherThreadRule<Void> otherThread = new OtherThreadRule<>();
 
     private Config config( int lockReadTimeout )
     {
-        Map<String, String> params = new HashMap<String, String>();
+        Map<String, String> params = new HashMap<>();
         params.put( HaSettings.lock_read_timeout.name(), lockReadTimeout + "s" );
         params.put( ClusterSettings.server_id.name(), "1" );
         return new Config( params, HaSettings.class );

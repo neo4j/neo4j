@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
@@ -69,7 +70,8 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
         public void visit( CommittedTransactionRepresentation transaction, TxHandler handler ) throws IOException
         {
             long transactionId = transaction.getCommitEntry().getTxId();
-            transactionIdStore.transactionCommitted( transactionId );
+            long checksum = LogEntryStart.checksum( transaction.getStartEntry() );
+            transactionIdStore.transactionCommitted( transactionId, checksum );
             try
             {
                 try ( LockGroup locks = new LockGroup() )

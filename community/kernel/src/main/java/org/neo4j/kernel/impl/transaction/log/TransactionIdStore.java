@@ -39,8 +39,9 @@ package org.neo4j.kernel.impl.transaction.log;
  */
 public interface TransactionIdStore
 {
-    // Tx id counting starting from this value (this value means no transaction in the log)
+    // Tx id counting starting from this value (this value means no transaction ever committed)
     public static final long BASE_TX_ID = 1;
+    public static final long BASE_TX_CHECKSUM = 0;
 
     /**
      * @return the next transaction id for a committing transaction. The transaction id is incremented
@@ -54,8 +55,9 @@ public interface TransactionIdStore
      * Calls to this method may come in out-of-transaction-id order. The highest gap-free transaction id
      * seen given to this method will be visible in {@link #getLastCommittedTransactionId()}.
      * @param transactionId the applied transaction id.
+     * @param checksum checksum of the transaction.
      */
-    void transactionCommitted( long transactionId );
+    void transactionCommitted( long transactionId, long checksum );
 
     /**
      * @return highest seen gap-free {@link #transactionCommitted(long) committed transaction id}.
@@ -63,14 +65,30 @@ public interface TransactionIdStore
     long getLastCommittedTransactionId();
 
     /**
+     * Returns transaction information about the last committed transaction, i.e.
+     * transaction id as well as checksum.
+     */
+    long[] getLastCommittedTransaction();
+
+    /**
+     * Returns transaction information about transaction where the last upgrade was performed, i.e.
+     * transaction id as well as checksum.
+     */
+    long[] getUpgradeTransaction();
+
+    /**
      * @return highest seen gap-free {@link #transactionClosed(long) closed transaction id}.
      */
     long getLastClosedTransactionId();
 
     /**
-     * Used by recovery. Perhaps this shouldn't be exposed like this?
+     * Used by recovery, where last committed/closed transaction ids are set.
+     * Perhaps this shouldn't be exposed like this?
+     *
+     * @param transactionId transaction id that will be the last closed/committed id.
+     * @param checksum checksum of the transaction.
      */
-    void setLastCommittedAndClosedTransactionId( long transactionId );
+    void setLastCommittedAndClosedTransactionId( long transactionId, long checksum );
 
     /**
      * Signals that a transaction with the given transaction id has been fully applied. Calls to this method
