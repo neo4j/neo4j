@@ -266,7 +266,7 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public void nodeVisitDegrees( long nodeId, DegreeVisitor visitor ) throws EntityNotFoundException
+    public boolean nodeVisitDegrees( long nodeId, DegreeVisitor visitor )
     {
         throw new UnsupportedOperationException( "expected to be answered by cache" );
     }

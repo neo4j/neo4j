@@ -760,43 +760,36 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         @Override
         public void visitNodeLabelChanges( long id, final Set<Integer> added, final Set<Integer> removed )
         {
-            try
+            // update counts
+            if ( !(added.isEmpty() && removed.isEmpty()) )
             {
-                // update counts
-                if ( !(added.isEmpty() && removed.isEmpty()) )
+                // get the relationship counts from *before* this transaction,
+                // the relationship changes will compensate for what happens during the transaction
+                storeLayer.nodeVisitDegrees( id, new DegreeVisitor()
                 {
-                    // get the relationship counts from *before* this transaction,
-                    // the relationship changes will compensate for what happens during the transaction
-                    storeLayer.nodeVisitDegrees( id, new DegreeVisitor()
+                    @Override
+                    public void visitDegree( int type, int outgoing, int incoming )
                     {
-                        @Override
-                        public void visitDegree( int type, int outgoing, int incoming )
+                        for ( Integer label : added )
                         {
-                            for ( Integer label : added )
-                            {
-                                // untyped
-                                counts.incrementRelationshipCount( label, -1, -1, outgoing );
-                                counts.incrementRelationshipCount( -1, -1, label, incoming );
-                                // typed
-                                counts.incrementRelationshipCount( label, type, -1, outgoing );
-                                counts.incrementRelationshipCount( -1, type, label, incoming );
-                            }
-                            for ( Integer label : removed )
-                            {
-                                // untyped
-                                counts.incrementRelationshipCount( label, -1, -1, -outgoing );
-                                counts.incrementRelationshipCount( -1, -1, label, -incoming );
-                                // typed
-                                counts.incrementRelationshipCount( label, type, -1, -outgoing );
-                                counts.incrementRelationshipCount( -1, type, label, -incoming );
-                            }
+                            // untyped
+                            counts.incrementRelationshipCount( label, -1, -1, outgoing );
+                            counts.incrementRelationshipCount( -1, -1, label, incoming );
+                            // typed
+                            counts.incrementRelationshipCount( label, type, -1, outgoing );
+                            counts.incrementRelationshipCount( -1, type, label, incoming );
                         }
-                    } );
-                }
-            }
-            catch ( EntityNotFoundException e )
-            {
-                // ok, the node was created in this transaction
+                        for ( Integer label : removed )
+                        {
+                            // untyped
+                            counts.incrementRelationshipCount( label, -1, -1, -outgoing );
+                            counts.incrementRelationshipCount( -1, -1, label, -incoming );
+                            // typed
+                            counts.incrementRelationshipCount( label, type, -1, -outgoing );
+                            counts.incrementRelationshipCount( -1, type, label, -incoming );
+                        }
+                    }
+                } );
             }
 
             // record the state changes to be made to the store

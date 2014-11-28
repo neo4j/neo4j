@@ -23,10 +23,10 @@ import org.neo4j.kernel.impl.cache.AutoLoadingCache;
 import org.neo4j.kernel.impl.core.DenseNodeImpl;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
-import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 public class CacheLoaders
@@ -38,19 +38,16 @@ public class CacheLoaders
             @Override
             public NodeImpl loadById( long id )
             {
-                try
-                {
-                    NodeRecord record = nodeStore.getRecord( id );
-                    return record.isDense() ? new DenseNodeImpl( id ) : new NodeImpl( id );
-                }
-                catch ( InvalidRecordException e )
+                NodeRecord record = nodeStore.loadRecord( id, new NodeRecord( id ) );
+                if ( record == null )
                 {
                     return null;
                 }
+                return record.isDense() ? new DenseNodeImpl( id ) : new NodeImpl( id );
             }
         };
     }
-    
+
     public static AutoLoadingCache.Loader<RelationshipImpl> relationshipLoader(
             final RelationshipStore relationshipStore )
     {
@@ -59,19 +56,16 @@ public class CacheLoaders
             @Override
             public RelationshipImpl loadById( long id )
             {
-                try
-                {
-                    RelationshipRecord record = relationshipStore.getRecord( id );
-                    return new RelationshipImpl( id, record.getFirstNode(), record.getSecondNode(), record.getType() );
-                }
-                catch ( InvalidRecordException e )
+                RelationshipRecord record = new RelationshipRecord( id );
+                if ( !relationshipStore.fillRecord( id, record, RecordLoad.CHECK ) )
                 {
                     return null;
                 }
+                return new RelationshipImpl( id, record.getFirstNode(), record.getSecondNode(), record.getType() );
             }
         };
     }
-    
+
     private CacheLoaders()
     {   // no instances allowed
     }
