@@ -14,7 +14,7 @@ Its constructs are based on English prose and neat iconography which helps to ma
 We have tried to optimize the language for reading and not for writing.
 
 Being a declarative language, Cypher focuses on the clarity of expressing _what_ to retrieve from a graph, not on _how_ to retrieve it.
-This is in contrast to imperative languages like Java, scripting languages like http://gremlin.tinkerpop.com[Gremlin], and http://neo4j.rubyforge.org/[the JRuby Neo4j bindings].
+This is in contrast to imperative languages like Java, scripting languages like http://gremlin.tinkerpop.com[Gremlin], and https://github.com/neo4jrb/neo4j/[the JRuby Neo4j bindings].
 This approach makes query optimization an implementation detail instead of burdening the user with it and requiring her to update all traversals just because the physical database structure has changed (new indexes etc.).
 
 Cypher is inspired by a number of different approaches and builds upon established practices for expressive querying.
