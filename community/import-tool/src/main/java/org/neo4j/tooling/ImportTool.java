@@ -117,7 +117,8 @@ public class ImportTool
                          + "input files are treated.\n"
                          + IdType.STRING + ": arbitrary strings for identifying nodes.\n"
                          + IdType.INTEGER + ": arbitrary integer values for identifying nodes.\n"
-                         + IdType.ACTUAL + ": (advanced) actual node ids." );
+                         + IdType.ACTUAL + ": (advanced) actual node ids." ),
+        STACKTRACE( "stacktrace", "", "Enable printing of stack traces when something goes wrong with the import.");
 
         private final String key;
         private final String usage;
@@ -168,6 +169,7 @@ public class ImportTool
         File storeDir;
         // The input groups
         Collection<Option<File[]>> nodesFiles, relationshipsFiles;
+        boolean enableStacktrace;
         try
         {
             storeDir =
@@ -181,6 +183,7 @@ public class ImportTool
                     args.interpretOptionsWithMetadata( Options.RELATIONSHIP_DATA.key(),
                             Converters.<File[]> mandatory(), Converters.toFiles( MULTI_FILE_DELIMITER ),
                             Validators.FILES_EXISTS, Validators.<File> atLeast( 1 ) );
+            enableStacktrace = args.getBoolean( Options.STACKTRACE.key(), Boolean.FALSE, Boolean.TRUE );
         }
         catch ( IllegalArgumentException e )
         {
@@ -209,9 +212,9 @@ public class ImportTool
             importer.doImport( input );
             success = true;
         }
-        catch ( IOException e )
+        catch ( Exception e )
         {
-            throw andPrintError( "Import error", e, true );
+            throw andPrintError( "Import error", e, enableStacktrace );
         }
         finally
         {
@@ -227,6 +230,10 @@ public class ImportTool
                 catch ( IOException e )
                 {
                     System.err.println( "Unable to delete store files after an aborted import " + e );
+                    if ( enableStacktrace )
+                    {
+                        e.printStackTrace();
+                    }
                 }
             }
         }

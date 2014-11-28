@@ -52,6 +52,7 @@ public class ThreadAheadReadable extends Thread implements CharReadable, Closeab
         this.readAheadArray = new char[bufferSize];
         this.readAheadBuffer = CharBuffer.wrap( readAheadArray );
         this.readAheadBuffer.position( bufferSize );
+        setDaemon( true );
         start();
     }
 

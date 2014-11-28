@@ -47,9 +47,11 @@ public class StageExecution implements StageControl
 
     public boolean stillExecuting()
     {
-        if ( panicCause != null )
+        Throwable panic = panicCause;
+        if ( panic != null )
         {
-            throw new RuntimeException( "Panic", panicCause );
+            String message = panic.getMessage();
+            throw new RuntimeException( message == null? "Panic" : message, panic );
         }
 
         for ( Step<?> step : pipeline )
