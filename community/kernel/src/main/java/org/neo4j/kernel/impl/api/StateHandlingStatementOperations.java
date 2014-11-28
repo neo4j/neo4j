@@ -903,13 +903,23 @@ public class StateHandlingStatementOperations implements
     @Override
     public long countsForNode( KernelStatement statement, int labelId )
     {
-        return storeLayer.countsForNode( labelId );
+        long count = storeLayer.countsForNode( labelId );
+        if ( statement.hasTxStateWithChanges() )
+        {
+            count += CountsDelta.forNodes( storeLayer, statement.txState(), labelId );
+        }
+        return count;
     }
 
     @Override
     public long countsForRelationship( KernelStatement statement, int startLabelId, int typeId, int endLabelId )
     {
-        return storeLayer.countsForRelationship( startLabelId, typeId, endLabelId );
+        long count = storeLayer.countsForRelationship( startLabelId, typeId, endLabelId );
+        if ( statement.hasTxStateWithChanges() )
+        {
+            count += CountsDelta.forRelationships( storeLayer, statement.txState(), startLabelId, typeId, endLabelId );
+        }
+        return count;
     }
 
     @Override

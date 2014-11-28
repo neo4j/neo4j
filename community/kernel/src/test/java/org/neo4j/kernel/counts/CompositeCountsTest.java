@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.counts;
 
+import java.util.List;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.util.List;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -43,6 +43,7 @@ import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.kernel.impl.store.CountsComputer.computeCounts;
@@ -343,6 +344,54 @@ public class CompositeCountsTest
 
         // then
         verifyAllCounts();
+    }
+
+    @Test
+    public void shouldAccessCountsInTransaction() throws Exception
+    {
+        // given
+        Label label = label( "Foo" );
+        RelationshipType type = withName( "BAR" );
+        
+        Node delN;
+        Relationship delR;
+        try ( Transaction tx = db.beginTx() )
+        {
+            delN = db.createNode( label );
+            Node a = db.createNode( label );
+            Node b = db.createNode( label );
+            delR = a.createRelationshipTo( b, type );
+            a.createRelationshipTo( db.createNode(), type );
+            b.createRelationshipTo( db.createNode(), type );
+            delN.createRelationshipTo( db.createNode(  ), type );
+            delN.createRelationshipTo( db.createNode( label ), type );
+
+            tx.success();
+        }
+
+        // when
+        long out, in;
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( Relationship rel : delN.getRelationships() )
+            {
+                rel.delete();
+            }
+            delN.delete();
+            delR.delete();
+
+            out = countsForRelationship( label, type, null );
+            in = countsForRelationship( null, type, label );
+
+            tx.success();
+        }
+
+        // then
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertEquals( countsForRelationship( label, type, null ), out );
+            assertEquals( countsForRelationship( null, type, label ), in );
+        }
     }
 
     private void verifyAllCounts()
