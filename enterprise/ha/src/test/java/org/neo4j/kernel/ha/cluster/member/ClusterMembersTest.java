@@ -39,8 +39,6 @@ import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.DevNullLoggingService;
-import org.neo4j.kernel.logging.Logging;
 
 import static java.net.URI.create;
 import static java.util.Arrays.asList;
@@ -67,15 +65,13 @@ import static org.neo4j.kernel.ha.cluster.member.ClusterMemberMatcher.sameMember
 
 public class ClusterMembersTest
 {
-    private static final InstanceId clusterId1 = new InstanceId( 1 );
-    private static final InstanceId clusterId2 = new InstanceId( 2 );
-    private static final InstanceId clusterId3 = new InstanceId( 3 );
-    private static final URI clusterUri1 = create( "cluster://server1" );
-    private static final URI clusterUri2 = create( "cluster://server2" );
-    private static final URI clusterUri3 = create( "cluster://server3" );
-    private static final URI haUri1 = create( "ha://server1?serverId=" + clusterId1.toIntegerIndex() );
-
-    private static final Logging LOGGING = new DevNullLoggingService();
+    private static InstanceId clusterId1 = new InstanceId( 1 );
+    private static InstanceId clusterId2 = new InstanceId( 2 );
+    private static InstanceId clusterId3 = new InstanceId( 3 );
+    private static URI clusterUri1 = create( "cluster://server1" );
+    private static URI clusterUri2 = create( "cluster://server2" );
+    private static URI clusterUri3 = create( "cluster://server3" );
+    private static URI haUri1 = create( "ha://server1?serverId="+clusterId1.toIntegerIndex() );
 
     @Test
     public void shouldRegisterItselfOnListeners() throws Exception
@@ -86,7 +82,7 @@ public class ClusterMembersTest
         ClusterMemberEvents clusterMemberEvents = mock(ClusterMemberEvents.class);
 
         // when
-        new ClusterMembers( cluster, heartbeat, clusterMemberEvents, null, LOGGING );
+        new ClusterMembers( cluster, heartbeat, clusterMemberEvents, null );
 
         // then
         verify( cluster ).addClusterListener( Mockito.<ClusterListener>any() );
@@ -102,7 +98,7 @@ public class ClusterMembersTest
         Heartbeat heartbeat = mock( Heartbeat.class );
         ClusterMemberEvents clusterMemberEvents = mock(ClusterMemberEvents.class);
 
-        ClusterMembers members = new ClusterMembers( cluster, heartbeat, clusterMemberEvents, null, LOGGING );
+        ClusterMembers members = new ClusterMembers( cluster, heartbeat, clusterMemberEvents, null );
 
         // when
         ArgumentCaptor<ClusterListener> listener = ArgumentCaptor.forClass( ClusterListener.class );
@@ -124,7 +120,7 @@ public class ClusterMembersTest
         Heartbeat heartbeat = mock( Heartbeat.class );
         ClusterMemberEvents clusterMemberEvents = mock(ClusterMemberEvents.class);
 
-        ClusterMembers members = new ClusterMembers( cluster, heartbeat, clusterMemberEvents, null, LOGGING );
+        ClusterMembers members = new ClusterMembers( cluster, heartbeat, clusterMemberEvents, null );
 
         ArgumentCaptor<ClusterListener> listener = ArgumentCaptor.forClass( ClusterListener.class );
         verify( cluster ).addClusterListener( listener.capture() );
@@ -149,7 +145,7 @@ public class ClusterMembersTest
         Heartbeat heartbeat = mock( Heartbeat.class );
         ClusterMemberEvents clusterMemberEvents = mock(ClusterMemberEvents.class);
 
-        ClusterMembers members = new ClusterMembers( cluster, heartbeat, clusterMemberEvents, clusterId1, LOGGING );
+        ClusterMembers members = new ClusterMembers( cluster, heartbeat, clusterMemberEvents, clusterId1 );
 
         // when
 
@@ -172,7 +168,7 @@ public class ClusterMembersTest
         Heartbeat heartbeat = mock( Heartbeat.class );
         ClusterMemberEvents clusterMemberEvents = mock(ClusterMemberEvents.class);
 
-        ClusterMembers members = new ClusterMembers( cluster, heartbeat, clusterMemberEvents, null, LOGGING );
+        ClusterMembers members = new ClusterMembers( cluster, heartbeat, clusterMemberEvents, null );
 
         ArgumentCaptor<ClusterListener> listener = ArgumentCaptor.forClass( ClusterListener.class );
         verify( cluster ).addClusterListener( listener.capture() );
@@ -196,7 +192,7 @@ public class ClusterMembersTest
         Heartbeat heartbeat = mock( Heartbeat.class );
         ClusterMemberEvents clusterMemberEvents = mock(ClusterMemberEvents.class);
 
-        ClusterMembers members = new ClusterMembers( cluster, heartbeat, clusterMemberEvents, null, LOGGING );
+        ClusterMembers members = new ClusterMembers( cluster, heartbeat, clusterMemberEvents, null );
 
         ArgumentCaptor<ClusterListener> listener = ArgumentCaptor.forClass( ClusterListener.class );
         verify( cluster ).addClusterListener( listener.capture() );
@@ -223,7 +219,7 @@ public class ClusterMembersTest
         Heartbeat heartbeat = mock( Heartbeat.class );
         ClusterMemberEvents clusterMemberEvents = mock(ClusterMemberEvents.class);
 
-        ClusterMembers members = new ClusterMembers( cluster, heartbeat, clusterMemberEvents, null, LOGGING );
+        ClusterMembers members = new ClusterMembers( cluster, heartbeat, clusterMemberEvents, null );
 
         ArgumentCaptor<ClusterListener> listener = ArgumentCaptor.forClass( ClusterListener.class );
         verify( cluster ).addClusterListener( listener.capture() );
@@ -250,7 +246,7 @@ public class ClusterMembersTest
         Heartbeat heartbeat = mock( Heartbeat.class );
         ClusterMemberEvents clusterMemberEvents = mock(ClusterMemberEvents.class);
 
-        ClusterMembers members = new ClusterMembers( cluster, heartbeat, clusterMemberEvents, null, LOGGING );
+        ClusterMembers members = new ClusterMembers( cluster, heartbeat, clusterMemberEvents, null );
 
         ArgumentCaptor<ClusterListener> listener = ArgumentCaptor.forClass( ClusterListener.class );
         verify( cluster ).addClusterListener( listener.capture() );
@@ -277,7 +273,7 @@ public class ClusterMembersTest
         Heartbeat heartbeat = mock( Heartbeat.class );
         ClusterMemberEvents clusterMemberEvents = mock(ClusterMemberEvents.class);
 
-        ClusterMembers members = new ClusterMembers( cluster, heartbeat, clusterMemberEvents, null, LOGGING );
+        ClusterMembers members = new ClusterMembers( cluster, heartbeat, clusterMemberEvents, null );
 
         ArgumentCaptor<ClusterListener> listener = ArgumentCaptor.forClass( ClusterListener.class );
         verify( cluster ).addClusterListener( listener.capture() );
@@ -304,7 +300,7 @@ public class ClusterMembersTest
         Heartbeat heartbeat = mock( Heartbeat.class );
         ClusterMemberEvents clusterMemberEvents = mock(ClusterMemberEvents.class);
 
-        ClusterMembers members = new ClusterMembers( cluster, heartbeat, clusterMemberEvents, null, LOGGING );
+        ClusterMembers members = new ClusterMembers( cluster, heartbeat, clusterMemberEvents, null );
 
         ArgumentCaptor<ClusterListener> listener = ArgumentCaptor.forClass( ClusterListener.class );
         verify( cluster ).addClusterListener( listener.capture() );
@@ -331,7 +327,7 @@ public class ClusterMembersTest
         Heartbeat heartbeat = mock( Heartbeat.class );
         ClusterMemberEvents clusterMemberEvents = mock(ClusterMemberEvents.class);
 
-        ClusterMembers members = new ClusterMembers( cluster, heartbeat, clusterMemberEvents, clusterId1, LOGGING );
+        ClusterMembers members = new ClusterMembers( cluster, heartbeat, clusterMemberEvents, clusterId1 );
 
         ArgumentCaptor<ClusterListener> listener = ArgumentCaptor.forClass( ClusterListener.class );
         verify( cluster ).addClusterListener( listener.capture() );
@@ -358,7 +354,7 @@ public class ClusterMembersTest
         Heartbeat heartbeat = mock( Heartbeat.class );
         ClusterMemberEvents clusterMemberEvents = mock(ClusterMemberEvents.class);
 
-        ClusterMembers members = new ClusterMembers( cluster, heartbeat, clusterMemberEvents, clusterId1, LOGGING );
+        ClusterMembers members = new ClusterMembers( cluster, heartbeat, clusterMemberEvents, clusterId1 );
 
         ArgumentCaptor<ClusterListener> listener = ArgumentCaptor.forClass( ClusterListener.class );
         verify( cluster ).addClusterListener( listener.capture() );
@@ -385,7 +381,7 @@ public class ClusterMembersTest
         Heartbeat heartbeat = mock( Heartbeat.class );
         ClusterMemberEvents clusterMemberEvents = mock(ClusterMemberEvents.class);
 
-        ClusterMembers members = new ClusterMembers( cluster, heartbeat, clusterMemberEvents, clusterId1, LOGGING );
+        ClusterMembers members = new ClusterMembers( cluster, heartbeat, clusterMemberEvents, clusterId1 );
         // initialized with the members of the cluster
         ArgumentCaptor<ClusterListener> listener = ArgumentCaptor.forClass( ClusterListener.class );
         verify( cluster ).addClusterListener( listener.capture() );
@@ -422,7 +418,7 @@ public class ClusterMembersTest
         Heartbeat heartbeat = mock( Heartbeat.class );
         ClusterMemberEvents clusterMemberEvents = mock(ClusterMemberEvents.class);
 
-        ClusterMembers members = new ClusterMembers( cluster, heartbeat, clusterMemberEvents, clusterId1, LOGGING );
+        ClusterMembers members = new ClusterMembers( cluster, heartbeat, clusterMemberEvents, clusterId1 );
         // initialized with the members of the cluster
         ArgumentCaptor<ClusterListener> listener = ArgumentCaptor.forClass( ClusterListener.class );
         verify( cluster ).addClusterListener( listener.capture() );
@@ -468,7 +464,7 @@ public class ClusterMembersTest
         Heartbeat heartbeat = mock( Heartbeat.class );
         ClusterMemberEvents clusterMemberEvents = mock( ClusterMemberEvents.class );
 
-        ClusterMembers members = new ClusterMembers( cluster, heartbeat, clusterMemberEvents, clusterId1, LOGGING );
+        ClusterMembers members = new ClusterMembers( cluster, heartbeat, clusterMemberEvents, clusterId1 );
         ClusterListener clusterListener = listenerSlot[0];
 
         // When
