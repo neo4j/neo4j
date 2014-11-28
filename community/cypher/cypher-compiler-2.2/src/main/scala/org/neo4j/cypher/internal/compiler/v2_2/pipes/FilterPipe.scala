@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.Predicate
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.LegacyExpression
+import org.neo4j.cypher.internal.helpers.Generator
 
 case class FilterPipe(source: Pipe, predicate: Predicate)(val estimatedCardinality: Option[Long] = None)
                      (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
@@ -43,38 +43,17 @@ case class FilterPipe(source: Pipe, predicate: Predicate)(val estimatedCardinali
   def withEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 }
 
-class FilterPipeIterator(input: Iterator[ExecutionContext], predicate: Predicate)(implicit state: QueryState) extends Iterator[ExecutionContext] {
-  private var needsComputeNext = true
-  private var hasNextRow: Boolean = true
-  private var nextRow: ExecutionContext = null
+final class FilterPipeIterator(input: Iterator[ExecutionContext], predicate: Predicate)(implicit state: QueryState) extends Generator[ExecutionContext] {
+  protected var nextResult: ExecutionContext = null
 
-  def hasNext = {
-    if (needsComputeNext) {
-      computeNext()
-    }
-    hasNextRow
-  }
-
-  def next() = {
-    if (needsComputeNext) {
-      computeNext()
-    }
-
-    if (hasNextRow) {
-      needsComputeNext = true
-      nextRow
-    }
-    else
-      Iterator.empty.next()
-  }
-
-  private def computeNext() {
-    needsComputeNext = false
-    while(input.hasNext) {
-      nextRow = input.next()
-      if (predicate.isTrue(nextRow))
+  protected def computeNext() {
+    while (input.hasNext) {
+      nextResult = input.next()
+      if (predicate.isTrue(nextResult))
         return
     }
-    hasNextRow = false
+    endOfComputation()
   }
 }
+
+
