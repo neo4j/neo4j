@@ -58,9 +58,9 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
             Selection(_,
               CartesianProduct(
                 Expand(
-                  AllNodesScan(IdName("c"), _), _, _, _, _, _, _, _,_),
+                  AllNodesScan(IdName("c"), _), _, _, _, _, _, _, _, _,_),
                 Expand(
-                  AllNodesScan(IdName("a"), _), _, _, _, _, _, _, _,_)
+                  AllNodesScan(IdName("a"), _), _, _, _, _, _, _, _, _,_)
               )
             ), _) => ()
     }
@@ -96,11 +96,11 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
   test("Should build plans expanding from the cheaper side for single relationship pattern") {
 
     def myCardinality(plan: LogicalPlan): Cardinality = Cardinality(plan match {
-      case _: NodeIndexSeek                    => 10.0
-      case _: AllNodesScan                     => 100.04
-      case Expand(lhs, _, _, _, _, _, _, _, _) => (myCardinality(lhs) * Multiplier(10)).amount
-      case _: Selection                        => 100.04
-      case _                                   => Double.MaxValue
+      case _: NodeIndexSeek                       => 10.0
+      case _: AllNodesScan                        => 100.04
+      case Expand(lhs, _, _, _, _, _, _, _, _, _) => (myCardinality(lhs) * Multiplier(10)).amount
+      case _: Selection                           => 100.04
+      case _                                      => Double.MaxValue
     })
 
     (new given {

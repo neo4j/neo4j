@@ -31,6 +31,7 @@ case class Expand(left: LogicalPlan,
                   to: IdName,
                   relName: IdName,
                   length: PatternLength,
+                  mode: ExpansionMode = ExpandAll,
                   predicate: Seq[(Identifier, Expression)] = Seq.empty)
                  (val solved: PlannerQuery) extends LogicalPlan {
   val lhs = Some(left)
@@ -44,3 +45,7 @@ case class Expand(left: LogicalPlan,
         (ident, f(left.availableSymbols + relName + IdName(ident.name), expr))
     })(solved)
 }
+
+sealed trait ExpansionMode
+case object ExpandAll extends ExpansionMode
+case object ExpandInto extends ExpansionMode

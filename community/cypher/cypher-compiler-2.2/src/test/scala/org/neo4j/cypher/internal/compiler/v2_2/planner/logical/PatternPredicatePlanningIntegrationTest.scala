@@ -45,7 +45,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
                 Seq(HasLabels(ident("  UNNAMED116"), Seq(LabelName("ComedyClub")_))_),
                 Expand(
                   Argument(Set("f"))(PlannerQuery.empty)(),
-                  "f", Direction.OUTGOING, Direction.OUTGOING, Seq(RelTypeName("WORKS_AT")_), "  UNNAMED116", "  UNNAMED102", SimplePatternLength, Seq()
+                  "f", Direction.OUTGOING, Direction.OUTGOING, Seq(RelTypeName("WORKS_AT")_), "  UNNAMED116", "  UNNAMED102", SimplePatternLength, ExpandAll, Seq()
                 )(PlannerQuery.empty)
               )(PlannerQuery.empty)
             )

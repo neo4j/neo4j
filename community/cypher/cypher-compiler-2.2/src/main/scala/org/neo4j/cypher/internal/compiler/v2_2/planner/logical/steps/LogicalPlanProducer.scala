@@ -102,7 +102,7 @@ object LogicalPlanProducer {
                  pattern: PatternRelationship,
                  predicates: Seq[(Identifier, Expression)] = Seq.empty,
                  allPredicates: Seq[Expression] = Seq.empty) =
-    Expand(left, from, dir, projectedDir, types, to, relName, length, predicates)(
+    Expand(left, from, dir, projectedDir, types, to, relName, length, ExpandAll, predicates)(
       left.solved.updateGraph(_
         .addPatternRel(pattern)
         .addPredicates(allPredicates: _*)
@@ -188,7 +188,7 @@ object LogicalPlanProducer {
                          length: PatternLength,
                          predicates: Seq[Expression],
                          solvedQueryGraph: QueryGraph) =
-    OptionalExpand(left, from, dir, types, to, relName, length, predicates)(
+    OptionalExpand(left, from, dir, types, to, relName, length, ExpandAll, predicates)(
       left.solved.updateGraph(_.withAddedOptionalMatch(solvedQueryGraph))
     )
 

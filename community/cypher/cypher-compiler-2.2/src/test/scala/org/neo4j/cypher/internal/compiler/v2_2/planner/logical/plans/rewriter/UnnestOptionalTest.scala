@@ -37,7 +37,7 @@ class UnnestOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport 
     val input = Apply(lhs, rhs)(solved)
 
     input.endoRewrite(unnestOptional) should equal(
-      OptionalExpand(lhs, IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), SimplePatternLength, Seq.empty)(solved))
+      OptionalExpand(lhs, IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), SimplePatternLength, ExpandAll, Seq.empty)(solved))
   }
 
   test("should rewrite Apply/Optional/Selection/Expand to OptionalExpand when lhs of expand is single row") {
@@ -50,7 +50,7 @@ class UnnestOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport 
     val input = Apply(lhs, rhs)(solved)
 
     input.endoRewrite(unnestOptional) should equal(
-      OptionalExpand(lhs, IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), SimplePatternLength, Seq(predicate))(solved))
+      OptionalExpand(lhs, IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), SimplePatternLength, ExpandAll, Seq(predicate))(solved))
   }
 
   test("should not rewrite Apply/Optional/Selection/Expand to OptionalExpand when expansion is variable length") {

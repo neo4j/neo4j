@@ -31,13 +31,13 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     val r2 = PatternRelationship("r2", ("b", "c"), Direction.OUTGOING, Seq(), SimplePatternLength)
 
     def myCardinality(plan: LogicalPlan): Cardinality = Cardinality(plan match {
-      case _: NodeIndexSeek                    => 10.0
-      case _: AllNodesScan                     => 10000
-      case _: NodeHashJoin                     => 42
-      case Expand(lhs, _, _, _, _, _, _, _, _) => (myCardinality(lhs) * Multiplier(10)).amount
-      case _: Selection                        => 100.04
-      case _: NodeByLabelScan                  => 100
-      case _                                   => Double.MaxValue
+      case _: NodeIndexSeek                       => 10.0
+      case _: AllNodesScan                        => 10000
+      case _: NodeHashJoin                        => 42
+      case Expand(lhs, _, _, _, _, _, _, _, _, _) => (myCardinality(lhs) * Multiplier(10)).amount
+      case _: Selection                           => 100.04
+      case _: NodeByLabelScan                     => 100
+      case _                                      => Double.MaxValue
     })
 
     val result= (new given {

@@ -30,6 +30,7 @@ case class OptionalExpand(left: LogicalPlan,
                   to: IdName,
                   relName: IdName,
                   length: PatternLength,
+                  mode: ExpansionMode = ExpandAll,
                   predicates: Seq[Expression])
              (val solved: PlannerQuery) extends LogicalPlan {
   val lhs = Some(left)

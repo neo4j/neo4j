@@ -97,7 +97,7 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
         case CartesianProduct(left, right) =>
           CartesianProductPipe(buildPipe(left, input), buildPipe(right, input))()
 
-        case Expand(left, IdName(fromName), dir, projectedDir, types: Seq[RelTypeName], IdName(toName), IdName(relName), SimplePatternLength, _) =>
+        case Expand(left, IdName(fromName), dir, projectedDir, types: Seq[RelTypeName], IdName(toName), IdName(relName), SimplePatternLength, ExpandAll, _) =>
           implicit val table: SemanticTable = context.semanticTable
 
           if (types.exists(_.id == None))
@@ -106,7 +106,7 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
             ExpandPipeForIntTypes(buildPipe(left, input), fromName, relName, toName, dir, types.flatMap(_.id).map(_.id))()
           }
 
-        case Expand(left, IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName), VarPatternLength(min, max), predicates) =>
+        case Expand(left, IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName), VarPatternLength(min, max), ExpandAll, predicates) =>
           val (keys, exprs) = predicates.unzip
           val commands = exprs.map(buildPredicate)
           val predicate = (context: ExecutionContext, state: QueryState, rel: Relationship) => {
@@ -125,7 +125,7 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
           else
             VarLengthExpandPipeForIntTypes(buildPipe(left, input), fromName, relName, toName, dir, projectedDir, types.flatMap(_.id).map(_.id), min, max, predicate)()
 
-        case OptionalExpand(left, IdName(fromName), dir, types, IdName(toName), IdName(relName), SimplePatternLength, predicates) =>
+        case OptionalExpand(left, IdName(fromName), dir, types, IdName(toName), IdName(relName), SimplePatternLength, ExpandAll, predicates) =>
           val predicate = predicates.map(buildPredicate).reduceOption(_ ++ _).getOrElse(True())
           OptionalExpandPipe(buildPipe(left, input), fromName, relName, toName, dir, types.map(_.name), predicate)()
 
