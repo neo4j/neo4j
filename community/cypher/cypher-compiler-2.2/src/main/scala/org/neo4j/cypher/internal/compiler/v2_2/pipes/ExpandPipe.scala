@@ -27,40 +27,16 @@ import org.neo4j.cypher.internal.compiler.v2_2.{ExecutionContext, InternalExcept
 import org.neo4j.graphdb.{Direction, Node, Relationship}
 
 sealed abstract class ExpandPipe[T](source: Pipe,
-                                 from: String,
-                                 relName: String,
-                                 to: String,
-                                 dir: Direction,
-                                 types: Seq[T],
-                                 pipeMonitor: PipeMonitor)
+                                    from: String,
+                                    relName: String,
+                                    to: String,
+                                    dir: Direction,
+                                    types: Seq[T],
+                                    pipeMonitor: PipeMonitor)
                     extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
-  def getRelationships: (Node, QueryContext, Direction) => Iterator[Relationship]
-
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    input.flatMap {
-      row =>
-        getFromNode(row) match {
-          case n: Node =>
-            val relationships: Iterator[Relationship] = getRelationships(n, state.query, dir)
-            relationships.map {
-              case r =>
-                row.newWith2(relName, r, to, r.getOtherNode(n))
-            }
-
-          case null => None
-
-          case value => throw new InternalException(s"Expected to find a node at $from but found $value instead")
-        }
-    }
-  }
-
-  def getFromNode(row: ExecutionContext): Any =
-    row.getOrElse(from, throw new InternalException(s"Expected to find a node at $from but found nothing"))
-
-  def planDescription = {
+  def planDescription =
     source.planDescription.andThen(this, "Expand", identifiers, ExpandExpression(from, relName, to, dir))
-  }
 
   val symbols = source.symbols.add(to, CTNode).add(relName, CTRelationship)
 
@@ -77,9 +53,8 @@ case class ExpandPipeForIntTypes(source: Pipe,
                                (implicit pipeMonitor: PipeMonitor)
   extends ExpandPipe[Int](source, from, relName, to, dir, types, pipeMonitor) {
 
-  override def getRelationships: (Node, QueryContext, Direction) => Iterator[Relationship] =
-    (n:Node, query: QueryContext, dir:Direction) => query.getRelationshipsForIds(n, dir, types)
-
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) =
+    new ExpandPipeIteratorForIntTypes(input, from, relName, to, dir, types)(state.query).createResults
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources
@@ -99,9 +74,8 @@ case class ExpandPipeForStringTypes(source: Pipe,
                                    (implicit pipeMonitor: PipeMonitor)
   extends ExpandPipe[String](source, from, relName, to, dir, types, pipeMonitor) {
 
-  override def getRelationships: (Node, QueryContext, Direction) => Iterator[Relationship] =
-    (n:Node, query: QueryContext, dir:Direction) => query.getRelationshipsFor(n, dir, types)
-
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) =
+    new ExpandPipeIteratorForStringTypes(input, from, relName, to, dir, types)(state.query).createResults
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources
@@ -109,4 +83,60 @@ case class ExpandPipeForStringTypes(source: Pipe,
   }
 
   def withEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+}
+
+sealed abstract
+class ExpandPipeIterator[T](input: Iterator[ExecutionContext],
+                            from: String,
+                            relName: String,
+                            to: String,
+                            dir: Direction)(implicit qtx: QueryContext) {
+
+  final def createResults: Iterator[ExecutionContext] =
+    input.flatMap {
+      row =>
+        getFromNode(row) match {
+          case n: Node =>
+            val relationships: Iterator[Relationship] = getRelationships(n)
+            relationships.map {
+              case r =>
+                row.newWith2(relName, r, to, r.getOtherNode(n))
+            }
+
+          case null =>
+            None
+
+          case value =>
+            throw new InternalException(s"Expected to find a node at $from but found $value instead")
+        }
+    }
+
+  private final def getFromNode(row: ExecutionContext): Any =
+    row.getOrElse(from, throw new InternalException(s"Expected to find a node at $from but found nothing"))
+
+  protected def getRelationships(node: Node): Iterator[Relationship]
+}
+
+final class ExpandPipeIteratorForIntTypes(input: Iterator[ExecutionContext],
+                                          from: String,
+                                          relName: String,
+                                          to: String,
+                                          dir: Direction,
+                                          types: Seq[Int])(implicit qtx: QueryContext)
+  extends ExpandPipeIterator[Int](input, from, relName, to, dir) {
+
+  protected def getRelationships(node: Node): Iterator[Relationship] =
+    qtx.getRelationshipsForIds(node, dir, types)
+}
+
+final class ExpandPipeIteratorForStringTypes(input: Iterator[ExecutionContext],
+                                             from: String,
+                                             relName: String,
+                                             to: String,
+                                             dir: Direction,
+                                             types: Seq[String])(implicit qtx: QueryContext)
+  extends ExpandPipeIterator[Int](input, from, relName, to, dir) {
+
+  protected def getRelationships(node: Node): Iterator[Relationship] =
+    qtx.getRelationshipsFor(node, dir, types)
 }
