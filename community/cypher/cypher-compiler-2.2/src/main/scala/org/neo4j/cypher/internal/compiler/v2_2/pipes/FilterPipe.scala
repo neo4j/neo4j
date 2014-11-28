@@ -28,8 +28,8 @@ case class FilterPipe(source: Pipe, predicate: Predicate)(val estimatedCardinali
                      (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
   val symbols = source.symbols
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext],state: QueryState) =
-    input.filter(ctx => predicate.isTrue(ctx)(state))
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) =
+    new FilterPipeIterator(input, predicate)(state)
 
   def planDescription = source.planDescription.andThen(this, "Filter", identifiers, LegacyExpression(predicate))
 
@@ -41,4 +41,40 @@ case class FilterPipe(source: Pipe, predicate: Predicate)(val estimatedCardinali
   override def localEffects = predicate.effects
 
   def withEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+}
+
+class FilterPipeIterator(input: Iterator[ExecutionContext], predicate: Predicate)(implicit state: QueryState) extends Iterator[ExecutionContext] {
+  private var needsComputeNext = true
+  private var hasNextRow: Boolean = true
+  private var nextRow: ExecutionContext = null
+
+  def hasNext = {
+    if (needsComputeNext) {
+      computeNext()
+    }
+    hasNextRow
+  }
+
+  def next() = {
+    if (needsComputeNext) {
+      computeNext()
+    }
+
+    if (hasNextRow) {
+      needsComputeNext = true
+      nextRow
+    }
+    else
+      Iterator.empty.next()
+  }
+
+  private def computeNext() {
+    needsComputeNext = false
+    while(input.hasNext) {
+      nextRow = input.next()
+      if (predicate.isTrue(nextRow))
+        return
+    }
+    hasNextRow = false
+  }
 }
