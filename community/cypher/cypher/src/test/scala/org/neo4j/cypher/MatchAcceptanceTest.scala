@@ -623,10 +623,12 @@ match (a {name:'A'}), (x) where x.name in ['B', 'C']
 optional match p = a --> x
 return x, p""")
 
-    assert(List(
-      Map("x" -> b, "p" -> PathImpl(a, r, b)),
-      Map("x" -> c, "p" -> null)
-    ) === result.toList)
+    graph.inTx {
+      assert(List(
+        Map("x" -> b, "p" -> PathImpl(a, r, b)),
+        Map("x" -> c, "p" -> null)
+      ) === result.toList)
+    }
   }
 
   test("should handle optional paths from graph algo") {

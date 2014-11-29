@@ -60,7 +60,7 @@ case object unnestApply extends Rewriter {
       p.copy(left = newApply)(origApply.solved)
 
     // L Ax (EXP R) => EXP( L Ax R )
-    case apply@Apply(lhs, expand@Expand(rhs, _, _, _, _, _, _, _, _, _)) =>
+    case apply@Apply(lhs, expand@Expand(rhs, _, _, _, _, _, _, _, _)) =>
       val newApply = apply.copy(right = rhs)(apply.solved)
       expand.copy(left = newApply)(apply.solved)
 

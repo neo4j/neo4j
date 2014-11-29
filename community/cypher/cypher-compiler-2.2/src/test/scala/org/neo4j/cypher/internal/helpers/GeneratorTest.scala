@@ -32,39 +32,42 @@ class GeneratorTest extends CypherFunSuite {
   }
 
   test("Should fail if empty") {
-    evaluating { TestGenerator(0).next() } should produce[NoSuchElementException]
+    evaluating {
+      val iter = TestGenerator(0).iterator
+      iter.next()
+    } should produce[NoSuchElementException]
   }
 
   test("Should handle multiple calls to hasNext") {
-    val gen = TestGenerator(3)
+    val iter = TestGenerator(3).iterator
 
-    gen.next() should equal(1)
+    iter.next() should equal(1)
 
-    gen.hasNext should equal(true)
-    gen.hasNext should equal(true)
+    iter.hasNext should equal(true)
+    iter.hasNext should equal(true)
 
-    gen.next() should equal(2)
+    iter.next() should equal(2)
 
-    gen.hasNext should equal(true)
-    gen.hasNext should equal(true)
-    gen.hasNext should equal(true)
+    iter.hasNext should equal(true)
+    iter.hasNext should equal(true)
+    iter.hasNext should equal(true)
 
-    gen.next() should equal(3)
+    iter.next() should equal(3)
 
-    gen.hasNext should equal(false)
-    gen.hasNext should equal(false)
-    gen.hasNext should equal(false)
+    iter.hasNext should equal(false)
+    iter.hasNext should equal(false)
+    iter.hasNext should equal(false)
   }
 
   final case class TestGenerator(maxCount: Int) extends Generator[Int] {
-    protected var deliverNext: Int = 0
+    var deliverNext: Int = 0
 
-    override protected def prepareNext(): Unit = {
+    def fetchNext: DeliveryState = {
       if (deliverNext < maxCount) {
         deliverNext += 1
-        return
+        return ReadyToDeliver
       }
-      close()
+      NothingToDeliver
     }
   }
 }

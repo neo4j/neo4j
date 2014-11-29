@@ -22,14 +22,14 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.Predicate
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.LegacyExpression
-import org.neo4j.cypher.internal.helpers.Generator
+import org.neo4j.cypher.internal.helpers.{NothingToDeliver, ReadyToDeliver, DeliveryState, Generator}
 
 case class FilterPipe(source: Pipe, predicate: Predicate)(val estimatedCardinality: Option[Long] = None)
                      (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
   val symbols = source.symbols
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) =
-    new FilterPipeIterator(input, predicate)(state)
+    new FilterPipeGenerator(input, predicate)(state).iterator
 
   def planDescription = source.planDescription.andThen(this, "Filter", identifiers, LegacyExpression(predicate))
 
@@ -43,21 +43,21 @@ case class FilterPipe(source: Pipe, predicate: Predicate)(val estimatedCardinali
   def withEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 }
 
-final class FilterPipeIterator(input: Iterator[ExecutionContext], predicate: Predicate)(implicit state: QueryState)
+final class FilterPipeGenerator(input: Iterator[ExecutionContext], predicate: Predicate)(implicit state: QueryState)
   extends Generator[ExecutionContext] {
 
   private var row: ExecutionContext = null
 
-  protected def prepareNext() {
+  def fetchNext: DeliveryState = {
     while (input.hasNext) {
       row = input.next()
       if (predicate.isTrue(deliverNext))
-        return
+        return ReadyToDeliver
     }
-    close()
+    NothingToDeliver
   }
 
-  protected def deliverNext = row
+  def deliverNext = row
 }
 
 

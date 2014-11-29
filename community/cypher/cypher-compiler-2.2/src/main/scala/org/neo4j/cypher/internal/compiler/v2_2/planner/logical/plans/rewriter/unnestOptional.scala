@@ -31,17 +31,17 @@ case object unnestOptional extends Rewriter {
   private val instance: Rewriter = Rewriter.lift {
     case apply@Apply(lhs,
       Optional(
-      e@Expand(_: Argument, _, _, _, _, _, _, SimplePatternLength, _, _))) =>
+      e@Expand(_: Argument, _, _, _, _, _, _, _, _))) =>
         optionalExpand(e, lhs)(Seq.empty)(apply.solved)
 
     case apply@Apply(lhs,
       Optional(
       Selection(predicates,
-      e@Expand(_: Argument, _, _, _, _, _, _, SimplePatternLength, _, _)))) =>
+      e@Expand(_: Argument, _, _, _, _, _, _, _, _)))) =>
         optionalExpand(e, lhs)(predicates)(apply.solved)
   }
 
   private def optionalExpand(e: Expand, lhs: LogicalPlan): (Seq[Expression] => PlannerQuery => OptionalExpand) =
     predicates =>
-      OptionalExpand(lhs, e.from, e.dir, e.types, e.to, e.relName, e.length, e.mode, predicates)
+      OptionalExpand(lhs, e.from, e.dir, e.projectedDir, e.types, e.to, e.relName, e.mode, e.predicates ++ predicates)
 }

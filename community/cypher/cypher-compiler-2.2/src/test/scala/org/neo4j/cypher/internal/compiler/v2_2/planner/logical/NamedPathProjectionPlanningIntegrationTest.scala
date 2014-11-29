@@ -30,7 +30,7 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
   test("should build plans containing outgoing path projections") {
     planFor("MATCH p = (a:X)-[r]->(b) RETURN p").plan should equal(
       Projection(
-        Expand( NodeByLabelScan("a",  Left("X"), Set.empty)(PlannerQuery.empty), "a", Direction.OUTGOING, Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength )(PlannerQuery.empty),
+        Expand( NodeByLabelScan("a",  Left("X"), Set.empty)(PlannerQuery.empty), "a", Direction.OUTGOING, Direction.OUTGOING, Seq.empty, "b", "r")(PlannerQuery.empty),
         expressions = Map(
           "p" -> PathExpression(NodePathStep(Identifier("a")_,SingleRelationshipPathStep(Identifier("r")_, Direction.OUTGOING, NilPathStep)))_
         )
@@ -48,7 +48,7 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
             FunctionInvocation(FunctionName("head")_, FunctionInvocation(FunctionName("nodes")_, pathExpr)_)_,
             Identifier("a")_
           )_),
-          Expand( NodeByLabelScan("a",  Left("X"), Set.empty)(PlannerQuery.empty), "a", Direction.OUTGOING, Direction.OUTGOING,  Seq.empty, "b", "r", SimplePatternLength )(PlannerQuery.empty)
+          Expand( NodeByLabelScan("a",  Left("X"), Set.empty)(PlannerQuery.empty), "a", Direction.OUTGOING, Direction.OUTGOING,  Seq.empty, "b", "r")(PlannerQuery.empty)
         )(PlannerQuery.empty),
         expressions = Map("b" -> Identifier("b") _)
       )(PlannerQuery.empty)

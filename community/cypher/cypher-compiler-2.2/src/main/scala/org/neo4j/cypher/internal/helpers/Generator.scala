@@ -19,39 +19,63 @@
  */
 package org.neo4j.cypher.internal.helpers
 
-abstract class Generator[+T] extends Iterator[T] {
-  private var preparing = true
-  private var open: Boolean = true
+trait Generator[+T] extends Iterable[T] {
+  self =>
 
-  protected def prepareNext(): Unit
-  protected def deliverNext: T
+  def fetchNext: DeliveryState
+  def deliverNext: T
 
-  final def hasNext = {
-    if (preparing) {
-      prepareNext()
-      preparing = false
-    }
-    open
-  }
-
-  final def next() = {
-    if (preparing) {
-      prepareNext()
-      preparing = false
-    }
-
-    if (open) {
-      preparing = true
-      deliverNext
-    }
-    else {
-      Iterator.empty.next()
-    }
-  }
-
-  protected final def isOpen: Boolean = open
-
-  protected final def close(): Unit = {
-    open = false
-  }
+  def iterator = new GeneratorIterator[T](self)
 }
+
+sealed abstract class GeneratorState {
+  def fetch(generator: Generator[Any]): DeliveryState
+}
+
+case object ReadyToFetch extends GeneratorState {
+  def fetch(generator: Generator[Any]): DeliveryState = generator.fetchNext
+}
+
+sealed abstract class DeliveryState extends GeneratorState {
+  self =>
+
+  def fetch(generator: Generator[Any]): DeliveryState = self
+
+  def canDeliver: Boolean
+  def deliver[T](generator: Generator[T]): T
+}
+
+case object ReadyToDeliver extends DeliveryState {
+  def canDeliver: Boolean = true
+  def deliver[T](generator: Generator[T]): T = generator.deliverNext
+}
+
+case object NothingToDeliver extends DeliveryState {
+  def canDeliver: Boolean = false
+  def deliver[T](generator: Generator[T]): T = Iterator.empty.next()
+}
+
+class GeneratorIterator[+T](private val generator: Generator[T]) extends Iterator[T] {
+  private var state: GeneratorState = ReadyToFetch
+
+  def hasNext: Boolean = {
+    val deliveryState = state.fetch(generator)
+    state = deliveryState
+    deliveryState.canDeliver
+  }
+
+  def next(): T = {
+    val deliveryState = state.fetch(generator)
+    val result = deliveryState.deliver(generator)
+    state = ReadyToFetch
+    result
+  }
+
+  def close() = {
+    state = NothingToDeliver
+  }
+
+  override def toString(): String =
+    s"${getClass.getName}@${Integer.toHexString(hashCode())}(state = $state)"
+}
+
