@@ -32,7 +32,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
-
 import org.neo4j.graphalgo.EstimateEvaluator;
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
@@ -50,9 +49,9 @@ import org.neo4j.helpers.collection.MapUtil;
 import common.Neo4jAlgoTestCase;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphalgo.CommonEvaluators.doubleCostEvaluator;
 import static org.neo4j.graphalgo.GraphAlgoFactory.aStar;
 import static org.neo4j.graphdb.Direction.OUTGOING;
@@ -121,6 +120,11 @@ public class TestAStar extends Neo4jAlgoTestCase
         Relationship relBC = graph.makeEdge( "B", "C", "length", 3d );
         Relationship relAC = graph.makeEdge( "A", "C", "length", 10d );
 
+        //Shortest Path (single & all) from node to itself works unexpected - Bug #2987
+        //Test to find a path between the same nodes 
+        Path nullPath = finder.findSinglePath( nodeA, nodeA );
+        assertNull(nullPath);
+        
         int counter = 0;
         for ( WeightedPath path : finder.findAllPaths( nodeA, nodeC ) )
         {

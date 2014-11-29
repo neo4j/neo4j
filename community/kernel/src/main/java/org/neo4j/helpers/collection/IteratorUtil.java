@@ -64,7 +64,7 @@ public abstract class IteratorUtil
      */
     public static <T> T firstOrNull( Iterator<T> iterator )
     {
-        return iterator.hasNext() ? iterator.next() : null;
+        return ((iterator==null)?null:(iterator.hasNext() ? iterator.next() : null));
     }
 
     /**
@@ -227,7 +227,7 @@ public abstract class IteratorUtil
      */
     public static <T> T firstOrNull( Iterable<T> iterable )
     {
-        return firstOrNull( iterable.iterator() );
+        return firstOrNull( (iterable==null)? null : iterable.iterator() );
     }
 
     /**
