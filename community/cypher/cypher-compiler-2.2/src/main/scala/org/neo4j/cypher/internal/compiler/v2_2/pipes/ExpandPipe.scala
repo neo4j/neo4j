@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.ExpandExpression
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{ExpandInto, ExpandAll, ExpansionMode}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.cypher.internal.compiler.v2_2.{ExecutionContext, InternalException}
@@ -49,13 +50,18 @@ case class ExpandPipeForIntTypes(source: Pipe,
                                 relName: String,
                                 to: String,
                                 dir: Direction,
-                                types: Seq[Int])
+                                types: Seq[Int],
+                                mode: ExpansionMode = ExpandAll)
                                (val estimatedCardinality: Option[Long] = None)
                                (implicit pipeMonitor: PipeMonitor)
   extends ExpandPipe[Int](source, from, relName, to, dir, types, pipeMonitor) {
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) =
-    new ExpandPipeIteratorForIntTypes(input, from, relName, to, dir, types)(state.query)
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = mode match {
+    case ExpandAll =>
+      new ExpandPipeIteratorForIntTypes(input, from, relName, to, dir, types)(state.query) with ExpandAllPipeIterator
+    case ExpandInto =>
+      new ExpandPipeIteratorForIntTypes(input, from, relName, to, dir, types)(state.query) with ExpandIntoPipeIterator
+  }
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources
@@ -70,13 +76,18 @@ case class ExpandPipeForStringTypes(source: Pipe,
                                     relName: String,
                                     to: String,
                                     dir: Direction,
-                                    types: Seq[String])
+                                    types: Seq[String],
+                                    mode: ExpansionMode = ExpandAll)
                                    (val estimatedCardinality: Option[Long] = None)
                                    (implicit pipeMonitor: PipeMonitor)
   extends ExpandPipe[String](source, from, relName, to, dir, types, pipeMonitor) {
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) =
-    new ExpandPipeIteratorForStringTypes(input, from, relName, to, dir, types)(state.query)
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = mode match {
+    case ExpandAll =>
+      new ExpandPipeIteratorForStringTypes(input, from, relName, to, dir, types)(state.query) with ExpandAllPipeIterator
+    case ExpandInto =>
+      new ExpandPipeIteratorForStringTypes(input, from, relName, to, dir, types)(state.query) with ExpandIntoPipeIterator
+  }
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources
@@ -87,34 +98,35 @@ case class ExpandPipeForStringTypes(source: Pipe,
 }
 
 sealed abstract
-class ExpandPipeIterator[T](input: Iterator[ExecutionContext],
-                            from: String,
-                            relName: String,
-                            to: String,
-                            dir: Direction)(implicit qtx: QueryContext)
+class ExpandPipeIterator(input: Iterator[ExecutionContext],
+                         protected val from: String,
+                         protected val relName: String,
+                         protected val to: String,
+                         protected val dir: Direction)(implicit qtx: QueryContext)
   extends Generator[ExecutionContext] {
 
-  private var row: ExecutionContext = null
-  private var node: Node = null
-  private var relationships: Iterator[Relationship] = Iterator.empty
+  protected var row: ExecutionContext = null
+  protected var node: Node = null
+  protected var relationships: Iterator[Relationship] = Iterator.empty
 
   protected final def prepareNext(): Unit =
     do {
       if (relationships.hasNext) {
-        return
+        if (prepareNextRelationship)
+          return
       } else {
-        prepareNextRelationships()
+        prepareNextRow()
       }
     } while (isOpen)
 
 
-  private final def prepareNextRelationships(): Unit = {
+  private final def prepareNextRow(): Unit = {
     while (input.hasNext) {
       row = input.next()
-      getFromNode(row) match {
+      row.getOrElse(from, throw new InternalException(s"Expected to find a node at $from but found nothing")) match {
         case nextNode: Node =>
           node = nextNode
-          relationships = getRelationships(nextNode)
+          relationships = expandNode
           return
 
         case null =>
@@ -127,37 +139,63 @@ class ExpandPipeIterator[T](input: Iterator[ExecutionContext],
     close()
   }
 
-  protected final def deliverNext: ExecutionContext = {
-    val resultRel = relationships.next()
-    row.newWith2(relName, resultRel, to, resultRel.getOtherNode(node))
+  protected def prepareNextRelationship: Boolean
+  protected def expandNode: Iterator[Relationship]
+}
+
+trait ExpandAllPipeIterator {
+  self: ExpandPipeIterator =>
+
+  override protected def prepareNextRelationship = true
+
+  override protected def deliverNext = {
+    val rel = relationships.next()
+    row.newWith2(relName, rel, to, rel.getOtherNode(node))
+  }
+}
+
+trait ExpandIntoPipeIterator {
+  self: ExpandPipeIterator =>
+
+  private var rel: Relationship = null
+  private var other: Node = null
+
+  override protected def prepareNextRelationship: Boolean = {
+    do {
+      rel = relationships.next()
+      other = rel.getOtherNode(node)
+      val sibling = row(to)
+      if (sibling == other) {
+        return true
+      }
+    } while (relationships.hasNext)
+    false
   }
 
-  private final def getFromNode(row: ExecutionContext): Any =
-    row.getOrElse(from, throw new InternalException(s"Expected to find a node at $from but found nothing"))
-
-  protected def getRelationships(node: Node): Iterator[Relationship]
+  protected def deliverNext =
+    row.newWith2(relName, rel, to, other)
 }
 
-final class ExpandPipeIteratorForIntTypes(input: Iterator[ExecutionContext],
-                                          from: String,
-                                          relName: String,
-                                          to: String,
-                                          dir: Direction,
-                                          types: Seq[Int])(implicit qtx: QueryContext)
-  extends ExpandPipeIterator[Int](input, from, relName, to, dir) {
+abstract
+class ExpandPipeIteratorForIntTypes(input: Iterator[ExecutionContext],
+                                    from: String,
+                                    relName: String,
+                                    to: String,
+                                    dir: Direction,
+                                    types: Seq[Int])(implicit qtx: QueryContext)
+  extends ExpandPipeIterator(input, from, relName, to, dir) {
 
-  protected def getRelationships(node: Node): Iterator[Relationship] =
-    qtx.getRelationshipsForIds(node, dir, types)
+  protected def expandNode = qtx.getRelationshipsForIds(node, dir, types)
 }
 
-final class ExpandPipeIteratorForStringTypes(input: Iterator[ExecutionContext],
-                                             from: String,
-                                             relName: String,
-                                             to: String,
-                                             dir: Direction,
-                                             types: Seq[String])(implicit qtx: QueryContext)
-  extends ExpandPipeIterator[Int](input, from, relName, to, dir) {
+abstract
+class ExpandPipeIteratorForStringTypes(input: Iterator[ExecutionContext],
+                                       from: String,
+                                       relName: String,
+                                       to: String,
+                                       dir: Direction,
+                                       types: Seq[String])(implicit qtx: QueryContext)
+  extends ExpandPipeIterator(input, from, relName, to, dir) {
 
-  protected def getRelationships(node: Node): Iterator[Relationship] =
-    qtx.getRelationshipsFor(node, dir, types)
+  protected def expandNode = qtx.getRelationshipsFor(node, dir, types)
 }

@@ -97,13 +97,13 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
         case CartesianProduct(left, right) =>
           CartesianProductPipe(buildPipe(left, input), buildPipe(right, input))()
 
-        case Expand(left, IdName(fromName), dir, projectedDir, types: Seq[RelTypeName], IdName(toName), IdName(relName), SimplePatternLength, ExpandAll, _) =>
+        case Expand(left, IdName(fromName), dir, projectedDir, types: Seq[RelTypeName], IdName(toName), IdName(relName), SimplePatternLength, mode, _) =>
           implicit val table: SemanticTable = context.semanticTable
 
           if (types.exists(_.id == None))
-            ExpandPipeForStringTypes(buildPipe(left, input), fromName, relName, toName, dir, types.map(_.name))()
+            ExpandPipeForStringTypes(buildPipe(left, input), fromName, relName, toName, dir, types.map(_.name), mode)()
           else {
-            ExpandPipeForIntTypes(buildPipe(left, input), fromName, relName, toName, dir, types.flatMap(_.id).map(_.id))()
+            ExpandPipeForIntTypes(buildPipe(left, input), fromName, relName, toName, dir, types.flatMap(_.id).map(_.id), mode)()
           }
 
         case Expand(left, IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName), VarPatternLength(min, max), ExpandAll, predicates) =>
