@@ -127,6 +127,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     // State
     private final TransactionRecordState recordState;
     private final CountsRecordState counts = new CountsRecordState();
+    private final RecordStateForCacheAccessor recordStateForCache;
     // For committing
     private final TransactionHeaderInformationFactory headerInformationFactory;
     private final TransactionCommitProcess commitProcess;
@@ -155,6 +156,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             IndexingService indexService,
                                             UpdateableSchemaState schemaState,
                                             TransactionRecordState recordState,
+                                            RecordStateForCacheAccessor recordStateForCache,
                                             SchemaIndexProviderMap providerMap, NeoStore neoStore,
                                             Locks.Client locks, TransactionHooks hooks,
                                             ConstraintIndexCreator constraintIndexCreator,
@@ -172,6 +174,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.labelScanStore = labelScanStore;
         this.indexService = indexService;
         this.recordState = recordState;
+        this.recordStateForCache = recordStateForCache;
         this.providerMap = providerMap;
         this.schemaState = schemaState;
         this.hooks = hooks;
@@ -473,7 +476,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
                     if ( hasTxStateWithChanges() )
                     {
-                        persistenceCache.apply( txState );
+                        persistenceCache.apply( txState, recordStateForCache );
                     }
                 }
             }

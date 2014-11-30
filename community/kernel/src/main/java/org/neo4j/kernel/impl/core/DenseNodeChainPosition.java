@@ -20,11 +20,13 @@
 package org.neo4j.kernel.impl.core;
 
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
+import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
+import org.neo4j.collection.primitive.PrimitiveIntObjectVisitor;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
@@ -33,38 +35,42 @@ import static java.lang.String.format;
 
 public class DenseNodeChainPosition implements RelationshipLoadingPosition
 {
-    private final Map<Integer, RelationshipLoadingPosition> positions = new HashMap<>();
-    private final Map<Integer, RelationshipGroupRecord> groups;
+    private final PrimitiveIntObjectMap<RelationshipLoadingPosition> positions = Primitive.intObjectMap();
     private final int[] types;
     private RelationshipLoadingPosition currentPosition;
 
     public DenseNodeChainPosition( Map<Integer, RelationshipGroupRecord> groups )
     {
-        this.types = PrimitiveIntCollections.asArray( groups.keySet().iterator() );
-        this.groups = groups;
+        this.types = PrimitiveIntCollections.asArray( groups.keySet() );
+
+        // Instantiate all positions eagerly so that we get a fixed point in time where
+        // all positions where initialized. This is required for relationship addition filtering
+        // during committing relationship changes to a NodeImpl.
+        for ( Entry<Integer,RelationshipGroupRecord> entry : groups.entrySet() )
+        {
+            this.positions.put( entry.getKey(), new TypePosition( entry.getValue() ) );
+        }
     }
 
-    private DenseNodeChainPosition( DenseNodeChainPosition copyFrom )
+    private DenseNodeChainPosition( final DenseNodeChainPosition copyFrom )
     {
         // Deep-copy of positions
-        for ( Entry<Integer, RelationshipLoadingPosition> entry : copyFrom.positions.entrySet() )
+        copyFrom.positions.visitEntries( new PrimitiveIntObjectVisitor<RelationshipLoadingPosition,RuntimeException>()
         {
-            RelationshipLoadingPosition position = entry.getValue().clone();
-            this.positions.put( entry.getKey(), position );
-            if ( entry.getValue() == copyFrom.currentPosition )
+            @Override
+            public boolean visited( int type, RelationshipLoadingPosition originalPosition )
             {
-                this.currentPosition = position;
+                RelationshipLoadingPosition position = originalPosition.clone();
+                positions.put( type, position );
+                if ( originalPosition == copyFrom.currentPosition )
+                {
+                    currentPosition = position;
+                }
+                return false;
             }
-        }
+        } );
 
-        this.groups = new HashMap<>( copyFrom.groups );
-        this.types = copyFrom.types.clone();
-    }
-
-    @Override
-    public void updateFirst( long first )
-    {
-        // TODO here we need relationship groups for any new
+        this.types = copyFrom.types;
     }
 
     @Override
@@ -91,9 +97,7 @@ public class DenseNodeChainPosition implements RelationshipLoadingPosition
         RelationshipLoadingPosition position = positions.get( type );
         if ( position == null )
         {
-            RelationshipGroupRecord record = groups.get( type );
-            position = record != null ? new TypePosition( record ) : RelationshipLoadingPosition.EMPTY;
-            positions.put( type, position );
+            return RelationshipLoadingPosition.EMPTY;
         }
         return position;
     }
@@ -128,12 +132,16 @@ public class DenseNodeChainPosition implements RelationshipLoadingPosition
     }
 
     @Override
-    public void compareAndAdvance( long relIdDeleted, long nextRelId )
+    public boolean atPosition( DirectionWrapper direction, int type, long position )
     {
-        for ( RelationshipLoadingPosition typePosition : positions.values() )
-        {
-            typePosition.compareAndAdvance( relIdDeleted, nextRelId );
-        }
+        RelationshipLoadingPosition typePosition = positions.get( type );
+        return typePosition != null ? typePosition.atPosition( direction, type, position ) : false;
+    }
+
+    @Override
+    public void compareAndAdvance( DirectionWrapper direction, int type, long relIdDeleted, long nextRelId )
+    {
+        getTypePosition( type ).compareAndAdvance( direction, type, relIdDeleted, nextRelId );
     }
 
     @Override
@@ -146,7 +154,6 @@ public class DenseNodeChainPosition implements RelationshipLoadingPosition
     public String toString()
     {
         StringBuilder builder = new StringBuilder( getClass().getSimpleName() + ":" );
-        builder.append( format( "%n  groups: %s", groups ) );
         builder.append( format( "%n  positions: %s", positions ) );
         return builder.toString();
     }
@@ -159,9 +166,11 @@ public class DenseNodeChainPosition implements RelationshipLoadingPosition
 
         TypePosition( RelationshipGroupRecord record )
         {
-            for ( DirectionWrapper dir : DirectionWrapper.values() )
+            for ( DirectionWrapper direction : DirectionWrapper.values() )
             {
-                directions.put( dir, new SingleChainPosition( dir.getNextRel( record ) ) );
+                long firstRel = direction.getNextRel( record );
+                directions.put( direction, firstRel != Record.NO_NEXT_RELATIONSHIP.intValue()
+                        ? new SingleChainPosition( firstRel ) : RelationshipLoadingPosition.EMPTY );
             }
         }
 
@@ -179,9 +188,9 @@ public class DenseNodeChainPosition implements RelationshipLoadingPosition
         }
 
         @Override
-        public void updateFirst( long first )
+        public boolean atPosition( DirectionWrapper direction, int type, long position )
         {
-            throw new UnsupportedOperationException();
+            return directions.get( direction ).atPosition( direction, type, position );
         }
 
         @Override
@@ -241,12 +250,9 @@ public class DenseNodeChainPosition implements RelationshipLoadingPosition
         }
 
         @Override
-        public void compareAndAdvance( long relIdDeleted, long nextRelId )
+        public void compareAndAdvance( DirectionWrapper direction, int type, long relIdDeleted, long nextRelId )
         {
-            for ( RelationshipLoadingPosition position : directions.values() )
-            {
-                position.compareAndAdvance( relIdDeleted, nextRelId );
-            }
+            directions.get( direction ).compareAndAdvance( direction, type, relIdDeleted, nextRelId );
         }
 
         @Override

@@ -36,6 +36,10 @@ public interface RecordAccess<KEY,RECORD,ADDITIONAL>
      */
     RecordProxy<KEY, RECORD, ADDITIONAL> getOrLoad( KEY key, ADDITIONAL additionalData );
 
+    RecordProxy<KEY, RECORD, ADDITIONAL> getIfLoaded( KEY key );
+
+    void setTo( KEY key, RECORD newRecord, ADDITIONAL additionalData );
+
     /**
      * Creates a new record with the given {@code key}. Any {@code additionalData} is set in the
      * record before returning.
@@ -50,6 +54,10 @@ public interface RecordAccess<KEY,RECORD,ADDITIONAL>
      * Closes the record access.
      */
     void close();
+
+    int changeSize();
+
+    Iterable<RecordProxy<KEY,RECORD,ADDITIONAL>> changes();
 
     /**
      * A proxy for a record that encapsulates load/store actions to take, knowing when the underlying record is
@@ -70,6 +78,8 @@ public interface RecordAccess<KEY,RECORD,ADDITIONAL>
         ADDITIONAL getAdditionalData();
 
         RECORD getBefore();
+
+        boolean isChanged();
     }
 
     /**

@@ -106,7 +106,7 @@ public class DirectRecordAccessSet implements RecordAccessSet
     {
         return relationshipTypeTokenRecords;
     }
-    
+
     @Override
     public void close()
     {
@@ -131,5 +131,17 @@ public class DirectRecordAccessSet implements RecordAccessSet
         relationshipTypeTokenRecords.commit();
         labelTokenRecords.commit();
         propertyKeyTokenRecords.commit();
+    }
+
+    @Override
+    public boolean hasChanges()
+    {
+        return  nodeRecords.changeSize() > 0 ||
+                propertyRecords.changeSize() > 0 ||
+                relationshipRecords.changeSize() > 0 ||
+                relationshipGroupRecords.changeSize() > 0 ||
+                propertyKeyTokenRecords.changeSize() > 0 ||
+                labelTokenRecords.changeSize() > 0 ||
+                relationshipTypeTokenRecords.changeSize() > 0;
     }
 }

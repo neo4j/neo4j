@@ -17,31 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.collection.primitive.hopscotch;
+package org.neo4j.collection.primitive;
 
-public class LongKeyTable<VALUE>
-        extends IntArrayBasedKeyTable<VALUE>
+public interface PrimitiveIntLongMap extends PrimitiveIntCollection
 {
-    public LongKeyTable( int capacity, VALUE singleValue )
-    {
-        super( capacity, 3, 32, singleValue );
-    }
+    long put( int key, long value );
 
-    @Override
-    public long key( int index )
-    {
-        return getLong( index( index ) );
-    }
+    boolean containsKey( int key );
 
-    @Override
-    protected void internalPut( int actualIndex, long key, VALUE value )
-    {
-        putLong( actualIndex, key );
-    }
+    long get( int key );
 
-    @Override
-    protected LongKeyTable<VALUE> newInstance( int newCapacity )
-    {
-        return new LongKeyTable<>( newCapacity, singleValue );
-    }
+    long remove( int key );
+
+    void visitEntries( PrimitiveIntLongVisitor visitor );
 }

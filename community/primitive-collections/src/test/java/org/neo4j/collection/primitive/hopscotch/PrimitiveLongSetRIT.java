@@ -19,19 +19,13 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
-import static java.lang.String.format;
-import static java.lang.System.currentTimeMillis;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.Set;
 
 import org.junit.Test;
+
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.test.randomized.Action;
@@ -43,19 +37,25 @@ import org.neo4j.test.randomized.RandomizedTester.TargetFactory;
 import org.neo4j.test.randomized.Result;
 import org.neo4j.test.randomized.TestResource;
 
-// TODO please either characterise this as NOT a unit test or find a way to make System.out disappear
+import static java.lang.String.format;
+import static java.lang.System.currentTimeMillis;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 public class PrimitiveLongSetRIT
 {
     @Test
     public void thoroughlyTestIt() throws Exception
     {
-        long endTime = currentTimeMillis() + SECONDS.toMillis( 20 );
+        long endTime = currentTimeMillis() + SECONDS.toMillis( 5 );
         while ( currentTimeMillis() < endTime )
         {
             long seed = currentTimeMillis();
             final Random random = new Random( seed );
-            int max = random.nextInt( 200_000 ) + 100;
-            System.out.println( "run: seed: " + seed + ", #ops: " + max );
+            int max = random.nextInt( 10_000 ) + 100;
             RandomizedTester<Sets,String> actions =
                     new RandomizedTester<>( setFactory(), actionFactory( random ) );
 
@@ -67,7 +67,7 @@ public class PrimitiveLongSetRIT
                 System.out.println( "Actually, minimal reproducible test of that is..." );
                 actions.findMinimalReproducible().testCaseWriter( "shouldOnlyContainAddedValues",
                         given() ).print( System.out );
-                fail( "Failed, see printed test case for how to reproduce" );
+                fail( "Failed, see printed test case for how to reproduce. Seed:" + seed );
             }
             fullVerification( result.getTarget(), random );
         }

@@ -36,8 +36,8 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContext;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContextSupplier;
-import org.neo4j.kernel.impl.transaction.state.RecordChanges;
-import org.neo4j.kernel.impl.transaction.state.RecordChanges.RecordChange;
+import org.neo4j.kernel.impl.transaction.state.RecordAccess;
+import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -168,10 +168,10 @@ public class KernelTransactionsTest
                 NeoStoreTransactionContext context = super.create();
                 when( context.hasChanges() ).thenReturn( true );
 
-                RecordChanges<Long, NodeRecord, Void> recordChanges = mock( RecordChanges.class );
+                RecordAccess<Long, NodeRecord, Void> recordChanges = mock( RecordAccess.class );
                 when( recordChanges.changeSize() ).thenReturn( 1 );
 
-                RecordChange<Long, NodeRecord, Void> recordChange = mock( RecordChange.class );
+                RecordProxy<Long, NodeRecord, Void> recordChange = mock( RecordProxy.class );
                 when( recordChange.forReadingLinkage() ).thenReturn( new NodeRecord( 1, false, 1, 1 ) );
 
                 when( recordChanges.changes() ).thenReturn( Iterables.option( recordChange ) );

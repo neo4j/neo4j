@@ -17,31 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.collection.primitive.hopscotch;
+package org.neo4j.kernel.impl.core;
 
-public class LongKeyTable<VALUE>
-        extends IntArrayBasedKeyTable<VALUE>
+import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
+
+/**
+ * Able to provide information about which id is the first id, in a list of many.
+ */
+public interface FirstRelationshipIds
 {
-    public LongKeyTable( int capacity, VALUE singleValue )
-    {
-        super( capacity, 3, 32, singleValue );
-    }
-
-    @Override
-    public long key( int index )
-    {
-        return getLong( index( index ) );
-    }
-
-    @Override
-    protected void internalPut( int actualIndex, long key, VALUE value )
-    {
-        putLong( actualIndex, key );
-    }
-
-    @Override
-    protected LongKeyTable<VALUE> newInstance( int newCapacity )
-    {
-        return new LongKeyTable<>( newCapacity, singleValue );
-    }
+    /**
+     * @param type relationship type token id.
+     * @param direction direction of the relationship.
+     * @return first id for the given type and direction, or {@link Record#NO_NEXT_RELATIONSHIP} if none.
+     */
+    long firstIdOf( int type, DirectionWrapper direction );
 }
