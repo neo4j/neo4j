@@ -17,19 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.state;
+package org.neo4j.kernel.api.txstate;
 
-public class EntityState
+import org.neo4j.kernel.api.LegacyIndex;
+import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
+import org.neo4j.kernel.impl.index.IndexEntityType;
+
+public interface LegacyIndexTxState
 {
-    private final long id;
+    LegacyIndex nodeChanges( String indexName ) throws LegacyIndexNotFoundKernelException;
 
-    public EntityState( long id )
-    {
-        this.id = id;
-    }
+    LegacyIndex relationshipChanges( String indexName ) throws LegacyIndexNotFoundKernelException;
 
-    public long getId()
-    {
-        return id;
-    }
+    void deleteIndex( IndexEntityType entityType, String indexName );
 }

@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.Collections;
-import java.util.Iterator;
-
 import org.junit.Test;
 import org.mockito.InOrder;
+
+import java.util.Collections;
+import java.util.Iterator;
 
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -51,7 +51,7 @@ public class LockingStatementOperationsTest
     private final SchemaWriteOperations schemaWriteOps;
     private final Locks.Client locks = mock( Locks.Client.class );
     private final InOrder order;
-    private final KernelStatement state = new KernelStatement( null, null, null, null, locks, null, null );
+    private final KernelStatement state = new KernelStatement( null, null, null, null, locks, null );
 
     public LockingStatementOperationsTest()
     {

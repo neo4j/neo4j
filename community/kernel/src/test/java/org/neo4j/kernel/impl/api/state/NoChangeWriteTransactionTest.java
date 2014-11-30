@@ -26,18 +26,17 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.index.DummyIndexExtensionFactory;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.TestLabels;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.index.DummyIndexExtensionFactory.IDENTIFIER;
 
 public class NoChangeWriteTransactionTest
 {
@@ -91,8 +90,7 @@ public class NoChangeWriteTransactionTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Index<Node> index = db.index().forNodes( "test", stringMap(
-                    IndexManager.PROVIDER, DummyIndexExtensionFactory.IDENTIFIER ) );
+            Index<Node> index = db.index().forNodes( "test", stringMap( PROVIDER, IDENTIFIER ) );
             tx.success();
             return index;
         }

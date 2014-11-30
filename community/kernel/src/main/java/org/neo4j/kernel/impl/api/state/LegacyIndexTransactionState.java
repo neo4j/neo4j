@@ -33,6 +33,7 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.LegacyIndexProviderTransaction;
 import org.neo4j.kernel.api.LegacyIndex;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
+import org.neo4j.kernel.api.txstate.LegacyIndexTxState;
 import org.neo4j.kernel.impl.api.LegacyIndexApplier.ProviderLookup;
 import org.neo4j.kernel.impl.index.IndexCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
@@ -53,7 +54,7 @@ import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
  *
  * @see TransactionRecordState
  */
-public class LegacyIndexTransactionState implements IndexCommandFactory, RecordState
+public class LegacyIndexTransactionState implements LegacyIndexTxState, IndexCommandFactory, RecordState
 {
     private final Map<String, LegacyIndexProviderTransaction> transactions = new HashMap<>();
     private final IndexConfigStore indexConfigStore;
@@ -70,6 +71,7 @@ public class LegacyIndexTransactionState implements IndexCommandFactory, RecordS
         this.providerLookup = providerLookup;
     }
 
+    @Override
     public LegacyIndex nodeChanges( String indexName ) throws LegacyIndexNotFoundKernelException
     {
         Map<String, String> configuration = indexConfigStore.get( Node.class, indexName );
@@ -87,6 +89,7 @@ public class LegacyIndexTransactionState implements IndexCommandFactory, RecordS
         return transaction.nodeIndex( indexName, configuration );
     }
 
+    @Override
     public LegacyIndex relationshipChanges( String indexName ) throws LegacyIndexNotFoundKernelException
     {
         Map<String, String> configuration = indexConfigStore.get( Relationship.class, indexName );
@@ -217,6 +220,7 @@ public class LegacyIndexTransactionState implements IndexCommandFactory, RecordS
         addCommand( indexName, command );
     }
 
+    @Override
     public void deleteIndex( IndexEntityType entityType, String indexName )
     {
         DeleteCommand command = new DeleteCommand();

@@ -19,12 +19,11 @@
  */
 package org.neo4j.kernel.counts;
 
+import java.util.concurrent.Future;
+
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -43,6 +42,7 @@ import org.neo4j.test.NamedFunction;
 import org.neo4j.test.ThreadingRule;
 
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
@@ -83,12 +83,11 @@ public class RelationshipCountsTest
 
         // then
         assertEquals( 0, before );
-        assertEquals( 0, during );
+        assertEquals( 3, during );
         assertEquals( 3, after );
     }
 
     @Test
-    @Ignore("TODO: re-enable this test when we can extract proper counts form TxState")
     public void shouldAccountForDeletedRelationships() throws Exception
     {
         // given
@@ -156,7 +155,7 @@ public class RelationshipCountsTest
         assertEquals( 0, before );
         assertEquals( 0, concurrently );
         assertEquals( 2, after );
-        assertEquals( before, during );
+        assertEquals( 2, during );
     }
 
     @Test
@@ -203,7 +202,7 @@ public class RelationshipCountsTest
         assertEquals( 3, before );
         assertEquals( 3, concurrently );
         assertEquals( 2, after );
-        assertEquals( before, during );
+        assertEquals( 2, during );
     }
 
     @Test

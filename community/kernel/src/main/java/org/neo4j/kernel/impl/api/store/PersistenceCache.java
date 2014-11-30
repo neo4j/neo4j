@@ -30,12 +30,13 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.KernelAPI;
-import org.neo4j.kernel.api.TxState;
-import org.neo4j.kernel.api.TxState.VisitorAdapter;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.txstate.ReadableTxState;
+import org.neo4j.kernel.api.txstate.TxStateVisitor;
+import org.neo4j.kernel.api.txstate.TxStateVisitor.Adapter;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.RecordStateForCacheAccessor;
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode;
@@ -44,7 +45,6 @@ import org.neo4j.kernel.impl.core.EntityFactory;
 import org.neo4j.kernel.impl.core.GraphPropertiesImpl;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeImpl;
-import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.Primitive;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
@@ -98,7 +98,6 @@ public class PersistenceCache
     private final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
     private final LabelTokenHolder labelTokenHolder;
     private final EntityFactory entityFactory;
-    private final NodeManager nodeManager;
 
     public PersistenceCache(
             AutoLoadingCache<NodeImpl> nodeCache,
@@ -106,13 +105,11 @@ public class PersistenceCache
             EntityFactory entityFactory, RelationshipLoader relationshipLoader,
             PropertyKeyTokenHolder propertyKeyTokenHolder,
             RelationshipTypeTokenHolder relationshipTypeTokenHolder,
-            LabelTokenHolder labelTokenHolder,
-            NodeManager nodeManager)
+            LabelTokenHolder labelTokenHolder )
     {
         this.nodeCache = nodeCache;
         this.relationshipCache = relationshipCache;
         this.entityFactory = entityFactory;
-        this.nodeManager = nodeManager;
         this.graphProperties = entityFactory.newGraphProperties();
         this.relationshipLoader = relationshipLoader;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
@@ -160,10 +157,10 @@ public class PersistenceCache
      * NeoCommandVisitor where each visited command would update the cache accordingly. But for the time being
      * we just do this and invalidate data made by "other" machines.
      */
-    public void apply( TxState txState, final RecordStateForCacheAccessor recordState )
+    public void apply( ReadableTxState txState, final RecordStateForCacheAccessor recordState )
     {
         // Apply everything except labels, which is done in the other apply method. TODO sort this out later.
-        txState.accept( new TxState.VisitorAdapter()
+        txState.accept( new TxStateVisitor.Adapter()
         {
             // For now just have these methods convert their data into whatever NodeImpl (and friends)
             // expects. We can optimize later.
@@ -180,7 +177,7 @@ public class PersistenceCache
             }
 
             @Override
-            public void visitDeletedRelationship( long id, int type, long startNode, long endNode )
+            public void visitDeletedRelationship( long id )
             {
                 evictRelationship( id );
                 // TODO We would like to do the patch rel chain position here as well, but we just don't have all the
@@ -409,14 +406,14 @@ public class PersistenceCache
                                                                 CacheLoader<Iterator<DefinedProperty>> cacheLoader ) throws EntityNotFoundException
     {
         return getRelationship( relationshipId ).getProperties( cacheLoader,
-                RELATIONSHIP_CACHE_SIZE_LISTENER );
+                                                                RELATIONSHIP_CACHE_SIZE_LISTENER );
     }
 
     public Property relationshipGetProperty( long relationshipId, int propertyKeyId,
                                              CacheLoader<Iterator<DefinedProperty>> cacheLoader ) throws EntityNotFoundException
     {
         return getRelationship( relationshipId ).getProperty( cacheLoader, RELATIONSHIP_CACHE_SIZE_LISTENER,
-                propertyKeyId );
+                                                              propertyKeyId );
     }
 
     public Iterator<DefinedProperty> graphGetProperties( CacheLoader<Iterator<DefinedProperty>> cacheLoader )
@@ -439,14 +436,14 @@ public class PersistenceCache
             Direction direction, int[] relTypes ) throws EntityNotFoundException
     {
         return getNode( node ).getRelationships( relationshipLoader, direction, relTypes,
-                NODE_CACHE_SIZE_LISTENER );
+                                                 NODE_CACHE_SIZE_LISTENER );
     }
 
     public PrimitiveLongIterator nodeGetRelationships( long nodeId, Direction direction )
             throws EntityNotFoundException
     {
         return getNode( nodeId ).getRelationships( relationshipLoader, direction,
-                NODE_CACHE_SIZE_LISTENER );
+                                                   NODE_CACHE_SIZE_LISTENER );
     }
 
     public int nodeGetDegree( long nodeId, Direction direction )
@@ -518,9 +515,9 @@ public class PersistenceCache
      * Used when rolling back a transaction. Node reservations are put in cache up front, so those have
      * to be removed when rolling back.
      */
-    public void invalidate( TxState txState )
+    public void invalidate( ReadableTxState txState )
     {
-        txState.accept( new VisitorAdapter()
+        txState.accept( new Adapter()
         {
             @Override
             public void visitCreatedNode( long id )

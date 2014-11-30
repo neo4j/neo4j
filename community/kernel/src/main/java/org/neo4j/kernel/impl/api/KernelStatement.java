@@ -26,39 +26,37 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenWriteOperations;
-import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionState;
+import org.neo4j.kernel.api.txstate.LegacyIndexTxState;
+import org.neo4j.kernel.api.txstate.WritableTxState;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.locking.Locks;
 
-public class KernelStatement implements TxState.Holder, Statement
+public class KernelStatement implements TxStateHolder, Statement
 {
     protected final Locks.Client locks;
-    protected final TxState.Holder txStateHolder;
+    protected final TxStateHolder txStateHolder;
     protected final IndexReaderFactory indexReaderFactory;
     protected final LabelScanStore labelScanStore;
     private final KernelTransactionImplementation transaction;
-    private final LegacyIndexTransactionState legacyIndexTransactionState;
     private final OperationsFacade facade;
     private LabelScanReader labelScanReader;
     private int referenceCount;
     private boolean closed;
 
     public KernelStatement( KernelTransactionImplementation transaction, IndexReaderFactory indexReaderFactory,
-                            LabelScanStore labelScanStore,
-                            TxState.Holder txStateHolder, Locks.Client locks, StatementOperationParts operations,
-                            LegacyIndexTransactionState legacyIndexTransactionState )
+                            LabelScanStore labelScanStore, TxStateHolder txStateHolder, Locks.Client locks,
+                            StatementOperationParts operations )
     {
         this.transaction = transaction;
         this.locks = locks;
         this.indexReaderFactory = indexReaderFactory;
         this.txStateHolder = txStateHolder;
         this.labelScanStore = labelScanStore;
-        this.legacyIndexTransactionState = legacyIndexTransactionState;
         this.facade = new OperationsFacade( this, operations );
     }
 
@@ -91,9 +89,15 @@ public class KernelStatement implements TxState.Holder, Statement
     }
 
     @Override
-    public TxState txState()
+    public WritableTxState txState()
     {
         return txStateHolder.txState();
+    }
+
+    @Override
+    public LegacyIndexTxState legacyIndexTxState()
+    {
+        return txStateHolder.legacyIndexTxState();
     }
 
     @Override
@@ -106,11 +110,6 @@ public class KernelStatement implements TxState.Holder, Statement
     public boolean hasTxStateWithChanges()
     {
         return txStateHolder.hasTxStateWithChanges();
-    }
-
-    protected LegacyIndexTransactionState legacyIndexTransactionState()
-    {
-        return legacyIndexTransactionState;
     }
 
     @Override

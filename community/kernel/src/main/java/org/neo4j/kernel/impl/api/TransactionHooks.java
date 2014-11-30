@@ -28,8 +28,8 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
 import org.neo4j.kernel.api.TransactionHook.Outcome;
-import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.exceptions.TransactionHookException;
+import org.neo4j.kernel.api.txstate.ReadableTxState;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 
 public class TransactionHooks
@@ -46,7 +46,7 @@ public class TransactionHooks
         hooks.remove( hook );
     }
 
-    public TransactionHooksState beforeCommit( TxState state, KernelTransaction tx, StoreReadLayer storeReadLayer )
+    public TransactionHooksState beforeCommit( ReadableTxState state, KernelTransaction tx, StoreReadLayer storeReadLayer )
     {
         if ( hooks.size() == 0 )
         {
@@ -62,7 +62,7 @@ public class TransactionHooks
     }
 
     @SuppressWarnings( "unchecked" )
-    public void afterCommit( TxState state, KernelTransaction tx, TransactionHooksState hooksState )
+    public void afterCommit( ReadableTxState state, KernelTransaction tx, TransactionHooksState hooksState )
     {
         if ( hooksState == null )
         {
@@ -75,7 +75,7 @@ public class TransactionHooks
     }
 
     @SuppressWarnings( "unchecked" )
-    public void afterRollback( TxState state, KernelTransaction tx, TransactionHooksState hooksState )
+    public void afterRollback( ReadableTxState state, KernelTransaction tx, TransactionHooksState hooksState )
     {
         if(hooksState == null)
         {

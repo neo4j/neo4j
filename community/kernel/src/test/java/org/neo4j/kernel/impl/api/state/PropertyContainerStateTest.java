@@ -36,7 +36,7 @@ public class PropertyContainerStateTest
     public void shouldListAddedProperties() throws Exception
     {
         // Given
-        PropertyContainerState state = new PropertyContainerState( 1 );
+        PropertyContainerState.Mutable state = new PropertyContainerState.Mutable( 1 );
         state.addProperty( stringProperty( 1, "Hello" ) );
         state.addProperty( stringProperty( 2, "Hello" ) );
         state.removeProperty( stringProperty( 1, "Hello" ) );
@@ -53,7 +53,7 @@ public class PropertyContainerStateTest
     public void shouldListAddedPropertiesEvenIfPropertiesHaveBeenReplaced() throws Exception
     {
         // Given
-        PropertyContainerState state = new PropertyContainerState( 1 );
+        PropertyContainerState.Mutable state = new PropertyContainerState.Mutable( 1 );
         state.addProperty( stringProperty( 1, "Hello" ) );
         state.addProperty( stringProperty( 1, "WAT" ) );
         state.addProperty( stringProperty( 2, "Hello" ) );
@@ -70,7 +70,7 @@ public class PropertyContainerStateTest
     public void shouldAugmentProperties() throws Exception
     {
         // Given
-        PropertyContainerState state = new PropertyContainerState( 1 );
+        PropertyContainerState.Mutable state = new PropertyContainerState.Mutable( 1 );
         state.addProperty( stringProperty( 1, "Hello" ) );
         state.addProperty( stringProperty( 2, "Hello" ) );
         state.removeProperty( stringProperty( 3, "ShouldBeRemoved" ) );
@@ -90,7 +90,7 @@ public class PropertyContainerStateTest
     public void shouldConvertAddRemoveToChange() throws Exception
     {
         // Given
-        PropertyContainerState state = new PropertyContainerState( 1 );
+        PropertyContainerState.Mutable state = new PropertyContainerState.Mutable( 1 );
 
         // When
         state.removeProperty( stringProperty( 4, "a value" ) );

@@ -78,9 +78,11 @@ public class LabelCountsTest
 
             tx.success();
         }
+        long fooDuring;
         try ( Transaction tx = graphDb.beginTx() )
         {
             node.delete();
+            fooDuring = numberOfNodesWith( label( "Foo" ) );
 
             tx.success();
         }
@@ -90,6 +92,7 @@ public class LabelCountsTest
 
         // then
         assertEquals( 1, fooCount );
+        assertEquals( 1, fooDuring );
     }
 
     @Test
@@ -106,11 +109,14 @@ public class LabelCountsTest
 
             tx.success();
         }
+        long fooDuring, barDuring;
         try ( Transaction tx = graphDb.beginTx() )
         {
             n1.addLabel( label( "Bar" ) );
             n2.addLabel( label( "Bar" ) );
             n3.addLabel( label( "Foo" ) );
+            fooDuring = numberOfNodesWith( label( "Foo" ) );
+            barDuring = numberOfNodesWith( label( "Bar" ) );
 
             tx.success();
         }
@@ -122,6 +128,8 @@ public class LabelCountsTest
         // then
         assertEquals( 2, fooCount );
         assertEquals( 2, barCount );
+        assertEquals( 2, fooDuring );
+        assertEquals( 2, barDuring );
     }
 
     @Test
@@ -138,11 +146,14 @@ public class LabelCountsTest
 
             tx.success();
         }
+        long fooDuring, barDuring;
         try ( Transaction tx = graphDb.beginTx() )
         {
             n1.removeLabel( label( "Bar" ) );
             n2.removeLabel( label( "Bar" ) );
             n3.removeLabel( label( "Foo" ) );
+            fooDuring = numberOfNodesWith( label( "Foo" ) );
+            barDuring = numberOfNodesWith( label( "Bar" ) );
 
             tx.success();
         }
@@ -154,6 +165,8 @@ public class LabelCountsTest
         // then
         assertEquals( 1, fooCount );
         assertEquals( 0, barCount );
+        assertEquals( 1, fooDuring );
+        assertEquals( 0, barDuring );
     }
 
     /** Transactional version of {@link #countsForNode(Label)} */
