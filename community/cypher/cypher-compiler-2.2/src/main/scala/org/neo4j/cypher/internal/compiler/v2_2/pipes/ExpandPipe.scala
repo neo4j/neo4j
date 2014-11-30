@@ -42,8 +42,11 @@ final case class ExpandPipe(source: Pipe,
                            (implicit pipeMonitor: PipeMonitor)
            extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) =
-    ExpandPipeGenerator(input, from, relName, to, dir, mode, predicate, optional)(nodeExpanderFactory)(state).iterator
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
+    val generator = ExpandPipeGenerator(input, from, relName, to, dir, mode, predicate, optional)(nodeExpanderFactory)(state)
+    val iter = generator.iterator
+    iter
+  }
 
   override def localEffects = Effects.READS_ENTITIES
 

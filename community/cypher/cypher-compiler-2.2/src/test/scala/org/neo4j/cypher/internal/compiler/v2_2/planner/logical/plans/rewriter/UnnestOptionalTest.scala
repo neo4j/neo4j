@@ -40,19 +40,6 @@ class UnnestOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport 
       OptionalExpand(lhs, IdName("a"), Direction.OUTGOING, Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll, Seq.empty)(solved))
   }
 
-  test("should rewrite Apply/Optional/Selection/Expand to OptionalExpand when lhs of expand is single row") {
-    val singleRow: LogicalPlan = Argument(Set(IdName("a")))(solved)(Map.empty)
-    val expand = Expand(singleRow, IdName("a"), Direction.OUTGOING, Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"))(solved)
-    val predicate: Equals = Equals(Property(ident("b"), PropertyKeyName("prop")(pos))(pos), SignedDecimalIntegerLiteral("1")(pos))(pos)
-    val selection = Selection(Seq(predicate), expand)(solved)
-    val rhs:LogicalPlan = Optional(selection)(solved)
-    val lhs = newMockedLogicalPlan("a")
-    val input = Apply(lhs, rhs)(solved)
-
-    input.endoRewrite(unnestOptional) should equal(
-      OptionalExpand(lhs, IdName("a"), Direction.OUTGOING, Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll, Seq(predicate))(solved))
-  }
-
   test("should not rewrite Apply/Optional/Selection/Expand to OptionalExpand when expansion is variable length") {
     val singleRow: LogicalPlan = Argument(Set(IdName("a")))(solved)(Map.empty)
     val expand = VarExpand(singleRow, IdName("a"), Direction.OUTGOING, Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), VarPatternLength(1, None))(solved)

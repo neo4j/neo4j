@@ -33,12 +33,6 @@ case object unnestOptional extends Rewriter {
       Optional(
       e@Expand(_: Argument, _, _, _, _, _, _, _, _))) =>
         optionalExpand(e, lhs)(Seq.empty)(apply.solved)
-
-    case apply@Apply(lhs,
-      Optional(
-      Selection(predicates,
-      e@Expand(_: Argument, _, _, _, _, _, _, _, _)))) =>
-        optionalExpand(e, lhs)(predicates)(apply.solved)
   }
 
   private def optionalExpand(e: Expand, lhs: LogicalPlan): (Seq[Expression] => PlannerQuery => OptionalExpand) =

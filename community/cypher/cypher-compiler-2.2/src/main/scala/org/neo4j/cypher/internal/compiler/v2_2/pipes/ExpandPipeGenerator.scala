@@ -125,7 +125,8 @@ class RegularExpandPipeGenerator(protected val input: Iterator[ExecutionContext]
   def fetchNext: DeliveryState = {
     var cont: Boolean = true
     do {
-      if (relationships.hasNext) {
+      val hasMoreRels = relationships.hasNext
+      if (hasMoreRels) {
         if (readyToDeliverNextResult)
           return ReadyToDeliver
       }
@@ -173,7 +174,8 @@ class OptionalExpandPipeGenerator(protected val input: Iterator[ExecutionContext
   def fetchNext: DeliveryState = {
     var cont: Boolean = true
     do {
-      if (relationships.hasNext) {
+      val hasMoreRels = relationships.hasNext
+      if (hasMoreRels) {
         if (readyToDeliverNextResult) {
           emitNullRow = false
           return ReadyToDeliver
