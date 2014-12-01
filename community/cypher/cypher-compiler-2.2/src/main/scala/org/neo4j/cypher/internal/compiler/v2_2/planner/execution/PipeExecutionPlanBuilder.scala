@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.StatementCon
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{Expression, Identifier, NodeStartItem, RelTypeName}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{AggregationExpression, Expression => CommandExpression}
-import org.neo4j.cypher.internal.compiler.v2_2.commands.{EntityProducerFactory, True, Predicate => CommandPredicate}
+import org.neo4j.cypher.internal.compiler.v2_2.commands.{Predicate => CommandPredicate, Equals, EntityProducerFactory, True}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{PipeInfo, PlanFingerprint}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes._
@@ -38,7 +38,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.{CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.helpers.Eagerly
-import org.neo4j.graphdb.Relationship
+import org.neo4j.graphdb.{Direction, Relationship}
 import org.neo4j.helpers.Clock
 
 case class PipeExecutionBuilderContext(cardinality: Metrics.CardinalityModel, semanticTable: SemanticTable)
@@ -95,16 +95,32 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
         case CartesianProduct(left, right) =>
           CartesianProductPipe(buildPipe(left, input), buildPipe(right, input))()
 
-        case Expand(left, IdName(fromName), dir, projectedDir, types: Seq[RelTypeName], IdName(toName), IdName(relName), SimplePatternLength, _) =>
+        case Expand(left, IdName(fromName), dir, types: Seq[RelTypeName], IdName(toName), IdName(relName), ExpandAll) =>
           implicit val table: SemanticTable = context.semanticTable
+          buildExpandPipe(types, buildPipe(left, input), fromName, relName, toName, dir)
 
-          if (types.exists(_.id == None))
-            ExpandPipeForStringTypes(buildPipe(left, input), fromName, relName, toName, dir, types.map(_.name))()
-          else {
-            ExpandPipeForIntTypes(buildPipe(left, input), fromName, relName, toName, dir, types.flatMap(_.id).map(_.id))()
-          }
+        case OptionalExpand(left, IdName(fromName), dir, types, IdName(toName), IdName(relName), ExpandAll, predicates) =>
+          val predicate = predicates.map(buildPredicate).reduceOption(_ ++ _).getOrElse(True())
+          OptionalExpandPipe(buildPipe(left, input), fromName, relName, toName, dir, types.map(_.name), predicate)()
 
-        case Expand(left, IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName), VarPatternLength(min, max), predicates) =>
+        case Expand(left, IdName(fromName), dir, types: Seq[RelTypeName], IdName(toName), IdName(relName), ExpandInto) =>
+          implicit val table: SemanticTable = context.semanticTable
+          val tmpName = toName + "$$$"
+          val expandPipe = buildExpandPipe(types, buildPipe(left, input), fromName, relName, tmpName, dir)
+          val id1: CommandExpression = commands.expressions.Identifier(toName)
+          val id2: CommandExpression = commands.expressions.Identifier(tmpName)
+          val pred: CommandPredicate = commands.Equals(id1, id2)
+          FilterPipe(expandPipe, pred)()
+
+        case OptionalExpand(left, IdName(fromName), dir, types, IdName(toName), IdName(relName), ExpandInto, predicates) =>
+          val tmpName = toName + "$$$"
+          val id1: CommandExpression = commands.expressions.Identifier(toName)
+          val id2: CommandExpression = commands.expressions.Identifier(tmpName)
+          val pred: CommandPredicate = commands.Equals(id1, id2)
+          val predicate = (predicates.map(buildPredicate) :+ pred).reduceOption(_ ++ _).getOrElse(True())
+          OptionalExpandPipe(buildPipe(left, input), fromName, relName, tmpName, dir, types.map(_.name), predicate)()
+
+        case VarExpand(left, IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName), VarPatternLength(min, max), expansionMode, predicates) =>
           val (keys, exprs) = predicates.unzip
           val commands = exprs.map(buildPredicate)
           val predicate = (context: ExecutionContext, state: QueryState, rel: Relationship) => {
@@ -122,10 +138,6 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
             VarLengthExpandPipeForStringTypes(buildPipe(left, input), fromName, relName, toName, dir, projectedDir, types.map(_.name), min, max, predicate)()
           else
             VarLengthExpandPipeForIntTypes(buildPipe(left, input), fromName, relName, toName, dir, projectedDir, types.flatMap(_.id).map(_.id), min, max, predicate)()
-
-        case OptionalExpand(left, IdName(fromName), dir, types, IdName(toName), IdName(relName), SimplePatternLength, predicates) =>
-          val predicate = predicates.map(buildPredicate).reduceOption(_ ++ _).getOrElse(True())
-          OptionalExpandPipe(buildPipe(left, input), fromName, relName, toName, dir, types.map(_.name), predicate)()
 
         case NodeHashJoin(nodes, left, right) =>
           NodeHashJoinPipe(nodes.map(_.name), buildPipe(left, input), buildPipe(right, input))()
@@ -226,6 +238,13 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
 
       def apply(that: AnyRef): AnyRef = bottomUp(instance).apply(that)
     }
+
+    def buildExpandPipe(types: Seq[RelTypeName], left: Pipe, fromName: String, relName: String, toName: String, dir: Direction)
+                       (implicit table: SemanticTable, monitor: PipeMonitor) =
+      if (types.exists(_.id == None))
+        ExpandPipeForStringTypes(left, fromName, relName, toName, dir, types.map(_.name))()
+      else
+        ExpandPipeForIntTypes(left, fromName, relName, toName, dir, types.flatMap(_.id).map(_.id))()
 
     def buildExpression(expr: ast.Expression): CommandExpression = {
       val rewrittenExpr = expr.endoRewrite(buildPipeExpressions)

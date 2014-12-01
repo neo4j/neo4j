@@ -308,6 +308,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result.columnAs[Node]("RELATIONSHIPS(p)").toList.head should equal(List(r1, r2))
   }
 
+  // 2014-12-03 Andres Legacy compiler has problems with projected direction. Fixed in a separated commit
   ignore("should return relationships by collecting them as a list - wrong way") {
     val a = createNode()
     val b = createNode()
@@ -1440,12 +1441,8 @@ return b
     actual shouldNot be(empty)
   }
 
-<<<<<<< HEAD
-  // Fixed in separate commit
+  // 2014-12-03 Andres Legacy compiler has problems with projected direction. Fixed in a separated commit
   ignore("MATCH (a)-[r1]->()-[r2]->(b) WITH [r1, r2] AS rs LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second") {
-=======
-  test("MATCH (a)-[r1]->()-[r2]->(b) WITH [r1, r2] AS rs LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second") {
->>>>>>> Unignore varlength tests
     val node1 = createNode()
     val node2 = createNode()
     val node3 = createNode()

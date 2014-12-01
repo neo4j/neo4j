@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.Selection
 
-case object mergeTwoSelections extends Rewriter {
+case object fuseSelections extends Rewriter {
 
   def apply(input: AnyRef) = bottomUp(instance).apply(input)
 
