@@ -26,7 +26,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
 
-import static org.neo4j.unsafe.impl.batchimport.cache.LongArrayFactory.AUTO;
+import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
 
 public enum IdType
 {

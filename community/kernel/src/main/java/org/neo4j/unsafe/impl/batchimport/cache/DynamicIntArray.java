@@ -23,27 +23,27 @@ package org.neo4j.unsafe.impl.batchimport.cache;
  * Dynamically growing {@link LongArray}. Is given a chunk size and chunks are added as higher and higher
  * items are requested.
  *
- * @see NumberArrayFactory#newDynamicLongArray(long, long)
+ * @see NumberArrayFactory#newDynamicIntArray(long, int)
  */
-public class DynamicLongArray extends DynamicNumberArray<LongArray> implements LongArray
+public class DynamicIntArray extends DynamicNumberArray<IntArray> implements IntArray
 {
-    private final long defaultValue;
+    private final int defaultValue;
 
-    public DynamicLongArray( NumberArrayFactory factory, long chunkSize, long defaultValue )
+    public DynamicIntArray( NumberArrayFactory factory, long chunkSize, int defaultValue )
     {
         super( factory, chunkSize );
         this.defaultValue = defaultValue;
     }
 
     @Override
-    public long get( long index )
+    public int get( long index )
     {
-        LongArray chunk = chunkAt( index );
+        IntArray chunk = chunkAt( index );
         return chunk != null ? chunk.get( index( index ) ) : defaultValue;
     }
 
     @Override
-    public void set( long index, long value )
+    public void set( long index, int value )
     {
         ensureChunkAt( index ).set( index( index ), value );
     }
@@ -54,15 +54,15 @@ public class DynamicLongArray extends DynamicNumberArray<LongArray> implements L
         // Let's just do this the stupid way. There's room for optimization here
         for ( int i = 0; i < numberOfEntries; i++ )
         {
-            long intermediary = get( fromIndex+i );
+            int intermediary = get( fromIndex+i );
             set( fromIndex+i, get( toIndex+i ) );
             set( toIndex+i, intermediary );
         }
     }
 
     @Override
-    protected LongArray addChunk( long chunkSize )
+    protected IntArray addChunk( long chunkSize )
     {
-        return factory.newLongArray( chunkSize, defaultValue );
+        return factory.newIntArray( chunkSize, defaultValue );
     }
 }

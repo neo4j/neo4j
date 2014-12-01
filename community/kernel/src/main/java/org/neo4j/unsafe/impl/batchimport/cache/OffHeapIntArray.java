@@ -20,37 +20,37 @@
 package org.neo4j.unsafe.impl.batchimport.cache;
 
 /**
- * Off-heap version of {@link LongArray} using {@code sun.misc.Unsafe}. Supports arrays with length beyond
+ * Off-heap version of {@link IntArray} using {@code sun.misc.Unsafe}. Supports arrays with length beyond
  * Integer.MAX_VALUE.
  */
-public class OffHeapLongArray extends OffHeapNumberArray implements LongArray
+public class OffHeapIntArray extends OffHeapNumberArray implements IntArray
 {
-    private final long defaultValue;
+    private final int defaultValue;
     private long highestSetIndex = -1;
     private long size;
 
-    public OffHeapLongArray( long length, long defaultValue )
+    public OffHeapIntArray( long length, int defaultValue )
     {
-        super( length, 3 );
+        super( length, 2 );
         this.defaultValue = defaultValue;
         clear();
     }
 
     @Override
-    public long get( long index )
+    public int get( long index )
     {
-        return unsafe.getLong( addressOf( index ) );
+        return unsafe.getInt( addressOf( index ) );
     }
 
     @Override
-    public void set( long index, long value )
+    public void set( long index, int value )
     {
         long address = addressOf( index );
-        if ( unsafe.getLong( address ) == defaultValue )
+        if ( unsafe.getInt( address ) == defaultValue )
         {
             size++;
         }
-        unsafe.putLong( address, value );
+        unsafe.putInt( address, value );
         if ( index > highestSetIndex )
         {
             highestSetIndex = index;
@@ -80,7 +80,7 @@ public class OffHeapLongArray extends OffHeapNumberArray implements LongArray
         {
             for ( long i = 0, adr = address; i < length; i++, adr += stride )
             {
-                unsafe.putLong( adr, defaultValue );
+                unsafe.putInt( adr, defaultValue );
             }
         }
         highestSetIndex = -1;

@@ -68,4 +68,6 @@ public interface NodeRelationshipLink
             return -1;
         }
     };
+
+    void close();
 }

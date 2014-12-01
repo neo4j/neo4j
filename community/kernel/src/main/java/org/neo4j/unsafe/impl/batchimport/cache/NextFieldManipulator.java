@@ -22,7 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.cache;
 import org.neo4j.unsafe.impl.batchimport.Utils;
 
 /**
- * Manipulates relationship group cache field containing NEXT and TYPE
+ * Manipulates relationship group cache field containing NEXT and TYPE.
  */
 public class NextFieldManipulator
 {

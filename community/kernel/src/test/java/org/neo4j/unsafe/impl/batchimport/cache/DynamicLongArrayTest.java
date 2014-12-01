@@ -28,21 +28,22 @@ public class DynamicLongArrayTest
     public void shouldWorkOnSingleChunk() throws Exception
     {
         // GIVEN
-        LongArray array = LongArrayFactory.AUTO.newDynamicLongArray( 10, 0 );
+        long defaultValue = 0;
+        LongArray array = NumberArrayFactory.AUTO.newDynamicLongArray( 10, defaultValue );
         array.set( 4, 5 );
 
         // WHEN
         assertEquals( 5L, array.get( 4 ) );
-        assertEquals( 0L, array.get( 12 ) );
-        array.set( 12, 13 );
-        assertEquals( 13L, array.get( 12 ) );
+        assertEquals( defaultValue, array.get( 12 ) );
+        array.set( 7, 1324 );
+        assertEquals( 1324L, array.get( 7 ) );
     }
 
     @Test
-    public void shouldAddManyChunks() throws Exception
+    public void shouldChunksAsNeeded() throws Exception
     {
         // GIVEN
-        LongArray array = LongArrayFactory.AUTO.newDynamicLongArray( 10, 0 );
+        LongArray array = NumberArrayFactory.AUTO.newDynamicLongArray( 10, 0 );
 
         // WHEN
         long index = 243;

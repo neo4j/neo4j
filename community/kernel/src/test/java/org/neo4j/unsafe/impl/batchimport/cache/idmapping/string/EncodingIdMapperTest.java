@@ -37,8 +37,8 @@ import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.test.RepeatRule;
 import org.neo4j.test.RepeatRule.Repeat;
 import org.neo4j.unsafe.impl.batchimport.cache.GatheringMemoryStatsVisitor;
-import org.neo4j.unsafe.impl.batchimport.cache.LongArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
+import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
 
@@ -56,7 +56,7 @@ public class EncodingIdMapperTest
     public void shouldHandleGreatAmountsOfStuff() throws Exception
     {
         // GIVEN
-        IdMapper idMapper = IdMappers.strings( LongArrayFactory.AUTO );
+        IdMapper idMapper = IdMappers.strings( NumberArrayFactory.AUTO );
         ResourceIterable<Object> ids = new ResourceIterable<Object>()
         {
             @Override
@@ -107,7 +107,7 @@ public class EncodingIdMapperTest
     public void shouldReturnExpectedValueForNotFound() throws Exception
     {
         // GIVEN
-        IdMapper idMapper = IdMappers.strings( LongArrayFactory.AUTO );
+        IdMapper idMapper = IdMappers.strings( NumberArrayFactory.AUTO );
         idMapper.prepare( null );
 
         // WHEN
@@ -121,7 +121,7 @@ public class EncodingIdMapperTest
     public void shouldEncodeShortStrings() throws Exception
     {
         // GIVEN
-        IdMapper mapper = IdMappers.strings( LongArrayFactory.AUTO );
+        IdMapper mapper = IdMappers.strings( NumberArrayFactory.AUTO );
 
         // WHEN
         mapper.put( "123", 0 );
@@ -141,7 +141,7 @@ public class EncodingIdMapperTest
         int processorsForSorting = random.nextInt( 7 ) + 1;
         int size = random.nextInt( 10_000 ) + 2;
         ValueType type = ValueType.values()[random.nextInt( ValueType.values().length )];
-        IdMapper mapper = new EncodingIdMapper( LongArrayFactory.HEAP, type.encoder(), type.radix(),
+        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, type.encoder(), type.radix(),
                 size*2, processorsForSorting /*1-7*/ );
 
         // WHEN
