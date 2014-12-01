@@ -1,0 +1,33 @@
+[[server-unmanaged-extensions-execution-engine]]
+= Reusing ExecutionEngine
+
+If we want to execute Cypher queries from an unmanaged extension we can use `ExecutionEngine` to do so.
+You only need to generate _one_ instance of this class which can be used to execute cypher queries for all requests.
+
+For example, the following unmanaged extension retrieves a person's colleagues using cypher:
+
+.Unmanaged extension ExecutionEngine example
+[snippet,java]
+----
+component=neo4j-server-examples
+source=org/neo4j/examples/server/unmanaged/ColleaguesExecutionEngineResource.java
+tag=ColleaguesExecutionEngineResource
+classifier=sources
+----
+
+The full source code is found here:
+https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/server-examples/src/main/java/org/neo4j/examples/server/unmanaged/ColleaguesExecutionEngineResource.java[ColleaguesExecutionEngineResource.java]
+
+Our findColleagues method will now respond to +GET+ requests at the URI: +http://\{neo4j_server}:\{neo4j_port}/examples/unmanaged/colleagues/\{personName}+. e.g.
+
+[source,bash]
+-----
+curl http://localhost:7474/examples/unmanaged/colleagues-execution-engine/Keanu%20Reeves
+-----
+
+which results in
+
+[source]
+----
+{"colleagues":["Hugo Weaving","Carrie-Anne Moss","Laurence Fishburne"]}
+----
