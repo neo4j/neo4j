@@ -48,7 +48,7 @@ import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.with
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 /**
- * {@link CountsTracker} maintains two files, the {@link #alphaFile} and the {@link #betaFile} that it rotates between.
+ * {@link CountsTracker} maintains two files, the {@link #leftFile} and the {@link #rightFile} that it rotates between.
  * {@link #updateLock} is used to ensure that no updates happen while we rotate from one file to another. Reads are
  * still ok though, they just read whatever the current state is. The state is assigned atomically at the end of
  * rotation.
@@ -57,8 +57,8 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
 {
     public static final String STORE_DESCRIPTOR = SortedKeyValueStore.class.getSimpleName();
 
-    public static final String ALPHA = ".alpha", BETA = ".beta";
-    private final File alphaFile, betaFile;
+    public static final String LEFT = ".left", RIGHT = ".right";
+    private final File leftFile, rightFile;
     private final ReadWriteLock updateLock = new ReentrantReadWriteLock( /*fair=*/true );
     private final StringLogger logger;
     private volatile CountsTrackerState state;
@@ -67,9 +67,9 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
                           File storeFileBase, long neoStoreTxId )
     {
         this.logger = logger;
-        this.alphaFile = storeFile( storeFileBase, ALPHA );
-        this.betaFile = storeFile( storeFileBase, BETA );
-        CountsStore store = openStore( logger, fs, pageCache, this.alphaFile, this.betaFile );
+        this.leftFile = storeFile( storeFileBase, LEFT );
+        this.rightFile = storeFile( storeFileBase, RIGHT );
+        CountsStore store = openStore( logger, fs, pageCache, this.leftFile, this.rightFile );
         if ( store.lastTxId() < neoStoreTxId )
         {
             IOException exOnClose = safelyCloseTheStore( store );
@@ -83,56 +83,56 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     }
 
     private static CountsStore openStore( StringLogger logger, FileSystemAbstraction fs, PageCache pageCache,
-                                          File alpha, File beta )
+                                          File left, File right )
     {
         try
         {
-            CountsStore alphaStore = openVerifiedCountsStore( fs, pageCache, alpha );
-            CountsStore betaStore = openVerifiedCountsStore( fs, pageCache, beta );
+            CountsStore leftStore = openVerifiedCountsStore( fs, pageCache, left );
+            CountsStore rightStore = openVerifiedCountsStore( fs, pageCache, right );
 
-            boolean isAlphaCorrupted = alphaStore == null;
-            boolean isBetaCorrupted = betaStore == null;
-            if ( isAlphaCorrupted && isBetaCorrupted )
+            boolean isLeftCorrupted = leftStore == null;
+            boolean isRightCorrupted = rightStore == null;
+            if ( isLeftCorrupted && isRightCorrupted )
             {
                 throw new UnderlyingStorageException(
                         "Neither of the two store files could be properly opened. Please shut down the database and delete them " +
                         "to have the database recreate the counts store on next startup" );
             }
 
-            if ( isAlphaCorrupted )
+            if ( isLeftCorrupted )
             {
-                logger.debug( "CountsStore picked beta store file since alpha store file could not be opened " +
-                              "(txId=" + betaStore.lastTxId() +
-                              ", minorVersion=" + betaStore.minorVersion() + ")" );
-                return betaStore;
+                logger.debug( "CountsStore picked right store file since left store file could not be opened " +
+                              "(txId=" + rightStore.lastTxId() +
+                              ", minorVersion=" + rightStore.minorVersion() + ")" );
+                return rightStore;
             }
 
-            if ( isBetaCorrupted )
+            if ( isRightCorrupted )
             {
-                logger.debug( "CountsStore picked alpha store file since beta store file could not be opened " +
-                              "(txId=" + alphaStore.lastTxId() +
-                              ", minorVersion=" + alphaStore.minorVersion() + ")" );
-                return alphaStore;
+                logger.debug( "CountsStore picked left store file since right store file could not be opened " +
+                              "(txId=" + leftStore.lastTxId() +
+                              ", minorVersion=" + leftStore.minorVersion() + ")" );
+                return leftStore;
             }
 
             // default case
-            if ( isAlphaStoreMoreRecent( alphaStore, betaStore ) )
+            if ( isLeftStoreMoreRecent( leftStore, rightStore ) )
             {
-                logger.debug( "CountsStore picked alpha store file (txId=" + alphaStore.lastTxId() +
-                              ", minorVersion=" + alphaStore.minorVersion() +
-                              "), against beta (txId=" + betaStore.lastTxId() +
-                              ", minorVersion=" + betaStore.minorVersion() + ")" );
-                betaStore.close();
-                return alphaStore;
+                logger.debug( "CountsStore picked left store file (txId=" + leftStore.lastTxId() +
+                              ", minorVersion=" + leftStore.minorVersion() +
+                              "), against right store file (txId=" + rightStore.lastTxId() +
+                              ", minorVersion=" + rightStore.minorVersion() + ")" );
+                rightStore.close();
+                return leftStore;
             }
             else
             {
-                logger.debug( "CountsStore picked beta store file (txId=" + betaStore.lastTxId() +
-                              ", minorVersion=" + betaStore.minorVersion() +
-                              "), against alpha (txId=" + alphaStore.lastTxId() +
-                              ", minorVersion=" + alphaStore.minorVersion() + ")" );
-                alphaStore.close();
-                return betaStore;
+                logger.debug( "CountsStore picked right store file (txId=" + rightStore.lastTxId() +
+                              ", minorVersion=" + rightStore.minorVersion() +
+                              "), against left store file (txId=" + leftStore.lastTxId() +
+                              ", minorVersion=" + leftStore.minorVersion() + ")" );
+                leftStore.close();
+                return rightStore;
             }
         }
         catch ( IOException e )
@@ -165,40 +165,40 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
 
     public static boolean countsStoreExists( FileSystemAbstraction fs, File storeFileBase )
     {
-        final File alpha = storeFile( storeFileBase, ALPHA );
-        final File beta = storeFile( storeFileBase, BETA );
-        return fs.fileExists( alpha ) || fs.fileExists( beta );
+        final File left = storeFile( storeFileBase, LEFT );
+        final File right = storeFile( storeFileBase, RIGHT );
+        return fs.fileExists( left ) || fs.fileExists( right );
     }
 
-    private static boolean isAlphaStoreMoreRecent( CountsStore alphaStore, CountsStore betaStore )
+    private static boolean isLeftStoreMoreRecent( CountsStore leftStore, CountsStore rightStore )
     {
-        long alphaTxId = alphaStore.lastTxId(), betaTxId = betaStore.lastTxId();
-        long alphaVersion = alphaStore.minorVersion(), betaVersion = betaStore.minorVersion();
-        if ( alphaTxId == betaTxId )
+        long leftTxId = leftStore.lastTxId(), rightTxId = rightStore.lastTxId();
+        long leftMinorVersion = leftStore.minorVersion(), rightMinorVersion = rightStore.minorVersion();
+        if ( leftTxId == rightTxId )
         {
-            if ( alphaVersion == betaVersion )
+            if ( leftMinorVersion == rightMinorVersion )
             {
                 throw new UnderlyingStorageException( "Found two storage files with same tx id and minor version" );
             }
-            return alphaVersion > betaVersion;
+            return leftMinorVersion > rightMinorVersion;
         }
         else
         {
-            return alphaTxId > betaTxId;
+            return leftTxId > rightTxId;
         }
     }
 
     public static void createEmptyCountsStore( PageCache pageCache, File file, String storeVersion )
     {
         // create both files initially to avoid problems with unflushed metadata
-        // increase alpha minor version by 1 to ensure that we use alpha after creating the store
+        // increase left minor version by 1 to ensure that we use left file after creating the store
 
-        File alpha = storeFile( file, ALPHA );
-        CountsStore.createEmpty( pageCache, alpha,
+        File left = storeFile( file, LEFT );
+        CountsStore.createEmpty( pageCache, left,
                 with( RECORD_SIZE, storeVersion, BASE_TX_ID, BASE_MINOR_VERSION + 1 ) );
 
-        File beta = storeFile( file, BETA );
-        CountsStore.createEmpty( pageCache, beta,
+        File right = storeFile( file, RIGHT );
+        CountsStore.createEmpty( pageCache, right,
                 with( RECORD_SIZE, storeVersion, BASE_TX_ID, BASE_MINOR_VERSION ) );
     }
 
@@ -342,13 +342,13 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     CountsStore.Writer<CountsKey,CopyableDoubleLongRegister> nextWriter( CountsTrackerState state, long lastTxId )
             throws IOException
     {
-        if ( alphaFile.equals( state.storeFile() ) )
+        if ( leftFile.equals( state.storeFile() ) )
         {
-            return state.newWriter( betaFile, lastTxId );
+            return state.newWriter( rightFile, lastTxId );
         }
         else
         {
-            return state.newWriter( alphaFile, lastTxId );
+            return state.newWriter( leftFile, lastTxId );
         }
     }
 

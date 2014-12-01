@@ -57,14 +57,14 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_I
 public class CountsTrackerTest
 {
     @Test
-    public void shouldCreateBothAlphaAndBetaOnCreation() throws IOException
+    public void shouldCreateBothLeftAndRightOnCreation() throws IOException
     {
         // given
         CountsTracker.createEmptyCountsStore( pageCache(), storeFile(), VERSION );
 
         // when
-        CountsStore.open( fs.get(), pageCache(), alphaStoreFile() ).close();
-        CountsStore.open( fs.get(), pageCache(), betaStoreFile() ).close();
+        CountsStore.open( fs.get(), pageCache(), leftStoreFile() ).close();
+        CountsStore.open( fs.get(), pageCache(), rightStoreFile() ).close();
 
         // then
         // it does not blow up
@@ -194,27 +194,27 @@ public class CountsTrackerTest
     public void shouldPickStoreFileWithLargerTxId() throws IOException
     {
         EphemeralFileSystemAbstraction fs = this.fs.get();
-        File alphaFile = alphaStoreFile();
-        File betaFile = betaStoreFile();
+        File leftFile = leftStoreFile();
+        File rightFile = rightStoreFile();
         PageCache pageCache = pageCache();
 
         {
-            createStoreFile( fs, pageCache, alphaFile, BASE_TX_ID );
-            createStoreFile( fs, pageCache, betaFile, BASE_TX_ID + 1 );
+            createStoreFile( fs, pageCache, leftFile, BASE_TX_ID );
+            createStoreFile( fs, pageCache, rightFile, BASE_TX_ID + 1 );
 
             CountsTracker tracker = new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
                     storeFile(), BASE_TX_ID + 1 );
-            assertEquals( betaFile, tracker.storeFile() );
+            assertEquals( rightFile, tracker.storeFile() );
             tracker.close();
         }
 
         {
-            createStoreFile( fs, pageCache, alphaFile, BASE_TX_ID + 1 );
-            createStoreFile( fs, pageCache, betaFile, BASE_TX_ID );
+            createStoreFile( fs, pageCache, leftFile, BASE_TX_ID + 1 );
+            createStoreFile( fs, pageCache, rightFile, BASE_TX_ID );
 
             CountsTracker tracker = new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
                     storeFile(), BASE_TX_ID + 1 );
-            assertEquals( alphaFile, tracker.storeFile() );
+            assertEquals( leftFile, tracker.storeFile() );
             tracker.close();
         }
     }
@@ -223,27 +223,27 @@ public class CountsTrackerTest
     public void shouldPickStoreFileWithLargerMinorVersion() throws IOException
     {
         EphemeralFileSystemAbstraction fs = this.fs.get();
-        File alphaFile = alphaStoreFile();
-        File betaFile = betaStoreFile();
+        File leftFile = leftStoreFile();
+        File rightFile = rightStoreFile();
         PageCache pageCache = pageCache();
 
-        createStoreFile( fs, pageCache, alphaFile, BASE_TX_ID + 1);
-        createStoreFile( fs, pageCache, betaFile, BASE_TX_ID );
+        createStoreFile( fs, pageCache, leftFile, BASE_TX_ID + 1);
+        createStoreFile( fs, pageCache, rightFile, BASE_TX_ID );
 
         {
             CountsTracker tracker = new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
                     storeFile(), BASE_TX_ID + 1 );
-            assertEquals( alphaFile, tracker.storeFile() );
+            assertEquals( leftFile, tracker.storeFile() );
             tracker.incrementNodeCount( 1, 1l );
             tracker.rotate( BASE_TX_ID + 1 );
-            assertEquals( betaFile, tracker.storeFile() );
+            assertEquals( rightFile, tracker.storeFile() );
             tracker.close();
         }
 
         {
             CountsTracker tracker = new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
                     storeFile(), BASE_TX_ID + 1 );
-            assertEquals( betaFile, tracker.storeFile() );
+            assertEquals( rightFile, tracker.storeFile() );
             tracker.close();
         }
     }
@@ -254,10 +254,10 @@ public class CountsTrackerTest
         // given
         EphemeralFileSystemAbstraction fs = this.fs.get();
         PageCache pageCache = pageCache();
-        createStoreFile( fs, pageCache, alphaStoreFile(), BASE_TX_ID + 1 );
-        createStoreFile( fs, pageCache, betaStoreFile(), BASE_TX_ID + 1 + 1 );
+        createStoreFile( fs, pageCache, leftStoreFile(), BASE_TX_ID + 1 );
+        createStoreFile( fs, pageCache, rightStoreFile(), BASE_TX_ID + 1 + 1 );
 
-        try ( StoreChannel channel = fs.open( betaStoreFile(), "rw" ) )
+        try ( StoreChannel channel = fs.open( rightStoreFile(), "rw" ) )
         {
             channel.truncate( META_HEADER_SIZE / 2 );
             channel.force( false );
@@ -267,7 +267,7 @@ public class CountsTrackerTest
         try ( CountsTracker tracker = new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
                 storeFile(), BASE_TX_ID + 1 ) )
         {
-            assertEquals( alphaStoreFile(), tracker.storeFile() );
+            assertEquals( leftStoreFile(), tracker.storeFile() );
         }
     }
 
@@ -277,8 +277,8 @@ public class CountsTrackerTest
         // given
         EphemeralFileSystemAbstraction fs = this.fs.get();
         PageCache pageCache = pageCache();
-        createStoreFile( fs, pageCache, alphaStoreFile(), BASE_TX_ID );
-        createStoreFile( fs, pageCache, betaStoreFile(), BASE_TX_ID + 1 );
+        createStoreFile( fs, pageCache, leftStoreFile(), BASE_TX_ID );
+        createStoreFile( fs, pageCache, rightStoreFile(), BASE_TX_ID + 1 );
 
         // when
         try ( @SuppressWarnings( "UnusedDeclaration" ) CountsTracker tracker = new CountsTracker(
@@ -311,14 +311,14 @@ public class CountsTrackerTest
     }
 
 
-    private File alphaStoreFile()
+    private File leftStoreFile()
     {
-        return new File( testName.getMethodName() + CountsTracker.ALPHA );
+        return new File( testName.getMethodName() + CountsTracker.LEFT );
     }
 
-    private File betaStoreFile()
+    private File rightStoreFile()
     {
-        return new File( testName.getMethodName() + CountsTracker.BETA );
+        return new File( testName.getMethodName() + CountsTracker.RIGHT );
     }
 
     private File storeFile()
