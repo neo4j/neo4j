@@ -64,8 +64,9 @@ public final class StandalonePageCacheFactory
         Config baseConfig = new Config( MapUtil.stringMap(
                 GraphDatabaseSettings.mapped_memory_total_size.name(), "8M" ) );
         Config finalConfig = baseConfig.with( config.getParams() );
-        final LifecycledPageCache delegate = life.add(
+        LifecycledPageCache delegate = life.add(
                 new LifecycledPageCache( swapperFactory, scheduler, finalConfig, PageCacheMonitor.NULL ) );
+        life.start();
 
         return new DelegatingStandalonePageCache( delegate, life, qualifiedPageCacheName );
     }
@@ -120,6 +121,12 @@ public final class StandalonePageCacheFactory
         public int maxCachedPages()
         {
             return delegate.maxCachedPages();
+        }
+
+        @Override
+        public String toString()
+        {
+            return pageCacheName;
         }
     }
 }
