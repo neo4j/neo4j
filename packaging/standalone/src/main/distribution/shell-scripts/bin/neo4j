@@ -164,8 +164,6 @@ startit() {
 	     exit 2;
   fi
 
-  echo "Using additional JVM arguments: " $JAVA_OPTS
-
   if [ $DIST_OS = "macosx" ] ; then
     getlaunchdpid
     if [ $LAUNCHDPID -eq 0 ] ; then
