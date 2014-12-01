@@ -20,91 +20,28 @@
 package org.neo4j.consistency.checking.full;
 
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.progress.Completion;
 
 public enum TaskExecutionOrder
 {
-    MULTI_THREADED
+    SINGLE_THREADED,
+    MULTI_PASS;
+
+    void execute( List<StoppableRunnable> tasks, Completion completion ) throws ConsistencyCheckIncompleteException
     {
-        @Override
-        void execute( List<StoppableRunnable> tasks, Completion completion )
-                throws ConsistencyCheckIncompleteException
+        try
         {
-            ExecutorService executor = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors(), new NamedThreadFactory("consistency-checker-task"));
             for ( StoppableRunnable task : tasks )
             {
-                executor.submit( task );
+                task.run();
             }
-
-            try
-            {
-                completion.await( 7, TimeUnit.DAYS );
-            }
-            catch ( Exception e )
-            {
-                tasks.get( 0 ).stopScanning();
-                throw new ConsistencyCheckIncompleteException( e );
-            }
-            finally
-            {
-                executor.shutdown();
-                try
-                {
-                    executor.awaitTermination( 10, TimeUnit.SECONDS );
-                }
-                catch ( InterruptedException e )
-                {
-                    // don't care
-                }
-            }
+            completion.await( 0, TimeUnit.SECONDS );
         }
-    },
-    SINGLE_THREADED
-    {
-        @Override
-        void execute( List<StoppableRunnable> tasks, Completion completion )
-                throws ConsistencyCheckIncompleteException
+        catch ( Exception e )
         {
-            try
-            {
-                for ( StoppableRunnable task : tasks )
-                {
-                    task.run();
-                }
-                completion.await( 0, TimeUnit.SECONDS );
-            }
-            catch ( Exception e )
-            {
-                throw new ConsistencyCheckIncompleteException( e );
-            }
+            throw new ConsistencyCheckIncompleteException( e );
         }
-    },
-    MULTI_PASS
-    {
-        @Override
-        void execute( List<StoppableRunnable> tasks, Completion completion )
-                throws ConsistencyCheckIncompleteException
-        {
-            try
-            {
-                for ( StoppableRunnable task : tasks )
-                {
-                    task.run();
-                }
-                completion.await( 0, TimeUnit.SECONDS );
-            }
-            catch ( Exception e )
-            {
-                throw new ConsistencyCheckIncompleteException( e );
-            }
-        }
-    };
-
-    abstract void execute( List<StoppableRunnable> tasks, Completion completion )
-            throws ConsistencyCheckIncompleteException;
+    }
 }

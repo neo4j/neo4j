@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
@@ -248,8 +249,8 @@ public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStor
         }
 
         @Override
-        public void processString( RecordStore<DynamicRecord> store, DynamicRecord string,
-                                   @SuppressWarnings( "deprecation") IdType idType ) throws FAILURE
+        public void processString( RecordStore<DynamicRecord> store, DynamicRecord string, IdType idType )
+                throws FAILURE
         {
             processor.processString( (RecordStore<DynamicRecord>) diffStore, string, idType );
         }
@@ -287,7 +288,14 @@ public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStor
 
         @Override
         public void processLabelToken(RecordStore<LabelTokenRecord> store, LabelTokenRecord record) throws FAILURE {
-            processor.processLabelToken((RecordStore<LabelTokenRecord>) diffStore, record);
+            processor.processLabelToken( (RecordStore<LabelTokenRecord>) diffStore, record );
+        }
+
+        @Override
+        public void processRelationshipGroup( RecordStore<RelationshipGroupRecord> store,
+                RelationshipGroupRecord record ) throws FAILURE
+        {
+            processor.processRelationshipGroup( (RecordStore<RelationshipGroupRecord>) diffStore, record );
         }
     }
 }

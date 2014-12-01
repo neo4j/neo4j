@@ -35,6 +35,8 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.util.StringLogger;
 
+import static org.neo4j.kernel.impl.store.RecordStore.Scanner.scan;
+
 public class IncrementalDiffCheck extends DiffCheck
 {
     public IncrementalDiffCheck( StringLogger logger )
@@ -55,7 +57,7 @@ public class IncrementalDiffCheck extends DiffCheck
         {
             if ( 0 == summary.getInconsistencyCountForRecordType( RecordType.SCHEMA ) )
             {
-                performFullCheckOfSchemaStore( diffs, reporter, processor );
+                performFullCheckOfSchemaStore( diffs, reporter );
             }
         }
 
@@ -63,16 +65,15 @@ public class IncrementalDiffCheck extends DiffCheck
     }
 
     @SuppressWarnings("unchecked")
-    private void performFullCheckOfSchemaStore( DiffStore diffs, ConsistencyReporter reporter,
-                                                StoreProcessor processor )
+    private void performFullCheckOfSchemaStore( DiffStore diffs, ConsistencyReporter reporter )
     {
         SchemaRecordCheck schemaChecker = new SchemaRecordCheck( new RuleReader( diffs.getSchemaStore() ) );
-        for ( DynamicRecord record : processor.scan( diffs.getSchemaStore() ) )
+        for ( DynamicRecord record : scan( diffs.getSchemaStore() ) )
         {
             reporter.forSchema( record, schemaChecker );
         }
         schemaChecker = schemaChecker.forObligationChecking();
-        for ( DynamicRecord record : processor.scan( diffs.getSchemaStore() ) )
+        for ( DynamicRecord record : scan( diffs.getSchemaStore() ) )
         {
             reporter.forSchema( record, schemaChecker );
         }

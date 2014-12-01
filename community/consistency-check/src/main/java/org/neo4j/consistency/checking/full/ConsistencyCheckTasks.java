@@ -41,8 +41,10 @@ import org.neo4j.kernel.impl.store.record.IndexRule;
 import static java.lang.String.format;
 
 import static org.neo4j.consistency.checking.full.MultiPassStore.ARRAYS;
+import static org.neo4j.consistency.checking.full.MultiPassStore.LABELS;
 import static org.neo4j.consistency.checking.full.MultiPassStore.NODES;
 import static org.neo4j.consistency.checking.full.MultiPassStore.PROPERTIES;
+import static org.neo4j.consistency.checking.full.MultiPassStore.PROPERTY_KEYS;
 import static org.neo4j.consistency.checking.full.MultiPassStore.RELATIONSHIPS;
 import static org.neo4j.consistency.checking.full.MultiPassStore.RELATIONSHIP_GROUPS;
 import static org.neo4j.consistency.checking.full.MultiPassStore.STRINGS;
@@ -69,13 +71,13 @@ public class ConsistencyCheckTasks
         List<StoppableRunnable> tasks = new ArrayList<>();
 
         tasks.add( create( nativeStores.getNodeStore(),
-                multiPass.processors( PROPERTIES, RELATIONSHIPS ) ) );
+                multiPass.processors( LABELS, PROPERTIES, RELATIONSHIPS, RELATIONSHIP_GROUPS ) ) );
 
         tasks.add( create( nativeStores.getRelationshipStore(),
                 multiPass.processors(  NODES, PROPERTIES, RELATIONSHIPS  ) ) );
 
         tasks.add( create( nativeStores.getPropertyStore(),
-                multiPass.processors(  PROPERTIES, STRINGS, ARRAYS  ) ) );
+                multiPass.processors(  PROPERTIES, STRINGS, ARRAYS, PROPERTY_KEYS ) ) );
 
         tasks.add( create( nativeStores.getStringStore(), multiPass.processors( STRINGS ) ) );
 
@@ -148,14 +150,14 @@ public class ConsistencyCheckTasks
         return tasks;
     }
 
-    <RECORD extends AbstractBaseRecord> StoreProcessorTask<RECORD> create( RecordStore<RECORD> input )
+    private <RECORD extends AbstractBaseRecord> StoreProcessorTask<RECORD> create( RecordStore<RECORD> input )
     {
         return new StoreProcessorTask<>(
                 input, progress, order, processor, processor );
     }
 
-    <RECORD extends AbstractBaseRecord> StoreProcessorTask<RECORD> create( RecordStore<RECORD> input,
-                                                                           StoreProcessor[] processors )
+    private <RECORD extends AbstractBaseRecord> StoreProcessorTask<RECORD> create( RecordStore<RECORD> input,
+            StoreProcessor[] processors )
     {
         return new StoreProcessorTask<>(
                 input, progress, order, processor, processors );

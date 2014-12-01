@@ -35,7 +35,7 @@ public enum MultiPassStore
     NODES
             {
                 @Override
-                RecordStore getRecordStore( StoreAccess storeAccess )
+                RecordStore<?> getRecordStore( StoreAccess storeAccess )
                 {
                     return storeAccess.getNodeStore();
                 }
@@ -43,7 +43,7 @@ public enum MultiPassStore
     RELATIONSHIPS
             {
                 @Override
-                RecordStore getRecordStore( StoreAccess storeAccess )
+                RecordStore<?> getRecordStore( StoreAccess storeAccess )
                 {
                     return storeAccess.getRelationshipStore();
                 }
@@ -51,15 +51,23 @@ public enum MultiPassStore
     PROPERTIES
             {
                 @Override
-                RecordStore getRecordStore( StoreAccess storeAccess )
+                RecordStore<?> getRecordStore( StoreAccess storeAccess )
                 {
                     return storeAccess.getPropertyStore();
+                }
+            },
+    PROPERTY_KEYS
+            {
+                @Override
+                RecordStore<?> getRecordStore( StoreAccess storeAccess )
+                {
+                    return storeAccess.getPropertyKeyTokenStore();
                 }
             },
     STRINGS
             {
                 @Override
-                RecordStore getRecordStore( StoreAccess storeAccess )
+                RecordStore<?> getRecordStore( StoreAccess storeAccess )
                 {
                     return storeAccess.getNodeStore();
                 }
@@ -67,15 +75,23 @@ public enum MultiPassStore
     ARRAYS
             {
                 @Override
-                RecordStore getRecordStore( StoreAccess storeAccess )
+                RecordStore<?> getRecordStore( StoreAccess storeAccess )
                 {
                     return storeAccess.getNodeStore();
+                }
+            },
+    LABELS
+            {
+                @Override
+                RecordStore<?> getRecordStore( StoreAccess storeAccess )
+                {
+                    return storeAccess.getLabelTokenStore();
                 }
             },
     RELATIONSHIP_GROUPS
             {
                 @Override
-                RecordStore getRecordStore( StoreAccess storeAccess )
+                RecordStore<?> getRecordStore( StoreAccess storeAccess )
                 {
                     return storeAccess.getRelationshipGroupStore();
                 }
@@ -87,10 +103,10 @@ public enum MultiPassStore
     }
 
     public List<DiffRecordAccess> multiPassFilters( long memoryPerPass, StoreAccess storeAccess,
-                                                    DiffRecordAccess recordAccess, MultiPassStore[] stores )
+            DiffRecordAccess recordAccess, MultiPassStore[] stores )
     {
-        ArrayList<DiffRecordAccess> filteringStores = new ArrayList<DiffRecordAccess>();
-        RecordStore recordStore = getRecordStore( storeAccess );
+        List<DiffRecordAccess> filteringStores = new ArrayList<>();
+        RecordStore<?> recordStore = getRecordStore( storeAccess );
         long recordsPerPass = memoryPerPass / recordStore.getRecordSize();
         long highId = recordStore.getHighId();
         for ( int iPass = 0; iPass * recordsPerPass <= highId; iPass++ )
@@ -101,7 +117,7 @@ public enum MultiPassStore
     }
 
 
-    abstract RecordStore getRecordStore( StoreAccess storeAccess );
+    abstract RecordStore<?> getRecordStore( StoreAccess storeAccess );
 
     static class Factory
     {
