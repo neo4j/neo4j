@@ -460,7 +460,7 @@ public class ClusterManager
         {
             ClusterClient client = database.getDependencyResolver().resolveDependency( ClusterClient.class );
             buf.append( "Instance " ).append( client.getServerId() )
-               .append( "(" ).append( client.getClusterServer() ).append( "):" ).append( "\n" );
+               .append( " (" ).append( client.getClusterServer() ).append( "):" ).append( "\n" );
 
             ClusterMembers members = database.getDependencyResolver().resolveDependency( ClusterMembers.class );
 
@@ -834,7 +834,7 @@ public class ClusterManager
                     return graphDatabaseService;
                 }
             }
-            throw new IllegalStateException( "No master found in cluster " + name );
+            throw new IllegalStateException( "No master found in cluster " + name + printState( this ) );
         }
 
         /**
@@ -854,7 +854,7 @@ public class ClusterManager
                 }
             }
 
-            throw new IllegalStateException( "No slave found in cluster " + name );
+            throw new IllegalStateException( "No slave found in cluster " + name + printState( this ) );
         }
 
         /**
@@ -868,7 +868,8 @@ public class ClusterManager
             HighlyAvailableGraphDatabase db = members.get( serverId ).get();
             if ( db == null )
             {
-                throw new IllegalStateException( "Db " + serverId + " not found at the moment in " + name );
+                throw new IllegalStateException( "Db " + serverId + " not found at the moment in " + name +
+                                                 printState( this ) );
             }
             return db;
         }
@@ -901,7 +902,8 @@ public class ClusterManager
                     return;
                 }
             }
-            throw new IllegalArgumentException( "Db " + db + " not a member of this cluster " + name );
+            throw new IllegalArgumentException( "Db " + db + " not a member of this cluster " + name +
+                                                printState( this ) );
         }
 
         /**
