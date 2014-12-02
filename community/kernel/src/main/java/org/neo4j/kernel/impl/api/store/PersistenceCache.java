@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.api.RecordStateForCacheAccessor;
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode;
 import org.neo4j.kernel.impl.cache.AutoLoadingCache;
 import org.neo4j.kernel.impl.core.EntityFactory;
+import org.neo4j.kernel.impl.core.GraphProperties;
 import org.neo4j.kernel.impl.core.GraphPropertiesImpl;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeImpl;
@@ -92,7 +93,7 @@ public class PersistenceCache
     };
     private final AutoLoadingCache<NodeImpl> nodeCache;
     private final AutoLoadingCache<RelationshipImpl> relationshipCache;
-    private GraphPropertiesImpl graphProperties;
+    private GraphProperties graphProperties;
     private final RelationshipLoader relationshipLoader;
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
     private final RelationshipTypeTokenHolder relationshipTypeTokenHolder;

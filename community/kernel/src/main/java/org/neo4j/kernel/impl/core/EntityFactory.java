@@ -28,6 +28,5 @@ public interface EntityFactory
 
     Relationship newRelationshipProxyById( long id );
 
-    // TODO shouldn't be impl, please fix
-    GraphPropertiesImpl newGraphProperties();
+    GraphProperties newGraphProperties();
 }
