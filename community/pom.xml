@@ -121,6 +121,7 @@ the relevant Commercial Agreement.
                     <include>org.neo4j.app:*</include>
                     <include>org.neo4j.examples:*</include>
                     <include>org.neo4j.doc:*</include>
+                    <include>org.neo4j.test:*</include>
                     <include>org.neo4j.build:licensecheck-config:*</include>
                   </includes>
                   <excludes>
@@ -187,6 +188,21 @@ the relevant Commercial Agreement.
         <dependency>
           <groupId>org.neo4j</groupId>
           <artifactId>neo4j-cypher-docs</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.neo4j.doc</groupId>
+          <artifactId>neo4j-cypher-refcard-tests</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.neo4j.doc</groupId>
+          <artifactId>neo4j-graphgist</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.neo4j.test</groupId>
+          <artifactId>neo4j-harness</artifactId>
           <version>${project.version}</version>
         </dependency>
       </dependencies>
