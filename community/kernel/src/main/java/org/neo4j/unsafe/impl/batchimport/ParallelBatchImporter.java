@@ -270,7 +270,8 @@ public class ParallelBatchImporter implements BatchImporter
             add( new IteratorBatcherStep<>( control(), "INPUT", config.batchSize(), config.movingAverageSize(),
                     relationships.iterator() ) );
 
-            add( new CalculateDenseNodesStep( control(), config, nodeRelationshipLink, idMapper ) );
+            add( new RelationshipPreparationStep( control(), config, idMapper ) );
+            add( new CalculateDenseNodesStep( control(), config, nodeRelationshipLink ) );
         }
     }
 
@@ -285,6 +286,7 @@ public class ParallelBatchImporter implements BatchImporter
 
             RelationshipStore relationshipStore = neoStore.getRelationshipStore();
             PropertyStore propertyStore = neoStore.getPropertyStore();
+            add( new RelationshipPreparationStep( control(), config, idMapper ) );
             add( new RelationshipEncoderStep( control(), config, idMapper,
                     neoStore.getRelationshipTypeRepository(), relationshipStore, nodeRelationshipLink ) );
             add( new PropertyEncoderStep<>( control(), config, 1, neoStore.getPropertyKeyRepository(), propertyStore ) );

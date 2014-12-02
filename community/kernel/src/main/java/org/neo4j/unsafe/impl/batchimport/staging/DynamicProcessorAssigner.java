@@ -48,16 +48,15 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  */
 public class DynamicProcessorAssigner extends AbstractExecutionMonitor
 {
-    private boolean firstCheck;
     private final Configuration config;
     private final Map<Step<?>,Long/*done batches*/> lastChangedProcessors = new HashMap<>();
-    private final int maxWorkers;
+    private final int availableProcessors;
 
-    public DynamicProcessorAssigner( Configuration config, int maxWorkers )
+    public DynamicProcessorAssigner( Configuration config, int availableProcessors )
     {
-        super( 200, MILLISECONDS );
+        super( 500, MILLISECONDS );
         this.config = config;
-        this.maxWorkers = maxWorkers;
+        this.availableProcessors = availableProcessors;
     }
 
     @Override
@@ -69,13 +68,7 @@ public class DynamicProcessorAssigner extends AbstractExecutionMonitor
     @Override
     public void check( StageExecution[] executions )
     {
-        if ( !firstCheck )
-        {
-            firstCheck = true;
-            return;
-        }
-
-        int permits = maxWorkers - countActiveProcessors( executions );
+        int permits = availableProcessors - countActiveProcessors( executions );
         if ( permits <= 0 )
         {
             return;
@@ -176,6 +169,6 @@ public class DynamicProcessorAssigner extends AbstractExecutionMonitor
     {
         return lastChangedProcessors.containsKey( step )
                 ? doneBatches - lastChangedProcessors.get( step )
-                : config.movingAverageSize();
+                : doneBatches;
     }
 }

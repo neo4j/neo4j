@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -40,7 +41,7 @@ import static org.neo4j.graphdb.Direction.INCOMING;
  * relationship ids are kept in {@link NodeRelationshipLink node cache}, which is a point of scalability issues,
  * although mitigated using multi-pass techniques.
  */
-public class RelationshipEncoderStep extends ExecutorServiceStep<List<InputRelationship>>
+public class RelationshipEncoderStep extends ExecutorServiceStep<Pair<List<InputRelationship>,long[]>>
 {
     private final IdMapper idMapper;
     private final BatchingTokenRepository<?> relationshipTypeRepository;
@@ -62,15 +63,17 @@ public class RelationshipEncoderStep extends ExecutorServiceStep<List<InputRelat
     }
 
     @Override
-    protected Object process( long ticket, List<InputRelationship> batch )
+    protected Object process( long ticket, Pair<List<InputRelationship>,long[]> batch )
     {
-        List<BatchEntity<RelationshipRecord,InputRelationship>> entities = new ArrayList<>( batch.size() );
-        for ( InputRelationship batchRelationship : batch )
+        List<BatchEntity<RelationshipRecord,InputRelationship>> entities = new ArrayList<>( batch.first().size() );
+        long[] startAndEndNodeIds = batch.other();
+        int index = 0;
+        for ( InputRelationship batchRelationship : batch.first() )
         {
             long relationshipId = batchRelationship.id();
+            long startNodeId = startAndEndNodeIds[index++];
+            long endNodeId = startAndEndNodeIds[index++];
             relationshipStore.setHighestPossibleIdInUse( relationshipId );
-            long startNodeId = idMapper.get( batchRelationship.startNode() );
-            long endNodeId = idMapper.get( batchRelationship.endNode() );
             int typeId = batchRelationship.hasTypeId() ? batchRelationship.typeId() :
                     relationshipTypeRepository.getOrCreateId( batchRelationship.type() );
             RelationshipRecord relationshipRecord = new RelationshipRecord( relationshipId,

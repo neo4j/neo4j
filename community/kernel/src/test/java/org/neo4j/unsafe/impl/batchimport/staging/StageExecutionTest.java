@@ -27,15 +27,12 @@ import org.junit.Test;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.unsafe.impl.batchimport.stats.Keys;
-import org.neo4j.unsafe.impl.batchimport.stats.Stat;
-import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
+import static org.neo4j.unsafe.impl.batchimport.staging.ControlledStep.stepWithAverageOf;
 
 public class StageExecutionTest
 {
@@ -86,16 +83,5 @@ public class StageExecutionTest
         Pair<Step<?>,Float> alsoSlow = ordered.next();
         assertEquals( 1f, alsoSlow.other().floatValue(), 0f );
         assertFalse( ordered.hasNext() );
-    }
-
-    private Step<?> stepWithAverageOf( long avg )
-    {
-        Step<?> step = mock( Step.class );
-        StepStats stats = mock( StepStats.class );
-        Stat stat = mock( Stat.class );
-        when( stat.asLong() ).thenReturn( avg );
-        when( stats.stat( Keys.avg_processing_time ) ).thenReturn( stat );
-        when( step.stats() ).thenReturn( stats );
-        return step;
     }
 }

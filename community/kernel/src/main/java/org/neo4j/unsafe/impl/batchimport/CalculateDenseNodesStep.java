@@ -21,8 +21,8 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import java.util.List;
 
+import org.neo4j.helpers.Pair;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
@@ -33,27 +33,27 @@ import static java.lang.Math.max;
 /**
  * Runs through relationship input and counts relationships per node so that dense nodes can be designated.
  */
-public class CalculateDenseNodesStep extends ExecutorServiceStep<List<InputRelationship>>
+public class CalculateDenseNodesStep extends ExecutorServiceStep<Pair<List<InputRelationship>,long[]>>
 {
     private final NodeRelationshipLink nodeRelationshipLink;
     private long highestSeenNodeId;
-    private final IdMapper idMapper;
 
     public CalculateDenseNodesStep( StageControl control, Configuration config,
-            NodeRelationshipLink nodeRelationshipLink, IdMapper idMapper )
+            NodeRelationshipLink nodeRelationshipLink )
     {
         super( control, "CALCULATOR", config.workAheadSize(), config.movingAverageSize(), 1 );
         this.nodeRelationshipLink = nodeRelationshipLink;
-        this.idMapper = idMapper;
     }
 
     @Override
-    protected Object process( long ticket, List<InputRelationship> batch )
+    protected Object process( long ticket, Pair<List<InputRelationship>,long[]> batch )
     {
-        for ( InputRelationship rel : batch )
+        long[] startAndEndNodeIds = batch.other();
+        int index = 0;
+        for ( InputRelationship rel : batch.first() )
         {
-            long startNode = idMapper.get( rel.startNode() );
-            long endNode = idMapper.get( rel.endNode() );
+            long startNode = startAndEndNodeIds[index++];
+            long endNode = startAndEndNodeIds[index++];
             ensureNodeFound( "start", rel, startNode );
             ensureNodeFound( "end", rel, endNode );
 

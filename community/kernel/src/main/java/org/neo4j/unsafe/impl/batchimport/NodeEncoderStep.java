@@ -54,7 +54,7 @@ public final class NodeEncoderStep extends ExecutorServiceStep<List<InputNode>>
             NodeStore nodeStore,
             Iterable<Object> allIds )
     {
-        super( control, "NDOE", config.workAheadSize(), config.movingAverageSize(), 1 );
+        super( control, "NODE", config.workAheadSize(), config.movingAverageSize(), 1 );
         this.idMapper = idMapper;
         this.idGenerator = idGenerator;
         this.nodeStore = nodeStore;
