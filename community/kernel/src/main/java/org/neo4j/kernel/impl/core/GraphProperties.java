@@ -19,28 +19,8 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.util.Iterator;
-
-import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.api.store.CacheLoader;
-import org.neo4j.kernel.impl.api.store.CacheUpdateListener;
 
 public interface GraphProperties extends PropertyContainer
 {
-
-	void commitPropertyMaps( PrimitiveIntObjectMap < DefinedProperty > translateAddedAndChangedProperties,
-			Iterator < Integer > removed );
-
-	Iterator < DefinedProperty > getProperties( CacheLoader< Iterator < DefinedProperty > > cacheLoader,
-			CacheUpdateListener noUpdates );
-
-	PrimitiveLongIterator getPropertyKeys( CacheLoader < Iterator < DefinedProperty > > cacheLoader,
-			CacheUpdateListener noUpdates );
-
-	Property getProperty( CacheLoader < Iterator < DefinedProperty > > cacheLoader,
-			CacheUpdateListener noUpdates, int propertyKeyId );
 }
