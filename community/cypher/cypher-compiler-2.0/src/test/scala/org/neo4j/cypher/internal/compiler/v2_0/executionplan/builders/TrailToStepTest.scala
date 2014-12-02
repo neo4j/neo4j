@@ -158,7 +158,7 @@ class TrailToStepTest extends Assertions {
     val expected = varlengthStep(0, Seq(A), OUTGOING, 1, None, None)
 
     val boundPoint = EndPoint("e")
-    val trail = VariableLengthStepTrail(boundPoint, Direction.OUTGOING, Seq("A"), 1, None, "p", None, "b", BtoE)
+    val trail = VariableLengthStepTrail(boundPoint, Direction.OUTGOING, Direction.OUTGOING, Seq("A"), 1, None, "p", None, "b", BtoE)
 
     val result = trail.toSteps(0).get
     assert(result.equals(expected))

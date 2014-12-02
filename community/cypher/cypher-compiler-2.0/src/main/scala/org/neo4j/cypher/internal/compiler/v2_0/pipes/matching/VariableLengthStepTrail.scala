@@ -28,6 +28,7 @@ import org.neo4j.graphdb.{Relationship, Node, PropertyContainer, Direction}
 
 final case class VariableLengthStepTrail(next: Trail,
                                          dir: Direction,
+                                         projectedDir: Direction,
                                          typ: Seq[String],
                                          min: Int,
                                          max: Option[Int],
@@ -77,7 +78,8 @@ final case class VariableLengthStepTrail(next: Trail,
              idx <= max.getOrElse(idx) &&
              left.nonEmpty) {
 
-        val currentPath = curr :+ left.head
+        val currentPath = if (projectedDir == dir) curr :+ left.head
+                          else (curr :+ left.head).reverse
         map += (path -> PathImpl(currentPath: _*))
 
         relIterator.foreach {

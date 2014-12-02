@@ -128,7 +128,7 @@ class TrailDecomposeTest extends GraphDatabaseJUnitSuite {
 
     val kernPath = Seq(nodeA, rel1, nodeB)
     val path =
-      VariableLengthStepTrail(EndPoint("b"), Direction.OUTGOING, Seq("A"), 1, Some(2), "p", None, "a", null)
+      VariableLengthStepTrail(EndPoint("b"), Direction.OUTGOING, Direction.OUTGOING, Seq("A"), 1, Some(2), "p", None, "a", null)
 
     //Then
     assertInTx(path.decompose(kernPath).toList === List(Map("a" -> nodeA, "b" -> nodeB, "p" -> PathImpl(kernPath:_*))))
@@ -145,7 +145,7 @@ class TrailDecomposeTest extends GraphDatabaseJUnitSuite {
 
     val kernPath = Seq(nodeA, rel0, nodeB)
     val path =
-      VariableLengthStepTrail(EndPoint("b"), Direction.OUTGOING, Seq("A"), 1, Some(2), "p", Some("r"), "a", null)
+      VariableLengthStepTrail(EndPoint("b"), Direction.OUTGOING, Direction.OUTGOING, Seq("A"), 1, Some(2), "p", Some("r"), "a", null)
 
     //Then
     assertInTx(path.decompose(kernPath).toList === List(Map("a" -> nodeA, "b" -> nodeB, "p" -> PathImpl(kernPath:_*), "r"->Seq(rel0))))
@@ -166,7 +166,7 @@ class TrailDecomposeTest extends GraphDatabaseJUnitSuite {
     val expectedPath = PathImpl(node1, rel2, node2)
 
     val point = EndPoint("b")
-    val lastStep = VariableLengthStepTrail(point, Direction.OUTGOING, Seq("A"), 1, Some(2), "p", None, "a", null)
+    val lastStep = VariableLengthStepTrail(point, Direction.OUTGOING, Direction.OUTGOING, Seq("A"), 1, Some(2), "p", None, "a", null)
     val firstStep = SingleStepTrail(lastStep, Direction.OUTGOING, "r1", Seq("B"), "x", True(), True(), null, Seq())
 
     //Then
@@ -188,7 +188,7 @@ class TrailDecomposeTest extends GraphDatabaseJUnitSuite {
     val expectedPath = PathImpl(node0, rel0, node1)
     val bound = EndPoint("x")
     val single = SingleStepTrail(bound, Direction.INCOMING, "r1", Seq("B"), "b", True(), True(), null, Seq())
-    val path = VariableLengthStepTrail(single, Direction.OUTGOING, Seq("A"), 1, Some(2), "p", None, "a", null)
+    val path = VariableLengthStepTrail(single, Direction.OUTGOING, Direction.OUTGOING, Seq("A"), 1, Some(2), "p", None, "a", null)
 
     //Then
     assertInTx(path.decompose(kernPath).toList === List(Map("x" -> node2, "a" -> node0, "b" -> node1, "r1" -> rel1, "p" -> expectedPath)))
@@ -209,7 +209,7 @@ class TrailDecomposeTest extends GraphDatabaseJUnitSuite {
     val expectedPath = input
 
     val bound = EndPoint("b")
-    val path = VariableLengthStepTrail(bound, Direction.OUTGOING, Seq("A"), 1, Some(2), "p", None, "a", null)
+    val path = VariableLengthStepTrail(bound, Direction.OUTGOING, Direction.OUTGOING, Seq("A"), 1, Some(2), "p", None, "a", null)
 
     //Then
     assertInTx(path.decompose(input).toList === List(Map("a" -> node0, "b" -> node2, "p" -> PathImpl(expectedPath:_*))))
@@ -229,7 +229,7 @@ class TrailDecomposeTest extends GraphDatabaseJUnitSuite {
 
     val bound = EndPoint("c")
     val single = SingleStepTrail(bound, Direction.INCOMING, "r", Seq("B"), "b", True(), True(), null, Seq())
-    val path = VariableLengthStepTrail(single, Direction.OUTGOING, Seq("A"), 0, Some(1), "p", None, "a", null)
+    val path = VariableLengthStepTrail(single, Direction.OUTGOING, Direction.OUTGOING, Seq("A"), 0, Some(1), "p", None, "a", null)
 
     //Then
     assertInTx(path.decompose(input).toList === List(Map("a" -> node0, "b" -> node0, "c" -> node1, "p" -> expectedPath, "r" -> rel0)))
@@ -254,8 +254,8 @@ class TrailDecomposeTest extends GraphDatabaseJUnitSuite {
     val input = Seq(node0, rel0, node1, rel1, node2, rel2, node3, rel3, node4)
 
     val bound = EndPoint("b")
-    val first = VariableLengthStepTrail(bound, Direction.OUTGOING, Seq("A"), 0, None, "p2", None, "x", null)
-    val second = VariableLengthStepTrail(first, Direction.OUTGOING, Seq("A"), 0, None, "p1", None, "a", null)
+    val first = VariableLengthStepTrail(bound, Direction.OUTGOING, Direction.OUTGOING, Seq("A"), 0, None, "p2", None, "x", null)
+    val second = VariableLengthStepTrail(first, Direction.OUTGOING, Direction.OUTGOING, Seq("A"), 0, None, "p1", None, "a", null)
 
     //Then
     assertInTx(second.decompose(input).toList === List(
