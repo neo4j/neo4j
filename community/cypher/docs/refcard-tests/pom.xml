@@ -4,12 +4,12 @@
   <parent>
         <groupId>org.neo4j</groupId>
         <artifactId>cypher-parent</artifactId>
-        <version>2.2-SNAPSHOT</version>
+        <version>2.2.0-M01</version>
         <relativePath>../..</relativePath>
   </parent>
   <groupId>org.neo4j.doc</groupId>
   <artifactId>neo4j-cypher-refcard-tests</artifactId>
-  <version>2.2-SNAPSHOT</version>
+  <version>2.2.0-M01</version>
   <name>Neo4j - Cypher Reference Card Tests</name>
   <description>Test for Reference Card for the Neo4j Cypher Query Language.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
@@ -18,7 +18,7 @@
   <properties>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
-    <neo4j.version>2.2-SNAPSHOT</neo4j.version>
+    <neo4j.version>2.2.0-M01</neo4j.version>
     <docs-plugin.skip>false</docs-plugin.skip>
     <attach-docs-phase>prepare-package</attach-docs-phase>
     <remote-csv-upload>http://docs.neo4j.org/refcard/${project.version}/csv</remote-csv-upload>
