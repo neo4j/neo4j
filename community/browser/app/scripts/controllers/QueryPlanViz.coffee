@@ -35,6 +35,21 @@ angular.module('neo4jApp.controllers')
         rows = (operator) ->
           operator.Rows || operator.EstimatedRows
 
+        expression = (operator) ->
+          operator.LegacyExpression || operator.ExpandExpression || operator.identifiers || ''
+
+        formatKey = (key) ->
+          (key + ':                    ')[0..20] + '\t'
+
+        tooltip_text = (operator) ->
+          [['Operator',    operator.operatorType],
+           ['Expression',  (operator.LegacyExpression || operator.ExpandExpression || '')],
+           ['Identifiers', operator.identifiers],
+           ['Estimated',   formatNumber(operator.EstimatedRows)],
+           ['Rows',        formatNumber(operator.Rows)],
+           ['Db Hits',     formatNumber(operator.DbHits)]
+          ].map((v) -> formatKey(v[0]) + v[1]).join('\n')
+
         explore = (operator) ->
           operators.push operator
           for child in operator.children
@@ -131,25 +146,25 @@ angular.module('neo4jApp.controllers')
         .attr('transform', (d) -> "translate(#{d.y},#{d.x})")
 
         operatorElement.append('rect')
-        .attr('width', (d) -> Math.max(1, d.dy))
+        .attr('width', (d) -> Math.max(2, d.dy))
         .attr('height', sankey.nodeWidth())
         .style('fill', (d) -> d.color = color(d.operatorType))
         .style('stroke', (d) -> d3.rgb(d.color).darker(2))
         .append('title')
-        .text((d) -> d.name + '\n' + format(d.value))
+        .text((d) -> tooltip_text(d))
 
         textElement = operatorElement.append('text')
-        .attr('y', 15)
-        .attr('x', 0);
+        .attr('y', 13)
+        .attr('x', (d) -> Math.min(4, d.dx));
 
         textElement.append('tspan')
         .attr('class', 'operator-name')
         .text((d) -> d.operatorType)
 
         textElement.append('tspan')
-        .attr('class', 'operator-identifiers')
-        .attr('dx', 5)
-        .text((d) -> d.IntroducedIdentifier)
+        .attr('class', 'operator-expression')
+        .attr('dx', 8)
+        .text((d) -> expression(d))
 
       return @
   ])
