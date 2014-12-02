@@ -25,10 +25,11 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, Lo
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.{cartesianProduct, solveOptionalMatches}
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 
-class GreedyQueryGraphSolver(config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default)
-  extends QueryGraphSolver {
+class GreedyQueryGraphSolver(planCombiner: CandidateGenerator[PlanTable],
+                             config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default)
+  extends TentativeQueryGraphSolver {
 
-  def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None) = {
+  def tryPlan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None) = {
   import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.CandidateGenerator._
 
     val select = config.applySelections.asFunctionInContext
@@ -79,9 +80,20 @@ class GreedyQueryGraphSolver(config: PlanningStrategyConfiguration = PlanningStr
     }
 
     val leaves: PlanTable = generateLeafPlanTable()
-    val afterExpandOrJoin = iterateUntilConverged(findBestPlan(expandsOrJoins))(leaves)
+    val afterCombiningPlans = iterateUntilConverged(findBestPlan(planCombiner))(leaves)
 
-    val afterCartesianProduct = iterateUntilConverged(solveOptionalAndCartesianProducts)(afterExpandOrJoin)
-    afterCartesianProduct.uniquePlan
+    if (stillHasOverlappingPlans(afterCombiningPlans))
+      None
+    else {
+      val afterCartesianProduct = iterateUntilConverged(solveOptionalAndCartesianProducts)(afterCombiningPlans)
+      Some(afterCartesianProduct.uniquePlan)
+    }
   }
+
+  private def stillHasOverlappingPlans(afterCombiningPlans: PlanTable): Boolean =
+    afterCombiningPlans.plans.exists {
+      p1 => afterCombiningPlans.plans.exists {
+        p2 => p1 != p2 && p1.availableSymbols.intersect(p2.availableSymbols).nonEmpty
+      }
+    }
 }

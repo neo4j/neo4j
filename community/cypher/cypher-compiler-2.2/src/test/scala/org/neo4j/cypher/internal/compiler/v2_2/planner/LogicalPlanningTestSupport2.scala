@@ -69,7 +69,10 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     def internalPlan(query: PlannerQuery)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan =
      planSingleQuery(query)
   }
-  var queryGraphSolver = new GreedyQueryGraphSolver()
+  var queryGraphSolver = new CompositeQueryGraphSolver(
+    new GreedyQueryGraphSolver(expandsOrJoins),
+    new GreedyQueryGraphSolver(expandsOnly)
+  )
 
   val realConfig = new RealLogicalPlanningConfiguration
 
