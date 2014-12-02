@@ -21,6 +21,10 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 
 import static java.lang.Math.round;
 
+/**
+ * Takes a value range and projects it to a very discrete number of integer values, quantizing based
+ * on float precision.
+ */
 public class QuantizedProjection
 {
     private final long max;
@@ -37,6 +41,8 @@ public class QuantizedProjection
 
     /**
      * @param step a part of the max, not the projection.
+     * @return {@code true} if the total so far including {@code step} is equal to or less than the max allowed,
+     * otherwise {@code false} -- meaning that we stepped beyond max.
      */
     public boolean next( long step )
     {

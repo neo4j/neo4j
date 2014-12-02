@@ -50,8 +50,8 @@ public class ControlledParkStrategy implements ParkStrategy
                 Thread.sleep( 1 );
             }
             catch ( InterruptedException e )
-            {
-                throw new RuntimeException( e );
+            {   // Do continue
+                Thread.interrupted();
             }
         }
     }
