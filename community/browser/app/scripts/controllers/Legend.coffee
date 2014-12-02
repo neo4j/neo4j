@@ -32,6 +32,24 @@ angular.module('neo4jApp')
     $scope.labelsContracted = yes
     $scope.typesContracted = yes
 
+    $scope.labelNotInSelection = (currentItem, label) ->
+      return false unless label
+      return false unless currentItem
+      return false unless currentItem.data.isNode
+      currentItem.data.labels.indexOf(label) < 0
+
+    $scope.relationshipNotInSelection = (currentItem, relationshipType) ->
+      return false unless relationshipType
+      return false unless currentItem
+      types = getRelationshipsTypesForNode currentItem
+      types.indexOf(relationshipType) < 0
+
+    getRelationshipsTypesForNode = (currentItem) ->
+      return [] unless currentItem
+      filtered = $scope.graph._relationships.filter( (item) ->
+        return item.source.id == currentItem.data.id or item.target.id == currentItem.data.id
+      )
+      filtered.map((item) -> return item.type)
 
     graphStats = (graph) ->
       resultLabels = {}
