@@ -8,6 +8,7 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
+  <groupId>org.neo4j.doc</groupId>
   <artifactId>neo4j-cypher-docs</artifactId>
   <packaging>jar</packaging>
   <version>2.1.7-SNAPSHOT</version>
