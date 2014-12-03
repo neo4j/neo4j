@@ -83,7 +83,7 @@ class MissingConstraintException() extends CypherException("Constraint not found
 }
 
 class NodeStillHasRelationshipsException(val nodeId: Long, cause: Throwable)
-  extends CypherException("Node with id " + nodeId + " still has relationships, and cannot be deleted.") {
+  extends CypherException("Node with id " + nodeId + " still has relationships, and cannot be deleted.", cause) {
   val status = Status.Schema.ConstraintViolation
 }
 
