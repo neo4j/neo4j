@@ -19,13 +19,6 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser.Operator;
@@ -38,6 +31,13 @@ import org.apache.lucene.search.TermQuery;
 import org.hamcrest.CoreMatchers;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -60,6 +60,7 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 
 import static org.apache.lucene.search.NumericRangeQuery.newIntRange;
+import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertEquals;
@@ -69,7 +70,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.index.Neo4jTestCase.assertContains;
@@ -166,7 +166,78 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     }
 
     @Test
-    @Ignore
+    public void removingAnIndexedNodeWillAlsoRemoveItFromTheIndex()
+    {
+        Index<Node> index = nodeIndex( LuceneIndexImplementation.EXACT_CONFIG );
+        Node node = graphDb.createNode();
+        node.setProperty( "poke", 1 );
+        index.add( node, "key", "value" );
+        commitTx();
+
+        beginTx();
+        node.delete();
+        commitTx();
+
+        beginTx();
+        IndexHits<Node> nodes = index.get( "key", "value" );
+        // IndexHits.size is allowed to be inaccurate in this case:
+        assertThat( nodes.size(), isOneOf( 0, 1 ) );
+        for ( Node n : nodes )
+        {
+            n.getProperty( "poke" );
+            fail( "Found node " + n );
+        }
+        commitTx();
+
+        beginTx();
+        IndexHits<Node> nodesAgain = index.get( "key", "value" );
+        // After a read, the index should be repaired:
+        assertThat( nodesAgain.size(), is( 0 ) );
+        for ( Node n : nodesAgain )
+        {
+            n.getProperty( "poke" );
+            fail( "Found node " + n );
+        }
+    }
+
+    @Test
+    public void removingAnIndexedRelationshipWillAlsoRemoveItFromTheIndex()
+    {
+        Index<Relationship> index = relationshipIndex( LuceneIndexImplementation.EXACT_CONFIG );
+        Node a = graphDb.createNode();
+        Node b = graphDb.createNode();
+        Relationship rel = a.createRelationshipTo( b, DynamicRelationshipType.withName( "REL" ) );
+        rel.setProperty( "poke", 1 );
+        index.add( rel, "key", "value" );
+        commitTx();
+
+        beginTx();
+        rel.delete();
+        commitTx();
+
+        beginTx();
+        IndexHits<Relationship> rels = index.get( "key", "value" );
+        // IndexHits.size is allowed to be inaccurate in this case:
+        assertThat( rels.size(), isOneOf( 0, 1 ) );
+        for ( Relationship r : rels )
+        {
+            r.getProperty( "poke" );
+            fail( "Found relationship " + r );
+        }
+        commitTx();
+
+        beginTx();
+        IndexHits<Relationship> relsAgain = index.get( "key", "value" );
+        // After a read, the index should be repaired:
+        assertThat( relsAgain.size(), is( 0 ) );
+        for ( Relationship r : relsAgain )
+        {
+            r.getProperty( "poke" );
+            fail( "Found relationship " + r );
+        }
+    }
+
+    @Test
     public void makeSureYouCanAskIfAnIndexExistsOrNot()
     {
         String name = currentIndexName();
@@ -1379,7 +1450,6 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         assertNull( index.query( "key", "*" ).getSingle() );
     }
 
-    @Ignore( "TODO Exposes a bug. Fixed in Lucene 3.4.0" )
     @Test
     public void updateIndex() throws Exception {
         String TEXT = "text";
@@ -1392,18 +1462,16 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         index.add(n, TEXT, "text");
         index.add(n, TEXT_1, "text");
         commitTx();
-        assertNotNull( index.query(QueryContext.numericRange(NUMERIC, 5, 5, true, true)).getSingle() );
-        assertNotNull( index.get(TEXT_1, "text").getSingle() );
 
         beginTx();
-        // Following line may be commented, it's addition of node that causes the problem
-        index.remove(n, TEXT, "text");
-        index.add(n, TEXT, "text 1");
+        assertNotNull( index.query( QueryContext.numericRange( NUMERIC, 5, 5, true, true ) ).getSingle() );
+        assertNotNull( index.get( TEXT_1, "text" ).getSingle() );
+        index.remove( n, TEXT, "text" );
+        index.add( n, TEXT, "text 1" );
         commitTx();
 
+        beginTx();
         assertNotNull( index.get(TEXT_1, "text").getSingle() );
-
-        // Test fails here
         assertNotNull( index.query(QueryContext.numericRange(NUMERIC, 5, 5, true, true)).getSingle() );
     }
 

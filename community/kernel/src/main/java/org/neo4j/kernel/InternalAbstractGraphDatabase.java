@@ -110,7 +110,6 @@ import org.neo4j.kernel.impl.core.DefaultCaches;
 import org.neo4j.kernel.impl.core.DefaultLabelIdCreator;
 import org.neo4j.kernel.impl.core.DefaultPropertyTokenCreator;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
-import org.neo4j.kernel.impl.core.EntityFactory;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeManager;
@@ -621,12 +620,6 @@ public abstract class InternalAbstractGraphDatabase
             public GraphDatabaseService getGraphDatabaseService()
             {
                 return InternalAbstractGraphDatabase.this;
-            }
-
-            @Override
-            public EntityFactory getEntityFactory()
-            {
-                return nodeManager;
             }
         };
     }
