@@ -84,9 +84,7 @@ abstract class InputEntityDeserializer<ENTITY extends InputEntity> extends Prefe
                 switch ( entry.type() )
                 {
                 case PROPERTY:
-                    ensurePropertiesArrayCapacity( propertiesCursor+2 );
-                    properties[propertiesCursor++] = entry.name();
-                    properties[propertiesCursor++] = value;
+                    addProperty( entry, value );
                     break;
                 case IGNORE: // value ignored
                     break;
@@ -128,6 +126,13 @@ abstract class InputEntityDeserializer<ENTITY extends InputEntity> extends Prefe
         {
             propertiesCursor = 0;
         }
+    }
+
+    protected void addProperty( Header.Entry entry, Object value )
+    {
+        ensurePropertiesArrayCapacity( propertiesCursor+2 );
+        properties[propertiesCursor++] = entry.name();
+        properties[propertiesCursor++] = value;
     }
 
     private Object[] properties()

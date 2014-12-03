@@ -21,7 +21,8 @@ package org.neo4j.unsafe.impl.batchimport.input;
 
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapping;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 
 /**
  * Unifies all data input given to a {@link BatchImporter} to allow for more coherent implementations.
@@ -32,5 +33,7 @@ public interface Input
 
     ResourceIterable<InputRelationship> relationships();
 
-    IdMapping idMapping();
+    IdMapper idMapper();
+
+    IdGenerator idGenerator();
 }

@@ -181,7 +181,7 @@ public class ImportTool
                             Validators.<File> atLeast( 1 ) );
             relationshipsFiles =
                     args.interpretOptionsWithMetadata( Options.RELATIONSHIP_DATA.key(),
-                            Converters.<File[]> mandatory(), Converters.toFiles( MULTI_FILE_DELIMITER ),
+                            Converters.<File[]> optional(), Converters.toFiles( MULTI_FILE_DELIMITER ),
                             Validators.FILES_EXISTS, Validators.<File> atLeast( 1 ) );
             enableStacktrace = args.getBoolean( Options.STACKTRACE.key(), Boolean.FALSE, Boolean.TRUE );
         }

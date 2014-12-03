@@ -75,7 +75,7 @@ public class IdMappers
      * An {@link IdMapper} capable of mapping {@link String strings} to long ids.
      *
      * @param cacheFactory {@link LongArrayFactory} for allocating memory for the cache used by this index.
-     * @return {@link IdMapping} for when node ids given to {@link InputNode} and {@link InputRelationship} are
+     * @return {@link IdMapper} for when node ids given to {@link InputNode} and {@link InputRelationship} are
      * strings with o association with the actual ids in the database.
      */
     public static IdMapper strings( LongArrayFactory cacheFactory )
@@ -87,7 +87,7 @@ public class IdMappers
      * An {@link IdMapper} capable of mapping {@link Long arbitrary longs} to long ids.
      *
      * @param cacheFactory {@link LongArrayFactory} for allocating memory for the cache used by this index.
-     * @return {@link IdMapping} for when node ids given to {@link InputNode} and {@link InputRelationship} are
+     * @return {@link IdMapper} for when node ids given to {@link InputNode} and {@link InputRelationship} are
      * strings with o association with the actual ids in the database.
      */
     public static IdMapper longs( LongArrayFactory cacheFactory )

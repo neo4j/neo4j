@@ -61,9 +61,8 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
-import org.neo4j.unsafe.impl.batchimport.cache.LongArrayFactory;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapping;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappings;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.Inputs;
@@ -80,6 +79,11 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.function.Functions.constant;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
+import static org.neo4j.unsafe.impl.batchimport.cache.LongArrayFactory.AUTO;
+import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators.fromInput;
+import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators.startingFromTheBeginning;
+import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers.actual;
+import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers.strings;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors.invisible;
 import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.SYNCHRONOUS;
 
@@ -105,31 +109,34 @@ public class ParallelBatchImporterTest
         }
     };
     private final Function<Configuration,WriterFactory> writerFactory;
-    private final InputIdGenerator idGenerator;
-    private final IdMapping idMapping;
+    private final InputIdGenerator inputIdGenerator;
+    private final IdMapper idMapper;
+    private final IdGenerator idGenerator;
 
     @Parameterized.Parameters(name = "{0},{1},{2}")
     public static Collection<Object[]> data()
     {
         return Arrays.<Object[]>asList(
                 // synchronous I/O, actual node id input
-                new Object[]{SYNCHRONOUS, new LongInputIdGenerator(), IdMappings.actual()},
+                new Object[]{SYNCHRONOUS, new LongInputIdGenerator(), actual(), fromInput()},
                 // synchronous I/O, string id input
-                new Object[]{SYNCHRONOUS, new StringInputIdGenerator(), IdMappings.strings( LongArrayFactory.AUTO )},
+                new Object[]{SYNCHRONOUS, new StringInputIdGenerator(), strings( AUTO ), startingFromTheBeginning()},
 
                 // FIXME: we've seen this fail before with inconsistencies due to some kind of race in IoQueue
                 //        enabled here to try and trigger the error so that we can fix it.
                 // extra slow parallel I/O, actual node id input
                 new Object[]{new IoQueue( 4, 4, 30, synchronousSlowWriterFactory ),
-                        new LongInputIdGenerator(), IdMappings.actual()}
+                        new LongInputIdGenerator(), actual(), fromInput()}
         );
     }
 
-    public ParallelBatchImporterTest( WriterFactory writerFactory, InputIdGenerator idGenerator, IdMapping idMapping )
+    public ParallelBatchImporterTest( WriterFactory writerFactory, InputIdGenerator inputIdGenerator,
+            IdMapper idMapper, IdGenerator idGenerator )
     {
         this.writerFactory = constant( writerFactory );
+        this.inputIdGenerator = inputIdGenerator;
+        this.idMapper = idMapper;
         this.idGenerator = idGenerator;
-        this.idMapping = idMapping;
     }
 
     @Test
@@ -145,8 +152,8 @@ public class ParallelBatchImporterTest
         try
         {
             // WHEN
-            inserter.doImport( Inputs.input( nodes( NODE_COUNT, idGenerator ),
-                    relationships( relationshipCount, idGenerator ), idMapping ) );
+            inserter.doImport( Inputs.input( nodes( NODE_COUNT, inputIdGenerator ),
+                    relationships( relationshipCount, inputIdGenerator ), idMapper, idGenerator ) );
             // THEN
             GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );
             try ( Transaction tx = db.beginTx() )
@@ -168,9 +175,9 @@ public class ParallelBatchImporterTest
                 File failureFile = directory.file( "input" );
                 try ( PrintStream out = new PrintStream( failureFile ) )
                 {
-                    out.println( "Seed used in this failing run: " + idGenerator.seed );
-                    out.println( idGenerator );
-                    for ( InputRelationship relationship : relationships( relationshipCount, idGenerator ) )
+                    out.println( "Seed used in this failing run: " + inputIdGenerator.seed );
+                    out.println( inputIdGenerator );
+                    for ( InputRelationship relationship : relationships( relationshipCount, inputIdGenerator ) )
                     {
                         out.println( relationship.id() + " " +
                                 relationship.startNode() + "-[:" + relationship.type() + "]->" + relationship.endNode() );
@@ -388,7 +395,7 @@ public class ParallelBatchImporterTest
         };
     }
 
-    private static Iterable<InputNode> nodes( final long count, final InputIdGenerator idGenerator )
+    private static Iterable<InputNode> nodes( final long count, final InputIdGenerator inputIdGenerator )
     {
         return new Iterable<InputNode>()
         {
@@ -414,7 +421,7 @@ public class ParallelBatchImporterTest
 
                             try
                             {
-                                return new InputNode( idGenerator.nextNodeId(), properties, null, LABELS, null );
+                                return new InputNode( inputIdGenerator.nextNodeId(), properties, null, LABELS, null );
                             }
                             finally
                             {

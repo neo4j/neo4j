@@ -68,7 +68,7 @@ public class CsvInputTest
         Iterable<DataFactory<InputNode>> data = dataIterable( data( "123,Mattias Persson,HACKER" ) );
         Input input = new CsvInput(
                 data,
-                header( entry( "id", Type.ID, idType.extractor( extractors ) ),
+                header( entry( null, Type.ID, idType.extractor( extractors ) ),
                         entry( "name", Type.PROPERTY, extractors.string() ),
                         entry( "labels", Type.LABEL, extractors.string() ) ),
                         null, null, idType, COMMAS );
@@ -139,7 +139,7 @@ public class CsvInputTest
         Input input = new CsvInput(
                 data,
                 header(
-                      entry( "id", Type.ID, extractors.long_() ),
+                      entry( null, Type.ID, extractors.long_() ),
                       entry( "unit", Type.PROPERTY, extractors.string() ),
                       entry( "type", Type.LABEL, extractors.string() ),
                       entry( "kills", Type.PROPERTY, extractors.int_() ) ),
@@ -165,7 +165,7 @@ public class CsvInputTest
         Input input = new CsvInput(
                 data,
                 header(
-                      entry( "id", Type.ID, extractors.long_() ),
+                      entry( null, Type.ID, extractors.long_() ),
                       entry( "name", Type.PROPERTY, extractors.string() ) ),
                 null, null, IdType.ACTUAL, Configuration.COMMAS );
 
@@ -183,10 +183,10 @@ public class CsvInputTest
     public void shouldHandleMultipleInputGroups() throws Exception
     {
         // GIVEN multiple input groups, each with their own, specific, header
-        DataFactory<InputNode> group1 = data( "id:ID,name,kills:int,health:int\n" +
+        DataFactory<InputNode> group1 = data( ":ID,name,kills:int,health:int\n" +
                                               "1,Jim,10,100\n" +
                                               "2,Abathur,0,200\n" );
-        DataFactory<InputNode> group2 = data( "id:ID,type\n" +
+        DataFactory<InputNode> group2 = data( ":ID,type\n" +
                                               "3,zergling\n" +
                                               "4,csv\n" );
         Iterable<DataFactory<InputNode>> data = dataIterable( group1, group2 );
@@ -252,6 +252,111 @@ public class CsvInputTest
             assertRelationship( relationships.next(), 1L, 1L, 2L, customType, NO_PROPERTIES );
             assertRelationship( relationships.next(), 2L, 2L, 1L, defaultType, NO_PROPERTIES );
             assertFalse( relationships.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldAllowNodesWithoutIdHeader() throws Exception
+    {
+        // GIVEN
+        DataFactory<InputNode> data = data(
+                "name:string,level:int\n" +
+                "Mattias,1\n" +
+                "Johan,2\n" );
+        Iterable<DataFactory<InputNode>> dataIterable = dataIterable( data );
+        Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), null, null, IdType.STRING, COMMAS );
+
+        // WHEN
+        try ( ResourceIterator<InputNode> nodes = input.nodes().iterator() )
+        {
+            // THEN
+            assertNode( nodes.next(), null, new Object[] {"name", "Mattias", "level", 1}, labels() );
+            assertNode( nodes.next(), null, new Object[] {"name", "Johan", "level", 2}, labels() );
+            assertFalse( nodes.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldAllowSomeNodesToBeAnonymous() throws Exception
+    {
+        // GIVEN
+        DataFactory<InputNode> data = data(
+                ":ID,name:string,level:int\n" +
+                "abc,Mattias,1\n" +
+                ",Johan,2\n" ); // this node is anonymous
+        Iterable<DataFactory<InputNode>> dataIterable = dataIterable( data );
+        Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), null, null, IdType.STRING, COMMAS );
+
+        // WHEN
+        try ( ResourceIterator<InputNode> nodes = input.nodes().iterator() )
+        {
+            // THEN
+            assertNode( nodes.next(), "abc", new Object[] {"name", "Mattias", "level", 1}, labels() );
+            assertNode( nodes.next(), null, new Object[] {"name", "Johan", "level", 2}, labels() );
+            assertFalse( nodes.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldAllowNodesToBeAnonymousEvenIfIdHeaderIsNamed() throws Exception
+    {
+        // GIVEN
+        DataFactory<InputNode> data = data(
+                "id:ID,name:string,level:int\n" +
+                "abc,Mattias,1\n" +
+                ",Johan,2\n" ); // this node is anonymous
+        Iterable<DataFactory<InputNode>> dataIterable = dataIterable( data );
+        Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), null, null, IdType.STRING, COMMAS );
+
+        // WHEN
+        try ( ResourceIterator<InputNode> nodes = input.nodes().iterator() )
+        {
+            // THEN
+            assertNode( nodes.next(), "abc", new Object[] {"id", "abc", "name", "Mattias", "level", 1}, labels() );
+            assertNode( nodes.next(), null, new Object[] {"name", "Johan", "level", 2}, labels() );
+            assertFalse( nodes.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldHaveIdSetAsPropertyIfIdHeaderEntryIsNamed() throws Exception
+    {
+        // GIVEN
+        DataFactory<InputNode> data = data(
+                "myId:ID,name:string,level:int\n" +
+                "abc,Mattias,1\n" +
+                "def,Johan,2\n" ); // this node is anonymous
+        Iterable<DataFactory<InputNode>> dataIterable = dataIterable( data );
+        Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), null, null, IdType.STRING, COMMAS );
+
+        // WHEN
+        try ( ResourceIterator<InputNode> nodes = input.nodes().iterator() )
+        {
+            // THEN
+            assertNode( nodes.next(), "abc", new Object[] {"myId", "abc", "name", "Mattias", "level", 1}, labels() );
+            assertNode( nodes.next(), "def", new Object[] {"myId", "def", "name", "Johan", "level", 2}, labels() );
+            assertFalse( nodes.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldNotHaveIdSetAsPropertyIfIdHeaderEntryIsNamedForActualIds() throws Exception
+    {
+        // GIVEN
+        DataFactory<InputNode> data = data(
+                "myId:ID,name:string,level:int\n" +
+                "0,Mattias,1\n" +
+                "1,Johan,2\n" ); // this node is anonymous
+        Iterable<DataFactory<InputNode>> dataIterable = dataIterable( data );
+        Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), null, null, IdType.ACTUAL, COMMAS );
+
+        // WHEN
+        try ( ResourceIterator<InputNode> nodes = input.nodes().iterator() )
+        {
+            // THEN
+            assertNode( nodes.next(), 0L, new Object[] {"name", "Mattias", "level", 1}, labels() );
+            assertNode( nodes.next(), 1L, new Object[] {"name", "Johan", "level", 2}, labels() );
+            assertFalse( nodes.hasNext() );
         }
     }
 

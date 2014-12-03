@@ -74,4 +74,12 @@ public class IdGenerators
             }
         };
     }
+
+    /**
+     * @return an {@link IdGenerator} that returns ids incrementally, starting from 0.
+     */
+    public static IdGenerator startingFromTheBeginning()
+    {
+        return startingFrom( 0 );
+    }
 }

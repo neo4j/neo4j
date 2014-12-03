@@ -34,15 +34,19 @@ import static java.util.Arrays.copyOf;
  */
 class InputNodeDeserializer extends InputEntityDeserializer<InputNode>
 {
+    private final boolean idsAreExternal;
+
     // Additional data
     private Object id;
     // holder of labels, Will grow with the node having most labels.
     private String[] labels = new String[10];
     private int labelsCursor;
 
-    InputNodeDeserializer( Header header, CharSeeker data, int[] delimiter, Function<InputNode,InputNode> decorator )
+    InputNodeDeserializer( Header header, CharSeeker data, int[] delimiter, Function<InputNode,InputNode> decorator,
+            boolean idsAreExternal )
     {
         super( header, data, delimiter, decorator );
+        this.idsAreExternal = idsAreExternal;
     }
 
     @Override
@@ -51,6 +55,10 @@ class InputNodeDeserializer extends InputEntityDeserializer<InputNode>
         switch ( entry.type() )
         {
         case ID:
+            if ( entry.name() != null && value != null && idsAreExternal )
+            {
+                addProperty( entry, value );
+            }
             id = value;
             break;
         case LABEL:
