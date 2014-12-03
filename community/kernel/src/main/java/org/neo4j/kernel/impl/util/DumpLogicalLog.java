@@ -88,7 +88,7 @@ public class DumpLogicalLog
                 fileChannel.close();
                 throw ex;
             }
-            out.println( "Logical log version: " + logHeader.logVersion +
+            out.println( "Logical log format:" + logHeader.logFormatVersion + "version: " + logHeader.logVersion +
                     " with prev committed tx[" + logHeader.lastCommittedTxId + "]" );
 
             LogDeserializer deserializer = new LogDeserializer();
