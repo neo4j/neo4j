@@ -1280,8 +1280,6 @@ RETURN a.name""")
     result.toList should equal (List(Map("b" -> b)))
   }
 
-
-
   test("issue #2907 should only check label on end node") {
 
     val a = createLabeledNode("BLUE")
@@ -1303,4 +1301,34 @@ RETURN a.name""")
     result should equal (1)
   }
 
+
+  test("Should be able to run delete/merge query multiple times") {
+    //GIVEN
+    val user = createLabeledNode(Map("name" -> "Joe"), "User")
+
+    val query = """MATCH (user:User { name:"Joe" })
+                  |  MERGE (project:Project { name: "Proj1" })
+                  |  MERGE (user)-[hasProject:HAS_PROJECT]->(project)
+                  |  WITH project
+                  |    // delete the current relations to be able to replace them with new ones
+                  |  OPTIONAL MATCH (project)-[hasFolder:HAS_FOLDER]->(:Folder)
+                  |  OPTIONAL MATCH (project)-[:HAS_FOLDER]->(folder:Folder)
+                  |  DELETE folder, hasFolder
+                  |  WITH project
+                  |    // add the new relations and objects
+                  |    FOREACH (el in[{name:"Dir1"}, {name:"Dir2"}] |
+                  |      MERGE (folder:Folder{ name: el.name })
+                  |      MERGE (project)–[:HAS_FOLDER]->(folder))
+                  |  RETURN DISTINCT project""".stripMargin
+
+
+    //WHEN
+    val first = eengine.profile(query).toList
+    val second = eengine.profile(query).toList
+    val check = eengine.execute("MATCH (f:Folder) RETURN f.name").toSet
+
+    //THEN
+    first should equal(second)
+    check should equal(Set(Map("f.name" -> "Dir1"), Map("f.name" -> "Dir2")))
+  }
 }
