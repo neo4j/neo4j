@@ -19,40 +19,35 @@
  */
 package org.neo4j.kernel;
 
-import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.junit.After;
 import org.junit.Test;
 
+import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
-import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.ha.ClusterManager;
+import org.neo4j.test.AbstractClusterTest;
 
 import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.cluster.ClusterSettings.default_timeout;
 import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
-import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 
-public class LabelIT
+public class LabelIT extends AbstractClusterTest
 {
+    public LabelIT()
+    {
+        super( clusterOfSize( 3 ) );
+    }
+
     @Test
     public void creatingIndexOnMasterShouldHaveSlavesBuildItAsWell() throws Throwable
     {
         // GIVEN
-        ClusterManager.ManagedCluster cluster = startCluster( clusterOfSize( 3 ) );
-        org.neo4j.kernel.ha.HighlyAvailableGraphDatabase slave1 = cluster.getAnySlave();
-        org.neo4j.kernel.ha.HighlyAvailableGraphDatabase slave2 = cluster.getAnySlave(/*except*/slave1);
+        HighlyAvailableGraphDatabase slave1 = cluster.getAnySlave();
+        HighlyAvailableGraphDatabase slave2 = cluster.getAnySlave(/*except*/slave1 );
 
         Label label = label( "Person" );
 
@@ -60,30 +55,36 @@ public class LabelIT
         TransactionContinuation txOnSlave1 = createNodeAndKeepTxOpen( slave1, label );
         TransactionContinuation txOnSlave2 = createNodeAndKeepTxOpen( slave2, label );
 
-        commit(slave1, txOnSlave1);
-        commit(slave2, txOnSlave2);
+        commit( txOnSlave1 );
+        commit( txOnSlave2 );
 
         // THEN
         assertEquals( getLabelId( slave1, label ), getLabelId( slave2, label ) );
     }
 
-    private long getLabelId( HighlyAvailableGraphDatabase db, Label label ) throws LabelNotFoundKernelException
+    @Override
+    protected void configureClusterMember( GraphDatabaseBuilder builder, String clusterName, InstanceId serverId )
+    {
+        builder.setConfig( ClusterSettings.default_timeout, "1s" );
+        builder.setConfig( HaSettings.tx_push_factor, "0" );
+    }
+
+    private static long getLabelId( HighlyAvailableGraphDatabase db, Label label )
     {
         try ( Transaction ignore = db.beginTx() )
         {
-            ThreadToStatementContextBridge bridge = db.getDependencyResolver().resolveDependency(
-                    ThreadToStatementContextBridge.class );
+            ThreadToStatementContextBridge bridge = threadToStatementContextBridgeFrom( db );
             return bridge.instance().readOperations().labelGetForName( label.name() );
         }
     }
 
-    private void commit( HighlyAvailableGraphDatabase db, TransactionContinuation txc ) throws Exception
+    private static void commit( TransactionContinuation txc ) throws Exception
     {
         txc.resume();
         txc.commit();
     }
 
-    private TransactionContinuation createNodeAndKeepTxOpen( HighlyAvailableGraphDatabase db, Label label )
+    private static TransactionContinuation createNodeAndKeepTxOpen( HighlyAvailableGraphDatabase db, Label label )
     {
         TransactionContinuation txc = new TransactionContinuation( db );
         txc.begin();
@@ -92,33 +93,9 @@ public class LabelIT
         return txc;
     }
 
-    private final File storeDir = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
-    private ClusterManager clusterManager;
-
-    private ClusterManager.ManagedCluster startCluster( ClusterManager.Provider provider ) throws Throwable
+    private static ThreadToStatementContextBridge threadToStatementContextBridgeFrom( HighlyAvailableGraphDatabase db )
     {
-        return startCluster( provider, new HighlyAvailableGraphDatabaseFactory() );
-    }
-
-    private ClusterManager.ManagedCluster startCluster( ClusterManager.Provider provider,
-                                                        HighlyAvailableGraphDatabaseFactory dbFactory ) throws Throwable
-    {
-        clusterManager = new ClusterManager( provider, storeDir, stringMap(
-                default_timeout.name(), "1s", tx_push_factor.name(), "0" ),
-                new HashMap<Integer, Map<String,String>>(), dbFactory );
-        clusterManager.start();
-        ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
-        cluster.await( allSeesAllAsAvailable() );
-        return cluster;
-    }
-
-    @After
-    public void after() throws Throwable
-    {
-        if ( clusterManager != null )
-        {
-            clusterManager.stop();
-        }
+        return db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
     }
 
     private static class TransactionContinuation
@@ -127,9 +104,10 @@ public class LabelIT
         private TopLevelTransaction graphDbTx;
         private final ThreadToStatementContextBridge bridge;
 
-        private TransactionContinuation( HighlyAvailableGraphDatabase db ) {
+        private TransactionContinuation( HighlyAvailableGraphDatabase db )
+        {
             this.db = db;
-            this.bridge = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
+            this.bridge = threadToStatementContextBridgeFrom( db );
         }
 
         public void begin()
