@@ -144,7 +144,7 @@ class TrailBuilderTest extends CypherFunSuite {
     //(b)-[:A*]->(e)
 
     val boundPoint = EndPoint("e")
-    val first = VariableLengthStepTrail(boundPoint, Direction.OUTGOING, Seq("A"), 1, None, "p", None, "b", BtoE)
+    val first = VariableLengthStepTrail(boundPoint, Direction.OUTGOING, Direction.OUTGOING, Seq("A"), 1, None, "p", None, "b", BtoE)
     val expectedTrail = Some(LongestTrail("b", None, first))
 
     val foundTrail = TrailBuilder.findLongestTrail(Seq(BtoE), Seq("b"), Nil)
@@ -155,7 +155,7 @@ class TrailBuilderTest extends CypherFunSuite {
     //(a)-[:A]->(b)-[:A*]->(e)
 
     val endPoint = EndPoint("e")
-    val last = VariableLengthStepTrail(endPoint, Direction.OUTGOING, Seq("A"), 1, None, "p", None, "b", BtoE)
+    val last = VariableLengthStepTrail(endPoint, Direction.OUTGOING, Direction.OUTGOING, Seq("A"), 1, None, "p", None, "b", BtoE)
     val first = SingleStepTrail(last, Direction.OUTGOING, "pr1", Seq("A"), "a", True(), True(), AtoB, Seq())
     val expected = Some(LongestTrail("a", None, first))
 
@@ -167,7 +167,7 @@ class TrailBuilderTest extends CypherFunSuite {
     //(b)-[:A*]->(e)-[:C*]->f
 
     val endPoint = EndPoint("e")
-    val trail = VariableLengthStepTrail(endPoint, Direction.OUTGOING, Seq("A"), 1, None, "p", None, "b", BtoE)
+    val trail = VariableLengthStepTrail(endPoint, Direction.OUTGOING,Direction.OUTGOING, Seq("A"), 1, None, "p", None, "b", BtoE)
     val expected = Some(LongestTrail("b", None, trail))
 
     val foundTrail = TrailBuilder.findLongestTrail(Seq(BtoE, EtoF), Seq("b", "f"), Nil)
@@ -187,7 +187,7 @@ class TrailBuilderTest extends CypherFunSuite {
     */
 
     val endPoint = EndPoint("e")
-    val second = VariableLengthStepTrail(endPoint, Direction.OUTGOING, Seq("A"), 1, None, "p", None, "b", BtoE)
+    val second = VariableLengthStepTrail(endPoint, Direction.OUTGOING,Direction.OUTGOING, Seq("A"), 1, None, "p", None, "b", BtoE)
     val trail = SingleStepTrail(second, Direction.OUTGOING, "pr1", Seq("A"), "a", True(), True(), AtoB, Seq())
 
     val expected = Some(LongestTrail("a", None, trail))
@@ -206,7 +206,7 @@ class TrailBuilderTest extends CypherFunSuite {
     */
 
     val endPoint = EndPoint("e")
-    val second = VariableLengthStepTrail(endPoint, Direction.OUTGOING, Seq("A"), 1, None, "p", None, "b", BtoE)
+    val second = VariableLengthStepTrail(endPoint, Direction.OUTGOING, Direction.OUTGOING, Seq("A"), 1, None, "p", None, "b", BtoE)
     val trail = SingleStepTrail(second, Direction.OUTGOING, "pr1", Seq("A"), "a", True(), True(), AtoB, Seq())
 
     val expected = Some(LongestTrail("a", None, trail))
@@ -225,7 +225,7 @@ class TrailBuilderTest extends CypherFunSuite {
     */
 
     val endPoint = EndPoint("e")
-    val second = VariableLengthStepTrail(endPoint, Direction.OUTGOING, Seq("A"), 1, None, "p", None, "b", BtoE)
+    val second = VariableLengthStepTrail(endPoint, Direction.OUTGOING, Direction.OUTGOING, Seq("A"), 1, None, "p", None, "b", BtoE)
     val trail = SingleStepTrail(second, Direction.OUTGOING, "pr1", Seq("A"), "a", True(), True(), AtoB, Seq())
 
     val expected = Some(LongestTrail("a", None, trail))
@@ -247,7 +247,7 @@ class TrailBuilderTest extends CypherFunSuite {
     */
 
     val endPoint = EndPoint("e")
-    val second = VariableLengthStepTrail(endPoint, Direction.OUTGOING, Seq("A"), 1, None, "p", None, "b", BtoE)
+    val second = VariableLengthStepTrail(endPoint, Direction.OUTGOING,Direction.OUTGOING, Seq("A"), 1, None, "p", None, "b", BtoE)
     val trail = SingleStepTrail(second, Direction.OUTGOING, "pr1", Seq("A"), "a", True(), True(), AtoB, Seq())
 
     val expected = Some(LongestTrail("a", None, trail))
