@@ -19,9 +19,9 @@
  */
 package org.neo4j.backup;
 
-import java.io.IOException;
+import io.netty.channel.Channel;
 
-import org.jboss.netty.channel.Channel;
+import java.io.IOException;
 
 import org.neo4j.backup.BackupClient.BackupRequestType;
 import org.neo4j.com.Client;
@@ -93,5 +93,6 @@ class BackupServer extends Server<TheBackupInterface, Object>
     @Override
     protected void finishOffChannel( Channel channel, RequestContext context )
     {
+
     }
 }

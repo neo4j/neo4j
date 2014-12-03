@@ -19,17 +19,16 @@
  */
 package org.neo4j.com;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.SimpleChannelHandler;
-
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 /**
  * This Netty handler will report through a monitor how many bytes are read/written.
  */
-public class MonitorChannelHandler extends SimpleChannelHandler
+public class MonitorChannelHandler extends ChannelDuplexHandler
 {
     private ByteCounterMonitor byteCounterMonitor;
 
@@ -39,24 +38,24 @@ public class MonitorChannelHandler extends SimpleChannelHandler
     }
 
     @Override
-    public void messageReceived( ChannelHandlerContext ctx, MessageEvent e ) throws Exception
+    public void channelRead( ChannelHandlerContext ctx, Object msg ) throws Exception
     {
-        if (e.getMessage() instanceof ChannelBuffer )
+        if (msg instanceof ByteBuf )
         {
-            byteCounterMonitor.bytesRead( ((ChannelBuffer)e.getMessage()).readableBytes() );
+            byteCounterMonitor.bytesRead( ((ByteBuf)msg).readableBytes() );
         }
 
-        super.messageReceived( ctx, e );
+        super.channelRead( ctx, msg );
     }
 
     @Override
-    public void writeRequested( ChannelHandlerContext ctx, MessageEvent e ) throws Exception
+    public void write( ChannelHandlerContext ctx, Object msg, ChannelPromise promise ) throws Exception
     {
-        if (e.getMessage() instanceof ChannelBuffer )
+        if (msg instanceof ByteBuf )
         {
-            byteCounterMonitor.bytesWritten( ((ChannelBuffer)e.getMessage()).readableBytes() );
+            byteCounterMonitor.bytesWritten( ((ByteBuf)msg).readableBytes() );
         }
 
-        super.writeRequested( ctx, e );
+        super.write( ctx, msg, promise );
     }
 }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.backup;
 
-import org.jboss.netty.buffer.ChannelBuffer;
+import io.netty.buffer.ByteBuf;
 
 import org.neo4j.com.Client;
 import org.neo4j.com.ObjectSerializer;
@@ -75,13 +75,25 @@ class BackupClient extends Client<TheBackupInterface> implements TheBackupInterf
         return type != BackupRequestType.FULL_BACKUP;
     }
 
+    @Override
+    public void init() throws Throwable
+    {
+
+    }
+
+    @Override
+    public void shutdown() throws Throwable
+    {
+
+    }
+
     public static enum BackupRequestType implements RequestType<TheBackupInterface>
     {
         FULL_BACKUP( new TargetCaller<TheBackupInterface, Void>()
         {
             @Override
             public Response<Void> call( TheBackupInterface master, RequestContext context,
-                    ChannelBuffer input, ChannelBuffer target )
+                    ByteBuf input, ByteBuf target )
             {
                 return master.fullBackup( new ToNetworkStoreWriter( target, new Monitors() ) );
             }
@@ -90,7 +102,7 @@ class BackupClient extends Client<TheBackupInterface> implements TheBackupInterf
         {
             @Override
             public Response<Void> call( TheBackupInterface master, RequestContext context,
-                    ChannelBuffer input, ChannelBuffer target )
+                    ByteBuf input, ByteBuf target )
             {
                 return master.incrementalBackup( context );
             }

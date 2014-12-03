@@ -19,9 +19,9 @@
  */
 package org.neo4j.com;
 
-import org.jboss.netty.buffer.ChannelBuffer;
+import io.netty.buffer.ByteBuf;
 
 public interface TargetCaller<T, R>
 {
-    Response<R> call( T requestTarget, RequestContext context, ChannelBuffer input, ChannelBuffer target ) throws Exception;
+    Response<R> call( T requestTarget, RequestContext context, ByteBuf input, ByteBuf target ) throws Exception;
 }

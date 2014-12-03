@@ -19,19 +19,19 @@
  */
 package org.neo4j.com;
 
+import io.netty.buffer.ByteBuf;
+
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
-
-import org.jboss.netty.buffer.ChannelBuffer;
 
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
 public class ToChannelBufferWriter implements MadeUpWriter
 {
-    private final ChannelBuffer target;
+    private final ByteBuf target;
 
-    public ToChannelBufferWriter( ChannelBuffer target )
+    public ToChannelBufferWriter( ByteBuf target )
     {
         this.target = target;
     }

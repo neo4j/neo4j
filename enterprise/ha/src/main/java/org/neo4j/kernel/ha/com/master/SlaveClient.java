@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.ha.com.master;
 
-import java.io.IOException;
+import io.netty.buffer.ByteBuf;
 
-import org.jboss.netty.buffer.ChannelBuffer;
+import java.io.IOException;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.com.Client;
@@ -69,7 +69,7 @@ public class SlaveClient extends Client<Slave> implements Slave
         return sendRequest( SlaveRequestType.PULL_UPDATES, RequestContext.EMPTY, new Serializer()
         {
             @Override
-            public void write( ChannelBuffer buffer ) throws IOException
+            public void write( ByteBuf buffer ) throws IOException
             {
                 writeString( buffer, NeoStoreDataSource.DEFAULT_DATA_SOURCE_NAME );
                 buffer.writeLong( upToAndIncludingTxId );
@@ -77,13 +77,25 @@ public class SlaveClient extends Client<Slave> implements Slave
         }, Protocol.VOID_DESERIALIZER );
     }
 
+    @Override
+    public void init() throws Throwable
+    {
+
+    }
+
+    @Override
+    public void shutdown() throws Throwable
+    {
+
+    }
+
     public static enum SlaveRequestType implements RequestType<Slave>
     {
         PULL_UPDATES( new TargetCaller<Slave, Void>()
         {
             @Override
-            public Response<Void> call( Slave master, RequestContext context, ChannelBuffer input,
-                                        ChannelBuffer target )
+            public Response<Void> call( Slave master, RequestContext context, ByteBuf input,
+                                        ByteBuf target )
             {
                 readString( input ); // And discard
                 return master.pullUpdates( input.readLong() );

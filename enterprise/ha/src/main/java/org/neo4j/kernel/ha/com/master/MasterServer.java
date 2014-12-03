@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.ha.com.master;
 
+import io.netty.channel.Channel;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-
-import org.jboss.netty.channel.Channel;
 
 import org.neo4j.com.Protocol;
 import org.neo4j.com.RequestContext;

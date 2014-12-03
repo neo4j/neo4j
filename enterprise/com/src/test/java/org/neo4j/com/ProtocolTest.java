@@ -19,12 +19,12 @@
  */
 package org.neo4j.com;
 
+import io.netty.buffer.ByteBuf;
+import org.junit.Test;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collection;
-
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.junit.Test;
 
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -49,7 +49,7 @@ public class ProtocolTest
         long timeStarted = 12345, lastTxWhenStarted = 12, timeCommitted = timeStarted+10;
         transaction.setHeader( additionalHeader, masterId, authorId, timeStarted, lastTxWhenStarted, timeCommitted, -1 );
         Protocol.TransactionSerializer serializer = new Protocol.TransactionSerializer( transaction );
-        ChannelBuffer buffer = new ChannelBufferWrapper( new InMemoryLogChannel() );
+        ByteBuf buffer = new ChannelBufferWrapper( new InMemoryLogChannel() );
 
         // WHEN serializing the transaction
         serializer.write( buffer );
