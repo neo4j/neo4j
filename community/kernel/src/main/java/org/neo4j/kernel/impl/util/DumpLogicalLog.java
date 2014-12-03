@@ -63,12 +63,13 @@ public class DumpLogicalLog
             StoreChannel fileChannel = fileSystem.open( new File( fileName ), "r" );
             ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE
                     + Xid.MAXBQUALSIZE * 10 );
-            long logVersion, prevLastCommittedTx;
+            long logVersion, prevLastCommittedTx, logFormat;
             try
             {
                 long[] header = LogIoUtils.readLogHeader( buffer, fileChannel, true );
                 logVersion = header[0];
                 prevLastCommittedTx = header[1];
+                logFormat = header[2];
             }
             catch ( IOException ex )
             {
@@ -78,7 +79,7 @@ public class DumpLogicalLog
                 fileChannel.close();
                 throw ex;
             }
-            System.out.println( "Logical log version: " + logVersion + " with prev committed tx[" +
+            System.out.println( "Logical log format:" + logFormat + " version:" + logVersion + " with prev committed tx[" +
                 prevLastCommittedTx + "]" );
             long logEntriesFound = 0;
             XaCommandFactory cf = instantiateCommandFactory();
