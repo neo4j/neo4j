@@ -1112,4 +1112,18 @@ RETURN x0.name""")
     result should equal (1)
   }
 
+  test("should return relationships by collecting them as a list - wrong way") {
+    val a = createNode()
+    val b = createNode()
+    val c = createLabeledNode("End")
+
+    val r1 = relate(a, b, "rel")
+    val r2 = relate(b, c, "rel")
+
+    val result = execute("match a-[r:rel*2..2]->(b:End) return r")
+
+    result.columnAs[List[Relationship]]("r").toList.head should equal(List(r1, r2))
+  }
+
+
 }

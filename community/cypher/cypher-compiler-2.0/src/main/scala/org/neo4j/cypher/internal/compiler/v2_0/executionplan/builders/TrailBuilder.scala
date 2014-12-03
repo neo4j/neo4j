@@ -72,16 +72,16 @@ final class TrailBuilder(patterns: Seq[Pattern], boundPoints: Seq[String], predi
         done.add(start => SingleStepTrail(EndPoint(end), dir, rel.relName, rel.relTypes, start, relPred, nodePred, rel, orgNodePred ++ orgRelPred))
       }
 
-      def multiStep(rel: VarLengthRelatedTo, end: String, dir: Direction) =
-        done.add(start => VariableLengthStepTrail(EndPoint(end), dir, rel.relTypes, rel.minHops.getOrElse(1), rel.maxHops, rel.pathName, rel.relIterator, start, rel))
+      def multiStep(rel: VarLengthRelatedTo, end: String, dir: Direction, projectedDir: Direction) =
+        done.add(start => VariableLengthStepTrail(EndPoint(end), dir, projectedDir, rel.relTypes, rel.minHops.getOrElse(1), rel.maxHops, rel.pathName, rel.relIterator, start, rel))
 
       val patternsLeft = patternsToDo.filterNot(_ == p)
 
       val result: Trail = p match {
         case rel: RelatedTo if rel.left.name == done.end           => singleStep(rel, rel.right.name, rel.direction)
         case rel: RelatedTo if rel.right.name == done.end          => singleStep(rel, rel.left.name, rel.direction.reverse())
-        case rel: VarLengthRelatedTo if rel.right.name == done.end   => multiStep(rel, rel.left.name, rel.direction.reverse())
-        case rel: VarLengthRelatedTo if rel.left.name == done.end => multiStep(rel, rel.right.name, rel.direction)
+        case rel: VarLengthRelatedTo if rel.right.name == done.end   => multiStep(rel, rel.left.name, rel.direction.reverse(), rel.direction)
+        case rel: VarLengthRelatedTo if rel.left.name == done.end => multiStep(rel, rel.right.name, rel.direction, rel.direction)
         case _                                                     => throw new ThisShouldNotHappenError("Andres", "This pattern is not expected")
       }
 
