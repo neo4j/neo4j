@@ -54,7 +54,7 @@ case class OptionalMatchPipe(source: Pipe,
     Iterator(in.newWith(nulls))
   }
 
-  override def localEffects: Effects = Effects.NONE
+  override def localEffects = matchPipe.localEffects
 
   def doMatch(state: QueryState)(ctx: ExecutionContext) = matchPipe.createResults(state)
 

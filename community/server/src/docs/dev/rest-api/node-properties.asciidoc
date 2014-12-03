@@ -7,6 +7,8 @@ include::update-node-properties.asciidoc[]
 
 include::get-properties-for-node.asciidoc[]
 
+include::get-property-for-node.asciidoc[]
+
 include::property-values-can-not-be-null.asciidoc[]
 
 include::property-values-can-not-be-nested.asciidoc[]

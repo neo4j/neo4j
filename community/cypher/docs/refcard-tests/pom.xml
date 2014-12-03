@@ -58,13 +58,13 @@
     </dependency>
     <dependency>
       <artifactId>neo4j-cypher-docs</artifactId>
-      <groupId>org.neo4j</groupId>
+      <groupId>org.neo4j.doc</groupId>
       <version>${neo4j.version}</version>
       <type>test-jar</type>
     </dependency>
     <dependency>
       <artifactId>neo4j-cypher-docs</artifactId>
-      <groupId>org.neo4j</groupId>
+      <groupId>org.neo4j.doc</groupId>
       <version>${neo4j.version}</version>
     </dependency>
       <!--<dependency>-->
