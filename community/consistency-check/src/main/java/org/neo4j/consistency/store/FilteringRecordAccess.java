@@ -19,13 +19,16 @@
  */
 package org.neo4j.consistency.store;
 
-import java.util.HashSet;
+import java.util.EnumSet;
 import java.util.Set;
 
 import org.neo4j.consistency.checking.full.MultiPassStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
+import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 import static java.util.Arrays.asList;
@@ -35,7 +38,7 @@ import static org.neo4j.consistency.store.RecordReference.SkippingReference.skip
 
 public class FilteringRecordAccess extends DelegatingRecordAccess
 {
-    private final Set<MultiPassStore> potentiallySkippableStores = new HashSet<>();
+    private final Set<MultiPassStore> potentiallySkippableStores = EnumSet.noneOf( MultiPassStore.class );
     private final int iPass;
     private final long recordsPerPass;
     private final MultiPassStore currentStore;
@@ -77,6 +80,16 @@ public class FilteringRecordAccess extends DelegatingRecordAccess
     }
 
     @Override
+    public RecordReference<RelationshipGroupRecord> relationshipGroup( long id )
+    {
+        if ( shouldSkip( id, MultiPassStore.RELATIONSHIP_GROUPS ) )
+        {
+            return skipReference();
+        }
+        return super.relationshipGroup( id );
+    }
+
+    @Override
     public RecordReference<PropertyRecord> property( long id )
     {
         if ( shouldSkip( id, MultiPassStore.PROPERTIES ) )
@@ -84,6 +97,16 @@ public class FilteringRecordAccess extends DelegatingRecordAccess
             return skipReference();
         }
         return super.property( id );
+    }
+
+    @Override
+    public RecordReference<PropertyKeyTokenRecord> propertyKey( int id )
+    {
+        if ( shouldSkip( id, MultiPassStore.PROPERTY_KEYS ) )
+        {
+            return skipReference();
+        }
+        return super.propertyKey( id );
     }
 
     @Override
@@ -104,6 +127,26 @@ public class FilteringRecordAccess extends DelegatingRecordAccess
             return skipReference();
         }
         return super.array( id );
+    }
+
+    @Override
+    public RecordReference<LabelTokenRecord> label( int id )
+    {
+        if ( shouldSkip( id, MultiPassStore.LABELS ) )
+        {
+            return skipReference();
+        }
+        return super.label( id );
+    }
+
+    @Override
+    public RecordReference<DynamicRecord> nodeLabels( long id )
+    {
+        if ( shouldSkip( id, MultiPassStore.LABELS ) )
+        {
+            return skipReference();
+        }
+        return super.nodeLabels( id );
     }
 
     private boolean shouldSkip( long id, MultiPassStore store )

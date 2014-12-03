@@ -54,7 +54,7 @@ public class ConsistencyCheckSettings
             "checking the native stores, so it may be useful to turn off this check for very large databases.")
     public static final Setting<Boolean> consistency_check_indexes = setting( "consistency_check_indexes", BOOLEAN, TRUE );
 
-    @Description("Window pool implementation to be used when running consistency check")
+    @Description("Execution order of store cross-checks to be used when running consistency check")
     public static final Setting<TaskExecutionOrder> consistency_check_execution_order =
             setting( "consistency_check_execution_order", options( TaskExecutionOrder.class ), TaskExecutionOrder.MULTI_PASS.name() );
 

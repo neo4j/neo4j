@@ -120,7 +120,7 @@ class StoreProcessorTask<R extends AbstractBaseRecord> implements StoppableRunna
     @Override
     public void stopScanning()
     {
-        processors[0].stopScanning();
+        processors[0].stop();
     }
 
 }

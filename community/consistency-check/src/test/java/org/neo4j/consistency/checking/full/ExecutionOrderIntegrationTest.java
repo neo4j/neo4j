@@ -65,6 +65,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
+import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
@@ -132,8 +133,9 @@ public class ExecutionOrderIntegrationTest
         {
             if ( LOG_DUPLICATES )
             {
-                new Exception(String.format( "Duplicate checks with single pass: %s, duplicate checks with multiple passes: %s%n",
-                        singlePassChecks.duplicates, multiPassChecks.duplicates ) );
+                throw new Exception(
+                        format( "Duplicate checks with single pass: %s, duplicate checks with multiple passes: %s%n",
+                                singlePassChecks.duplicates, multiPassChecks.duplicates ) );
             }
         }
     }
@@ -153,7 +155,7 @@ public class ExecutionOrderIntegrationTest
         private final Map<String, Integer> duplicates = new HashMap<>();
 
         @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-        void log( PendingReferenceCheck check, InvocationOnMock invocation )
+        void log( PendingReferenceCheck<?> check, InvocationOnMock invocation )
         {
             Method method = invocation.getMethod();
             if ( Object.class == method.getDeclaringClass() && "finalize".equals( method.getName() ) )

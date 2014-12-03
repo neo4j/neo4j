@@ -24,6 +24,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 import org.junit.runners.model.Statement;
 
 import java.io.IOException;
@@ -109,8 +113,21 @@ import static org.neo4j.kernel.impl.util.Bits.bits;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
 
+@RunWith( Parameterized.class )
 public class FullCheckIntegrationTest
 {
+    @Parameter
+    public TaskExecutionOrder taskExecutionOrder;
+
+    @Parameters
+    public static Iterable<Object[]> taskExecutions()
+    {
+        return Arrays.asList( new Object[][]{
+                {TaskExecutionOrder.SINGLE_THREADED},
+                {TaskExecutionOrder.MULTI_PASS}
+        } );
+    }
+
     @Test
     public void shouldCheckConsistencyOfAConsistentStore() throws Exception
     {
@@ -190,7 +207,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        on( stats ).verify( RecordType.NODE, 2 )
+        on( stats ).verify( RecordType.NODE, 1 )
                    .andThatsAllFolks();
     }
 
@@ -219,7 +236,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        on( stats ).verify( RecordType.NODE, 2 )
+        on( stats ).verify( RecordType.NODE, 1 )
                    .andThatsAllFolks();
     }
 
@@ -401,9 +418,10 @@ public class FullCheckIntegrationTest
                    .andThatsAllFolks();
     }
 
-    private long[] asArray(List<Integer> in){
+    private long[] asArray( List<Integer> in )
+    {
         long[] longs = new long[in.size()];
-        for ( int i = 0; i<in.size(); i++)
+        for ( int i = 0; i < in.size(); i++ )
         {
             longs[i] = in.get( i ).longValue();
         }
@@ -488,14 +506,14 @@ public class FullCheckIntegrationTest
 
     private long inlinedLabelsLongRepresentation( long... labelIds )
     {
-        long header = (long)labelIds.length << 36;
-        byte bitsPerLabel = (byte) (36/labelIds.length);
+        long header = (long) labelIds.length << 36;
+        byte bitsPerLabel = (byte) (36 / labelIds.length);
         Bits bits = bits( 5 );
         for ( long labelId : labelIds )
         {
             bits.put( labelId, bitsPerLabel );
         }
-        return header|bits.getLongs()[0];
+        return header | bits.getLongs()[0];
     }
 
     @Test
@@ -504,7 +522,7 @@ public class FullCheckIntegrationTest
         // given
         final List<DynamicRecord> chain = chainOfDynamicRecordsWithLabelsForANode( 176/*3 full records*/ ).first();
         assertEquals( "number of records in chain", 3, chain.size() );
-        assertEquals( "all records full", chain.get( 0 ).getLength(),  chain.get( 2 ).getLength() );
+        assertEquals( "all records full", chain.get( 0 ).getLength(), chain.get( 2 ).getLength() );
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
@@ -529,7 +547,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        on( stats ).verify( RecordType.NODE, 2 )
+        on( stats ).verify( RecordType.NODE, 1 )
                    .verify( RecordType.COUNTS, 177 )
                    .andThatsAllFolks();
     }
@@ -604,7 +622,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        on( stats ).verify( RecordType.NODE, 2 )
+        on( stats ).verify( RecordType.NODE, 1 )
                    .verify( RecordType.COUNTS, 1 )
                    .andThatsAllFolks();
     }
@@ -686,7 +704,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        on( stats ).verify( RecordType.PROPERTY, 4 )
+        on( stats ).verify( RecordType.PROPERTY, 2 )
                    .andThatsAllFolks();
     }
 
@@ -1203,7 +1221,7 @@ public class FullCheckIntegrationTest
         // then
         // - next group has other owner that its previous
         // - first group has other owner
-        on( stats ).verify( RecordType.NODE, 2 )
+        on( stats ).verify( RecordType.NODE, 1 )
                    .andThatsAllFolks();
     }
 
@@ -1540,7 +1558,7 @@ public class FullCheckIntegrationTest
 
     private ConsistencySummaryStatistics check( DirectStoreAccess stores ) throws ConsistencyCheckIncompleteException
     {
-        Config config = config( TaskExecutionOrder.MULTI_PASS );
+        Config config = config( taskExecutionOrder );
         FullCheck checker = new FullCheck( config, ProgressMonitorFactory.NONE );
         return checker.execute( stores, StringLogger.wrap( log ) );
     }

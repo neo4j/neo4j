@@ -83,88 +83,94 @@ public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
         }
     };
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     abstract class Processor<FAILURE extends Exception>
     {
         // Have it volatile so that it can be stopped from a different thread.
-        private volatile boolean continueScanning = true;
+        private volatile boolean shouldStop;
 
-        public void stopScanning()
+        public void stop()
         {
-            continueScanning = false;
+            shouldStop = true;
         }
 
-        public void processSchema( RecordStore<DynamicRecord> store, DynamicRecord schema ) throws FAILURE
+        public abstract void processSchema( RecordStore<DynamicRecord> store, DynamicRecord schema ) throws FAILURE;
+
+        public abstract void processNode( RecordStore<NodeRecord> store, NodeRecord node ) throws FAILURE;
+
+        public abstract void processRelationship( RecordStore<RelationshipRecord> store, RelationshipRecord rel )
+                throws FAILURE;
+
+        public abstract void processProperty( RecordStore<PropertyRecord> store, PropertyRecord property ) throws
+                FAILURE;
+
+        public abstract void processString( RecordStore<DynamicRecord> store, DynamicRecord string, IdType idType )
+                throws FAILURE;
+
+        public abstract void processArray( RecordStore<DynamicRecord> store, DynamicRecord array ) throws FAILURE;
+
+        public abstract void processLabelArrayWithOwner( RecordStore<DynamicRecord> store, DynamicRecord labelArray )
+                throws FAILURE;
+
+        public abstract void processRelationshipTypeToken( RecordStore<RelationshipTypeTokenRecord> store,
+                RelationshipTypeTokenRecord record ) throws FAILURE;
+
+        public abstract void processPropertyKeyToken( RecordStore<PropertyKeyTokenRecord> store, PropertyKeyTokenRecord
+                record ) throws FAILURE;
+
+        public abstract void processLabelToken( RecordStore<LabelTokenRecord> store, LabelTokenRecord record ) throws
+                FAILURE;
+
+        public abstract void processRelationshipGroup( RecordStore<RelationshipGroupRecord> store,
+                RelationshipGroupRecord record ) throws FAILURE;
+
+        protected <R extends AbstractBaseRecord> R getRecord( RecordStore<R> store, long id )
         {
-            processRecord( DynamicRecord.class, store, schema );
+            return store.forceGetRecord( id );
         }
 
-        public void processNode( RecordStore<NodeRecord> store, NodeRecord node ) throws FAILURE
+        public <R extends AbstractBaseRecord> void applyById( RecordStore<R> store, Iterable<Long> ids ) throws FAILURE
         {
-            processRecord( NodeRecord.class, store, node );
+            for ( R record : Scanner.scanById( store, ids ) )
+            {
+                store.accept( this, record );
+            }
         }
 
-        public void processRelationship( RecordStore<RelationshipRecord> store, RelationshipRecord rel ) throws FAILURE
+        public <R extends AbstractBaseRecord> void applyFiltered( RecordStore<R> store,
+                Predicate<? super R>... filters ) throws FAILURE
         {
-            processRecord( RelationshipRecord.class, store, rel );
+            apply( store, ProgressListener.NONE, filters );
         }
 
-        public void processProperty( RecordStore<PropertyRecord> store, PropertyRecord property ) throws FAILURE
+        public <R extends AbstractBaseRecord> void applyFiltered( RecordStore<R> store,
+                ProgressListener progressListener,
+                Predicate<? super R>... filters ) throws FAILURE
         {
-            processRecord( PropertyRecord.class, store, property );
+            apply( store, progressListener, filters );
         }
 
-        public void processString( RecordStore<DynamicRecord> store, DynamicRecord string,
-                                   @SuppressWarnings( "deprecation") IdType idType ) throws FAILURE
+        private <R extends AbstractBaseRecord> void apply( RecordStore<R> store, ProgressListener progressListener,
+                Predicate<? super R>... filters ) throws FAILURE
         {
-            processDynamic( store, string );
-        }
+            for ( R record : Scanner.scan( store, filters ) )
+            {
+                if ( shouldStop )
+                {
+                    break;
+                }
 
-        public void processArray( RecordStore<DynamicRecord> store, DynamicRecord array ) throws FAILURE
-        {
-            processDynamic( store, array );
+                store.accept( this, record );
+                progressListener.set( record.getLongId() );
+            }
+            progressListener.done();
         }
+    }
 
-        public void processLabelArrayWithOwner( RecordStore<DynamicRecord> store, DynamicRecord labelArray )
-                throws FAILURE
-        {
-            processDynamic( store, labelArray );
-        }
-
-        protected void processDynamic( RecordStore<DynamicRecord> store, DynamicRecord record ) throws FAILURE
-        {
-            processRecord( DynamicRecord.class, store, record );
-        }
-
-        public void processRelationshipTypeToken( RecordStore<RelationshipTypeTokenRecord> store,
-                                                  RelationshipTypeTokenRecord record ) throws FAILURE
-        {
-            processRecord( RelationshipTypeTokenRecord.class, store, record );
-        }
-
-        public void processPropertyKeyToken( RecordStore<PropertyKeyTokenRecord> store, PropertyKeyTokenRecord record ) throws FAILURE
-        {
-            processRecord( PropertyKeyTokenRecord.class, store, record );
-        }
-
-        public void processLabelToken( RecordStore<LabelTokenRecord> store, LabelTokenRecord record ) throws FAILURE
-        {
-            processRecord(LabelTokenRecord.class, store, record);
-        }
-
-        public void processRelationshipGroup( RecordStore<RelationshipGroupRecord> store,
-                RelationshipGroupRecord record ) throws FAILURE
-        {
-            processRecord( RelationshipGroupRecord.class, store, record );
-        }
-
-        protected <R extends AbstractBaseRecord> void processRecord( Class<R> type, RecordStore<R> store, R record ) throws FAILURE
-        {
-            processRecord( type, store, record );
-        }
-
+    static class Scanner
+    {
         @SafeVarargs
-        public final <R extends AbstractBaseRecord> Iterable<R> scan( final RecordStore<R> store,
+        public static <R extends AbstractBaseRecord> Iterable<R> scan( final RecordStore<R> store,
                 final Predicate<? super R>... filters )
         {
             return new Iterable<R>()
@@ -179,9 +185,10 @@ public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
                         @Override
                         protected R fetchNextOrNull()
                         {
-                            scan: while ( ids.hasNext() && continueScanning )
+                            scan:
+                            while ( ids.hasNext() )
                             {
-                                R record = getRecord( store, ids.next() );
+                                R record = store.forceGetRecord( ids.next() );
                                 for ( Predicate<? super R> filter : filters )
                                 {
                                     if ( !filter.accept( record ) )
@@ -198,15 +205,10 @@ public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
             };
         }
 
-        protected <R extends AbstractBaseRecord> R getRecord( RecordStore<R> store, long id )
-        {
-            return store.forceGetRecord( id );
-        }
-
         public static <R extends AbstractBaseRecord> Iterable<R> scanById( final RecordStore<R> store,
                 Iterable<Long> ids )
         {
-            return new IterableWrapper<R, Long>( ids )
+            return new IterableWrapper<R,Long>( ids )
             {
                 @Override
                 protected R underlyingObjectToObject( Long id )
@@ -214,36 +216,6 @@ public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
                     return store.forceGetRecord( id );
                 }
             };
-        }
-
-        public <R extends AbstractBaseRecord> void applyById( RecordStore<R> store, Iterable<Long> ids ) throws FAILURE
-        {
-            for ( R record : scanById( store, ids ) )
-            {
-                store.accept( this, record );
-            }
-        }
-
-        public <R extends AbstractBaseRecord> void applyFiltered( RecordStore<R> store, Predicate<? super R>... filters ) throws FAILURE
-        {
-            apply( store, ProgressListener.NONE, filters );
-        }
-
-        public <R extends AbstractBaseRecord> void applyFiltered( RecordStore<R> store, ProgressListener progressListener,
-                Predicate<? super R>... filters ) throws FAILURE
-        {
-            apply( store, progressListener, filters );
-        }
-
-        private <R extends AbstractBaseRecord> void apply( RecordStore<R> store, ProgressListener progressListener,
-                Predicate<? super R>... filters ) throws FAILURE
-        {
-            for ( R record : scan( store, filters ) )
-            {
-                store.accept( this, record );
-                progressListener.set( record.getLongId() );
-            }
-            progressListener.done();
         }
     }
 }
