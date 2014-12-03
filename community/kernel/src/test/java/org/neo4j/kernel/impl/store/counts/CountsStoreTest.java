@@ -64,8 +64,8 @@ public class CountsStoreTest
     public void shouldCreateAnEmptyStore() throws IOException
     {
         // when
-        CountsStore.createEmpty( pageCache, alpha, header );
-        try ( CountsStore counts = CountsStore.open( fs, pageCache, alpha ) )
+        CountsStore.createEmpty( pageCache, left, header );
+        try ( CountsStore counts = CountsStore.open( fs, pageCache, left ) )
         {
             // then
             assertEquals( 0, get( counts, nodeKey( 0 ) ) );
@@ -73,7 +73,7 @@ public class CountsStoreTest
             assertEquals( BASE_TX_ID, counts.lastTxId() );
             assertEquals( BASE_MINOR_VERSION, counts.minorVersion() );
             assertEquals( 0, counts.totalRecordsStored() );
-            assertEquals( alpha, counts.file() );
+            assertEquals( left, counts.file() );
             counts.accept( new KeyValueRecordVisitor<CountsKey, CopyableDoubleLongRegister>()
             {
                 @Override
@@ -89,14 +89,14 @@ public class CountsStoreTest
     public void shouldBumpMinorVersion() throws IOException
     {
         // when
-        CountsStore.createEmpty( pageCache, alpha, header );
-        try ( CountsStore counts = CountsStore.open( fs, pageCache, alpha ) )
+        CountsStore.createEmpty( pageCache, left, header );
+        try ( CountsStore counts = CountsStore.open( fs, pageCache, left ) )
         {
             // when
             long initialMinorVersion = counts.minorVersion();
 
             SortedKeyValueStore.Writer<CountsKey, CopyableDoubleLongRegister> writer =
-                    counts.newWriter( beta, counts.lastTxId() );
+                    counts.newWriter( right, counts.lastTxId() );
             writer.close();
 
             try ( CountsStore updated = (CountsStore) writer.openForReading() )
@@ -110,13 +110,13 @@ public class CountsStoreTest
     public void shouldUpdateTheStore() throws IOException
     {
         // given
-        CountsStore.createEmpty( pageCache, alpha, header );
+        CountsStore.createEmpty( pageCache, left, header );
         SortedKeyValueStore.Writer<CountsKey, CopyableDoubleLongRegister> writer;
-        try ( CountsStore counts = CountsStore.open( fs, pageCache, alpha ) )
+        try ( CountsStore counts = CountsStore.open( fs, pageCache, left ) )
         {
             // when
             DoubleLongRegister valueRegister = Registers.newDoubleLongRegister();
-            writer = counts.newWriter( beta, lastCommittedTxId );
+            writer = counts.newWriter( right, lastCommittedTxId );
             valueRegister.write( 0, 21 );
             writer.visit( nodeKey( 0 ), valueRegister );
             valueRegister.write( 0, 32 );
@@ -136,7 +136,7 @@ public class CountsStoreTest
             assertEquals( lastCommittedTxId, updated.lastTxId() );
             assertEquals( BASE_MINOR_VERSION, updated.minorVersion() );
             assertEquals( 4, updated.totalRecordsStored() );
-            assertEquals( beta, updated.file() );
+            assertEquals( right, updated.file() );
             updated.accept( new KeyValueRecordVisitor<CountsKey, CopyableDoubleLongRegister>()
             {
                 private final DoubleLongRegister target = Registers.newDoubleLongRegister();
@@ -196,7 +196,7 @@ public class CountsStoreTest
 
         int headerSize = RECORD_SIZE * headerRecords;
 
-        try ( StoreChannel channel = fs.open( alpha, "rw" ) )
+        try ( StoreChannel channel = fs.open( left, "rw" ) )
         {
             ByteBuffer buffer = ByteBuffer.allocate( headerSize );
             buffer.putShort( headerRecords );
@@ -217,7 +217,7 @@ public class CountsStoreTest
         try
         {
             // when
-            CountsStore.open( fs, pageCache, alpha );
+            CountsStore.open( fs, pageCache, left );
             fail( "should have thrown" );
         }
         catch ( UnderlyingStorageException  ex )
@@ -238,7 +238,7 @@ public class CountsStoreTest
 
         int headerSize = RECORD_SIZE * headerRecords;
 
-        try ( StoreChannel channel = fs.open( alpha, "rw" ) )
+        try ( StoreChannel channel = fs.open( left, "rw" ) )
         {
             // header
             ByteBuffer buffer = ByteBuffer.allocate( headerSize + RECORD_SIZE );
@@ -274,7 +274,7 @@ public class CountsStoreTest
         try
         {
             // when
-            CountsStore.open( fs, pageCache, alpha );
+            CountsStore.open( fs, pageCache, left );
             fail( "should have thrown" );
         }
         catch ( UnderlyingStorageException  ex )
@@ -288,8 +288,8 @@ public class CountsStoreTest
     public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     @Rule
     public PageCacheRule pageCacheRule = new PageCacheRule();
-    private final File alpha = new File( "alpha" );
-    private final File beta = new File( "beta" );
+    private final File left = new File( "left" );
+    private final File right = new File( "right" );
     private final int lastCommittedTxId = 42;
     private FileSystemAbstraction fs;
     private PageCache pageCache;
