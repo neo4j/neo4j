@@ -91,7 +91,7 @@ public class VersionAwareLogEntryReader implements LogEntryReader<ReadableByteCh
             throw new IllegalLogFormatException( CURRENT_FORMAT_VERSION, logFormatVersion );
         }
         version = version & 0x00FFFFFFFFFFFFFFL;
-        return new long[] { version, previousCommittedTx };
+        return new long[] { version, previousCommittedTx, logFormatVersion };
     }
 
     public LogEntry readLogEntry( ReadableByteChannel channel ) throws IOException
