@@ -57,7 +57,7 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
 {
     public static final String STORE_DESCRIPTOR = SortedKeyValueStore.class.getSimpleName();
 
-    public static final String ALPHA = ".alpha", BETA = ".beta";
+    public static final String ALPHA = ".a", BETA = ".b";
     private final File alphaFile, betaFile;
     private final ReadWriteLock updateLock = new ReentrantReadWriteLock( /*fair=*/true );
     private final StringLogger logger;
@@ -74,63 +74,68 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
         {
             IOException exOnClose = safelyCloseTheStore( store );
             throw new UnderlyingStorageException(
-                "Counts store seems to be out of date ( last count store txid is " + store.lastTxId() +
-                        " but database wide last txid is " + neoStoreTxId +
-                        " ). Please shut down the database and manually delete the counts store files " +
-                "to have the database recreate them on next startup", exOnClose );
+                    "Counts store seems to be out of date (last count store txid is " + store.lastTxId() + " but " +
+                    "database wide last txid is " + neoStoreTxId + "). Please shut down the database and manually " +
+                    "delete the counts store files: " + alphaFile + " and " + betaFile + " to have the database " +
+                    "recreate them on next startup", exOnClose );
         }
         this.state = new ConcurrentCountsTrackerState( store );
     }
 
     private static CountsStore openStore( StringLogger logger, FileSystemAbstraction fs, PageCache pageCache,
-                                          File alpha, File beta )
+                                          File alphaFile, File betaFile )
     {
         try
         {
-            CountsStore alphaStore = openVerifiedCountsStore( fs, pageCache, alpha );
-            CountsStore betaStore = openVerifiedCountsStore( fs, pageCache, beta );
+            if ( !fs.fileExists( alphaFile ) || !fs.fileExists( betaFile ) )
+            {
+                throw new UnderlyingStorageException(
+                        "Expected both counts store files " + alphaFile + " and " + betaFile + " to exist. You may " +
+                        "recreate the counts store by shutting down the database first, deleting the counts store " +
+                        "files manually and then restarting the database" );
+            }
+
+            CountsStore alphaStore = openVerifiedCountsStore( fs, pageCache, alphaFile );
+            CountsStore betaStore = openVerifiedCountsStore( fs, pageCache, betaFile );
 
             boolean isAlphaCorrupted = alphaStore == null;
             boolean isBetaCorrupted = betaStore == null;
             if ( isAlphaCorrupted && isBetaCorrupted )
             {
                 throw new UnderlyingStorageException(
-                        "Neither of the two store files could be properly opened. Please shut down the database and delete them " +
-                        "to have the database recreate the counts store on next startup" );
+                        "Neither of the two store files could be properly opened. Please shut down the database and " +
+                        "delete " + alphaFile + " and " + betaFile + " to have the database recreate the counts" +
+                        "store on next startup" );
             }
 
             if ( isAlphaCorrupted )
             {
-                logger.debug( "CountsStore picked beta store file since alpha store file could not be opened " +
-                              "(txId=" + betaStore.lastTxId() +
-                              ", minorVersion=" + betaStore.minorVersion() + ")" );
+                logger.debug( "CountsStore picked " + betaFile + " since " + alphaFile + " could not be opened " +
+                              "(txId=" + betaStore.lastTxId() + ", minorVersion=" + betaStore.minorVersion() + ")" );
                 return betaStore;
             }
 
             if ( isBetaCorrupted )
             {
-                logger.debug( "CountsStore picked alpha store file since beta store file could not be opened " +
-                              "(txId=" + alphaStore.lastTxId() +
-                              ", minorVersion=" + alphaStore.minorVersion() + ")" );
+                logger.debug( "CountsStore picked " + alphaFile + " since " + betaFile + " could not be opened " +
+                              "(txId=" + alphaStore.lastTxId() + ", minorVersion=" + alphaStore.minorVersion() + ")" );
                 return alphaStore;
             }
 
             // default case
             if ( isAlphaStoreMoreRecent( alphaStore, betaStore ) )
             {
-                logger.debug( "CountsStore picked alpha store file (txId=" + alphaStore.lastTxId() +
-                              ", minorVersion=" + alphaStore.minorVersion() +
-                              "), against beta (txId=" + betaStore.lastTxId() +
-                              ", minorVersion=" + betaStore.minorVersion() + ")" );
+                logger.debug( "CountsStore picked " + alphaFile + " (txId=" + alphaStore.lastTxId() + ", " +
+                              "minorVersion=" + alphaStore.minorVersion() + "), against " + betaFile + " " +
+                              "(txId=" + betaStore.lastTxId() + ", minorVersion=" + betaStore.minorVersion() + ")" );
                 betaStore.close();
                 return alphaStore;
             }
             else
             {
-                logger.debug( "CountsStore picked beta store file (txId=" + betaStore.lastTxId() +
-                              ", minorVersion=" + betaStore.minorVersion() +
-                              "), against alpha (txId=" + alphaStore.lastTxId() +
-                              ", minorVersion=" + alphaStore.minorVersion() + ")" );
+                logger.debug( "CountsStore picked " + betaFile + " file (txId=" + betaStore.lastTxId() + ", " +
+                              "minorVersion=" + betaStore.minorVersion() + "), against " + alphaFile + " " +
+                              "(txId=" + alphaStore.lastTxId() + ", minorVersion=" + alphaStore.minorVersion() + ")" );
                 alphaStore.close();
                 return betaStore;
             }
@@ -144,13 +149,6 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     private static CountsStore openVerifiedCountsStore( FileSystemAbstraction fs, PageCache pageCache, File file )
             throws IOException
     {
-        if ( !fs.fileExists( file ) )
-        {
-            throw new UnderlyingStorageException(
-                "Expected counts store file " + file + " to exist. You may recreate the counts store by shutting down "
-              + "the database first, deleting the counts store files manually and then restarting the database");
-        }
-
         try
         {
             return CountsStore.open( fs, pageCache, file );
@@ -165,9 +163,9 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
 
     public static boolean countsStoreExists( FileSystemAbstraction fs, File storeFileBase )
     {
-        final File alpha = storeFile( storeFileBase, ALPHA );
-        final File beta = storeFile( storeFileBase, BETA );
-        return fs.fileExists( alpha ) || fs.fileExists( beta );
+        final File alphaFile = storeFile( storeFileBase, ALPHA );
+        final File betaFile = storeFile( storeFileBase, BETA );
+        return fs.fileExists( alphaFile ) || fs.fileExists( betaFile );
     }
 
     private static boolean isAlphaStoreMoreRecent( CountsStore alphaStore, CountsStore betaStore )
@@ -178,7 +176,10 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
         {
             if ( alphaVersion == betaVersion )
             {
-                throw new UnderlyingStorageException( "Found two storage files with same tx id and minor version" );
+                throw new UnderlyingStorageException( "Found two storage files with same tx id and minor version. " +
+                                                      "Please shut down the database and manually delete the counts " +
+                                                      "store files: " + alphaStore.file() + " and " + betaStore.file() +
+                                                      " to have the database recreate them on next startup" );
             }
             return alphaVersion > betaVersion;
         }
