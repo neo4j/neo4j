@@ -19,18 +19,13 @@
  */
 package org.neo4j.kernel.impl.core;
 
-public class RelationshipData
+import org.neo4j.kernel.impl.api.RelationshipVisitor;
+
+public class RelationshipData implements RelationshipVisitor<RuntimeException>
 {
     private long startNode;
     private long endNode;
     private int type;
-
-    public void set( long startNode, long endNode, int type )
-    {
-        this.startNode = startNode;
-        this.endNode = endNode;
-        this.type = type;
-    }
 
     public long getStartNode()
     {
@@ -45,5 +40,13 @@ public class RelationshipData
     public int getType()
     {
         return type;
+    }
+
+    @Override
+    public void visit( long relIdIgnored, int type, long startNode, long endNode )
+    {
+        this.startNode = startNode;
+        this.endNode = endNode;
+        this.type = type;
     }
 }

@@ -20,20 +20,19 @@
 package org.neo4j.kernel.impl.transaction.state;
 
 import java.util.Collection;
-import java.util.List;
 
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.transaction.command.Command;
 
 /**
- * Keeper of state that is about to be committed. That state can be {@link #extractCommands(List) extracted}
+ * Keeper of state that is about to be committed. That state can be {@link #extractCommands(Collection) extracted}
  * into a list of {@link Command commands}.
  */
 public interface RecordState
 {
     /**
      * @return whether or not there are any changes in here. If {@code true} then {@link Command commands}
-     * can be {@link #extractCommands(List) extracted}.
+     * can be {@link #extractCommands(Collection) extracted}.
      */
     boolean hasChanges();
 

@@ -24,7 +24,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.kernel.api.TxState;
+import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
@@ -64,10 +64,10 @@ public abstract class StatementOperationsTestHelper
 
     public static KernelStatement mockedState()
     {
-        return mockedState( mock( TxState.class ) );
+        return mockedState( mock( TransactionState.class ) );
     }
 
-    public static KernelStatement mockedState( final TxState txState )
+    public static KernelStatement mockedState( final TransactionState txState )
     {
         KernelStatement state = mock( KernelStatement.class );
         Locks.Client lockHolder = mock( Locks.Client.class );
@@ -82,7 +82,6 @@ public abstract class StatementOperationsTestHelper
             throw new Error( e );
         }
         when( state.txState() ).thenReturn( txState );
-        when( state.hasTxState() ).thenReturn( true );
         when( state.hasTxStateWithChanges() ).thenAnswer( new Answer<Boolean>() {
             @Override
             public Boolean answer( InvocationOnMock invocation ) throws Throwable

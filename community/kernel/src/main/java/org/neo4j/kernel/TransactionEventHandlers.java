@@ -33,7 +33,7 @@ import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
-import org.neo4j.kernel.api.TxState;
+import org.neo4j.kernel.api.txstate.ReadableTxState;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
@@ -116,7 +116,7 @@ public class TransactionEventHandlers
     }
 
     @Override
-    public TransactionHandlerState beforeCommit( TxState state, KernelTransaction transaction,
+    public TransactionHandlerState beforeCommit( ReadableTxState state, KernelTransaction transaction,
             StoreReadLayer storeReadLayer )
     {
         if(transactionEventHandlers.isEmpty())
@@ -145,7 +145,7 @@ public class TransactionEventHandlers
 
     @Override
     @SuppressWarnings( "unchecked" )
-    public void afterCommit( TxState state, KernelTransaction transaction, TransactionHandlerState handlerState )
+    public void afterCommit( ReadableTxState state, KernelTransaction transaction, TransactionHandlerState handlerState )
     {
         if(transactionEventHandlers.isEmpty())
         {
@@ -160,7 +160,7 @@ public class TransactionEventHandlers
 
     @Override
     @SuppressWarnings( "unchecked" )
-    public void afterRollback( TxState state, KernelTransaction transaction, TransactionHandlerState handlerState )
+    public void afterRollback( ReadableTxState state, KernelTransaction transaction, TransactionHandlerState handlerState )
     {
         if(transactionEventHandlers.isEmpty())
         {

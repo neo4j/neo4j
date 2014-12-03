@@ -19,36 +19,123 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-public final class RelationshipState extends PropertyContainerState
+import java.util.Iterator;
+
+import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.impl.api.RelationshipVisitor;
+
+/**
+ * Represents the transactional changes to a relationship.
+ *
+ * @see PropertyContainerState
+ */
+public interface RelationshipState extends PropertyContainerState
 {
-    private long startNode = -1;
-    private long endNode = -1;
-    private int type = -1;
+    long getId();
 
-    public RelationshipState( long id )
+    <EX extends Exception> boolean accept( RelationshipVisitor<EX> visitor ) throws EX;
+
+    class Mutable extends PropertyContainerState.Mutable implements RelationshipState
     {
-        super( id );
+        private long startNode = -1;
+        private long endNode = -1;
+        private int type = -1;
+
+        private Mutable( long id )
+        {
+            super( id );
+        }
+
+        public void setMetaData( long startNode, long endNode, int type )
+        {
+            this.startNode = startNode;
+            this.endNode = endNode;
+            this.type = type;
+        }
+
+        @Override
+        public <EX extends Exception> boolean accept( RelationshipVisitor<EX> visitor ) throws EX
+        {
+            if ( type != -1 )
+            {
+                visitor.visit( getId(), type, startNode, endNode );
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
     }
 
-    public void setMetaData( long startNode, long endNode, int type )
+    abstract class Defaults extends StateDefaults<Long, RelationshipState, RelationshipState.Mutable>
     {
-        this.startNode = startNode;
-        this.endNode = endNode;
-        this.type = type;
-    }
+        @Override
+        Mutable createValue( Long id )
+        {
+            return new Mutable( id );
+        }
 
-    public long startNode()
-    {
-        return startNode;
-    }
+        @Override
+        RelationshipState defaultValue()
+        {
+            return DEFAULT;
+        }
 
-    public long endNode()
-    {
-        return endNode;
-    }
+        private static final RelationshipState DEFAULT = new RelationshipState()
+        {
+            private UnsupportedOperationException notDefined( String field )
+            {
+                return new UnsupportedOperationException( field + " not defined" );
+            }
 
-    public int type()
-    {
-        return type;
+            @Override
+            public long getId()
+            {
+                throw notDefined( "id" );
+            }
+
+            @Override
+            public <EX extends Exception> boolean accept( RelationshipVisitor<EX> visitor ) throws EX
+            {
+                return false;
+            }
+
+            @Override
+            public Iterator<DefinedProperty> addedProperties()
+            {
+                return IteratorUtil.emptyIterator();
+            }
+
+            @Override
+            public Iterator<DefinedProperty> changedProperties()
+            {
+                return IteratorUtil.emptyIterator();
+            }
+
+            @Override
+            public Iterator<Integer> removedProperties()
+            {
+                return IteratorUtil.emptyIterator();
+            }
+
+            @Override
+            public Iterator<DefinedProperty> addedAndChangedProperties()
+            {
+                return IteratorUtil.emptyIterator();
+            }
+
+            @Override
+            public Iterator<DefinedProperty> augmentProperties( Iterator<DefinedProperty> iterator )
+            {
+                return iterator;
+            }
+
+            @Override
+            public void accept( Visitor visitor )
+            {
+            }
+        };
     }
 }

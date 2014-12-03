@@ -21,8 +21,9 @@ package org.neo4j.kernel.impl.api.state;
 
 import java.util.Map;
 
-import org.neo4j.kernel.impl.util.DiffSets;
+import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 import org.neo4j.kernel.impl.util.VersionedHashMap;
+import org.neo4j.kernel.impl.util.diffsets.ReadableDiffSets;
 
 /**
  * Indexes entities by what property and value has been modified on them.
@@ -31,21 +32,21 @@ public class PropertyChanges
 {
     private VersionedHashMap<Integer, Map<Object, DiffSets<Long>>> changes;
 
-    public DiffSets<Long> changesForProperty( int propertyKeyId, Object value )
+    public ReadableDiffSets<Long> changesForProperty( int propertyKeyId, Object value )
     {
-        if(changes != null)
+        if ( changes != null )
         {
-            Map<Object, DiffSets<Long>> keyChanges = changes.get( propertyKeyId );
-            if(keyChanges != null)
+            Map<Object,DiffSets<Long>> keyChanges = changes.get( propertyKeyId );
+            if ( keyChanges != null )
             {
-                DiffSets<Long> valueChanges = keyChanges.get(value);
-                if(valueChanges != null)
+                DiffSets<Long> valueChanges = keyChanges.get( value );
+                if ( valueChanges != null )
                 {
                     return valueChanges;
                 }
             }
         }
-        return DiffSets.emptyDiffSets();
+        return ReadableDiffSets.Empty.instance();
     }
 
     public void changeProperty( long entityId, int propertyKeyId, Object oldValue, Object newValue )

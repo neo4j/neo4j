@@ -24,7 +24,7 @@ import org.junit.Test;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
-import org.neo4j.kernel.api.TxState;
+import org.neo4j.kernel.api.txstate.ReadableTxState;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 
 import static junit.framework.TestCase.fail;
@@ -51,9 +51,9 @@ public class TransactionHookIT extends KernelIntegrationTest
         commit();
 
         // Then
-        verify( hook ).beforeCommit( any( TxState.class ), any( KernelTransaction.class ),
+        verify( hook ).beforeCommit( any( ReadableTxState.class ), any( KernelTransaction.class ),
                 any( StoreReadLayer.class ) );
-        verify( hook ).afterCommit( any( TxState.class ), any( KernelTransaction.class ),
+        verify( hook ).afterCommit( any( ReadableTxState.class ), any( KernelTransaction.class ),
                 any( TransactionHook.Outcome.class ) );
         verifyNoMoreInteractions( hook );
     }
@@ -64,7 +64,7 @@ public class TransactionHookIT extends KernelIntegrationTest
         // Given
         TransactionHook hook = mock( TransactionHook.class );
         final String message = "Original";
-        when( hook.beforeCommit( any( TxState.class ), any( KernelTransaction.class ),
+        when( hook.beforeCommit( any( ReadableTxState.class ), any( KernelTransaction.class ),
                 any( StoreReadLayer.class ) ) ).thenReturn( new TransactionHook.Outcome()
         {
             @Override
@@ -92,14 +92,13 @@ public class TransactionHookIT extends KernelIntegrationTest
         }
         catch ( org.neo4j.kernel.api.exceptions.TransactionFailureException e )
         {
-            e.printStackTrace();
             assertThat( e.getCause().getMessage(), equalTo( "Transaction handler failed." ) );
             assertThat( e.getCause().getCause().getMessage(), equalTo( message ) );
         }
         // Then
-        verify( hook ).beforeCommit( any( TxState.class ), any( KernelTransaction.class ),
+        verify( hook ).beforeCommit( any( ReadableTxState.class ), any( KernelTransaction.class ),
                 any( StoreReadLayer.class ) );
-        verify( hook ).afterRollback( any( TxState.class ), any( KernelTransaction.class ),
+        verify( hook ).afterRollback( any( ReadableTxState.class ), any( KernelTransaction.class ),
                 any( TransactionHook.Outcome.class ) );
         verifyNoMoreInteractions( hook );
     }

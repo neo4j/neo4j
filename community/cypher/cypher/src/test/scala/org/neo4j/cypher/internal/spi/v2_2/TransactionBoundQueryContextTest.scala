@@ -37,7 +37,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     super.beforeEach ()
     graph = new ImpermanentGraphDatabase
     outerTx = mock[Transaction]
-    statement = new KernelStatement(mock[KernelTransactionImplementation], null, null, null, null, null, null)
+    statement = new KernelStatement(mock[KernelTransactionImplementation], null, null, null, null, null)
   }
 
     test ("should_mark_transaction_successful_if_successful") {

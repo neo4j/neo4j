@@ -31,10 +31,11 @@ import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
-import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionState;
+import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionStateImpl;
 import org.neo4j.kernel.impl.api.store.PersistenceCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
@@ -150,7 +151,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
             TransactionRecordState recordState = new TransactionRecordState(
                     neoStore, integrityValidator, context );
             LegacyIndexTransactionState legacyIndexTransactionState =
-                    new LegacyIndexTransactionState( indexConfigStore, legacyIndexProviderLookup );
+                    new LegacyIndexTransactionStateImpl( indexConfigStore, legacyIndexProviderLookup );
             RecordStateForCacheAccessor recordStateForCache =
                     new RecordStateForCacheAccessor( context.getRecordChangeSet() );
             KernelTransactionImplementation tx = new KernelTransactionImplementation(

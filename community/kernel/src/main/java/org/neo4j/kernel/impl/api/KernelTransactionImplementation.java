@@ -31,7 +31,6 @@ import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
@@ -43,11 +42,14 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
+import org.neo4j.kernel.api.txstate.TxStateVisitor;
+import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
-import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionState;
-import org.neo4j.kernel.impl.api.state.TxStateImpl;
+import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.api.store.PersistenceCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.index.IndexEntityType;
@@ -72,7 +74,7 @@ import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
  * as
  * {@code TransitionalTxManagementKernelTransaction} is gone from {@code server}.
  */
-public class KernelTransactionImplementation implements KernelTransaction, TxState.Holder
+public class KernelTransactionImplementation implements KernelTransaction, TxStateHolder
 {
     /*
      * IMPORTANT:
@@ -134,11 +136,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final TransactionMonitor transactionMonitor;
     private final PersistenceCache persistenceCache;
     private final StoreReadLayer storeLayer;
-    private final LegacyIndexTransactionState legacyIndexTransactionState;
     private final Clock clock;
     private final TransactionToRecordStateVisitor txStateToRecordStateVisitor = new TransactionToRecordStateVisitor();
     private final Collection<Command> extractedCommands = new ArrayCollection<>( 20 );
-    private TxStateImpl txState;
+    private TransactionState txState;
+    private LegacyIndexTransactionState legacyIndexTransactionState;
     private TransactionType transactionType = TransactionType.ANY;
     private TransactionHooks.TransactionHooksState hooksState;
     private Locks.Client locks;
@@ -150,6 +152,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private long lastTransactionIdWhenStarted;
     /** Implements reusing the same underlying {@link KernelStatement} for overlapping statements. */
     private KernelStatement currentStatement;
+
 
     public KernelTransactionImplementation( StatementOperationParts operations,
                                             SchemaWriteGuard schemaWriteGuard, LabelScanStore labelScanStore,
@@ -165,7 +168,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             TransactionMonitor transactionMonitor,
                                             PersistenceCache persistenceCache,
                                             StoreReadLayer storeLayer,
-                                            LegacyIndexTransactionState legacyIndexTransaction,
+                                            LegacyIndexTransactionState legacyIndexTransactionState,
                                             Pool<KernelTransactionImplementation> pool,
                                             Clock clock )
     {
@@ -185,7 +188,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionMonitor = transactionMonitor;
         this.persistenceCache = persistenceCache;
         this.storeLayer = storeLayer;
-        this.legacyIndexTransactionState = legacyIndexTransaction;
+        this.legacyIndexTransactionState = new CachingLegacyIndexTransactionState( legacyIndexTransactionState );
         this.pool = pool;
         this.clock = clock;
         this.schemaStorage = new SchemaStorage( neoStore.getSchemaStore() );
@@ -249,7 +252,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         if ( currentStatement == null )
         {
             currentStatement = new KernelStatement( this, new IndexReaderFactory.Caching( indexService ),
-                    labelScanStore, this, locks, operations, legacyIndexTransactionState );
+                    labelScanStore, this, locks, operations );
         }
         currentStatement.acquire();
         return currentStatement;
@@ -298,25 +301,25 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public TxState txState()
+    public TransactionState txState()
     {
-        if ( !hasTxState() )
+        if ( txState == null )
         {
-            txState = new TxStateImpl( legacyIndexTransactionState );
+            txState = new TxState();
         }
         return txState;
     }
 
     @Override
-    public boolean hasTxState()
+    public LegacyIndexTransactionState legacyIndexTxState()
     {
-        return null != txState;
+        return legacyIndexTransactionState;
     }
 
     @Override
     public boolean hasTxStateWithChanges()
     {
-        return hasTxState() && txState.hasChanges();
+        return txState != null && txState.hasChanges();
     }
 
     private void closeTransaction()
@@ -422,6 +425,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionType = null;
         this.hooksState = null;
         this.txState = null;
+        this.legacyIndexTransactionState = null;
     }
 
     private void commit() throws TransactionFailureException
@@ -512,7 +516,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             // Free any acquired id's
             if ( txState != null )
             {
-                txState.accept( new TxState.VisitorAdapter()
+                txState.accept( new TxStateVisitor.Adapter()
                 {
                     @Override
                     public void visitCreatedNode( long id )
@@ -574,7 +578,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         pool.release( this );
     }
 
-    private class TransactionToRecordStateVisitor extends TxState.VisitorAdapter
+    private class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     {
         private final RelationshipDataExtractor relationshipData = new RelationshipDataExtractor();
         private boolean clearState;
@@ -663,7 +667,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
 
         @Override
-        public void visitDeletedRelationship( long id, int type, long startNode, long endNode )
+        public void visitDeletedRelationship( long id )
         {
             try
             {

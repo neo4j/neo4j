@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util;
+package org.neo4j.kernel.impl.util.diffsets;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -27,6 +27,9 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.impl.util.DiffApplyingPrimitiveIntIterator;
+import org.neo4j.kernel.impl.util.DiffApplyingPrimitiveLongIterator;
+import org.neo4j.kernel.impl.util.VersionedHashMap;
 
 import static java.lang.String.format;
 import static java.util.Collections.newSetFromMap;
@@ -42,39 +45,8 @@ import static org.neo4j.helpers.collection.IteratorUtil.asSet;
  *
  * @param <T> type of elements
  */
-public class DiffSets<T>
+public class DiffSets<T> implements ReadableDiffSets<T>
 {
-    public interface Visitor<T>
-    {
-        void visitAdded( T element );
-
-        void visitRemoved( T element );
-    }
-
-    public static class VisitorAdapter<T> implements Visitor<T>
-    {
-        @Override
-        public void visitAdded( T element )
-        {   // Ignore
-        }
-
-        @Override
-        public void visitRemoved( T element )
-        {   // Ignore
-        }
-    }
-
-    @SuppressWarnings(
-            {"rawtypes", "unchecked"})
-    private static final DiffSets EMPTY = new DiffSets( Collections.emptySet(), Collections.emptySet() )
-    {
-        @Override
-        public Iterator apply( Iterator source )
-        {
-            return source;
-        }
-    };
-
     @SuppressWarnings("unchecked")
     public static <T> DiffSets<T> emptyDiffSets()
     {
@@ -96,7 +68,8 @@ public class DiffSets<T>
         this.removedElements = removedElements;
     }
 
-    public void accept( Visitor<T> visitor )
+    @Override
+    public void accept( DiffSetsVisitor<T> visitor )
     {
         for ( T element : added( false ) )
         {
@@ -151,31 +124,37 @@ public class DiffSets<T>
         }
     }
 
+    @Override
     public boolean isAdded( T elem )
     {
         return added( false ).contains( elem );
     }
 
+    @Override
     public boolean isRemoved( T elem )
     {
         return removed( false ).contains( elem );
     }
 
+    @Override
     public Set<T> getAdded()
     {
         return resultSet( addedElements );
     }
 
+    @Override
     public Set<T> getRemoved()
     {
         return resultSet( removedElements );
     }
 
+    @Override
     public boolean isEmpty()
     {
         return added( false ).isEmpty() && removed( false ).isEmpty();
     }
 
+    @Override
     public Iterator<T> apply( Iterator<T> source )
     {
         Iterator<T> result = source;
@@ -192,26 +171,31 @@ public class DiffSets<T>
         return result;
     }
 
+    @Override
     public PrimitiveLongIterator augment( final PrimitiveLongIterator source )
     {
         return new DiffApplyingPrimitiveLongIterator( source, added( false ), removed( false ) );
     }
 
+    @Override
     public PrimitiveIntIterator augment( final PrimitiveIntIterator source )
     {
         return new DiffApplyingPrimitiveIntIterator( source, added( false ), removed( false ) );
     }
 
+    @Override
     public PrimitiveLongIterator augmentWithRemovals( final PrimitiveLongIterator source )
     {
         return new DiffApplyingPrimitiveLongIterator( source, Collections.emptySet(), removed( false ) );
     }
 
+    @Override
     public PrimitiveLongIterator augmentWithAdditions( final PrimitiveLongIterator source )
     {
         return new DiffApplyingPrimitiveLongIterator( source, added( false ), Collections.emptySet() );
     }
 
+    @Override
     public DiffSets<T> filterAdded( Predicate<T> addedFilter )
     {
         return new DiffSets<>(
@@ -219,6 +203,7 @@ public class DiffSets<T>
                 asSet( removed( false ) ) );
     }
 
+    @Override
     public DiffSets<T> filter( Predicate<T> filter )
     {
         return new DiffSets<>(
@@ -267,6 +252,7 @@ public class DiffSets<T>
         }
     }
 
+    @Override
     public int delta()
     {
         return added( false ).size() - removed( false ).size();
@@ -344,4 +330,50 @@ public class DiffSets<T>
     {
         return format( "{+%s, -%s}", added( false ), removed( false ) );
     }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private static final DiffSets EMPTY = new DiffSets( Collections.emptySet(), Collections.emptySet() )
+    {
+        @Override
+        public Iterator apply( Iterator source )
+        {
+            return source;
+        }
+
+        @Override
+        public PrimitiveLongIterator augment( PrimitiveLongIterator source )
+        {
+            return source;
+        }
+
+        @Override
+        public PrimitiveIntIterator augment( PrimitiveIntIterator source )
+        {
+            return source;
+        }
+
+        @Override
+        public PrimitiveLongIterator augmentWithRemovals( PrimitiveLongIterator source )
+        {
+            return source;
+        }
+
+        @Override
+        public PrimitiveLongIterator augmentWithAdditions( PrimitiveLongIterator source )
+        {
+            return source;
+        }
+
+        @Override
+        public DiffSets filterAdded( Predicate addedFilter )
+        {
+            return this;
+        }
+
+        @Override
+        public DiffSets filter( Predicate filter )
+        {
+            return this;
+        }
+    };
 }

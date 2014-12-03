@@ -17,19 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.state;
+package org.neo4j.kernel.impl.util.diffsets;
 
-public class EntityState
+public interface DiffSetsVisitor<T>
 {
-    private final long id;
+    void visitAdded( T element );
 
-    public EntityState( long id )
-    {
-        this.id = id;
-    }
+    void visitRemoved( T element );
 
-    public long getId()
+    class Adapter<T> implements DiffSetsVisitor<T>
     {
-        return id;
+        @Override
+        public void visitAdded( T element )
+        {   // Ignore
+        }
+
+        @Override
+        public void visitRemoved( T element )
+        {   // Ignore
+        }
     }
 }

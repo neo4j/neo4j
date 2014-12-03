@@ -27,7 +27,7 @@ import java.util.Map;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.impl.util.DiffSets;
+import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 
 public abstract class UniquePropertyIndexUpdater implements IndexUpdater
 {
