@@ -102,11 +102,13 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
         context.setAvailableHaMasterId( null );
     }
 
+    @Override
     public void addHighAvailabilityMemberListener( HighAvailabilityMemberListener toAdd )
     {
         memberListeners = Listeners.addListener( toAdd, memberListeners );
     }
 
+    @Override
     public void removeHighAvailabilityMemberListener( HighAvailabilityMemberListener toRemove )
     {
         memberListeners = Listeners.removeListener( toRemove, memberListeners );
@@ -248,7 +250,10 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                     final HighAvailabilityMemberChangeEvent event =
                             new HighAvailabilityMemberChangeEvent(
                                     state, HighAvailabilityMemberState.PENDING, null, null );
+                    HighAvailabilityMemberState oldState = state;
                     state = HighAvailabilityMemberState.PENDING;
+                    logger.debug( "Got memberIsFailed(" + instanceId + ") and quorum is no longer satisfied, " +
+                            "moved to " + state + " from " + oldState );
                     Listeners.notifyListeners( memberListeners, new Listeners
                             .Notification<HighAvailabilityMemberListener>()
                     {
@@ -266,6 +271,10 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                 {
                     throw new RuntimeException( throwable );
                 }
+            }
+            else
+            {
+                logger.debug( "Got memberIsFailed(" + instanceId + ")" );
             }
         }
 

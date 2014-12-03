@@ -41,6 +41,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -72,6 +73,8 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePullerClient;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.com.master.Slaves;
@@ -86,7 +89,9 @@ import org.neo4j.kernel.monitoring.Monitors;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
+
 import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.io.fs.FileUtils.copyRecursively;
 
@@ -372,7 +377,7 @@ public class ClusterManager
 
                     for ( ClusterMember clusterMember : members.getMembers() )
                     {
-                        if ( clusterMember.getHARole().equals( "UNKNOWN" ) )
+                        if ( clusterMember.getHARole().equals( HighAvailabilityModeSwitcher.UNKNOWN ) )
                         {
                             return false;
                         }
@@ -380,6 +385,11 @@ public class ClusterManager
                 }
 
                 // Everyone sees everyone else as available!
+                for( HighlyAvailableGraphDatabase database : cluster.getAllMembers() )
+                {
+                    StringLogger logger = database.getDependencyResolver().resolveDependency( StringLogger.class );
+                    logger.debug( this.toString() );
+                }
                 return true;
             }
 
@@ -460,6 +470,7 @@ public class ClusterManager
         {
             ClusterClient client = database.getDependencyResolver().resolveDependency( ClusterClient.class );
             buf.append( "Instance " ).append( client.getServerId() )
+               .append( ":State " ).append( database.getInstanceState() )
                .append( " (" ).append( client.getClusterServer() ).append( "):" ).append( "\n" );
 
             ClusterMembers members = database.getDependencyResolver().resolveDependency( ClusterMembers.class );
@@ -475,6 +486,7 @@ public class ClusterManager
 
         return buf.toString();
     }
+
 
     @Override
     public void start() throws Throwable
@@ -847,13 +859,12 @@ public class ClusterManager
             Set<HighlyAvailableGraphDatabase> exceptSet = new HashSet<>( asList( except ) );
             for ( HighlyAvailableGraphDatabase graphDatabaseService : getAllMembers() )
             {
-                if ( graphDatabaseService.getInstanceState().equals( "SLAVE" ) && !exceptSet.contains(
-                        graphDatabaseService ) )
+                if ( graphDatabaseService.getInstanceState() == HighAvailabilityMemberState.SLAVE
+                        && !exceptSet.contains( graphDatabaseService ) )
                 {
                     return graphDatabaseService;
                 }
             }
-
             throw new IllegalStateException( "No slave found in cluster " + name + printState( this ) );
         }
 
@@ -1077,7 +1088,7 @@ public class ClusterManager
             }
             String state = printState( this );
             throw new IllegalStateException( format(
-                    "Awaited condition never met, waited %s for %s:%n%s", maxSeconds, predicate, state ) );
+                    "Awaited condition never met, waited %s secondes for %s:%n%s", maxSeconds, predicate, state ) );
         }
 
         /**

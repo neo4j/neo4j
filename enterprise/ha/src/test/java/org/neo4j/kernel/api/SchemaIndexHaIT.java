@@ -20,9 +20,11 @@
 package org.neo4j.kernel.api;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
@@ -42,6 +44,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -69,6 +72,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePullerClient;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.test.DoubleLatch;
@@ -283,7 +287,7 @@ public class SchemaIndexHaIT
     {
         for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
         {
-            if( db != slaveToIgnore && db.getInstanceState().equals( "SLAVE" ) )
+            if( db != slaveToIgnore && db.getInstanceState() == HighAvailabilityMemberState.SLAVE )
             {
                 dbFactory.triggerFinish( db );
             }
