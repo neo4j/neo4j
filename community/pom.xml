@@ -186,7 +186,7 @@ the relevant Commercial Agreement.
           <type>pom</type>
         </dependency>
         <dependency>
-          <groupId>org.neo4j</groupId>
+          <groupId>org.neo4j.doc</groupId>
           <artifactId>neo4j-cypher-docs</artifactId>
           <version>${project.version}</version>
         </dependency>
