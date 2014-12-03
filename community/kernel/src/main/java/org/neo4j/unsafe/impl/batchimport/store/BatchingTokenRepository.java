@@ -26,9 +26,11 @@ import java.util.TreeMap;
 
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
+import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
+import org.neo4j.kernel.impl.transaction.state.PropertyCreator;
 import org.neo4j.kernel.impl.transaction.state.TokenCreator;
 
 import static java.lang.Math.max;
@@ -40,31 +42,30 @@ import static java.lang.Math.max;
 public abstract class BatchingTokenRepository<T extends TokenRecord>
 {
     // TODO more efficient data structure
-    private final Map<String,Integer> existing = new HashMap<>();
-    private final Map<String,Integer> created = new HashMap<>();
+    private final Map<String,Integer> tokens = new HashMap<>();
     private final TokenStore<T> store;
     private int highId;
 
     public BatchingTokenRepository( TokenStore<T> store, int highId )
     {
         this.store = store;
-        // TODO read the store into the repository?
+        // TODO read the store into the repository, i.e. into existing?
         this.highId = highId;
     }
 
     public int getOrCreateId( String name )
     {
         assert name != null;
-        Integer id = existing.get( name );
+        Integer id = tokens.get( name );
         if ( id == null )
         {
-            synchronized ( created )
+            synchronized ( tokens )
             {
-                id = created.get( name );
+                id = tokens.get( name );
                 if ( id == null )
                 {
                     id = highId++;
-                    created.put( name, id );
+                    tokens.put( name, id );
                 }
             }
         }
@@ -147,7 +148,7 @@ public abstract class BatchingTokenRepository<T extends TokenRecord>
     private Iterable<Map.Entry<Integer,String>> sortCreatedTokensById()
     {
         Map<Integer,String> sorted = new TreeMap<>();
-        for ( Map.Entry<String,Integer> entry : created.entrySet() )
+        for ( Map.Entry<String,Integer> entry : tokens.entrySet() )
         {
             sorted.put( entry.getValue(), entry.getKey() );
         }
@@ -165,6 +166,19 @@ public abstract class BatchingTokenRepository<T extends TokenRecord>
         protected PropertyKeyTokenRecord createRecord( int key )
         {
             return new PropertyKeyTokenRecord( key );
+        }
+
+        public PropertyBlock[] propertyKeysAndValues( final Object[] properties,
+                final PropertyCreator creator )
+        {
+            PropertyBlock[] blocks = new PropertyBlock[properties.length >> 1];
+            for ( int i = 0, cursor = 0; i < blocks.length; i++ )
+            {
+                int key = getOrCreateId( (String)properties[cursor++] );
+                Object value = properties[cursor++];
+                blocks[i] = creator.encodeValue( blocks[i] = new PropertyBlock(), key, value );
+            }
+            return blocks;
         }
     }
 

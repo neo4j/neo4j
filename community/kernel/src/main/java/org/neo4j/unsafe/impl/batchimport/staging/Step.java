@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
+import org.neo4j.unsafe.impl.batchimport.Parallelizable;
 import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
 
 /**
@@ -35,7 +36,7 @@ import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
  *
  * @param <T> the type of batch objects received from upstream.
  */
-public interface Step<T>
+public interface Step<T> extends Parallelizable
 {
     /**
      * @return name of this step.

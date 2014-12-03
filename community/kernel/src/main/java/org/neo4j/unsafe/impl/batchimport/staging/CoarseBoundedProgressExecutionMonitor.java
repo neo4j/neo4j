@@ -31,7 +31,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.last;
  * An {@link ExecutionMonitor} that prints progress in percent, knowing the max number of nodes and relationships
  * in advance.
  */
-public class CoarseBoundedProgressExecutionMonitor extends PollingExecutionMonitor
+public class CoarseBoundedProgressExecutionMonitor extends AbstractExecutionMonitor
 {
     private long totalDoneBatches;
     private final long highNodeId;
@@ -40,13 +40,13 @@ public class CoarseBoundedProgressExecutionMonitor extends PollingExecutionMonit
 
     public CoarseBoundedProgressExecutionMonitor( long highNodeId, long highRelationshipId )
     {
-        super( SECONDS.toMillis( 1 ) );
+        super( 1, SECONDS );
         this.highNodeId = highNodeId;
         this.highRelationshipId = highRelationshipId;
     }
 
     @Override
-    protected void poll( StageExecution[] executions )
+    public void check( StageExecution[] executions )
     {
         updatePercent( executions );
     }
@@ -91,11 +91,11 @@ public class CoarseBoundedProgressExecutionMonitor extends PollingExecutionMonit
 
     private long doneBatches( StageExecution execution )
     {
-        return last( execution.stats() ).stat( Keys.done_batches ).asLong();
+        return last( execution.steps() ).stats().stat( Keys.done_batches ).asLong();
     }
 
     @Override
-    protected void end( StageExecution[] executions, long totalTimeMillis )
+    public void end( StageExecution[] executions, long totalTimeMillis )
     {
         for ( StageExecution execution : executions )
         {

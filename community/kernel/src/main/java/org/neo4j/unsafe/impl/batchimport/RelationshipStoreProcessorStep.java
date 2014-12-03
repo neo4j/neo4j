@@ -33,10 +33,10 @@ public abstract class RelationshipStoreProcessorStep extends LonelyProcessingSte
 {
     private final RelationshipStore relationshipStore;
 
-    protected RelationshipStoreProcessorStep( StageControl control, String name, int batchSize,
+    protected RelationshipStoreProcessorStep( StageControl control, String name, Configuration config,
             RelationshipStore relationshipStore )
     {
-        super( control, name, batchSize );
+        super( control, name, config.batchSize(), config.movingAverageSize() );
         this.relationshipStore = relationshipStore;
     }
 

@@ -42,11 +42,11 @@ public class NodeFirstRelationshipStep extends NodeStoreProcessorStep implements
 
     private long nextGroupId = -1;
 
-    public NodeFirstRelationshipStep( StageControl control, int batchSize,
+    public NodeFirstRelationshipStep( StageControl control, Configuration config,
                                       NodeStore nodeStore, RelationshipGroupStore relGroupStore,
                                       NodeRelationshipLink nodeRelationshipLink )
     {
-        super( control, "LINKER", batchSize, nodeStore );
+        super( control, "LINKER", config, nodeStore );
         this.relGroupStore = relGroupStore;
         this.nodeRelationshipLink = nodeRelationshipLink;
     }

@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 import java.io.PrintStream;
 
 import org.neo4j.unsafe.impl.batchimport.stats.DetailLevel;
+import org.neo4j.unsafe.impl.batchimport.stats.Keys;
 import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
 
 import static java.lang.String.format;
@@ -33,7 +34,7 @@ import static org.neo4j.helpers.Format.duration;
  * An {@link ExecutionMonitor} that prints very detailed information about each {@link Stage} and the
  * {@link Step steps} therein.
  */
-public class DetailedExecutionMonitor extends PollingExecutionMonitor
+public class DetailedExecutionMonitor extends AbstractExecutionMonitor
 {
     private final PrintStream out;
 
@@ -49,7 +50,7 @@ public class DetailedExecutionMonitor extends PollingExecutionMonitor
     }
 
     @Override
-    protected void start( StageExecution[] executions )
+    public void start( StageExecution[] executions )
     {
         StringBuilder names = new StringBuilder();
         for ( StageExecution execution : executions )
@@ -60,13 +61,13 @@ public class DetailedExecutionMonitor extends PollingExecutionMonitor
     }
 
     @Override
-    protected void end( StageExecution[] executions, long totalTimeMillis )
+    public void end( StageExecution[] executions, long totalTimeMillis )
     {
         out.println( "Stage total time " + duration( totalTimeMillis ) );
     }
 
     @Override
-    protected void poll( StageExecution[] executions )
+    public void check( StageExecution[] executions )
     {
         boolean first = true;
         for ( StageExecution execution : executions )
@@ -76,23 +77,18 @@ public class DetailedExecutionMonitor extends PollingExecutionMonitor
         }
     }
 
-    @Override
-    public void done( long totalTimeMillis )
-    {
-        out.println( "IMPORT DONE. Took: " + duration( totalTimeMillis ) );
-    }
-
     private void printStats( StageExecution execution, boolean first )
     {
-        int bottleNeckIndex = figureOutBottleNeck( execution );
+        Step<?> bottleNeck = execution.stepsOrderedBy( Keys.avg_processing_time, false ).iterator().next().first();
 
         StringBuilder builder = new StringBuilder();
         int i = 0;
-        for ( StepStats stats : execution.stats() )
+        for ( Step<?> step : execution.steps() )
         {
+            StepStats stats = step.stats();
             builder.append( i > 0 ? format( "%n  " ) : (first ? "--" : " -") )
                    .append( stats.toString( DetailLevel.BASIC ) )
-                   .append( i == bottleNeckIndex ? "  <== BOTTLE NECK" : "" );
+                   .append( step == bottleNeck ? "  <== BOTTLE NECK" : "" );
             i++;
         }
 

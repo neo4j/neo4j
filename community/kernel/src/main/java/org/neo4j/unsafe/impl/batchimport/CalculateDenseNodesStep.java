@@ -21,43 +21,39 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import java.util.List;
 
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.helpers.Pair;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 import static java.lang.Math.max;
-import static java.lang.Math.round;
 
 /**
  * Runs through relationship input and counts relationships per node so that dense nodes can be designated.
  */
-public class CalculateDenseNodesStep extends ExecutorServiceStep<List<InputRelationship>>
+public class CalculateDenseNodesStep extends ExecutorServiceStep<Pair<List<InputRelationship>,long[]>>
 {
     private final NodeRelationshipLink nodeRelationshipLink;
     private long highestSeenNodeId;
-    private final StringLogger logger;
-    private final IdMapper idMapper;
 
-    public CalculateDenseNodesStep( StageControl control, int workAheadSize,
-            NodeRelationshipLink nodeRelationshipLink, IdMapper idMapper, StringLogger logger )
+    public CalculateDenseNodesStep( StageControl control, Configuration config,
+            NodeRelationshipLink nodeRelationshipLink )
     {
-        super( control, "CALCULATOR", workAheadSize, 1 );
+        super( control, "CALCULATOR", config.workAheadSize(), config.movingAverageSize(), 1 );
         this.nodeRelationshipLink = nodeRelationshipLink;
-        this.idMapper = idMapper;
-        this.logger = logger;
     }
 
     @Override
-    protected Object process( long ticket, List<InputRelationship> batch )
+    protected Object process( long ticket, Pair<List<InputRelationship>,long[]> batch )
     {
-        for ( InputRelationship rel : batch )
+        long[] startAndEndNodeIds = batch.other();
+        int index = 0;
+        for ( InputRelationship rel : batch.first() )
         {
-            long startNode = idMapper.get( rel.startNode() );
-            long endNode = idMapper.get( rel.endNode() );
+            long startNode = startAndEndNodeIds[index++];
+            long endNode = startAndEndNodeIds[index++];
             ensureNodeFound( "start", rel, startNode );
             ensureNodeFound( "end", rel, endNode );
 
@@ -95,22 +91,5 @@ public class CalculateDenseNodesStep extends ExecutorServiceStep<List<InputRelat
             throw new InputException( relationship + " specified " + nodeDescription +
                     " node that hasn't been imported" );
         }
-    }
-
-    @Override
-    protected void done()
-    {
-        // Prints a percent of dense nodes, given the supplied dense node threshold
-        long numberOfDenseNodes = 0;
-        for ( long i = 0; i < highestSeenNodeId; i++ )
-        {
-            if ( nodeRelationshipLink.isDense( i ) )
-            {
-                numberOfDenseNodes++;
-            }
-        }
-        logger.info( "# dense nodes: " + numberOfDenseNodes + ", which is " +
-                round( 100D*numberOfDenseNodes/highestSeenNodeId ) + " %" );
-        super.done();
     }
 }

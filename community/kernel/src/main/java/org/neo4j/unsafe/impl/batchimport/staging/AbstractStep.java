@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.function.primitive.PrimitiveLongPredicate;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.kernel.impl.util.MovingAverage;
 import org.neo4j.unsafe.impl.batchimport.stats.ProcessingStats;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
@@ -64,12 +65,35 @@ public abstract class AbstractStep<T> implements Step<T>
     // Number of batches fully processed
     protected final AtomicLong doneBatches = new AtomicLong();
     // Milliseconds spent processing all received batches.
-    protected final AtomicLong totalProcessingTime = new AtomicLong();
+    protected final MovingAverage totalProcessingTime;
 
-    public AbstractStep( StageControl control, String name )
+    public AbstractStep( StageControl control, String name, int movingAverageSize )
     {
         this.control = control;
         this.name = name;
+        this.totalProcessingTime = new MovingAverage( movingAverageSize );
+    }
+
+    /**
+     * The number of processors processing incoming batches in parallel for this step. Exposed as a method
+     * since this number can change over time depending on the load.
+     */
+    @Override
+    public int numberOfProcessors()
+    {
+        return 1;
+    }
+
+    @Override
+    public boolean incrementNumberOfProcessors()
+    {
+        return false;
+    }
+
+    @Override
+    public boolean decrementNumberOfProcessors()
+    {
+        return false;
     }
 
     @Override
@@ -171,7 +195,8 @@ public abstract class AbstractStep<T> implements Step<T>
     protected void addStatsProviders( Collection<StatsProvider> providers )
     {
         providers.add( new ProcessingStats( doneBatches.get()+queuedBatches.get(), doneBatches.get(),
-                totalProcessingTime.get(), upstreamIdleTime.get(), downstreamIdleTime.get() ) );
+                totalProcessingTime.total(), totalProcessingTime.average() / numberOfProcessors(),
+                upstreamIdleTime.get(), downstreamIdleTime.get() ) );
     }
 
     @SuppressWarnings( "unchecked" )

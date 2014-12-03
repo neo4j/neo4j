@@ -49,7 +49,7 @@ public class BatchingPhysicalTransactionAppenderTest
         TransactionMetadataCache cache = new TransactionMetadataCache( 10, 10 );
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         LimitedCounterFactory counters = new LimitedCounterFactory( highestValueBeforeWrappingAround, 0 );
-        ControlledIdler forceThreadControl = new ControlledIdler();
+        ControlledParkStrategy forceThreadControl = new ControlledParkStrategy();
         BatchingPhysicalTransactionAppender appender = new BatchingPhysicalTransactionAppender( logFile, cache,
                 transactionIdStore, BYPASS, counters, forceThreadControl );
         Counter appendCounter = counters.createdCounters.get( 0 );
@@ -70,7 +70,7 @@ public class BatchingPhysicalTransactionAppenderTest
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         LimitedCounterFactory counters = new LimitedCounterFactory(
                 highestValueBeforeWrappingAround, highestValueBeforeWrappingAround );
-        ControlledIdler forceThreadControl = new ControlledIdler();
+        ControlledParkStrategy forceThreadControl = new ControlledParkStrategy();
         BatchingPhysicalTransactionAppender appender = new BatchingPhysicalTransactionAppender( logFile, cache,
                 transactionIdStore, BYPASS, counters, forceThreadControl );
         Counter appendCounter = counters.createdCounters.get( 0 );
@@ -81,13 +81,13 @@ public class BatchingPhysicalTransactionAppenderTest
     }
 
     private void assertForceAfterAppendAwaitsCorrectForceTicket( OtherThreadExecutor<Void> t2,
-            BatchingPhysicalTransactionAppender appender, ControlledIdler forceThreadControl, Counter appendCounter ) throws Exception
+            BatchingPhysicalTransactionAppender appender, ControlledParkStrategy forceThreadControl, Counter appendCounter ) throws Exception
     {
         forceThreadControl.awaitIdle();
         long ticket = appendCounter.incrementAndGet();
         // THEN forcing as part of append (forceAfterAppend) should await that ticket
         Future<Object> forceFuture = t2.executeDontWait( forceAfterAppend( appender, ticket ) );
-        forceThreadControl.letLoose();
+        forceThreadControl.unpark( Thread.currentThread() );
         forceFuture.get();
     }
 
@@ -152,43 +152,6 @@ public class BatchingPhysicalTransactionAppenderTest
             };
             createdCounters.add( counter );
             return counter;
-        }
-    }
-
-    public class ControlledIdler implements WaitStrategy
-    {
-        private volatile boolean idle;
-
-        @Override
-        public void wait( Thread thread )
-        {
-            idle = true;
-            await( false );
-        }
-
-        public void letLoose()
-        {
-            idle = false;
-        }
-
-        public void awaitIdle()
-        {
-            await( true );
-        }
-
-        private void await( boolean idle )
-        {
-            while ( this.idle != idle )
-            {
-                try
-                {
-                    Thread.sleep( 1 );
-                }
-                catch ( InterruptedException e )
-                {
-                    throw new RuntimeException( e );
-                }
-            }
         }
     }
 }

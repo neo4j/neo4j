@@ -19,15 +19,17 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.function.primitive.PrimitiveLongPredicate;
-import org.neo4j.helpers.NamedThreadFactory;
+import org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor;
+import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor;
 
 import static java.lang.System.currentTimeMillis;
-import static java.util.concurrent.Executors.newFixedThreadPool;
-import static java.util.concurrent.Executors.newSingleThreadExecutor;
+
+import static org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor.DEFAULT_PARK_STRATEGY;
 
 /**
  * {@link Step} that uses {@link ExecutorService} as a queue and execution mechanism.
@@ -35,8 +37,9 @@ import static java.util.concurrent.Executors.newSingleThreadExecutor;
  */
 public abstract class ExecutorServiceStep<T> extends AbstractStep<T>
 {
-    private final ExecutorService executor;
+    private final TaskExecutor executor;
     private final int workAheadSize;
+    private final boolean allowMultipleProcessors;
     private final PrimitiveLongPredicate catchUp = new PrimitiveLongPredicate()
     {
         @Override
@@ -50,14 +53,19 @@ public abstract class ExecutorServiceStep<T> extends AbstractStep<T>
     // Useful for tracking how much time we spend waiting for batches from upstream.
     private final AtomicLong lastBatchEndTime = new AtomicLong();
 
-    protected ExecutorServiceStep( StageControl control, String name, int workAheadSize, int numberOfExecutors )
+    protected ExecutorServiceStep( StageControl control, String name, int workAheadSize, int movingAverageSize,
+            int initialProcessorCount, boolean allowMultipleProcessors )
     {
-        super( control, name );
+        super( control, name, movingAverageSize );
         this.workAheadSize = workAheadSize;
-        NamedThreadFactory threadFactory = new NamedThreadFactory( name );
-        this.executor = numberOfExecutors == 1 ?
-                newSingleThreadExecutor( threadFactory ) :
-                newFixedThreadPool( numberOfExecutors, threadFactory );
+        this.allowMultipleProcessors = allowMultipleProcessors;
+        this.executor = new DynamicTaskExecutor( initialProcessorCount, workAheadSize, DEFAULT_PARK_STRATEGY, name );
+    }
+
+    protected ExecutorServiceStep( StageControl control, String name, int workAheadSize, int movingAverageSize,
+            int initialProcessorCount )
+    {
+        this( control, name, workAheadSize, movingAverageSize, initialProcessorCount, initialProcessorCount > 1 );
     }
 
     @Override
@@ -68,10 +76,10 @@ public abstract class ExecutorServiceStep<T> extends AbstractStep<T>
 
         receivedBatch();
 
-        executor.submit( new Runnable()
+        executor.submit( new Callable<Void>()
         {
             @Override
-            public void run()
+            public Void call()
             {
                 assertHealthy();
 
@@ -79,7 +87,7 @@ public abstract class ExecutorServiceStep<T> extends AbstractStep<T>
                 try
                 {
                     Object result = process( ticket, batch );
-                    totalProcessingTime.addAndGet( currentTimeMillis()-startTime );
+                    totalProcessingTime.add( currentTimeMillis()-startTime );
 
                     await( rightTicket, ticket );
                     sendDownstream( ticket, result );
@@ -99,6 +107,7 @@ public abstract class ExecutorServiceStep<T> extends AbstractStep<T>
                 {
                     issuePanic( e );
                 }
+                return null;
             }
         } );
 
@@ -126,6 +135,24 @@ public abstract class ExecutorServiceStep<T> extends AbstractStep<T>
     public void close()
     {
         super.close();
-        executor.shutdown();
+        executor.shutdown( true );
+    }
+
+    @Override
+    public int numberOfProcessors()
+    {
+        return executor.numberOfProcessors();
+    }
+
+    @Override
+    public boolean incrementNumberOfProcessors()
+    {
+        return allowMultipleProcessors ? executor.incrementNumberOfProcessors() : false;
+    }
+
+    @Override
+    public boolean decrementNumberOfProcessors()
+    {
+        return executor.decrementNumberOfProcessors();
     }
 }

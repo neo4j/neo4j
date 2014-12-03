@@ -28,9 +28,10 @@ public class IteratorBatcherStep<T> extends ProducerStep<T>
 {
     private final ResourceIterator<T> data;
 
-    public IteratorBatcherStep( StageControl control, String name, int batchSize, ResourceIterator<T> data )
+    public IteratorBatcherStep( StageControl control, String name, int batchSize, int movingAverageSize,
+            ResourceIterator<T> data )
     {
-        super( control, name, batchSize );
+        super( control, name, batchSize, movingAverageSize );
         this.data = data;
     }
 

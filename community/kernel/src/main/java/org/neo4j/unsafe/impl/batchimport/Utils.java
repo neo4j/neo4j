@@ -19,40 +19,11 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import java.util.Iterator;
-
-import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.impl.store.record.PropertyBlock;
-import org.neo4j.kernel.impl.transaction.state.PropertyCreator;
-import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository;
-
 /**
  * Common and cross-concern utilities.
  */
 public class Utils
 {
-    public static Iterator<PropertyBlock> propertyKeysAndValues( final Object[] properties,
-            final BatchingTokenRepository<?> propertyKeyHolder, final PropertyCreator creator )
-    {
-        return new PrefetchingIterator<PropertyBlock>()
-        {
-            private int cursor;
-
-            @Override
-            protected PropertyBlock fetchNextOrNull()
-            {
-                if ( cursor >= properties.length )
-                {
-                    return null;
-                }
-
-                int key = propertyKeyHolder.getOrCreateId( (String)properties[cursor++] );
-                Object value = properties[cursor++];
-                return creator.encodeValue( new PropertyBlock(), key, value );
-            }
-        };
-    }
-
     public static int safeCastLongToInt( long value )
     {
         if ( value > Integer.MAX_VALUE )

@@ -40,13 +40,13 @@ class BatchingForceThread extends Thread
 
     private volatile boolean run = true;
     private final Operation operation;
-    private final WaitStrategy waitStrategy;
+    private final ParkStrategy waitStrategy;
     private volatile IOException failure;
 
     /**
      * @param waitStrategy how do we wait if there's nothing in particular to do right now?
      */
-    BatchingForceThread( Operation operation, WaitStrategy waitStrategy )
+    BatchingForceThread( Operation operation, ParkStrategy waitStrategy )
     {
         super( "BatchingWrites thread" + trackTest() );
         this.operation = operation;
@@ -68,7 +68,7 @@ class BatchingForceThread extends Thread
             {
                 if ( !operation.perform() )
                 {
-                    waitStrategy.wait( this );
+                    waitStrategy.park( this );
                 }
             }
             catch ( IOException e )

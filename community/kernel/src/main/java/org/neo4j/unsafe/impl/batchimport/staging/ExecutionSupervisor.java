@@ -19,49 +19,48 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
-import java.util.concurrent.TimeUnit;
-
-import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
+import org.neo4j.helpers.Clock;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
-import static java.lang.System.currentTimeMillis;
 import static java.lang.Thread.sleep;
 
-import static org.neo4j.unsafe.impl.batchimport.stats.Keys.downstream_idle_time;
-import static org.neo4j.unsafe.impl.batchimport.stats.Keys.upstream_idle_time;
-
 /**
- * {@link ExecutionMonitor} that polls the {@link StageExecution} about up to date stats.
- * An {@code interval} can be supplied (millis), where {@link #poll(StageExecution)} will be called,
- * a method that is up to subclasses to implement.
+ * Supervises a {@link StageExecution} until it is no longer {@link StageExecution#stillExecuting() executing}.
+ * Meanwhile it feeds information about the execution to an {@link ExecutionMonitor}.
  */
-public abstract class PollingExecutionMonitor implements ExecutionMonitor
+public class ExecutionSupervisor
 {
-    private final long intervalMillis;
+    private final Clock clock;
+    private final ExecutionMonitor monitor;
 
-    public PollingExecutionMonitor( long intervalMillis )
+    public ExecutionSupervisor( Clock clock, ExecutionMonitor monitor )
     {
-        this( intervalMillis, TimeUnit.MILLISECONDS );
+        this.clock = clock;
+        this.monitor = monitor;
     }
 
-    public PollingExecutionMonitor( long interval, TimeUnit unit )
+    public ExecutionSupervisor( ExecutionMonitor monitor )
     {
-        this.intervalMillis = unit.toMillis( interval );
+        this( Clock.SYSTEM_CLOCK, monitor );
     }
 
-    @Override
-    public void monitor( StageExecution... executions )
+    public void supervise( StageExecution... executions )
     {
         long startTime = currentTimeMillis();
         start( executions );
 
         while ( anyStillExecuting( executions ) )
         {
-            poll( executions );
             finishAwareSleep( executions );
+            monitor.check( executions );
         }
         end( executions, currentTimeMillis()-startTime );
+    }
+
+    private long currentTimeMillis()
+    {
+        return clock.currentTimeMillis();
     }
 
     private boolean anyStillExecuting( StageExecution[] executions )
@@ -77,18 +76,18 @@ public abstract class PollingExecutionMonitor implements ExecutionMonitor
     }
 
     protected void end( StageExecution[] executions, long totalTimeMillis )
-    {   // Nothing by default
+    {
+        monitor.end( executions, totalTimeMillis );
     }
 
     protected void start( StageExecution[] executions )
-    {   // Nothing by default
+    {
+        monitor.start( executions );
     }
-
-    protected abstract void poll( StageExecution[] executions );
 
     private void finishAwareSleep( StageExecution[] executions )
     {
-        long endTime = currentTimeMillis()+intervalMillis;
+        long endTime = monitor.nextCheckTime();
         while ( currentTimeMillis() < endTime )
         {
             if ( !anyStillExecuting( executions ) )
@@ -111,30 +110,8 @@ public abstract class PollingExecutionMonitor implements ExecutionMonitor
         }
     }
 
-    /**
-     * Tries to figure out which {@link Step} in a {@link StageExecution} that is the bottle neck
-     * I.e. which {@link Step} that waits very little for upstream work and very little
-     * for down stream to catch up.
-     *
-     * @return the {@link StepStats} index in {@link StageExecution#stats()} that is most likely
-     * the bottle neck of the execution.
-     */
-    protected int figureOutBottleNeck( StageExecution execution )
+    public void done( long totalTimeMillis )
     {
-        int leaderIndex = -1;
-        StepStats leader = null;
-        int index = 0;
-        for ( StepStats stat : execution.stats() )
-        {
-            if ( leader == null ||
-                   (stat.stat( downstream_idle_time ).asLong() + stat.stat( upstream_idle_time ).asLong()) <
-                   (leader.stat( downstream_idle_time ).asLong() + leader.stat( upstream_idle_time ).asLong()) )
-            {
-                leader = stat;
-                leaderIndex = index;
-            }
-            index++;
-        }
-        return leaderIndex;
+        monitor.done( totalTimeMillis );
     }
 }

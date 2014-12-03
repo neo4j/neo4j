@@ -20,7 +20,6 @@
 package org.neo4j.unsafe.impl.batchimport.stats;
 
 import org.neo4j.unsafe.impl.batchimport.staging.Step;
-import org.neo4j.unsafe.impl.batchimport.stats.Stats.LongBasedStat;
 
 import static org.neo4j.unsafe.impl.batchimport.stats.Stats.longStat;
 
@@ -30,22 +29,16 @@ import static org.neo4j.unsafe.impl.batchimport.stats.Stats.longStat;
  */
 public class ProcessingStats extends GenericStatsProvider
 {
-    public ProcessingStats( long receivedBatches, long doneBatches, long totalProcessingTime, long upstreamIdleTime,
-            long downstreamIdleTime )
+    public ProcessingStats(
+            long receivedBatches, long doneBatches,
+            long totalProcessingTime, long average,
+            long upstreamIdleTime, long downstreamIdleTime )
     {
         add( Keys.received_batches, longStat( receivedBatches ) );
         add( Keys.done_batches, longStat( doneBatches ) );
         add( Keys.total_processing_time, longStat( totalProcessingTime ) );
         add( Keys.upstream_idle_time, longStat( upstreamIdleTime ) );
         add( Keys.downstream_idle_time, longStat( downstreamIdleTime ) );
-        add( Keys.avg_processing_time, new LongBasedStat( DetailLevel.BASIC )
-        {
-            @Override
-            public long asLong()
-            {
-                long batches = stat( Keys.done_batches ).asLong();
-                return batches == 0 ? 0 : stat( Keys.total_processing_time ).asLong() / batches;
-            }
-        } );
+        add( Keys.avg_processing_time, longStat( average ) );
     }
 }

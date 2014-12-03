@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 
 public class FakeClock implements Clock
 {
-    private long time = 0;
+    private volatile long time = 0;
 
     @Override
     public long currentTimeMillis()

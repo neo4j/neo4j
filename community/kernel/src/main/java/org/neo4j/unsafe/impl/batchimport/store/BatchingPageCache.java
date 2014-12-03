@@ -34,6 +34,8 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.util.SimplePool;
+import org.neo4j.unsafe.impl.batchimport.Parallelizable;
+import org.neo4j.unsafe.impl.batchimport.WriterFactories;
 import org.neo4j.unsafe.impl.batchimport.store.io.Monitor;
 
 import static java.lang.Math.min;
@@ -46,7 +48,7 @@ import static java.lang.Math.min;
 */
 public class BatchingPageCache implements PageCache
 {
-    public interface WriterFactory
+    public interface WriterFactory extends Parallelizable
     {
         Writer create( StoreChannel channel, Monitor monitor );
 
@@ -63,7 +65,7 @@ public class BatchingPageCache implements PageCache
         void write( ByteBuffer byteBuffer, long position, Pool<ByteBuffer> poolToReleaseBufferIn ) throws IOException;
     }
 
-    public static final WriterFactory SYNCHRONOUS = new WriterFactory()
+    public static final WriterFactory SYNCHRONOUS = new WriterFactories.SingleThreadedWriterFactory()
     {
         @Override
         public Writer create( final StoreChannel channel, final Monitor monitor )

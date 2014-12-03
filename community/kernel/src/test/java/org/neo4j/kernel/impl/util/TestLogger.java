@@ -31,7 +31,10 @@ import org.neo4j.kernel.logging.LogMarker;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
-import static org.junit.Assert.*;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.Predicates.equalTo;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.filter;
@@ -80,6 +83,7 @@ public class TestLogger extends StringLogger
         public static LogCall warn(String msg,  Throwable c) { return new LogCall(Level.WARN,  msg, c, false); }
         public static LogCall error(String msg, Throwable c) { return new LogCall(Level.ERROR, msg, c, false); }
 
+        @Override
         public void accept( Visitor<LogCall,RuntimeException> visitor )
         {
             visitor.visit( this );
@@ -120,7 +124,7 @@ public class TestLogger extends StringLogger
         }
     }
 
-    private List<LogCall> logCalls = new ArrayList<LogCall>();
+    private final List<LogCall> logCalls = new ArrayList<LogCall>();
 
     //
     // TEST TOOLS
@@ -160,6 +164,18 @@ public class TestLogger extends StringLogger
         {
             fail( "These log calls were expected, but never occurred: \n" + serialize( expected.iterator() ) + "\nActual log calls were:\n" + serialize( logCalls.iterator() ) );
         }
+    }
+
+    public void assertContainsMessageContaining( String partOfMessage )
+    {
+        for ( LogCall logCall : logCalls )
+        {
+            if ( logCall.message.contains( partOfMessage ) )
+            {
+                return;
+            }
+        }
+        fail( "Expected at least one log statement containing '" + partOfMessage + "', but none found. ctual log calls were:\n" + serialize( logCalls.iterator() ) );
     }
 
     public void assertNoDebugs()

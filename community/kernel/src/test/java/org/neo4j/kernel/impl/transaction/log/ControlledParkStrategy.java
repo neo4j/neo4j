@@ -17,31 +17,42 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.record;
+package org.neo4j.kernel.impl.transaction.log;
 
-public abstract class PrimitiveRecord extends Abstract64BitRecord
+public class ControlledParkStrategy implements ParkStrategy
 {
-    private long nextProp;
+    private volatile boolean idle;
 
-    public PrimitiveRecord()
+    @Override
+    public void park( Thread thread )
     {
+        idle = true;
+        await( false );
     }
 
-    public PrimitiveRecord( long id, long nextProp )
+    @Override
+    public void unpark( Thread thread )
     {
-        super( id );
-        this.nextProp = nextProp;
+        idle = false;
     }
 
-    public long getNextProp()
+    public void awaitIdle()
     {
-        return nextProp;
+        await( true );
     }
 
-    public void setNextProp( long nextProp )
+    private void await( boolean idle )
     {
-        this.nextProp = nextProp;
+        while ( this.idle != idle )
+        {
+            try
+            {
+                Thread.sleep( 1 );
+            }
+            catch ( InterruptedException e )
+            {   // Do continue
+                Thread.interrupted();
+            }
+        }
     }
-
-    public abstract void setIdTo( PropertyRecord property );
 }

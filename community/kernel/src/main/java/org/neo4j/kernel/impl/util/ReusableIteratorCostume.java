@@ -17,31 +17,40 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.record;
+package org.neo4j.kernel.impl.util;
 
-public abstract class PrimitiveRecord extends Abstract64BitRecord
+import java.util.Iterator;
+
+/**
+ * Dresses up an array in an {@link Iterator} costume. Can be reused for multiple arrays.
+ */
+public class ReusableIteratorCostume<T> implements Iterator<T>
 {
-    private long nextProp;
+    private T[] items;
+    private int cursor;
 
-    public PrimitiveRecord()
+    public Iterator<T> dressArray( T[] items )
     {
+        this.items = items;
+        this.cursor = 0;
+        return this;
     }
 
-    public PrimitiveRecord( long id, long nextProp )
+    @Override
+    public boolean hasNext()
     {
-        super( id );
-        this.nextProp = nextProp;
+        return cursor < items.length;
     }
 
-    public long getNextProp()
+    @Override
+    public T next()
     {
-        return nextProp;
+        return items[cursor++];
     }
 
-    public void setNextProp( long nextProp )
+    @Override
+    public void remove()
     {
-        this.nextProp = nextProp;
+        throw new UnsupportedOperationException();
     }
-
-    public abstract void setIdTo( PropertyRecord property );
 }

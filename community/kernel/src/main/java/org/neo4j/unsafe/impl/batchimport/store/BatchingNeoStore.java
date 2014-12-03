@@ -139,17 +139,17 @@ public class BatchingNeoStore implements AutoCloseable
         return neoStore.getPropertyStore();
     }
 
-    public BatchingTokenRepository<?> getPropertyKeyRepository()
+    public BatchingPropertyKeyTokenRepository getPropertyKeyRepository()
     {
         return propertyKeyRepository;
     }
 
-    public BatchingTokenRepository<?> getLabelRepository()
+    public BatchingLabelTokenRepository getLabelRepository()
     {
         return labelRepository;
     }
 
-    public BatchingTokenRepository<?> getRelationshipTypeRepository()
+    public BatchingRelationshipTypeTokenRepository getRelationshipTypeRepository()
     {
         return relationshipTypeRepository;
     }

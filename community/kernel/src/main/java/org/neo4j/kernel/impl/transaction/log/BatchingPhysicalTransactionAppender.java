@@ -43,7 +43,7 @@ public class BatchingPhysicalTransactionAppender extends AbstractPhysicalTransac
      * chooses to solve short pauses like this by temporarily changing its system-wide lowest granularity,
      * i.e. potentially affecting the rest of the operation system that this is run on.
      */
-    public static final WaitStrategy DEFAULT_WAIT_STRATEGY = new WaitStrategy.Park( 10 /*ms*/ );
+    public static final ParkStrategy DEFAULT_WAIT_STRATEGY = new ParkStrategy.Park( 10 /*ms*/ );
 
     /**
      * Incremented for every call to {@link #append(org.neo4j.kernel.impl.transaction.TransactionRepresentation)}
@@ -81,7 +81,7 @@ public class BatchingPhysicalTransactionAppender extends AbstractPhysicalTransac
             TransactionMetadataCache transactionMetadataCache, final TransactionIdStore transactionIdStore,
             IdOrderingQueue legacyIndexTransactionOrdering,
             Factory<Counter> counting,
-            WaitStrategy idleBackoffStrategy )
+            ParkStrategy idleBackoffStrategy )
     {
         super( logFile, transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering );
         appenderTicket = counting.newInstance();

@@ -19,12 +19,12 @@
  */
 package org.neo4j.unsafe.impl.batchimport.store;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
 
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContext;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess;
+import org.neo4j.kernel.impl.util.collection.ArrayCollection;
 
 /**
  * {@link RecordAccess} optimized for batching and an access pattern where records are created sequentially.
@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.transaction.state.RecordAccess;
  */
 public abstract class BatchingRecordAccess<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RECORD,ADDITIONAL>
 {
-    private final List<RecordProxy<KEY,RECORD,ADDITIONAL>> proxies = new ArrayList<>();
+    private final Collection<RecordProxy<KEY,RECORD,ADDITIONAL>> proxies = new ArrayCollection<>( 1000 );
 
     @Override
     public RecordProxy<KEY,RECORD,ADDITIONAL> getOrLoad( KEY key, ADDITIONAL additionalData )
@@ -90,7 +90,8 @@ public abstract class BatchingRecordAccess<KEY,RECORD,ADDITIONAL> implements Rec
 
     @Override
     public void close()
-    {   // Nothing to close
+    {   // Fast clearing due to ArrayCollection
+        proxies.clear();
     }
 
     public static class BatchingRecordProxy<KEY,RECORD,ADDITIONAL> implements RecordProxy<KEY,RECORD,ADDITIONAL>

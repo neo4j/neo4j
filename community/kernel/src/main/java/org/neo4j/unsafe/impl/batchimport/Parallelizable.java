@@ -19,34 +19,28 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import java.util.List;
-
-import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
-import org.neo4j.kernel.impl.store.record.PropertyRecord;
-
 /**
- * Batch of created records, i.e. entity records with their property records and friends.
- *
- * @param <ENTITY> the type of entities in this batch.
+ * Represents something that can be parallelizable, in this case that means the ability to dynamically change
+ * the number of processors executing that tasks ahead.
  */
-public class RecordBatch<ENTITY extends PrimitiveRecord>
+public interface Parallelizable
 {
-    private final List<ENTITY> entityRecords;
-    private final Iterable<PropertyRecord> propertyRecords;
+    /**
+     * The number of processors processing incoming tasks in parallel.
+     */
+    int numberOfProcessors();
 
-    public RecordBatch( List<ENTITY> entityRecords, Iterable<PropertyRecord> propertyRecords )
-    {
-        this.entityRecords = entityRecords;
-        this.propertyRecords = propertyRecords;
-    }
+    /**
+     * Increments number of processors that processes tasks in parallel.
+     *
+     * @return {@code true} if one more processor was assigned, otherwise {@code false}.
+     */
+    boolean incrementNumberOfProcessors();
 
-    public List<ENTITY> getEntityRecords()
-    {
-        return entityRecords;
-    }
-
-    public Iterable<PropertyRecord> getPropertyRecords()
-    {
-        return propertyRecords;
-    }
+    /**
+     * Decrements number of processors that processes tasks in parallel.
+     *
+     * @return {@code true} if one processor was unassigned, otherwise {@code false}.
+     */
+    boolean decrementNumberOfProcessors();
 }

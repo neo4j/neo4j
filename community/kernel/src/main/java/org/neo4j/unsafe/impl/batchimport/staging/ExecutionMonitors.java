@@ -21,6 +21,8 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import static org.neo4j.unsafe.impl.batchimport.staging.SpectrumExecutionMonitor.DEFAULT_WIDTH;
+
 /**
  * Common {@link ExecutionMonitor} implementations.
  */
@@ -33,19 +35,35 @@ public class ExecutionMonitors
 
     public static ExecutionMonitor defaultVisible()
     {
-        return new SpectrumExecutionMonitor( 2, SECONDS, System.out, 80 );
+        return new SpectrumExecutionMonitor( 2, SECONDS, System.out, DEFAULT_WIDTH );
     }
 
-    private static final ExecutionMonitor INVISIBLE = new PollingExecutionMonitor( 1, SECONDS )
+    private static final ExecutionMonitor INVISIBLE = new ExecutionMonitor()
     {
         @Override
-        public void done( long totalTimeMillis )
-        {   // Nothing to do here
+        public void start( StageExecution[] executions )
+        {   // Do nothing
         }
 
         @Override
-        protected void poll( StageExecution[] executions )
-        {   // Nothing to do here
+        public void end( StageExecution[] executions, long totalTimeMillis )
+        {   // Do nothing
+        }
+
+        @Override
+        public long nextCheckTime()
+        {
+            return Long.MAX_VALUE;
+        }
+
+        @Override
+        public void check( StageExecution[] executions )
+        {   // Do nothing
+        }
+
+        @Override
+        public void done( long totalTimeMillis )
+        {   // Do nothing
         }
     };
 

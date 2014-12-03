@@ -37,10 +37,10 @@ public class NodeCountsStep extends NodeStoreProcessorStep
     private final CountsTracker countsTracker;
     private final int anyLabel;
 
-    public NodeCountsStep( StageControl control, int batchSize, NodeStore nodeStore, NodeLabelsCache cache,
+    public NodeCountsStep( StageControl control, Configuration config, NodeStore nodeStore, NodeLabelsCache cache,
             int highLabelId, CountsTracker countsTracker )
     {
-        super( control, "NODE COUNTS", batchSize, nodeStore );
+        super( control, "NODE COUNTS", config, nodeStore );
         this.cache = cache;
         this.anyLabel = highLabelId;
         this.countsTracker = countsTracker;

@@ -24,6 +24,7 @@ import java.util.LinkedList;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 
+import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Writer;
 
 /**
@@ -35,10 +36,10 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Writer;
 class WriteQueue implements Callable<Void>
 {
     private final LinkedList<WriteJob> queue = new LinkedList<>();
-    private final ExecutorService executor;
+    private final TaskExecutor executor;
     private final JobMonitor jobMonitor;
 
-    public WriteQueue( ExecutorService executor, JobMonitor jobMonitor )
+    public WriteQueue( TaskExecutor executor, JobMonitor jobMonitor )
     {
         this.executor = executor;
         this.jobMonitor = jobMonitor;

@@ -25,7 +25,6 @@ import org.junit.Test;
 
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.stats.Keys;
-import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
 
 import static org.junit.Assert.assertEquals;
 
@@ -40,7 +39,7 @@ public class StageTest
         int batchSize = 10;
         long batches = 1000;
         final long items = batches*batchSize;
-        stage.add( new ProducerStep<Object>( stage.control(), "Producer", batchSize )
+        stage.add( new ProducerStep<Object>( stage.control(), "Producer", batchSize, 100 )
         {
             private long i = 0;
             private final Object theObject = new Object();
@@ -61,12 +60,12 @@ public class StageTest
 
         // WHEN
         StageExecution execution = stage.execute();
-        ExecutionMonitors.invisible().monitor( execution );
+        new ExecutionSupervisor( ExecutionMonitors.invisible() ).supervise( execution );
 
         // THEN
-        for ( StepStats stats : execution.stats() )
+        for ( Step<?> step : execution.steps() )
         {
-            assertEquals( batches, stats.stat( Keys.done_batches ).asLong() );
+            assertEquals( batches, step.stats().stat( Keys.done_batches ).asLong() );
         }
         stage.close();
     }
@@ -79,7 +78,7 @@ public class StageTest
         ReceiveOrderAssertingStep( StageControl control, String name, int workAheadSize, int numberOfExecutors,
                 long processingTime )
         {
-            super( control, name, workAheadSize, numberOfExecutors );
+            super( control, name, workAheadSize, 100, numberOfExecutors );
             this.processingTime = processingTime;
         }
 

@@ -39,12 +39,6 @@ public class StringEncoder implements Encoder
     // data changing over time, potentially with each encoding
     private final byte[] reMap = new byte[256];
     private int numChars;
-    private int maxIdLength;
-
-    // reused scratch structures to reduce garbage
-    private byte[] scratchEncodedBytes = new byte[100];
-    private final int[] scratchCodes;
-    private final int[] scratchSimplestCodes = new int[2];
 
     public StringEncoder()
     {
@@ -54,7 +48,6 @@ public class StringEncoder implements Encoder
     public StringEncoder( int codingStrength )
     {
         numCodes = codingStrength > 2 ? codingStrength : 2;
-        scratchCodes = new int[numCodes];
         Arrays.fill( reMap, (byte)-1 );
     }
 
@@ -69,48 +62,33 @@ public class StringEncoder implements Encoder
     {
         // construct bytes from string
         int inputLength = s.length();
-        byte[] bytes = encodedBytes( inputLength );
+        byte[] bytes = new byte[inputLength];
         for ( int i = 0; i < inputLength; i++ )
         {
             bytes[i] = (byte) ((s.charAt( i )) % 127);
         }
         reMap( bytes, inputLength );
-        if ( inputLength > 127 )
-        {
-            if ( inputLength > maxIdLength )
-            {
-                maxIdLength = inputLength;
-            }
-        }
         // encode
         if ( inputLength <= encodingThreshold )
         {
             return simplestCode( bytes, inputLength );
         }
+        int[] codes = new int[numCodes];
         for ( int i = 0; i < numCodes; )
         {
-            scratchCodes[i] = getCode( bytes, inputLength, 1 );//relPrimes[index][i]);
-            scratchCodes[i + 1] = getCode( bytes, inputLength, inputLength - 1 );//relPrimes[index][i+1]);
+            codes[i] = getCode( bytes, inputLength, 1 );
+            codes[i + 1] = getCode( bytes, inputLength, inputLength - 1 );
             i += 2;
         }
         int carryOver = lengthEncoder( inputLength ) << 1;
         int temp = 0;
         for ( int i = 0; i < numCodes; i++ )
         {
-            temp = scratchCodes[i] & FOURTH_BYTE;
-            scratchCodes[i] = scratchCodes[i] >>> 8 | carryOver << 24;
+            temp = codes[i] & FOURTH_BYTE;
+            codes[i] = codes[i] >>> 8 | carryOver << 24;
             carryOver = temp;
         }
-        return scratchCodes;
-    }
-
-    private byte[] encodedBytes( int length )
-    {
-        if ( length > scratchEncodedBytes.length )
-        {
-            scratchEncodedBytes = new byte[length];
-        }
-        return scratchEncodedBytes;
+        return codes;
     }
 
     private int lengthEncoder( int length )
@@ -155,17 +133,18 @@ public class StringEncoder implements Encoder
 
     private int[] simplestCode( byte[] bytes, int inputLength )
     {
-        scratchSimplestCodes[0] = inputLength << 25;
-        scratchSimplestCodes[1] = 0;
+        int[] codes = new int[]{0, 0};
+        codes[0] = inputLength << 25;
+        codes[1] = 0;
         for ( int i = 0; i < 3 && i < inputLength; i++ )
         {
-            scratchSimplestCodes[0] = scratchSimplestCodes[0] | bytes[i] << ((2 - i) * 8);
+            codes[0] = codes[0] | bytes[i] << ((2 - i) * 8);
         }
         for ( int i = 3; i < 7 && i < inputLength; i++ )
         {
-            scratchSimplestCodes[1] = scratchSimplestCodes[1] | (bytes[i]) << ((6 - i) * 8);
+            codes[1] = codes[1] | (bytes[i]) << ((6 - i) * 8);
         }
-        return scratchSimplestCodes;
+        return codes;
     }
 
     private int getCode( byte[] bytes, int inputLength, int order )
