@@ -144,7 +144,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
   }
 
   test("simple expand") {
-    val logicalPlan = Expand(AllNodesScan("a", Set.empty)(solved), "a", Direction.INCOMING, Direction.INCOMING, Seq(), "b", "r1", SimplePatternLength)_
+    val logicalPlan = Expand(AllNodesScan("a", Set.empty)(solved), "a", Direction.INCOMING, Direction.INCOMING, Seq(), "b", "r1")_
     val pipeInfo = build(logicalPlan)
 
     pipeInfo.pipe should equal(ExpandPipeForIntTypes( AllNodesScanPipe("a")(), "a", "r1", "b", Direction.INCOMING, Seq() )())
@@ -154,8 +154,8 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
     val logicalPlan =
       NodeHashJoin(
         Set(IdName("b")),
-        Expand(AllNodesScan("a", Set.empty)(solved), "a", Direction.INCOMING, Direction.INCOMING, Seq(), "b", "r1", SimplePatternLength)(solved),
-        Expand(AllNodesScan("c", Set.empty)(solved), "c", Direction.INCOMING, Direction.INCOMING, Seq(), "b", "r2", SimplePatternLength)(solved)
+        Expand(AllNodesScan("a", Set.empty)(solved), "a", Direction.INCOMING, Direction.INCOMING, Seq(), "b", "r1")(solved),
+        Expand(AllNodesScan("c", Set.empty)(solved), "c", Direction.INCOMING, Direction.INCOMING, Seq(), "b", "r2")(solved)
       )_
     val pipeInfo = build(logicalPlan)
 
@@ -169,7 +169,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
   test("use ExpandPipeForStringTypes when at least one is unknown") {
     val names = Seq("existing1", "nonexisting", "existing3")
     val relTypeNames = names.map(new RelTypeName(_)(null))
-    val logicalPlan = Expand(AllNodesScan("a", Set.empty)(solved), "a", Direction.INCOMING, Direction.INCOMING, relTypeNames, "b", "r1", SimplePatternLength)_
+    val logicalPlan = Expand(AllNodesScan("a", Set.empty)(solved), "a", Direction.INCOMING, Direction.INCOMING, relTypeNames, "b", "r1")_
     val pipeInfo = build(logicalPlan)
 
     pipeInfo.pipe should equal(ExpandPipeForStringTypes( AllNodesScanPipe("a")(), "a", "r1", "b", Direction.INCOMING, names)())
@@ -178,7 +178,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
   test("use ExpandPipeForIntTypes when all tokens are known") {
     val names = Seq("existing1", "existing2", "existing3")
     val relTypeNames = names.map(new RelTypeName(_)(null))
-    val logicalPlan = Expand(AllNodesScan("a", Set.empty)(solved), "a", Direction.INCOMING, Direction.INCOMING, relTypeNames, "b", "r1", SimplePatternLength)_
+    val logicalPlan = Expand(AllNodesScan("a", Set.empty)(solved), "a", Direction.INCOMING, Direction.INCOMING, relTypeNames, "b", "r1")_
     val pipeInfo = build(logicalPlan)
 
     pipeInfo.pipe should equal(ExpandPipeForIntTypes( AllNodesScanPipe("a")(), "a", "r1", "b", Direction.INCOMING, Seq(1, 2, 3))())
@@ -187,7 +187,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
   test("use VarExpandPipeForStringTypes when at least one is unknown") {
     val names = Seq("existing1", "nonexisting", "existing3")
     val relTypeNames = names.map(new RelTypeName(_)(null))
-    val logicalPlan = Expand(AllNodesScan("a", Set.empty)(solved), "a", Direction.INCOMING, Direction.INCOMING, relTypeNames, "b", "r1", new VarPatternLength(2, Some(5))) _
+    val logicalPlan = VarExpand(AllNodesScan("a", Set.empty)(solved), "a", Direction.INCOMING, Direction.INCOMING, relTypeNames, "b", "r1", new VarPatternLength(2, Some(5))) _
     val pipeInfo = build(logicalPlan)
 
     pipeInfo.pipe match {
@@ -201,7 +201,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
   test("use VarExpandPipeForIntTypes when all tokens are known") {
     val names = Seq("existing1", "existing2", "existing3")
     val relTypeNames = names.map(new RelTypeName(_)(null))
-    val logicalPlan = Expand(AllNodesScan("a", Set.empty)(solved), "a", Direction.INCOMING, Direction.INCOMING, relTypeNames, "b", "r1", new VarPatternLength(2, Some(5))) _
+    val logicalPlan = VarExpand(AllNodesScan("a", Set.empty)(solved), "a", Direction.INCOMING, Direction.INCOMING, relTypeNames, "b", "r1", new VarPatternLength(2, Some(5))) _
     val pipeInfo = build(logicalPlan)
 
     pipeInfo.pipe match {

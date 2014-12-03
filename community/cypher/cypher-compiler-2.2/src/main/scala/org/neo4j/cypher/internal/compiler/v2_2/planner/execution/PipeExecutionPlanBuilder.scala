@@ -31,14 +31,15 @@ import org.neo4j.cypher.internal.compiler.v2_2.commands.{EntityProducerFactory, 
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{PipeInfo, PlanFingerprint}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes._
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.expanders.{NodeExpander, NodeRelationshipExpander}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityInput
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{CantHandleQueryException, SemanticTable}
-import org.neo4j.cypher.internal.compiler.v2_2.spi.{InstrumentedGraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.compiler.v2_2.spi.{QueryContext, InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.helpers.Eagerly
-import org.neo4j.graphdb.Relationship
+import org.neo4j.graphdb.{Node, Direction, Relationship}
 import org.neo4j.helpers.Clock
 
 case class PipeExecutionBuilderContext(cardinality: Metrics.CardinalityModel, semanticTable: SemanticTable)
@@ -50,6 +51,19 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
 
   def build(plan: LogicalPlan)(implicit context: PipeExecutionBuilderContext, planContext: PlanContext): PipeInfo = {
     val updating = false
+
+    def compilePredicate(predicates: Seq[Expression]): CommandPredicate =
+      compileOptionalPredicate(predicates).getOrElse(True())
+
+    def compileOptionalPredicate(predicates: Seq[Expression]): Option[CommandPredicate] =
+      predicates.map(buildPredicate).reduceOption(_ ++ _)
+
+    def compileNodeExpanderFactory(types: Seq[RelTypeName])(implicit semanticTable: SemanticTable): (Direction, QueryContext) => NodeExpander[Relationship] = {
+      if (types.exists(_.id == None))
+        NodeRelationshipExpander.forTypeNames(types.map(_.name): _*)
+      else
+        NodeRelationshipExpander.forTypeIds(types.flatMap(_.id).map(_.id): _*)
+    }
 
     def buildPipe(plan: LogicalPlan, input: QueryGraphCardinalityInput): Pipe = {
       implicit val monitor = monitors.newMonitor[PipeMonitor]()
@@ -90,21 +104,24 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
           NodeIndexSeekPipe(id, label, propertyKey, valueExpr.map(buildExpression), unique = true)()
 
         case Selection(predicates, left) =>
-          FilterPipe(buildPipe(left, input), predicates.map(buildPredicate).reduce(_ ++ _))()
+          FilterPipe(buildPipe(left, input), compilePredicate(predicates))()
 
         case CartesianProduct(left, right) =>
           CartesianProductPipe(buildPipe(left, input), buildPipe(right, input))()
 
-        case Expand(left, IdName(fromName), dir, projectedDir, types: Seq[RelTypeName], IdName(toName), IdName(relName), SimplePatternLength, _) =>
+        case Expand(left, IdName(fromName), dir, projectedDir, types: Seq[RelTypeName], IdName(toName), IdName(relName), mode, predicates) =>
           implicit val table: SemanticTable = context.semanticTable
+          val nodeExpanderFactory = compileNodeExpanderFactory(types)
+          val predicate = compileOptionalPredicate(predicates)
+          ExpandPipe(buildPipe(left, input), fromName, relName, toName, dir, mode, predicate, optional = false)(nodeExpanderFactory)()
 
-          if (types.exists(_.id == None))
-            ExpandPipeForStringTypes(buildPipe(left, input), fromName, relName, toName, dir, types.map(_.name))()
-          else {
-            ExpandPipeForIntTypes(buildPipe(left, input), fromName, relName, toName, dir, types.flatMap(_.id).map(_.id))()
-          }
+        case OptionalExpand(left, IdName(fromName), dir, projectedDir, types: Seq[RelTypeName], IdName(toName), IdName(relName), mode, predicates) =>
+          implicit val table: SemanticTable = context.semanticTable
+          val nodeExpanderFactory = compileNodeExpanderFactory(types)
+          val predicate = compileOptionalPredicate(predicates)
+          ExpandPipe(buildPipe(left, input), fromName, relName, toName, dir, mode, predicate, optional = true)(nodeExpanderFactory)()
 
-        case Expand(left, IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName), VarPatternLength(min, max), predicates) =>
+        case VarExpand(left, IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName), VarPatternLength(min, max), ExpandAll, predicates) =>
           val (keys, exprs) = predicates.unzip
           val commands = exprs.map(buildPredicate)
           val predicate = (context: ExecutionContext, state: QueryState, rel: Relationship) => {
@@ -122,10 +139,6 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
             VarLengthExpandPipeForStringTypes(buildPipe(left, input), fromName, relName, toName, dir, projectedDir, types.map(_.name), min, max, predicate)()
           else
             VarLengthExpandPipeForIntTypes(buildPipe(left, input), fromName, relName, toName, dir, projectedDir, types.flatMap(_.id).map(_.id), min, max, predicate)()
-
-        case OptionalExpand(left, IdName(fromName), dir, types, IdName(toName), IdName(relName), SimplePatternLength, predicates) =>
-          val predicate = predicates.map(buildPredicate).reduceOption(_ ++ _).getOrElse(True())
-          OptionalExpandPipe(buildPipe(left, input), fromName, relName, toName, dir, types.map(_.name), predicate)()
 
         case NodeHashJoin(nodes, left, right) =>
           NodeHashJoinPipe(nodes.map(_.name), buildPipe(left, input), buildPipe(right, input))()

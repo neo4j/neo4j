@@ -19,94 +19,86 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
+import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_2.commands.Predicate
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.ExpandExpression
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.expanders.{NodeExpander, NodeRelationshipExpander}
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.{LegacyExpression, ExpandExpression}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{ExpandInto, ExpandAll, ExpansionMode}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
-import org.neo4j.cypher.internal.compiler.v2_2.{ExecutionContext, InternalException}
-import org.neo4j.graphdb.{Direction, Node, Relationship}
+import org.neo4j.graphdb.{Direction, Relationship}
 
-sealed abstract class ExpandPipe[T](source: Pipe,
-                                 from: String,
-                                 relName: String,
-                                 to: String,
-                                 dir: Direction,
-                                 types: Seq[T],
-                                 pipeMonitor: PipeMonitor)
-                    extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
+final case class ExpandPipe(source: Pipe,
+                            from: String,
+                            relName: String,
+                            to: String,
+                            dir: Direction,
+                            mode: ExpansionMode,
+                            predicate: Option[Predicate] = None,
+                            optional: Boolean = false)
+                           (nodeExpanderFactory: (Direction, QueryContext) => NodeExpander[Relationship])
+                           (val estimatedCardinality: Option[Long] = None)
+                           (implicit pipeMonitor: PipeMonitor)
+           extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
-  def getRelationships: (Node, QueryContext, Direction) => Iterator[Relationship]
-
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    input.flatMap {
-      row =>
-        getFromNode(row) match {
-          case n: Node =>
-            val relationships: Iterator[Relationship] = getRelationships(n, state.query, dir)
-            relationships.map {
-              case r =>
-                row.newWith2(relName, r, to, r.getOtherNode(n))
-            }
-
-          case null => None
-
-          case value => throw new InternalException(s"Expected to find a node at $from but found $value instead")
-        }
-    }
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
+    val generator = ExpandPipeGenerator(input, from, relName, to, dir, mode, predicate, optional)(nodeExpanderFactory)(state)
+    val iter = generator.iterator
+    iter
   }
 
-  def getFromNode(row: ExecutionContext): Any =
-    row.getOrElse(from, throw new InternalException(s"Expected to find a node at $from but found nothing"))
-
-  def planDescription = {
-    source.planDescription.andThen(this, "Expand", identifiers, ExpandExpression(from, relName, to, dir))
-  }
+  override def localEffects = Effects.READS_ENTITIES
 
   val symbols = source.symbols.add(to, CTNode).add(relName, CTRelationship)
 
-  override def localEffects = Effects.READS_ENTITIES
-}
+  def planDescription = {
+    val nameStr = if (optional) "OptionalExpand" else "Expand"
+    val modeStr = if (mode == ExpandInto) "Into" else ""
+    val name = s"$nameStr$modeStr"
 
-case class ExpandPipeForIntTypes(source: Pipe,
-                                from: String,
-                                relName: String,
-                                to: String,
-                                dir: Direction,
-                                types: Seq[Int])
-                               (val estimatedCardinality: Option[Long] = None)
-                               (implicit pipeMonitor: PipeMonitor)
-  extends ExpandPipe[Int](source, from, relName, to, dir, types, pipeMonitor) {
-
-  override def getRelationships: (Node, QueryContext, Direction) => Iterator[Relationship] =
-    (n:Node, query: QueryContext, dir:Direction) => query.getRelationshipsForIds(n, dir, types)
-
+    predicate match {
+      case None =>
+        source.planDescription.andThen(this, name, identifiers, ExpandExpression(from, relName, to, dir))
+      case Some(expression) =>
+        source.planDescription.andThen(this, name, identifiers, ExpandExpression(from, relName, to, dir), LegacyExpression(expression))
+    }
+  }
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources
-    copy(source = source)(estimatedCardinality)
+    copy(source = source)(nodeExpanderFactory)(estimatedCardinality)
   }
 
-  def withEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Long) = copy()(nodeExpanderFactory)(Some(estimated))
 }
 
-case class ExpandPipeForStringTypes(source: Pipe,
-                                    from: String,
-                                    relName: String,
-                                    to: String,
-                                    dir: Direction,
-                                    types: Seq[String])
-                                   (val estimatedCardinality: Option[Long] = None)
-                                   (implicit pipeMonitor: PipeMonitor)
-  extends ExpandPipe[String](source, from, relName, to, dir, types, pipeMonitor) {
-
-  override def getRelationships: (Node, QueryContext, Direction) => Iterator[Relationship] =
-    (n:Node, query: QueryContext, dir:Direction) => query.getRelationshipsFor(n, dir, types)
-
-
-  def dup(sources: List[Pipe]): Pipe = {
-    val (source :: Nil) = sources
-    copy(source = source)(estimatedCardinality)
+// TODO: Remove uses
+object ExpandPipeForStringTypes {
+  def apply(source: Pipe,
+            from: String,
+            relName: String,
+            to: String,
+            dir: Direction,
+            types: Seq[String] = Seq.empty,
+            mode: ExpansionMode = ExpandAll)
+           (estimatedCardinality: Option[Long] = None)
+           (implicit pipeMonitor: PipeMonitor) = {
+    ExpandPipe(source, from, relName, to, dir, mode)(NodeRelationshipExpander.forTypeNames(types: _*))(estimatedCardinality)
   }
+}
 
-  def withEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+// TODO: Remove uses
+object ExpandPipeForIntTypes {
+  def apply(source: Pipe,
+            from: String,
+            relName: String,
+            to: String,
+            dir: Direction,
+            types: Seq[Int] = Seq.empty,
+            mode: ExpansionMode = ExpandAll)
+           (estimatedCardinality: Option[Long] = None)
+           (implicit pipeMonitor: PipeMonitor) = {
+    ExpandPipe(source, from, relName, to, dir, mode)(NodeRelationshipExpander.forTypeIds(types: _*))(estimatedCardinality)
+  }
 }

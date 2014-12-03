@@ -62,7 +62,7 @@ class ExpandTest
     val qg = createQuery(rRel)
 
     expand(plan, qg) should equal(Candidates(
-      planExpand(left = planA, from = aNode, Direction.OUTGOING, Direction.OUTGOING, types = Seq.empty, to = bNode, rName, SimplePatternLength, rRel, Seq.empty, Seq.empty))
+      planExpand(left = planA, from = aNode, Direction.OUTGOING, Direction.OUTGOING, types = Seq.empty, to = bNode, rName, SimplePatternLength, rRel, Seq.empty, Seq.empty, ExpandAll))
     )
   }
 
@@ -77,8 +77,8 @@ class ExpandTest
     val qg = createQuery(rRel)
 
     expand(plan, qg) should equal(CandidateList(Seq(
-      planExpand(left = planA, from = aNode, Direction.OUTGOING, Direction.OUTGOING, types = Seq.empty, to = bNode, rName, SimplePatternLength, rRel, Seq.empty, Seq.empty),
-      planExpand(left = planB, from = bNode, Direction.INCOMING, Direction.OUTGOING, types = Seq.empty, to = aNode, rName, SimplePatternLength, rRel, Seq.empty, Seq.empty)
+      planExpand(left = planA, from = aNode, Direction.OUTGOING, Direction.OUTGOING, types = Seq.empty, to = bNode, rName, SimplePatternLength, rRel, Seq.empty, Seq.empty, ExpandAll),
+      planExpand(left = planB, from = bNode, Direction.INCOMING, Direction.OUTGOING, types = Seq.empty, to = aNode, rName, SimplePatternLength, rRel, Seq.empty, Seq.empty, ExpandAll)
     )))
   }
 
@@ -104,10 +104,9 @@ class ExpandTest
     val qg = createQuery(rSelfRel)
 
     expand(plan, qg) should equal(CandidateList(Seq(
-      planHiddenSelection(Seq(Equals(Identifier(aNode.name) _, Identifier(aNode.name + "$$$") _) _),
-        planExpand(left = planA, from = aNode, dir = Direction.OUTGOING, Direction.OUTGOING, types = Seq.empty,
-                   to = IdName(aNode.name + "$$$"), relName = rName, SimplePatternLength, rSelfRel, Seq.empty, Seq.empty)
-      ))))
+      planExpand(left = planA, from = aNode, dir = Direction.OUTGOING, Direction.OUTGOING, types = Seq.empty,
+                 to = IdName(aNode.name), relName = rName, SimplePatternLength, rSelfRel, Seq.empty, Seq.empty, ExpandInto)
+    )))
   }
 
   test("looping pattern is handled as it should") {
@@ -120,15 +119,11 @@ class ExpandTest
     val qg = createQuery(rRel)
 
     expand(plan, qg) should equal(Candidates(
-      planHiddenSelection(Seq(Equals(Identifier(bNode.name)_, Identifier(bNode.name + "$$$")_)_),
-        planExpand(left = aAndB, from = aNode, dir = Direction.OUTGOING, Direction.OUTGOING, types = Seq.empty,
-          to = IdName(bNode.name + "$$$"), relName = rName, SimplePatternLength, mockRel, Seq.empty, Seq.empty)
-      ),
-      planHiddenSelection(
-        predicates = Seq(Equals(Identifier(aNode.name) _, Identifier(aNode.name + "$$$") _) _),
-        left = planExpand(left = aAndB, from = bNode, dir = Direction.INCOMING, Direction.OUTGOING, types = Seq.empty,
-          to = IdName(aNode.name + "$$$"), relName = rName, SimplePatternLength, mockRel, Seq.empty, Seq.empty)
-      )))
+      planExpand(left = aAndB, from = aNode, dir = Direction.OUTGOING, Direction.OUTGOING, types = Seq.empty,
+        to = IdName(bNode.name), relName = rName, SimplePatternLength, mockRel, Seq.empty, Seq.empty, ExpandInto),
+      planExpand(left = aAndB, from = bNode, dir = Direction.INCOMING, Direction.OUTGOING, types = Seq.empty,
+        to = IdName(aNode.name), relName = rName, SimplePatternLength, mockRel, Seq.empty, Seq.empty, ExpandInto)
+      ))
   }
 
   test("unlimited variable length relationship") {
@@ -141,7 +136,7 @@ class ExpandTest
     val qg = createQuery(rVarRel)
 
     expand(plan, qg) should equal(Candidates(
-      planExpand(left = planA, from = aNode, dir = Direction.OUTGOING, Direction.OUTGOING, types = Seq.empty, to = bNode, relName = rName, rVarRel.length, rVarRel, Seq.empty, Seq.empty)
+      planExpand(left = planA, from = aNode, dir = Direction.OUTGOING, Direction.OUTGOING, types = Seq.empty, to = bNode, relName = rName, rVarRel.length, rVarRel, Seq.empty, Seq.empty, ExpandAll)
     ))
   }
 
@@ -165,7 +160,7 @@ class ExpandTest
     val result = expand(plan, qg)
     result should equal(Candidates(
       planExpand(left = planA, from = aNode, dir = Direction.OUTGOING, Direction.OUTGOING, types = Seq.empty,
-                 to = bNode, relName = rName, rVarRel.length, rVarRel, Seq(fooIdentifier -> innerPredicate), Seq(allPredicate))
+                 to = bNode, relName = rName, rVarRel.length, rVarRel, Seq(fooIdentifier -> innerPredicate), Seq(allPredicate), ExpandAll)
     ))
   }
 }

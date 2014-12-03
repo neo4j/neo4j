@@ -21,10 +21,11 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.compiler.v2_2.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{Argument, IdName, Selection, SingleRow}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{PlannerQuery, LogicalPlanningTestSupport}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
+import org.neo4j.graphdb.Direction
 
-class MergeTwoSelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport with AstConstructionTestSupport {
+class FuseSelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport with AstConstructionTestSupport {
   test("merges two selections into one") {
     val p1 = propEquality("a", "foo", 12)
     val p2 = propEquality("a", "bar", 33)
@@ -32,7 +33,7 @@ class MergeTwoSelectionsTest extends CypherFunSuite with LogicalPlanningTestSupp
 
     Selection(Seq(p1),
       Selection(Seq(p2), lhs)(solved))(solved).
-      endoRewrite(mergeTwoSelections) should equal(
+      endoRewrite(fuseSelections) should equal(
       Selection(Seq(p1, p2), lhs)(solved)
     )
   }
@@ -46,8 +47,20 @@ class MergeTwoSelectionsTest extends CypherFunSuite with LogicalPlanningTestSupp
     Selection(Seq(p1),
       Selection(Seq(p2),
         Selection(Seq(p3), lhs)(solved))(solved))(solved).
-      endoRewrite(mergeTwoSelections) should equal(
+      endoRewrite(fuseSelections) should equal(
       Selection(Seq(p1, p2, p3), lhs)(solved)
+    )
+  }
+
+  test("merge selection into expand") {
+    val p1 = propEquality("a", "foo", 12)
+    val p2 = propEquality("a", "bar", 33)
+    val topSolved = mock[PlannerQuery]
+    val lhs = Argument(Set(IdName("a")))(solved)()
+    val expand = Expand(lhs, "from", Direction.OUTGOING, Direction.OUTGOING, Seq.empty, "to", "rel", ExpandAll, Seq(p2))(solved)
+
+    Selection(Seq(p1), expand)(topSolved).endoRewrite(fuseSelections) should equal(
+      expand.copy(predicates = Seq(p2, p1))(topSolved)
     )
   }
 }

@@ -97,7 +97,7 @@ class UnnestEmptyApplyTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val lhs: LogicalPlan = newMockedLogicalPlan("a")
     val arg1: LogicalPlan = Argument(Set(IdName("a")))(solved)()
     val arg2: LogicalPlan = Argument(Set(IdName("a")))(solved)()
-    val expand: LogicalPlan = Expand(arg2, IdName("a"), Direction.OUTGOING, Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), SimplePatternLength, Seq.empty)(solved)
+    val expand: LogicalPlan = Expand(arg2, IdName("a"), Direction.OUTGOING, Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll, Seq.empty)(solved)
     val apply2: LogicalPlan = Apply(arg1, expand)(solved)
     val apply: LogicalPlan = Apply(lhs, apply2)(solved)
 
@@ -105,7 +105,7 @@ class UnnestEmptyApplyTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val result = rewrite(apply)
 
     // Then
-    result should equal(Expand(lhs, IdName("a"), Direction.OUTGOING, Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), SimplePatternLength, Seq.empty)(solved))
+    result should equal(Expand(lhs, IdName("a"), Direction.OUTGOING, Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll, Seq.empty)(solved))
   }
 
   test("apply on apply on optional should be OK") {
@@ -121,7 +121,7 @@ class UnnestEmptyApplyTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val lhs: LogicalPlan = newMockedLogicalPlan("a")
     val arg1: LogicalPlan = Argument(Set(IdName("a")))(solved)()
     val arg2: LogicalPlan = Argument(Set(IdName("a")))(solved)()
-    val expand: LogicalPlan = Expand(arg2, IdName("a"), Direction.OUTGOING, Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), SimplePatternLength, Seq.empty)(solved)
+    val expand: LogicalPlan = Expand(arg2, IdName("a"), Direction.OUTGOING, Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll, Seq.empty)(solved)
     val optional: LogicalPlan = Optional(expand)(solved)
     val apply2: LogicalPlan = Apply(arg1, optional)(solved)
     val apply: LogicalPlan = Apply(lhs, apply2)(solved)
@@ -133,7 +133,7 @@ class UnnestEmptyApplyTest extends CypherFunSuite with LogicalPlanningTestSuppor
     result should equal(Apply(
       lhs,
       Optional(
-        Expand(arg2, IdName("a"), Direction.OUTGOING, Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), SimplePatternLength, Seq.empty)(solved))(solved)
+        Expand(arg2, IdName("a"), Direction.OUTGOING, Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll, Seq.empty)(solved))(solved)
     )(solved))
   }
 

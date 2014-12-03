@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.ExpandInto
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
 import org.mockito.Mockito._
 import org.mockito.Matchers._
@@ -36,9 +37,11 @@ class ExpandPipeTest extends CypherFunSuite {
   val startNode = newMockedNode(1)
   val endNode1 = newMockedNode(2)
   val endNode2 = newMockedNode(3)
+  val endNode3 = newMockedNode(4)
   val relationship1 = newMockedRelationship(1, startNode, endNode1)
   val relationship2 = newMockedRelationship(2, startNode, endNode2)
-  val selfRelationship = newMockedRelationship(3, startNode, startNode)
+  val relationship3 = newMockedRelationship(3, startNode, endNode3)
+  val selfRelationship = newMockedRelationship(4, startNode, startNode)
   val query = mock[QueryContext]
   val queryState = QueryStateHelper.emptyWith(query = query)
 
@@ -110,6 +113,20 @@ class ExpandPipeTest extends CypherFunSuite {
     // then
     val (single :: Nil) = result
     single.m should equal(Map("a" -> startNode, "r" -> relationship1, "b" -> endNode1))
+  }
+
+  test("should support expand into") {
+    // given
+    mockRelationships(relationship1, relationship2, relationship3)
+    val left = newMockedPipe("a",
+      row("a" -> startNode, "b" -> endNode2))
+
+    // when
+    val result = ExpandPipeForStringTypes(left, "a", "r", "b", Direction.OUTGOING, Seq.empty, ExpandInto)().createResults(queryState).toList
+
+    // then
+    val (single :: Nil) = result
+    single.m should equal(Map("a" -> startNode, "r" -> relationship2, "b" -> endNode2))
   }
 
   private def row(values: (String, Any)*) = ExecutionContext.from(values: _*)

@@ -17,18 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter
+package org.neo4j.cypher.internal.compiler.v2_2.pipes.expanders
 
-import org.neo4j.cypher.internal.compiler.v2_2.{Rewriter, repeat}
-import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSequencer
+import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
+import org.neo4j.graphdb.{Direction, Node}
 
-case object LogicalPlanRewriter extends Rewriter {
-  val instance: Rewriter = repeat(RewriterStepSequencer.newDefault("LogicalPlanRewriter")(
-    fuseSelections,
-    unnestApply,
-    simplifyEquality,
-    unnestOptional
-  ))
+object NodeRelationshipExpander {
+  def forTypeNames(typeNames: String*) =
+    (dir: Direction, qtx: QueryContext) =>
+      (node: Node) =>
+        qtx.getRelationshipsFor(node, dir, typeNames)
 
-  def apply(that: AnyRef) = instance(that)
+
+  def forTypeIds(typeIds: Int*) =
+    (dir: Direction, qtx: QueryContext) =>
+      (node: Node) =>
+        qtx.getRelationshipsForIds(node, dir, typeIds)
 }

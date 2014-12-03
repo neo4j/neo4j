@@ -91,6 +91,35 @@ object LogicalPlanProducer {
       )
     )
 
+  def planSimpleExpand(left: LogicalPlan,
+                       from: IdName,
+                       dir: Direction,
+                       to: IdName,
+                       pattern: PatternRelationship,
+                       mode: ExpansionMode = ExpandAll,
+                       predicates: Seq[Expression] = Seq.empty) =
+    Expand(left, from, dir, pattern.dir, pattern.types, to, pattern.name, mode, predicates)(
+      left.solved.updateGraph(_
+        .addPatternRel(pattern)
+        .addPredicates(predicates: _*)
+      ))
+
+  def planVarExpand(left: LogicalPlan,
+                    from: IdName,
+                    dir: Direction,
+                    to: IdName,
+                    pattern: PatternRelationship,
+                    length: VarPatternLength,
+                    predicates: Seq[(Identifier, Expression)] = Seq.empty,
+                    allPredicates: Seq[Expression] = Seq.empty,
+                    mode: ExpansionMode = ExpandAll) =
+    VarExpand(left, from, dir, pattern.dir, pattern.types, to, pattern.name, length, mode, predicates)(
+      left.solved.updateGraph(_
+        .addPatternRel(pattern)
+        .addPredicates(allPredicates: _*)
+      ))
+
+  // TODO: Remove all uses
   def planExpand(left: LogicalPlan,
                  from: IdName,
                  dir: Direction,
@@ -101,12 +130,15 @@ object LogicalPlanProducer {
                  length: PatternLength,
                  pattern: PatternRelationship,
                  predicates: Seq[(Identifier, Expression)] = Seq.empty,
-                 allPredicates: Seq[Expression] = Seq.empty) =
-    Expand(left, from, dir, projectedDir, types, to, relName, length, predicates)(
-      left.solved.updateGraph(_
-        .addPatternRel(pattern)
-        .addPredicates(allPredicates: _*)
-      ))
+                 allPredicates: Seq[Expression] = Seq.empty,
+                 mode: ExpansionMode = ExpandAll) =
+    length match {
+      case SimplePatternLength =>
+        planSimpleExpand(left, from, dir, to, pattern, mode, allPredicates)
+
+      case varLength: VarPatternLength =>
+        planVarExpand(left, from, dir, to, pattern, varLength, predicates, allPredicates, mode)
+    }
 
   def planHiddenSelection(predicates: Seq[Expression], left: LogicalPlan) =
     Selection(predicates, left)(left.solved)
@@ -182,13 +214,12 @@ object LogicalPlanProducer {
   def planOptionalExpand(left: LogicalPlan,
                          from: IdName,
                          dir: Direction,
-                         types: Seq[ast.RelTypeName],
                          to: IdName,
-                         relName: IdName,
-                         length: PatternLength,
-                         predicates: Seq[Expression],
+                         pattern: PatternRelationship,
+                         mode: ExpansionMode = ExpandAll,
+                         predicates: Seq[Expression] = Seq.empty,
                          solvedQueryGraph: QueryGraph) =
-    OptionalExpand(left, from, dir, types, to, relName, length, predicates)(
+    OptionalExpand(left, from, dir, pattern.dir, pattern.types, to, pattern.name, mode, predicates)(
       left.solved.updateGraph(_.withAddedOptionalMatch(solvedQueryGraph))
     )
 
