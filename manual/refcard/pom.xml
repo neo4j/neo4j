@@ -23,8 +23,6 @@
     <docs.sources>${project.build.directory}/docs</docs.sources>
     <docs-plugin.skip>true</docs-plugin.skip>
     <doctools.version>13</doctools.version>
-    <docs.server>neo@docs.neo4j.org</docs.server>
-    <docs.rootpath>/data/www/doc/docs.neo4j.org</docs.rootpath>
     <refcard.version>${project.version}</refcard.version>
   </properties>
 
@@ -149,45 +147,6 @@
       </plugin>
     </plugins>
   </build>
-  
-  <profiles>
-    <profile>
-      <id>print</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <property>
-          <name>print</name>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>exec-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>execute-asciidoc-html5-print</id>
-                <phase>compile</phase>
-                <goals>
-                  <goal>exec</goal>
-                </goals>
-                <configuration>
-                  <executable>make</executable>
-                  <arguments>
-                    <argument>init</argument>
-                    <argument>preview</argument>
-                    <argument>VERSION=${refcard.version}</argument>
-                    <argument>HTML5_DIR_NAME=html5/print</argument>
-                    <argument>HTML5_DOCINFO=docinfo</argument>
-                  </arguments>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
   
   <repositories>
     <repository>
