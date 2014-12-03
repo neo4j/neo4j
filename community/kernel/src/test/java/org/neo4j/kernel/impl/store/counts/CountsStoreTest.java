@@ -288,8 +288,8 @@ public class CountsStoreTest
     public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     @Rule
     public PageCacheRule pageCacheRule = new PageCacheRule();
-    private final File alpha = new File( "alpha" );
-    private final File beta = new File( "beta" );
+    private final File alpha = new File( "a" );
+    private final File beta = new File( "b" );
     private final int lastCommittedTxId = 42;
     private FileSystemAbstraction fs;
     private PageCache pageCache;
