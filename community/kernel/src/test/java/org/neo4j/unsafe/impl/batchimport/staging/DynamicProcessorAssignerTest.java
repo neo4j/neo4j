@@ -79,42 +79,45 @@ public class DynamicProcessorAssignerTest
         StageExecution[] execution = executionOf( config, slowStep, fastStep );
         assigner.start( execution );
 
-        // WHEN first checking, then one additional processor will be added to the slow step
+        // WHEN first checking
         assigner.check( execution );
-        // and WHEN checking again a little later
-        slowStep.setStat( Keys.done_batches, 20 );
-        fastStep.setStat( Keys.done_batches, 20 );
-        assigner.check( execution );
+        // THEN one additional processor will be added to the slow step
+        verify( slowStep, times( 1 ) ).incrementNumberOfProcessors();
+        verify( fastStep, times( 1 ) ).decrementNumberOfProcessors();
 
-        // THEN
+        // and WHEN checking again after further "moving average" number of batches have been performed
+        slowStep.setStat( Keys.done_batches, 25 );
+        fastStep.setStat( Keys.done_batches, 25 );
+        assigner.check( execution );
+        // THEN we should try and decrement processors for the fastest step, which is way faster than the next fastest
         verify( slowStep, times( 0 ) ).decrementNumberOfProcessors();
         verify( fastStep, times( 1 ) ).decrementNumberOfProcessors();
     }
 
     @Test
-    public void shouldWaitMakingChangesUntilMovingAverageNumberOfBatchesPassedSinceLastChange() throws Exception
+    public void shouldHandleZeroAverage() throws Exception
     {
         // GIVEN
         Configuration config = movingAverageConfig( 10 );
         DynamicProcessorAssigner assigner = new DynamicProcessorAssigner( config, 5 );
 
-        ControlledStep<?> slowStep = new ControlledStep<>( "slow", true );
-        slowStep.setStat( Keys.avg_processing_time, 10 );
-        slowStep.setStat( Keys.done_batches, 5 );
+        ControlledStep<?> aStep = new ControlledStep<>( "slow", true );
+        aStep.setStat( Keys.avg_processing_time, 0 );
+        aStep.setStat( Keys.done_batches, 0 );
 
-        ControlledStep<?> fastStep = new ControlledStep<>( "fast", true );
-        fastStep.setStat( Keys.avg_processing_time, 2 );
-        fastStep.setStat( Keys.done_batches, 5 );
+        ControlledStep<?> anotherStep = new ControlledStep<>( "fast", true );
+        anotherStep.setStat( Keys.avg_processing_time, 0 );
+        anotherStep.setStat( Keys.done_batches, 0 );
 
-        StageExecution[] execution = executionOf( config, slowStep, fastStep );
+        StageExecution[] execution = executionOf( config, aStep, anotherStep );
         assigner.start( execution );
 
         // WHEN
         assigner.check( execution );
 
         // THEN
-        assertEquals( 1, slowStep.numberOfProcessors() );
-        assertEquals( 1, fastStep.numberOfProcessors() );
+        assertEquals( 1, aStep.numberOfProcessors() );
+        assertEquals( 1, anotherStep.numberOfProcessors() );
     }
 
     private Configuration movingAverageConfig( final int movingAverage )

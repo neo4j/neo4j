@@ -98,7 +98,8 @@ public class DynamicProcessorAssigner extends AbstractExecutionMonitor
         Step<?> bottleNeckStep = bottleNeck.first();
         long doneBatches = batches( bottleNeckStep );
         int usedPermits = 0;
-        if ( batchesPassedSinceLastChange( bottleNeckStep, doneBatches ) >= config.movingAverageSize() )
+        if ( bottleNeck.other().floatValue() > 1.0f &&
+             batchesPassedSinceLastChange( bottleNeckStep, doneBatches ) >= config.movingAverageSize() )
         {
             int optimalProcessorIncrement = min( max( 1, (int) bottleNeck.other().floatValue() - 1 ), permits );
             for ( int i = 0; i < optimalProcessorIncrement; i++ )
@@ -168,7 +169,9 @@ public class DynamicProcessorAssigner extends AbstractExecutionMonitor
     private long batchesPassedSinceLastChange( Step<?> step, long doneBatches )
     {
         return lastChangedProcessors.containsKey( step )
+                // <doneBatches> number of batches have passed since the last change to this step
                 ? doneBatches - lastChangedProcessors.get( step )
-                : doneBatches;
+                // we have made no changes to this step yet, go ahead
+                : config.movingAverageSize();
     }
 }
