@@ -42,7 +42,7 @@ public class StoreProcessorTest
     {
         // given
         StoreProcessor processor = new StoreProcessor( CheckDecorator.NONE, mock( ConsistencyReport.Reporter.class ) );
-        RecordStore<?> recordStore = mock( RecordStore.class );
+        RecordStore<NodeRecord> recordStore = mock( RecordStore.class );
         when( recordStore.getHighId() ).thenReturn( 3L );
         when( recordStore.forceGetRecord( any( Long.class ) ) ).thenReturn( new NodeRecord( 0, false, 0, 0 ) );
 
@@ -62,7 +62,7 @@ public class StoreProcessorTest
     {
         // given
         final StoreProcessor processor = new StoreProcessor( CheckDecorator.NONE, mock( ConsistencyReport.Reporter.class ) );
-        RecordStore<?> recordStore = mock( RecordStore.class );
+        RecordStore<NodeRecord> recordStore = mock( RecordStore.class );
         when( recordStore.getHighId() ).thenReturn( 4L );
         when( recordStore.forceGetRecord( 0L ) ).thenReturn( new NodeRecord( 0, false, 0, 0 ) );
         when( recordStore.forceGetRecord( 1L ) ).thenReturn( new NodeRecord( 0, false, 0, 0 ) );
