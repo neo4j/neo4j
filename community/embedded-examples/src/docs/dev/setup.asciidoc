@@ -9,7 +9,7 @@ The following sections will show how to do this by either altering the build pat
 
 Get the Neo4j libraries from one of these sources:
 
-* Extract a Neo4j http://www.neo4j.org/download[download] zip/tarball, and use the 'jar' files found in the 'lib/' directory.
+* Extract a Neo4j http://neo4j.com/download/[download] zip/tarball, and use the 'jar' files found in the 'lib/' directory.
 * Use the 'jar' files available from http://search.maven.org/#search|ga|1|g%3A%22org.neo4j%22[Maven Central Repository]
 
 Add the jar files to your project:

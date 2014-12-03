@@ -19,7 +19,7 @@ DESCRIPTION
 Neo4j is a graph database, perfect for working with highly connected data.
 The `neo4j` command is used to control the Neo4j Server.
 
-The preferred way to install Neo4j on Linux systems is by using prebuilt installation packages, but there's also the possibility to use the `neo4j-installer` command to install or remove it as a system service.
+The preferred way to install Neo4j on Linux systems is by using prebuilt installation packages.
 For information regarding Windows, see below.
 
 [[neo4j-manpage-commands]]
@@ -52,16 +52,6 @@ Usage - Windows
 
 Double-clicking on the Neo4j.bat script will start the server in a console.
 To quit, just press `control-C` in the console window.
-
-For installing the Neo4j Server as a service, use the `Neo4jInstaller.bat` command.
-
-* Neo4j.bat start - will start the Neo4j service
-** will start the Neo4j service if installed or a console
-** session otherwise.
-* Neo4j.bat stop - stop the Neo4j service if running
-* Neo4j.bat restart - restart the Neo4j service if installed
-* Neo4j.bat status - report on the status of the Neo4j service
-** returns RUNNING, STOPPED or NOT INSTALLED 
 
 
 [[neo4j-manpage-files]]
