@@ -53,10 +53,8 @@ case class CardinalityCostModel(cardinality: CardinalityModel) extends CostModel
     case NodeIndexSeek(_, _, _, ManyQueryExpression(Collection(elements)), _) =>
       DB_ACCESS_BOUND_PLAN_COST_PER_ROW * Multiplier(elements.size)
 
-    case NodeIndexSeek(_, _, _, ManyQueryExpression(Collection(elements)), _) =>
-      DB_ACCESS_BOUND_PLAN_COST_PER_ROW * Multiplier(10)
-
-    case _ => DB_ACCESS_BOUND_PLAN_COST_PER_ROW
+    case _ =>
+      DB_ACCESS_BOUND_PLAN_COST_PER_ROW
   }
 
   private def cardinalityForPlan(plan: LogicalPlan, input: QueryGraphCardinalityInput): Cardinality = plan match {
@@ -65,11 +63,13 @@ case class CardinalityCostModel(cardinality: CardinalityModel) extends CostModel
   }
 
   def apply(plan: LogicalPlan, input: QueryGraphCardinalityInput): Cost = plan match {
+
     case CartesianProduct(lhs, rhs) =>
       apply(lhs, input) + cardinality(lhs, input) * apply(rhs, input)
 
     case Apply(lhs, rhs) =>
-      val newInput = input.withCardinality(cardinality(lhs, input))
+      val newInputCardinality = cardinality(lhs, input)
+      val newInput = input.withCardinality(newInputCardinality)
 
       val lCost = apply(lhs, input)
       val rCost = apply(rhs, newInput)

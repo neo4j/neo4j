@@ -20,48 +20,30 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
-import org.neo4j.cypher.internal.compiler.v2_2.{LabelId, RelTypeId, InputPosition, PropertyKeyId}
+import org.neo4j.cypher.internal.compiler.v2_2._
 
 trait SymbolicName extends ASTNode with ASTParticle {
   def name: String
   def position: InputPosition
 }
 
-final case class LabelName(name: String)(val position: InputPosition) extends SymbolicName
+trait SymbolicNameWithId[+ID <: NameId] extends SymbolicName {
+  def id(implicit semanticTable: SemanticTable): Option[ID]
 
-object LabelName {
-  implicit class LabelNameId(that: LabelName)(implicit semanticTable: SemanticTable) {
-    def id: Option[LabelId] = semanticTable.resolvedLabelIds.get(that.name)
-
-    def either = that.id match {
-      case Some(id) => Right(id)
-      case None => Left(that.name)
-    }
+  def either(implicit semanticTable: SemanticTable) = id match {
+    case Some(id) => Right(id)
+    case None     => Left(name)
   }
 }
 
-final case class PropertyKeyName(name: String)(val position: InputPosition) extends SymbolicName
-
-object PropertyKeyName {
-  implicit class PropertyKeyNameId(that: PropertyKeyName)(implicit semanticTable: SemanticTable) {
-    def id: Option[PropertyKeyId] = semanticTable.resolvedPropertyKeyNames.get(that.name)
-
-    def either = that.id match {
-      case Some(id) => Right(id)
-      case None => Left(that.name)
-    }
-  }
+case class LabelName(name: String)(val position: InputPosition) extends SymbolicNameWithId[LabelId] {
+  def id(implicit semanticTable: SemanticTable): Option[LabelId] = semanticTable.resolvedLabelIds.get(name)
 }
 
-final case class RelTypeName(name: String)(val position: InputPosition) extends SymbolicName
+case class PropertyKeyName(name: String)(val position: InputPosition) extends SymbolicNameWithId[PropertyKeyId] {
+  def id(implicit semanticTable: SemanticTable): Option[PropertyKeyId] = semanticTable.resolvedPropertyKeyNames.get(name)
+}
 
-object RelTypeName {
-  implicit class RelTypeNameId(that: RelTypeName)(implicit semanticTable: SemanticTable) {
-    def id: Option[RelTypeId] = semanticTable.resolvedRelTypeNames.get(that.name)
-
-    def either: Either[String, RelTypeId] = that.id match {
-      case Some(id) => Right(id)
-      case None => Left(that.name)
-    }
-  }
+case class RelTypeName(name: String)(val position: InputPosition) extends SymbolicNameWithId[RelTypeId] {
+  def id(implicit semanticTable: SemanticTable): Option[RelTypeId] = semanticTable.resolvedRelTypeNames.get(name)
 }

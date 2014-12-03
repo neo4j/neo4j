@@ -45,7 +45,7 @@ object ExpressionConverters {
         patternRelationships = patternContent.rels.toSet,
         patternNodes = patternContent.nodeIds.toSet
       ).addPredicates(predicates: _*)
-      qg.addArgumentId(qg.coveredIds.filter(_.name.isNamed).toSeq)
+      qg.addArgumentIds(qg.coveredIds.filter(_.name.isNamed).toSeq)
     }
   }
 

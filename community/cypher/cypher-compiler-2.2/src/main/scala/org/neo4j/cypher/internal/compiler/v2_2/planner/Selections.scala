@@ -32,6 +32,9 @@ case class Predicate(dependencies: Set[IdName], expr: Expression) extends PageDo
 
   def hasDependenciesMet(symbols: Set[IdName]): Boolean =
     (dependencies -- symbols).isEmpty
+
+  def hasDependenciesMetForRequiredSymbol(symbols: Set[IdName], required: IdName): Boolean =
+    dependencies.contains(required) && hasDependenciesMet(symbols)
 }
 
 
@@ -48,6 +51,10 @@ case class Selections(predicates: Set[Predicate] = Set.empty) extends PageDocFor
 
   def predicatesGiven(ids: Set[IdName]): Seq[Expression] = predicates.collect {
     case p@Predicate(_, predicate) if p.hasDependenciesMet(ids) => predicate
+  }.toSeq
+
+  def predicatesGivenForRequiredSymbol(allowed: Set[IdName], required: IdName): Seq[Expression] = predicates.collect {
+    case p@Predicate(_, predicate) if p.hasDependenciesMetForRequiredSymbol(allowed, required) => predicate
   }.toSeq
 
   def scalarPredicatesGiven(ids: Set[IdName]): Seq[Expression] = predicatesGiven(ids).filterNot(containsPatternPredicates)

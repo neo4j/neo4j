@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast.LabelName
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.MapSupport._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryGraph, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
-import org.neo4j.cypher.internal.compiler.v2_2.helpers.MapSupport._
 
 object Metrics {
 
@@ -32,8 +32,9 @@ object Metrics {
     def empty = QueryGraphCardinalityInput(Map.empty, Cardinality(1))
   }
 
-  case class QueryGraphCardinalityInput(labelInfo: Map[IdName, Set[LabelName]], inboundCardinality: Cardinality) {
-    def withCardinality(c: Cardinality): QueryGraphCardinalityInput = copy(inboundCardinality = c)
+  case class QueryGraphCardinalityInput(labelInfo: LabelInfo, inboundCardinality: Cardinality) {
+    def withCardinality(c: Cardinality): QueryGraphCardinalityInput =
+      copy(inboundCardinality = c)
 
     def recurse(fromPlan: LogicalPlan)(implicit cardinality: Metrics.CardinalityModel): QueryGraphCardinalityInput = {
       val newCardinalityInput = cardinality(fromPlan, this)
@@ -52,6 +53,8 @@ object Metrics {
   type CardinalityModel = (LogicalPlan, QueryGraphCardinalityInput) => Cardinality
 
   type QueryGraphCardinalityModel = (QueryGraph, QueryGraphCardinalityInput) => Cardinality
+
+  type LabelInfo = Map[IdName, Set[LabelName]]
 }
 
 case class Metrics(cost: CostModel,
@@ -84,14 +87,23 @@ case class Cardinality(amount: Double) extends Ordered[Cardinality] {
   def *(that: Cost): Cost = amount * that.gummyBears
   def ^(a: Int): Cardinality = Math.pow(amount, a)
   def map(f: Double => Double): Cardinality = f(amount)
+
+  def inverse = Multiplier(1.0d / amount)
 }
 
 object Cardinality {
 
   val EMPTY = Cardinality(0)
+  val SINGLE = Cardinality(1)
 
   implicit def lift(amount: Double): Cardinality = Cardinality(amount)
   implicit def lift(amount: Long): Cardinality = lift(amount.doubleValue())
+
+  def min(l: Cardinality, r: Cardinality): Cardinality =
+    Cardinality(Math.min(l.amount, r.amount))
+
+  def max(l: Cardinality, r: Cardinality): Cardinality =
+    Cardinality(Math.max(l.amount, r.amount))
 }
 
 case class CostPerRow(cost: Double) {
@@ -110,7 +122,17 @@ case class Multiplier(coefficient: Double) {
 }
 
 object Multiplier {
+
+  val ZERO = Multiplier(0.0d)
+  val ONE = Multiplier(1.0d)
+
   implicit def lift(amount: Double): Multiplier = Multiplier(amount)
+
+  def min(l: Multiplier, r: Multiplier): Multiplier =
+    Multiplier(Math.min(l.coefficient, r.coefficient))
+
+  def max(l: Multiplier, r: Multiplier): Multiplier =
+    Multiplier(Math.max(l.coefficient, r.coefficient))
 }
 
 case class Selectivity(factor: Double) extends Ordered[Selectivity] {
@@ -124,11 +146,13 @@ case class Selectivity(factor: Double) extends Ordered[Selectivity] {
 }
 
 object Selectivity {
+  val ZERO = Selectivity(0.0d)
+  val ONE = Selectivity(1.0d)
+
   implicit def lift(amount: Double): Selectivity = Selectivity(amount)
 
   implicit def turnSeqIntoSingleSelectivity(p: Seq[Selectivity]):Selectivity =
     p.reduceOption(_ * _).getOrElse(Selectivity(1))
-
 }
 
 trait MetricsFactory {

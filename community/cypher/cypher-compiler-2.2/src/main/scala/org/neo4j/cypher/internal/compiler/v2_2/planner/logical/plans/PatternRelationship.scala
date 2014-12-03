@@ -84,10 +84,12 @@ case object SimplePatternLength extends PatternLength {
 final case class VarPatternLength(min: Int, max: Option[Int]) extends PatternLength {
   def isSimple = false
 
-  def implicitPatternNodeCount = max.getOrElse(15)
+  def implicitPatternNodeCount = max.getOrElse(VarPatternLength.STAR_LENGTH)
 }
 
 object VarPatternLength {
+  val STAR_LENGTH = 16
+
   def unlimited = VarPatternLength(1, None)
 
   def fixed(length: Int) = VarPatternLength(length, Some(length))

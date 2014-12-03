@@ -22,10 +22,11 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityModel
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assumeIndependence.{AssumeIndependenceQueryGraphCardinalityModel, IndependenceCombiner}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.{CardinalityModelTestHelper, IndependenceCombiner}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assumeIndependence.AssumeIndependenceQueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 
-class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPlanningTestSupport with CardinalityTestHelper {
+class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPlanningTestSupport with CardinalityModelTestHelper {
 
   val allNodes = 733.0
   val personCount = 324
@@ -65,5 +66,5 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
     new StatisticsBackedCardinalityModel(in)
 
   def createCardinalityModel(stats: GraphStatistics, semanticTable: SemanticTable): QueryGraphCardinalityModel =
-    AssumeIndependenceQueryGraphCardinalityModel(stats, semanticTable, IndependenceCombiner)
+    AssumeIndependenceQueryGraphCardinalityModel(stats, semanticTable, combiner)
 }

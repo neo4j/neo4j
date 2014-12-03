@@ -17,25 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2
+package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_2.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.CardinalityModelTestHelper
+import org.neo4j.cypher.internal.helpers.{RandomizedTestSupport, testRandomizer}
 
-class SemanticChecker(semanticCheckMonitor: SemanticCheckMonitor) {
-  def check(queryText: String, statement: Statement): SemanticState = {
-    semanticCheckMonitor.startSemanticCheck(queryText)
-    val SemanticCheckResult(semanticState, semanticErrors) = statement.semanticCheck(SemanticState.clean)
+abstract class RandomizedCardinalityModelTestSuite
+  extends CypherFunSuite with RandomizedTestSupport with LogicalPlanningTestSupport with CardinalityModelTestHelper
 
-    if (semanticErrors.nonEmpty) {
-      semanticCheckMonitor.finishSemanticCheckError(queryText, semanticErrors)
-    } else {
-      semanticCheckMonitor.finishSemanticCheckSuccess(queryText)
-    }
-    semanticErrors.map {
-      error =>
-        throw new SyntaxException(s"${error.msg} (${error.position})", queryText, error.position.offset)
-    }
 
-    semanticState
-  }
-}
