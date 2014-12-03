@@ -23,8 +23,6 @@
     <docs.sources>${project.build.directory}/docs</docs.sources>
     <docs-plugin.skip>true</docs-plugin.skip>
     <doctools.version>13</doctools.version>
-    <docs.server>neo@docs.neo4j.org</docs.server>
-    <docs.rootpath>/data/www/doc/docs.neo4j.org</docs.rootpath>
     <refcard.version>${project.version}</refcard.version>
   </properties>
 

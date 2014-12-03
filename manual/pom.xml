@@ -149,14 +149,14 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.neo4j</groupId>
+      <groupId>org.neo4j.doc</groupId>
       <artifactId>neo4j-cypher-docs</artifactId>
       <version>${neo4j.version}</version>
       <classifier>test-sources</classifier>
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.neo4j</groupId>
+      <groupId>org.neo4j.doc</groupId>
       <artifactId>neo4j-cypher-docs</artifactId>
       <version>${neo4j.version}</version>
       <classifier>docs</classifier>
@@ -441,7 +441,7 @@
               <includeProjectDependencies>false</includeProjectDependencies>
               <arguments>
                 <argument>${docs.sources}/cypherdoc</argument>
-                <argument>http://docs.neo4j.org/chunked/${project.version}/csv</argument>
+                <argument>http://neo4j.com/docs/${project.version}/csv</argument>
                 <argument>${project.build.directory}/../src/tutorials/gists</argument>
               </arguments>
             </configuration>

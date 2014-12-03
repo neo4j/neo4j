@@ -267,8 +267,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result shouldBe 'nonEmpty
   }
 
-  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
-  ignore("should be able to filter on path nodes") {
+  test("should be able to filter on path nodes") {
     val a = createNode(Map("foo" -> "bar"))
     val b = createNode(Map("foo" -> "bar"))
     val c = createNode(Map("foo" -> "bar"))
@@ -278,13 +277,12 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     relate(b, c, "rel")
     relate(c, d, "rel")
 
-    val result = executeWithNewPlanner("match p = pA-[:rel*3..3]->pB WHERE all(i in nodes(p) where i.foo = 'bar') return pB")
+    val result = execute("match p = pA-[:rel*3..3]->pB WHERE all(i in nodes(p) where i.foo = 'bar') return pB")
 
     result.columnAs("pB").toList should equal(List(d))
   }
 
-  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
-  ignore("should return relationships by fetching them from the path - starting from the end") {
+  test("should return relationships by fetching them from the path - starting from the end") {
     val a = createNode()
     val b = createNode()
     val c = createLabeledNode("End")
@@ -292,13 +290,12 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val r1 = relate(a, b, "rel")
     val r2 = relate(b, c, "rel")
 
-    val result = executeWithNewPlanner("match p = a-[:rel*2..2]->(b:End) return RELATIONSHIPS(p)")
+    val result = execute("match p = a-[:rel*2..2]->(b:End) return RELATIONSHIPS(p)")
 
     result.columnAs[Node]("RELATIONSHIPS(p)").toList.head should equal(List(r1, r2))
   }
 
-  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
-  ignore("should return relationships by fetching them from the path") {
+  test("should return relationships by fetching them from the path") {
     val a = createLabeledNode("Start")
     val b = createNode()
     val c = createNode()
@@ -306,13 +303,12 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val r1 = relate(a, b, "rel")
     val r2 = relate(b, c, "rel")
 
-    val result = executeWithNewPlanner("match p = (a:Start)-[:rel*2..2]->b return RELATIONSHIPS(p)")
+    val result = execute("match p = (a:Start)-[:rel*2..2]->b return RELATIONSHIPS(p)")
 
     result.columnAs[Node]("RELATIONSHIPS(p)").toList.head should equal(List(r1, r2))
   }
 
-  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
-  ignore("should return relationships by collecting them as a list - wrong way") {
+  test("should return relationships by collecting them as a list - wrong way") {
     val a = createNode()
     val b = createNode()
     val c = createLabeledNode("End")
@@ -320,13 +316,12 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val r1 = relate(a, b, "rel")
     val r2 = relate(b, c, "rel")
 
-    val result = executeWithNewPlanner("match a-[r:rel*2..2]->(b:End) return r")
+    val result = execute("match a-[r:rel*2..2]->(b:End) return r")
 
     result.columnAs[List[Relationship]]("r").toList.head should equal(List(r1, r2))
   }
 
-  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
-  ignore("should return relationships by collecting them as a list - undirected") {
+  test("should return relationships by collecting them as a list - undirected") {
     val a = createLabeledNode("End")
     val b = createNode()
     val c = createLabeledNode("End")
@@ -334,14 +329,13 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val r1 = relate(a, b, "rel")
     val r2 = relate(b, c, "rel")
 
-    val result = executeWithNewPlanner("match a-[r:rel*2..2]-(b:End) return r")
+    val result = execute("match a-[r:rel*2..2]-(b:End) return r")
 
     val relationships = result.columnAs[List[Relationship]]("r").toSet
     relationships should equal(Set(List(r1, r2), List(r2, r1)))
   }
 
-  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
-  ignore("should return relationships by collecting them as a list") {
+  test("should return relationships by collecting them as a list") {
     val a = createLabeledNode("Start")
     val b = createNode()
     val c = createNode()
@@ -349,18 +343,17 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val r1 = relate(a, b, "rel")
     val r2 = relate(b, c, "rel")
 
-    val result = executeWithNewPlanner("match (a:Start)-[r:rel*2..2]->b return r")
+    val result = execute("match (a:Start)-[r:rel*2..2]->b return r")
 
     result.columnAs[List[Relationship]]("r").toList.head should equal(List(r1, r2))
   }
 
-  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
-  ignore("should return a var length path") {
+  test("should return a var length path") {
     createNodes("A", "B", "C")
     val r1 = relate("A" -> "KNOWS" -> "B")
     val r2 = relate("B" -> "KNOWS" -> "C")
 
-    val result = executeWithNewPlanner("match p=(n {name:'A'})-[:KNOWS*1..2]->x return p")
+    val result = execute("match p=(n {name:'A'})-[:KNOWS*1..2]->x return p")
 
     graph.inTx {
       result.columnAs("p").toList should equal(List(
@@ -369,13 +362,12 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     }
   }
 
-  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
-  ignore("a var length path of length zero") {
+  test("a var length path of length zero") {
     val a = createNode()
     val b = createNode()
     relate(a, b)
 
-    val result = executeWithNewPlanner("match p=a-[*0..1]->b return a,b, length(p) as l")
+    val result = execute("match p=a-[*0..1]->b return a,b, length(p) as l")
 
     result.toSet should equal(
       Set(
@@ -384,13 +376,12 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
         Map("a" -> a, "b" -> b, "l" -> 1)))
   }
 
-  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
-  ignore("a named var length path of length zero") {
+  test("a named var length path of length zero") {
     createNodes("A", "B", "C")
     val r1 = relate("A" -> "KNOWS" -> "B")
     val r2 = relate("B" -> "FRIEND" -> "C")
 
-    val result = executeWithNewPlanner("match p=(a {name:'A'})-[:KNOWS*0..1]->b-[:FRIEND*0..1]->c return p,a,b,c")
+    val result = execute("match p=(a {name:'A'})-[:KNOWS*0..1]->b-[:FRIEND*0..1]->c return p,a,b,c")
 
     graph.inTx {
       result.columnAs[Path]("p").toList should equal(
@@ -402,13 +393,12 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     }
   }
 
-  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
-  ignore("test zero length var len path in the middle") {
+  test("test zero length var len path in the middle") {
     createNodes("A", "B", "C", "D", "E")
     relate("A" -> "CONTAINS" -> "B")
     relate("B" -> "FRIEND" -> "C")
 
-    val result = executeWithNewPlanner("match (a {name:'A'})-[:CONTAINS*0..1]->b-[:FRIEND*0..1]->c return a,b,c")
+    val result = execute("match (a {name:'A'})-[:CONTAINS*0..1]->b-[:FRIEND*0..1]->c return a,b,c")
 
     result.toSet should equal(
       Set(
@@ -418,15 +408,14 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       )
   }
 
-  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
-  ignore("simple var length acceptance test") {
+  test("simple var length acceptance test") {
     createNodes("A", "B", "C", "D")
     relate("A" -> "CONTAINS" -> "B")
     relate("B" -> "CONTAINS" -> "C")
     relate("C" -> "CONTAINS" -> "D")
 
 
-    val result = executeWithNewPlanner("match (a {name:'A'})-[*]->x return x")
+    val result = execute("match (a {name:'A'})-[*]->x return x")
 
     result.toSet should equal(
       Set(
@@ -436,13 +425,12 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       )
   }
 
-  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
-  ignore("should return a var length path without minimal length") {
+  test("should return a var length path without minimal length") {
     createNodes("A", "B", "C")
     val r1 = relate("A" -> "KNOWS" -> "B")
     val r2 = relate("B" -> "KNOWS" -> "C")
 
-    val result = executeWithNewPlanner("match p=(n {name:'A'})-[:KNOWS*..2]->x return p")
+    val result = execute("match p=(n {name:'A'})-[:KNOWS*..2]->x return p")
 
     result.columnAs[Path]("p").toList should equal(List(
       PathImpl(node("A"), r1, node("B")),
@@ -450,13 +438,12 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     ))
   }
 
-  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
-  ignore("should return a var length path with unbound max") {
+  test("should return a var length path with unbound max") {
     createNodes("A", "B", "C")
     val r1 = relate("A" -> "KNOWS" -> "B")
     val r2 = relate("B" -> "KNOWS" -> "C")
 
-    val result = executeWithNewPlanner("match p=(n {name:'A'})-[:KNOWS*..]->x return p")
+    val result = execute("match p=(n {name:'A'})-[:KNOWS*..]->x return p")
 
     result.columnAs[Path]("p").toList should equal(List(
       PathImpl(node("A"), r1, node("B")),
@@ -646,13 +633,12 @@ return x, p""").toSet
     ) === result))
   }
 
-  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
-  ignore("should handle optional paths from a combo") {
+  test("should handle optional paths from a combo") {
     val a = createNode("A")
     val b = createNode("B")
     relate(a, b, "X")
 
-    val result = executeWithNewPlanner( """
+    val result = execute( """
 match (a {name:'A'})
 optional match p = a-->b-[*]->c
 return p""")
@@ -662,13 +648,12 @@ return p""")
     ) === result.toSet)
   }
 
-  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
-  ignore("should handle optional paths from a combo with MATCH") {
+  test("should handle optional paths from a combo with MATCH") {
     val a = createNode("A")
     val b = createNode("B")
     relate(a, b, "X")
 
-    val result = executeWithNewPlanner( """
+    val result = execute( """
 match (a {name:'A'})
 optional match p = a-->b-[*]->c
 return p""")
@@ -678,14 +663,13 @@ return p""")
     ) === result.toSet)
   }
 
-  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
-  ignore("should handle optional paths from var length path") {
+  test("should handle optional paths from var length path") {
     val a = createNode("A")
     val b = createNode("B")
     val c = createNode("C")
     val r = relate(a, b, "X")
 
-    val result = executeWithNewPlanner( """
+    val result = execute( """
 match (a {name:'A'}), (x) where x.name in ['B', 'C']
 optional match p = (a)-[r*]->(x)
 return r, x, p""")
@@ -696,15 +680,14 @@ return r, x, p""")
     ) === result.toSet)
   }
 
-  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
-  ignore("should return an iterable with all relationships from a var length") {
+  test("should return an iterable with all relationships from a var length") {
     val a = createNode()
     val b = createNode()
     val c = createNode()
     val r1 = relate(a, b)
     val r2 = relate(b, c)
 
-    val result = executeWithNewPlanner( """
+    val result = execute( """
 match (a) where id(a) = 0
 match a-[r*2]->c
 return r""")
@@ -723,8 +706,7 @@ return p""")
     result.toList.size should equal (2)
   }
 
-  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
-  ignore("should collect leafs") {
+  test("should collect leafs") {
     val a = createNode()
     val b = createNode()
     val c = createNode()
@@ -733,7 +715,7 @@ return p""")
     val rac = relate(a, c)
     val rcd = relate(c, d)
 
-    val result = executeWithNewPlanner( """
+    val result = execute( """
 match p = root-[*]->leaf
 where id(root) = 0 and not(leaf-->())
 return p, leaf""")
@@ -858,12 +840,11 @@ RETURN a.name""")
     result should equal (List(Map("a" -> a)))
   }
 
-  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
-  ignore("nullable var length path should work") {
+  test("nullable var length path should work") {
     createNode()
     val b = createNode()
 
-    val result = executeWithNewPlanner("""
+    val result = execute("""
 match (a), (b) where id(a) = 0 and id(b) = 1
 optional match a-[r*]-b where r is null and a <> b
 return b
@@ -1229,13 +1210,12 @@ return b
     ))
   }
 
-  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
-  ignore("should match fixed-size var length pattern") {
+  test("should match fixed-size var length pattern") {
     val a = createNode()
     val b = createNode()
     val r = relate(a, b)
 
-    val result = executeWithNewPlanner("match (a)-[r*1..1]->(b) return r")
+    val result = execute("match (a)-[r*1..1]->(b) return r")
     result.toList should equal (List(Map("r" -> List(r))))
   }
 
@@ -1299,13 +1279,12 @@ return b
     result.toList should equal (List(Map("p"->new PathImpl(node))))
   }
 
-  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
-  ignore("match p = (a)-[r*0..]->(b) return p") {
+  test("match p = (a)-[r*0..]->(b) return p") {
     // given a single node
     val node = createNode()
 
     // when
-    val result = executeWithNewPlanner("match p = (a)-[r*0..]->(b) return p")
+    val result = execute("match p = (a)-[r*0..]->(b) return p")
 
     // should give us a single, empty path starting at one end
     result.toList should equal (List(Map("p"-> new PathImpl(node))))
@@ -1459,7 +1438,7 @@ return b
     actual shouldNot be(empty)
   }
 
-  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
+  // Fixed in separate commit
   ignore("MATCH (a)-[r1]->()-[r2]->(b) WITH [r1, r2] AS rs LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second") {
     val node1 = createNode()
     val node2 = createNode()
@@ -1468,7 +1447,7 @@ return b
     val rel2 = relate(node2, node3, "Y")
 
     // when
-    val result = executeWithNewPlanner("MATCH (a)-[r1]->()-[r2]->(b) WITH [r1, r2] AS rs, a AS a LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second")
+    val result = execute("MATCH (a)-[r1]->()-[r2]->(b) WITH [r1, r2] AS rs, a AS a LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second")
 
     val actual = result.toList
 
@@ -1477,8 +1456,7 @@ return b
     ))
   }
 
-  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
-  ignore("MATCH (a)-[r1]->()-[r2]->(b) WITH [r1, r2] AS rs, a AS first, b AS second LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second") {
+  test("MATCH (a)-[r1]->()-[r2]->(b) WITH [r1, r2] AS rs, a AS first, b AS second LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second") {
     val node1 = createNode()
     val node2 = createNode()
     val node3 = createNode()
@@ -1486,7 +1464,7 @@ return b
     val rel2 = relate(node2, node3, "Y")
 
     // when
-    val result = executeWithNewPlanner("MATCH (a)-[r1]->()-[r2]->(b) WITH [r1, r2] AS rs, a AS first, b AS second LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second")
+    val result = execute("MATCH (a)-[r1]->()-[r2]->(b) WITH [r1, r2] AS rs, a AS first, b AS second LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second")
 
     val actual = result.toList
 
@@ -1495,8 +1473,7 @@ return b
     ))
   }
 
-  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
-  ignore("MATCH (a)-[r1]->()-[r2]->(b) WITH [r1, r2] AS rs, a AS second, b AS first LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second") {
+  test("MATCH (a)-[r1]->()-[r2]->(b) WITH [r1, r2] AS rs, a AS second, b AS first LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second") {
     val node1 = createNode()
     val node2 = createNode()
     val node3 = createNode()
@@ -1504,7 +1481,7 @@ return b
     val rel2 = relate(node2, node3, "Y")
 
     // when
-    val result = executeWithNewPlanner("MATCH (a)-[r1]->()-[r2]->(b) WITH [r1, r2] AS rs, a AS second, b AS first LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second")
+    val result = execute("MATCH (a)-[r1]->()-[r2]->(b) WITH [r1, r2] AS rs, a AS second, b AS first LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second")
 
     val actual = result.toList
 
@@ -1570,8 +1547,7 @@ return b
     ))
   }
 
-  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
-  ignore("MATCH (a:Artist)-[:WORKED_WITH* { year: 1988 }]->(b:Artist) RETURN *") {
+  test("MATCH (a:Artist)-[:WORKED_WITH* { year: 1988 }]->(b:Artist) RETURN *") {
     val a = createLabeledNode("Artist")
     val b = createLabeledNode("Artist")
     val c = createLabeledNode("Artist")
@@ -1579,7 +1555,7 @@ return b
     relate(a, b, "WORKED_WITH", Map("year" -> 1987))
     relate(b, c, "WORKED_WITH", Map("year" -> 1988))
 
-    val result = executeWithNewPlanner("MATCH (a:Artist)-[:WORKED_WITH* { year: 1988 }]->(b:Artist) RETURN *")
+    val result = execute("MATCH (a:Artist)-[:WORKED_WITH* { year: 1988 }]->(b:Artist) RETURN *")
     result.toList should equal(List(
       Map("a" -> b, "b" -> c)
     ))
@@ -1673,5 +1649,35 @@ return b
 
     //THEN
     result should equal (1)
+  }
+
+  test("Should be able to run delete/merge query multiple times") {
+    //GIVEN
+    createLabeledNode("User")
+
+    val query = """MATCH (:User)
+                  |MERGE (project:Project)
+                  |MERGE (user)-[:HAS_PROJECT]->(project)
+                  |WITH project
+                  |    // delete the current relations to be able to replace them with new ones
+                  |OPTIONAL MATCH (project)-[hasFolder:HAS_FOLDER]->(:Folder)
+                  |OPTIONAL MATCH (project)-[:HAS_FOLDER]->(folder:Folder)
+                  |DELETE folder, hasFolder
+                  |WITH project
+                  |   // add the new relations and objects
+                  |FOREACH (el in[{name:"Dir1"}, {name:"Dir2"}] |
+                  |  MERGE (folder:Folder{ name: el.name })
+                  |  MERGE (project)–[:HAS_FOLDER]->(folder))
+                  |RETURN DISTINCT project""".stripMargin
+
+
+    //WHEN
+    val first = eengine.execute(query).toList
+    val second = eengine.execute(query).toList
+    val check = executeWithNewPlanner("MATCH (f:Folder) RETURN f.name").toSet
+
+    //THEN
+    first should equal(second)
+    check should equal(Set(Map("f.name" -> "Dir1"), Map("f.name" -> "Dir2")))
   }
 }
