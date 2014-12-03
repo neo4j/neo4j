@@ -39,8 +39,12 @@ case class Planner(monitors: Monitors,
                    clock: Clock,
                    tokenResolver: SimpleTokenResolver = new SimpleTokenResolver(),
                    maybeExecutionPlanBuilder: Option[PipeExecutionPlanBuilder] = None,
-                   strategy: PlanningStrategy = new QueryPlanningStrategy(),
-                   queryGraphSolver: QueryGraphSolver = new GreedyQueryGraphSolver()) extends PipeBuilder {
+                   strategy: PlanningStrategy = new QueryPlanningStrategy,
+                   queryGraphSolver: QueryGraphSolver =
+                   new CompositeQueryGraphSolver(
+                     new GreedyQueryGraphSolver(expandsOrJoins),
+                     new GreedyQueryGraphSolver(expandsOnly)
+                   )) extends PipeBuilder {
 
   val executionPlanBuilder: PipeExecutionPlanBuilder =
     maybeExecutionPlanBuilder.getOrElse(new PipeExecutionPlanBuilder(clock, monitors))
