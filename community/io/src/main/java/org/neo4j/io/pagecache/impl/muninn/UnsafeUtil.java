@@ -26,8 +26,11 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.security.AccessController;
+import java.security.PrivilegedExceptionAction;
 
 public final class UnsafeUtil
 {
@@ -53,26 +56,19 @@ public final class UnsafeUtil
 
     static
     {
-        Unsafe theUnsafe = null;
-        Object sentinelBase = null;
-        long sentinelOffset = 0;
+        unsafe = getUnsafe();
+
         try
         {
-            Field unsafeField = Unsafe.class.getDeclaredField( "theUnsafe" );
-            unsafeField.setAccessible( true );
-            theUnsafe = (Unsafe) unsafeField.get( null );
-
             Field field = UnsafeUtil.class.getDeclaredField( "nullSentinel" );
-            sentinelBase = theUnsafe.staticFieldBase( field );
-            sentinelOffset = theUnsafe.staticFieldOffset( field );
+            nullSentinelBase = unsafe.staticFieldBase( field );
+            nullSentinelOffset = unsafe.staticFieldOffset( field );
         }
-        catch ( NoSuchFieldException | IllegalAccessException e )
+        catch ( NoSuchFieldException e )
         {
-            e.printStackTrace();
+            throw new LinkageError( "Inaccessible field: 'nullSentinel'", e );
         }
-        unsafe = theUnsafe;
-        nullSentinelBase = sentinelBase;
-        nullSentinelOffset = sentinelOffset;
+
         MethodHandles.Lookup lookup = MethodHandles.lookup();
         getAndAddInt = getGetAndAddIntMethodHandle( lookup );
         getAndSetObject = getGetAndSetObjectMethodHandle( lookup );
@@ -134,6 +130,45 @@ public final class UnsafeUtil
         storeByteOrderIsNative = ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN;
     }
 
+    private static Unsafe getUnsafe()
+    {
+        try
+        {
+            return AccessController.doPrivileged( new PrivilegedExceptionAction<Unsafe>()
+            {
+                @Override
+                public Unsafe run() throws Exception
+                {
+                    try
+                    {
+                        return Unsafe.getUnsafe();
+                    }
+                    catch ( Exception e )
+                    {
+                        Class<Unsafe> type = Unsafe.class;
+                        Field[] fields = type.getDeclaredFields();
+                        for ( Field field : fields )
+                        {
+                            if ( Modifier.isStatic( field.getModifiers() )
+                                 && type.isAssignableFrom( field.getType() ) )
+                            {
+                                field.setAccessible( true );
+                                return type.cast( field.get( null ) );
+                            }
+                        }
+                        LinkageError error = new LinkageError( "No static field of type sun.misc.Unsafe" );
+                        error.addSuppressed( e );
+                        throw error;
+                    }
+                }
+            } );
+        }
+        catch ( Exception e )
+        {
+            throw new LinkageError( "Cannot access sun.misc.Unsafe", e );
+        }
+    }
+
     private static MethodHandle getGetAndAddIntMethodHandle(
             MethodHandles.Lookup lookup )
     {
@@ -172,26 +207,35 @@ public final class UnsafeUtil
         }
         catch ( NoSuchFieldException e )
         {
-            throw new Error( e );
+            String message = "Could not get offset of '" + field + "' field on type " + type;
+            throw new LinkageError( message, e );
         }
     }
 
     public static int getAndAddInt( Object obj, long offset, int delta )
     {
-        // The Java 8 specific version:
         if ( getAndAddInt != null )
         {
-            try
-            {
-                return (int) getAndAddInt.invokeExact( unsafe, obj, offset, delta );
-            }
-            catch ( Throwable throwable )
-            {
-                throw new AssertionError( "Unexpected intrinsic failure", throwable );
-            }
+            return getAndAddInt_java8( obj, offset, delta );
         }
 
-        // The Java 7 version:
+        return getAndAddInt_java7( obj, offset, delta );
+    }
+
+    private static int getAndAddInt_java8( Object obj, long offset, int delta )
+    {
+        try
+        {
+            return (int) getAndAddInt.invokeExact( unsafe, obj, offset, delta );
+        }
+        catch ( Throwable throwable )
+        {
+            throw new LinkageError( "Unexpected 'getAndAddInt' intrinsic failure", throwable );
+        }
+    }
+
+    private static int getAndAddInt_java7( Object obj, long offset, int delta )
+    {
         int x;
         do
         {
@@ -215,20 +259,28 @@ public final class UnsafeUtil
 
     public static Object getAndSetObject( Object obj, long offset, Object newValue )
     {
-        // The Java 8 specific version:
         if ( getAndSetObject != null )
         {
-            try
-            {
-                return getAndSetObject.invokeExact( unsafe, obj, offset, newValue );
-            }
-            catch ( Throwable throwable )
-            {
-                throw new AssertionError( "Unexpected intrinsic failure", throwable );
-            }
+            return getAndSetObject_java8( obj, offset, newValue );
         }
 
-        // The Java 7 version:
+        return getAndSetObject_java7( obj, offset, newValue );
+    }
+
+    private static Object getAndSetObject_java8( Object obj, long offset, Object newValue )
+    {
+        try
+        {
+            return getAndSetObject.invokeExact( unsafe, obj, offset, newValue );
+        }
+        catch ( Throwable throwable )
+        {
+            throw new LinkageError( "Unexpected 'getAndSetObject' intrinsic failure", throwable );
+        }
+    }
+
+    private static Object getAndSetObject_java7( Object obj, long offset, Object newValue )
+    {
         Object current;
         do
         {
@@ -335,7 +387,7 @@ public final class UnsafeUtil
         unsafe.setMemory( address, bytes, value );
     }
 
-    public static ByteBuffer newDirectByteBuffer(long addr, int cap) throws Exception
+    public static ByteBuffer newDirectByteBuffer( long addr, int cap ) throws Exception
     {
         if ( directByteBufferCtor == null )
         {
@@ -363,11 +415,11 @@ public final class UnsafeUtil
      */
     public static void retainReference( Object obj )
     {
-        Object sentinel = UnsafeUtil.getObjectVolatile( nullSentinelBase, nullSentinelOffset );
+        Object sentinel = getObjectVolatile( nullSentinelBase, nullSentinelOffset );
 
         if ( sentinel == obj )
         {
-            UnsafeUtil.putObjectVolatile( nullSentinelBase, nullSentinelOffset, obj );
+            putObjectVolatile( nullSentinelBase, nullSentinelOffset, obj );
         }
     }
 }
