@@ -79,16 +79,23 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
     )
   }
 
-  /* re-enable perty to make it pass */ ignore("Should build plans containing expand for looping relationship patterns") {
-    val result: String = planFor("MATCH (a)-[r1]->(b)<-[r2]-(a) RETURN r1, r2").plan.toString
-    println(result)
-    result should equal(
-      """Projection[r1,r2](Map("r1" → r1, "r2" → r2))
-        |↳ Selection[a,a$$$,b,r1,r2](Vector(r1 <> r2))
-        |↳ Selection[a,a$$$,b,r1,r2](a = a$$$ ⸬ ⬨)
-        |↳ Expand[a,a$$$,b,r1,r2](b, INCOMING, INCOMING, ⬨, a$$$, r2, , Vector())
-        |↳ Expand[a,b,r1](b, INCOMING, OUTGOING, ⬨, a, r1, , Vector())
-        |↳ AllNodesScan[b](b, Set())""".stripMargin
+  test("Should build plans containing expand for looping relationship patterns") {
+    (new given {
+      cardinality = mapCardinality {
+        case _: AllNodesScan => 1000.0
+        case _                => 1.0
+      }
+
+    } planFor "MATCH (a)-[r1]->(b)<-[r2]-(a) RETURN r1, r2").plan should equal(
+    Projection(
+      Selection(Seq(NotEquals(Identifier("r1")_,Identifier("r2")_) _),
+        Expand(
+          Expand(
+            AllNodesScan(IdName("b"),Set.empty)(PlannerQuery.empty),
+            IdName("b"), Direction.INCOMING, Seq.empty, IdName("a"), IdName("r1"),ExpandAll)(PlannerQuery.empty),
+          IdName("b"), Direction.INCOMING, Seq.empty, IdName("a"), IdName("r2"), ExpandInto)(PlannerQuery.empty)
+        )(PlannerQuery.empty),
+        Map("r1" -> Identifier("r1")_, "r2" -> Identifier("r2")_))(PlannerQuery.empty)
     )
   }
 
