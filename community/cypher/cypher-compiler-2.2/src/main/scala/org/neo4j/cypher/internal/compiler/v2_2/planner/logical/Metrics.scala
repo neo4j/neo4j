@@ -97,7 +97,6 @@ object Cardinality {
   val SINGLE = Cardinality(1)
 
   implicit def lift(amount: Double): Cardinality = Cardinality(amount)
-  implicit def lift(amount: Long): Cardinality = lift(amount.doubleValue())
 
   def min(l: Cardinality, r: Cardinality): Cardinality =
     Cardinality(Math.min(l.amount, r.amount))

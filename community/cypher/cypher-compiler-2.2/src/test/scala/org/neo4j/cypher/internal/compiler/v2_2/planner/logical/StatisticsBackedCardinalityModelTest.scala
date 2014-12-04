@@ -34,13 +34,14 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
   val rel2Count = 78
 
   test("query containing a WITH and LIMIT") {
+    val i = .1
     givenPattern("MATCH (a:Person) WITH a LIMIT 10 MATCH (a)-[:REL]->()").
     withGraphNodes(allNodes).
-    withLabel('Person -> personCount).
+    withLabel('Person -> i).
     withRelationshipCardinality('Person -> 'REL -> 'Person -> relCount).
     shouldHavePlannerQueryCardinality(produceCardinalityModel)(
-        Math.min(allNodes * (personCount / allNodes), 10.0) *
-        allNodes * (relCount / (personCount * allNodes))
+        Math.min(allNodes * (i / allNodes), 10.0) *
+        allNodes * (relCount / (i * allNodes))
       )
   }
 
