@@ -74,12 +74,12 @@ We will now briefly describe the modules and their roles.
 
 server-api::
   This module provides classes which can be used to create plugins on the Neo4j server.
-  More information about its usage can be found http://docs.neo4j.org/chunked/milestone/server-plugins.html[here].
+  More information about its usage can be found http://neo4j.com/docs/milestone/server-plugins.html[here].
 
 neo4j-udc::
   This module is a Usage Data Collector which can gather usage data to help improve Neo4j.
   For more information on what data it gathers and how it can be disabled,
-  see http://docs.neo4j.org/chunked/milestone/usage-data-collector.html[the manual].
+  see http://neo4j.com/docs/milestone/usage-data-collector.html[the manual].
 
 neo4j-graphviz::
   The graphviz module is a library that allows visualization of Neo4j graph data 
@@ -90,18 +90,18 @@ neo4j-graphviz::
 
 neo4j-jmx::
   The jmx module offers a JMX interface to different Neo4j modules.
-  Its details and usage information can be found http://docs.neo4j.org/chunked/milestone/jmx-mxbeans.html[here].
+  Its details and usage information can be found http://neo4j.com/docs/milestone/jmx-mxbeans.html[here].
 
 neo4j-graph-algo::
   This module offers some graph algorithms which can be performed on your graphs.
   They can be called using any of the interfaces to the system, 
-  like the REST api as documented http://docs.neo4j.org/chunked/milestone/rest-api-graph-algos.html[here],
-  or the traversal API as documented http://docs.neo4j.org/chunked/milestone/tutorials-java-embedded-graph-algo.html[here].
-  Finally, the graph algorithms are integrated into http://docs.neo4j.org/chunked/milestone/cypher-query-lang.html[the Cypher Query Language]
-  as is illustrated http://docs.neo4j.org/chunked/milestone/query-match.html#match-shortest-path[here].
+  like the REST api as documented http://neo4j.com/docs/milestone/rest-api-graph-algos.html[here],
+  or the traversal API as documented http://neo4j.com/docs/milestone/tutorials-java-embedded-graph-algo.html[here].
+  Finally, the graph algorithms are integrated into http://neo4j.com/docs/milestone/cypher-query-lang.html[the Cypher Query Language]
+  as is illustrated http://neo4j.com/docs/milestone/query-match.html#match-shortest-path[here].
 
 neo4j-graph-matching::
-  This module provides an http://components.neo4j.org/neo4j-graph-matching/snapshot/apidocs/index.html[API]
+  This module provides an http://neo4j.com/docs/milestone/javadocs/org/neo4j/graphmatching/package-summary.html[API]
   to perform pattern matching on graphs.
   It is mainly intended for internal use by the Cypher Execution Engine.
   Although its API can be used when using an embedded version of Neo4j,
@@ -109,13 +109,13 @@ neo4j-graph-matching::
 
 neo4j-lucene-index::
   This module provides indexing capabilities to allow users to lookup nodes based on their properties.
-  As described in http://docs.neo4j.org/chunked/milestone/indexing.html[the manual],
-  this way of indexing is no longer recommended if http://docs.neo4j.org/chunked/milestone/graphdb-neo4j-schema.html[schema indexing] would suffice.
+  As described in http://neo4j.com/docs/milestone/indexing.html[the manual],
+  this way of indexing is no longer recommended if http://neo4j.com/docs/milestone/graphdb-neo4j-schema.html[schema indexing] would suffice.
 
 neo4j-server::
-  The community version of http://docs.neo4j.org/chunked/milestone/server.html[the Neo4j server].
-  It contains the functionality of the http://docs.neo4j.org/chunked/milestone/rest-api.html[REST API]
-  and http://docs.neo4j.org/chunked/milestone/tools-webadmin.html[the WebAdmin tool].
+  The community version of http://neo4j.com/docs/milestone/server.html[the Neo4j server].
+  It contains the functionality of the http://neo4j.com/docs/milestone/rest-api.html[REST API]
+  and http://neo4j.com/docs/milestone/tools-webadmin.html[the WebAdmin tool].
 
 neo4j-community::
   The neo4j-community module is a historical alias for the neo4j module.
@@ -125,8 +125,8 @@ neo4j::
 
 neo4j-shell::
   The shell module provides a simple shell to monitor a Neo4j database.
-  It is documented http://docs.neo4j.org/chunked/milestone/shell.html[here]
-  and its manpage can be found in the http://docs.neo4j.org/chunked/milestone/manpages.html[manpages section] of the manual.
+  It is documented http://neo4j.com/docs/milestone/shell.html[here]
+  and its manpage can be found in the http://neo4j.com/docs/milestone/manpages.html[manpages section] of the manual.
 
 neo4j-cypher::
   This module provides the Cypher Execution Engine, which allows users to query using the Cypher Query Language.
@@ -149,13 +149,13 @@ neo4j-advanced::
 
 neo4j-management::
   The management module extends the neo4j-jmx module with extra monitoring features.
-  These features are documented http://docs.neo4j.org/chunked/milestone/operations-monitoring.html[here].
+  These features are documented http://neo4j.com/docs/milestone/operations-monitoring.html[here].
 
 ==== Enterprise Modules ====
 
 neo4j-ha::
   The high availability (ha) module allows the Neo4j server to be clustered,
-  to allow for fault-tolerance and read-scalability as discussed http://docs.neo4j.org/chunked/milestone/ha.html[here].
+  to allow for fault-tolerance and read-scalability as discussed http://neo4j.com/docs/milestone/ha.html[here].
 
 neo4j-cluster::
   This module is a library to provide http://en.wikipedia.org/wiki/Heartbeat_network[Heartbeat]
@@ -164,8 +164,8 @@ neo4j-cluster::
 
 neo4j-backup::
   This modules provides the possibility of easily creating backups, even from remote machines.
-  The features of this module and its usage are documented http://docs.neo4j.org/chunked/milestone/operations-backup.html[here]
-  and the manpage can be found in the http://docs.neo4j.org/chunked/milestone/manpages.html[manpages section]
+  The features of this module and its usage are documented http://neo4j.com/docs/milestone/operations-backup.html[here]
+  and the manpage can be found in the http://neo4j.com/docs/milestone/manpages.html[manpages section]
   of the manual.
 
 neo4j-com::
@@ -219,8 +219,8 @@ More information about the maven conventions can be found http://maven.apache.or
 
 Finally, each module can have documentation.
 This documentation is located in the `src/docs` folder,
-which is organized as described http://docs.neo4j.org/chunked/milestone/community-docs.html#_file_structure_in_emphasis_docs_jar_emphasis[here].
-These documentation files can be incorporated into http://docs.neo4j.org/chunked/milestone/index.html[the manual]
+which is organized as described http://neo4j.com/docs/milestone/community-docs.html#_file_structure_in_emphasis_docs_jar_emphasis[here].
+These documentation files can be incorporated into http://neo4j.com/docs/milestone/index.html[the manual]
 by including them in the neo4j-manual component.
 
 === Build, Integration, Test approach ===
@@ -279,7 +279,7 @@ This also allows the following names:
 === Contributing Process ===
 
 If you want to contribute to the system,
-please read http://docs.neo4j.org/chunked/milestone/community-contributing-code.html[this section]
+please read http://neo4j.com/docs/milestone/community-contributing-code.html[this section]
 of the manual, which describes some general guidelines for contributing.
 Note that test-driven development (write tests first, code later) is recommended.
 Your contribution should adhere to the structure as described

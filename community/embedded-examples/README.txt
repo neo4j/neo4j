@@ -17,8 +17,7 @@ The scripts and related source code are:
 References
 ----------
 
-  * http://docs.neo4j.org/        documentation
-  * http://components.neo4j.org/  documentation about each component
+  * http://neo4j.com/docs/        documentation
 
 License(s)
 ----------

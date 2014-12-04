@@ -3,7 +3,7 @@
 This project creates a reference card for the Cypher Query Language.
 
 Here's an example of what it renders:
-http://docs.neo4j.org/refcard/1.9/
+http://neo4j.com/docs/stable/cypher-refcard/
 
 === Building ===
 
@@ -24,36 +24,11 @@ The result will be available in the 'target/html5' directory.
 Please create issues on GitHub for errors or to request additions.
 Pull requests are very welcome.
 
-[NOTE]
-We need a http://docs.neo4j.org/chunked/milestone/cla.html[CLA] from you in order 
-to process any pull requests!
-
 === How it works ===
 
-The main file for the content is 'src/cypher-refcard.asciidoc'.
+The main file for the content is '/manual/refcard/src/cypher-refcard.asciidoc'.
 It loads include files created from executing tests against Neo4j.
-That's done in the Scala project in the 'neo4j-cypher-refcard-tests' directory,
-The tests are located in 'neo4j-cypher-refcard-tests/src/test/scala/org/neo4j/cypher/docgen/refcard'
+That's done in the Scala project in the '/community/cypher/docs/refcard-tests' directory,
+The tests are located in '/community/cypher/docs/refcard-tests/src/test/scala/org/neo4j/cypher/docgen/refcard'
 
-=== Branch layout ===
-
-As of writing this, there's three branches in use.
-
-* The `1.9` branch is for the `1.9.x` series releases.
-* The `2.0` branch is for the `2.0.x` series releases.
-* The `master` branch is for the `2.1.x` series releases.
-
-
-=== Deploying ===
-
-The refcard is automatically deployed on each push to any branch which builds successfully.
-The following properties determine what happens.
-
-[horizontal]
-+neo4j.version+:: The version of Neo4j used to execute the tests.
-+refcard.version+:: The visible version of the refcard and part of the URL.
-
-The refcard currently gets deployed to `http://docs.neo4j.org/refcard/{refcard.version}/`
-
-IMPORTANT: The project itself should always have a snapshot version.
 
