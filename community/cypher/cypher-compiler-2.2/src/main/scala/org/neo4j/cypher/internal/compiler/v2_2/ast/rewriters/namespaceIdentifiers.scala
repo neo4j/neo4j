@@ -20,13 +20,17 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_2._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.namespaceIdentifiers.IdentifierNames
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{AliasedReturnItem, ReturnItems, Return, Identifier}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
 
 import scala.collection.mutable
 
-case class namespaceIdentifiers(scopeTree: Scope) extends Rewriter {
+object namespaceIdentifiers {
   type IdentifierNames = Map[(String, InputPosition), String]
+}
 
+case class namespaceIdentifiers(scopeTree: Scope) extends Rewriter {
   val identifierNames = namespacedIdentifierNames(scopeTree)
 
   def apply(in: AnyRef): AnyRef = bottomUp(getRewriter(in)).apply(in)

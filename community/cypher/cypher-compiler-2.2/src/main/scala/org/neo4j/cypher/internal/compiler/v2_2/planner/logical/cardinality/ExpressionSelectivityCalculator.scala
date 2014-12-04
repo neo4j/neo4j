@@ -83,16 +83,8 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       GraphStatistics.DEFAULT_PREDICATE_SELECTIVITY
   }
 
-  def areRelationships(semanticTable: SemanticTable, lhs: Identifier, rhs: Identifier): Boolean = {
-    try {
-      semanticTable.isRelationship(lhs) && semanticTable.isRelationship(rhs)
-    }
-    catch {
-      // TODO: Fix SemanticTable w.r.t. rewriting, triggered by ReturnAcceptanceTest
-      case e: NoSuchElementException =>
-        false
-    }
-  }
+  def areRelationships(semanticTable: SemanticTable, lhs: Identifier, rhs: Identifier): Boolean =
+    semanticTable.isRelationship(lhs) && semanticTable.isRelationship(rhs)
 
   private def calculateSelectivityForLabel(label: Option[LabelId]): Selectivity = {
     val nodeCardinality: Cardinality = stats.nodesWithLabelCardinality(None)

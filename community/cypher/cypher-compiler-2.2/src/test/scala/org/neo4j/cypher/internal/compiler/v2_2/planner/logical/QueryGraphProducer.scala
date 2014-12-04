@@ -39,8 +39,7 @@ trait QueryGraphProducer extends MockitoSugar {
     val semanticState = semanticChecker.check(query, cleanedStatement)
 
     val firstRewriteStep = astRewriter.rewrite(query, cleanedStatement, semanticState)._1
-    val rewrittenAst: Statement =
-      Planner.rewriteStatement(firstRewriteStep, semanticState.scopeTree)
+    val (rewrittenAst: Statement, _) = Planner.rewriteStatement(firstRewriteStep, semanticState.scopeTree, SemanticTable(types = semanticState.typeTable))
     rewrittenAst.asInstanceOf[Query].asUnionQuery.queries.head
   }
 
