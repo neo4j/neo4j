@@ -27,6 +27,7 @@ trait PlanDescription {
   def name: String
   def children: Seq[PlanDescription]
   def arguments: Map[String, AnyRef]
+  def identifiers: Set[String]
   def hasProfilerStatistics: Boolean
   def asJava: javacompat.PlanDescription
   def render(builder: StringBuilder) {}

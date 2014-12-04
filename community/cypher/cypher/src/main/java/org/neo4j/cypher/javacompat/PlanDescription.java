@@ -20,10 +20,11 @@
 package org.neo4j.cypher.javacompat;
 
 
-import org.neo4j.cypher.ProfilerStatisticsNotReadyException;
-
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+
+import org.neo4j.cypher.ProfilerStatisticsNotReadyException;
 
 
 /**
@@ -48,6 +49,11 @@ public interface PlanDescription
      * @return a map containing arguments that describe this execution step in more detail
      */
     public Map<String, Object> getArguments();
+
+    /**
+     * @return the set of identifiers used in this execution step
+     */
+    public Set<String> getIdentifiers();
 
     /**
      * @return list of previous (child) execution step descriptions
