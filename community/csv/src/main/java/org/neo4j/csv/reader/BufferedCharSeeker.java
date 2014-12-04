@@ -192,10 +192,20 @@ public class BufferedCharSeeker implements CharSeeker
     @Override
     public <EXTRACTOR extends Extractor<?>> EXTRACTOR extract( Mark mark, EXTRACTOR extractor )
     {
+        if ( !tryExtract( mark, extractor ) )
+        {
+            throw new IllegalStateException( extractor + " didn't extract value for " + mark +
+                    ". For values which are optional please use tryExtract method instead" );
+        }
+        return extractor;
+    }
+
+    @Override
+    public boolean tryExtract( Mark mark, Extractor<?> extractor )
+    {
         long from = mark.startPosition();
         long to = mark.position();
-        extractor.extract( buffer, (int)(from), (int)(to-from) );
-        return extractor;
+        return extractor.extract( buffer, (int)(from), (int)(to-from) );
     }
 
     private int skipEolChars() throws IOException

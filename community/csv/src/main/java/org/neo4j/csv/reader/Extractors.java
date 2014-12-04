@@ -243,7 +243,30 @@ public class Extractors
         }
     }
 
-    private static class StringExtractor extends AbstractExtractor<String>
+    private static abstract class AbstractSingleValueExtractor<T> extends AbstractExtractor<T>
+    {
+        AbstractSingleValueExtractor( String toString )
+        {
+            super( toString );
+        }
+
+        @Override
+        public final boolean extract( char[] data, int offset, int length )
+        {
+            if ( length == 0 )
+            {
+                clear();
+                return false;
+            }
+            return extract0( data, offset, length );
+        }
+
+        protected abstract void clear();
+
+        protected abstract boolean extract0( char[] data, int offset, int length );
+    }
+
+    private static class StringExtractor extends AbstractSingleValueExtractor<String>
     {
         private String value;
 
@@ -253,9 +276,16 @@ public class Extractors
         }
 
         @Override
-        public void extract( char[] data, int offset, int length )
+        protected void clear()
         {
-            value = length > 0 ? new String( data, offset, length ) : null;
+            value = null;
+        }
+
+        @Override
+        protected boolean extract0( char[] data, int offset, int length )
+        {
+            value = new String( data, offset, length );
+            return true;
         }
 
         @Override
@@ -265,7 +295,7 @@ public class Extractors
         }
     }
 
-    public static class LongExtractor extends AbstractExtractor<Long>
+    public static class LongExtractor extends AbstractSingleValueExtractor<Long>
     {
         private long value;
 
@@ -275,9 +305,16 @@ public class Extractors
         }
 
         @Override
-        public void extract( char[] data, int offset, int length )
+        protected void clear()
+        {
+            value = 0;
+        }
+
+        @Override
+        protected boolean extract0( char[] data, int offset, int length )
         {
             value = extractLong( data, offset, length );
+            return true;
         }
 
         @Override
@@ -296,7 +333,7 @@ public class Extractors
         }
     }
 
-    public static class IntExtractor extends AbstractExtractor<Integer>
+    public static class IntExtractor extends AbstractSingleValueExtractor<Integer>
     {
         private int value;
 
@@ -306,9 +343,16 @@ public class Extractors
         }
 
         @Override
-        public void extract( char[] data, int offset, int length )
+        protected void clear()
+        {
+            value = 0;
+        }
+
+        @Override
+        protected boolean extract0( char[] data, int offset, int length )
         {
             value = safeCastLongToInt( extractLong( data, offset, length ) );
+            return true;
         }
 
         @Override
@@ -327,7 +371,7 @@ public class Extractors
         }
     }
 
-    public static class ShortExtractor extends AbstractExtractor<Short>
+    public static class ShortExtractor extends AbstractSingleValueExtractor<Short>
     {
         private short value;
 
@@ -337,9 +381,16 @@ public class Extractors
         }
 
         @Override
-        public void extract( char[] data, int offset, int length )
+        protected void clear()
+        {
+            value = 0;
+        }
+
+        @Override
+        protected boolean extract0( char[] data, int offset, int length )
         {
             value = safeCastLongToShort( extractLong( data, offset, length ) );
+            return true;
         }
 
         @Override
@@ -358,7 +409,7 @@ public class Extractors
         }
     }
 
-    public static class ByteExtractor extends AbstractExtractor<Byte>
+    public static class ByteExtractor extends AbstractSingleValueExtractor<Byte>
     {
         private byte value;
 
@@ -368,9 +419,16 @@ public class Extractors
         }
 
         @Override
-        public void extract( char[] data, int offset, int length )
+        protected void clear()
+        {
+            value = 0;
+        }
+
+        @Override
+        protected boolean extract0( char[] data, int offset, int length )
         {
             value = safeCastLongToByte( extractLong( data, offset, length ) );
+            return true;
         }
 
         @Override
@@ -396,7 +454,7 @@ public class Extractors
         Boolean.TRUE.toString().getChars( 0, BOOLEAN_MATCH.length, BOOLEAN_MATCH, 0 );
     }
 
-    public static class BooleanExtractor extends AbstractExtractor<Boolean>
+    public static class BooleanExtractor extends AbstractSingleValueExtractor<Boolean>
     {
         private boolean value;
 
@@ -406,9 +464,16 @@ public class Extractors
         }
 
         @Override
-        public void extract( char[] data, int offset, int length )
+        protected void clear()
+        {
+            value = false;
+        }
+
+        @Override
+        protected boolean extract0( char[] data, int offset, int length )
         {
             value = extractBoolean( data, offset, length );
+            return true;
         }
 
         @Override
@@ -423,7 +488,7 @@ public class Extractors
         }
     }
 
-    public static class CharExtractor extends AbstractExtractor<Character>
+    public static class CharExtractor extends AbstractSingleValueExtractor<Character>
     {
         private char value;
 
@@ -433,13 +498,20 @@ public class Extractors
         }
 
         @Override
-        public void extract( char[] data, int offset, int length )
+        protected void clear()
         {
-            if ( length != 1 )
+            value = 0;
+        }
+
+        @Override
+        protected boolean extract0( char[] data, int offset, int length )
+        {
+            if ( length > 1 )
             {
                 throw new IllegalStateException( "Was told to extract a character, but length:" + length );
             }
             value = data[offset];
+            return true;
         }
 
         @Override
@@ -454,7 +526,7 @@ public class Extractors
         }
     }
 
-    public static class FloatExtractor extends AbstractExtractor<Float>
+    public static class FloatExtractor extends AbstractSingleValueExtractor<Float>
     {
         private float value;
 
@@ -464,10 +536,17 @@ public class Extractors
         }
 
         @Override
-        public void extract( char[] data, int offset, int length )
+        protected void clear()
+        {
+            value = 0;
+        }
+
+        @Override
+        protected boolean extract0( char[] data, int offset, int length )
         {
             // TODO Figure out a way to do this conversion without round tripping to String
             value = Float.parseFloat( String.valueOf( data, offset, length ) );
+            return true;
         }
 
         @Override
@@ -482,7 +561,7 @@ public class Extractors
         }
     }
 
-    public static class DoubleExtractor extends AbstractExtractor<Double>
+    public static class DoubleExtractor extends AbstractSingleValueExtractor<Double>
     {
         private double value;
 
@@ -492,10 +571,17 @@ public class Extractors
         }
 
         @Override
-        public void extract( char[] data, int offset, int length )
+        protected void clear()
+        {
+            value = 0;
+        }
+
+        @Override
+        protected boolean extract0( char[] data, int offset, int length )
         {
             // TODO Figure out a way to do this conversion without round tripping to String
             value = Double.parseDouble( String.valueOf( data, offset, length ) );
+            return true;
         }
 
         @Override
@@ -526,6 +612,15 @@ public class Extractors
         {
             return value;
         }
+
+        @Override
+        public boolean extract( char[] data, int offset, int length )
+        {
+            extract0( data, offset, length );
+            return true;
+        }
+
+        protected abstract void extract0( char[] data, int offset, int length );
 
         protected int charsToNextDelimiter( char[] data, int offset, int length )
         {
@@ -575,7 +670,7 @@ public class Extractors
         }
 
         @Override
-        public void extract( char[] data, int offset, int length )
+        protected void extract0( char[] data, int offset, int length )
         {
             int numberOfValues = numberOfValues( data, offset, length );
             value = numberOfValues > 0 ? new String[numberOfValues] : EMPTY;
@@ -598,7 +693,7 @@ public class Extractors
         }
 
         @Override
-        public void extract( char[] data, int offset, int length )
+        protected void extract0( char[] data, int offset, int length )
         {
             int numberOfValues = numberOfValues( data, offset, length );
             value = numberOfValues > 0 ? new byte[numberOfValues] : EMPTY;
@@ -621,7 +716,7 @@ public class Extractors
         }
 
         @Override
-        public void extract( char[] data, int offset, int length )
+        protected void extract0( char[] data, int offset, int length )
         {
             int numberOfValues = numberOfValues( data, offset, length );
             value = numberOfValues > 0 ? new short[numberOfValues] : EMPTY;
@@ -644,7 +739,7 @@ public class Extractors
         }
 
         @Override
-        public void extract( char[] data, int offset, int length )
+        protected void extract0( char[] data, int offset, int length )
         {
             int numberOfValues = numberOfValues( data, offset, length );
             value = numberOfValues > 0 ? new int[numberOfValues] : EMPTY;
@@ -667,7 +762,7 @@ public class Extractors
         }
 
         @Override
-        public void extract( char[] data, int offset, int length )
+        protected void extract0( char[] data, int offset, int length )
         {
             int numberOfValues = numberOfValues( data, offset, length );
             value = numberOfValues > 0 ? new long[numberOfValues] : EMPTY;
@@ -690,7 +785,7 @@ public class Extractors
         }
 
         @Override
-        public void extract( char[] data, int offset, int length )
+        protected void extract0( char[] data, int offset, int length )
         {
             int numberOfValues = numberOfValues( data, offset, length );
             value = numberOfValues > 0 ? new float[numberOfValues] : EMPTY;
@@ -714,7 +809,7 @@ public class Extractors
         }
 
         @Override
-        public void extract( char[] data, int offset, int length )
+        protected void extract0( char[] data, int offset, int length )
         {
             int numberOfValues = numberOfValues( data, offset, length );
             value = numberOfValues > 0 ? new double[numberOfValues] : EMPTY;
@@ -738,7 +833,7 @@ public class Extractors
         }
 
         @Override
-        public void extract( char[] data, int offset, int length )
+        protected void extract0( char[] data, int offset, int length )
         {
             int numberOfValues = numberOfValues( data, offset, length );
             value = numberOfValues > 0 ? new boolean[numberOfValues] : EMPTY;

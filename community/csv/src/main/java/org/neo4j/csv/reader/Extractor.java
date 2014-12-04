@@ -34,8 +34,18 @@ package org.neo4j.csv.reader;
  */
 public interface Extractor<T>
 {
-    void extract( char[] data, int offset, int length );
+    /**
+     * Extracts value of type {@code T} from the given character data.
+     * @param data characters in a buffer.
+     * @param offset offset into the buffer where the value starts.
+     * @param length number of characters from the offset to extract.
+     * @return {@code true} if a value was extracted, otherwise {@code false}.
+     */
+    boolean extract( char[] data, int offset, int length );
 
+    /**
+     * @return the most recently extracted value.
+     */
     T value();
 
     /**

@@ -360,6 +360,48 @@ public class CsvInputTest
         }
     }
 
+    @Test
+    public void shouldIgnoreEmptyPropertyValues() throws Exception
+    {
+        // GIVEN
+        DataFactory<InputNode> data = data(
+                ":ID,name,extra\n" +
+                "0,Mattias,\n" +            // here we leave out "extra" property
+                "1,Johan,Additional\n" );
+        Iterable<DataFactory<InputNode>> dataIterable = dataIterable( data );
+        Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), null, null, IdType.ACTUAL, COMMAS );
+
+        // WHEN
+        try ( ResourceIterator<InputNode> nodes = input.nodes().iterator() )
+        {
+            // THEN
+            assertNode( nodes.next(), 0L, new Object[] {"name", "Mattias"}, labels() );
+            assertNode( nodes.next(), 1L, new Object[] {"name", "Johan", "extra", "Additional"}, labels() );
+            assertFalse( nodes.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldIgnoreEmptyIntPropertyValues() throws Exception
+    {
+        // GIVEN
+        DataFactory<InputNode> data = data(
+                ":ID,name,extra:int\n" +
+                "0,Mattias,\n" +            // here we leave out "extra" property
+                "1,Johan,10\n" );
+        Iterable<DataFactory<InputNode>> dataIterable = dataIterable( data );
+        Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), null, null, IdType.ACTUAL, COMMAS );
+
+        // WHEN
+        try ( ResourceIterator<InputNode> nodes = input.nodes().iterator() )
+        {
+            // THEN
+            assertNode( nodes.next(), 0L, new Object[] {"name", "Mattias"}, labels() );
+            assertNode( nodes.next(), 1L, new Object[] {"name", "Johan", "extra", 10}, labels() );
+            assertFalse( nodes.hasNext() );
+        }
+    }
+
     private <ENTITY extends InputEntity> DataFactory<ENTITY> given( final CharSeeker data )
     {
         return new DataFactory<ENTITY>()
