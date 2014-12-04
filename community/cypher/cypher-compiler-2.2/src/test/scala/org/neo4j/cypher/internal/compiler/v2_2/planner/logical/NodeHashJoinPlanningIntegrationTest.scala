@@ -20,13 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{NotEquals, Identifier}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{PlannerQuery, LogicalPlanningTestSupport2}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.graphdb.Direction
 
 class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  /* re-enable perty to make it pass */ ignore("should build plans containing joins") {
+  test("should build plans containing joins") {
     val r1 = PatternRelationship("r1", ("a", "b"), Direction.INCOMING, Seq(), SimplePatternLength)
     val r2 = PatternRelationship("r2", ("b", "c"), Direction.OUTGOING, Seq(), SimplePatternLength)
 
@@ -44,13 +45,22 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       cardinality = PartialFunction(myCardinality)
     } planFor "MATCH (a:X)<-[r1]-(b)-[r2]->(c:X) RETURN b").plan
 
-    result.toString should equal(
-      """Projection[b](Map("b" → b))
-        |↳ Selection[a,b,c,r1,r2](Vector(r1 <> r2))
-        |↳ NodeHashJoin[a,b,c,r1,r2](Set(b))
-        |  ↳ left = Expand[a,b,r1](a, INCOMING, ⬨, b, r1, , Vector())
-        |    ↳ NodeByLabelScan[a](a, Left("X"), Set())
-        |  ↳ right = Expand[b,c,r2](c, INCOMING, ⬨, b, r2, , Vector())
-        |    ↳ NodeByLabelScan[c](c, Left("X"), Set())""".stripMargin)
+
+    val expected = Projection(
+      Selection(
+        Seq(NotEquals(Identifier("r1")_, Identifier("r2")_) _),
+        NodeHashJoin(
+          Set(IdName("b")),
+          Expand(
+            NodeByLabelScan(IdName("a"), Left("X"), Set.empty)(PlannerQuery.empty),
+            IdName("a"), Direction.INCOMING, Seq.empty, IdName("b"), IdName("r1"))(PlannerQuery.empty),
+          Expand(
+            NodeByLabelScan(IdName("c"), Left("X"), Set.empty)(PlannerQuery.empty),
+            IdName("c"), Direction.INCOMING, Seq.empty, IdName("b"), IdName("r2"))(PlannerQuery.empty)
+        )(PlannerQuery.empty)
+      )(PlannerQuery.empty),
+      Map("b" -> Identifier("b") _))(PlannerQuery.empty)
+
+    result should equal(expected)
   }
 }

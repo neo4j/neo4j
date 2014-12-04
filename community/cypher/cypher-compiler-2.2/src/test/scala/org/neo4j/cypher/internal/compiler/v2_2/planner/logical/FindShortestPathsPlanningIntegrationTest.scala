@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{Identifier, NotEquals}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{PlannerQuery, LogicalPlanningTestSupport2}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.graphdb.Direction
 
@@ -66,7 +67,7 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
     )
   }
 
-  /* re-enable perty to make it pass */ ignore("find shortest paths on top of hash joins") {
+  test("find shortest paths on top of hash joins") {
     def myCardinality(plan: LogicalPlan): Cardinality = Cardinality(plan match {
       case _: NodeIndexSeek              => 10.0
       case _: AllNodesScan               => 10000
@@ -81,16 +82,28 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
       cardinality = PartialFunction(myCardinality)
     } planFor "MATCH (a:X)<-[r1]-(b)-[r2]->(c:X), p = shortestPath((a)-[r]->(c)) RETURN p").plan
 
-    val expectation =
-      """Projection[p](Map("p" → p))
-        |↳ FindShortestPaths[a,b,c,p,r,r1,r2](p = shortestPath((a)-[r]->(c)))
-        |↳ Selection[a,b,c,r1,r2](Vector(r1 <> r2))
-        |↳ NodeHashJoin[a,b,c,r1,r2](Set(b))
-        |  ↳ left = Expand[a,b,r1](a, INCOMING, INCOMING, ⬨, b, r1, , Vector())
-        |    ↳ NodeByLabelScan[a](a, Left("X"), Set())
-        |  ↳ right = Expand[b,c,r2](c, INCOMING, OUTGOING, ⬨, b, r2, , Vector())
-        |    ↳ NodeByLabelScan[c](c, Left("X"), Set())""".stripMargin
+    val expected =
+      Projection(
+        FindShortestPaths(
+        Selection(
+          Seq(NotEquals(Identifier("r1") _, Identifier("r2") _) _),
+          NodeHashJoin(
+            Set(IdName("b")),
+            Expand(
+              NodeByLabelScan(IdName("a"), Left("X"), Set.empty)(PlannerQuery.empty),
+              IdName("a"), Direction.INCOMING, Seq.empty, IdName("b"), IdName("r1"), ExpandAll)(PlannerQuery.empty),
+            Expand(
+              NodeByLabelScan(IdName("c"), Left("X"), Set.empty)(PlannerQuery.empty),
+              IdName("c"), Direction.INCOMING, Seq.empty, IdName("b"), IdName("r2"), ExpandAll)(PlannerQuery.empty)
+          )(PlannerQuery.empty)
+        )(PlannerQuery.empty),
+          ShortestPathPattern(Some(IdName("p")), PatternRelationship("r", ("a", "c"), Direction.OUTGOING, Seq.empty, SimplePatternLength), single = true)(null))(PlannerQuery.empty),
+        Map("p" -> Identifier("p") _))(PlannerQuery.empty)
 
-    result.toString should equal(expectation)
+
+
+        println (result)
+
+    result should equal(expected)
   }
 }

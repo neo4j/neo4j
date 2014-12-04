@@ -819,31 +819,25 @@ order by a.COL1""")
     result.toList shouldBe empty
   }
 
-  // 2014-02-18 AT This method had a missing @Test, if @Test is added this test fails miserably
-  ignore("should_use_predicates_in_the_correct_place") {
-    //GIVEN
-    val m = execute( """create
-                        advertiser = {name:"advertiser1"},
-                        thing      = {name:"Color"},
-                        red        = {name:"red"},
-                        p1         = {name:"product1"},
-                        p2         = {name:"product4"},
-                        (advertiser)-[:adv_has_product]->(p1),
-                        (advertiser)-[:adv_has_product]->(p2),
-                        (thing)-[:aa_has_value]->(red),
-                        (p1)   -[:ap_has_value]->(red),
-                        (p2)   -[:ap_has_value]->(red)
-                        return advertiser, thing""").toList.head
+  test("should_use_predicates_in_the_correct_place") {
+    val advertiser = createNode(Map("name" -> "advertiser1"))
+    val thing = createNode(Map("name" -> "Color"))
+    val red = createNode(Map("name" -> "red"))
+    val p1 = createNode(Map("name" -> "product1"))
+    val p4 = createNode(Map("name" -> "product4"))
 
-    val advertiser = m("advertiser").asInstanceOf[Node]
-    val thing = m("thing").asInstanceOf[Node]
+    relate(advertiser, p1, "adv_has_product")
+    relate(advertiser, p4, "adv_has_product")
+    relate(thing, red, "aa_has_value")
+    relate(p1, red, "ap_has_value")
+    relate(p4, red, "ap_has_value")
 
     //WHEN
     val result = execute("""
        MATCH (advertiser) -[:adv_has_product] ->(out) -[:ap_has_value] -> red <-[:aa_has_value]- (a)
        WHERE red.name = 'red' AND out.name = 'product1'
        AND id(advertiser) = {1} AND id(a) = {2}
-       RETURN out.name""", "1" -> advertiser, "2" -> thing)
+       RETURN out.name""", "1" -> advertiser.getId, "2" -> thing.getId)
 
     //THEN
     result.toList should equal(List(Map("out.name" -> "product1")))

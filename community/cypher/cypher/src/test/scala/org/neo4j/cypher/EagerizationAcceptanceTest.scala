@@ -50,7 +50,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite {
     assertNumberOfEagerness(result, 0)
   }
 
-  ignore("should not add eagerness when not writing to nodes") {
+  test("should not add eagerness when not writing to nodes") {
     val result = execute("MATCH a, b CREATE (a)-[r:KNOWS]->(b) SET r = { key: 42 }")
 
     assertNumberOfEagerness(result, 0)
