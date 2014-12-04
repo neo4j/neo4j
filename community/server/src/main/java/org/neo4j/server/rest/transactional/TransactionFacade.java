@@ -25,6 +25,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 import org.neo4j.cypher.javacompat.internal.ServerExecutionEngine;
+import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.rest.transactional.error.TransactionLifecycleException;
 import org.neo4j.server.rest.web.TransactionUriScheme;
@@ -52,11 +53,11 @@ import org.neo4j.server.rest.web.TransactionUriScheme;
 public class TransactionFacade
 {
     private final TransitionalPeriodTransactionMessContainer kernel;
-    private final ServerExecutionEngine engine;
+    private final QueryExecutionEngine engine;
     private final TransactionRegistry registry;
     private final StringLogger log;
 
-    public TransactionFacade( TransitionalPeriodTransactionMessContainer kernel, ServerExecutionEngine engine,
+    public TransactionFacade( TransitionalPeriodTransactionMessContainer kernel, QueryExecutionEngine engine,
                               TransactionRegistry registry, StringLogger log )
     {
         this.kernel = kernel;

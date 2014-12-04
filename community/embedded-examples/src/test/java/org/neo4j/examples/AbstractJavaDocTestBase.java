@@ -25,7 +25,6 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 
-import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.test.GraphDescription;
@@ -43,8 +42,6 @@ public abstract class AbstractJavaDocTestBase implements GraphHolder
 
     public @Rule
     TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this, true ) );
-
-    protected ExecutionEngine engine;
 
     protected static GraphDatabaseService db;
 
@@ -79,7 +76,6 @@ public abstract class AbstractJavaDocTestBase implements GraphHolder
         GraphDatabaseService graphdb = graphdb();
         cleanDatabaseContent( graphdb );
         gen.get().setGraph( graphdb );
-        engine = new ExecutionEngine( graphdb );
     }
 
     @After

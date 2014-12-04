@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.database;
 
-import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
@@ -30,7 +29,6 @@ import org.neo4j.kernel.logging.Logging;
 public class WrappedDatabase extends LifecycleAdapter implements Database
 {
     private final GraphDatabaseAPI graph;
-    private final ExecutionEngine executionEngine;
 
     public static Database.Factory wrappedDatabase( final GraphDatabaseAPI db )
     {
@@ -47,7 +45,6 @@ public class WrappedDatabase extends LifecycleAdapter implements Database
     public WrappedDatabase( GraphDatabaseAPI graph )
     {
         this.graph = graph;
-        this.executionEngine = new ExecutionEngine( graph );
         try
         {
             start();
@@ -69,12 +66,6 @@ public class WrappedDatabase extends LifecycleAdapter implements Database
     public GraphDatabaseAPI getGraph()
     {
         return graph;
-    }
-
-    @Override
-    public ExecutionEngine executionEngine()
-    {
-        return executionEngine;
     }
 
     @Override

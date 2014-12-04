@@ -19,8 +19,14 @@
  */
 package org.neo4j.cypher.javacompat.internal;
 
+import java.util.Map;
+
+import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Result;
+import org.neo4j.kernel.impl.query.QueryExecutionEngine;
+import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
@@ -29,14 +35,9 @@ import org.neo4j.kernel.impl.util.StringLogger;
  *
  * This is not public API
  */
-public class ServerExecutionEngine extends ExecutionEngine
+public class ServerExecutionEngine extends ExecutionEngine implements QueryExecutionEngine
 {
     private org.neo4j.cypher.internal.ServerExecutionEngine serverExecutionEngine;
-
-    public ServerExecutionEngine( GraphDatabaseService database )
-    {
-        super( database );
-    }
 
     public ServerExecutionEngine( GraphDatabaseService database, StringLogger logger )
     {
@@ -44,15 +45,41 @@ public class ServerExecutionEngine extends ExecutionEngine
     }
 
     @Override
-    protected
-    org.neo4j.cypher.ExecutionEngine createInnerEngine(GraphDatabaseService database, StringLogger logger)
+    protected org.neo4j.cypher.ExecutionEngine createInnerEngine( GraphDatabaseService database, StringLogger logger )
     {
-        serverExecutionEngine = new org.neo4j.cypher.internal.ServerExecutionEngine(database, logger);
+        serverExecutionEngine = new org.neo4j.cypher.internal.ServerExecutionEngine( database, logger );
         return serverExecutionEngine;
     }
 
+    @Override
+    public Result executeQuery( String query, Map<String, Object> parameters ) throws QueryExecutionKernelException
+    {
+        try
+        {
+            return execute( query, parameters );
+        }
+        catch ( CypherException e )
+        {
+            throw new QueryExecutionKernelException( e );
+        }
+    }
+
+    @Override
     public boolean isPeriodicCommit( String query )
     {
         return serverExecutionEngine.isPeriodicCommit( query );
+    }
+
+    @Override
+    public Result profileQuery( String query, Map<String, Object> parameters ) throws QueryExecutionKernelException
+    {
+        try
+        {
+            return profile( query, parameters );
+        }
+        catch ( CypherException e )
+        {
+            throw new QueryExecutionKernelException( e );
+        }
     }
 }

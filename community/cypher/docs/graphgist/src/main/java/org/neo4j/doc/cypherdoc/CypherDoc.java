@@ -27,22 +27,21 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 /**
  * Parse AsciiDoc-like content for use in Cypher documentation.
- * 
+ *
  * <pre>
  * The string/file is parsed top to bottom.
  * The database isn't flushed: every query builds on the state left
  * behind by the previous ones.
- * 
+ *
  * Commands:
  *   // console
- *     Adds an empty div with the class cypherdoc-console to HTML outputs. 
+ *     Adds an empty div with the class cypherdoc-console to HTML outputs.
  *   // graph: name
  *     Adds a graphviz graph with "name" in the generated filename.
  *     It will depict whatever state the graph is in at that moment.
@@ -70,8 +69,7 @@ public final class CypherDoc
         TestFailureException failure = null;
         try
         {
-            ExecutionEngine engine = new ExecutionEngine( database );
-            return executeBlocks( blocks, new State( engine, database, parentDirectory, url ) );
+            return executeBlocks( blocks, new State( database, parentDirectory, url ) );
         }
         catch ( TestFailureException exception )
         {

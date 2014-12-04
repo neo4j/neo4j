@@ -22,7 +22,7 @@ package org.neo4j.cypher.javacompat;
 /**
  * Holds statistics for the execution of a query.
  */
-public class QueryStatistics
+public class QueryStatistics implements org.neo4j.graphdb.QueryStatistics
 {
     private final org.neo4j.cypher.QueryStatistics inner;
 
@@ -35,24 +35,39 @@ public class QueryStatistics
      * Returns the number of nodes created by this query.
      * @return the number of nodes created by this query.
      */
+    @Override
     public int getNodesCreated()
     {
         return inner.nodesCreated();
+    }
+
+    @Override
+    public int getNodesDeleted()
+    {
+        return inner.nodesDeleted();
     }
 
     /**
      * Returns the number of relationships created by this query.
      * @return the number of relationships created by this query.
      */
+    @Override
     public int getRelationshipsCreated()
     {
         return inner.relationshipsCreated();
+    }
+
+    @Override
+    public int getRelationshipsDeleted()
+    {
+        return inner.relationshipsDeleted();
     }
 
     /**
      * Returns the number of properties set by this query. Setting a property to the same value again still counts towards this.
      * @return the number of properties set by this query.
      */
+    @Override
     public int getPropertiesSet()
     {
         return inner.propertiesSet();
@@ -80,6 +95,7 @@ public class QueryStatistics
      * Returns the number of labels added to any node by this query.
      * @return the number of labels added to any node by this query.
      */
+    @Override
     public int getLabelsAdded()
     {
         return inner.labelsAdded();
@@ -89,6 +105,7 @@ public class QueryStatistics
      * Returns the number of labels removed from any node by this query.
      * @return the number of labels removed from any node by this query.
      */
+    @Override
     public int getLabelsRemoved()
     {
         return inner.labelsRemoved();
@@ -98,6 +115,7 @@ public class QueryStatistics
      * Returns the number of indexes added by this query.
      * @return the number of indexes added by this query.
      */
+    @Override
     public int getIndexesAdded()
     {
         return inner.indexesAdded();
@@ -107,6 +125,7 @@ public class QueryStatistics
      * Returns the number of indexes removed by this query.
      * @return the number of indexes removed by this query.
      */
+    @Override
     public int getIndexesRemoved()
     {
         return inner.indexesRemoved();
@@ -116,6 +135,7 @@ public class QueryStatistics
      * Returns the number of constraint added by this query.
      * @return the number of constraint added by this query.
      */
+    @Override
     public int getConstraintsAdded()
     {
         return inner.constraintsAdded();
@@ -125,6 +145,7 @@ public class QueryStatistics
      * Returns the number of constraint removed by this query.
      * @return the number of constraint removed by this query.
      */
+    @Override
     public int getConstraintsRemoved()
     {
         return inner.constraintsRemoved();
@@ -134,6 +155,7 @@ public class QueryStatistics
      * If the query updated the graph in any way, this method will return true.
      * @return if the graph has been updated.
      */
+    @Override
     public boolean containsUpdates()
     {
         return inner.containsUpdates();

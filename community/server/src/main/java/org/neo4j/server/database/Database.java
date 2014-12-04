@@ -37,8 +37,6 @@ public interface Database extends Lifecycle
 
     public GraphDatabaseAPI getGraph();
 
-    ExecutionEngine executionEngine();
-
     public abstract boolean isRunning();
 
     public Logging getLogging();

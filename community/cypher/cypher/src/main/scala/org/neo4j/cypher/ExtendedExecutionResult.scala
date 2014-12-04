@@ -19,6 +19,9 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.graphdb.QueryExecutionType
+
 trait ExtendedExecutionResult extends ExecutionResult {
   def planDescriptionRequested: Boolean
+  def executionType: QueryExecutionType
 }

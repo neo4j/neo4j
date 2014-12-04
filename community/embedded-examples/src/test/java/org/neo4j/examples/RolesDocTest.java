@@ -194,8 +194,8 @@ public class RolesDocTest extends ImpermanentGraphJavaDocTestBase
             gen.get().addSnippet( "o-get-admins", createOutputSnippet( traverserToString( traverser ) ) );
             String query = "match ({name: 'Admins'})<-[:PART_OF*0..]-(group)<-[:MEMBER_OF]-(user) return user.name, group.name";
             gen.get().addSnippet( "query-get-admins", createCypherSnippet( query ) );
-            String result = engine.execute( query )
-                    .dumpToString();
+            String result = db.execute( query )
+                    .resultAsString();
             assertTrue( result.contains("Engin") );
             gen.get().addSnippet( "o-query-get-admins", createQueryResultSnippet( result ) );
             
@@ -213,8 +213,8 @@ public class RolesDocTest extends ImpermanentGraphJavaDocTestBase
             gen.get().addSnippet( "o-get-user-memberships", createOutputSnippet( traverserToString( traverser ) ) );
             query = "match ({name: 'Jale'})-[:MEMBER_OF]->()-[:PART_OF*0..]->(group) return group.name";
             gen.get().addSnippet( "query-get-user-memberships", createCypherSnippet( query ) );
-            result = engine.execute( query )
-                    .dumpToString();
+            result = db.execute( query )
+                    .resultAsString();
             assertTrue( result.contains("Users") );
             gen.get()
                     .addSnippet( "o-query-get-user-memberships",
@@ -234,8 +234,8 @@ public class RolesDocTest extends ImpermanentGraphJavaDocTestBase
             gen.get().addSnippet( "o-get-groups", createOutputSnippet( traverserToString( traverser ) ) );
             query = "match ({name: 'Reference_Node'})<-[:ROOT]->()<-[:PART_OF*0..]-(group) return group.name";
             gen.get().addSnippet( "query-get-groups", createCypherSnippet( query ) );
-            result = engine.execute( query )
-                    .dumpToString();
+            result = db.execute( query )
+                    .resultAsString();
             assertTrue( result.contains("Users") );
             gen.get()
                     .addSnippet( "o-query-get-groups",
@@ -255,8 +255,8 @@ public class RolesDocTest extends ImpermanentGraphJavaDocTestBase
             		"return user.name, min(length(p)) " +
             		"order by min(length(p)), user.name";
             gen.get().addSnippet( "query-get-members", createCypherSnippet( query ) );
-            result = engine.execute( query )
-                    .dumpToString();
+            result = db.execute( query )
+                    .resultAsString();
             assertTrue( result.contains("Engin") );
             gen.get()
                     .addSnippet( "o-query-get-members",

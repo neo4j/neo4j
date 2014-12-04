@@ -19,21 +19,20 @@
  */
 package org.neo4j.doc.cypherdoc;
 
-import org.neo4j.cypher.javacompat.ExtendedExecutionResult;
-
 class Result
 {
     final String query;
     final String text;
     final String profile;
 
-    public Result(String query, ExtendedExecutionResult result) {
+    public Result( String query, org.neo4j.graphdb.Result result )
+    {
         this.query = query;
-        text = result.dumpToString();
+        text = result.resultAsString();
         String profileText;
         try
         {
-            profileText = result.executionPlanDescription().toString();
+            profileText = result.getExecutionPlanDescription().toString();
         }
         catch ( Exception ex )
         {

@@ -185,8 +185,8 @@ public class AclExampleDocTest extends ImpermanentGraphJavaDocTestBase
         //TODO: can we do open ended?
         String query = "match ({name: 'FileRoot'})-[:contains*0..]->(parentDir)-[:leaf]->(file) return file";
         gen.get().addSnippet( "query1", createCypherSnippet( query ) );
-        String result = engine.execute( query )
-                .dumpToString();
+        String result = db.execute( query )
+                .resultAsString();
         assertTrue( result.contains("File1") );
         gen.get()
                 .addSnippet( "result1", createQueryResultSnippet( result ) );
@@ -194,8 +194,8 @@ public class AclExampleDocTest extends ImpermanentGraphJavaDocTestBase
         //Ownership
         query = "match ({name: 'FileRoot'})-[:contains*0..]->()-[:leaf]->(file)<-[:owns]-(user) return file, user";
         gen.get().addSnippet( "query2", createCypherSnippet( query ) );
-        result = engine.execute( query )
-                .dumpToString();
+        result = db.execute( query )
+                .resultAsString();
         assertTrue( result.contains("File1") );
         assertTrue( result.contains("User1") );
         assertTrue( result.contains("User2") );
@@ -211,8 +211,8 @@ public class AclExampleDocTest extends ImpermanentGraphJavaDocTestBase
                 "WHERE file.name =~ 'File.*' " +
                 "RETURN file.name, dir.name, role.name, readUser.name";
         gen.get().addSnippet( "query3", createCypherSnippet( query ) );
-        result = engine.execute( query )
-                .dumpToString();
+        result = db.execute( query )
+                .resultAsString();
         assertTrue( result.contains("File1") );
         assertTrue( result.contains("File2") );
         assertTrue( result.contains("Admin1") );

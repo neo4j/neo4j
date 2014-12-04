@@ -21,6 +21,7 @@ package org.neo4j.kernel;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,10 +38,12 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.MultipleFoundException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.config.Setting;
@@ -138,6 +141,7 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
 import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
+import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -175,6 +179,8 @@ import org.neo4j.kernel.logging.DefaultLogging;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.RollingLogMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.impl.query.QueryEngineProvider;
+import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.String.format;
@@ -204,16 +210,12 @@ public abstract class InternalAbstractGraphDatabase
         /**
          * Allowed to be null. Null means that no external {@link Monitors} was created, let the
          * database create its own monitors instance.
-         *
-         * @return
          */
         Monitors monitors();
 
         /**
          * Allowed to be null. Null means that no external {@link Logging} was created, let the
          * database create its own logging.
-         *
-         * @return
          */
         Logging logging();
 
@@ -222,6 +224,8 @@ public abstract class InternalAbstractGraphDatabase
         Iterable<KernelExtensionFactory<?>> kernelExtensions();
 
         Iterable<CacheProvider> cacheProviders();
+
+        Iterable<QueryEngineProvider> executionEngines();
     }
 
     private static final long MAX_NODE_ID = IdType.NODE.getMaxValue();
@@ -294,6 +298,7 @@ public abstract class InternalAbstractGraphDatabase
     protected TransactionHeaderInformation transactionHeaderInformation;
     protected DataSourceManager dataSourceManager;
     private StartupStatisticsProvider startupStatistics;
+    private QueryExecutionEngine queryExecutor = QueryEngineProvider.noEngine();
 
     protected InternalAbstractGraphDatabase( String storeDir, Map<String,String> params, Dependencies dependencies )
     {
@@ -596,6 +601,22 @@ public abstract class InternalAbstractGraphDatabase
         // Kernel event handlers should be the very last, i.e. very first to receive shutdown events
         life.add( kernelEventHandlers );
 
+        dataSourceManager.addListener( new DataSourceManager.Listener()
+        {
+            @Override
+            public void registered( NeoStoreDataSource dataSource )
+            {
+                queryExecutor = QueryEngineProvider.initialize( InternalAbstractGraphDatabase.this,
+                                                                dependencies.executionEngines() );
+            }
+
+            @Override
+            public void unregistered( NeoStoreDataSource dataSource )
+            {
+                queryExecutor = QueryEngineProvider.noEngine();
+            }
+        } );
+
         // TODO This is probably too coarse-grained and we should have some strategy per user of config instead
         life.add( new ConfigurationChangedRestarter() );
     }
@@ -606,7 +627,6 @@ public abstract class InternalAbstractGraphDatabase
     }
 
     protected Neo4jJobScheduler createJobScheduler()
-
     {
         return new Neo4jJobScheduler( this.toString() );
     }
@@ -933,6 +953,26 @@ public abstract class InternalAbstractGraphDatabase
     }
 
     @Override
+    public Result execute( String query ) throws QueryExecutionException
+    {
+        return execute( query, Collections.<String,Object>emptyMap() );
+    }
+
+    @Override
+    public Result execute( String query, Map<String, Object> parameters ) throws QueryExecutionException
+    {
+        availabilityGuard.checkAvailability( accessTimeout, TransactionFailureException.class );
+        try
+        {
+            return queryExecutor.executeQuery( query, parameters );
+        }
+        catch ( QueryExecutionKernelException e )
+        {
+            throw e.asUserException();
+        }
+    }
+
+    @Override
     public String toString()
     {
         return getClass().getSimpleName() + " [" + getStoreDir() + "]";
@@ -1140,9 +1180,7 @@ public abstract class InternalAbstractGraphDatabase
     @Override
     public Node findNode( final Label myLabel, final String key, final Object value )
     {
-        ResourceIterator<Node> iterator = findNodes( myLabel, key, value );
-
-        try
+        try ( ResourceIterator<Node> iterator = findNodes( myLabel, key, value ) )
         {
             if ( !iterator.hasNext() )
             {
@@ -1154,10 +1192,6 @@ public abstract class InternalAbstractGraphDatabase
                 throw new MultipleFoundException();
             }
             return node;
-        }
-        finally
-        {
-            iterator.close();
         }
     }
 
@@ -1298,8 +1332,6 @@ public abstract class InternalAbstractGraphDatabase
 
         // Kept here to have it not be publicly documented.
         public static final Setting<String> lock_manager = setting( "lock_manager", STRING, "" );
-        public static final Setting<Boolean> statistics_enabled =
-                setting( "statistics_enabled", Settings.BOOLEAN, Settings.FALSE );
 
         public static final Setting<String> log_configuration_file = setting( "log.configuration", STRING,
                 "neo4j-logback.xml" );
@@ -1404,6 +1436,10 @@ public abstract class InternalAbstractGraphDatabase
                       && type.isInstance( InternalAbstractGraphDatabase.this ) )
             {
                 return type.cast( InternalAbstractGraphDatabase.this );
+            }
+            else if ( QueryExecutionEngine.class.isAssignableFrom( type ) && type.isInstance( queryExecutor ) )
+            {
+                return type.cast( queryExecutor );
             }
             else if ( Locks.class.isAssignableFrom( type ) && type.isInstance( lockManager ) )
             {

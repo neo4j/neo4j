@@ -31,10 +31,9 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
 
-import org.neo4j.cypher.javacompat.ExecutionEngine;
-import org.neo4j.cypher.javacompat.ExtendedExecutionResult;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -45,13 +44,13 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assume.assumeFalse;
+import static org.mockito.Matchers.anyMapOf;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class BlockTest
 {
     private GraphDatabaseService database;
-    private ExecutionEngine engine;
     private State state;
 
     @Rule
@@ -69,8 +68,7 @@ public class BlockTest
     public void setup()
     {
         database = new TestGraphDatabaseFactory().newImpermanentDatabase();
-        engine = new ExecutionEngine( database );
-        state = new State( engine, database, null, "" );
+        state = new State( database, null, "" );
     }
 
     @After
@@ -142,7 +140,7 @@ public class BlockTest
     @Test
     public void graph()
     {
-        engine.execute( "CREATE (n:Person {name:\"Adam\"});" );
+        database.execute( "CREATE (n:Person {name:\"Adam\"});" );
         Block block = Block.getBlock( Arrays.asList( "// graph:xyz" ) );
         assertThat( block.type, sameInstance( BlockType.GRAPH ) );
         String output;
@@ -161,7 +159,7 @@ public class BlockTest
     @Test
     public void graphWithoutId()
     {
-        engine.execute( "CREATE (n:Person {name:\"Adam\"});" );
+        database.execute( "CREATE (n:Person {name:\"Adam\"});" );
         Block block = Block.getBlock( Arrays.asList( "//graph" ) );
         assertThat( block.type, sameInstance( BlockType.GRAPH ) );
         String output;
@@ -219,7 +217,7 @@ public class BlockTest
     }
 
     @Test
-    public void should_replace_filenames_in_queries()
+    public void should_replace_filenames_in_queries() throws Exception
     {
         assumeFalse( System.getProperty("os.name").toLowerCase().startsWith( "win" ) );
         // given
@@ -230,12 +228,12 @@ public class BlockTest
                 "RETURN line;",
                 "----" );
         Block block = new Block( myQuery, BlockType.QUERY );
-        ExecutionEngine engine = mock( ExecutionEngine.class );
+        QueryExecutionEngine engine = mock( QueryExecutionEngine.class );
         ArgumentCaptor<String> fileQuery = ArgumentCaptor.forClass( String.class );
         ArgumentCaptor<String> httpQuery = ArgumentCaptor.forClass( String.class );
 
-        when( engine.profile( fileQuery.capture() ) ).
-                thenReturn( mock( ExtendedExecutionResult.class ) );
+        when( engine.profileQuery( fileQuery.capture(), anyMapOf( String.class, Object.class ) ) ).
+                thenReturn( mock( org.neo4j.graphdb.Result.class ) );
 
         when( engine.prettify( httpQuery.capture() ) ).
                 thenReturn( "apa" );

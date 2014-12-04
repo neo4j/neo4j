@@ -20,7 +20,6 @@
 package files;
 
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
@@ -31,7 +30,6 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -61,7 +59,6 @@ public class TestNoFileDescriptorLeaks
     private GraphDatabaseService db;
     private MBeanServer jmx;
     private ObjectName osMBean;
-    private ExecutionEngine cypher;
 
     @BeforeClass
     public static void beforeClass()
@@ -73,7 +70,6 @@ public class TestNoFileDescriptorLeaks
     public void setUp() throws Exception
     {
         db = new GraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );
-        cypher = new ExecutionEngine(db);
         osMBean = ObjectName.getInstance("java.lang:type=OperatingSystem");
         jmx = getPlatformMBeanServer();
     }
@@ -95,7 +91,7 @@ public class TestNoFileDescriptorLeaks
         // GIVEN
         try ( Transaction tx = db.beginTx() )
         {
-            cypher.execute("create constraint on (n:Node) assert n.id is unique");
+            db.execute("create constraint on (n:Node) assert n.id is unique");
             tx.success();
         }
         cycleMerge( 1 );
@@ -117,7 +113,7 @@ public class TestNoFileDescriptorLeaks
         {
             try ( Transaction tx = db.beginTx() )
             {
-                cypher.execute(
+                db.execute(
                         "MERGE (a:Node {id: {a}}) " +
                         "MERGE (b:Node {id: {b}}) " +
                         "MERGE (c:Node {id: {c}}) " +
@@ -131,12 +127,12 @@ public class TestNoFileDescriptorLeaks
                                 "e", nextId(),
                                 "f", nextId())
                 );
-                cypher.execute( "MERGE (n:Node {id: {a}}) ", map("a", nextId() % 100) );
-                cypher.execute( "MERGE (n:Node {id: {a}}) ", map("a", nextId() % 100) );
-                cypher.execute( "MERGE (n:Node {id: {a}}) ", map("a", nextId() % 100) );
-                cypher.execute( "MERGE (n:Node {id: {a}}) ", map("a", nextId() ) );
-                cypher.execute( "MERGE (n:Node {id: {a}}) ", map("a", nextId() ) );
-                cypher.execute( "MERGE (n:Node {id: {a}}) ", map("a", nextId() ) );
+                db.execute( "MERGE (n:Node {id: {a}}) ", map("a", nextId() % 100) );
+                db.execute( "MERGE (n:Node {id: {a}}) ", map("a", nextId() % 100) );
+                db.execute( "MERGE (n:Node {id: {a}}) ", map("a", nextId() % 100) );
+                db.execute( "MERGE (n:Node {id: {a}}) ", map("a", nextId() ) );
+                db.execute( "MERGE (n:Node {id: {a}}) ", map("a", nextId() ) );
+                db.execute( "MERGE (n:Node {id: {a}}) ", map("a", nextId() ) );
                 tx.success();
             }
         }

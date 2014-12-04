@@ -23,13 +23,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.cypher.javacompat.ExtendedExecutionResult;
-import org.neo4j.cypher.javacompat.PlanDescription;
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Result;
 import org.neo4j.helpers.collection.IterableWrapper;
+
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
 public class CypherResultRepresentation extends MappingRepresentation
 {
@@ -40,7 +42,7 @@ public class CypherResultRepresentation extends MappingRepresentation
     private final MappingRepresentation statsRepresentation;
     private final MappingRepresentation plan;
 
-    public CypherResultRepresentation( final ExtendedExecutionResult result, boolean includeStats, boolean includePlan )
+    public CypherResultRepresentation( final Result result, boolean includeStats, boolean includePlan )
     {
         super( RepresentationType.STRING );
         resultRepresentation = createResultRepresentation( result );
@@ -61,10 +63,10 @@ public class CypherResultRepresentation extends MappingRepresentation
             serializer.putMapping( "plan", plan );
     }
 
-    private ListRepresentation createResultRepresentation( ExtendedExecutionResult executionResult )
+    private ListRepresentation createResultRepresentation( Result executionResult )
     {
         final List<String> columns = executionResult.columns();
-        final Iterable<Map<String, Object>> inner = new RepresentationExceptionHandlingIterable<>(executionResult);
+        Iterable<Map<String, Object>> inner = new RepresentationExceptionHandlingIterable<>( loop( executionResult ) );
         return new ListRepresentation( "data", new IterableWrapper<Representation,Map<String,Object>>(inner) {
 
             @Override
@@ -130,13 +132,13 @@ public class CypherResultRepresentation extends MappingRepresentation
         return representations.get( 0 ).getRepresentationType();
     }
 
-    private Function<Object, PlanDescription> planProvider( final ExtendedExecutionResult result )
+    private Function<Object, ExecutionPlanDescription> planProvider( final Result result )
     {
-        return new Function<Object,PlanDescription>(){
+        return new Function<Object,ExecutionPlanDescription>(){
             @Override
-            public PlanDescription apply( Object from )
+            public ExecutionPlanDescription apply( Object from )
             {
-                return result.executionPlanDescription();
+                return result.getExecutionPlanDescription();
             }
         };
     }

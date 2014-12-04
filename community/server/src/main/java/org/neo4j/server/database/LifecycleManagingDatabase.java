@@ -22,7 +22,6 @@ package org.neo4j.server.database;
 import java.io.File;
 import java.util.Map;
 
-import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -70,7 +69,6 @@ public class LifecycleManagingDatabase implements Database
 
     private boolean isRunning = false;
     private GraphDatabaseAPI graph;
-    private ExecutionEngine executionEngine;
 
     public LifecycleManagingDatabase(Config dbConfig, GraphFactory dbFactory, Dependencies dependencies)
     {
@@ -100,12 +98,6 @@ public class LifecycleManagingDatabase implements Database
     }
 
     @Override
-    public ExecutionEngine executionEngine()
-    {
-        return executionEngine;
-    }
-
-    @Override
     public void init() throws Throwable
     {
     }
@@ -116,7 +108,6 @@ public class LifecycleManagingDatabase implements Database
         try
         {
             this.graph = dbFactory.newGraphDatabase( getLocation(), dbConfig.getParams(), dependencies );
-            this.executionEngine = new ExecutionEngine( graph );
             isRunning = true;
             log.log( "Successfully started database" );
         }

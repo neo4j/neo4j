@@ -27,11 +27,9 @@ import java.util.Map;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.cypher.javacompat.ExecutionEngine;
-import org.neo4j.cypher.javacompat.ExtendedExecutionResult;
-import org.neo4j.cypher.javacompat.PlanDescription;
-import org.neo4j.cypher.javacompat.ProfilerStatistics;
-import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
@@ -51,8 +49,6 @@ import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 
 public class CypherResultRepresentationTest
 {
-    private static final ResourceIterator EMPTY_ITERATOR = emptyIterator();
-
     @Test
     @SuppressWarnings("unchecked")
     public void shouldSerializeProfilingResult() throws Exception
@@ -60,21 +56,21 @@ public class CypherResultRepresentationTest
         // Given
         String name = "Kalle";
 
-        PlanDescription plan = getMockDescription( name );
-        PlanDescription childPlan = getMockDescription( "child" );
+        ExecutionPlanDescription plan = getMockDescription( name );
+        ExecutionPlanDescription childPlan = getMockDescription( "child" );
         when( plan.getChildren() ).thenReturn( asList( childPlan ) );
         when( plan.hasProfilerStatistics() ).thenReturn( true );
 
-        ProfilerStatistics stats = mock( ProfilerStatistics.class );
+        ExecutionPlanDescription.ProfilerStatistics stats = mock( ExecutionPlanDescription.ProfilerStatistics.class );
         when( stats.getDbHits() ).thenReturn( 13l );
         when( stats.getRows() ).thenReturn( 25l );
 
         when( plan.getProfilerStatistics() ).thenReturn( stats );
 
-        ExtendedExecutionResult result = mock( ExtendedExecutionResult.class );
-        when( result.iterator() ).thenReturn( EMPTY_ITERATOR );
+        Result result = mock( Result.class );
+        when( result.hasNext() ).thenReturn( false );
         when( result.columns() ).thenReturn( new ArrayList<String>() );
-        when( result.executionPlanDescription() ).thenReturn( plan );
+        when( result.getExecutionPlanDescription() ).thenReturn( plan );
 
         // When
         Map<String, Object> serialized = serializeToStringThenParseAsToMap( new CypherResultRepresentation( result,
@@ -98,8 +94,8 @@ public class CypherResultRepresentationTest
     public void shouldNotIncludePlanUnlessAskedFor() throws Exception
     {
         // Given
-        ExtendedExecutionResult result = mock( ExtendedExecutionResult.class );
-        when( result.iterator() ).thenReturn( EMPTY_ITERATOR );
+        Result result = mock( Result.class );
+        when( result.hasNext() ).thenReturn( false );
         when( result.columns() ).thenReturn( new ArrayList<String>() );
 
         // When
@@ -116,8 +112,8 @@ public class CypherResultRepresentationTest
     @Test
     public void shouldFormatMapsProperly() throws Exception
     {
-        ExecutionEngine executionEngine = new ExecutionEngine( database.getGraphDatabaseService() );
-        ExtendedExecutionResult result = executionEngine.execute( "RETURN {one:{two:['wait for it...', {three: 'GO!'}]}}" );
+        GraphDatabaseService graphdb = database.getGraphDatabaseService();
+        Result result = graphdb.execute( "RETURN {one:{two:['wait for it...', {three: 'GO!'}]}}" );
         CypherResultRepresentation representation = new CypherResultRepresentation( result, false, false );
 
         // When
@@ -136,10 +132,9 @@ public class CypherResultRepresentationTest
     {
         try ( Transaction ignored = database.getGraphDatabaseService().beginTx() )
         {
-            ExecutionEngine executionEngine = new ExecutionEngine( database.getGraphDatabaseService() );
-            executionEngine.execute( "CREATE (n {name: 'Sally'}), (m {age: 42}), n-[r:FOO {drunk: false}]->m" );
-            ExtendedExecutionResult result = executionEngine.execute( "MATCH p=n-[r]->m RETURN n, r, p, {node: n, edge: r, " +
-                    "path: p}" );
+            GraphDatabaseService graphdb = database.getGraphDatabaseService();
+            graphdb.execute( "CREATE (n {name: 'Sally'}), (m {age: 42}), n-[r:FOO {drunk: false}]->m" );
+            Result result = graphdb.execute( "MATCH p=n-[r]->m RETURN n, r, p, {node: n, edge: r, path: p}" );
             CypherResultRepresentation representation = new CypherResultRepresentation( result, false, false );
 
             // When
@@ -154,17 +149,9 @@ public class CypherResultRepresentationTest
         }
     }
 
-    private static ResourceIterator<Map<String, Object>> emptyIterator()
+    private ExecutionPlanDescription getMockDescription( String name )
     {
-        @SuppressWarnings("unchecked")
-        ResourceIterator<Map<String, Object>> iterator = mock( ResourceIterator.class );
-        when( iterator.hasNext() ).thenReturn( false );
-        return iterator;
-    }
-
-    private PlanDescription getMockDescription( String name )
-    {
-        PlanDescription plan = mock( PlanDescription.class );
+        ExecutionPlanDescription plan = mock( ExecutionPlanDescription.class );
         when( plan.getName() ).thenReturn( name );
         when( plan.getArguments() ).thenReturn( MapUtil.map( "argumentKey", "argumentValue" ) );
         return plan;

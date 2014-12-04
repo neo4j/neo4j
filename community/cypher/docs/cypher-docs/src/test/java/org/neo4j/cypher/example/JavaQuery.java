@@ -26,14 +26,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.neo4j.cypher.javacompat.ExecutionEngine;
-import org.neo4j.cypher.javacompat.ExtendedExecutionResult;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.IteratorUtil;
 
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 
 public class JavaQuery
@@ -66,12 +66,10 @@ public class JavaQuery
         // END SNIPPET: addData
 
         // START SNIPPET: execute
-        ExecutionEngine engine = new ExecutionEngine( db );
-
-        ExtendedExecutionResult result;
+        Result result;
         try ( Transaction ignored = db.beginTx() )
         {
-            result = engine.execute( "match (n {name: 'my node'}) return n, n.name" );
+            result = db.execute( "match (n {name: 'my node'}) return n, n.name" );
             // END SNIPPET: execute
             // START SNIPPET: items
             Iterator<Node> n_column = result.columnAs( "n" );
@@ -89,9 +87,9 @@ public class JavaQuery
         // END SNIPPET: columns
 
         // the result is now empty, get a new one
-        result = engine.execute( "match (n {name: 'my node'}) return n, n.name" );
+        result = db.execute( "match (n {name: 'my node'}) return n, n.name" );
         // START SNIPPET: rows
-        for ( Map<String, Object> row : result )
+        for ( Map<String, Object> row : loop( result ) )
         {
             for ( Entry<String, Object> column : row.entrySet() )
             {
@@ -100,7 +98,7 @@ public class JavaQuery
             rows += "\n";
         }
         // END SNIPPET: rows
-        resultString = engine.execute( "match (n {name: 'my node'}) return n, n.name" ).dumpToString();
+        resultString = db.execute( "match (n {name: 'my node'}) return n, n.name" ).resultAsString();
         columnsString = columns.toString();
         db.shutdown();
     }

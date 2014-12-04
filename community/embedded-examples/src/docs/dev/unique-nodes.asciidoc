@@ -8,13 +8,13 @@ For an overview of the topic, see <<transactions-unique-nodes>>.
 [[tutorials-java-embedded-unique-get-or-create]]
 == Get or create unique node using Cypher and unique constraints ==
 
-.Create a Cypher execution engine and a unique constraint
+.Create a unique constraint
 [snippet,java]
 ----
 component=neo4j-examples
 source=org/neo4j/examples/GetOrCreateDocIT.java
 classifier=test-sources
-tag=prepareExecutionEngineAndConstraint
+tag=prepareConstraint
 ----
 
 .Use MERGE to create a unique node

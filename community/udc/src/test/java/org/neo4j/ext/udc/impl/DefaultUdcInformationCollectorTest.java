@@ -20,6 +20,7 @@
 package org.neo4j.ext.udc.impl;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -33,6 +34,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
@@ -230,6 +232,18 @@ public class DefaultUdcInformationCollectorTest
 
         @Override
         public Transaction beginTx()
+        {
+            return null;
+        }
+
+        @Override
+        public Result execute( String query )
+        {
+            return execute( query, Collections.<String, Object>emptyMap() );
+        }
+
+        @Override
+        public Result execute( String query, Map<String, Object> parameters )
         {
             return null;
         }

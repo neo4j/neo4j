@@ -23,14 +23,13 @@ package org.neo4j.examples;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.cypher.javacompat.ExecutionEngine;
-import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.traversal.Evaluators;
@@ -69,7 +68,6 @@ public class TraversalExample
 
     private Node createData()
     {
-        ExecutionEngine engine = new ExecutionEngine( db );
         String query = "CREATE (joe {name: 'Joe'}), (sara {name: 'Sara'}), "
            + "(lisa {name: 'Lisa'}), (peter {name: 'PETER'}), (dirk {name: 'Dirk'}), "
                        + "(lars {name: 'Lars'}), (ed {name: 'Ed'}),"
@@ -78,7 +76,7 @@ public class TraversalExample
            + "(lars)-[:KNOWS]->(drk), (ed)-[:KNOWS]->(lars), "
            + "(lisa)-[:KNOWS]->(lars) "
            + "RETURN joe";
-        ExecutionResult result = engine.execute( query );
+        Result result = db.execute( query );
         Object joe = result.columnAs( "joe" ).next();
         if ( joe instanceof Node )
         {

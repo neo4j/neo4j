@@ -23,7 +23,7 @@ import java.io.PrintWriter
 
 import org.neo4j.cypher.internal.compiler.v2_2.InternalQueryStatistics
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription
-import org.neo4j.graphdb.ResourceIterator
+import org.neo4j.graphdb.{QueryExecutionType, ResourceIterator}
 
 trait InternalExecutionResult extends Iterator[Map[String, Any]] {
   def columns: List[String]
@@ -37,4 +37,5 @@ trait InternalExecutionResult extends Iterator[Map[String, Any]] {
   def executionPlanDescription(): InternalPlanDescription
   def close()
   def planDescriptionRequested: Boolean
+  def executionType: QueryExecutionType
 }

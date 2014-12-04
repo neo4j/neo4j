@@ -24,12 +24,14 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.StringUtils;
 
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle;
 import org.neo4j.visualization.graphviz.GraphvizWriter;
@@ -220,7 +222,15 @@ enum BlockType
                 webQuery = webQuery.replace( file, state.url + file );
             }
 
-            state.latestResult = new Result( fileQuery, state.engine.profile( fileQuery ) );
+            try
+            {
+                state.latestResult = new Result( fileQuery, state.engine.profileQuery(
+                        fileQuery, Collections.<String, Object>emptyMap() ) );
+            }
+            catch ( QueryExecutionKernelException e )
+            {
+                throw e.asUserException();
+            }
             String prettifiedQuery = state.engine.prettify( webQuery );
 
             try ( Transaction tx = state.database.beginTx() )

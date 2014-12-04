@@ -25,9 +25,10 @@ import java.util.Collections
 
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription
+import org.neo4j.graphdb.QueryExecutionType.{QueryType, explained}
 import org.neo4j.graphdb.ResourceIterator
 
-case class ExplainExecutionResult(columns: List[String], executionPlanDescription: InternalPlanDescription)
+case class ExplainExecutionResult(columns: List[String], executionPlanDescription: InternalPlanDescription, queryType: QueryType)
   extends InternalExecutionResult {
   def javaIterator: ResourceIterator[util.Map[String, Any]] = new EmptyResourceIterator
   def columnAs[T](column: String) = Iterator.empty
@@ -48,6 +49,8 @@ case class ExplainExecutionResult(columns: List[String], executionPlanDescriptio
   def javaColumnAs[T](column: String): ResourceIterator[T] = new EmptyResourceIterator
 
   def planDescriptionRequested = true
+
+  def executionType = explained(queryType)
 
   def close() {}
 

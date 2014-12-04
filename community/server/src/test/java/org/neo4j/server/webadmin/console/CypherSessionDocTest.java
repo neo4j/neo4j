@@ -45,7 +45,6 @@ import static org.junit.Assert.assertThat;
 import org.junit.Test;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.Database;
@@ -60,7 +59,7 @@ public class CypherSessionDocTest
     {
         InternalAbstractGraphDatabase graphdb = (InternalAbstractGraphDatabase) new TestGraphDatabaseFactory().newImpermanentDatabase();
         Database database = new WrappedDatabase( graphdb );
-        CypherExecutor executor = new CypherExecutor( database, StringLogger.DEV_NULL );
+        CypherExecutor executor = new CypherExecutor( database );
         executor.start();
         try
         {

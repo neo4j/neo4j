@@ -29,7 +29,10 @@ import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 /**
  * To run a Cypher query, use this class.
+ *
+ * @deprecated use {@link org.neo4j.graphdb.GraphDatabaseService#execute(String)} instead.
  */
+@Deprecated
 public class ExecutionEngine
 {
     private org.neo4j.cypher.ExecutionEngine inner;
@@ -66,9 +69,9 @@ public class ExecutionEngine
      * @throws org.neo4j.cypher.SyntaxException If the Query contains errors,
      * a SyntaxException exception might be thrown
      */
-    public ExtendedExecutionResult execute( String query ) throws CypherException
+    public ExecutionResult execute( String query ) throws CypherException
     {
-        return new ExtendedExecutionResult( inner.execute( query ) );
+        return new ExecutionResult( inner.execute( query ) );
     }
 
     /**
@@ -79,9 +82,9 @@ public class ExecutionEngine
      * @throws org.neo4j.cypher.SyntaxException If the Query contains errors,
      * a SyntaxException exception might be thrown
      */
-    public ExtendedExecutionResult execute( String query, Map<String, Object> params) throws CypherException
+    public ExecutionResult execute( String query, Map<String, Object> params) throws CypherException
     {
-        return new ExtendedExecutionResult( inner.execute( query, params ) );
+        return new ExecutionResult( inner.execute( query, params ) );
     }
 
     /**
@@ -95,9 +98,9 @@ public class ExecutionEngine
      * @throws org.neo4j.cypher.SyntaxException If the Query contains errors,
      * a SyntaxException exception might be thrown
      */
-    public ExtendedExecutionResult profile( String query ) throws CypherException
+    public ExecutionResult profile( String query ) throws CypherException
     {
-        return new ExtendedExecutionResult( inner.profile( query ) );
+        return new ExecutionResult( inner.profile( query ) );
     }
 
     /**
@@ -112,9 +115,9 @@ public class ExecutionEngine
      * @throws org.neo4j.cypher.SyntaxException If the Query contains errors,
      * a SyntaxException exception might be thrown
      */
-    public ExtendedExecutionResult profile( String query, Map<String, Object> params) throws CypherException
+    public ExecutionResult profile( String query, Map<String, Object> params) throws CypherException
     {
-        return new ExtendedExecutionResult( inner.profile( query, params ) );
+        return new ExecutionResult( inner.profile( query, params ) );
     }
 
     /**

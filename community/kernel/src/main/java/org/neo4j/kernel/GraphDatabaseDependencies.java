@@ -19,16 +19,17 @@
  */
 package org.neo4j.kernel;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
+import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 import static org.neo4j.helpers.collection.Iterables.addAll;
 
@@ -41,8 +42,9 @@ public class GraphDatabaseDependencies implements InternalAbstractGraphDatabase.
         {
             kernelExtensions.add( factory );
         }
-
-        return new GraphDatabaseDependencies(null, null, new ArrayList<Class<?>>(), kernelExtensions, Iterables.toList( Service.load( CacheProvider.class ) ));
+        return new GraphDatabaseDependencies( null, null, new ArrayList<Class<?>>(), kernelExtensions,
+                                              Iterables.toList( Service.load( CacheProvider.class ) ),
+                                              Iterables.toList( Service.load( QueryEngineProvider.class ) ) );
     }
 
     private Monitors monitors;
@@ -50,50 +52,67 @@ public class GraphDatabaseDependencies implements InternalAbstractGraphDatabase.
     private final List<Class<?>> settingsClasses;
     private final List<KernelExtensionFactory<?>> kernelExtensions;
     private final List<CacheProvider> cacheProviders;
+    private final List<QueryEngineProvider> queryEngineProviders;
 
     private GraphDatabaseDependencies(
             Monitors monitors,
             Logging logging,
             List<Class<?>> settingsClasses,
-            List<KernelExtensionFactory<?>> kernelExtensions, List<CacheProvider> cacheProviders )
+            List<KernelExtensionFactory<?>> kernelExtensions,
+            List<CacheProvider> cacheProviders,
+            List<QueryEngineProvider> queryEngineProviders )
     {
         this.monitors = monitors;
         this.logging = logging;
         this.settingsClasses = settingsClasses;
         this.kernelExtensions = kernelExtensions;
         this.cacheProviders = cacheProviders;
+        this.queryEngineProviders = queryEngineProviders;
     }
 
     // Builder DSL
-    public GraphDatabaseDependencies monitors(Monitors monitors)
+    public GraphDatabaseDependencies monitors( Monitors monitors )
     {
-        return new GraphDatabaseDependencies(monitors, logging, settingsClasses, kernelExtensions, cacheProviders);
+        return new GraphDatabaseDependencies( monitors, logging, settingsClasses, kernelExtensions, cacheProviders,
+                                              queryEngineProviders );
     }
 
-    public GraphDatabaseDependencies logging(Logging logging)
+    public GraphDatabaseDependencies logging( Logging logging )
     {
-        return new GraphDatabaseDependencies(monitors, logging, settingsClasses, kernelExtensions, cacheProviders);
+        return new GraphDatabaseDependencies( monitors, logging, settingsClasses, kernelExtensions, cacheProviders,
+                                              queryEngineProviders );
     }
 
-    public GraphDatabaseDependencies settingsClasses(List<Class<?>> settingsClasses)
+    public GraphDatabaseDependencies settingsClasses( List<Class<?>> settingsClasses )
     {
-        return new GraphDatabaseDependencies(monitors, logging, settingsClasses, kernelExtensions, cacheProviders);
+        return new GraphDatabaseDependencies( monitors, logging, settingsClasses, kernelExtensions, cacheProviders,
+                                              queryEngineProviders );
     }
 
-    public GraphDatabaseDependencies settingsClasses(Class<?>... settingsClass)
+    public GraphDatabaseDependencies settingsClasses( Class<?>... settingsClass )
     {
-        settingsClasses.addAll(Arrays.asList(settingsClass));
-        return new GraphDatabaseDependencies(monitors, logging, settingsClasses, kernelExtensions, cacheProviders);
+        settingsClasses.addAll( Arrays.asList( settingsClass ) );
+        return new GraphDatabaseDependencies( monitors, logging, settingsClasses, kernelExtensions, cacheProviders,
+                                              queryEngineProviders );
     }
 
-    public GraphDatabaseDependencies kernelExtensions(Iterable<KernelExtensionFactory<?>> kernelExtensions)
+    public GraphDatabaseDependencies kernelExtensions( Iterable<KernelExtensionFactory<?>> kernelExtensions )
     {
-        return new GraphDatabaseDependencies(monitors, logging, settingsClasses, addAll(new ArrayList<KernelExtensionFactory<?>>(), kernelExtensions), cacheProviders);
+        return new GraphDatabaseDependencies( monitors, logging, settingsClasses,
+                                              addAll( new ArrayList<KernelExtensionFactory<?>>(), kernelExtensions ),
+                                              cacheProviders, queryEngineProviders );
     }
 
-    public GraphDatabaseDependencies cacheProviders(Iterable<CacheProvider> cacheProviders)
+    public GraphDatabaseDependencies cacheProviders( Iterable<CacheProvider> cacheProviders )
     {
-        return new GraphDatabaseDependencies(monitors, logging, settingsClasses, kernelExtensions, addAll(this.cacheProviders, cacheProviders));
+        return new GraphDatabaseDependencies( monitors, logging, settingsClasses, kernelExtensions,
+                                              addAll( this.cacheProviders, cacheProviders ), queryEngineProviders );
+    }
+
+    public GraphDatabaseDependencies queryEngineProviders( Iterable<QueryEngineProvider> queryEngineProviders )
+    {
+        return new GraphDatabaseDependencies( monitors, logging, settingsClasses, kernelExtensions, cacheProviders,
+                                              addAll( this.queryEngineProviders, queryEngineProviders ) );
     }
 
     // Dependencies implementation
@@ -125,5 +144,11 @@ public class GraphDatabaseDependencies implements InternalAbstractGraphDatabase.
     public Iterable<CacheProvider> cacheProviders()
     {
         return cacheProviders;
+    }
+
+    @Override
+    public Iterable<QueryEngineProvider> executionEngines()
+    {
+        return queryEngineProviders;
     }
 }

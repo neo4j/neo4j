@@ -19,14 +19,6 @@
  */
 package org.neo4j.cypher.export;
 
-import org.neo4j.cypher.javacompat.ExtendedExecutionResult;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.schema.ConstraintDefinition;
-import org.neo4j.graphdb.schema.IndexDefinition;
-
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -35,7 +27,16 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.IndexDefinition;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
 public class CypherResultSubGraph implements SubGraph
 {
@@ -72,11 +73,11 @@ public class CypherResultSubGraph implements SubGraph
         }
     }
 
-    public static SubGraph from( ExtendedExecutionResult result, GraphDatabaseService gds, boolean addBetween )
+    public static SubGraph from( Result result, GraphDatabaseService gds, boolean addBetween )
     {
         final CypherResultSubGraph graph = new CypherResultSubGraph();
         final List<String> columns = result.columns();
-        for ( Map<String, Object> row : result )
+        for ( Map<String, Object> row : loop( result ) )
         {
             for ( String column : columns )
             {
