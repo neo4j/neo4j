@@ -14,3 +14,47 @@ include::ql/schema-index/index.asciidoc[]
 
 include::ql/constraints/index.asciidoc[]
 
+:leveloffset: 2
+
+[[query-schema-statistics]]
+Statistics
+==========
+
+When you issue a Cypher query, it gets compiled to an execution plan that can run and answer your question.
+To produce an efficient plan for your query, Neo4j needs information about your database, such as the schema - what indexes and constraints exist?
+Neo4j will also use statistical information it keeps about your database to optimize the execution plan.
+With this information, Neo4j can decide which access pattern leads to the best performing plans.
+
+The statistical information that Neo4j keeps is:
+. Number of nodes with a certain label on it.
+. Selectivity per index
+. Number of relationships by type
+. Number of relationships by type, ending or starting from a node with a specific label on it
+
+Neo4j keeps these statistical figures up to date in two different ways - for label counts for example, the number is updated when ever you set or remove a label from a node.
+For indexes, Neo4j needs to scan the full index to produce the selectivity number.
+Since this is potentially a very time-consuming operation, these numbers are collected in the background when enough data on the index has been changed.
+
+Config options:
+
+```index_background_sampling_enabled```
+Controls whether indexes will automatically be re-sampled when they have been updated enough.
+The Cypher query planner depends on accurate statistics to create efficient, so it is important it is kept up to date as the database evolves.
+If background sampling is turned off, make sure to trigger manual sampling when data has been updated.
+
+```index_sampling_buffer_size```
+
+```index_sampling_update_percentage```
+Controls how large portion of the index has to have been updated before a new sampling run is triggered.
+
+Managing statistics from the shell:
+
+Usage:
+```schema sample -a```
+will sample all indexes.
+```schema sample -l Person -p name```
+will sample the index on index the for label 'Person' on property 'name' (if existing).
+```schema sample -a -f```
+will force a sample of all indexes.
+```schema sample -f -l :Person -p name```
+will force sampling of a specific index.

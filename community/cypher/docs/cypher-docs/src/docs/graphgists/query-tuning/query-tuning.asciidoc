@@ -1,20 +1,33 @@
 [[query-tuning]]
+= Query Tuning
 
-Query Tuning
-============
-
-A short introduction of query tuning in Cypher. In particular we explain basic concept of how to make sure that
-your queries run as fast as possible by using all the feature given by Neo4j.
+A short introduction of query tuning in Cypher.
+In particular, we explain the basic concept of how to make sure that your queries run as fast as possible by using all the feature given by Neo4j.
 You can read more about the <<execution-plans, execution plan operators>> shown on this page.
+
+== General information
+
+The Cypher query compiler, nick-named Ronja, is a cost-based optimizer, CBO for short.
+A CBO produces many different alternative execution plans for a given query and calculates the cost for the different plans.
+The cost of a plan is a measure of how expensive, in resources such as heap and I/O access, running that plan would be.
+For cost estimation, Neo4j uses statistical numbers such as how many nodes have which labels on them, and how often a relationship starts or ends on nodes with different labels.
+All the statistical numbers are in one way or another tied to labels and relationship types.
+
+[TIP]
+Being explicit about what types and labels you expect relationships and nodes to have in your query helps Neo4j use the best possible statistical information, which leads to better execution plans.
+This means that when you know that a relationship can only be of a certain type, you should add that to the query.
+The same goes for labels, where declaring labels on both the start and end nodes of a relationship helps Neo4j find the best way to execute the statement.
+
+== Example of query tuning
 
 We start with the following data set:
 
 //setup
 [source,cypher]
 ----
-CREATE (adam:User {name: 'Adam'})
-CREATE (pernilla:User {name: 'Pernilla'})
-CREATE (david:User {name: 'David'})
+CREATE (adam:Person {name: 'Adam'})
+CREATE (pernilla:Person {name: 'Pernilla'})
+CREATE (david:Person {name: 'David'})
 CREATE (adam)-[:FRIEND]->(pernilla)
 CREATE (pernilla)-[:FRIEND]->(david)
 ----
