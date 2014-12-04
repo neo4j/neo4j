@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSeq
 
 case object LogicalPlanRewriter extends Rewriter {
   val instance: Rewriter = repeat(RewriterStepSequencer.newDefault("LogicalPlanRewriter")(
-    mergeTwoSelections,
+    fuseSelections,
     unnestApply,
     simplifyEquality,
     unnestOptional

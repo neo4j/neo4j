@@ -23,23 +23,48 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.{Expression, Identifier, RelT
 import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
 import org.neo4j.graphdb.Direction
 
-case class Expand(left: LogicalPlan,
-                  from: IdName,
-                  dir: Direction,
-                  projectedDir: Direction,
-                  types: Seq[RelTypeName],
-                  to: IdName,
-                  relName: IdName,
-                  length: PatternLength,
-                  predicate: Seq[(Identifier, Expression)] = Seq.empty)
-                 (val solved: PlannerQuery) extends LogicalPlan {
+sealed trait ExpansionMode
+case object ExpandAll extends ExpansionMode
+case object ExpandInto extends ExpansionMode
+
+case class Expand(left: LogicalPlan, from: IdName, dir: Direction, types: Seq[RelTypeName], to: IdName, relName: IdName, mode: ExpansionMode = ExpandAll)(val solved: PlannerQuery) extends LogicalPlan {
+  val lhs = Some(left)
+  def rhs = None
+
+  def availableSymbols: Set[IdName] = left.availableSymbols + relName + to
+}
+
+case class OptionalExpand(left: LogicalPlan, from: IdName, dir: Direction, types: Seq[RelTypeName], to: IdName, relName: IdName, mode: ExpansionMode = ExpandAll, predicates: Seq[Expression] = Seq.empty)(val solved: PlannerQuery) extends LogicalPlan {
   val lhs = Some(left)
   def rhs = None
 
   def availableSymbols: Set[IdName] = left.availableSymbols + relName + to
 
   override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan =
-    copy(predicate = predicate.map {
+    copy(predicates = predicates.map(f(availableSymbols, _)))(solved)
+}
+
+// TODO: Support proper var length handling in Ronja again
+// TODO: Fix cost and cardinality calculation for this
+case class VarExpand(left: LogicalPlan,
+                     from: IdName,
+                     dir: Direction,
+                     projectedDir: Direction,
+                     types: Seq[RelTypeName],
+                     to: IdName,
+                     relName: IdName,
+                     length: VarPatternLength,
+                     mode: ExpansionMode = ExpandAll,
+                     predicates: Seq[(Identifier, Expression)] = Seq.empty)
+                    (val solved: PlannerQuery) extends LogicalPlan {
+
+  val lhs = Some(left)
+  def rhs = None
+
+  def availableSymbols: Set[IdName] = left.availableSymbols + relName + to
+
+  override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan =
+    copy(predicates = predicates.map {
       case tuple @ (ident, expr) =>
         (ident, f(left.availableSymbols + relName + IdName(ident.name), expr))
     })(solved)

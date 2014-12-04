@@ -31,13 +31,13 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     val r2 = PatternRelationship("r2", ("b", "c"), Direction.OUTGOING, Seq(), SimplePatternLength)
 
     def myCardinality(plan: LogicalPlan): Cardinality = Cardinality(plan match {
-      case _: NodeIndexSeek                    => 10.0
-      case _: AllNodesScan                     => 10000
-      case _: NodeHashJoin                     => 42
-      case Expand(lhs, _, _, _, _, _, _, _, _) => (myCardinality(lhs) * Multiplier(10)).amount
-      case _: Selection                        => 100.04
-      case _: NodeByLabelScan                  => 100
-      case _                                   => Double.MaxValue
+      case _: NodeIndexSeek              => 10.0
+      case _: AllNodesScan               => 10000
+      case _: NodeHashJoin               => 42
+      case Expand(lhs, _, _, _, _, _, _) => (myCardinality(lhs) * Multiplier(10)).amount
+      case _: Selection                  => 100.04
+      case _: NodeByLabelScan            => 100
+      case _                             => Double.MaxValue
     })
 
     val result= (new given {
@@ -48,9 +48,9 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       """Projection[b](Map("b" → b))
         |↳ Selection[a,b,c,r1,r2](Vector(r1 <> r2))
         |↳ NodeHashJoin[a,b,c,r1,r2](Set(b))
-        |  ↳ left = Expand[a,b,r1](a, INCOMING, INCOMING, ⬨, b, r1, , Vector())
+        |  ↳ left = Expand[a,b,r1](a, INCOMING, ⬨, b, r1, , Vector())
         |    ↳ NodeByLabelScan[a](a, Left("X"), Set())
-        |  ↳ right = Expand[b,c,r2](c, INCOMING, OUTGOING, ⬨, b, r2, , Vector())
+        |  ↳ right = Expand[b,c,r2](c, INCOMING, ⬨, b, r2, , Vector())
         |    ↳ NodeByLabelScan[c](c, Left("X"), Set())""".stripMargin)
   }
 }

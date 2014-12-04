@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{LogicalPlan, IdName}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 
 object expand extends CandidateGenerator[PlanTable] {
   def apply(planTable: PlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): CandidateList = {
@@ -35,21 +35,30 @@ object expand extends CandidateGenerator[PlanTable] {
     } yield {
       val dir = patternRel.directionRelativeTo(nodeId)
       val otherSide = patternRel.otherSide(nodeId)
-      val availablePredicates = queryGraph.selections.predicatesGiven(plan.availableSymbols + patternRel.name)
-      val (predicates, allPredicates) = availablePredicates.collect {
-        case all @ AllIterablePredicate(FilterScope(identifier, Some(innerPredicate)), relId @ Identifier(patternRel.name.name))
-          if !innerPredicate.exists { case expr => expr == relId } =>
-          (identifier, innerPredicate) -> all
-      }.unzip
+      val overlapping = plan.availableSymbols.contains(otherSide)
 
-      val expandF = (otherSide: IdName) => planExpand(plan, nodeId, dir, patternRel.dir, patternRel.types,
-                                                      otherSide, patternRel.name, patternRel.length, patternRel,
-                                                      predicates, allPredicates)
-      if (plan.availableSymbols.contains(otherSide)) {
-        expandIntoAlreadyExistingNode(expandF, otherSide)
+      patternRel.length match {
+        case SimplePatternLength =>
+          val mode = if (overlapping) ExpandInto else ExpandAll
+          planSimpleExpand(plan, nodeId, dir, otherSide, patternRel, mode)
+
+        case length: VarPatternLength =>
+          val availablePredicates = queryGraph.selections.predicatesGiven(plan.availableSymbols + patternRel.name)
+          val (predicates, allPredicates) = availablePredicates.collect {
+            case all@AllIterablePredicate(FilterScope(identifier, Some(innerPredicate)), relId@Identifier(patternRel.name.name))
+              if identifier == relId || !innerPredicate.dependencies(relId) =>
+              (identifier, innerPredicate) -> all
+          }.unzip
+
+          val expandF =
+            (otherSide: IdName) =>
+              planVarExpand(plan, nodeId, dir, otherSide, patternRel, predicates, allPredicates, ExpandAll)
+
+          if (overlapping)
+            expandIntoAlreadyExistingNode(expandF, otherSide)
+          else
+            expandF(otherSide)
       }
-      else
-        expandF(otherSide)
     }
     context.metrics.candidateListCreator(expandPlans.toList)
   }

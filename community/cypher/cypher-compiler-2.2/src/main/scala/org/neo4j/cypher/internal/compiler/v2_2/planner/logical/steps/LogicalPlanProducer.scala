@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.pipes.SortDescription
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{Limit => LimitPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
-import org.neo4j.cypher.internal.compiler.v2_2.{LabelId, ast}
+import org.neo4j.cypher.internal.compiler.v2_2.{InternalException, LabelId, ast}
 import org.neo4j.graphdb.Direction
 
 object LogicalPlanProducer {
@@ -91,22 +91,34 @@ object LogicalPlanProducer {
       )
     )
 
-  def planExpand(left: LogicalPlan,
-                 from: IdName,
-                 dir: Direction,
-                 projectedDir: Direction,
-                 types: Seq[ast.RelTypeName],
-                 to: IdName,
-                 relName: IdName,
-                 length: PatternLength,
-                 pattern: PatternRelationship,
-                 predicates: Seq[(Identifier, Expression)] = Seq.empty,
-                 allPredicates: Seq[Expression] = Seq.empty) =
-    Expand(left, from, dir, projectedDir, types, to, relName, length, predicates)(
+  def planSimpleExpand(left: LogicalPlan,
+                       from: IdName,
+                       dir: Direction,
+                       to: IdName,
+                       pattern: PatternRelationship,
+                       mode: ExpansionMode) =
+    Expand(left, from, dir, pattern.types, to, pattern.name, mode)(
       left.solved.updateGraph(_
         .addPatternRel(pattern)
-        .addPredicates(allPredicates: _*)
       ))
+
+  def planVarExpand(left: LogicalPlan,
+                    from: IdName,
+                    dir: Direction,
+                    to: IdName,
+                    pattern: PatternRelationship,
+                    predicates: Seq[(Identifier, Expression)],
+                    allPredicates: Seq[Expression],
+                    mode: ExpansionMode) = pattern.length match {
+    case l: VarPatternLength =>
+      VarExpand(left, from, dir, pattern.dir, pattern.types, to, pattern.name, l, mode, predicates)(
+        left.solved.updateGraph(_
+          .addPatternRel(pattern)
+          .addPredicates(allPredicates: _*)
+        ))
+
+    case _                   => throw new InternalException("Expected a varlength path to be here")
+  }
 
   def planHiddenSelection(predicates: Seq[Expression], left: LogicalPlan) =
     Selection(predicates, left)(left.solved)
@@ -182,13 +194,12 @@ object LogicalPlanProducer {
   def planOptionalExpand(left: LogicalPlan,
                          from: IdName,
                          dir: Direction,
-                         types: Seq[ast.RelTypeName],
                          to: IdName,
-                         relName: IdName,
-                         length: PatternLength,
-                         predicates: Seq[Expression],
+                         pattern: PatternRelationship,
+                         mode: ExpansionMode = ExpandAll,
+                         predicates: Seq[Expression] = Seq.empty,
                          solvedQueryGraph: QueryGraph) =
-    OptionalExpand(left, from, dir, types, to, relName, length, predicates)(
+    OptionalExpand(left, from, dir, pattern.types, to, pattern.name, mode, predicates)(
       left.solved.updateGraph(_.withAddedOptionalMatch(solvedQueryGraph))
     )
 
