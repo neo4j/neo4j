@@ -42,7 +42,7 @@ public interface Configuration
     int fileChannelBufferSize();
 
     /**
-     * Number of batches that a stage can queue up before awaiting the downstream stage to catch up.
+     * Number of batches that a step can queue up before awaiting the downstream step to catch up.
      */
     int workAheadSize();
 
@@ -55,18 +55,26 @@ public interface Configuration
      * Max number of I/O threads doing file write operations. Optimal value for this setting is heavily
      * dependent on hard drive. A spinning disk is most likely best off with 1, where an SSD may see
      * better performance with a handful of threads writing to it simultaneously.
-     * This value eats into the cake of {@link #maxNumberOfThreads()}. The total number of threads
-     * used by the importer at any given time is {@link #maxNumberOfThreads()}, out of those
+     * This value eats into the cake of {@link #maxNumberOfProcessors()}. The total number of threads
+     * used by the importer at any given time is {@link #maxNumberOfProcessors()}, out of those
      * a maximum number of I/O threads can be used.
+     *   "Processor" in the context of the batch importer is different from "thread" since when discovering
+     * how many processors are fully in use there's a calculation where one thread takes up 0 < fraction <= 1
+     * of a processor.
      */
-    int maxNumberOfIoThreads();
+    int maxNumberOfIoProcessors();
 
     /**
-     * Max number of threads simultaneously used in total by importer at any given time.
-     * This will have to includes {@link #maxNumberOfIoThreads()}. Defaults to the value provided
-     * by the {@link Runtime#availableProcessors() jvm}.
+     * Rough max number of processors (CPU cores) simultaneously used in total by importer at any given time.
+     * This value should be set including {@link #maxNumberOfIoProcessors()} in mind.
+     * Defaults to the value provided by the {@link Runtime#availableProcessors() jvm}. There's a discrete
+     * number of threads that needs to be used just to get the very basics of the import working,
+     * so for that reason there's no lower bound to this value.
+     *   "Processor" in the context of the batch importer is different from "thread" since when discovering
+     * how many processors are fully in use there's a calculation where one thread takes up 0 < fraction <= 1
+     * of a processor.
      */
-    int maxNumberOfThreads();
+    int maxNumberOfProcessors();
 
     /**
      * For statistics the average processing time is based on total processing time divided by
@@ -115,13 +123,13 @@ public interface Configuration
         }
 
         @Override
-        public int maxNumberOfIoThreads()
+        public int maxNumberOfIoProcessors()
         {
             return max( 2, Runtime.getRuntime().availableProcessors()/3 );
         }
 
         @Override
-        public int maxNumberOfThreads()
+        public int maxNumberOfProcessors()
         {
             return Runtime.getRuntime().availableProcessors();
         }
@@ -176,15 +184,15 @@ public interface Configuration
         }
 
         @Override
-        public int maxNumberOfIoThreads()
+        public int maxNumberOfIoProcessors()
         {
-            return defaults.maxNumberOfIoThreads();
+            return defaults.maxNumberOfIoProcessors();
         }
 
         @Override
-        public int maxNumberOfThreads()
+        public int maxNumberOfProcessors()
         {
-            return defaults.maxNumberOfThreads();
+            return defaults.maxNumberOfProcessors();
         }
 
         @Override
