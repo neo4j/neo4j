@@ -89,15 +89,14 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     result.toList should contain(Map("n.y" -> "a", "sum(n.x)" -> 75))
   }
 
-  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
-  ignore("should handle aggregation on functions") {
+  test("should handle aggregation on functions") {
     val a = createLabeledNode("Start")
     val b = createNode()
     val c = createNode()
     relate(a, b)
     relate(a, c)
 
-    val result = executeWithNewPlanner(
+    val result = execute(
       """match p = (a:Start)-[*]-> (b)
         |return b, avg(length(p))""".stripMargin)
 
