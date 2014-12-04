@@ -72,12 +72,8 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTe
     result.executionPlanDescription().toString should include("NodeByLabelScan")
   }
 
-  // enable when the we have numbers for indexed entries in a lucene index
-  ignore("should use index selectivity when planning") {
+  test("should use index selectivity when planning") {
     // Given
-    graph.createIndex("L", "l")
-    graph.createIndex("R", "r")
-
     graph.inTx{
       val ls = (1 to 100).map { i =>
         createLabeledNode(Map("l" -> i), "L")
@@ -91,6 +87,10 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTe
         relate(l, r, "REL")
       }
     }
+
+    // note: creating index after the nodes makes sure that we have statistics when the indexes come online
+    graph.createIndex("L", "l")
+    graph.createIndex("R", "r")
 
     val result = executeWithNewPlanner("MATCH (l:L {l: 9})-[:REL]->(r:R {r: 23}) RETURN l, r")
     result.toList should have size 100
