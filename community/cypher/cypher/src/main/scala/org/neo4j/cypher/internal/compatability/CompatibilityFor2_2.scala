@@ -194,7 +194,7 @@ case class ExecutionResultWrapperFor2_2(inner: InternalExecutionResult, version:
 
   def javaColumnAs[T](column: String) = exceptionHandlerFor2_2.runSafely{inner.javaColumnAs[T](column)}
 
-  def executionPlanDescription(): PlanDescription =
+  def executionPlanDescription(): ExtendedPlanDescription =
     exceptionHandlerFor2_2.runSafely {
       convert(
         inner.executionPlanDescription().
@@ -202,50 +202,45 @@ case class ExecutionResultWrapperFor2_2(inner: InternalExecutionResult, version:
     )
   }
 
-  def close() = exceptionHandlerFor2_2.runSafely{inner.close}
+  def close() = exceptionHandlerFor2_2.runSafely{ inner.close() }
 
-  def next() = exceptionHandlerFor2_2.runSafely{
-    inner.next
-  }
+  def next() = exceptionHandlerFor2_2.runSafely{ inner.next() }
 
-  def hasNext = exceptionHandlerFor2_2.runSafely{inner.hasNext}
+  def hasNext = exceptionHandlerFor2_2.runSafely{ inner.hasNext }
 
-  def convert(i: InternalPlanDescription): PlanDescription = exceptionHandlerFor2_2.runSafely {
+  def convert(i: InternalPlanDescription): ExtendedPlanDescription = exceptionHandlerFor2_2.runSafely {
     CompatibilityPlanDescription(i, version)
   }
 
   def executionType: QueryExecutionType = exceptionHandlerFor2_2.runSafely {inner.executionType}
 }
 
-case class CompatibilityPlanDescription(inner: InternalPlanDescription, version: CypherVersion) extends PlanDescription {
+case class CompatibilityPlanDescription(inner: InternalPlanDescription, version: CypherVersion)
+  extends ExtendedPlanDescription {
+
   self =>
-  def children = exceptionHandlerFor2_2.runSafely {
+  def children = extendedChildren
+
+  def extendedChildren = exceptionHandlerFor2_2.runSafely {
     inner.children.toSeq.map(CompatibilityPlanDescription.apply(_, version))
   }
 
   def arguments: Map[String, AnyRef] = exceptionHandlerFor2_2.runSafely {
-    inner.arguments.map {
-      arg => arg.name -> PlanDescriptionArgumentSerializer.serialize(arg)
-    }.toMap
+    inner.arguments.map { arg => arg.name -> PlanDescriptionArgumentSerializer.serialize(arg) }.toMap
   }
 
-  def hasProfilerStatistics = exceptionHandlerFor2_2.runSafely {
-    inner.arguments.exists(_.isInstanceOf[DbHits])
-  }
+  def identifiers = exceptionHandlerFor2_2.runSafely { inner.orderedIdentifiers.toSet }
 
-  def name = exceptionHandlerFor2_2.runSafely {
-    inner.name
-  }
+  def hasProfilerStatistics = exceptionHandlerFor2_2.runSafely { inner.arguments.exists(_.isInstanceOf[DbHits]) }
 
-  def asJava: javacompat.PlanDescription = exceptionHandlerFor2_2.runSafely {
-    asJava(self)
-  }
+  def name = exceptionHandlerFor2_2.runSafely { inner.name }
 
-  override def toString: String = exceptionHandlerFor2_2.runSafely {
-    s"Compiler CYPHER ${version.name}\n\n$inner"
-  }
+  def asJava: javacompat.PlanDescription = asExtJava
+  def asExtJava: javacompat.ExtendedPlanDescription = exceptionHandlerFor2_2.runSafely { asJava(self) }
 
-  def asJava(in: PlanDescription): javacompat.PlanDescription = new javacompat.PlanDescription {
+  override def toString: String = exceptionHandlerFor2_2.runSafely { s"Compiler CYPHER ${version.name}\n\n$inner" }
+
+  def asJava(in: ExtendedPlanDescription): javacompat.ExtendedPlanDescription = new javacompat.ExtendedPlanDescription {
     def getProfilerStatistics: ProfilerStatistics = new ProfilerStatistics {
       def getDbHits: Long = extract { case DbHits(count) => count}
 
@@ -261,11 +256,15 @@ case class CompatibilityPlanDescription(inner: InternalPlanDescription, version:
 
     def getArguments: util.Map[String, AnyRef] = arguments.asJava
 
-    def getChildren: util.List[javacompat.PlanDescription] = in.children.toList.map(_.asJava).asJava
+    def getIdentifiers: util.Set[String] = identifiers.asJava
+
+    def getChildren: util.List[javacompat.PlanDescription] = in.extendedChildren.toList.map(_.asJava).asJava
+    def getExtendedChildren: util.List[javacompat.ExtendedPlanDescription] =
+      in.extendedChildren.toList.map(_.asExtJava).asJava
 
     override def toString: String = self.toString
   }
- }
+}
 
 case class CompatibilityFor2_2Cost(graph: GraphDatabaseService,
                                    queryCacheSize: Int,

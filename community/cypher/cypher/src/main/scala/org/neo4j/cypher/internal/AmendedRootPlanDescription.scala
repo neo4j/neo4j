@@ -21,23 +21,25 @@ package org.neo4j.cypher.internal
 
 import java.util
 
-import org.neo4j.cypher.{CypherVersion, PlanDescription}
-import org.neo4j.cypher.javacompat.{PlanDescription => JPlanDescription}
+import org.neo4j.cypher.{ExtendedPlanDescription, CypherVersion, PlanDescription}
+import org.neo4j.cypher.javacompat.{ExtendedPlanDescription => JPlanDescription}
 
-class AmendedRootPlanDescription(inner: PlanDescription, version: CypherVersion) extends PlanDescription {
+class AmendedRootPlanDescription(inner: ExtendedPlanDescription, version: CypherVersion)
+  extends ExtendedPlanDescription {
 
   self =>
 
-  val childAsJava = inner.asJava
+  val childAsJava = inner.asExtJava
 
   def name = inner.name
 
-  def asJava = new JPlanDescription {
+  def asJava = asExtJava
+  def asExtJava = new JPlanDescription {
     val getName = name
 
     val getProfilerStatistics = childAsJava.getProfilerStatistics
     val hasProfilerStatistics = childAsJava.hasProfilerStatistics
-
+    val getIdentifiers = java.util.Collections.unmodifiableSet[String](childAsJava.getIdentifiers)
     val getArguments = {
       val args = childAsJava.getArguments
       val newArgs = new util.HashMap[String, AnyRef]()
@@ -47,6 +49,7 @@ class AmendedRootPlanDescription(inner: PlanDescription, version: CypherVersion)
     }
 
     val getChildren = childAsJava.getChildren
+    val getExtendedChildren = childAsJava.getExtendedChildren
 
     override def toString = self.toString
   }
@@ -61,7 +64,11 @@ class AmendedRootPlanDescription(inner: PlanDescription, version: CypherVersion)
 
   def children: Seq[PlanDescription] = inner.children
 
+  def extendedChildren: Seq[ExtendedPlanDescription] = inner.extendedChildren
+
   def arguments: Map[String, AnyRef] = inner.arguments + ("version" -> version.toString)
+
+  def identifiers: Set[String] = inner.identifiers
 
   def hasProfilerStatistics: Boolean = inner.hasProfilerStatistics
 }

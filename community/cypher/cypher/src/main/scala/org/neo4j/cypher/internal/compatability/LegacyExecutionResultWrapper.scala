@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compatability
 
 import java.io.PrintWriter
 
-import org.neo4j.cypher.internal.AmendedRootPlanDescription
 import org.neo4j.cypher._
+import org.neo4j.cypher.internal.AmendedRootPlanDescription
 import org.neo4j.graphdb.QueryExecutionType.{QueryType, profiled, query}
 
 case class LegacyExecutionResultWrapper(inner: ExecutionResult, planDescriptionRequested: Boolean, version: CypherVersion) extends ExtendedExecutionResult {
@@ -42,8 +42,14 @@ case class LegacyExecutionResultWrapper(inner: ExecutionResult, planDescriptionR
 
   def javaColumnAs[T](column: String) = inner.javaColumnAs[T](column)
 
-  def executionPlanDescription(): PlanDescription =
-    new AmendedRootPlanDescription(inner.executionPlanDescription(), version)
+  def executionPlanDescription(): PlanDescription = {
+    val description = inner.executionPlanDescription() match {
+      case extended: ExtendedPlanDescription => extended
+      case other => ExtendedPlanDescriptionWrapper(other)
+    }
+
+    new AmendedRootPlanDescription(description, version)
+  }
 
   def close() = inner.close()
 
@@ -66,4 +72,16 @@ case class LegacyExecutionResultWrapper(inner: ExecutionResult, planDescriptionR
       stats.indexesRemoved > 0 ||
       stats.constraintsAdded > 0 ||
       stats.constraintsRemoved > 0)
+}
+
+case class ExtendedPlanDescriptionWrapper(inner: PlanDescription) extends ExtendedPlanDescription {
+  def extendedChildren = inner.children.map(ExtendedPlanDescriptionWrapper)
+  def identifiers = Set.empty
+  def asJava = inner.asJava
+  def asExtJava = new javacompat.ExtendedPlanDescriptionWrapper( inner.asJava )
+  def children = inner.children
+  def arguments = inner.arguments
+  def hasProfilerStatistics = inner.hasProfilerStatistics
+  def name = inner.name
+  override def toString = inner.toString
 }

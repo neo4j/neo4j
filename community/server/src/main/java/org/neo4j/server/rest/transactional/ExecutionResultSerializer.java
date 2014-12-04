@@ -19,6 +19,9 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import org.codehaus.jackson.JsonFactory;
+import org.codehaus.jackson.JsonGenerator;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
@@ -27,18 +30,16 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import org.codehaus.jackson.JsonFactory;
-import org.codehaus.jackson.JsonGenerator;
-
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.repr.util.RFC1123;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
+
+import static org.neo4j.server.rest.domain.JsonHelper.writeValue;
 
 /**
  * Writes directly to an output stream, therefore implicitly stateful. Methods must be invoked in the correct
@@ -174,6 +175,7 @@ public class ExecutionResultSerializer
     {
         out.writeStringField( "operatorType", planDescription.getName() );
         writePlanArgs( planDescription );
+        writePlanIdentifiers( planDescription );
 
         List<ExecutionPlanDescription> children = planDescription.getChildren();
         out.writeArrayFieldStart( "children" );
@@ -206,13 +208,18 @@ public class ExecutionResultSerializer
             Object fieldValue = entry.getValue();
 
             out.writeFieldName( fieldName );
-            writeValue( fieldValue );
+            writeValue( out, fieldValue );
         }
     }
 
-    private void writeValue( Object value ) throws IOException
+    private void writePlanIdentifiers( ExecutionPlanDescription planDescription ) throws IOException
     {
-        JsonHelper.writeValue(out, value);
+        out.writeArrayFieldStart( "identifiers" );
+        for ( String id : planDescription.getIdentifiers() )
+        {
+            out.writeString( id );
+        }
+        out.writeEndArray();
     }
 
     /**
