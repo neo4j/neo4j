@@ -227,6 +227,10 @@ case class CompatibilityPlanDescription(inner: InternalPlanDescription, version:
     }.toMap
   }
 
+  def identifiers = exceptionHandlerFor2_2.runSafely {
+    inner.orderedIdentifiers.toSet
+  }
+
   def hasProfilerStatistics = exceptionHandlerFor2_2.runSafely {
     inner.arguments.exists(_.isInstanceOf[DbHits])
   }
@@ -259,11 +263,13 @@ case class CompatibilityPlanDescription(inner: InternalPlanDescription, version:
 
     def getArguments: util.Map[String, AnyRef] = arguments.asJava
 
+    def getIdentifiers: util.Set[String] = identifiers.asJava
+
     def getChildren: util.List[javacompat.PlanDescription] = in.children.toList.map(_.asJava).asJava
 
     override def toString: String = self.toString
   }
- }
+}
 
 case class CompatibilityFor2_2Cost(graph: GraphDatabaseService,
                                    queryCacheSize: Int,

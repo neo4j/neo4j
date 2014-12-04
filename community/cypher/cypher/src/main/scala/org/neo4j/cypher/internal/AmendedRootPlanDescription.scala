@@ -37,7 +37,7 @@ class AmendedRootPlanDescription(inner: PlanDescription, version: CypherVersion)
 
     val getProfilerStatistics = childAsJava.getProfilerStatistics
     val hasProfilerStatistics = childAsJava.hasProfilerStatistics
-
+    val getIdentifiers = java.util.Collections.unmodifiableSet[String](childAsJava.getIdentifiers)
     val getArguments = {
       val args = childAsJava.getArguments
       val newArgs = new util.HashMap[String, AnyRef]()
@@ -62,6 +62,8 @@ class AmendedRootPlanDescription(inner: PlanDescription, version: CypherVersion)
   def children: Seq[PlanDescription] = inner.children
 
   def arguments: Map[String, AnyRef] = inner.arguments + ("version" -> version.toString)
+
+  def identifiers: Set[String] = inner.identifiers
 
   def hasProfilerStatistics: Boolean = inner.hasProfilerStatistics
 }
