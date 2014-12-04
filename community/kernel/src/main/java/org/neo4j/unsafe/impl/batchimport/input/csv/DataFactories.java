@@ -298,7 +298,8 @@ public class DataFactories
                 List<Header.Entry> columns = new ArrayList<>();
                 for ( int i = 0; !mark.isEndOfLine() && headerSeeker.seek( mark, delimiter ); i++ )
                 {
-                    String entryString = headerSeeker.extract( mark, extractors.string() ).value();
+                    String entryString = headerSeeker.tryExtract( mark, extractors.string() )
+                            ? extractors.string().value() : null;
                     int typeIndex = entryString != null ? entryString.lastIndexOf( ':' ) : -1;
                     String name;
                     String typeSpec;

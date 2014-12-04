@@ -245,13 +245,13 @@ public class BufferedCharSeekerTest
         assertNextValue( seeker, mark, COMMA, "one" );
         assertNextValue( seeker, mark, COMMA, "two" );
         assertNextValue( seeker, mark, COMMA, "three" );
-        assertNextValue( seeker, mark, COMMA, null );
+        assertNextValueNotExtracted( seeker, mark, COMMA );
         assertTrue( mark.isEndOfLine() );
 
         assertNextValue( seeker, mark, COMMA, "uno" );
         assertNextValue( seeker, mark, COMMA, "dos" );
         assertNextValue( seeker, mark, COMMA, "tres" );
-        assertNextValue( seeker, mark, COMMA, null );
+        assertNextValueNotExtracted( seeker, mark, COMMA );
         assertTrue( mark.isEndOfLine() );
 
         // THEN
@@ -263,6 +263,12 @@ public class BufferedCharSeekerTest
     {
         assertTrue( seeker.seek( mark, delimiter ) );
         assertEquals( expectedValue, seeker.extract( mark, extractors.string() ).value() );
+    }
+
+    private void assertNextValueNotExtracted( CharSeeker seeker, Mark mark, int[] delimiter ) throws IOException
+    {
+        assertTrue( seeker.seek( mark, delimiter ) );
+        assertFalse( seeker.tryExtract( mark, extractors.string() ) );
     }
 
     @Test

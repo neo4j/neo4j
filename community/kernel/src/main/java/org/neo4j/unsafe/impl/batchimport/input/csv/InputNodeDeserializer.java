@@ -55,7 +55,7 @@ class InputNodeDeserializer extends InputEntityDeserializer<InputNode>
         switch ( entry.type() )
         {
         case ID:
-            if ( entry.name() != null && value != null && idsAreExternal )
+            if ( entry.name() != null && idsAreExternal )
             {
                 addProperty( entry, value );
             }

@@ -69,8 +69,19 @@ public interface CharSeeker extends Closeable
      * @param extractor {@link Extractor} capable of extracting the value.
      * @return the supplied {@link Extractor}, which after the call carries the extracted value itself,
      * where either {@link Extractor#value()} or a more specific accessor method can be called to access the value.
+     * @throws IllegalStateException if the {@link Extractor#extract(char[], int, int) extraction}
+     * returns {@code false}.
      */
     <EXTRACTOR extends Extractor<?>> EXTRACTOR extract( Mark mark, EXTRACTOR extractor );
+
+    /**
+     * Extracts the value specified by the {@link Mark}, previously populated by a call to {@link #seek(Mark, int[])}.
+     * @param mark the {@link Mark} specifying which part of a bigger piece of data contains the found value.
+     * @param extractor {@link Extractor} capable of extracting the value.
+     * @return {@code true} if a value was extracted, otherwise {@code false}. Probably the only reason for
+     * returning {@code false} would be if the data to extract was empty.
+     */
+    boolean tryExtract( Mark mark, Extractor<?> extractor );
 
     public static final CharSeeker EMPTY = new CharSeeker()
     {
@@ -81,9 +92,15 @@ public interface CharSeeker extends Closeable
         }
 
         @Override
-        public <EXTRACTOR extends Extractor<?>> EXTRACTOR extract( Mark mark, EXTRACTOR extractor )
+        public <EXTRACTOR extends org.neo4j.csv.reader.Extractor<?>> EXTRACTOR extract( Mark mark, EXTRACTOR extractor )
         {
             throw new IllegalStateException( "Nothing to extract" );
+        }
+
+        @Override
+        public boolean tryExtract( Mark mark, Extractor<?> extractor )
+        {
+            return false;
         }
 
         @Override

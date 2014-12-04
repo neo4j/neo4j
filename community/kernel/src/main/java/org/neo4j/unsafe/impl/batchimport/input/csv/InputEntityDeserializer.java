@@ -79,7 +79,8 @@ abstract class InputEntityDeserializer<ENTITY extends InputEntity> extends Prefe
 
                 // Extract it, type according to our header
                 Header.Entry entry = entries[i];
-                Object value = data.extract( mark, entry.extractor() ).value();
+                Object value = data.tryExtract( mark, entry.extractor() )
+                        ? entry.extractor().value() : null;
                 boolean handled = true;
                 switch ( entry.type() )
                 {
@@ -130,9 +131,13 @@ abstract class InputEntityDeserializer<ENTITY extends InputEntity> extends Prefe
 
     protected void addProperty( Header.Entry entry, Object value )
     {
-        ensurePropertiesArrayCapacity( propertiesCursor+2 );
-        properties[propertiesCursor++] = entry.name();
-        properties[propertiesCursor++] = value;
+        if ( value != null )
+        {
+            ensurePropertiesArrayCapacity( propertiesCursor+2 );
+            properties[propertiesCursor++] = entry.name();
+            properties[propertiesCursor++] = value;
+        }
+        // else it's fine because no value was specified
     }
 
     private Object[] properties()
