@@ -124,7 +124,6 @@ public class ManyPropertyKeysIT
             store.updateRecord( record );
         }
         neoStore.close();
-        pageCache.close();
 
         return database();
     }

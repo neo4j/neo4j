@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.configuration;
 
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-
-import org.junit.Test;
 
 public class TestConfigConcurrency
 {
@@ -82,8 +82,8 @@ public class TestConfigConcurrency
         // Given
         Config config = new Config();
 
-        List<Thread> threads = new ArrayList<Thread>(  );
-        List<ConfigHammer> hammers = new ArrayList<ConfigHammer>(  );
+        List<Thread> threads = new ArrayList<>(  );
+        List<ConfigHammer> hammers = new ArrayList<>(  );
 
         // When
         int numThreads = 10;
@@ -106,8 +106,4 @@ public class TestConfigConcurrency
             if(hammer.failure != null)
                 throw hammer.failure;
     }
-
-
-
-
 }

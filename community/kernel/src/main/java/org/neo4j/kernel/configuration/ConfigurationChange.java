@@ -20,9 +20,9 @@
 package org.neo4j.kernel.configuration;
 
 /**
-* TODO
+* Represents a change to the database configuration.
 */
-public class ConfigurationChange
+public final class ConfigurationChange
 {
     private String name;
     private String oldValue;
@@ -54,5 +54,34 @@ public class ConfigurationChange
     public String toString()
     {
         return name+":"+oldValue+"->"+newValue;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( !(o instanceof ConfigurationChange) )
+        {
+            return false;
+        }
+
+        ConfigurationChange that = (ConfigurationChange) o;
+
+        return name.equals( that.name ) &&
+               !(newValue != null ? !newValue.equals( that.newValue ) : that.newValue != null) &&
+               !(oldValue != null ? !oldValue.equals( that.oldValue ) : that.oldValue != null);
+
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = name.hashCode();
+        result = 31 * result + (oldValue != null ? oldValue.hashCode() : 0);
+        result = 31 * result + (newValue != null ? newValue.hashCode() : 0);
+        return result;
     }
 }

@@ -19,20 +19,42 @@
  */
 package org.neo4j.graphdb.factory;
 
-import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.Service;
-import org.neo4j.helpers.Settings;
-import org.neo4j.kernel.configuration.*;
-import org.neo4j.kernel.impl.api.store.CacheLayer;
-import org.neo4j.kernel.impl.cache.CacheProvider;
-import org.neo4j.kernel.impl.cache.MonitorGc;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.neo4j.helpers.Settings.*;
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.helpers.Service;
+import org.neo4j.helpers.Settings;
+import org.neo4j.kernel.configuration.ConfigurationMigrator;
+import org.neo4j.kernel.configuration.GraphDatabaseConfigurationMigrator;
+import org.neo4j.kernel.configuration.Internal;
+import org.neo4j.kernel.configuration.Migrator;
+import org.neo4j.kernel.configuration.Obsoleted;
+import org.neo4j.kernel.configuration.Title;
+import org.neo4j.kernel.impl.api.store.CacheLayer;
+import org.neo4j.kernel.impl.cache.CacheProvider;
+import org.neo4j.kernel.impl.cache.MonitorGc;
+
+import static org.neo4j.helpers.Settings.ANY;
+import static org.neo4j.helpers.Settings.BOOLEAN;
+import static org.neo4j.helpers.Settings.BYTES;
+import static org.neo4j.helpers.Settings.DURATION;
 import static org.neo4j.helpers.Settings.DirectMemoryUsage.directMemoryUsage;
+import static org.neo4j.helpers.Settings.FALSE;
+import static org.neo4j.helpers.Settings.INTEGER;
+import static org.neo4j.helpers.Settings.NO_DEFAULT;
+import static org.neo4j.helpers.Settings.PATH;
+import static org.neo4j.helpers.Settings.STRING;
+import static org.neo4j.helpers.Settings.TRUE;
+import static org.neo4j.helpers.Settings.basePath;
+import static org.neo4j.helpers.Settings.illegalValueMessage;
+import static org.neo4j.helpers.Settings.matches;
+import static org.neo4j.helpers.Settings.max;
+import static org.neo4j.helpers.Settings.min;
+import static org.neo4j.helpers.Settings.options;
+import static org.neo4j.helpers.Settings.port;
+import static org.neo4j.helpers.Settings.setting;
 
 /**
  * Settings for Neo4j. Use this with {@link GraphDatabaseBuilder}.
@@ -89,6 +111,12 @@ public abstract class GraphDatabaseSettings
     @Description("The directory where the database files are located.")
     public static final Setting<File> store_dir = setting("store_dir", PATH, NO_DEFAULT );
 
+    @Description( "The maximum amount of time to wait for the database to become available, when " +
+                  "starting a new transaction." )
+    @Internal
+    public static final Setting<Long> transaction_start_timeout =
+            setting( "transaction_start_timeout", DURATION, "1s" );
+
     @Description("The base name for the Neo4j Store files, either an absolute path or relative to the store_dir " +
             "setting. This should generally not be changed.")
     @Internal
@@ -120,7 +148,8 @@ public abstract class GraphDatabaseSettings
     @Description("Controls the auto indexing feature for relationships. Setting it to `false` shuts it down, " +
             "while `true` enables it by default for properties "
             + "listed in the relationship_keys_indexable setting.")
-    public static final Setting<Boolean> relationship_auto_indexing = setting("relationship_auto_indexing",BOOLEAN, FALSE );
+    public static final Setting<Boolean> relationship_auto_indexing =
+            setting("relationship_auto_indexing", BOOLEAN, FALSE );
 
     @Description("A list of property names (comma separated) that will be indexed by default. This applies to " +
             "_relationships_ only." )

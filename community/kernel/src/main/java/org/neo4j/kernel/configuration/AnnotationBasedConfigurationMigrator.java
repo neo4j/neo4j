@@ -29,7 +29,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 
 public class AnnotationBasedConfigurationMigrator implements ConfigurationMigrator {
 
-    private ArrayList<ConfigurationMigrator> migrators = new ArrayList<ConfigurationMigrator>();
+    private ArrayList<ConfigurationMigrator> migrators = new ArrayList<>();
     private AnnotatedFieldHarvester fieldHarvester = new AnnotatedFieldHarvester();
     
     public AnnotationBasedConfigurationMigrator(

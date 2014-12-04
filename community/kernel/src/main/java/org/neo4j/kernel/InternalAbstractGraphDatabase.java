@@ -25,8 +25,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -56,7 +54,6 @@ import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.Clock;
-import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
@@ -82,8 +79,6 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConfigurationChange;
-import org.neo4j.kernel.configuration.ConfigurationChangeListener;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.guard.Guard;
@@ -171,7 +166,6 @@ import org.neo4j.kernel.info.JvmChecker;
 import org.neo4j.kernel.info.JvmMetadataRepository;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.lifecycle.LifecycleListener;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
@@ -184,9 +178,7 @@ import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.String.format;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
-import static org.neo4j.helpers.NamedThreadFactory.daemon;
 import static org.neo4j.helpers.Settings.STRING;
 import static org.neo4j.helpers.Settings.setting;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
@@ -293,7 +285,7 @@ public abstract class InternalAbstractGraphDatabase
     protected TransactionCounters transactionMonitor;
     protected PageCacheMonitor pageCacheMonitor;
     protected AvailabilityGuard availabilityGuard;
-    protected long accessTimeout;
+    protected long transactionStartTimeout;
     protected StoreUpgrader storeMigrationProcess;
     protected TransactionHeaderInformation transactionHeaderInformation;
     protected DataSourceManager dataSourceManager;
@@ -315,7 +307,7 @@ public abstract class InternalAbstractGraphDatabase
         this.monitors = dependencies.monitors();
 
         this.storeDir = config.get( Configuration.store_dir );
-        accessTimeout = 1_000; // TODO make configurable
+        transactionStartTimeout = config.get( GraphDatabaseSettings.transaction_start_timeout );
     }
 
     private Map<String,CacheProvider> mapCacheProviders( Iterable<CacheProvider> cacheProviders )
@@ -465,9 +457,6 @@ public abstract class InternalAbstractGraphDatabase
         storeMigrationProcess = new StoreUpgrader( createUpgradeConfiguration(), fileSystem,
                 monitors.newMonitor( StoreUpgrader.Monitor.class ), logging );
 
-        Map<String,String> configParams = config.getParams();
-        config.applyChanges( configParams );
-
         this.msgLog = logging.getMessagesLog( getClass() );
 
         config.setLogger( msgLog );
@@ -616,9 +605,6 @@ public abstract class InternalAbstractGraphDatabase
                 queryExecutor = QueryEngineProvider.noEngine();
             }
         } );
-
-        // TODO This is probably too coarse-grained and we should have some strategy per user of config instead
-        life.add( new ConfigurationChangedRestarter() );
     }
 
     protected UpgradeConfiguration createUpgradeConfiguration()
@@ -929,7 +915,7 @@ public abstract class InternalAbstractGraphDatabase
     @Override
     public Transaction beginTx()
     {
-        availabilityGuard.checkAvailability( accessTimeout, TransactionFailureException.class );
+        availabilityGuard.checkAvailability( transactionStartTimeout, TransactionFailureException.class );
 
         KernelAPI kernel = neoDataSource.getKernel();
         TopLevelTransaction topLevelTransaction =
@@ -961,7 +947,7 @@ public abstract class InternalAbstractGraphDatabase
     @Override
     public Result execute( String query, Map<String, Object> parameters ) throws QueryExecutionException
     {
-        availabilityGuard.checkAvailability( accessTimeout, TransactionFailureException.class );
+        availabilityGuard.checkAvailability( transactionStartTimeout, TransactionFailureException.class );
         try
         {
             return queryExecutor.executeQuery( query, parameters );
@@ -1649,52 +1635,6 @@ public abstract class InternalAbstractGraphDatabase
 
             // Try with kernel extensions
             return kernelExtensions.resolveDependency( type, selector );
-        }
-    }
-
-    class ConfigurationChangedRestarter extends LifecycleAdapter
-    {
-        private final ConfigurationChangeListener listener = new ConfigurationChangeListener()
-        {
-            Executor executor = Executors.newSingleThreadExecutor(
-                    daemon( "DB configuration restart", monitors.newMonitor( NamedThreadFactory.Monitor.class ) ) );
-
-            @Override
-            public void notifyConfigurationChanges( final Iterable<ConfigurationChange> change )
-            {
-                executor.execute( new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        // Restart
-                        try
-                        {
-                            life.stop();
-                            life.start();
-
-                            msgLog.logMessage( "Database restarted with the following configuration changes:" +
-                                               change );
-                        }
-                        catch ( LifecycleException e )
-                        {
-                            msgLog.logMessage( "Could not restart database", e );
-                        }
-                    }
-                } );
-            }
-        };
-
-        @Override
-        public void start() throws Throwable
-        {
-            config.addConfigurationChangeListener( listener );
-        }
-
-        @Override
-        public void stop() throws Throwable
-        {
-            config.removeConfigurationChangeListener( listener );
         }
     }
 }

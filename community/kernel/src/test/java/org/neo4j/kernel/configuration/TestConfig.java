@@ -19,18 +19,24 @@
  */
 package org.neo4j.kernel.configuration;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.junit.Test;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.Settings;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.neo4j.helpers.Settings.BOOLEAN;
 import static org.neo4j.helpers.Settings.STRING;
 import static org.neo4j.helpers.Settings.setting;
@@ -67,6 +73,28 @@ public class TestConfig
 
     }
 
+    private class ChangeCaptureListener implements ConfigurationChangeListener
+    {
+        private Set<ConfigurationChange> lastChangeSet;
+
+        @Override
+        public void notifyConfigurationChanges( Iterable<ConfigurationChange> change )
+        {
+            lastChangeSet = new HashSet<>();
+            for ( ConfigurationChange ch : change )
+            {
+                lastChangeSet.add( ch );
+            }
+        }
+    }
+
+    private <T> Set<T> setOf( T... objs )
+    {
+        Set<T> set = new HashSet<>();
+        Collections.addAll( set, objs );
+        return set;
+    }
+
     @Test
     public void shouldApplyDefaults()
     {
@@ -85,38 +113,69 @@ public class TestConfig
         assertThat( config.get( MyMigratingSettings.newer ), is( "hello!" ) );
     }
 
-    @Test
+    @Test( expected = InvalidSettingException.class )
     public void shouldNotAllowSettingInvalidValues()
     {
         Config config = new Config( new HashMap<String, String>(), MySettingsWithDefaults.class );
 
-        try
-        {
+        Map<String, String> params = config.getParams();
+        params.put( MySettingsWithDefaults.boolSetting.name(), "asd" );
 
-            Map<String, String> params = config.getParams();
-            params.put( MySettingsWithDefaults.boolSetting.name(), "asd" );
+        config.applyChanges( params );
 
-            config.applyChanges( params );
+        fail( "Expected validation to fail." );
+    }
 
-            fail( "Expected validation to fail." );
-        }
-        catch ( InvalidSettingException e )
-        {
-        }
+    @Test( expected = InvalidSettingException.class )
+    public void shouldNotAllowInvalidValuesInConstructor()
+    {
+        new Config( stringMap( MySettingsWithDefaults.boolSetting.name(), "asd" ), MySettingsWithDefaults.class );
+
+        fail( "Expected validation to fail." );
     }
 
     @Test
-    public void shouldNotAllowInvalidValuesInConstructor()
+    public void shouldNotifyChangeListenersWhenNewSettingsAreApplied()
     {
-        try
-        {
-            new Config( stringMap( MySettingsWithDefaults.boolSetting.name(), "asd" ), MySettingsWithDefaults.class );
+        // Given
+        Config config = new Config( stringMap("setting", "old"), MyMigratingSettings.class );
+        ChangeCaptureListener listener = new ChangeCaptureListener();
+        config.addConfigurationChangeListener( listener );
 
-            fail( "Expected validation to fail." );
-        }
-        catch ( InvalidSettingException e )
-        {
-        }
+        // When
+        config.applyChanges( stringMap( "setting", "new" ) );
+
+        // Then
+        assertThat( listener.lastChangeSet,
+                is( setOf( new ConfigurationChange( "setting", "old", "new" ) ) ) );
+    }
+
+    @Test
+    public void shouldNotNotifyChangeListenerWhenNothingChanged()
+    {
+        // Given
+        Config config = new Config( stringMap("setting", "old"), MyMigratingSettings.class );
+        ChangeCaptureListener listener = new ChangeCaptureListener();
+        config.addConfigurationChangeListener( listener );
+
+        // When
+        config.applyChanges( stringMap( "setting", "old" ) ); // nothing really changed here
+
+        // Then
+        assertThat( listener.lastChangeSet, nullValue() );
+    }
+    
+    @Test
+    public void settingNewPropertyMustNotAlterExistingSettings()
+    {
+        // Given
+        Config config = new Config( stringMap( "a", "1" ) );
+
+        // When
+        config.setProperty( "b", "2" );
+
+        // Then
+        assertThat( config.getParams(), is( stringMap( "a", "1", "b", "2" ) ) );
     }
 
     @Test
@@ -132,5 +191,4 @@ public class TestConfig
         assertThat( config.get( MyMigratingSettings.newer ), equalTo( "hello!" ) );
         assertThat( config.get( MySettingsWithDefaults.hello ), equalTo( "Hello, World!" ) );
     }
-
 }

@@ -117,7 +117,8 @@ public class Config implements DiagnosticsProvider
     }
 
     /**
-     * Use {@link ServerConfigurator#setProperty()} instead.
+     * Use {@link Config#applyChanges(java.util.Map)} instead, so changes are applied in
+     * bulk and the ConfigurationChangeListeners can process the changes in one go.
      */
     @Deprecated
     public Config setProperty( String key, Object value )
@@ -126,7 +127,7 @@ public class Config implements DiagnosticsProvider
         // None should call this except external users,
         // as "ideally" properties should not be changed once they are loaded.
         this.params.put( key, value.toString() );
-        this.applyChanges( params );
+        this.applyChanges( new HashMap<>( params ) );
         return this;
     }
 
@@ -162,9 +163,24 @@ public class Config implements DiagnosticsProvider
                 }
             }
 
+            if ( configurationChanges.isEmpty() )
+            {
+                // Don't bother... nothing changed.
+                return;
+            }
+
             // Make the change
             params.clear();
-            params.putAll( newConfiguration );
+            for ( Map.Entry<String, String> entry : newConfiguration.entrySet() )
+            {
+                // Filter out nulls because we are using a ConcurrentHashMap under the covers, which doesn't support
+                // null keys or values.
+                String value = entry.getValue();
+                if ( value != null )
+                {
+                    params.put( entry.getKey(), value );
+                }
+            }
 
             // Notify listeners
             for ( ConfigurationChangeListener listener : listeners )

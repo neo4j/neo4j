@@ -27,7 +27,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.management.Attribute;
 import javax.management.AttributeList;
 import javax.management.AttributeNotFoundException;
@@ -35,7 +34,6 @@ import javax.management.InvalidAttributeValueException;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanException;
 import javax.management.MBeanInfo;
-import javax.management.MBeanOperationInfo;
 import javax.management.NotCompliantMBeanException;
 import javax.management.ReflectionException;
 
@@ -51,18 +49,17 @@ public final class ConfigurationBean extends Neo4jMBean
 {
     public static final String CONFIGURATION_MBEAN_NAME = "Configuration";
     private final Map<String, String> config;
-    private final Config configuration;
 
     private final Map<String, String> parameterDescriptions;
 
     ConfigurationBean( KernelData kernel, ManagementSupport support ) throws NotCompliantMBeanException
     {
         super( CONFIGURATION_MBEAN_NAME, kernel, support );
-        this.config = new HashMap<String, String>(kernel.getConfig().getParams());
-        this.configuration = kernel.getConfig();
+        this.config = new HashMap<>( kernel.getConfig().getParams() );
+        Config configuration = kernel.getConfig();
         configuration.addConfigurationChangeListener( new UpdatedConfigurationListener() );
 
-        Map<String, String> descriptions = new HashMap<String, String>();
+        Map<String, String> descriptions = new HashMap<>();
 
         for ( Class<?> settingsClass : configuration.getSettingsClasses() )
         {
@@ -74,7 +71,10 @@ public final class ConfigurationBean extends Neo4jMBean
                     if ( documentation == null || !Setting.class.isAssignableFrom(field.getType()) ) continue;
                     try
                     {
-                        if ( !field.isAccessible() ) field.setAccessible( true );
+                        if ( !field.isAccessible() )
+                        {
+                            field.setAccessible( true );
+                        }
 
                         String description = documentation.value();
                         Setting setting = (Setting) field.get( null );
@@ -83,12 +83,13 @@ public final class ConfigurationBean extends Neo4jMBean
 
                         String value = configuration.getParams().get( setting.name() );
                         if (value == null)
+                        {
                             value = setting.getDefaultValue();
+                        }
                         config.put( setting.name(), value );
                     }
-                    catch ( Exception e )
+                    catch ( Exception ignore )
                     {
-                        continue;
                     }
                 }
             }
@@ -105,27 +106,13 @@ public final class ConfigurationBean extends Neo4jMBean
 
     private MBeanAttributeInfo[] keys()
     {
-        List<MBeanAttributeInfo> keys = new ArrayList<MBeanAttributeInfo>();
+        List<MBeanAttributeInfo> keys = new ArrayList<>();
         for ( String key : config.keySet() )
         {
             keys.add( new MBeanAttributeInfo( key, String.class.getName(),
                                               describeConfigParameter( key ), true, false, false ) );
         }
         return keys.toArray( new MBeanAttributeInfo[keys.size()] );
-    }
-
-    private MBeanOperationInfo[] methods()
-    {
-        List<MBeanOperationInfo> methods = new ArrayList<MBeanOperationInfo>();
-        try
-        {
-            methods.add( new MBeanOperationInfo( "Apply settings", getClass().getMethod( "apply" ) ) );
-        }
-        catch( NoSuchMethodException e )
-        {
-            e.printStackTrace(  );
-        }
-        return methods.toArray( new MBeanOperationInfo[methods.size()] );
     }
 
     @Override
@@ -157,8 +144,7 @@ public final class ConfigurationBean extends Neo4jMBean
     public void setAttribute( Attribute attribute )
         throws AttributeNotFoundException, InvalidAttributeValueException, MBeanException, ReflectionException
     {
-        if (config.containsKey( attribute.getName() ))
-            config.put( attribute.getName(), attribute.getValue().toString() );
+        throw new InvalidAttributeValueException( "Not a writeable attribute: " + attribute.getName() );
     }
 
     @Override
@@ -166,7 +152,7 @@ public final class ConfigurationBean extends Neo4jMBean
     {
         Description description = getClass().getAnnotation( Description.class );
         return new MBeanInfo( getClass().getName(), description != null ? description.value() : "Neo4j configuration",
-                keys(), null, methods(), null );
+                keys(), null, null, null );
     }
 
     @Override
@@ -184,22 +170,6 @@ public final class ConfigurationBean extends Neo4jMBean
         catch( Exception e )
         {
             throw new MBeanException( e );
-        }
-    }
-
-    public void apply()
-    {
-        // Apply new config
-        try
-        {
-            // TODO What does a System.out do here?
-            System.out.println( "Apply new config" );
-            configuration.applyChanges( config );
-        }
-        catch( Throwable e )
-        {
-            // TODO i mean, come on
-            e.printStackTrace();
         }
     }
 

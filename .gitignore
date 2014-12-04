@@ -19,3 +19,9 @@ out
 .java-version
 community/server/data
 enterprise/server-enterprise/data
+advanced/server-advanced/data
+advanced/server-advanced/neo4j-home
+community/neo4j-harness/data
+community/server-plugin-test/neo4j-home
+enterprise/server-enterprise/neo4j-home
+integrationtests/data

@@ -19,22 +19,22 @@
  */
 package org.neo4j.jmx;
 
-import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
-import static org.junit.Assert.assertEquals;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.util.Hashtable;
-
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
 import javax.management.ObjectName;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
+import static org.junit.Assert.assertEquals;
 
 public class DescriptionTest
 {
@@ -87,9 +87,8 @@ public class DescriptionTest
         Kernel kernel = ((GraphDatabaseAPI) graphdb).getDependencyResolver().resolveDependency( JmxKernelExtension
                 .class ).getSingleManagementBean( Kernel.class );
         ObjectName query = kernel.getMBeanQuery();
-        Hashtable<String, String> properties = new Hashtable<String, String>( query.getKeyPropertyList() );
+        Hashtable<String, String> properties = new Hashtable<>( query.getKeyPropertyList() );
         properties.put( "name", Kernel.NAME );
-        MBeanInfo beanInfo = getPlatformMBeanServer().getMBeanInfo( new ObjectName( query.getDomain(), properties ) );
-        return beanInfo;
+        return getPlatformMBeanServer().getMBeanInfo( new ObjectName( query.getDomain(), properties ) );
     }
 }
