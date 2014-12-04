@@ -104,6 +104,7 @@
   </dependencies>
 
     <build>
+    <pluginManagement>
         <plugins>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -141,9 +142,7 @@
                     </dependency>
                 </dependencies>
             </plugin>
-        </plugins>
-        <pluginManagement>
-          <plugins>
+
             <plugin>
               <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-surefire-plugin</artifactId>
