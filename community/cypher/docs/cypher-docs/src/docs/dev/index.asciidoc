@@ -46,4 +46,5 @@ include::execution-plans.asciidoc[]
 
 :leveloffset: 1
 
-include::../parsed-graphgists/query-tuning/query-tuning.asciidoc[]
+include::query-tuning.asciidoc[]
+
