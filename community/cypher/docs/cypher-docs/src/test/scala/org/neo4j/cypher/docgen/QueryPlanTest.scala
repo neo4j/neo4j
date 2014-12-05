@@ -68,7 +68,7 @@ class QueryPlanTest extends DocumentingTestBase {
     profileQuery(
       title = "Node by label scan",
       text = """Using the label index, fetches all nodes with a specific label on them.
-                |The following query will return all nodes which have label 'Person' where the property 'name' has the value 'me' via a scan of the Person label index""".stripMargin,
+                |The following query will return all nodes which have label `Person` where the property `name` has the value "me" via a scan of the `Person` label index.""".stripMargin,
       queryText = """MATCH (person:Person {name: "me"}) RETURN person""",
       assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("LabelScan"))
     )
@@ -78,7 +78,7 @@ class QueryPlanTest extends DocumentingTestBase {
     profileQuery(
       title = "Node index seek",
       text = """Finds nodes using an index seek. The node identifier and the index used is shown in the arguments of the operator.
-                |The following query will return all nodes which have label 'Company' where the property 'name' has the value 'Malmo' using the Location index.""".stripMargin,
+                |The following query will return all nodes which have label `Company` where the property `name` has the value "Malmo" using the `Location` index.""".stripMargin,
       queryText = """MATCH (location:Location {name: "Malmo"}) RETURN location""",
       assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("NodeIndexSeek"))
     )
@@ -89,7 +89,7 @@ class QueryPlanTest extends DocumentingTestBase {
       title = "Node unique index seek",
       text =
         """Finds nodes using an index seek on a unique index. The node identifier and the index used is shown in the arguments of the operator.
-          |The following query will return all nodes which have label 'Team' where the property 'name' has the value 'Field' using the Team unique index.""",
+          |The following query will return all nodes which have the label `Team` where the property `name` has the value "Field" using the `Team` unique index.""".stripMargin,
       queryText = """MATCH (team:Team {name: "Field"}) RETURN team""".stripMargin,
       assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("NodeUniqueIndexSeek"))
     )
@@ -100,7 +100,7 @@ class QueryPlanTest extends DocumentingTestBase {
       title = "Node by Id seek",
       text =
         """Reads one or more nodes by id from the node store.
-          |The following query will return the node which has nodeId 0""".stripMargin,
+          |The following query will return the node which has nodeId `0`.""".stripMargin,
       queryText = """MATCH n WHERE id(n) = 0 RETURN n""",
       assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("NodeByIdSeek"))
     )
@@ -111,7 +111,7 @@ class QueryPlanTest extends DocumentingTestBase {
       title = "Projection",
       text =
         """For each row from it's input, projection executes a set of expressions and produces a row with the results of the expressions.
-          |The following query will produce one row with the value 'hello'.""".stripMargin,
+          |The following query will produce one row with the value "hello".""".stripMargin,
       queryText = """RETURN "hello" AS greeting""",
       assertion = (p) => assertThat(p.executionPlanDescription().toString, startsWith("Projection"))
     )
@@ -121,8 +121,8 @@ class QueryPlanTest extends DocumentingTestBase {
     profileQuery(
       title = "Selection",
       text =
-        """Filters each row coming from the child operator, only passing through rows that evaluate the predicates to true.
-          |The following query will look for nodes with the label 'Person' and filter those whose name begins with the letter 'a'.""".stripMargin,
+        """Filters each row coming from the child operator, only passing through rows that evaluate the predicates to `TRUE`.
+          |The following query will look for nodes with the label `Person` and filter those whose name begins with the letter `a`.""".stripMargin,
       queryText = """MATCH (p:Person) WHERE p.name =~ "^a.*" RETURN p""",
       assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("Filter"))
     )
@@ -132,7 +132,7 @@ class QueryPlanTest extends DocumentingTestBase {
     profileQuery(
       title = "Cartesian Product",
       text =
-        """Produces a cross product of the two inputs - each row coming from the left child, will be matched with all the rows from the right child operator.
+        """Produces a cross product of the two inputs -- each row coming from the left child will be matched with all the rows from the right child operator.
           |The following query will join all the people with all the locations and return the cartesian product of the nodes with those labels.
         """.stripMargin,
       queryText = """MATCH (p:Person), (l:Location) RETURN p, l""",
@@ -162,7 +162,7 @@ class QueryPlanTest extends DocumentingTestBase {
       text =
         """Optional expand traverses relationships from a given node, and makes sure that predicates are evaluated before producing rows.
           |
-          |If no matching relationships are found, a single row with null for the relationship and end node identifier is produced.
+          |If no matching relationships are found, a single row with `NULL` for the relationship and end node identifier is produced.
           |
           |The following query will find all the people and the location they work in as long as they've worked there for more than 180 days.
         """.stripMargin,
@@ -191,7 +191,7 @@ class QueryPlanTest extends DocumentingTestBase {
     profileQuery(
       title = "Sorted Limit",
       text =
-        """Returns the first 'n' rows sorted by a provided key. The physical operator is called 'Top'. Instead of sorting the whole input, only the top X rows are kept.
+        """Returns the first 'n' rows sorted by a provided key. The physical operator is called `Top`. Instead of sorting the whole input, only the top X rows are kept.
           |
           |The following query will find the first 2 people sorted alphabetically by name.
         """.stripMargin,
@@ -231,9 +231,9 @@ class QueryPlanTest extends DocumentingTestBase {
       title = "Semi Apply",
       text =
         """Tests for the existence of a pattern predicate.
-          |Semi Apply takes a row from it's child operator and feeds it to the Argument operator on the right hand side of Semi Apply.
-          |If the right hand side operator tree yields at least one row, the row from the LHS is yielded by the Semi Apply operator.
-          |This makes Semi Apply a filtering operator, used mostly for pattern predicates in queries.
+          |`SemiApply` takes a row from it's child operator and feeds it to the `Argument` operator on the right hand side of `SemiApply`.
+          |If the right hand side operator tree yields at least one row, the row from the left hand side is yielded by the `SemiApply` operator.
+          |This makes `SemiApply` a filtering operator, used mostly for pattern predicates in queries.
           |
           |The following query will find all the people who have a friend.
         """.stripMargin,
@@ -251,7 +251,7 @@ class QueryPlanTest extends DocumentingTestBase {
       text =
         """Tests for the existence of a pattern predicate and evaluates a predicate.
           |This operator allows for the mixing of normal predicates and pattern predicates that check for the existing of a pattern.
-          |First the normal expression predicate is evaluated, and only if it returns false is the costly pattern predicate evaluated.
+          |First the normal expression predicate is evaluated, and only if it returns `FALSE` the costly pattern predicate evaluation is performed.
           |
           |The following query will find all the people who have a friend or are older than 25.
         """.stripMargin,
@@ -267,9 +267,10 @@ class QueryPlanTest extends DocumentingTestBase {
     profileQuery(
       title = "Anti Semi Apply",
       text =
-        """Tests for the absence of a pattern predicate. A pattern predicate that is prepended by NOT is solve with AntiSemiApply.
-
-           The following query will find all the people who aren't my friend.
+        """Tests for the absence of a pattern predicate.
+          |A pattern predicate that is prepended by `NOT` is solved with `AntiSemiApply`.
+          |
+          |The following query will find all the people who aren't my friend.
         """.stripMargin,
       queryText =
         """MATCH (me:Person {name: "me"}), (other:Person)
@@ -301,7 +302,7 @@ class QueryPlanTest extends DocumentingTestBase {
       text =
         """Reads one or more relationships by id from the relationship store. Produces both the relationship and the nodes on either side.
           |
-          |The following query will find the relationship with id '0' and will return a row for the source node of that relationship.
+          |The following query will find the relationship with id `0` and will return a row for the source node of that relationship.
         """.stripMargin,
       queryText =
         """MATCH (n1)-[r]->()
@@ -317,9 +318,9 @@ class QueryPlanTest extends DocumentingTestBase {
       title = "Undirected Relationship By Id Seek",
       text =
         """Reads one or more relationships by id from the relationship store.
-          |For each relationship, two rows are produced, with the end nodes in two different locations.
+          |For each relationship, two rows are produced with start and end nodes arranged differently.
           |
-          |The following query will find the relationship with id '1' and will return a row for both the source and destination nodes of that relationship.
+          |The following query will find the relationship with id `1` and will return a row for both the source and destination nodes of that relationship.
         """.stripMargin,
       queryText =
         """MATCH (n1)-[r]-()
@@ -351,7 +352,7 @@ class QueryPlanTest extends DocumentingTestBase {
       text =
         """Skips 'n' rows
           |
-          |The following query will skip the person with the lowest 'id' property and return the rest.
+          |The following query will skip the person with the lowest `id` property and return the rest.
         """.stripMargin,
       queryText =
         """MATCH (p:Person)
