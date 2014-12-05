@@ -19,28 +19,28 @@
  */
 package org.neo4j.io.fs;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.ClosedByInterruptException;
-import java.nio.channels.ClosedChannelException;
-import java.nio.channels.FileChannel;
-import java.util.Arrays;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.ClosedByInterruptException;
+import java.nio.channels.ClosedChannelException;
+import java.util.Arrays;
+
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.test.TargetDirectory;
+
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 @RunWith( Parameterized.class )
 public class FileSystemAbstractionInterruptionTest
@@ -190,12 +190,6 @@ public class FileSystemAbstractionInterruptionTest
     public void ch_write_ByteBuffer_position() throws IOException
     {
         chan( true ).write( ByteBuffer.allocate( 1 ), 1 );
-    }
-
-    @Test(expected = ClosedByInterruptException.class)
-    public void ch_map() throws IOException
-    {
-        chan( true ).map( FileChannel.MapMode.READ_ONLY, 0, 10 );
     }
 
     @Test(expected = ClosedByInterruptException.class)
