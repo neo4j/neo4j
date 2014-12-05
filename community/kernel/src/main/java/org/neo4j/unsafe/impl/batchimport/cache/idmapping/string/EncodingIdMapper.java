@@ -24,6 +24,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.unsafe.impl.batchimport.Utils.CompareType;
 import org.neo4j.unsafe.impl.batchimport.cache.IntArray;
 import org.neo4j.unsafe.impl.batchimport.cache.LongArray;
@@ -110,7 +112,7 @@ public class EncodingIdMapper implements IdMapper
     }
 
     @Override
-    public void prepare( Iterable<Object> ids )
+    public void prepare( ResourceIterable<Object> ids )
     {
         synchronized ( this )
         {
@@ -120,7 +122,10 @@ public class EncodingIdMapper implements IdMapper
         }
         if ( detectAndMarkCollisions() > 0 )
         {
-            buildCollisionInfo( ids.iterator() );
+            try ( ResourceIterator<Object> idIterator = ids.iterator() )
+            {
+                buildCollisionInfo( idIterator );
+            }
         }
         readyForUse = true;
     }

@@ -20,9 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -31,8 +29,11 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.function.Factory;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.test.RepeatRule;
 import org.neo4j.test.RepeatRule.Repeat;
 import org.neo4j.unsafe.impl.batchimport.cache.GatheringMemoryStatsVisitor;
@@ -46,6 +47,9 @@ import static java.lang.System.currentTimeMillis;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import static org.neo4j.graphdb.Resource.EMPTY;
+import static org.neo4j.helpers.collection.IteratorUtil.resourceIterator;
+
 public class EncodingIdMapperTest
 {
     @Test
@@ -53,12 +57,12 @@ public class EncodingIdMapperTest
     {
         // GIVEN
         IdMapper idMapper = IdMappers.strings( LongArrayFactory.AUTO );
-        Iterable<Object> ids = new Iterable<Object>()
+        ResourceIterable<Object> ids = new ResourceIterable<Object>()
         {
             @Override
-            public Iterator<Object> iterator()
+            public ResourceIterator<Object> iterator()
             {
-                return new PrefetchingIterator<Object>()
+                return new PrefetchingResourceIterator<Object>()
                 {
                     private int i;
 
@@ -68,6 +72,11 @@ public class EncodingIdMapperTest
                         return i++ < 300_000
                                 ? "" + i
                                 : null;
+                    }
+
+                    @Override
+                    public void close()
+                    {   // Nothing to close
                     }
                 };
             }
@@ -99,7 +108,7 @@ public class EncodingIdMapperTest
     {
         // GIVEN
         IdMapper idMapper = IdMappers.strings( LongArrayFactory.AUTO );
-        idMapper.prepare( Arrays.asList() );
+        idMapper.prepare( null );
 
         // WHEN
         long id = idMapper.get( "123" );
@@ -138,7 +147,7 @@ public class EncodingIdMapperTest
                 size*2, processorsForSorting /*1-7*/ );
 
         // WHEN
-        Iterable<Object> values = new ValueGenerator( size, stringOrLong ? new StringValues() : new LongValues() );
+        ResourceIterable<Object> values = new ValueGenerator( size, stringOrLong ? new StringValues() : new LongValues() );
         {
             int id = 0;
             for ( Object value : values )
@@ -182,7 +191,7 @@ public class EncodingIdMapperTest
         }
     }
 
-    private class ValueGenerator implements Iterable<Object>
+    private class ValueGenerator implements ResourceIterable<Object>
     {
         private final int size;
         private final Factory<Object> generator;
@@ -196,13 +205,13 @@ public class EncodingIdMapperTest
         }
 
         @Override
-        public Iterator<Object> iterator()
+        public ResourceIterator<Object> iterator()
         {
             if ( !values.isEmpty() )
             {
-                return values.iterator();
+                return resourceIterator( values.iterator(), EMPTY );
             }
-            return new PrefetchingIterator<Object>()
+            return resourceIterator( new PrefetchingIterator<Object>()
             {
                 private int cursor;
 
@@ -224,7 +233,7 @@ public class EncodingIdMapperTest
                     }
                     return null;
                 }
-            };
+            }, EMPTY );
         }
     }
 

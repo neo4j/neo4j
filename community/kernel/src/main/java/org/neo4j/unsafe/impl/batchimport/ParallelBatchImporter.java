@@ -26,7 +26,6 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Format;
-import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -58,6 +57,7 @@ import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 import static java.lang.System.currentTimeMillis;
 
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
+import static org.neo4j.unsafe.impl.batchimport.Utils.idsOf;
 import static org.neo4j.unsafe.impl.batchimport.WriterFactories.parallel;
 
 /**
@@ -243,16 +243,8 @@ public class ParallelBatchImporter implements BatchImporter
 
             NodeStore nodeStore = neoStore.getNodeStore();
             PropertyStore propertyStore = neoStore.getPropertyStore();
-            Iterable<Object> allIds = new IterableWrapper<Object, InputNode>( nodes )
-            {
-                @Override
-                protected Object underlyingObjectToObject( InputNode object )
-                {
-                    return object.id();
-                }
-            };
             add( new NodeEncoderStep( control(), config, idMapper, idGenerator,
-                    neoStore.getLabelRepository(), nodeStore, allIds ) );
+                    neoStore.getLabelRepository(), nodeStore, idsOf( nodes ) ) );
             add( new PropertyEncoderStep<>( control(), config, 1, neoStore.getPropertyKeyRepository(), propertyStore ) );
             add( new EntityStoreUpdaterStep<>( control(), "WRITER", config, nodeStore, propertyStore,
                     writeMonitor, writerFactory ) );
