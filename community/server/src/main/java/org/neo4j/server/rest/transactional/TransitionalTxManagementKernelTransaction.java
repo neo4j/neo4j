@@ -46,7 +46,7 @@ class TransitionalTxManagementKernelTransaction
 
     public void resumeSinceTransactionsAreStillThreadBound()
     {
-        assert suspendedTransaction != null : "Can't suspend the transaction if it has not first been suspended.";
+        assert suspendedTransaction != null : "Can't resume the transaction if it has not first been suspended.";
         bridge.bindTransactionToCurrentThread( suspendedTransaction );
         suspendedTransaction = null;
     }
