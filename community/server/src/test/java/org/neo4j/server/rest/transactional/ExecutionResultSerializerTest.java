@@ -19,6 +19,12 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import org.codehaus.jackson.JsonNode;
+import org.junit.Test;
+import org.mockito.internal.stubbing.answers.ThrowsException;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -33,21 +39,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.codehaus.jackson.JsonNode;
-import org.junit.Test;
-import org.mockito.internal.stubbing.answers.ThrowsException;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
-import org.neo4j.graphdb.QueryExecutionType;
+import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Result;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.TestLogger;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
@@ -55,7 +54,6 @@ import org.neo4j.test.mocking.GraphMock;
 import org.neo4j.test.mocking.Link;
 
 import static java.util.Arrays.asList;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -64,9 +62,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.error;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
 import static org.neo4j.server.rest.domain.JsonHelper.readJson;
@@ -84,8 +82,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, org.neo4j.kernel.impl.util
-                .StringLogger.DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
 
         // when
         serializer.transactionCommitUri( URI.create( "commit/uri/1" ) );
@@ -101,7 +98,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, StringLogger.DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
 
         Result executionResult = mockExecutionResult( map(
                 "column1", "value1",
@@ -123,7 +120,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, StringLogger.DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
 
         Result executionResult = mockExecutionResult( map(
                 "column1", "value1",
@@ -144,7 +141,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, StringLogger.DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
 
         Result executionResult = mockExecutionResult( map(
                 "column1", "value1",
@@ -169,7 +166,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, StringLogger.DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
 
         Result executionResult = mockExecutionResult( map(
                 "column1", "value1",
@@ -193,7 +190,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, StringLogger.DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
 
         // when
         serializer.transactionCommitUri( URI.create( "commit/uri/1" ) );
@@ -211,7 +208,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, StringLogger.DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
 
         // when
         serializer.errors( asList( new Neo4jError( Status.Request.InvalidFormat, new Exception( "cause1" ) ) ) );
@@ -229,7 +226,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, StringLogger.DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
 
         // when
         serializer.finish();
@@ -244,7 +241,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, StringLogger.DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
 
         Result executionResult = mockExecutionResult( map(
                 "column1", "value1",
@@ -268,7 +265,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, StringLogger.DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
 
         Result executionResult1 = mockExecutionResult( map(
                 "column1", "value1",
@@ -295,7 +292,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, StringLogger.DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
 
         Result executionResult = mockExecutionResult( map(
                 "node", node( 1, properties(
@@ -321,7 +318,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, StringLogger.DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
 
         Node a = node(1, properties(property("foo", 12)));
         Node b = node( 2, properties( property( "bar", false ) ) );
@@ -349,7 +346,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, StringLogger.DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
 
         Result executionResult = mockExecutionResult( map(
                 "path", mockPath( map( "key1", "value1" ), map( "key2", "value2" ), map( "key3", "value3" ) ) ) );
@@ -370,7 +367,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, StringLogger.DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
 
         Map<String, Object> data = map(
                 "column1", "value1",
@@ -405,7 +402,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, StringLogger.DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
 
         Map<String, Object> data = map(
                 "column1", "value1",
@@ -451,7 +448,7 @@ public class ExecutionResultSerializerTest
                 relationship( 1, node[2], "LOVES", node[3], property( "name", "rel1" ) )};
 
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, StringLogger.DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
 
         // when
         serializer.statementResult( mockExecutionResult(
@@ -504,7 +501,7 @@ public class ExecutionResultSerializerTest
 
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ExecutionResultSerializer serializer = new ExecutionResultSerializer(
-                output, URI.create( "http://base.uri/" ), StringLogger.DEV_NULL );
+                output, URI.create( "http://base.uri/" ), DEV_NULL );
 
         // when
         serializer.statementResult( mockExecutionResult(
@@ -542,7 +539,7 @@ public class ExecutionResultSerializerTest
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ExecutionResultSerializer serializer = new ExecutionResultSerializer(
-                output, URI.create( "http://base.uri/" ), StringLogger.DEV_NULL );
+                output, URI.create( "http://base.uri/" ), DEV_NULL );
 
         // when
         serializer.statementResult( mockExecutionResult(
@@ -573,7 +570,7 @@ public class ExecutionResultSerializerTest
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ExecutionResultSerializer serializer = new ExecutionResultSerializer(
-                output, URI.create( "http://base.uri/" ), StringLogger.DEV_NULL );
+                output, URI.create( "http://base.uri/" ), DEV_NULL );
 
         String operatorType = "Ich habe einen Plan";
 
@@ -588,7 +585,7 @@ public class ExecutionResultSerializerTest
         args.put( "listOfListOfInts", asList( asList(1, 2, 3) ) );
 
         // when
-        ExecutionPlanDescription planDescription = mockedPlanDescription( operatorType, args, Collections.<ExecutionPlanDescription>emptyList() );
+        ExecutionPlanDescription planDescription = mockedPlanDescription( operatorType, NO_IDS, args, NO_PLANS );
         serializer.statementResult( mockExecutionResult( planDescription ), false, ResultDataContent.rest );
         serializer.finish();
         String resultString = output.toString( "UTF-8" );
@@ -597,7 +594,8 @@ public class ExecutionResultSerializerTest
         assertIsPlanRoot( resultString );
         Map<String, ?> rootMap = planRootMap( resultString );
 
-        assertEquals( asSet( "operatorType", "children", "string", "bool", "number", "double", "listOfInts", "listOfListOfInts"), rootMap.keySet() );
+        assertEquals( asSet( "operatorType", "identifiers", "children", "string", "bool", "number", "double",
+                "listOfInts", "listOfListOfInts" ), rootMap.keySet() );
 
         assertEquals( operatorType, rootMap.get( "operatorType" ) );
         assertEquals( args.get( "string" ), rootMap.get( "string" ) );
@@ -609,19 +607,56 @@ public class ExecutionResultSerializerTest
     }
 
     @Test
+    public void shouldSerializePlanWithoutChildButWithIdentifiers() throws Exception
+    {
+        // given
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer(
+                output, URI.create( "http://base.uri/" ), DEV_NULL );
+
+        String operatorType = "Ich habe einen Plan";
+        String id1 = "id1";
+        String id2 = "id2";
+        String id3 = "id3";
+
+        // This is the full set of types that we allow in plan arguments
+
+        // when
+        ExecutionPlanDescription planDescription =
+                mockedPlanDescription( operatorType, asSet( id1, id2, id3 ), NO_ARGS, NO_PLANS );
+        serializer.statementResult( mockExecutionResult( planDescription ), false, ResultDataContent.rest );
+        serializer.finish();
+        String resultString = output.toString( "UTF-8" );
+
+        // then
+        assertIsPlanRoot( resultString );
+        Map<String,?> rootMap = planRootMap( resultString );
+
+        assertEquals( asSet( "operatorType", "identifiers", "children" ), rootMap.keySet() );
+
+        assertEquals( operatorType, rootMap.get( "operatorType" ) );
+        assertEquals( asList( id2, id1, id3 ), rootMap.get( "identifiers" ) );
+    }
+
+    @Test
     public void shouldSerializePlanWithChildren() throws Exception
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ExecutionResultSerializer serializer = new ExecutionResultSerializer(
-                output, URI.create( "http://base.uri/" ), StringLogger.DEV_NULL );
+                output, URI.create( "http://base.uri/" ), DEV_NULL );
+
+        String leftId = "leftId";
+        String rightId = "rightId";
+        String parentId = "parentId";
 
         // when
-        ExecutionPlanDescription plan1 = mockedPlanDescription( "child", MapUtil.map( "id", 1 ), Collections.<ExecutionPlanDescription>emptyList() );
-        ExecutionPlanDescription plan2 = mockedPlanDescription( "child", MapUtil.map( "id", 2 ), Collections.<ExecutionPlanDescription>emptyList() );
-        ExecutionPlanDescription plan0 = mockedPlanDescription( "parent", MapUtil.map( "id", 0 ), asList( plan1, plan2 ) );
+        ExecutionPlanDescription left = mockedPlanDescription( "child", asSet( leftId ), MapUtil.map( "id", 1 ), NO_PLANS );
+        ExecutionPlanDescription right = mockedPlanDescription( "child", asSet( rightId ), MapUtil.map( "id", 2 ), NO_PLANS );
+        ExecutionPlanDescription parent =
+                mockedPlanDescription( "parent", asSet( parentId ), MapUtil.map( "id", 0 ), asList( left, right ) );
 
-        serializer.statementResult( mockExecutionResult( plan0 ), false, ResultDataContent.rest );
+        serializer.statementResult( mockExecutionResult( parent ), false, ResultDataContent.rest );
         serializer.finish();
 
         // then
@@ -630,23 +665,45 @@ public class ExecutionResultSerializerTest
 
         assertEquals( "parent", root.get( "operatorType" ).getTextValue() );
         assertEquals( 0, root.get( "id" ).asLong() );
+        assertEquals( asSet( parentId ), identifiersOf( root ) );
 
         Set<Integer> childIds = new HashSet<>();
-        for (JsonNode child : root.get( "children" ) )
+        Set<Set<String>> identifiers = new HashSet<>();
+        for ( JsonNode child : root.get( "children" ) )
         {
             assertTrue( "Expected object", child.isObject() );
             assertEquals( "child", child.get( "operatorType" ).getTextValue() );
+            identifiers.add( identifiersOf( child ) );
             childIds.add( child.get( "id" ).asInt() );
         }
         assertEquals( asSet( 1, 2 ), childIds );
+        assertEquals( asSet( asSet( leftId ), asSet( rightId ) ), identifiers );
     }
 
-    private ExecutionPlanDescription mockedPlanDescription( String operatorType, Map<String, Object> args, List<ExecutionPlanDescription> children )
+    private Set<String> identifiersOf( JsonNode root )
+    {
+        Set<String> parentIds = new HashSet<>();
+        for ( JsonNode id : root.get( "identifiers" ) )
+        {
+            parentIds.add( id.asText() );
+        }
+        return parentIds;
+    }
+
+    private static final Map<String,Object> NO_ARGS = Collections.emptyMap();
+    private static final Set<String> NO_IDS = Collections.emptySet();
+    private static final List<ExecutionPlanDescription> NO_PLANS = Collections.emptyList();
+
+    private ExecutionPlanDescription mockedPlanDescription( String operatorType,
+                                                            Set<String> identifiers,
+                                                            Map<String,Object> args,
+                                                            List<ExecutionPlanDescription> children )
     {
         ExecutionPlanDescription planDescription = mock( ExecutionPlanDescription.class );
         when( planDescription.getChildren() ).thenReturn( children );
         when( planDescription.getName() ).thenReturn( operatorType );
         when( planDescription.getArguments() ).thenReturn( args );
+        when( planDescription.getIdentifiers() ).thenReturn( identifiers );
         return planDescription;
     }
 

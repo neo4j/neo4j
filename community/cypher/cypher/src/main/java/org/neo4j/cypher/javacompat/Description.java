@@ -19,13 +19,16 @@
  */
 package org.neo4j.cypher.javacompat;
 
+import scala.collection.JavaConversions;
+
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 
-import scala.collection.JavaConversions;
-
+import org.neo4j.cypher.ExtendedPlanDescription;
 import org.neo4j.cypher.ProfilerStatisticsNotReadyException;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 
@@ -67,6 +70,16 @@ class Description implements ExecutionPlanDescription
     public Map<String, Object> getArguments()
     {
         return JavaConversions.asJavaMap( description.arguments() );
+    }
+
+    @Override
+    public Set<String> getIdentifiers()
+    {
+        if ( description instanceof ExtendedPlanDescription )
+        {
+            return JavaConversions.asJavaSet( ((ExtendedPlanDescription) description).identifiers() );
+        }
+        return Collections.emptySet();
     }
 
     @Override
