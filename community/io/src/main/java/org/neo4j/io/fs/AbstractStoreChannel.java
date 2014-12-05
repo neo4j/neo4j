@@ -21,11 +21,7 @@ package org.neo4j.io.fs;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
-
-import org.neo4j.io.fs.StoreChannel;
 
 public class AbstractStoreChannel implements StoreChannel
 {
@@ -49,12 +45,6 @@ public class AbstractStoreChannel implements StoreChannel
 
     @Override
     public void writeAll( ByteBuffer src ) throws IOException
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public MappedByteBuffer map( FileChannel.MapMode mode, long position, long size ) throws IOException
     {
         throw new UnsupportedOperationException();
     }

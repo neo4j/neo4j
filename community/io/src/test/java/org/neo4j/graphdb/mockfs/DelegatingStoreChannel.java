@@ -21,8 +21,6 @@ package org.neo4j.graphdb.mockfs;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 
 import org.neo4j.io.fs.StoreChannel;
@@ -59,11 +57,6 @@ public class DelegatingStoreChannel implements StoreChannel
     public void writeAll( ByteBuffer src, long position ) throws IOException
     {
         delegate.writeAll( src, position );
-    }
-
-    public MappedByteBuffer map( FileChannel.MapMode mode, long position, long size ) throws IOException
-    {
-        return delegate.map( mode, position, size );
     }
 
     public StoreChannel truncate( long size ) throws IOException

@@ -21,8 +21,6 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 
 import org.neo4j.io.fs.StoreChannel;
@@ -66,12 +64,6 @@ public class PhysicalLogVersionedStoreChannel implements LogVersionedStoreChanne
     {
         advance( src.remaining() );
         delegateChannel.writeAll( src );
-    }
-
-    @Override
-    public MappedByteBuffer map( FileChannel.MapMode mode, long position, long size ) throws IOException
-    {
-        throw new UnsupportedOperationException( "Not needed" );
     }
 
     @Override

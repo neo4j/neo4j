@@ -21,7 +21,6 @@ package org.neo4j.io.fs;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 
@@ -49,12 +48,6 @@ public class StoreFileChannel implements StoreChannel
     public int write( ByteBuffer src, long position ) throws IOException
     {
         return channel.write( src, position );
-    }
-
-    @Override
-    public MappedByteBuffer map( FileChannel.MapMode mode, long position, long size ) throws IOException
-    {
-        return channel.map( mode, position, size );
     }
 
     @Override

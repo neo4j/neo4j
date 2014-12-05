@@ -21,8 +21,6 @@ package org.neo4j.adversaries.fs;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 
 import org.neo4j.adversaries.Adversary;
@@ -66,13 +64,6 @@ public class AdversarialFileChannel implements StoreChannel
     {
         adversary.injectFailure( IOException.class );
         delegate.writeAll( src );
-    }
-
-    @Override
-    public MappedByteBuffer map( FileChannel.MapMode mode, long position, long size ) throws IOException
-    {
-        adversary.injectFailure( IOException.class );
-        return delegate.map( mode, position, size );
     }
 
     @Override
