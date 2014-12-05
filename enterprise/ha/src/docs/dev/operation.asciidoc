@@ -36,6 +36,6 @@ All this can be summarized as:
 * If the master fails a new master will be elected automatically.
 * The cluster automatically handles instances becoming unavailable (for example due to network issues), and also makes sure to accept them as members in the cluster when they are available again.
 * Transactions are atomic, consistent and durable but eventually propagated out to other slaves.
-* Updates to slaves are eventual consistent by nature but can be configured to be pushed optimistically from master during commit.
+* Updates to slaves are eventually consistent by nature but can be configured to be pushed optimistically from master during commit.
 * If the master goes down any running write transaction will be rolled back and new transactions will block or fail until a new master has become available.
 * Reads are highly available and the ability to handle read load scales with more database instances in the cluster.
