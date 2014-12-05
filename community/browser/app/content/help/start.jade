@@ -8,8 +8,11 @@ article.help
         p
           | The&nbsp;
           code START
-          |  clause binds starting points within the graph, by directly looking up
-          | a node ID, or using a special (non-schema) index.
+          | clause should only be used when accessing legacy indexes. 
+          br
+          | In all other cases, use 
+          code MATCH
+          | instead.
         table.table-condensed.table-help
           tr
             th Reference:
@@ -29,7 +32,9 @@ article.help
       .col-sm-9.col-sm-offset-3
         figure
           pre.code.runnable.
-            START n=node(0)
+            START n=node:names(name = "A")
             RETURN n
-          figcaption Bind n to node with ID 0, then return that node.
+          figcaption The query returns the node indexed with the name "
+            code A
+            | " in the legacy index name "names".
 
