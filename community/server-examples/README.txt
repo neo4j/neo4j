@@ -2,8 +2,8 @@ Neo4j Server Examples
 =====================
  
 Please head over here for the examples:
-http://docs.neo4j.org/chunked/milestone/server-extending.html
-http://docs.neo4j.org/chunked/milestone/server-java-rest-client-example.html
+http://neo4j.com/docs/milestone/server-extending.html
+http://neo4j.com/docs/milestone/server-java-rest-client-example.html
 
 License(s)
 ----------

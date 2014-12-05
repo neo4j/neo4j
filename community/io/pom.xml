@@ -11,7 +11,6 @@
     <short-name>io</short-name>
     <bundle.namespace>org.neo4j.io</bundle.namespace>
     <license-text.header>GPL-3-header.txt</license-text.header>
-    <docs.url>http://docs.neo4j.org/chunked/${project.version}/primitive-collections.html</docs.url>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
 
@@ -146,12 +145,5 @@ the relevant Commercial Agreement.
       </plugin>
     </plugins>
   </build>
-
-  <distributionManagement>
-    <site>
-      <id>neo4j-site</id>
-      <url>scpexe://docs.neo4j.org/data/www/doc/components.neo4j.org/${project.artifactId}/${project.version}</url>
-    </site>
-  </distributionManagement>
 
 </project>
