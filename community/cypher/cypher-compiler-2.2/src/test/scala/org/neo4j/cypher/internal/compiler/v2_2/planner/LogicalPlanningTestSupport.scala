@@ -72,8 +72,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       def apply(v1: LogicalPlan, ignored: QueryGraphCardinalityInput) = Cardinality(1)
     }
     when(context.cardinality).thenReturn(cardinality)
-    val semanticTable = SemanticTable()
-    semanticTable.resolvedRelTypeNames = mutable.Map("existing1" -> RelTypeId(1), "existing2" -> RelTypeId(2), "existing3" -> RelTypeId(3))
+    val semanticTable = new SemanticTable(resolvedRelTypeNames = mutable.Map("existing1" -> RelTypeId(1), "existing2" -> RelTypeId(2), "existing3" -> RelTypeId(3)))
 
     when(context.semanticTable).thenReturn(semanticTable)
 
@@ -165,12 +164,11 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     val parsedStatement = parser.parse(queryText)
     val semanticState = semanticChecker.check(queryText, parsedStatement)
     val (rewrittenStatement, _) = astRewriter.rewrite(queryText, parsedStatement, semanticState)
-    Planner.rewriteStatement(rewrittenStatement, semanticState.scopeTree) match {
-      case ast: Query =>
+    Planner.rewriteStatement(rewrittenStatement, semanticState.scopeTree, SemanticTable(types = semanticState.typeTable)) match {
+      case (ast: Query, newTable)=>
         val semanticState = semanticChecker.check(queryText, ast)
-        val semanticTable = SemanticTable(types = semanticState.typeTable)
-        tokenResolver.resolve(ast)(semanticTable, planContext)
-        val (logicalPlan, _) = planner.produceLogicalPlan(ast, semanticTable)(planContext)
+        tokenResolver.resolve(ast)(newTable, planContext)
+        val (logicalPlan, _) = planner.produceLogicalPlan(ast, newTable)(planContext)
         logicalPlan
 
       case _ =>

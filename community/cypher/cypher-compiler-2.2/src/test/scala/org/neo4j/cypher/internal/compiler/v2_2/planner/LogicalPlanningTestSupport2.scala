@@ -252,17 +252,16 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       val (rewrittenStatement, _) = astRewriter.rewrite(queryString, cleanedStatement, semanticState)
       val postRewriteSemanticState = semanticChecker.check(queryString, rewrittenStatement)
       val semanticTable = SemanticTable(types = postRewriteSemanticState.typeTable)
-      val plannerQuery: LogicalPlan = Planner.rewriteStatement(rewrittenStatement, postRewriteSemanticState.scopeTree) match {
-        case ast: Query =>
-          tokenResolver.resolve(ast)(semanticTable, planContext)
+      Planner.rewriteStatement(rewrittenStatement, postRewriteSemanticState.scopeTree, semanticTable) match {
+        case (ast: Query, newTable) =>
+          tokenResolver.resolve(ast)(newTable, planContext)
           val unionQuery = ast.asUnionQuery
-          val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
-          val context = LogicalPlanningContext(planContext, metrics, semanticTable, queryGraphSolver, QueryGraphCardinalityInput(Map.empty, Cardinality(1)))
+          val metrics = metricsFactory.newMetrics(planContext.statistics, newTable)
+          val context = LogicalPlanningContext(planContext, metrics, newTable, queryGraphSolver, QueryGraphCardinalityInput(Map.empty, Cardinality(1)))
           val plannerQuery = unionQuery.queries.head
-          strategy.internalPlan(plannerQuery)(context)
+          val resultPlan = strategy.internalPlan(plannerQuery)(context)
+          SemanticPlan(resultPlan.endoRewrite(unnestApply), newTable)
       }
-
-      SemanticPlan(plannerQuery.endoRewrite(unnestApply), semanticTable)
     }
 
     def getLogicalPlanFor(queryString: String): (LogicalPlan, SemanticTable) = {
@@ -271,13 +270,13 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       val (rewrittenStatement, _) = astRewriter.rewrite(queryString, parsedStatement, semanticState)
       semanticChecker.check(queryString, rewrittenStatement)
 
-      Planner.rewriteStatement(rewrittenStatement, semanticState.scopeTree) match {
-        case ast: Query =>
+      Planner.rewriteStatement(rewrittenStatement, semanticState.scopeTree, semanticTable) match {
+        case (ast: Query, newTable) =>
           tokenResolver.resolve(ast)(semanticTable, planContext)
           val unionQuery = ast.asUnionQuery
           val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
           val context = LogicalPlanningContext(planContext, metrics, semanticTable, queryGraphSolver, QueryGraphCardinalityInput(Map.empty, Cardinality(1)))
-          (strategy.plan(unionQuery)(context), semanticTable)
+          (strategy.plan(unionQuery)(context), newTable)
       }
     }
 

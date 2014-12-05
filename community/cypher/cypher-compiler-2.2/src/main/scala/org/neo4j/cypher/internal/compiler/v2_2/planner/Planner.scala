@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.namespaceIdentifiers.IdentifierNames
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{PipeBuilder, PipeInfo}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.execution.{PipeExecutionBuilderContext, PipeExecutionPlanBuilder}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityInput
@@ -50,10 +51,10 @@ case class Planner(monitors: Monitors,
     maybeExecutionPlanBuilder.getOrElse(new PipeExecutionPlanBuilder(clock, monitors))
 
   def producePlan(inputQuery: PreparedQuery, planContext: PlanContext): PipeInfo = {
-    Planner.rewriteStatement(inputQuery.statement, inputQuery.scopeTree) match {
-      case ast: Query =>
+    Planner.rewriteStatement(inputQuery.statement, inputQuery.scopeTree, inputQuery.semanticTable) match {
+      case (ast: Query, rewrittenSemanticTable) =>
         monitor.startedPlanning(inputQuery.queryText)
-        val (logicalPlan, pipeBuildContext) = produceLogicalPlan(ast, inputQuery.semanticTable)(planContext)
+        val (logicalPlan, pipeBuildContext) = produceLogicalPlan(ast, rewrittenSemanticTable)(planContext)
         monitor.foundPlan(inputQuery.queryText, logicalPlan)
         val result = executionPlanBuilder.build(logicalPlan)(pipeBuildContext, planContext)
         monitor.successfulPlanning(inputQuery.queryText, result)
@@ -80,11 +81,17 @@ case class Planner(monitors: Monitors,
 object Planner {
   import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStep._
 
-  def getRewriter(scopeTree: Scope): Rewriter = {
-    val namespacedIdentifiers = namespaceIdentifiers(scopeTree)
+  def rewriteStatement(statement: Statement, scopeTree: Scope, semanticTable: SemanticTable): (Statement, SemanticTable) = {
+    val namespacer = namespaceIdentifiers(scopeTree)
+    val newStatement = rewriteStatement(namespacer, statement)
+    val newSemanticTable = rewriteSemanticTable(namespacer.identifierNames, semanticTable)
 
-    RewriterStepSequencer.newDefault("Planner")(
-      ApplyRewriter("namespaceIdentifiers", namespacedIdentifiers),
+    (newStatement, newSemanticTable)
+  }
+
+  def rewriteStatement(namespacer: namespaceIdentifiers, statement: Statement): Statement = {
+    val rewriter = RewriterStepSequencer.newDefault("Planner")(
+      ApplyRewriter("namespaceIdentifiers", namespacer),
 
       rewriteEqualityToInCollection,
       splitInCollectionsToIsolateConstants,
@@ -96,11 +103,17 @@ object Planner {
       inlineProjections,
       namePatternPredicates
     )
+
+    statement.endoRewrite(rewriter)
   }
 
-  def rewriteStatement(statement: Statement, scopeTree: Scope) = {
-    val result = statement.endoRewrite(getRewriter(scopeTree))
-    result
+  def rewriteSemanticTable(identifierNames: IdentifierNames, semanticTable: SemanticTable): SemanticTable = {
+    val replacements = identifierNames.toSeq.collect {
+      case ((oldName, oldPos), newName) => Identifier(oldName)(oldPos) -> Identifier(newName)(oldPos)
+    }
+
+    val newSemanticTable = semanticTable.replaceKeys(replacements: _*)
+    newSemanticTable
   }
 }
 
