@@ -48,7 +48,12 @@ import static org.neo4j.unsafe.impl.batchimport.Utils.unsignedCompare;
  */
 public class EncodingIdMapper implements IdMapper
 {
-    private static LongBitsManipulator COLLISION_BIT = new LongBitsManipulator( 62, 1, 1 );
+    // Bit in encoded String --> long values that marks that the particular item has a collision,
+    // i.e. that there's at least one other string that encodes into the same long value.
+    // This bit is the least significant in the most significant byte of the encoded values,
+    // where the 7 most significant bits in that byte denotes length of original string.
+    // See StringEncoder.
+    private static LongBitsManipulator COLLISION_BIT = new LongBitsManipulator( 56, 1 );
     public static int CACHE_CHUNK_SIZE = 1_000_000; // 8MB a piece
     private final IntArray trackerCache;
     private final LongArray dataCache;
@@ -180,10 +185,9 @@ public class EncodingIdMapper implements IdMapper
     private int detectAndMarkCollisions()
     {
         int numCollisions = 0;
-        for ( int i = 0; i < trackerCache.size(); i++ )
+        for ( int i = 0; i < trackerCache.size() - 1; i++ )
         {
-            if ( i < trackerCache.size() - 1
-                    && compareDataCache( dataCache, trackerCache, i, i + 1, CompareType.GE ) )
+            if ( compareDataCache( dataCache, trackerCache, i, i + 1, CompareType.GE ) )
             {
                 if ( !compareDataCache( dataCache, trackerCache, i, i + 1, CompareType.EQ ) )
                 {
