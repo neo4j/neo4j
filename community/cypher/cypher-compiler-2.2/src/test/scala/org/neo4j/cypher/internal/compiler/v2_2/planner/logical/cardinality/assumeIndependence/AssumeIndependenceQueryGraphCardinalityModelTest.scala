@@ -212,12 +212,6 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
     }
   }
 
-  ignore("cardinality for property equality predicate when property name is unknown (does not exist in the store)") {
-    // This should work
-    forQuery("MATCH (a) WHERE a.unknownProp = 42").
-      shouldHaveQueryGraphCardinality(0)
-  }
-
   test("empty graph") {
     givenPattern("MATCH a WHERE a.prop = 10").
       withGraphNodes(0).
@@ -225,6 +219,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
       shouldHaveQueryGraphCardinality(0)
   }
 
+  // 2014-12-05: Davide - This test looks strange since inbound cardinality is never used in the test framework?
   ignore("honours bound arguments") {
     givenPattern("MATCH (a:FOO)-[:TYPE]->(b:BAR)").
     withQueryGraphArgumentIds(IdName("a")).
