@@ -19,12 +19,17 @@
  */
 package org.neo4j.io.fs;
 
+import org.junit.Test;
+
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
-import org.junit.Test;
-
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 public class StoreFileChannelTest
 {
@@ -32,8 +37,8 @@ public class StoreFileChannelTest
     public void shouldHandlePartialWrites() throws Exception
     {
         // Given
-        FileChannel mockChannel = mock(FileChannel.class);
-        when(mockChannel.write( any(ByteBuffer.class), anyLong() )).thenReturn( 4 );
+        FileChannel mockChannel = mock( FileChannel.class );
+        when(mockChannel.write( any( ByteBuffer.class ), anyLong() ) ).thenReturn( 4 );
 
         ByteBuffer buffer = ByteBuffer.wrap( "Hello, world!".getBytes( "UTF-8" ) );
 

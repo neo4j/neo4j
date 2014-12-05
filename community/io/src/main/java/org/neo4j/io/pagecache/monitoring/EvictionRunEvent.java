@@ -28,6 +28,12 @@ public interface EvictionRunEvent extends AutoCloseablePageCacheMonitorEvent
 {
     /**
      * An eviction is started as part of this eviction run.
+     * <p>
+     * Implementers note: This method is not allowed to throw anything ever,
+     * not even OutOfMemoryError. Furthermore, it must always return a non-null
+     * value. So if the implementation cannot return an event object specific
+     * to its implementation, then it MUST return the relevant null-object
+     * constant from the PageCacheMonitor interface.
      */
     public EvictionEvent beginEviction();
 }

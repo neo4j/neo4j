@@ -301,25 +301,49 @@ public interface PageCacheMonitor
 
     /**
      * A background eviction has begun. Called from the background eviction thread.
-     * 
+     * <p>
      * This call will be paired with a following PageCacheMonitor#endPageEviction call.
-     *
+     * <p>
      * The method returns an EvictionRunEvent to represent the event of this eviction run.
+     * <p>
+     * Implementers note: This method is not allowed to throw anything ever,
+     * not even OutOfMemoryError. Furthermore, it must always return a non-null
+     * value. So if the implementation cannot return an event object specific
+     * to its implementation, then it MUST return the relevant null-object
+     * constant from the PageCacheMonitor interface.
      **/
     public EvictionRunEvent beginPageEvictions( int pageCountToEvict );
 
     /**
      * A page is to be pinned.
+     * <p>
+     * Implementers note: This method is not allowed to throw anything ever,
+     * not even OutOfMemoryError. Furthermore, it must always return a non-null
+     * value. So if the implementation cannot return an event object specific
+     * to its implementation, then it MUST return the relevant null-object
+     * constant from the PageCacheMonitor interface.
      */
     public PinEvent beginPin( boolean exclusiveLock, long filePageId, PageSwapper swapper );
 
     /**
      * A PagedFile wants to flush all its bound pages.
+     * <p>
+     * Implementers note: This method is not allowed to throw anything ever,
+     * not even OutOfMemoryError. Furthermore, it must always return a non-null
+     * value. So if the implementation cannot return an event object specific
+     * to its implementation, then it MUST return the relevant null-object
+     * constant from the PageCacheMonitor interface.
      */
     public MajorFlushEvent beginFileFlush( PageSwapper swapper );
 
     /**
      * The PageCache wants to flush all its bound pages.
+     * <p>
+     * Implementers note: This method is not allowed to throw anything ever,
+     * not even OutOfMemoryError. Furthermore, it must always return a non-null
+     * value. So if the implementation cannot return an event object specific
+     * to its implementation, then it MUST return the relevant null-object
+     * constant from the PageCacheMonitor interface.
      */
     public MajorFlushEvent beginCacheFlush();
 

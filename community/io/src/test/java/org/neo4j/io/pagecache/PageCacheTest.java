@@ -646,7 +646,7 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
         channel.close();
     }
 
-    @Test( timeout = 1000 )
+    @Test( timeout = 10000 )
     public void flushingDuringPagedFileCloseMustRetryUntilItSucceeds() throws IOException
     {
         FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
@@ -661,7 +661,7 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
                     @Override
                     public void writeAll( ByteBuffer src, long position ) throws IOException
                     {
-                        if ( writeCount++ < 10 )
+                        if ( writeCount++ < 5 )
                         {
                             throw new IOException( "This is a benign exception that we expect to be thrown " +
                                                    "during a flush of a PagedFile." );

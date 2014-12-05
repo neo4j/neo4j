@@ -26,7 +26,7 @@ package org.neo4j.io.pagecache.impl.muninn;
  */
 final class FreePage
 {
-    final MuninnPage page;
+    MuninnPage page;
     int count;
     FreePage next;
 

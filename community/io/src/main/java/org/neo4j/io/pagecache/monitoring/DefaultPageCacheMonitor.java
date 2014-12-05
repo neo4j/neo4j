@@ -263,7 +263,7 @@ public class DefaultPageCacheMonitor implements PageCacheMonitor
         }
         catch ( Throwable throwable )
         {
-            throw new AssertionError( "Unexpected MethodHandle error", throwable );
+            return NULL_PIN_EVENT;
         }
     }
 

@@ -31,6 +31,12 @@ public interface PinEvent
 
     /**
      * The page we want to pin is not in memory, so being a page fault to load it in.
+     * <p>
+     * Implementers note: This method is not allowed to throw anything ever,
+     * not even OutOfMemoryError. Furthermore, it must always return a non-null
+     * value. So if the implementation cannot return an event object specific
+     * to its implementation, then it MUST return the relevant null-object
+     * constant from the PageCacheMonitor interface.
      */
     public PageFaultEvent beginPageFault();
 

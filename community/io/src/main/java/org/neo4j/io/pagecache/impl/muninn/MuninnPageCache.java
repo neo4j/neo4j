@@ -119,7 +119,16 @@ public class MuninnPageCache implements RunnablePageCache
     private final int keepFree;
     private final MuninnCursorPool cursorPool;
     private final PageCacheMonitor monitor;
-    final MuninnPage[] pages;
+    private final MuninnPage[] pages;
+
+    // This holds a reference to the next FreePage object that will be used to
+    // release an evicted page back into the freelist.
+    // This exists to make sure that at least one page release can always
+    // succeed, even when we have completely exhausted the heap space of the
+    // JVM, such that any allocation would throw an OutOfMemoryError.
+    // After the initialisation in the constructor, this field will only ever
+    // be accessed by the eviction thread.
+    private FreePage nextReleasableFreePage;
 
     // The freelist takes a bit of explanation. It is a thread-safe linked-list
     // of 3 types of objects. A link can either be a MuninnPage, a FreePage or
@@ -176,6 +185,7 @@ public class MuninnPageCache implements RunnablePageCache
         this.cursorPool = new MuninnCursorPool();
         this.monitor = monitor;
         this.pages = new MuninnPage[maxPages];
+        this.nextReleasableFreePage = new FreePage( null );
 
         MemoryReleaser memoryReleaser = new MemoryReleaser( maxPages );
         Object pageList = null;
@@ -205,6 +215,10 @@ public class MuninnPageCache implements RunnablePageCache
             }
         }
         UnsafeUtil.putObjectVolatile( this, freelistOffset, pageList );
+
+        // Note that we are relying on the fact that submitting a Runnable to
+        // an Executor, and starting a thread, are both synchronising actions,
+        // and thus ensure safe publication of this object instance.
     }
 
     static void verifyHacks()
@@ -288,6 +302,12 @@ public class MuninnPageCache implements RunnablePageCache
                         prev.next = current.next;
                     }
                     monitor.unmappedFile( current.file );
+                    // We have already committed to unmapping the file, so we
+                    // have to make sure all changes are flushed to storage.
+                    // This is important because once all files are unmapped,
+                    // the page cache can be closed. And when that happens,
+                    // there will no longer be any way for dirty pages to have
+                    // their changes made durable.
                     flushAndCloseWithoutFail( file );
                     break;
                 }
@@ -309,22 +329,39 @@ public class MuninnPageCache implements RunnablePageCache
                 file.closeSwapper();
                 flushedAndClosed = true;
             }
-            catch ( IOException e )
+            catch ( Throwable e )
             {
-                if ( !printedFirstException )
+                try
                 {
-                    printedFirstException = true;
-                    try
+                    if ( !printedFirstException )
                     {
+                        // We don't have access to the logging subsystem in
+                        // neo4j-io, so we just print the stack trace here and
+                        // hope for the best.
                         e.printStackTrace();
+                        printedFirstException = true;
                     }
-                    catch ( Exception ignore )
+                    else
                     {
+                        // It could be the case that the storage device is
+                        // full. Such a problem can take a long time to
+                        // resolve, so we might as well take it easy.
+                        sleepBeforeRetryingFailedFlush();
                     }
+                }
+                catch ( Throwable ignore )
+                {
                 }
             }
         }
         while ( !flushedAndClosed );
+    }
+
+    private void sleepBeforeRetryingFailedFlush() throws InterruptedException
+    {
+        // This is in a nicely named method of its own, in case it shows up in
+        // a profiler.
+        Thread.sleep( 250 );
     }
 
     @Override
@@ -339,9 +376,8 @@ public class MuninnPageCache implements RunnablePageCache
     {
         try ( MajorFlushEvent cacheFlush = monitor.beginCacheFlush() )
         {
-            for ( int i = 0; i < pages.length; i++ )
+            for ( MuninnPage page : pages )
             {
-                MuninnPage page = pages[i];
                 long stamp = page.writeLock();
                 try
                 {
@@ -427,6 +463,8 @@ public class MuninnPageCache implements RunnablePageCache
 
     MuninnPage grabFreePage( PageFaultEvent faultEvent ) throws IOException
     {
+        // This method is executed by threads that are in the process of page-
+        // faulting, and want a fresh new page to fault into.
         // Review the comment on the freelist field before making changes to
         // this part of the code.
         // Whatever the case, we're going to the head-pointer of the freelist,
@@ -562,24 +600,34 @@ public class MuninnPageCache implements RunnablePageCache
     {
         int clockArm = 0;
 
-        while ( !Thread.interrupted() )
+        try
         {
-            int pageCountToEvict = parkUntilEvictionRequired( keepFree );
-            try ( EvictionRunEvent evictionRunEvent = monitor.beginPageEvictions( pageCountToEvict ) )
+            while ( !Thread.interrupted() )
             {
-                clockArm = evictPages( pageCountToEvict, clockArm, evictionRunEvent );
+                int pageCountToEvict = parkUntilEvictionRequired( keepFree );
+                try ( EvictionRunEvent evictionRunEvent = monitor.beginPageEvictions( pageCountToEvict ) )
+                {
+                    clockArm = evictPages( pageCountToEvict, clockArm, evictionRunEvent );
+                }
             }
         }
-
-        // The last thing we do, is unparking any thread that might be waiting
-        // for free pages in a page fault.
-        // This can happen because files can be unmapped while their cursors
-        // are in use.
-        Object freelistHead = getAndSetFreelistHead( shutdownSignal );
-        if ( freelistHead instanceof FreePageWaiter )
+        finally
         {
-            FreePageWaiter waiters = (FreePageWaiter) freelistHead;
-            interruptAllWaiters( waiters );
+            // The last thing we do, is unparking any thread that might be waiting
+            // for free pages in a page fault.
+            // This can happen because files can be unmapped while their cursors
+            // are in use.
+            Object freelistHead = getAndSetFreelistHead( shutdownSignal );
+            if ( freelistHead instanceof FreePageWaiter )
+            {
+                FreePageWaiter waiters = (FreePageWaiter) freelistHead;
+                interruptAllWaiters( waiters );
+            }
+
+            // Make sure to null out this reference, as we might otherwise have
+            // a transitive reference to the MemoryReleaser, which would
+            // prevent our native pointers from being freed.
+            nextReleasableFreePage = null;
         }
     }
 
@@ -624,7 +672,7 @@ public class MuninnPageCache implements RunnablePageCache
 
     int evictPages( int pageCountToEvict, int clockArm, EvictionRunEvent evictionRunEvent )
     {
-        FreePageWaiter waiters = grabFreePageWaitersIfAny();
+        FreePageWaiter waiters = grabFreePageWaitersIfAny(); // allocation free
 
         Thread currentThread = Thread.currentThread();
         while ( (pageCountToEvict > 0 || waiters != null) && !currentThread.isInterrupted() ) {
@@ -637,14 +685,23 @@ public class MuninnPageCache implements RunnablePageCache
             if ( page == null )
             {
                 // The page cache has been shut down.
-                currentThread.interrupt();
-                interruptAllWaiters( waiters );
+                try
+                {
+                    // This might not be allocation free if we have a
+                    // SecurityManager configured, but that's okay because
+                    // we're shutting down anyway.
+                    currentThread.interrupt();
+                }
+                finally
+                {
+                    interruptAllWaiters( waiters );
+                }
                 return 0;
             }
 
             if ( page.isLoaded() && page.decrementUsage() )
             {
-                long stamp = page.tryWriteLock();
+                long stamp = page.tryWriteLock(); // tryWriteLock is allocation free
                 if ( stamp != 0 )
                 {
                     // We got the lock.
@@ -666,48 +723,14 @@ public class MuninnPageCache implements RunnablePageCache
                     }
                     finally
                     {
-                        page.unlockWrite( stamp );
+                        page.unlockWrite( stamp ); // Allocation free
                     }
 
                     if ( pageEvicted )
                     {
-                        if ( waiters != null )
-                        {
-                            waiters.unpark( page );
-                            waiters = waiters.next;
-                        }
-                        else
-                        {
-                            Object current;
-                            Object nextListHead;
-                            FreePage freePage = null;
-                            FreePageWaiter waiter;
-                            do
-                            {
-                                waiter = null;
-                                current = getFreelistHead();
-                                if ( current == null || current instanceof FreePage )
-                                {
-                                    freePage = freePage == null?
-                                            new FreePage( page ) : freePage;
-                                    freePage.setNext( (FreePage) current );
-                                    nextListHead = freePage;
-                                }
-                                else
-                                {
-                                    assert current instanceof FreePageWaiter :
-                                            "Unexpected link type: " + current;
-                                    waiter = (FreePageWaiter) current;
-                                    nextListHead = waiter.next;
-                                }
-                            }
-                            while ( !compareAndSetFreelistHead(
-                                    current, nextListHead ) );
-                            if ( waiter != null )
-                            {
-                                waiter.unpark( page );
-                            }
-                        }
+                        // releaseEvictedPage() is not allocation free, but
+                        // any OOMEs thrown are taken care of for us.
+                        waiters = releaseEvictedPage( page, waiters );
                     }
                     else if ( waiters != null && evictorException != null )
                     {
@@ -735,6 +758,9 @@ public class MuninnPageCache implements RunnablePageCache
 
     private boolean evictPage( MuninnPage page, EvictionEvent evictionEvent )
     {
+        // Note: this method is expected to handle all the failures that can
+        // occur during eviction, including OutOfMemoryErrors, and is therefore
+        // itself not allowed to throw anything.
         try
         {
             page.evict( evictionEvent );
@@ -753,11 +779,112 @@ public class MuninnPageCache implements RunnablePageCache
         }
         catch ( Throwable throwable )
         {
-            evictorException = new IOException(
-                    "Eviction thread encountered a problem", throwable );
+            try
+            {
+                evictorException = new IOException(
+                        "Eviction thread encountered a problem", throwable );
+            }
+            catch ( OutOfMemoryError ignore )
+            {
+                evictorException = oomException;
+            }
             evictionEvent.threwException( evictorException );
         }
         return false;
+    }
+
+    private FreePageWaiter releaseEvictedPage(
+            MuninnPage page, FreePageWaiter waiters )
+    {
+        // Note: this method is called at a sensitive time; we are outside of
+        // the catch clauses that protect the eviction itself, we are at a
+        // point where we have already evicted a page but not yet made it
+        // available to anyone, we'll leak the page if we fail to make it
+        // available, we risk crashing the eviction thread if we throw an
+        // exception.
+        // In other words, we have to be pretty careful about our failure
+        // handling. We are not allowed to *not* succeed in releasing the given
+        // page, and we are not allowed to throw any exception. Not even
+        // OutOfMemoryError.
+        if ( waiters != null )
+        {
+            waiters.unpark( page );
+            return waiters.next;
+        }
+        Object current;
+        Object nextListHead;
+        FreePageWaiter waiter;
+        do
+        {
+            waiter = null;
+            current = getFreelistHead();
+            if ( current == null || current instanceof FreePage )
+            {
+                nextReleasableFreePage.page = page;
+                nextReleasableFreePage.setNext( (FreePage) current );
+                nextListHead = nextReleasableFreePage;
+            }
+            else
+            {
+                waiter = (FreePageWaiter) current;
+                nextListHead = waiter.next;
+            }
+        }
+        while ( !compareAndSetFreelistHead( current, nextListHead ) );
+
+        if ( waiter != null )
+        {
+            waiter.unpark( page );
+        }
+        else
+        {
+            // If there's no waiter to unpark, then that means we've spent the
+            // nextReleasableFreePage instance, and we must therefor prepare a
+            // new one for the next iteration.
+            // We absolutely cannot progress until this succeeds.
+            prepareNextReleasableFreePage();
+        }
+        return waiters;
+    }
+
+    private void prepareNextReleasableFreePage()
+    {
+        boolean allocated = false;
+        do
+        {
+            // 'Tis a lesson you should heed:
+            // Try, try, try again.
+            // If at first you don't succeed,
+            // Try, try, try again.
+            try
+            {
+                nextReleasableFreePage = new FreePage( null );
+                allocated = true;
+            }
+            catch ( OutOfMemoryError ignore )
+            {
+                handleOutOfMemoryInNextReleasableFreePagePreparation();
+            }
+        }
+        while ( !allocated );
+    }
+
+    private void handleOutOfMemoryInNextReleasableFreePagePreparation()
+    {
+        // This is in a separate method because it is so rare, and we'd like it
+        // to not count against the inlining budget for the
+        // prepareNextReleasableFreePage method.
+        evictorException = oomException;
+        // Also try clearing out some scraps of memory, if possible
+        FreePageWaiter waiter = grabFreePageWaitersIfAny();
+        while ( waiter != null )
+        {
+            waiter.unparkException( oomException );
+            // Sadly, we have to kill all of them, because once we grab
+            // the stack, we can't put it back. We'd have ABA issues on
+            // our hands if we tried.
+            waiter = waiter.next;
+        }
     }
 
     private FreePageWaiter grabFreePageWaitersIfAny()
