@@ -71,12 +71,12 @@ public class DijkstraIteratorTest extends Neo4jAlgoTestCase
         {
             graph.makeEdge( "start", "a", "cost", (double) 1 );
             graph.makeEdge( "a", "x", "cost", (double) 9 );
-            graph.makeEdge( "a", "b", "cost", (double) 1 );
+            graph.makeEdge( "a", "b", "cost", (float) 1 );
             graph.makeEdge( "b", "x", "cost", (double) 7 );
-            graph.makeEdge( "b", "c", "cost", (double) 1 );
-            graph.makeEdge( "c", "x", "cost", (double) 5 );
-            graph.makeEdge( "c", "d", "cost", (double) 1 );
-            graph.makeEdge( "d", "x", "cost", (double) 3 );
+            graph.makeEdge( "b", "c", "cost", (long) 1 );
+            graph.makeEdge( "c", "x", "cost", (int) 5 );
+            graph.makeEdge( "c", "d", "cost", (byte) 1 );
+            graph.makeEdge( "d", "x", "cost", (short) 3 );
             graph.makeEdge( "d", "e", "cost", (double) 1 );
             graph.makeEdge( "e", "x", "cost", (double) 1 );
             HashMap<Node,Double> seen1, seen2, dists1, dists2;
