@@ -1,8 +1,10 @@
 {
   "name": "jquery-ui",
-  "version": "1.10.3",
+  "version": "1.11.2",
   "main": [
-    "ui/jquery-ui.js"
+    "jquery-ui.js"
+  ],
+  "ignore": [
   ],
   "dependencies": {
     "jquery": ">=1.6"
