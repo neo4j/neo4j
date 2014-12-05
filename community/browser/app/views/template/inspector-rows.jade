@@ -1,7 +1,5 @@
 script(id="inspector/graphItem.html", type="text/ng-template")
   ul.list-inline
-    li(ng-if="item.isNode", ng-repeat="label in item.labels")
-      .label.label-node.class-name(ng-style='styleForLabel(label)', ng-bind="label")
     li(ng-if="!item.isNode")
       .label.label-node.class-name(ng-style='styleForItem(item)', ng-bind="item.type")
     li.empty(ng-if='item.propertyList.length == 0') No properties
