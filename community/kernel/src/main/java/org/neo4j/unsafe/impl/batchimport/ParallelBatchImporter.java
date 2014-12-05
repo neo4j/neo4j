@@ -98,7 +98,7 @@ public class ParallelBatchImporter implements BatchImporter
         this.highTokenIds = highTokenIds;
         this.logger = logging.getMessagesLog( getClass() );
         this.executionPoller = new ExecutionSupervisor( Clock.SYSTEM_CLOCK, new MultiExecutionMonitor(
-                executionMonitor, new DynamicProcessorAssigner( config, config.maxNumberOfThreads() ) ) );
+                executionMonitor, new DynamicProcessorAssigner( config, config.maxNumberOfProcessors() ) ) );
         this.monitors = new Monitors();
         this.writeMonitor = new IoMonitor();
         this.writerFactory = writerFactory.apply( config );

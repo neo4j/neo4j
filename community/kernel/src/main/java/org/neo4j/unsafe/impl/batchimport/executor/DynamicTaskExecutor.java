@@ -43,13 +43,13 @@ public class DynamicTaskExecutor implements TaskExecutor
     private volatile boolean shutDown;
     private volatile Throwable shutDownCause;
 
-    public DynamicTaskExecutor( int initialThreadCount, int maxQueueSize, ParkStrategy parkStrategy,
+    public DynamicTaskExecutor( int initialProcessorCount, int maxQueueSize, ParkStrategy parkStrategy,
             String processorThreadNamePrefix )
     {
         this.parkStrategy = parkStrategy;
         this.processorThreadNamePrefix = processorThreadNamePrefix;
         this.queue = new ArrayBlockingQueue<>( maxQueueSize );
-        setNumberOfProcessors( initialThreadCount );
+        setNumberOfProcessors( initialProcessorCount );
     }
 
     @Override
