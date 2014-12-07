@@ -19,6 +19,11 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.collection.PrefetchingResourceIterator;
+import org.neo4j.unsafe.impl.batchimport.input.InputNode;
+
 /**
  * Common and cross-concern utilities.
  */
@@ -81,6 +86,33 @@ public class Utils
         case NE:
         }
         return false;
+    }
+
+    public static ResourceIterable<Object> idsOf( final ResourceIterable<InputNode> nodes )
+    {
+        return new ResourceIterable<Object>()
+        {
+            @Override
+            public ResourceIterator<Object> iterator()
+            {
+                return new PrefetchingResourceIterator<Object>()
+                {
+                    private final ResourceIterator<InputNode> iterator = nodes.iterator();
+
+                    @Override
+                    public void close()
+                    {
+                        iterator.close();
+                    }
+
+                    @Override
+                    protected Object fetchNextOrNull()
+                    {
+                        return iterator.hasNext() ? iterator.next().id() : null;
+                    }
+                };
+            }
+        };
     }
 
     private Utils()

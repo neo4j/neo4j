@@ -41,12 +41,12 @@ public class NodeLabelsCache
     private final long[] fieldScratch = new long[1];
     private final Bits fieldBits = bitsFromLongs( fieldScratch );
 
-    public NodeLabelsCache( LongArrayFactory cacheFactory, int highLabelId )
+    public NodeLabelsCache( NumberArrayFactory cacheFactory, int highLabelId )
     {
         this( cacheFactory, highLabelId, 10_000_000 );
     }
 
-    public NodeLabelsCache( LongArrayFactory cacheFactory, int highLabelId, int chunkSize )
+    public NodeLabelsCache( NumberArrayFactory cacheFactory, int highLabelId, int chunkSize )
     {
         this.cache = cacheFactory.newDynamicLongArray( chunkSize, 0 );
         this.spillOver = cacheFactory.newDynamicLongArray( chunkSize / 5, 0 ); // expect way less of these
@@ -160,5 +160,11 @@ public class NodeLabelsCache
         return capacity > target.length
                 ? new int[capacity]
                 : target;
+    }
+
+    public void close()
+    {
+        cache.close();
+        spillOver.close();
     }
 }

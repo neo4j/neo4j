@@ -23,6 +23,14 @@ import scala.collection.{immutable, mutable}
 
 object Eagerly {
 
+  def immutableReplaceKeys[K, V](m: immutable.Map[K, V])(replacements: (K, K)*): immutable.Map[K, V] = {
+    val deletes = replacements.map { case (oldKey, _) => oldKey }
+    val updates = replacements.flatMap {
+      case (oldKey, newKey) => m.get(oldKey).map(value => newKey -> value)
+    }
+    m -- deletes ++ updates
+  }
+
   // These two methods could in theory be replaced by a single one. My attempts so far didn't type out or broke scalac. You get a cookie if you get it to work -- boggle
 
   def immutableMapValues[A, B, C](m: collection.Map[A, B], f: B => C): immutable.Map[A, C] =

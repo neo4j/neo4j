@@ -12,7 +12,7 @@ digraph htmlconfig {
   "asciidoc" [label="AsciiDoc" shape="component"]
   "docbook"  [label="DocBook XML 4.5"]
   "install"  [label="Neo4j Download Packages"]
-  "docsneo"  [label="docs.neo4j.org"]
+  "docsneo"  [label="neo4j.com/docs"]
   "graphviz" [label="Graphviz Dot" shape="component"]
   "svg"      [label="SVG Images"]
   "png"      [label="PNG Images"]

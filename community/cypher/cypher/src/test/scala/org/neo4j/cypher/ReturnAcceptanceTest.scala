@@ -329,6 +329,35 @@ return coalesce(a.title, a.name)""")
   }
 
 
+  test("should not be confused by rewriting about what is a relationship and what not") {
+    val andres = createNode("name" -> "Andres")
+    val michael = createNode("name" -> "Michael")
+    val peter = createNode("name" -> "Peter")
+    val bread = createNode("type" -> "Bread")
+    val veg = createNode("type" -> "Veggies")
+    val meat = createNode("type" -> "Meat")
+
+    relate(andres, bread, "ATE", Map("times" -> 10))
+    relate(andres, veg, "ATE", Map("times" -> 8))
+
+    relate(michael, veg, "ATE", Map("times" -> 4))
+    relate(michael, bread, "ATE", Map("times" -> 6))
+    relate(michael, meat, "ATE", Map("times" -> 9))
+
+    relate(peter, veg, "ATE", Map("times" -> 7))
+    relate(peter, bread, "ATE", Map("times" -> 7))
+    relate(peter, meat, "ATE", Map("times" -> 4))
+
+    executeWithNewPlanner(
+      """
+    match me-[r1]->you
+
+    with 1 AS x
+    match me-[r1]->food<-[r2]-you
+
+    return r1.times""").dumpToString()
+  }
+
   test("should return shortest paths if using a ridiculously unhip cypher") {
     val a = createNode()
     val b = createNode()

@@ -20,67 +20,14 @@
 package org.neo4j.unsafe.impl.batchimport.cache;
 
 /**
- * Implemented as just a {@link LongArray} with an {@link IntArray} interface to it. An attempt was made
- * to have each long in the underlying {@link LongArray} store two ints, but there was concurrency issues
- * with false sharing and where added synchronization would be too much of an overhead.
+ * Abstraction of a {@code int[]} so that different implementations can be plugged in, for example
+ * off-heap, dynamically growing, or other implementations.
  *
- * The reason it just wraps a {@link LongArray} is that there's a bunch of classes around {@link LongArray},
- * f.ex {@link LongArrayFactory}, {@link HeapLongArray} and {@link OffHeapLongArray} which would be bad to duplicate.
- *
- * Moving forward the implementation should rather use 4 bytes per int, instead of currently 8 bytes.
+ * @see NumberArrayFactory
  */
-public class IntArray implements NumberArray
+public interface IntArray extends NumberArray
 {
-    private final LongArray longs;
+    int get( long index );
 
-    public IntArray( LongArrayFactory factory, long chunkSize, int defaultValue )
-    {
-        this.longs = factory.newDynamicLongArray( chunkSize, defaultValue );
-    }
-
-    @Override
-    public long length()
-    {
-        return longs.length();
-    }
-
-    public int get( long index )
-    {
-        return (int) longs.get( index );
-    }
-
-    public void set( long index, int value )
-    {
-        longs.set( index, value );
-    }
-
-    @Override
-    public void clear()
-    {
-        longs.clear();
-    }
-
-    @Override
-    public void swap( long fromIndex, long toIndex, int numberOfEntries )
-    {
-        longs.swap( fromIndex, toIndex, numberOfEntries );
-    }
-
-    @Override
-    public long highestSetIndex()
-    {
-        return longs.highestSetIndex();
-    }
-
-    @Override
-    public long size()
-    {
-        return longs.size();
-    }
-
-    @Override
-    public void visitMemoryStats( MemoryStatsVisitor visitor )
-    {
-        longs.visitMemoryStats( visitor );
-    }
+    void set( long index, int value );
 }

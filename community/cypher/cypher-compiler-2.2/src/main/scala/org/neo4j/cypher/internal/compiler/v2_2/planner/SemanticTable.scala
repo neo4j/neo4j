@@ -20,15 +20,33 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{ASTNode, ASTAnnotationMap, Identifier, Expression}
+import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import scala.collection.mutable
 
-case class SemanticTable(types: ASTAnnotationMap[Expression, ExpressionTypeInfo] = ASTAnnotationMap.empty) {
-  var resolvedLabelIds: mutable.Map[String, LabelId] = new mutable.HashMap[String, LabelId]
-  var resolvedPropertyKeyNames: mutable.Map[String, PropertyKeyId] = new mutable.HashMap[String, PropertyKeyId]
-  var resolvedRelTypeNames: mutable.Map[String, RelTypeId] = new mutable.HashMap[String, RelTypeId]
+object SemanticTable {
+  def apply(types: ASTAnnotationMap[Expression, ExpressionTypeInfo] = ASTAnnotationMap.empty) =
+    new SemanticTable(types)
+}
+
+class SemanticTable(
+    val types: ASTAnnotationMap[Expression, ExpressionTypeInfo] = ASTAnnotationMap.empty,
+    val resolvedLabelIds: mutable.Map[String, LabelId] = new mutable.HashMap[String, LabelId],
+    val resolvedPropertyKeyNames: mutable.Map[String, PropertyKeyId] = new mutable.HashMap[String, PropertyKeyId],
+    val resolvedRelTypeNames: mutable.Map[String, RelTypeId] = new mutable.HashMap[String, RelTypeId]
+  ) {
+
+  def isNode(expr: Identifier) = types(expr).specified == symbols.CTNode.invariant
 
   def isRelationship(expr: Identifier) = types(expr).specified == symbols.CTRelationship.invariant
 
-  def isNode(expr: Identifier) = types(expr).specified == symbols.CTNode.invariant
+  def replaceKeys(replacements: (Identifier, Identifier)*): SemanticTable =
+    copy(types = types.replaceKeys(replacements: _*))
+
+  def copy(
+    types: ASTAnnotationMap[Expression, ExpressionTypeInfo] = types,
+    resolvedLabelIds: mutable.Map[String, LabelId] = resolvedLabelIds,
+    resolvedPropertyKeyNames: mutable.Map[String, PropertyKeyId] = resolvedPropertyKeyNames,
+    resolvedRelTypeNames: mutable.Map[String, RelTypeId] = resolvedRelTypeNames
+  ) =
+    new SemanticTable(types, resolvedLabelIds, resolvedPropertyKeyNames, resolvedRelTypeNames)
 }

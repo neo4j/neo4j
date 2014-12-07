@@ -157,7 +157,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
   }
 
   def profileQuery(title: String, text: String, queryText: String, realQuery: Option[String] = None, assertion: (InternalExecutionResult => Unit)) {
-    internalProfileQuery(title, text, "cypher 2.2-cost " + queryText, realQuery, None, None, assertion)
+    internalProfileQuery(title, text, queryText, realQuery, None, None, assertion)
   }
 
   private def internalProfileQuery(title: String,

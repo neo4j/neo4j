@@ -43,7 +43,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * removes processors from those steps.</li>
  * <li>Also manages I/O threads, see {@link IoQueue}, in this aspect proxied by {@link EntityStoreUpdaterStep}.
  * <li>At all times keeps the total number of processors assigned to steps to a total of less than or equal to
- * {@link Configuration#maxNumberOfThreads()}.</li>
+ * {@link Configuration#maxNumberOfProcessors()}.</li>
  * </ul>
  */
 public class DynamicProcessorAssigner extends AbstractExecutionMonitor

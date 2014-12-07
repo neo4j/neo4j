@@ -19,32 +19,96 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Random;
+
+import org.junit.After;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
+
+import static java.lang.System.currentTimeMillis;
+
 import static org.junit.Assert.assertEquals;
 
-import static org.neo4j.unsafe.impl.batchimport.cache.LongArrayFactory.HEAP;
-
+@RunWith( Parameterized.class )
 public class IntArrayTest
 {
     @Test
-    public void shouldBeAbleToKeepTwoIntValuesInSameLong() throws Exception
+    public void shouldHandleSomeRandomSetAndGet() throws Exception
     {
         // GIVEN
-        int defaultValue = 5;
-        IntArray array = new IntArray( HEAP, 1000, defaultValue );
+        int length = random.nextInt( 100_000 ) + 100;
+        int defaultValue = random.nextInt( 2 ) - 1; // 0 or -1
+        IntArray array = newArray( length, defaultValue );
+        long[] expected = new long[length];
+        Arrays.fill( expected, defaultValue );
 
-        // WHEN/THEN
-        for ( int i = 0; i < 100; i++ )
+        // WHEN
+        int operations = random.nextInt( 1_000 ) + 10;
+        for ( int i = 0; i < operations; i++ )
         {
-            assertEquals( defaultValue, array.get( i ) );
+            // THEN
+            int index = random.nextInt( length );
+            int value = random.nextInt();
+            switch ( random.nextInt( 3 ) )
+            {
+            case 0: // set
+                array.set( index, value );
+                expected[index] = value;
+                break;
+            case 1: // get
+                assertEquals( "Seed:" + seed, expected[index], array.get( index ) );
+                break;
+            default: // swap
+                int items = Math.min( random.nextInt( 10 )+1, length-index );
+                int toIndex = (index + length/2) % (length-items);
+                array.swap( index, toIndex, items );
+                swap( expected, index, toIndex, items );
+                break;
+            }
         }
+    }
 
-        array.set( 2, Integer.MAX_VALUE-8 );
-        assertEquals( defaultValue, array.get( 3 ) );
-        assertEquals( Integer.MAX_VALUE-8, array.get( 2 ) );
+    private void swap( long[] expected, int fromIndex, int toIndex, int items )
+    {
+        for ( int i = 0; i < items; i++ )
+        {
+            long fromValue = expected[fromIndex+i];
+            expected[fromIndex+i] = expected[toIndex+i];
+            expected[toIndex+i] = fromValue;
+        }
+    }
 
-        array.set( 5, Integer.MAX_VALUE-12 );
-        assertEquals( Integer.MAX_VALUE-12, array.get( 5 ) );
-        assertEquals( defaultValue, array.get( 4 ) );
+    @Parameters
+    public static Collection<Object[]> data()
+    {
+        return Arrays.asList(
+                new Object[] {NumberArrayFactory.HEAP},
+                new Object[] {NumberArrayFactory.OFF_HEAP}
+                );
+    }
+
+    public IntArrayTest( NumberArrayFactory factory )
+    {
+        this.factory = factory;
+    }
+
+    private IntArray newArray( int length, int defaultValue )
+    {
+        return array = factory.newIntArray( length, defaultValue );
+    }
+
+    private final NumberArrayFactory factory;
+    private final long seed = currentTimeMillis();
+    private final Random random = new Random( seed );
+    private IntArray array;
+
+    @After
+    public void after()
+    {
+        array.close();
     }
 }

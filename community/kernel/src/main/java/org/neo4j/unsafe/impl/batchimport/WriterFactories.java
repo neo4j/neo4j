@@ -37,7 +37,7 @@ public class WriterFactories
             @Override
             public WriterFactory apply( Configuration configuration )
             {
-                return new IoQueue( 1, configuration.maxNumberOfIoThreads(),
+                return new IoQueue( 1, configuration.maxNumberOfIoProcessors(),
                         configuration.workAheadSize()*10, SYNCHRONOUS );
             }
         };

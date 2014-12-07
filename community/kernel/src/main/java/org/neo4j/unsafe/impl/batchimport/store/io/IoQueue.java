@@ -36,19 +36,19 @@ public class IoQueue implements WriterFactory
     private final TaskExecutor executor;
     private final JobMonitor jobMonitor = new JobMonitor();
     private final WriterFactory delegateFactory;
-    private final int maxThreads;
+    private final int maxProcessors;
 
-    public IoQueue( int initialThreads, int maxThreads, int queueSize, WriterFactory delegateFactory )
+    public IoQueue( int initialProcessorCount, int maxProcessors, int queueSize, WriterFactory delegateFactory )
     {
-        this( new DynamicTaskExecutor( initialThreads, queueSize,
-                DynamicTaskExecutor.DEFAULT_PARK_STRATEGY, "IoQueue I/O thread" ), maxThreads, delegateFactory );
+        this( new DynamicTaskExecutor( initialProcessorCount, queueSize,
+                DynamicTaskExecutor.DEFAULT_PARK_STRATEGY, "IoQueue I/O thread" ), maxProcessors, delegateFactory );
     }
 
-    IoQueue( TaskExecutor executor, int maxIoThreads, WriterFactory delegateFactory )
+    IoQueue( TaskExecutor executor, int maxProcessors, WriterFactory delegateFactory )
     {
         this.executor = executor;
         this.delegateFactory = delegateFactory;
-        this.maxThreads = maxIoThreads;
+        this.maxProcessors = maxProcessors;
     }
 
     @Override
@@ -96,7 +96,7 @@ public class IoQueue implements WriterFactory
     @Override
     public boolean incrementNumberOfProcessors()
     {
-        if ( executor.numberOfProcessors() >= maxThreads )
+        if ( executor.numberOfProcessors() >= maxProcessors )
         {
             return false;
         }

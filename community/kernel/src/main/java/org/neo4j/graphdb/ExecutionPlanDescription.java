@@ -21,6 +21,7 @@ package org.neo4j.graphdb;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Instances describe single execution steps in a Cypher query execution plan
@@ -52,6 +53,11 @@ public interface ExecutionPlanDescription
      * @return a map containing arguments that describe this execution step in more detail
      */
     Map<String, Object> getArguments();
+
+    /**
+     * @return the set of identifiers used in this execution step
+     */
+    public Set<String> getIdentifiers();
 
     /**
      * Signifies that the query was profiled, and that statistics from the profiling can

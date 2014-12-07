@@ -10,12 +10,30 @@ To analyze a query for performance improvements, it's essential to be able to un
 
 There are two options to choose from when you want to look at execution plans:
 
-. If you want to see the execution plan but not run the statement, prepend your Cypher statement with +EXPLAIN+.
-  The statement will always return an empty result and make no changes to the database.
-. If you want to run the statement and see which operators are doing most of the work, use +PROFILE+.
-  This will run your statement and keep track of how many rows pass through each operator, and how much each operator needs to interact with the storage layer to retrieve the necessary data.
+`EXPLAIN`::
+If you want to see the execution plan but not run the statement, prepend your Cypher statement with `EXPLAIN`.
+The statement will always return an empty result and make no changes to the database.
 
-These are some of the operators you will see if you look at execution plans.
+`PROFILE`::
+If you want to run the statement and see which operators are doing most of the work, use `PROFILE`.
+This will run your statement and keep track of how many rows pass through each operator, and how much each operator needs to interact with the storage layer to retrieve the necessary data.
+Please note that _profiling your query uses more resources,_ so you should not profile unless you are actively working on a query.
+
+An execution plan gives you a few distinct pieces information per operator in the plan:
+
+`Operator`::
+The name of the operator.
+`EstimatedRows`::
+You will always see the estimated number of rows of your execution plan, if the cost based compiler has been used.
+These metrics were not calculated in older versions of Cypher, so if your query is being compiled by an older compiler, you will not see the estimated number of rows.
+`Rows`::
+`DbHits`::
+If you have profiled your query, you will also see the number of rows that actually passed through an operator, and how many `DbHits` were needed to execute that operator.
+A `DbHit` is a call to the IO subsystem of Neo4j -- something needed to be fetched either from cache or from disk.
+
+If the `EstimatedRows` and the actual `Rows` passed through an operator are very far from each other, this could be a problem with outdated statistics.
+
+You will find some of the operators used in execution plans in the following sections.
 
 :leveloffset: 1
 
@@ -23,12 +41,14 @@ include::ql/query-plan/anti-semi-apply.asciidoc[]
 include::ql/query-plan/all-nodes-scan.asciidoc[]
 include::ql/query-plan/cartesian-product.asciidoc[]
 include::ql/query-plan/directed-relationship-by-id-seek.asciidoc[]
+include::ql/query-plan/expand.asciidoc[]
 include::ql/query-plan/limit.asciidoc[]
 include::ql/query-plan/node-by-label-scan.asciidoc[]
 include::ql/query-plan/node-by-id-seek.asciidoc[]
 include::ql/query-plan/node-index-seek.asciidoc[]
 include::ql/query-plan/node-unique-index-seek.asciidoc[]
 include::ql/query-plan/projection.asciidoc[]
+include::ql/query-plan/optional-expand.asciidoc[]
 include::ql/query-plan/selection.asciidoc[]
 include::ql/query-plan/select-or-anti-semi-apply.asciidoc[]
 include::ql/query-plan/select-or-semi-apply.asciidoc[]

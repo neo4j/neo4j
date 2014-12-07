@@ -636,14 +636,28 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         }
         socket.close();
 
-        // then
         try ( Transaction ignored = graphdb().beginTx() )
         {
             assertEquals( 0, countNodes() );
         }
 
-        long numTerminations = txMonitor.getNumberOfTerminatedTransactions() - initialTerminations;
-        assertEquals( 1, numTerminations );
+        // then soon the transaction should have been terminated
+        long endTime = System.currentTimeMillis() + 5000;
+        long additionalTerminations = 0;
+
+        while ( true )
+        {
+            additionalTerminations = txMonitor.getNumberOfTerminatedTransactions() - initialTerminations;
+
+            if ( additionalTerminations > 0 || System.currentTimeMillis() > endTime )
+            {
+                break;
+            }
+
+            Thread.sleep( 100 );
+        }
+
+        assertEquals( 1, additionalTerminations );
     }
 
     @Test

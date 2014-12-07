@@ -24,12 +24,14 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.unsafe.impl.batchimport.Utils.CompareType;
 import org.neo4j.unsafe.impl.batchimport.cache.IntArray;
 import org.neo4j.unsafe.impl.batchimport.cache.LongArray;
-import org.neo4j.unsafe.impl.batchimport.cache.LongArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.LongBitsManipulator;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
+import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 
 import static org.neo4j.unsafe.impl.batchimport.Utils.unsignedCompare;
@@ -46,7 +48,12 @@ import static org.neo4j.unsafe.impl.batchimport.Utils.unsignedCompare;
  */
 public class EncodingIdMapper implements IdMapper
 {
-    private static LongBitsManipulator COLLISION_BIT = new LongBitsManipulator( 62, 1, 1 );
+    // Bit in encoded String --> long values that marks that the particular item has a collision,
+    // i.e. that there's at least one other string that encodes into the same long value.
+    // This bit is the least significant in the most significant byte of the encoded values,
+    // where the 7 most significant bits in that byte denotes length of original string.
+    // See StringEncoder.
+    private static LongBitsManipulator COLLISION_BIT = new LongBitsManipulator( 56, 1 );
     public static int CACHE_CHUNK_SIZE = 1_000_000; // 8MB a piece
     private final IntArray trackerCache;
     private final LongArray dataCache;
@@ -60,12 +67,12 @@ public class EncodingIdMapper implements IdMapper
     private long[][] sortBuckets;
     private long size;
 
-    public EncodingIdMapper( LongArrayFactory cacheFactory, Encoder encoder, Radix radix )
+    public EncodingIdMapper( NumberArrayFactory cacheFactory, Encoder encoder, Radix radix )
     {
         this( cacheFactory, encoder, radix, CACHE_CHUNK_SIZE, Runtime.getRuntime().availableProcessors() - 1 );
     }
 
-    public EncodingIdMapper( LongArrayFactory cacheFactory, Encoder encoder, Radix radix,
+    public EncodingIdMapper( NumberArrayFactory cacheFactory, Encoder encoder, Radix radix,
             int chunkSize, int processorsForSorting )
     {
         this.processorsForSorting = processorsForSorting;
@@ -77,12 +84,12 @@ public class EncodingIdMapper implements IdMapper
         this.collisionValuesIndex = newIntArray( cacheFactory, chunkSize );
     }
 
-    private static IntArray newIntArray( LongArrayFactory cacheFactory, int chunkSize )
+    private static IntArray newIntArray( NumberArrayFactory cacheFactory, int chunkSize )
     {
-        return new IntArray( cacheFactory, chunkSize, -1 );
+        return cacheFactory.newDynamicIntArray( chunkSize, -1 );
     }
 
-    private static LongArray newLongArray( LongArrayFactory cacheFactory, int chunkSize )
+    private static LongArray newLongArray( NumberArrayFactory cacheFactory, int chunkSize )
     {
         return cacheFactory.newDynamicLongArray( chunkSize, -1 );
     }
@@ -110,7 +117,7 @@ public class EncodingIdMapper implements IdMapper
     }
 
     @Override
-    public void prepare( Iterable<Object> ids )
+    public void prepare( ResourceIterable<Object> ids )
     {
         synchronized ( this )
         {
@@ -120,7 +127,10 @@ public class EncodingIdMapper implements IdMapper
         }
         if ( detectAndMarkCollisions() > 0 )
         {
-            buildCollisionInfo( ids.iterator() );
+            try ( ResourceIterator<Object> idIterator = ids.iterator() )
+            {
+                buildCollisionInfo( idIterator );
+            }
         }
         readyForUse = true;
     }
@@ -175,10 +185,9 @@ public class EncodingIdMapper implements IdMapper
     private int detectAndMarkCollisions()
     {
         int numCollisions = 0;
-        for ( int i = 0; i < trackerCache.size(); i++ )
+        for ( int i = 0; i < trackerCache.size() - 1; i++ )
         {
-            if ( i < trackerCache.size() - 1
-                    && compareDataCache( dataCache, trackerCache, i, i + 1, CompareType.GE ) )
+            if ( compareDataCache( dataCache, trackerCache, i, i + 1, CompareType.GE ) )
             {
                 if ( !compareDataCache( dataCache, trackerCache, i, i + 1, CompareType.EQ ) )
                 {

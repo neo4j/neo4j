@@ -19,49 +19,27 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
-import java.lang.reflect.Field;
-
-import sun.misc.Unsafe;
-
 /**
  * Off-heap version of {@link LongArray} using {@code sun.misc.Unsafe}. Supports arrays with length beyond
  * Integer.MAX_VALUE.
  */
-public class OffHeapLongArray implements LongArray
+public class OffHeapLongArray extends OffHeapNumberArray implements LongArray
 {
-    private final long address;
-    private final long length;
     private final long defaultValue;
     private long highestSetIndex = -1;
     private long size;
 
     public OffHeapLongArray( long length, long defaultValue )
     {
-        this.length = length;
+        super( length, 3 );
         this.defaultValue = defaultValue;
-        this.address = unsafe.allocateMemory( length << 3 );
         clear();
-    }
-
-    @Override
-    public long length()
-    {
-        return length;
     }
 
     @Override
     public long get( long index )
     {
         return unsafe.getLong( addressOf( index ) );
-    }
-
-    private long addressOf( long index )
-    {
-        if ( index < 0 || index >= length )
-        {
-            throw new ArrayIndexOutOfBoundsException( "Requested index " + index + ", but length is " + length );
-        }
-        return address + (index<<3);
     }
 
     @Override
@@ -96,11 +74,11 @@ public class OffHeapLongArray implements LongArray
     {
         if ( isByteUniform( defaultValue ) )
         {
-            unsafe.setMemory( address, length << 3, (byte)defaultValue );
+            unsafe.setMemory( address, length << shift, (byte)defaultValue );
         }
         else
         {
-            for ( long i = 0, adr = address; i < length; i++, adr += 8 )
+            for ( long i = 0, adr = address; i < length; i++, adr += stride )
             {
                 unsafe.putLong( adr, defaultValue );
             }
@@ -109,58 +87,17 @@ public class OffHeapLongArray implements LongArray
         size = 0;
     }
 
-    private boolean isByteUniform( long value )
-    {
-        byte any = 0; // assignment not really needed
-        for ( int i = 0; i < 8; i++ )
-        {
-            byte test = (byte)(value >>> 8*i);
-            if ( i == 0 )
-            {
-                any = test;
-            }
-            else if ( test != any )
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
     @Override
     public void swap( long fromIndex, long toIndex, int numberOfEntries )
     {
         long fromAddress = addressOf( fromIndex );
         long toAddress = addressOf( toIndex );
 
-        for ( int i = 0; i < numberOfEntries; i++, fromAddress += 8, toAddress += 8 )
+        for ( int i = 0; i < numberOfEntries; i++, fromAddress += stride, toAddress += stride )
         {
             long fromValue = unsafe.getLong( fromAddress );
-            long toValue = unsafe.getLong( toAddress );
-            unsafe.putLong( fromAddress, toValue );
+            unsafe.putLong( fromAddress, unsafe.getLong( toAddress ) );
             unsafe.putLong( toAddress, fromValue );
-        }
-    }
-
-    @Override
-    public void visitMemoryStats( MemoryStatsVisitor visitor )
-    {
-        visitor.offHeapUsage( length*8 );
-    }
-
-    private static final Unsafe unsafe = getUnsafe();
-
-    private static Unsafe getUnsafe()
-    {
-        try
-        {
-            Field singleoneInstanceField = Unsafe.class.getDeclaredField( "theUnsafe" );
-            singleoneInstanceField.setAccessible( true );
-            return (Unsafe) singleoneInstanceField.get( null );
-        }
-        catch ( Exception e )
-        {
-            throw new Error( e );
         }
     }
 }

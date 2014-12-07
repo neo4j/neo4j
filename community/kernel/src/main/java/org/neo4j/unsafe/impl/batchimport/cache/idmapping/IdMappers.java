@@ -19,8 +19,9 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping;
 
-import org.neo4j.unsafe.impl.batchimport.cache.LongArrayFactory;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
+import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.EncodingIdMapper;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.LongEncoder;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.Radix;
@@ -47,7 +48,7 @@ public class IdMappers
         }
 
         @Override
-        public void prepare( Iterable<Object> nodeData )
+        public void prepare( ResourceIterable<Object> nodeData )
         {   // No need to prepare anything
         }
 
@@ -74,11 +75,11 @@ public class IdMappers
     /**
      * An {@link IdMapper} capable of mapping {@link String strings} to long ids.
      *
-     * @param cacheFactory {@link LongArrayFactory} for allocating memory for the cache used by this index.
+     * @param cacheFactory {@link NumberArrayFactory} for allocating memory for the cache used by this index.
      * @return {@link IdMapper} for when node ids given to {@link InputNode} and {@link InputRelationship} are
      * strings with o association with the actual ids in the database.
      */
-    public static IdMapper strings( LongArrayFactory cacheFactory )
+    public static IdMapper strings( NumberArrayFactory cacheFactory )
     {
         return new EncodingIdMapper( cacheFactory, new StringEncoder(), new Radix.String() );
     }
@@ -86,11 +87,11 @@ public class IdMappers
     /**
      * An {@link IdMapper} capable of mapping {@link Long arbitrary longs} to long ids.
      *
-     * @param cacheFactory {@link LongArrayFactory} for allocating memory for the cache used by this index.
+     * @param cacheFactory {@link NumberArrayFactory} for allocating memory for the cache used by this index.
      * @return {@link IdMapper} for when node ids given to {@link InputNode} and {@link InputRelationship} are
      * strings with o association with the actual ids in the database.
      */
-    public static IdMapper longs( LongArrayFactory cacheFactory )
+    public static IdMapper longs( NumberArrayFactory cacheFactory )
     {
         return new EncodingIdMapper( cacheFactory, new LongEncoder(), new Radix.Long() );
     }

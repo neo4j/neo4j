@@ -59,7 +59,6 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.util.Converters.withDefault;
-import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.additiveLabels;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.defaultRelationshipType;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
@@ -87,8 +86,7 @@ public class ImportTool
         NODE_DATA(
                 "nodes",
                 "\"<file1>" + MULTI_FILE_DELIMITER + "<file2>" + MULTI_FILE_DELIMITER + "...\"",
-                "Node CSV header and data. "
-                        + "Multiple files will be logically seen as one big file "
+                "Node CSV header and data. Multiple files will be logically seen as one big file "
                         + "from the perspective of the importer. "
                         + "The first line must contain the header. "
                         + "Multiple data sources like these can be specified in one import, "
@@ -97,8 +95,7 @@ public class ImportTool
         RELATIONSHIP_DATA(
                 "relationships",
                 "\"<file1>" + MULTI_FILE_DELIMITER + "<file2>" + MULTI_FILE_DELIMITER + "...\"",
-                "Relationship CSV header and data. "
-                + "Multiple files will be logically seen as one big file "
+                "Relationship CSV header and data. Multiple files will be logically seen as one big file "
                         + "from the perspective of the importer. "
                         + "The first line must contain the header. "
                         + "Multiple data sources like these can be specified in one import, "
@@ -107,17 +104,25 @@ public class ImportTool
         DELIMITER( "delimiter", "<delimiter-character>", "Delimiter character, or 'TAB', between values in CSV data." ),
         ARRAY_DELIMITER( "array-delimiter", "<array-delimiter-character>",
                 "Delimiter character, or 'TAB', between array elements within a value in CSV data." ),
-        QUOTE( "quote", "<quotation-character>", "Character to treat as quotation character for values in CSV data. "
-                + "Quotes inside quotes escaped like `\"\"\"Go away\"\", he said.\"` and "
-                + "`\"\\\"Go away\\\", he said.\"` are supported. "
-                + "If you have set \"`'`\" to be used as the quotation character, "
-                + "you could write the previous example like this instead: " + "`'\"Go away\", he said.'`" ),
-        ID_TYPE( "id-type", "<id-type>", "One out of " + Arrays.toString( IdType.values() )
-                         + " and specifies how ids in node/relationship "
-                         + "input files are treated.\n"
-                         + IdType.STRING + ": arbitrary strings for identifying nodes.\n"
-                         + IdType.INTEGER + ": arbitrary integer values for identifying nodes.\n"
-                         + IdType.ACTUAL + ": (advanced) actual node ids." ),
+        QUOTE( "quote", "<quotation-character>",
+                "Character to treat as quotation character for values in CSV data. "
+                        + "Quotes inside quotes escaped like `\"\"\"Go away\"\", he said.\"` and "
+                        + "`\"\\\"Go away\\\", he said.\"` are supported. "
+                        + "If you have set \"`'`\" to be used as the quotation character, "
+                        + "you could write the previous example like this instead: " + "`'\"Go away\", he said.'`" ),
+        ID_TYPE( "id-type", "<id-type>",
+                "One out of " + Arrays.toString( IdType.values() )
+                        + " and specifies how ids in node/relationship "
+                        + "input files are treated.\n"
+                        + IdType.STRING + ": arbitrary strings for identifying nodes.\n"
+                        + IdType.INTEGER + ": arbitrary integer values for identifying nodes.\n"
+                        + IdType.ACTUAL + ": (advanced) actual node ids." ),
+        PROCESSORS( "processors", "<max processor count>",
+                "(advanced) Max number of processors used by the importer. Defaults to number of, by the JVM reported, "
+                        + "available processors (in your case " + Runtime.getRuntime().availableProcessors()
+                        + "). There is a certain amount of minimum threads needed so for that reason there "
+                        + "is no lower bound for this value. For optimal performance this value shouldn't be "
+                        + "greater than number of available processors." ),
         STACKTRACE( "stacktrace", "", "Enable printing of stack traces when something goes wrong with the import.");
 
         private final String key;
@@ -170,6 +175,7 @@ public class ImportTool
         // The input groups
         Collection<Option<File[]>> nodesFiles, relationshipsFiles;
         boolean enableStacktrace;
+        Number processors = null;
         try
         {
             storeDir =
@@ -184,6 +190,7 @@ public class ImportTool
                             Converters.<File[]> optional(), Converters.toFiles( MULTI_FILE_DELIMITER ),
                             Validators.FILES_EXISTS, Validators.<File> atLeast( 1 ) );
             enableStacktrace = args.getBoolean( Options.STACKTRACE.key(), Boolean.FALSE, Boolean.TRUE );
+            processors = args.getNumber( Options.PROCESSORS.key(), null );
         }
         catch ( IllegalArgumentException e )
         {
@@ -195,8 +202,7 @@ public class ImportTool
                 new Config( stringMap( store_dir.name(), storeDir.getAbsolutePath() ) ) ) );
         life.start();
         BatchImporter importer = new ParallelBatchImporter( storeDir.getPath(),
-                // TODO Ability to specify batch importer configuration as well?
-                DEFAULT,
+                importConfiguration( processors ),
                 logging,
                 ExecutionMonitors.defaultVisible() );
         Input input = new CsvInput(
@@ -237,6 +243,18 @@ public class ImportTool
                 }
             }
         }
+    }
+
+    private static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration( final Number processors )
+    {
+        return new org.neo4j.unsafe.impl.batchimport.Configuration.Default()
+        {
+            @Override
+            public int maxNumberOfProcessors()
+            {
+                return processors != null ? processors.intValue() : super.maxNumberOfProcessors();
+            }
+        };
     }
 
     /**

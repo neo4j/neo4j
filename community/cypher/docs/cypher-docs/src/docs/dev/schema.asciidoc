@@ -14,3 +14,8 @@ include::ql/schema-index/index.asciidoc[]
 
 include::ql/constraints/index.asciidoc[]
 
+:leveloffset: 2
+
+include::statistics.asciidoc[]
+
+

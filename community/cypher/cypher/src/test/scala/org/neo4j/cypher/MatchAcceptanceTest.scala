@@ -308,8 +308,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result.columnAs[Node]("RELATIONSHIPS(p)").toList.head should equal(List(r1, r2))
   }
 
-  // 2014-12-03 Andres Legacy compiler has problems with projected direction. Fixed in a separated commit
-  ignore("should return relationships by collecting them as a list - wrong way") {
+  test("should return relationships by collecting them as a list - wrong way") {
     val a = createNode()
     val b = createNode()
     val c = createLabeledNode("End")
@@ -1295,7 +1294,7 @@ return b
 
   test("MATCH n RETURN n.prop AS m, count(n) AS count") {
     // given a single node
-    val node = createNode("prop" -> "42")
+    createNode("prop" -> "42")
 
     // when
     val result = executeWithNewPlanner("MATCH n RETURN n.prop AS n, count(n) AS count")
@@ -1383,7 +1382,7 @@ return b
   test("MATCH (a1)-[r]->() WITH r, a1 LIMIT 1 MATCH (a1:X)-[r]->(b2) RETURN a1, r, b2") {
     val node1 = createNode()
     val node2 = createNode()
-    val relationship = relate(node1, node2)
+    relate(node1, node2)
 
     // when
     val result = executeWithNewPlanner("MATCH (a1)-[r]->() WITH r, a1 LIMIT 1 MATCH (a1:X)-[r]->(b2) RETURN a1, r, b2")
@@ -1402,7 +1401,7 @@ return b
       node
     })
     val node2 = createNode()
-    val relationship = relate(node1, node2)
+    relate(node1, node2)
 
     // when
     val result = executeWithNewPlanner("MATCH (a1:X:Y)-[r]->() WITH r, a1 LIMIT 1 MATCH (a1:Y)-[r]->(b2) RETURN a1, r, b2")
@@ -1416,7 +1415,7 @@ return b
   test("MATCH (a1)-[r:X]->() WITH r, a1 LIMIT 1 MATCH (a1)-[r:Y]->(b2) RETURN a1, r, b2") {
     val node1 = createNode()
     val node2 = createNode()
-    val relationship = relate(node1, node2, "X")
+    relate(node1, node2, "X")
 
     // when
     val result = executeWithNewPlanner("MATCH (a1)-[r:X]->() WITH r, a1 LIMIT 1 MATCH (a1)-[r:Y]->(b2) RETURN a1, r, b2")
@@ -1430,7 +1429,7 @@ return b
   test("MATCH (a1)-[r:Y]->() WITH r, a1 LIMIT 1 MATCH (a1)-[r:Y]->(b2) RETURN a1, r, b2") {
     val node1 = createNode()
     val node2 = createNode()
-    val relationship = relate(node1, node2, "Y")
+    relate(node1, node2, "Y")
 
     // when
     val result = executeWithNewPlanner("MATCH (a1)-[r:Y]->() WITH r, a1 LIMIT 1 MATCH (a1)-[r:Y]->(b2) RETURN a1, r, b2")
@@ -1441,8 +1440,8 @@ return b
     actual shouldNot be(empty)
   }
 
-  // 2014-12-03 Andres Legacy compiler has problems with projected direction. Fixed in a separated commit
-  ignore("MATCH (a)-[r1]->()-[r2]->(b) WITH [r1, r2] AS rs LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second") {
+  // 2014-12-03 Davide Legacy compiler never filter the relationships on a varlength expand
+  ignore("MATCH ()-[r1]->()-[r2]->() WITH [r1, r2] AS rs LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second") {
     val node1 = createNode()
     val node2 = createNode()
     val node3 = createNode()
@@ -1450,7 +1449,7 @@ return b
     relate(node2, node3, "Y")
 
     // when
-    val result = execute("MATCH (a)-[r1]->()-[r2]->(b) WITH [r1, r2] AS rs, a AS a LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second")
+    val result = execute("MATCH ()-[r1]->()-[r2]->() WITH [r1, r2] AS rs LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second")
 
     val actual = result.toSet
 

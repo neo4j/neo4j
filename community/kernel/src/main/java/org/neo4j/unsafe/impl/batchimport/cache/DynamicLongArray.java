@@ -19,108 +19,33 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
-import java.util.Arrays;
-
 /**
  * Dynamically growing {@link LongArray}. Is given a chunk size and chunks are added as higher and higher
  * items are requested.
+ *
+ * @see NumberArrayFactory#newDynamicLongArray(long, long)
  */
-public class DynamicLongArray implements LongArray
+public class DynamicLongArray extends DynamicNumberArray<LongArray> implements LongArray
 {
-    private final LongArrayFactory factory;
-    private final long chunkSize;
-    private LongArray[] chunks = new LongArray[0];
     private final long defaultValue;
 
-    public DynamicLongArray( LongArrayFactory factory, long chunkSize, long defaultValue )
+    public DynamicLongArray( NumberArrayFactory factory, long chunkSize, long defaultValue )
     {
-        this.factory = factory;
-        this.chunkSize = chunkSize;
+        super( factory, chunkSize );
         this.defaultValue = defaultValue;
-    }
-
-    /**
-     * @return the current length of this dynamically growing array.
-     */
-    @Override
-    public long length()
-    {
-        return chunks.length*chunkSize;
     }
 
     @Override
     public long get( long index )
     {
-        int chunkIndex = chunkIndex( index );
-        return chunkIndex < chunks.length ? chunks[chunkIndex].get( index( index ) ) : defaultValue;
+        LongArray chunk = chunkAt( index );
+        return chunk != null ? chunk.get( index( index ) ) : defaultValue;
     }
 
     @Override
     public void set( long index, long value )
     {
-        while ( index >= length() )
-        {
-            addChunk();
-        }
-
-        chunk( index ).set( index( index ), value );
-    }
-
-    @Override
-    public long highestSetIndex()
-    {
-        for ( int i = chunks.length-1; i >= 0; i-- )
-        {
-            LongArray chunk = chunks[i];
-            long highestSetInChunk = chunk.highestSetIndex();
-            if ( highestSetInChunk > -1 )
-            {
-                return i*chunkSize + highestSetInChunk;
-            }
-        }
-        return -1;
-    }
-
-    @Override
-    public long size()
-    {
-        long size = 0;
-        for ( int i = 0; i < chunks.length; i++ )
-        {
-            size += chunks[i].size();
-        }
-        return size;
-    }
-
-    private long index( long index )
-    {
-        return index % chunkSize;
-    }
-
-    private LongArray chunk( long index )
-    {
-        return chunks[chunkIndex( index )];
-    }
-
-    private int chunkIndex( long index )
-    {
-        return (int) (index/chunkSize);
-    }
-
-    private void addChunk()
-    {
-        chunks = Arrays.copyOf( chunks, chunks.length+1 );
-        LongArray newLongArray = factory.newLongArray( chunkSize, defaultValue );
-        chunks[chunks.length-1] = newLongArray;
-    }
-
-    @Override
-    public void clear()
-    {
-        for ( LongArray chunk : chunks )
-        {
-            chunk.clear();
-        }
+        ensureChunkAt( index ).set( index( index ), value );
     }
 
     @Override
@@ -136,11 +61,8 @@ public class DynamicLongArray implements LongArray
     }
 
     @Override
-    public void visitMemoryStats( MemoryStatsVisitor visitor )
+    protected LongArray addChunk( long chunkSize )
     {
-        for ( LongArray chunk : chunks )
-        {
-            chunk.visitMemoryStats( visitor );
-        }
+        return factory.newLongArray( chunkSize, defaultValue );
     }
 }

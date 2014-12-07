@@ -13,8 +13,8 @@ Key principles and capabilities of Cypher are as follows:
 ++++
 <div class="paragraph"><p>You can try Cypher snippets live in the Neo4j Console at 
 <a href="http://console.neo4j.org" target="_blank">console.neo4j.org</a>
-or read the full Cypher documentation at 
-<a href="http://docs.neo4j.org" target="_blank">docs.neo4j.org</a>.
+or read the full Cypher documentation in the 
+<a href="../" target="_blank">Neo4j Manual</a>.
 For live graph models using Cypher check out <a href="http://gist.neo4j.org" target="_blank">GraphGist</a>.</p></div>
 ++++
 

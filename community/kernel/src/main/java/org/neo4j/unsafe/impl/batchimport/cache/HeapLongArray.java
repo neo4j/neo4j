@@ -21,62 +21,45 @@ package org.neo4j.unsafe.impl.batchimport.cache;
 
 import java.util.Arrays;
 
+import static org.neo4j.unsafe.impl.batchimport.Utils.safeCastLongToInt;
+
 /**
  * A {@code long[]} on heap, abstracted into a {@link LongArray}.
  */
-public class HeapLongArray implements LongArray
+public class HeapLongArray extends HeapNumberArray implements LongArray
 {
-    private final long[][] shards;
-    private final long length;
+    private final long[] array;
     private final long defaultValue;
-    private long highestSetIndex = -1;
-    private long size;
 
-    public HeapLongArray( long length, long defaultValue )
+    public HeapLongArray( int length, long defaultValue )
     {
-        this.length = length;
+        super( 8 );
         this.defaultValue = defaultValue;
-        int numShards = (int) ((length-1) / Integer.MAX_VALUE) + 1;
-        this.shards = new long[numShards][];
-        for ( int i = 0; i < numShards-1; i++ )
-        {
-            this.shards[i] = newShard( Integer.MAX_VALUE );
-        }
-        this.shards[numShards-1] = newShard( (int) (length % Integer.MAX_VALUE) );
-    }
-
-    private long[] newShard( int length )
-    {
-        long[] shard = new long[length];
-        if ( defaultValue != 0 )
-        {
-            Arrays.fill( shard, defaultValue );
-        }
-        return shard;
+        this.array = new long[length];
+        clear();
     }
 
     @Override
     public long length()
     {
-        return length;
+        return array.length;
     }
 
     @Override
     public long get( long index )
     {
-        return shard( index )[arrayIndex( index )];
+        return array[safeCastLongToInt( index )];
     }
 
     @Override
     public void set( long index, long value )
     {
-        long[] shard = shard( index );
-        int arrayIndex = arrayIndex( index );
-        if ( shard[arrayIndex] == defaultValue )
+        int intIndex = safeCastLongToInt( index );
+        if ( array[intIndex] == defaultValue )
         {
             size++;
         }
-        shard[arrayIndex] = value;
+        array[intIndex] = value;
         if ( index > highestSetIndex )
         {
             highestSetIndex = index;
@@ -84,31 +67,10 @@ public class HeapLongArray implements LongArray
     }
 
     @Override
-    public long highestSetIndex()
-    {
-        return highestSetIndex;
-    }
-
-    @Override
-    public long size()
-    {
-        return size;
-    }
-
-    private long[] shard( long index )
-    {
-        return shards[shardIndex( index )];
-    }
-
-    @Override
     public void clear()
     {
-        for ( long[] shard : shards )
-        {
-            Arrays.fill( shard, defaultValue );
-        }
-        highestSetIndex = -1;
-        size = 0;
+        Arrays.fill( array, defaultValue );
+        super.clear();
     }
 
     @Override
@@ -117,25 +79,8 @@ public class HeapLongArray implements LongArray
         for ( int i = 0; i < numberOfEntries; i++ )
         {
             long fromValue = get( fromIndex+i );
-            long toValue = get( toIndex+i );
-            set( fromIndex+i, toValue );
+            set( fromIndex+i, get( toIndex+i ) );
             set( toIndex+i, fromValue );
         }
-    }
-
-    private int arrayIndex( long index )
-    {
-        return index < Integer.MAX_VALUE ? (int) index : (int) (index % Integer.MAX_VALUE);
-    }
-
-    private int shardIndex( long index )
-    {
-        return index < Integer.MAX_VALUE ? 0 : (int) (index / Integer.MAX_VALUE);
-    }
-
-    @Override
-    public void visitMemoryStats( MemoryStatsVisitor visitor )
-    {
-        visitor.heapUsage( length*8 ); // roughly
     }
 }

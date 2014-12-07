@@ -21,8 +21,6 @@ package org.neo4j.io.fs;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.InterruptibleChannel;
@@ -57,8 +55,6 @@ public interface StoreChannel
      * write it all at once.
      */
     void writeAll( ByteBuffer src ) throws IOException;
-
-    MappedByteBuffer map( FileChannel.MapMode mode, long position, long size ) throws IOException;
 
     /**
      * @see java.nio.channels.FileChannel#read(java.nio.ByteBuffer, long)

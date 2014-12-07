@@ -20,9 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -31,13 +29,16 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.function.Factory;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.test.RepeatRule;
 import org.neo4j.test.RepeatRule.Repeat;
 import org.neo4j.unsafe.impl.batchimport.cache.GatheringMemoryStatsVisitor;
-import org.neo4j.unsafe.impl.batchimport.cache.LongArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
+import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
 
@@ -46,19 +47,22 @@ import static java.lang.System.currentTimeMillis;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import static org.neo4j.graphdb.Resource.EMPTY;
+import static org.neo4j.helpers.collection.IteratorUtil.resourceIterator;
+
 public class EncodingIdMapperTest
 {
     @Test
     public void shouldHandleGreatAmountsOfStuff() throws Exception
     {
         // GIVEN
-        IdMapper idMapper = IdMappers.strings( LongArrayFactory.AUTO );
-        Iterable<Object> ids = new Iterable<Object>()
+        IdMapper idMapper = IdMappers.strings( NumberArrayFactory.AUTO );
+        ResourceIterable<Object> ids = new ResourceIterable<Object>()
         {
             @Override
-            public Iterator<Object> iterator()
+            public ResourceIterator<Object> iterator()
             {
-                return new PrefetchingIterator<Object>()
+                return new PrefetchingResourceIterator<Object>()
                 {
                     private int i;
 
@@ -68,6 +72,11 @@ public class EncodingIdMapperTest
                         return i++ < 300_000
                                 ? "" + i
                                 : null;
+                    }
+
+                    @Override
+                    public void close()
+                    {   // Nothing to close
                     }
                 };
             }
@@ -98,8 +107,8 @@ public class EncodingIdMapperTest
     public void shouldReturnExpectedValueForNotFound() throws Exception
     {
         // GIVEN
-        IdMapper idMapper = IdMappers.strings( LongArrayFactory.AUTO );
-        idMapper.prepare( Arrays.asList() );
+        IdMapper idMapper = IdMappers.strings( NumberArrayFactory.AUTO );
+        idMapper.prepare( null );
 
         // WHEN
         long id = idMapper.get( "123" );
@@ -112,7 +121,7 @@ public class EncodingIdMapperTest
     public void shouldEncodeShortStrings() throws Exception
     {
         // GIVEN
-        IdMapper mapper = IdMappers.strings( LongArrayFactory.AUTO );
+        IdMapper mapper = IdMappers.strings( NumberArrayFactory.AUTO );
 
         // WHEN
         mapper.put( "123", 0 );
@@ -131,14 +140,12 @@ public class EncodingIdMapperTest
         // GIVEN
         int processorsForSorting = random.nextInt( 7 ) + 1;
         int size = random.nextInt( 10_000 ) + 2;
-        boolean stringOrLong = random.nextBoolean();
-        IdMapper mapper = new EncodingIdMapper( LongArrayFactory.HEAP,
-                stringOrLong ? new StringEncoder() : new LongEncoder(),
-                stringOrLong ? new Radix.String() : new Radix.Long(),
+        ValueType type = ValueType.values()[random.nextInt( ValueType.values().length )];
+        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, type.encoder(), type.radix(),
                 size*2, processorsForSorting /*1-7*/ );
 
         // WHEN
-        Iterable<Object> values = new ValueGenerator( size, stringOrLong ? new StringValues() : new LongValues() );
+        ResourceIterable<Object> values = new ValueGenerator( size, type.data( random ) );
         {
             int id = 0;
             for ( Object value : values )
@@ -164,25 +171,7 @@ public class EncodingIdMapperTest
         }
     }
 
-    private class LongValues implements Factory<Object>
-    {
-        @Override
-        public Object newInstance()
-        {
-            return random.nextInt( 1_000_000_000 );
-        }
-    }
-
-    private class StringValues implements Factory<Object>
-    {
-        @Override
-        public Object newInstance()
-        {
-            return String.valueOf( random.nextInt( 1_000_000_000 ) );
-        }
-    }
-
-    private class ValueGenerator implements Iterable<Object>
+    private class ValueGenerator implements ResourceIterable<Object>
     {
         private final int size;
         private final Factory<Object> generator;
@@ -196,13 +185,13 @@ public class EncodingIdMapperTest
         }
 
         @Override
-        public Iterator<Object> iterator()
+        public ResourceIterator<Object> iterator()
         {
             if ( !values.isEmpty() )
             {
-                return values.iterator();
+                return resourceIterator( values.iterator(), EMPTY );
             }
-            return new PrefetchingIterator<Object>()
+            return resourceIterator( new PrefetchingIterator<Object>()
             {
                 private int cursor;
 
@@ -224,8 +213,136 @@ public class EncodingIdMapperTest
                     }
                     return null;
                 }
-            };
+            }, EMPTY );
         }
+    }
+
+    private static enum ValueType
+    {
+        LONGS
+        {
+            @Override
+            Encoder encoder()
+            {
+                return new LongEncoder();
+            }
+
+            @Override
+            Radix radix()
+            {
+                return new Radix.Long();
+            }
+
+            @Override
+            Factory<Object> data( final Random random )
+            {
+                return new Factory<Object>()
+                {
+                    @Override
+                    public Object newInstance()
+                    {
+                        return random.nextInt( 1_000_000_000 );
+                    }
+                };
+            }
+        },
+        LONGS_AS_STRINGS
+        {
+            @Override
+            Encoder encoder()
+            {
+                return new StringEncoder();
+            }
+
+            @Override
+            Radix radix()
+            {
+                return new Radix.String();
+            }
+
+            @Override
+            Factory<Object> data( final Random random )
+            {
+                return new Factory<Object>()
+                {
+                    @Override
+                    public Object newInstance()
+                    {
+                        return String.valueOf( random.nextInt( 1_000_000_000 ) );
+                    }
+                };
+            }
+        },
+        VERY_LONG_STRINGS
+        {
+            char[] CHARS = "½!\"#¤%&/()=?`´;:,._-<>".toCharArray();
+
+            @Override
+            Encoder encoder()
+            {
+                return new StringEncoder();
+            }
+
+            @Override
+            Radix radix()
+            {
+                return new Radix.String();
+            }
+
+            @Override
+            Factory<Object> data( final Random random )
+            {
+                return new Factory<Object>()
+                {
+                    @Override
+                    public Object newInstance()
+                    {
+                        // Randomize length, although reduce chance of really long strings
+                        int length = 1500;
+                        for ( int i = 0; i < 4; i++ )
+                        {
+                            length = random.nextInt( length ) + 20;
+                        }
+                        char[] chars = new char[length];
+                        for ( int i = 0; i < length; i++ )
+                        {
+                            char ch;
+                            if ( random.nextBoolean() )
+                            {   // A letter
+                                ch = randomLetter( random );
+                            }
+                            else
+                            {
+                                ch = CHARS[random.nextInt( CHARS.length )];
+                            }
+                            chars[i] = ch;
+                        }
+                        return new String( chars );
+                    }
+
+                    private char randomLetter( Random random )
+                    {
+                        int base;
+                        if ( random.nextBoolean() )
+                        {   // lower case
+                            base = 'a';
+                        }
+                        else
+                        {   // upper case
+                            base = 'A';
+                        }
+                        int size = 'z' - 'a';
+                        return (char) (base + random.nextInt( size ));
+                    }
+                };
+            }
+        };
+
+        abstract Encoder encoder();
+
+        abstract Radix radix();
+
+        abstract Factory<Object> data( Random random );
     }
 
     private final long seed = currentTimeMillis();

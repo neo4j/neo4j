@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.compatability.{ExecutionResultWrapperFor2_2, exceptionHandlerFor2_2}
+import org.neo4j.cypher.internal.compatibility.{ExecutionResultWrapperFor2_2, exceptionHandlerFor2_2}
 import org.neo4j.cypher.internal.compiler.v2_2.PipeExecutionResult
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
 import org.neo4j.cypher.{ExecutionResult, InternalException}

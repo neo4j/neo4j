@@ -1,3 +1,7 @@
+define([
+	"./core"
+], function( jQuery ) {
+
 /*
  * Optional (non-Sizzle) selector module for custom builds.
  *
@@ -23,8 +27,10 @@
  * customize this stub for the project's specific needs.
  */
 
-var selector_hasDuplicate,
-	matches = docElem.webkitMatchesSelector ||
+var docElem = window.document.documentElement,
+	selector_hasDuplicate,
+	matches = docElem.matches ||
+		docElem.webkitMatchesSelector ||
 		docElem.mozMatchesSelector ||
 		docElem.oMatchesSelector ||
 		docElem.msMatchesSelector,
@@ -161,4 +167,6 @@ jQuery.extend( jQuery.find, {
 	attr: function( elem, name ) {
 		return elem.getAttribute( name );
 	}
+});
+
 });

@@ -21,7 +21,7 @@
     <neo4j.version>2.2-SNAPSHOT</neo4j.version>
     <docs-plugin.skip>false</docs-plugin.skip>
     <attach-docs-phase>prepare-package</attach-docs-phase>
-    <remote-csv-upload>http://docs.neo4j.org/refcard/${project.version}/csv</remote-csv-upload>
+    <remote-csv-upload>http://neo4j.com/docs/${project.version}/cypher-refcard/csv</remote-csv-upload>
   </properties>
 
   <licenses>

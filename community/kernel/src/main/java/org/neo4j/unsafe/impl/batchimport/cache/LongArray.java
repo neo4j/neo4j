@@ -22,6 +22,8 @@ package org.neo4j.unsafe.impl.batchimport.cache;
 /**
  * Abstraction of a {@code long[]} so that different implementations can be plugged in, for example
  * off-heap, dynamically growing, or other implementations.
+ *
+ * @see NumberArrayFactory
  */
 public interface LongArray extends NumberArray
 {

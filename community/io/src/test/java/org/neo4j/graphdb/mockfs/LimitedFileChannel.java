@@ -21,8 +21,6 @@ package org.neo4j.graphdb.mockfs;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 
 import org.neo4j.io.fs.StoreChannel;
@@ -137,12 +135,6 @@ public class LimitedFileChannel implements StoreChannel
     {
         fs.ensureHasSpace();
         inner.writeAll( src );
-    }
-
-    @Override
-    public MappedByteBuffer map( FileChannel.MapMode mapMode, long l, long l1 ) throws IOException
-    {
-        return inner.map( mapMode, l, l1 );
     }
 
     @Override
