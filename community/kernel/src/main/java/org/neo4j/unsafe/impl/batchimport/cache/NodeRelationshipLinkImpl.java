@@ -33,7 +33,7 @@ public class NodeRelationshipLinkImpl implements NodeRelationshipLink
     private final int denseNodeThreshold;
     private final RelGroupCache relGroupCache;
 
-    public NodeRelationshipLinkImpl( LongArrayFactory arrayFactory, int denseNodeThreshold )
+    public NodeRelationshipLinkImpl( NumberArrayFactory arrayFactory, int denseNodeThreshold )
     {
         int chunkSize = 1_000_000;
         this.array = arrayFactory.newDynamicLongArray( chunkSize, IdFieldManipulator.emptyField() );
@@ -148,7 +148,7 @@ public class NodeRelationshipLinkImpl implements NodeRelationshipLink
         return IdFieldManipulator.getCount( field );
     }
 
-    private static class RelGroupCache
+    private static class RelGroupCache implements AutoCloseable
     {
         private static final int ENTRY_SIZE = 4;
 
@@ -160,7 +160,7 @@ public class NodeRelationshipLinkImpl implements NodeRelationshipLink
         private final LongArray array;
         private int nextFreeId = 0;
 
-        RelGroupCache( LongArrayFactory arrayFactory, long chunkSize )
+        RelGroupCache( NumberArrayFactory arrayFactory, long chunkSize )
         {
             assert chunkSize > 0;
             this.array = arrayFactory.newDynamicLongArray( chunkSize, -1 );
@@ -328,11 +328,24 @@ public class NodeRelationshipLinkImpl implements NodeRelationshipLink
             }
             return EMPTY;
         }
+
+        @Override
+        public void close()
+        {
+            array.close();
+        }
     }
 
     @Override
     public String toString()
     {
         return array.toString();
+    }
+
+    @Override
+    public void close()
+    {
+        array.close();
+        relGroupCache.close();
     }
 }

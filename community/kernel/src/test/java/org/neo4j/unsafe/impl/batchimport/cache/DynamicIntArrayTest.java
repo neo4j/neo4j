@@ -22,27 +22,35 @@ package org.neo4j.unsafe.impl.batchimport.cache;
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
-public class OffHeapLongArrayTest
+public class DynamicIntArrayTest
 {
     @Test
-    public void shouldPutAndGetValues() throws Exception
+    public void shouldWorkOnSingleChunk() throws Exception
     {
         // GIVEN
-        int size = 100;
-        LongArray array = new OffHeapLongArray( size, -1 );
-        for ( int i = 0; i < size; i++ )
-        {
-            assertEquals( -1L, array.get( i ) );
-        }
+        int defaultValue = 0;
+        IntArray array = NumberArrayFactory.AUTO.newDynamicIntArray( 10, defaultValue );
+        array.set( 4, 5 );
 
         // WHEN
-        array.set( 10, 100 );
-        array.set( 0, 21 );
-        array.set( 99, 349389 );
+        assertEquals( 5L, array.get( 4 ) );
+        assertEquals( defaultValue, array.get( 12 ) );
+        array.set( 7, 1324 );
+        assertEquals( 1324L, array.get( 7 ) );
+    }
+
+    @Test
+    public void shouldChunksAsNeeded() throws Exception
+    {
+        // GIVEN
+        IntArray array = NumberArrayFactory.AUTO.newDynamicIntArray( 10, 0 );
+
+        // WHEN
+        long index = 243;
+        int value = 5485748;
+        array.set( index, value );
 
         // THEN
-        assertEquals( 100L, array.get( 10 ) );
-        assertEquals( 21L, array.get( 0 ) );
-        assertEquals( 349389L, array.get( 99 ) );
+        assertEquals( value, array.get( index ) );
     }
 }

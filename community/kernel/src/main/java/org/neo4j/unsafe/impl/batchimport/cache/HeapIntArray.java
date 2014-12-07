@@ -24,18 +24,18 @@ import java.util.Arrays;
 import static org.neo4j.unsafe.impl.batchimport.Utils.safeCastLongToInt;
 
 /**
- * A {@code long[]} on heap, abstracted into a {@link LongArray}.
+ * A {@code long[]} on heap, abstracted into a {@link IntArray}.
  */
-public class HeapLongArray extends HeapNumberArray implements LongArray
+public class HeapIntArray extends HeapNumberArray implements IntArray
 {
-    private final long[] array;
-    private final long defaultValue;
+    private final int[] array;
+    private final int defaultValue;
 
-    public HeapLongArray( int length, long defaultValue )
+    public HeapIntArray( int length, int defaultValue )
     {
-        super( 8 );
+        super( 4 );
         this.defaultValue = defaultValue;
-        this.array = new long[length];
+        this.array = new int[length];
         clear();
     }
 
@@ -46,13 +46,13 @@ public class HeapLongArray extends HeapNumberArray implements LongArray
     }
 
     @Override
-    public long get( long index )
+    public int get( long index )
     {
         return array[safeCastLongToInt( index )];
     }
 
     @Override
-    public void set( long index, long value )
+    public void set( long index, int value )
     {
         int intIndex = safeCastLongToInt( index );
         if ( array[intIndex] == defaultValue )
@@ -78,8 +78,9 @@ public class HeapLongArray extends HeapNumberArray implements LongArray
     {
         for ( int i = 0; i < numberOfEntries; i++ )
         {
-            long fromValue = get( fromIndex+i );
-            set( fromIndex+i, get( toIndex+i ) );
+            int fromValue = get( fromIndex+i );
+            int toValue = get( toIndex+i );
+            set( fromIndex+i, toValue );
             set( toIndex+i, fromValue );
         }
     }

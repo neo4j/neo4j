@@ -32,7 +32,7 @@ public class NodeLabelsCacheTest
     public void shouldCacheSmallSetOfLabelsPerNode() throws Exception
     {
         // GIVEN
-        NodeLabelsCache cache = new NodeLabelsCache( LongArrayFactory.AUTO, 5, CHUNK_SIZE );
+        NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO, 5, CHUNK_SIZE );
         long nodeId = 0;
 
         // WHEN
@@ -49,7 +49,7 @@ public class NodeLabelsCacheTest
     {
         // GIVEN
         int highLabelId = 1000;
-        NodeLabelsCache cache = new NodeLabelsCache( LongArrayFactory.AUTO, highLabelId, CHUNK_SIZE );
+        NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO, highLabelId, CHUNK_SIZE );
         long nodeId = 0;
 
         // WHEN
@@ -67,7 +67,7 @@ public class NodeLabelsCacheTest
     {
         // GIVEN a really weird scenario where we have 5000 different labels
         int highLabelId = 1_000;
-        NodeLabelsCache cache = new NodeLabelsCache( LongArrayFactory.AUTO, highLabelId, 1_000_000 );
+        NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO, highLabelId, 1_000_000 );
         int numberOfNodes = 100_000;
         int[][] expectedLabels = new int[numberOfNodes][];
         for ( int i = 0; i < numberOfNodes; i++ )
@@ -90,7 +90,7 @@ public class NodeLabelsCacheTest
     public void shouldEndTargetArrayWithMinusOne() throws Exception
     {
         // GIVEN
-        NodeLabelsCache cache = new NodeLabelsCache( LongArrayFactory.AUTO, 10 );
+        NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO, 10 );
         cache.put( 10, new long[] { 5, 6, 7, 8 } );
 
         // WHEN
@@ -109,7 +109,7 @@ public class NodeLabelsCacheTest
     public void shouldReturnEmptyArrayForNodeWithNoLabelsAndNoLabelsWhatsoever() throws Exception
     {
         // GIVEN
-        NodeLabelsCache cache = new NodeLabelsCache( LongArrayFactory.AUTO, 0 );
+        NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO, 0 );
 
         // WHEN
         int[] target = new int[3];

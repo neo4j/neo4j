@@ -20,9 +20,11 @@
 package org.neo4j.unsafe.impl.batchimport.cache;
 
 /**
- * Super interface for primitive arrays.
+ * Abstraction over primitive arrays.
+ *
+ * @see NumberArrayFactory
  */
-public interface NumberArray
+public interface NumberArray extends AutoCloseable
 {
     /**
      * @return length of the array, i.e. the capacity.
@@ -36,6 +38,9 @@ public interface NumberArray
 
     void swap( long fromIndex, long toIndex, int numberOfEntries );
 
+    /**
+     * Sets all values to a default value.
+     */
     void clear();
 
     /**
@@ -44,4 +49,10 @@ public interface NumberArray
     long highestSetIndex();
 
     void visitMemoryStats( MemoryStatsVisitor visitor );
+
+    /**
+     * Releases any resources that GC won't release automatically.
+     */
+    @Override
+    public void close();
 }

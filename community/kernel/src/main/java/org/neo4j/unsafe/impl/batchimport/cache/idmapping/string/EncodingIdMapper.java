@@ -29,9 +29,9 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.unsafe.impl.batchimport.Utils.CompareType;
 import org.neo4j.unsafe.impl.batchimport.cache.IntArray;
 import org.neo4j.unsafe.impl.batchimport.cache.LongArray;
-import org.neo4j.unsafe.impl.batchimport.cache.LongArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.LongBitsManipulator;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
+import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 
 import static org.neo4j.unsafe.impl.batchimport.Utils.unsignedCompare;
@@ -67,12 +67,12 @@ public class EncodingIdMapper implements IdMapper
     private long[][] sortBuckets;
     private long size;
 
-    public EncodingIdMapper( LongArrayFactory cacheFactory, Encoder encoder, Radix radix )
+    public EncodingIdMapper( NumberArrayFactory cacheFactory, Encoder encoder, Radix radix )
     {
         this( cacheFactory, encoder, radix, CACHE_CHUNK_SIZE, Runtime.getRuntime().availableProcessors() - 1 );
     }
 
-    public EncodingIdMapper( LongArrayFactory cacheFactory, Encoder encoder, Radix radix,
+    public EncodingIdMapper( NumberArrayFactory cacheFactory, Encoder encoder, Radix radix,
             int chunkSize, int processorsForSorting )
     {
         this.processorsForSorting = processorsForSorting;
@@ -84,12 +84,12 @@ public class EncodingIdMapper implements IdMapper
         this.collisionValuesIndex = newIntArray( cacheFactory, chunkSize );
     }
 
-    private static IntArray newIntArray( LongArrayFactory cacheFactory, int chunkSize )
+    private static IntArray newIntArray( NumberArrayFactory cacheFactory, int chunkSize )
     {
-        return new IntArray( cacheFactory, chunkSize, -1 );
+        return cacheFactory.newDynamicIntArray( chunkSize, -1 );
     }
 
-    private static LongArray newLongArray( LongArrayFactory cacheFactory, int chunkSize )
+    private static LongArray newLongArray( NumberArrayFactory cacheFactory, int chunkSize )
     {
         return cacheFactory.newDynamicLongArray( chunkSize, -1 );
     }

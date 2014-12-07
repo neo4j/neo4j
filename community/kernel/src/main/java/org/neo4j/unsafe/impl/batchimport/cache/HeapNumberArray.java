@@ -20,14 +20,46 @@
 package org.neo4j.unsafe.impl.batchimport.cache;
 
 /**
- * Abstraction of a {@code int[]} so that different implementations can be plugged in, for example
- * off-heap, dynamically growing, or other implementations.
- *
- * @see NumberArrayFactory
+ * Base class for common functionality for any {@link NumberArray} where the data lives inside heap.
  */
-public interface IntArray extends NumberArray
+abstract class HeapNumberArray implements NumberArray
 {
-    int get( long index );
+    private final int itemSize;
+    protected long highestSetIndex;
+    protected long size;
 
-    void set( long index, int value );
+    protected HeapNumberArray( int itemSize )
+    {
+        this.itemSize = itemSize;
+    }
+
+    @Override
+    public long highestSetIndex()
+    {
+        return highestSetIndex;
+    }
+
+    @Override
+    public long size()
+    {
+        return size;
+    }
+
+    @Override
+    public void clear()
+    {
+        highestSetIndex = -1;
+        size = 0;
+    }
+
+    @Override
+    public void visitMemoryStats( MemoryStatsVisitor visitor )
+    {
+        visitor.heapUsage( length() * itemSize ); // roughly
+    }
+
+    @Override
+    public void close()
+    {   // Nothing to close
+    }
 }

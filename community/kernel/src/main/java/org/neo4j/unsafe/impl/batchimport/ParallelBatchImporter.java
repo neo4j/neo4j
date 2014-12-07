@@ -34,7 +34,6 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.unsafe.impl.batchimport.cache.LongArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLinkImpl;
@@ -59,6 +58,7 @@ import static java.lang.System.currentTimeMillis;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.Utils.idsOf;
 import static org.neo4j.unsafe.impl.batchimport.WriterFactories.parallel;
+import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
 
 /**
  * {@link BatchImporter} which tries to exercise as much of the available resources to gain performance.
@@ -115,6 +115,10 @@ public class ParallelBatchImporter implements BatchImporter
     {
         logger.info( "Import starting" );
 
+        // Things that we need to close later. The reason they're not in the try-with-resource statement
+        // is that we need to close, and set to null, at specific points preferably. So use good ol' finally block.
+        NodeRelationshipLink nodeRelationshipLink = null;
+        NodeLabelsCache nodeLabelsCache = null;
         long startTime = currentTimeMillis();
         try ( BatchingNeoStore neoStore = new BatchingNeoStore( fileSystem, storeDir, config,
                 writeMonitor, logging, monitors, writerFactory, highTokenIds ) )
@@ -122,8 +126,7 @@ public class ParallelBatchImporter implements BatchImporter
             // Some temporary caches and indexes in the import
             IdMapper idMapper = input.idMapper();
             IdGenerator idGenerator = input.idGenerator();
-            NodeRelationshipLink nodeRelationshipLink =
-                    new NodeRelationshipLinkImpl( LongArrayFactory.AUTO, config.denseNodeThreshold() );
+            nodeRelationshipLink = new NodeRelationshipLinkImpl( AUTO, config.denseNodeThreshold() );
             final ResourceIterable<InputNode> nodes = input.nodes();
             final ResourceIterable<InputRelationship> relationships = input.relationships();
 
@@ -185,16 +188,17 @@ public class ParallelBatchImporter implements BatchImporter
             // in parallel with the link-back stages, or rather piggy-back on that processing directly.
 
             // Release this potentially really big piece of cached data
+            nodeRelationshipLink.close();
             nodeRelationshipLink = null;
 
             // Stage 6 -- count nodes per label and labels per node
-            NodeLabelsCache countsCache = new NodeLabelsCache( LongArrayFactory.AUTO,
-                    neoStore.getLabelRepository().getHighId() );
-            final NodeCountsStage nodeCountsStage = new NodeCountsStage( neoStore, countsCache );
+            nodeLabelsCache = new NodeLabelsCache( AUTO, neoStore.getLabelRepository().getHighId() );
+            final NodeCountsStage nodeCountsStage = new NodeCountsStage( neoStore, nodeLabelsCache );
             executeStages( nodeCountsStage );
 
             // Stage 7 -- count label-[type]->label
-            final RelationshipCountsStage relationshipCountsStage = new RelationshipCountsStage( neoStore, countsCache );
+            final RelationshipCountsStage relationshipCountsStage =
+                    new RelationshipCountsStage( neoStore, nodeLabelsCache );
             executeStages( relationshipCountsStage );
 
             long totalTimeMillis = currentTimeMillis() - startTime;
@@ -209,6 +213,14 @@ public class ParallelBatchImporter implements BatchImporter
         finally
         {
             writerFactory.shutdown();
+            if ( nodeRelationshipLink != null )
+            {
+                nodeRelationshipLink.close();
+            }
+            if ( nodeLabelsCache != null )
+            {
+                nodeLabelsCache.close();
+            }
         }
     }
 
