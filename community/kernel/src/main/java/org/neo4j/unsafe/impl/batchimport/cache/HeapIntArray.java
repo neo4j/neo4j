@@ -79,8 +79,7 @@ public class HeapIntArray extends HeapNumberArray implements IntArray
         for ( int i = 0; i < numberOfEntries; i++ )
         {
             int fromValue = get( fromIndex+i );
-            int toValue = get( toIndex+i );
-            set( fromIndex+i, toValue );
+            set( fromIndex+i, get( toIndex+i ) );
             set( toIndex+i, fromValue );
         }
     }

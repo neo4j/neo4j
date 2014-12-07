@@ -96,8 +96,7 @@ public class OffHeapLongArray extends OffHeapNumberArray implements LongArray
         for ( int i = 0; i < numberOfEntries; i++, fromAddress += stride, toAddress += stride )
         {
             long fromValue = unsafe.getLong( fromAddress );
-            long toValue = unsafe.getLong( toAddress );
-            unsafe.putLong( fromAddress, toValue );
+            unsafe.putLong( fromAddress, unsafe.getLong( toAddress ) );
             unsafe.putLong( toAddress, fromValue );
         }
     }

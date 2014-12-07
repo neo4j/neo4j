@@ -95,10 +95,9 @@ public class OffHeapIntArray extends OffHeapNumberArray implements IntArray
 
         for ( int i = 0; i < numberOfEntries; i++, fromAddress += stride, toAddress += stride )
         {
-            long fromValue = unsafe.getLong( fromAddress );
-            long toValue = unsafe.getLong( toAddress );
-            unsafe.putLong( fromAddress, toValue );
-            unsafe.putLong( toAddress, fromValue );
+            int fromValue = unsafe.getInt( fromAddress );
+            unsafe.putInt( fromAddress, unsafe.getInt( toAddress ) );
+            unsafe.putInt( toAddress, fromValue );
         }
     }
 }
