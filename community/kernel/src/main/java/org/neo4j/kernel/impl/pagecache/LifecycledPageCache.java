@@ -39,9 +39,13 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_tota
 
 public class LifecycledPageCache extends LifecycleAdapter implements PageCache
 {
-    private final RunnablePageCache pageCache;
+    private final PageSwapperFactory swapperFactory;
     private final JobScheduler scheduler;
-    private volatile JobScheduler.JobHandle pageEvictionJobHandle;
+    private final Config config;
+    private final PageCacheMonitor monitor;
+
+    private RunnablePageCache pageCache;
+    private JobScheduler.JobHandle pageEvictionJobHandle;
 
     public LifecycledPageCache(
             PageSwapperFactory swapperFactory,
@@ -49,12 +53,21 @@ public class LifecycledPageCache extends LifecycleAdapter implements PageCache
             Config config,
             PageCacheMonitor monitor )
     {
+        this.swapperFactory = swapperFactory;
         this.scheduler = scheduler;
-        this.pageCache = new MuninnPageCache(
+        this.config = config;
+        this.monitor = monitor;
+    }
+
+    @Override
+    public synchronized void start()
+    {
+        pageCache = new MuninnPageCache(
                 swapperFactory,
                 calculateMaxPages( config ),
                 calculatePageSize( config ),
                 monitor );
+        pageEvictionJobHandle = scheduler.schedule( JobScheduler.Group.pageCacheEviction, pageCache );
     }
 
     private static int calculateMaxPages( Config config )
@@ -71,26 +84,21 @@ public class LifecycledPageCache extends LifecycleAdapter implements PageCache
     }
 
     @Override
-    public void start()
-    {
-        pageEvictionJobHandle = scheduler.schedule( JobScheduler.Group.pageCacheEviction, pageCache );
-    }
-
-    @Override
-    public void stop() throws IOException
+    public synchronized void stop() throws IOException
     {
         JobScheduler.JobHandle handle = pageEvictionJobHandle;
         if ( handle != null )
         {
             handle.cancel( true );
         }
-        close();
+        pageCache.close();
+        pageCache = null;
     }
 
     @Override
     public void close() throws IOException
     {
-        pageCache.close();
+        throw new UnsupportedOperationException( "This page cache is life-cycled and cannot be directly closed." );
     }
 
     @Override

@@ -56,7 +56,7 @@ public class JmxKernelExtension implements Lifecycle
         support = ManagementSupport.load();
         url = support.getJMXServiceURL( kernelData );
         mbs = support.getMBeanServer();
-        beans = new LinkedList<Neo4jMBean>();
+        beans = new LinkedList<>();
         try
         {
             Neo4jMBean bean = new KernelBean( kernelData, support );

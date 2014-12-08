@@ -19,17 +19,8 @@
  */
 package org.neo4j.kernel.configuration;
 
-import java.lang.reflect.Field;
-import java.util.Arrays;
-
-import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.Predicates;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-
-import static org.neo4j.helpers.Predicates.or;
-import static org.neo4j.helpers.collection.Iterables.map;
 
 /**
  * When a specified change happens, restart the given LifeSupport instance.
@@ -42,26 +33,6 @@ public class RestartOnChange
 {
     private final Predicate<String> restartSpecification;
     private final Lifecycle life;
-
-    public RestartOnChange( Class<?> settingsClass, Lifecycle life )
-    {
-        this( or( map( new Function<Field, Predicate<String>>()
-        {
-            @Override
-            public Predicate<String> apply( Field method )
-            {
-                try
-                {
-                    Setting setting = (Setting) method.get( null );
-                    return Predicates.in( setting.name() );
-                }
-                catch ( IllegalAccessException e )
-                {
-                    return Predicates.not( Predicates.<String>TRUE() );
-                }
-            }
-        }, Arrays.asList( settingsClass.getFields() ) ) ), life );
-    }
 
     public RestartOnChange( final String configurationNamePrefix, Lifecycle life )
     {

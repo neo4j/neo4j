@@ -19,14 +19,14 @@
  */
 package org.neo4j.server.configuration;
 
+import org.apache.commons.configuration.AbstractConfiguration;
+
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-
-import org.apache.commons.configuration.AbstractConfiguration;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.Pair;
@@ -46,28 +46,14 @@ public class ConfigWrappingConfiguration extends AbstractConfiguration
     @Override
     public boolean isEmpty()
     {
-        if( config == null )
-        {
-            return true;
-        }
-        else
-        {
-            // always return not empty as some properties have default values
-            return false;
-        }
+        // non-null config is always non-empty as some properties have default values
+        return config == null;
     }
 
     @Override
     public boolean containsKey( String key )
     {
-        if( getProperty( key ) != null )
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        return getProperty( key ) != null;
     }
 
     @Override
@@ -88,12 +74,12 @@ public class ConfigWrappingConfiguration extends AbstractConfiguration
     public Iterator<String> getKeys()
     {
         // get all the properties keys
-        final Set<String> staticKeys = this.getRegistedSettings().keySet();
+        Set<String> staticKeys = getRegisteredSettings().keySet();
         // only keep the properties which have been assigned default values or user-defined values
-        final Set<String> notNullKeys = new HashSet();
-        for ( final String key : staticKeys )
+        Set<String> notNullKeys = new HashSet<>();
+        for ( String key : staticKeys )
         {
-            if ( this.containsKey( key ) )
+            if ( containsKey( key ) )
             {
                 notNullKeys.add( key );
             }
@@ -109,10 +95,10 @@ public class ConfigWrappingConfiguration extends AbstractConfiguration
 
     private Setting<?> getSettingForKey( String key )
     {
-        return this.getRegistedSettings().get( key );
+        return getRegisteredSettings().get( key );
     }
 
-    private Map<String, Setting<?>> getRegistedSettings()
+    private Map<String, Setting<?>> getRegisteredSettings()
     {
         Iterable<Class<?>> settingsClasses = config.getSettingsClasses();
         AnnotatedFieldHarvester fieldHarvester = new AnnotatedFieldHarvester();

@@ -20,13 +20,9 @@
 package org.neo4j.jmx;
 
 import java.lang.management.ManagementFactory;
-import javax.management.AttributeNotFoundException;
-import javax.management.InstanceNotFoundException;
-import javax.management.MBeanException;
 import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
-import javax.management.ReflectionException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.jmx.impl.JmxKernelExtension;
@@ -67,19 +63,7 @@ public class JmxUtils
         {
             return (T) mbeanServer.getAttribute( objectName, attribute );
         }
-        catch ( MBeanException e )
-        {
-            throw new RuntimeException( e );
-        }
-        catch ( AttributeNotFoundException e )
-        {
-            throw new RuntimeException( e );
-        }
-        catch ( InstanceNotFoundException e )
-        {
-            throw new RuntimeException( e );
-        }
-        catch ( ReflectionException e )
+        catch ( Exception e )
         {
             throw new RuntimeException( e );
         }
@@ -92,15 +76,7 @@ public class JmxUtils
         {
             return (T) mbeanServer.invoke( objectName, attribute, params, signatur );
         }
-        catch ( MBeanException e )
-        {
-            throw new RuntimeException( e );
-        }
-        catch ( InstanceNotFoundException e )
-        {
-            throw new RuntimeException( e );
-        }
-        catch ( ReflectionException e )
+        catch ( Exception e )
         {
             throw new RuntimeException( e );
         }

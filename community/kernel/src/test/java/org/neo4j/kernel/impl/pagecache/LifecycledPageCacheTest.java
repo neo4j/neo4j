@@ -28,6 +28,7 @@ import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.EphemeralFileSystemRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -42,22 +43,31 @@ public class LifecycledPageCacheTest
     public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
 
     @Test
-    public void shouldUseConfiguredPageSizeAndFitAsManyPagesAsItCan() throws Exception
+    public void shouldUseConfiguredPageSizeAndFitAsManyPagesAsItCan() throws Throwable
     {
         // Given
         Config config = new Config();
         config.applyChanges( stringMap(
-                mapped_memory_page_size.name(),             "4096",
+                mapped_memory_page_size.name(), "4096",
                 mapped_memory_total_size.name(), Integer.toString(4096 * 16) ) );
 
         // When
+        LifeSupport life = new LifeSupport();
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fsRule.get() );
-        Neo4jJobScheduler scheduler = new Neo4jJobScheduler();
-        PageCache cache = new LifecycledPageCache(
-                swapperFactory, scheduler, config, PageCacheMonitor.NULL );
+        Neo4jJobScheduler scheduler = life.add( new Neo4jJobScheduler() );
+        PageCache cache = life.add( new LifecycledPageCache(
+                swapperFactory, scheduler, config, PageCacheMonitor.NULL ) );
+        life.start();
 
         // Then
-        assertThat(cache.pageSize(), equalTo(4096));
-        assertThat(cache.maxCachedPages(), equalTo(16));
+        try
+        {
+            assertThat( cache.pageSize(), equalTo( 4096 ) );
+            assertThat( cache.maxCachedPages(), equalTo( 16 ) );
+        }
+        finally
+        {
+            life.shutdown();
+        }
     }
 }
