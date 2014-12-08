@@ -1,0 +1,36 @@
+[[server-unmanaged-extensions-execution-engine]]
+= Using Cypher in an unmanaged extension
+
+You can execute Cypher queries by using the `GraphDatabaseService` that is injected into the extension.
+
+[NOTE]
+In Neo4j versions prior to 2.2 you had to retrieve an `ExecutionEngine` to execute queries.
+This has been deprecated, and we recommend you to update any existing code to use `GraphDatabaseService` instead.
+
+For example, the following unmanaged extension retrieves a person's colleagues using Cypher:
+
+.Unmanaged extension Cypher execution example
+[snippet,java]
+----
+component=neo4j-server-examples
+source=org/neo4j/examples/server/unmanaged/ColleaguesCypherExecutionResource.java
+tag=ColleaguesCypherExecutionResource
+classifier=sources
+----
+
+The full source code is found here:
+https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/server-examples/src/main/java/org/neo4j/examples/server/unmanaged/ColleaguesCypherExecutionResource.java[ColleaguesCypherExecutionResource.java]
+
+Our `findColleagues` method will now respond to +GET+ requests at the URI: +http://\{neo4j_server}:\{neo4j_port}/examples/unmanaged/colleagues-cypher-execution/\{personName}+. e.g.
+
+[source,bash]
+-----
+curl http://localhost:7474/examples/unmanaged/colleagues-cypher-execution/Keanu%20Reeves
+-----
+
+which results in
+
+[source]
+----
+{"colleagues":["Hugo Weaving","Carrie-Anne Moss","Laurence Fishburne"]}
+----
