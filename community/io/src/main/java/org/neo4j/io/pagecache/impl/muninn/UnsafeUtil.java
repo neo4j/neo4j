@@ -35,11 +35,8 @@ import java.security.PrivilegedExceptionAction;
 public final class UnsafeUtil
 {
     private static final Unsafe unsafe;
-    private static final Object nullSentinelBase;
-    private static final long nullSentinelOffset;
     private static final MethodHandle getAndAddInt;
     private static final MethodHandle getAndSetObject;
-    private static Object nullSentinel; // see the retainReference() method
     private static final String allowUnalignedMemoryAccessProperty =
             "org.neo4j.io.pagecache.impl.muninn.UnsafeUtil.allowUnalignedMemoryAccess";
 
@@ -57,17 +54,6 @@ public final class UnsafeUtil
     static
     {
         unsafe = getUnsafe();
-
-        try
-        {
-            Field field = UnsafeUtil.class.getDeclaredField( "nullSentinel" );
-            nullSentinelBase = unsafe.staticFieldBase( field );
-            nullSentinelOffset = unsafe.staticFieldOffset( field );
-        }
-        catch ( NoSuchFieldException e )
-        {
-            throw new LinkageError( "Inaccessible field: 'nullSentinel'", e );
-        }
 
         MethodHandles.Lookup lookup = MethodHandles.lookup();
         getAndAddInt = getGetAndAddIntMethodHandle( lookup );
@@ -92,7 +78,7 @@ public final class UnsafeUtil
         {
             if ( dbbClass == null )
             {
-                throw new AssertionError( e );
+                throw new LinkageError( "Cannot to link java.nio.DirectByteBuffer", e );
             }
             try
             {
@@ -101,7 +87,7 @@ public final class UnsafeUtil
             }
             catch ( NoSuchMethodException e1 )
             {
-                throw new AssertionError( e1 );
+                throw new LinkageError( "Cannot find JNI constructor for java.nio.DirectByteBuffer", e1 );
             }
         }
         directByteBufferClass = dbbClass;
@@ -401,25 +387,5 @@ public final class UnsafeUtil
         }
         // Reflection based fallback code.
         return (ByteBuffer) directByteBufferCtor.newInstance( addr, cap );
-    }
-
-    /**
-     * This method prevents the given object from becoming finalizable until
-     * this method has been called.
-     * This method will prevent reordering with other reads and writes, and
-     * can as such be used to synchronize the finalization of an object, with
-     * the access of its fields.
-     *
-     * See this email thread for more gory details:
-     * https://groups.google.com/forum/#!topic/mechanical-sympathy/PbVDvcKmm9g
-     */
-    public static void retainReference( Object obj )
-    {
-        Object sentinel = getObjectVolatile( nullSentinelBase, nullSentinelOffset );
-
-        if ( sentinel == obj )
-        {
-            putObjectVolatile( nullSentinelBase, nullSentinelOffset, obj );
-        }
     }
 }
