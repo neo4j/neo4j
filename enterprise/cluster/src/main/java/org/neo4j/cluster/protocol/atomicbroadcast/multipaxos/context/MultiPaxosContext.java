@@ -76,7 +76,7 @@ public class MultiPaxosContext
         electionContext = new ElectionContextImpl( me, commonState, logging, timeouts, roles, clusterContext, heartbeatContext, electionCredentialsProvider );
         proposerContext = new ProposerContextImpl(me, commonState, logging, timeouts, paxosInstances );
         acceptorContext = new AcceptorContextImpl(me, commonState, logging, timeouts, instanceStore);
-        atomicBroadcastContext = new AtomicBroadcastContextImpl(me, commonState, logging, timeouts, executor);
+        atomicBroadcastContext = new AtomicBroadcastContextImpl(me, commonState, logging, timeouts, executor, heartbeatContext );
 
         heartbeatContext.setCircularDependencies( clusterContext, learnerContext );
     }
@@ -160,7 +160,7 @@ public class MultiPaxosContext
         AcceptorContextImpl snapshotAcceptorContext =
                 acceptorContext.snapshot( commonStateSnapshot, logging, timeouts, instanceStore );
         AtomicBroadcastContextImpl snapshotAtomicBroadcastContext =
-                atomicBroadcastContext.snapshot( commonStateSnapshot, logging, timeouts, executor );
+                atomicBroadcastContext.snapshot( commonStateSnapshot, logging, timeouts, executor, snapshotHeartbeatContext );
 
         snapshotHeartbeatContext.setCircularDependencies( snapshotClusterContext, snapshotLearnerContext );
 

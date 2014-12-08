@@ -24,8 +24,11 @@ import java.util.concurrent.Executor;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
 import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AtomicBroadcastContext;
+import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.timeout.Timeouts;
+import org.neo4j.cluster.util.Quorums;
 import org.neo4j.helpers.Listeners;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.logging.Logging;
 
 class AtomicBroadcastContextImpl
@@ -34,13 +37,15 @@ class AtomicBroadcastContextImpl
 {
     private Iterable<AtomicBroadcastListener> listeners = Listeners.newListeners();
     private final Executor executor;
+    private final HeartbeatContext heartbeatContext;
 
     AtomicBroadcastContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState,
                                 Logging logging,
-                                Timeouts timeouts, Executor executor )
+                                Timeouts timeouts, Executor executor, HeartbeatContext heartbeatContext  )
     {
         super( me, commonState, logging, timeouts );
         this.executor = executor;
+        this.heartbeatContext = heartbeatContext;
     }
 
     @Override
@@ -69,9 +74,9 @@ class AtomicBroadcastContextImpl
     }
 
     public AtomicBroadcastContextImpl snapshot( CommonContextState commonStateSnapshot, Logging logging,
-                                                Timeouts timeouts, Executor executor )
+                                                Timeouts timeouts, Executor executor, HeartbeatContext heartbeatContext )
     {
-        return new AtomicBroadcastContextImpl( me, commonStateSnapshot, logging, timeouts, executor );
+        return new AtomicBroadcastContextImpl( me, commonStateSnapshot, logging, timeouts, executor, heartbeatContext );
     }
 
     @Override
@@ -93,5 +98,13 @@ class AtomicBroadcastContextImpl
     public int hashCode()
     {
         return 0;
+    }
+
+    @Override
+    public boolean hasQuorum()
+    {
+        int availableMembers = (int) Iterables.count( heartbeatContext.getAlive() );
+        int totalMembers = commonState.configuration().getMembers().size();
+        return Quorums.isQuorum( availableMembers, totalMembers );
     }
 }
