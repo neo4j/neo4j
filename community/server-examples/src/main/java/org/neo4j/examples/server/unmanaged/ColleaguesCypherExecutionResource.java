@@ -21,6 +21,7 @@ package org.neo4j.examples.server.unmanaged;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Map;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -34,10 +35,9 @@ import org.codehaus.jackson.JsonEncoding;
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.map.ObjectMapper;
 
-import org.neo4j.cypher.javacompat.ExecutionEngine;
-import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 
@@ -45,7 +45,6 @@ import org.neo4j.helpers.collection.MapUtil;
 @Path("/colleagues-cypher-execution")
 public class ColleaguesCypherExecutionResource
 {
-    private final ExecutionEngine executionEngine;
     private final ObjectMapper objectMapper;
     private GraphDatabaseService graphDb;
 
@@ -53,7 +52,6 @@ public class ColleaguesCypherExecutionResource
     {
         this.graphDb = graphDb;
         this.objectMapper = new ObjectMapper();
-        this.executionEngine = new ExecutionEngine( graphDb );
     }
 
     @GET
@@ -72,12 +70,12 @@ public class ColleaguesCypherExecutionResource
                 jg.writeFieldName( "colleagues" );
                 jg.writeStartArray();
 
-                try ( Transaction tx = graphDb.beginTx() )
+                try ( Transaction tx = graphDb.beginTx();
+                      Result result = graphDb.execute( colleaguesQuery(), params ) )
                 {
-                    ExecutionResult result = executionEngine.execute( colleaguesQuery(), params );
-
-                    for ( Map<String, Object> row : result )
+                    while ( result.hasNext() )
                     {
+                        Map<String,Object> row = result.next();
                         jg.writeString( ((Node) row.get( "colleague" )).getProperty( "name" ).toString() );
                     }
                     tx.success();

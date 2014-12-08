@@ -77,15 +77,15 @@ public class ColleaguesResource
                 jg.writeStartArray();
 
                 try ( Transaction tx = graphDb.beginTx();
-                      ResourceIterator<Node> persons =
-                              graphDb.findNodesByLabelAndProperty( PERSON, "name", personName ).iterator() )
+                      ResourceIterator<Node> persons = graphDb.findNodes( PERSON, "name", personName ) )
                 {
                     while ( persons.hasNext() )
                     {
                         Node person = persons.next();
                         for ( Relationship actedIn : person.getRelationships( ACTED_IN, OUTGOING ) )
                         {
-                            for ( Relationship colleagueActedIn : actedIn.getEndNode().getRelationships( ACTED_IN, INCOMING ) )
+                            Node endNode = actedIn.getEndNode();
+                            for ( Relationship colleagueActedIn : endNode.getRelationships( ACTED_IN, INCOMING ) )
                             {
                                 Node colleague = colleagueActedIn.getStartNode();
                                 if ( !colleague.equals( person ) )

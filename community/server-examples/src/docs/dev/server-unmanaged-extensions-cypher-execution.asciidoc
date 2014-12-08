@@ -1,12 +1,15 @@
 [[server-unmanaged-extensions-execution-engine]]
 = Using Cypher in an unmanaged extension
 
-If we want to execute Cypher queries from an unmanaged extension we can use `ExecutionEngine` to do so.
-You should only generate _one_ instance of this class which can be used to execute Cypher queries for all requests.
+You can execute Cypher queries by using the `GraphDatabaseService` that is injected into the extension.
+
+[NOTE]
+In Neo4j versions prior to 2.2 you had to retrieve an `ExecutionEngine` to execute queries.
+This has been deprecated, and we recommend you to update any existing code to use `GraphDatabaseService` instead.
 
 For example, the following unmanaged extension retrieves a person's colleagues using Cypher:
 
-.Unmanaged extension ExecutionEngine example
+.Unmanaged extension Cypher execution example
 [snippet,java]
 ----
 component=neo4j-server-examples
