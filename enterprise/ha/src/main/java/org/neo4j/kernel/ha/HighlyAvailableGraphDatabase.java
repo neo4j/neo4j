@@ -671,9 +671,9 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         return getClass().getSimpleName() + "[" + storeDir + "]";
     }
 
-    public String getInstanceState()
+    public HighAvailabilityMemberState getInstanceState()
     {
-        return memberStateMachine.getCurrentState().name();
+        return memberStateMachine.getCurrentState();
     }
 
     public String role()

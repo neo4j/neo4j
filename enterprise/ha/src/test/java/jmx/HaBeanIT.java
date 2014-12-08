@@ -207,7 +207,7 @@ public class HaBeanIT
         cluster.await( ClusterManager.masterSeesSlavesAsAvailable( 1 ) );
         for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
         {
-            if ( db.getInstanceState().equals( HighAvailabilityMemberState.PENDING.name() ))
+            if ( db.getInstanceState() == HighAvailabilityMemberState.PENDING )
             {
                 continue;
             }

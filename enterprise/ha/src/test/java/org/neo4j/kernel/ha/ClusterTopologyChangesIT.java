@@ -54,10 +54,11 @@ import org.neo4j.test.ha.ClusterManager.RepairKit;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+
 import static org.neo4j.cluster.protocol.cluster.ClusterConfiguration.COORDINATOR;
-import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.Predicates.not;
 import static org.neo4j.test.ReflectionUtil.getPrivateField;
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
@@ -94,40 +95,6 @@ public class ClusterTopologyChangesIT extends AbstractClusterTest
         cluster.await( masterAvailable() );
         cluster.await( allSeesAllAsAvailable() );
         assertEquals( 3, cluster.size() );
-    }
-
-    @Test
-    public void slaveShouldCatchUpTransactionLogsOnFirstLockRequestAfterFailure() throws Throwable
-    {
-        // Given
-        HighlyAvailableGraphDatabase master = cluster.getMaster();
-
-        Node theNode = createNodeOn( master );
-        cluster.sync();
-
-        HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
-        RepairKit repairKit = cluster.fail( slave );
-
-        try ( Transaction tx = master.beginTx() )
-        {
-            for ( int i = 0; i < TEST_NODE_COUNT; i++ )
-            {
-                master.createNode( label( "Node" + i ) );
-            }
-            tx.success();
-        }
-        cluster.sync();
-
-        // When
-        repairKit.repair();
-        try ( Transaction tx = slave.beginTx() )
-        {
-            slave.getNodeById( theNode.getId() ).addLabel( label( "42" ) );
-            tx.success();
-        }
-
-        // Then
-        assertEquals( 1 + TEST_NODE_COUNT, nodeCountOn( slave ) );
     }
 
     @Test
@@ -168,7 +135,7 @@ public class ClusterTopologyChangesIT extends AbstractClusterTest
 
         // master loses quorum and goes to PENDING, cluster is unavailable
         cluster.await( not( masterAvailable() ) );
-        assertEquals( HighAvailabilityMemberState.PENDING.toString(), master.getInstanceState() );
+        assertEquals( HighAvailabilityMemberState.PENDING, master.getInstanceState() );
 
         // WHEN: both slaves are repaired, majority restored, quorum can be achieved
         slave1RepairKit.repair();
@@ -229,6 +196,7 @@ public class ClusterTopologyChangesIT extends AbstractClusterTest
         builder.setConfig( HaSettings.read_timeout, "1s" );
         builder.setConfig( HaSettings.state_switch_timeout, "2s" );
         builder.setConfig( HaSettings.com_chunk_size, "1024" );
+        builder.setConfig( GraphDatabaseSettings.cache_type, "none" );
     }
 
     @SuppressWarnings( "unchecked" )
