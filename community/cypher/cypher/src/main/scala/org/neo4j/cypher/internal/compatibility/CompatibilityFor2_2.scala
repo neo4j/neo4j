@@ -235,12 +235,11 @@ case class CompatibilityPlanDescription(inner: InternalPlanDescription, version:
 
   def name = exceptionHandlerFor2_2.runSafely { inner.name }
 
-  def asJava: javacompat.PlanDescription = asExtJava
-  def asExtJava: javacompat.ExtendedPlanDescription = exceptionHandlerFor2_2.runSafely { asJava(self) }
+  def asJava: javacompat.PlanDescription = exceptionHandlerFor2_2.runSafely { asJava(self) }
 
   override def toString: String = exceptionHandlerFor2_2.runSafely { s"Compiler CYPHER ${version.name}\n\n$inner" }
 
-  def asJava(in: ExtendedPlanDescription): javacompat.ExtendedPlanDescription = new javacompat.ExtendedPlanDescription {
+  def asJava(in: ExtendedPlanDescription): javacompat.PlanDescription = new javacompat.PlanDescription {
     def getProfilerStatistics: ProfilerStatistics = new ProfilerStatistics {
       def getDbHits: Long = extract { case DbHits(count) => count}
 
@@ -259,8 +258,6 @@ case class CompatibilityPlanDescription(inner: InternalPlanDescription, version:
     def getIdentifiers: util.Set[String] = identifiers.asJava
 
     def getChildren: util.List[javacompat.PlanDescription] = in.extendedChildren.toList.map(_.asJava).asJava
-    def getExtendedChildren: util.List[javacompat.ExtendedPlanDescription] =
-      in.extendedChildren.toList.map(_.asExtJava).asJava
 
     override def toString: String = self.toString
   }

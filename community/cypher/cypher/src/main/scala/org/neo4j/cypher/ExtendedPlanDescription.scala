@@ -23,5 +23,4 @@ package org.neo4j.cypher
 trait ExtendedPlanDescription extends PlanDescription {
   def identifiers: Set[String]
   def extendedChildren: Seq[ExtendedPlanDescription]
-  def asExtJava: javacompat.ExtendedPlanDescription
 }

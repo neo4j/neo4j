@@ -22,24 +22,23 @@ package org.neo4j.cypher.internal
 import java.util
 
 import org.neo4j.cypher.{ExtendedPlanDescription, CypherVersion, PlanDescription}
-import org.neo4j.cypher.javacompat.{ExtendedPlanDescription => JPlanDescription}
+import org.neo4j.cypher.javacompat.{PlanDescription => JPlanDescription}
+
 
 class AmendedRootPlanDescription(inner: ExtendedPlanDescription, version: CypherVersion)
   extends ExtendedPlanDescription {
 
   self =>
 
-  val childAsJava = inner.asExtJava
+  val childAsJava = inner.asJava
 
   def name = inner.name
 
-  def asJava = asExtJava
-  def asExtJava = new JPlanDescription {
+  def asJava = new JPlanDescription {
     val getName = name
 
     val getProfilerStatistics = childAsJava.getProfilerStatistics
     val hasProfilerStatistics = childAsJava.hasProfilerStatistics
-    val getIdentifiers = java.util.Collections.unmodifiableSet[String](childAsJava.getIdentifiers)
     val getArguments = {
       val args = childAsJava.getArguments
       val newArgs = new util.HashMap[String, AnyRef]()
@@ -49,7 +48,6 @@ class AmendedRootPlanDescription(inner: ExtendedPlanDescription, version: Cypher
     }
 
     val getChildren = childAsJava.getChildren
-    val getExtendedChildren = childAsJava.getExtendedChildren
 
     override def toString = self.toString
   }

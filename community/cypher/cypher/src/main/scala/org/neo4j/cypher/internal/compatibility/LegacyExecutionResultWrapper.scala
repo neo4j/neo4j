@@ -78,7 +78,6 @@ case class ExtendedPlanDescriptionWrapper(inner: PlanDescription) extends Extend
   def extendedChildren = inner.children.map(ExtendedPlanDescriptionWrapper)
   def identifiers = Set.empty
   def asJava = inner.asJava
-  def asExtJava = new javacompat.ExtendedPlanDescriptionWrapper( inner.asJava )
   def children = inner.children
   def arguments = inner.arguments
   def hasProfilerStatistics = inner.hasProfilerStatistics
