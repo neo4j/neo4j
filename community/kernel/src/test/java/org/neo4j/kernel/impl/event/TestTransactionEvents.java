@@ -19,18 +19,21 @@
  */
 package org.neo4j.kernel.impl.event;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import org.junit.ClassRule;
-import org.junit.Test;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -41,11 +44,13 @@ import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -53,7 +58,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cache_type;
@@ -184,9 +188,10 @@ public class TestTransactionEvents
             }
 
             assertTrue( "Should have been invoked", handler.hasBeenCalled() );
-            if ( handler.failure() != null )
+            Throwable failure = handler.failure();
+            if ( failure != null )
             {
-                throw new RuntimeException( handler.failure() );
+                throw new RuntimeException( failure );
             }
         }
         finally
@@ -248,9 +253,10 @@ public class TestTransactionEvents
             }
 
             assertTrue( "Should have been invoked", handler.hasBeenCalled() );
-            if ( handler.failure() != null )
+            Throwable failure = handler.failure();
+            if ( failure != null )
             {
-                throw new RuntimeException( handler.failure() );
+                throw new RuntimeException( failure );
             }
         }
         finally
@@ -594,12 +600,12 @@ public class TestTransactionEvents
     public void makeSureHandlerIsntCalledWhenTxRolledBack()
     {
         DummyTransactionEventHandler<Integer> handler =
-            new DummyTransactionEventHandler<Integer>( 10 );
+            new DummyTransactionEventHandler<>( 10 );
         GraphDatabaseService db = dbRule.getGraphDatabaseService();
         db.registerTransactionEventHandler( handler );
         try
         {
-            try ( Transaction tx = db.beginTx() )
+            try ( Transaction ignore = db.beginTx() )
             {
                 db.createNode().delete();
             }
@@ -652,6 +658,119 @@ public class TestTransactionEvents
         // Then
         assertThat(node, inTx(db, hasProperty(key).withValue(value2)));
         db.unregisterTransactionEventHandler( handler );
+    }
+
+    @Test
+    public void nodeCanBecomeSchemaIndexableInBeforeCommitByAddingProperty() throws Exception
+    {
+        // Given we have a schema index...
+        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        Label label = DynamicLabel.label( "Label" );
+        IndexDefinition index;
+        try ( Transaction tx = db.beginTx() )
+        {
+            index = db.schema().indexFor( label ).on( "indexed" ).create();
+            tx.success();
+        }
+
+        // ... and a transaction event handler that likes to add the indexed property on nodes
+        db.registerTransactionEventHandler( new TransactionEventHandler<Object>()
+        {
+            @Override
+            public Object beforeCommit( TransactionData data ) throws Exception
+            {
+                Iterator<Node> nodes = data.createdNodes().iterator();
+                if ( nodes.hasNext() )
+                {
+                    Node node = nodes.next();
+                    node.setProperty( "indexed", "value" );
+                }
+                return null;
+            }
+
+            @Override
+            public void afterCommit( TransactionData data, Object state )
+            {
+            }
+
+            @Override
+            public void afterRollback( TransactionData data, Object state )
+            {
+            }
+        } );
+
+        // When we create a node with the right label, but not the right property...
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
+            Node node = db.createNode( label );
+            node.setProperty( "random", 42 );
+            tx.success();
+        }
+
+        // Then we should be able to look it up through the index.
+        try ( Transaction ignore = db.beginTx() )
+        {
+            Node node = db.findNode( label, "indexed", "value" );
+            assertThat( node.getProperty( "random" ), is( (Object) 42 ) );
+        }
+    }
+
+    @Test
+    public void nodeCanBecomeSchemaIndexableInBeforeCommitByAddingLabel() throws Exception
+    {
+        // Given we have a schema index...
+        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        final Label label = DynamicLabel.label( "Label" );
+        IndexDefinition index;
+        try ( Transaction tx = db.beginTx() )
+        {
+            index = db.schema().indexFor( label ).on( "indexed" ).create();
+            tx.success();
+        }
+
+        // ... and a transaction event handler that likes to add the indexed property on nodes
+        db.registerTransactionEventHandler( new TransactionEventHandler<Object>()
+        {
+            @Override
+            public Object beforeCommit( TransactionData data ) throws Exception
+            {
+                Iterator<Node> nodes = data.createdNodes().iterator();
+                if ( nodes.hasNext() )
+                {
+                    Node node = nodes.next();
+                    node.addLabel( label );
+                }
+                return null;
+            }
+
+            @Override
+            public void afterCommit( TransactionData data, Object state )
+            {
+            }
+
+            @Override
+            public void afterRollback( TransactionData data, Object state )
+            {
+            }
+        } );
+
+        // When we create a node with the right property, but not the right label...
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
+            Node node = db.createNode();
+            node.setProperty( "indexed", "value" );
+            node.setProperty( "random", 42 );
+            tx.success();
+        }
+
+        // Then we should be able to look it up through the index.
+        try ( Transaction ignore = db.beginTx() )
+        {
+            Node node = db.findNode( label, "indexed", "value" );
+            assertThat( node.getProperty( "random" ), is( (Object) 42 ) );
+        }
     }
 
     @Test
@@ -805,7 +924,8 @@ public class TestTransactionEvents
         }
     }
 
-    public static final @ClassRule DatabaseRule dbRule = new ImpermanentDatabaseRule()
+    @Rule
+    public final DatabaseRule dbRule = new ImpermanentDatabaseRule()
     {
         @Override
         protected void configure( GraphDatabaseBuilder builder )
