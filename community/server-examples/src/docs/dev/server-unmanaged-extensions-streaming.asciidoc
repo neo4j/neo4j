@@ -1,0 +1,51 @@
+[[server-unmanaged-extensions-streaming]]
+= Streaming JSON responses
+
+When writing unmanaged extensions we have greater control over the amount of memory that our Neo4j queries use.
+If we keep too much state around it can lead to more frequent full Garbage Collection and subsequent unresponsiveness by the Neo4j server.
+
+A common way that state can creep in is the creation of JSON objects to represent the result of a query which we then send back to our application.
+Neo4j's Transactional Cypher HTTP endpoint (see <<rest-api-transactional>>) streams responses back to the client and we should follow in its footsteps.
+
+For example, the following unmanaged extension streams an array of a person's colleagues:
+
+
+.Unmanaged extension streaming example
+[snippet,java]
+----
+component=neo4j-server-examples
+source=org/neo4j/examples/server/unmanaged/ColleaguesResource.java
+tag=ColleaguesResource
+classifier=sources
+----
+
+The full source code is found here:
+https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/server-examples/src/main/java/org/neo4j/examples/server/unmanaged/ColleaguesResource.java[ColleaguesResource.java]
+
+As well as depending on JAX-RS API this example also uses Jackson -- a Java JSON library.
+You'll need to add the following dependency to your Maven POM file (or equivalent):
+
+[source,xml]
+--------
+<dependency>
+	<groupId>org.codehaus.jackson</groupId>
+	<artifactId>jackson-mapper-asl</artifactId>
+	<version>1.9.7</version>
+</dependency>
+--------
+
+Our `findColleagues` method will now respond to +GET+ requests at the URI: +http://\{neo4j_server}:\{neo4j_port}/examples/unmanaged/colleagues/\{personName}+.
+For example:
+
+[source,bash]
+-----
+curl http://localhost:7474/examples/unmanaged/colleagues/Keanu%20Reeves
+-----
+
+which results in
+
+[source]
+----
+{"colleagues":["Hugo Weaving","Carrie-Anne Moss","Laurence Fishburne"]}
+----
+

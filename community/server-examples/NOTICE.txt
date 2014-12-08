@@ -34,6 +34,8 @@ Apache Software License, Version 2.0
   Commons Lang
   Commons Logging
   ConcurrentLinkedHashMap
+  Data Mapper for Jackson
+  Jackson
   JTA 1.1
   Lucene Core
   opencsv

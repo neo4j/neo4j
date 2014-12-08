@@ -14,10 +14,8 @@ Eclipse Maven integration:
 It's included in the Java package, for other packages see:
 http://www.eclipse.org/m2e/
 
-ScalaIDE for Eclipse, version using Scala 2.9.0-1:
-Update site: http://download.scala-ide.org/releases-29/2.0.0-beta
-For other options see:
-http://download.scala-ide.org/
+ScalaIDE for Eclipse see:
+http://scala-ide.org/
 Note: Avoid installing JDT Weaving in case you already have another version
 installed (for example through SpringSource Tool Suite).
 
@@ -35,3 +33,5 @@ To get the Cypher project working in Eclipse (with the above plugins installed):
 * Use File -> Import... -> Existing Maven Projects to import the project.
 * After the import has finished, right-click on the project and
   -> Maven -> Update Project Configuration...
+* Make sure to set the Scala version to 2.10.* for the projects.
+
