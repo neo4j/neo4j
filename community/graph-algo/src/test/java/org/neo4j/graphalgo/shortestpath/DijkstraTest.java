@@ -65,11 +65,11 @@ public class DijkstraTest extends Neo4jAlgoTestCase
     public void testDijkstraMinimal2()
     {
         graph.makeEdge( "a", "b", "cost", (double) 1 );
-        graph.makeEdge( "a", "c", "cost", (double) 1 );
-        graph.makeEdge( "a", "d", "cost", (double) 1 );
-        graph.makeEdge( "a", "e", "cost", (double) 1 );
-        graph.makeEdge( "b", "c", "cost", (double) 1 );
-        graph.makeEdge( "c", "d", "cost", (double) 1 );
+        graph.makeEdge( "a", "c", "cost", (float) 1 );
+        graph.makeEdge( "a", "d", "cost", (long) 1 );
+        graph.makeEdge( "a", "e", "cost", (int) 1 );
+        graph.makeEdge( "b", "c", "cost", (byte) 1 );
+        graph.makeEdge( "c", "d", "cost", (short) 1 );
         graph.makeEdge( "d", "e", "cost", (double) 1 );
         graph.makeEdge( "e", "f", "cost", (double) 1 );
         Dijkstra<Double> dijkstra = getDijkstra( graph, 0.0, "a", "a" );
@@ -87,8 +87,8 @@ public class DijkstraTest extends Neo4jAlgoTestCase
     public void testDijkstraChain()
     {
         graph.makeEdge( "a", "b", "cost", (double) 1 );
-        graph.makeEdge( "b", "c", "cost", (double) 2 );
-        graph.makeEdge( "c", "d", "cost", (double) 3 );
+        graph.makeEdge( "b", "c", "cost", (float) 2 );
+        graph.makeEdge( "c", "d", "cost", (byte) 3 );
         Dijkstra<Double> dijkstra = getDijkstra( graph, 0.0, "a", "d" );
         assertTrue( dijkstra.getCost() == 6.0 );
         assertTrue( dijkstra.getPathAsNodes() != null );
@@ -111,10 +111,10 @@ public class DijkstraTest extends Neo4jAlgoTestCase
     public void testDijstraTraverserMeeting()
     {
         graph.makeEdge( "s", "c", "cost", (double) 7 );
-        graph.makeEdge( "c", "e", "cost", (double) 7 );
-        graph.makeEdge( "s", "a", "cost", (double) 2 );
-        graph.makeEdge( "a", "b", "cost", (double) 7 );
-        graph.makeEdge( "b", "e", "cost", (double) 2 );
+        graph.makeEdge( "c", "e", "cost", (float) 7 );
+        graph.makeEdge( "s", "a", "cost", (long) 2 );
+        graph.makeEdge( "a", "b", "cost", (int) 7 );
+        graph.makeEdge( "b", "e", "cost", (byte) 2 );
         Dijkstra<Double> dijkstra = getDijkstra( graph, 0.0, "s", "e" );
         assertTrue( dijkstra.getCost() == 11.0 );
         assertTrue( dijkstra.getPathAsNodes() != null );

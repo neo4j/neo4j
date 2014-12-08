@@ -25,16 +25,16 @@ import org.neo4j.graphdb.Relationship;
 
 public class IntegerEvaluator implements CostEvaluator<Integer>
 {
-    private String costpropertyName;
+    private String costPropertyName;
 
-    public IntegerEvaluator( String costpropertyName )
+    public IntegerEvaluator( String costPropertyName)
     {
         super();
-        this.costpropertyName = costpropertyName;
+        this.costPropertyName = costPropertyName;
     }
 
     public Integer getCost( Relationship relationship, Direction direction )
     {
-        return (Integer) relationship.getProperty( costpropertyName );
+        return ( (Number) relationship.getProperty(costPropertyName) ).intValue();
     }
 }

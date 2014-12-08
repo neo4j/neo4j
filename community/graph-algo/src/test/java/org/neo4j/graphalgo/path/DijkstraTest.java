@@ -50,8 +50,8 @@ public class DijkstraTest extends Neo4jAlgoTestCase
         Node nodeB = graph.makeNode( "B" );
         Node nodeC = graph.makeNode( "C" );
         graph.makeEdge( "A", "B", "length", 2d );
-        graph.makeEdge( "B", "C", "length", 3d );
-        graph.makeEdge( "A", "C", "length", 10d );
+        graph.makeEdge( "B", "C", "length", 3L );
+        graph.makeEdge( "A", "C", "length", (byte)10 );
 
         Dijkstra algo = new Dijkstra( PathExpanders.allTypesAndDirections(),
                 CommonEvaluators.doubleCostEvaluator( "length" ) );
@@ -82,14 +82,14 @@ public class DijkstraTest extends Neo4jAlgoTestCase
 
         // Path "1"
         graph.makeEdge( "A", "B", "length", 2d );
-        graph.makeEdge( "B", "C", "length", 3d );
-        graph.makeEdge( "C", "D", "length", 1d ); // = 6
+        graph.makeEdge( "B", "C", "length", 3L );
+        graph.makeEdge( "C", "D", "length", (byte)1 ); // = 6
 
         // Path "2"
-        graph.makeEdge( "B", "D", "length", 5d ); // = 7
+        graph.makeEdge( "B", "D", "length", (short)5 ); // = 7
 
         // Path "3"
-        graph.makeEdge( "A", "D", "length", 6d ); // = 8
+        graph.makeEdge( "A", "D", "length", (float)6 ); // = 8
 
         Dijkstra algo = new Dijkstra( Traversal.expanderForAllTypes( Direction.OUTGOING ),
                 CommonEvaluators.doubleCostEvaluator( "length" ), false );
@@ -106,8 +106,8 @@ public class DijkstraTest extends Neo4jAlgoTestCase
         Node nodeC = graph.makeNode( "C" );
         Set<Relationship> expectedFirsts = new HashSet<Relationship>();
         expectedFirsts.add( graph.makeEdge( "A", "B", "length", 1d ) );
-        expectedFirsts.add( graph.makeEdge( "A", "B", "length", 1d ) );
-        Relationship expectedSecond = graph.makeEdge( "B", "C", "length", 2d );
+        expectedFirsts.add( graph.makeEdge( "A", "B", "length", 1 ) );
+        Relationship expectedSecond = graph.makeEdge( "B", "C", "length", 2L );
         graph.makeEdge( "A", "C", "length", 5d );
 
         Dijkstra algo = new Dijkstra( PathExpanders.allTypesAndDirections(),
@@ -144,14 +144,14 @@ public class DijkstraTest extends Neo4jAlgoTestCase
         Node nodeE = graph.makeNode( "E" );
         Node nodeF = graph.makeNode( "F" );
         graph.makeEdge( "A", "B", "length", 2d );
-        graph.makeEdge( "A", "C", "length", 2.5d );
+        graph.makeEdge( "A", "C", "length", 2.5f );
         graph.makeEdge( "C", "D", "length", 7.3d );
-        graph.makeEdge( "B", "D", "length", 2.5d );
-        graph.makeEdge( "D", "E", "length", 3d );
-        graph.makeEdge( "C", "E", "length", 5d );
-        graph.makeEdge( "E", "F", "length", 5d );
-        graph.makeEdge( "C", "F", "length", 12d );
-        graph.makeEdge( "A", "F", "length", 25d );
+        graph.makeEdge( "B", "D", "length", 2.5f );
+        graph.makeEdge( "D", "E", "length", 3L );
+        graph.makeEdge( "C", "E", "length", 5 );
+        graph.makeEdge( "E", "F", "length", (byte)5 );
+        graph.makeEdge( "C", "F", "length", (short)12 );
+        graph.makeEdge( "A", "F", "length", (long)25 );
 
         Dijkstra algo = new Dijkstra( PathExpanders.allTypesAndDirections(),
                 CommonEvaluators.doubleCostEvaluator( "length" ) );
