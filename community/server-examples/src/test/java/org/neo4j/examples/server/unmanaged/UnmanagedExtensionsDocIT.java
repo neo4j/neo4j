@@ -19,36 +19,13 @@
 package org.neo4j.examples.server.unmanaged;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.config.DefaultClientConfig;
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.jaxrs.JacksonJsonProvider;
-import org.codehaus.jackson.node.ArrayNode;
-import org.codehaus.jackson.node.JsonNodeFactory;
-import org.codehaus.jackson.node.ObjectNode;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.DynamicRelationshipType;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.harness.ServerControls;
-import org.neo4j.harness.TestServerBuilders;
 import org.neo4j.harness.junit.Neo4jRule;
-import org.neo4j.server.CommunityNeoServer;
-import org.neo4j.server.helpers.CommunityServerBuilder;
-import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.server.HTTP;
 
 import static junit.framework.TestCase.assertEquals;
@@ -56,7 +33,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsCollectionContaining.hasItem;
 
-public class UnmanagedExtensionsIT
+public class UnmanagedExtensionsDocIT
 {
     @Rule
     public Neo4jRule neo4j = new Neo4jRule()
@@ -64,7 +41,7 @@ public class UnmanagedExtensionsIT
                     "MERGE (m:Movie  {name: 'The Matrix'}) " +
                     "MERGE (p:Person {name: actor}) " +
                     "MERGE (p)-[:ACTED_IN]->(m) " )
-            .withExtension( "/path/to/my/extension1", ColleaguesExecutionEngineResource.class )
+            .withExtension( "/path/to/my/extension1", ColleaguesCypherExecutionResource.class )
             .withExtension( "/path/to/my/extension2", ColleaguesResource.class );
 
     @Test
@@ -72,7 +49,7 @@ public class UnmanagedExtensionsIT
     {
         // When
         HTTP.Response response = HTTP.GET( neo4j.httpURI().resolve(
-                "/path/to/my/extension1/colleagues-execution-engine/Keanu%20Reeves" ).toString() );
+                "/path/to/my/extension1/colleagues-cypher-execution/Keanu%20Reeves" ).toString() );
 
         // Then
         assertEquals( 200, response.status() );

@@ -20,6 +20,7 @@ package org.neo4j.examples.server.unmanaged;
 
 import java.io.IOException;
 import java.io.OutputStream;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -39,6 +40,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 
 import static org.neo4j.graphdb.Direction.INCOMING;
@@ -74,10 +76,13 @@ public class ColleaguesResource
                 jg.writeFieldName( "colleagues" );
                 jg.writeStartArray();
 
-                try ( Transaction tx = graphDb.beginTx() )
+                try ( Transaction tx = graphDb.beginTx();
+                      ResourceIterator<Node> persons =
+                              graphDb.findNodesByLabelAndProperty( PERSON, "name", personName ).iterator() )
                 {
-                    for ( Node person : graphDb.findNodesByLabelAndProperty( PERSON, "name", personName ) )
+                    while ( persons.hasNext() )
                     {
+                        Node person = persons.next();
                         for ( Relationship actedIn : person.getRelationships( ACTED_IN, OUTGOING ) )
                         {
                             for ( Relationship colleagueActedIn : actedIn.getEndNode().getRelationships( ACTED_IN, INCOMING ) )

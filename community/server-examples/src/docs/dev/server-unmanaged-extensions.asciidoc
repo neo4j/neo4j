@@ -8,7 +8,7 @@ For these situations you can use the unmanaged extension API.
 [CAUTION]
 This is a sharp tool, allowing users to deploy arbitrary http://en.wikipedia.org/wiki/JAX-RS[JAX-RS] classes to the server so be careful when using this.
 In particular it's easy to consume lots of heap space on the server and degrade performance.
-If in doubt please ask for help via one of the community channels. (see <<community-support>>)
+If in doubt please ask for help via one of the community channels (see <<community-support>>).
 
 :leveloffset: 3
 [[intro-unmanaged-extensions]]
@@ -26,12 +26,12 @@ In Maven this would be achieved by adding the following lines to the pom file:
 </dependency>
 --------
 
-[source,xml]
+["source","xml","unnumbered","2",presubs="attributes"]
 --------
 <dependency>
     <groupId>org.neo4j</groupId>
     <artifactId>neo4j</artifactId>
-    <version>${neo4j.version}</version>
+    <version>{neo4j-version}</version>
     <scope>provided</scope>
 </dependency>
 --------
@@ -82,7 +82,7 @@ include::server-unmanaged-extensions-streaming.asciidoc[]
 
 :leveloffset: 3
 
-include::server-unmanaged-extensions-execution-engine.asciidoc[]
+include::server-unmanaged-extensions-cypher-execution.asciidoc[]
 
 :leveloffset: 2
 
@@ -97,8 +97,8 @@ You can access this toolkit by adding the following test dependency to your proj
 <dependency>
    <groupId>org.neo4j.test</groupId>
    <artifactId>neo4j-harness</artifactId>
-   <version>{neo4j.version}</version>
-   <scope>provided</scope>
+   <version>{neo4j-version}</version>
+   <scope>test</scope>
 </dependency>
 --------
 
@@ -128,3 +128,4 @@ source=org/neo4j/harness/doc/JUnitDocTest.java
 tag=useJUnitRule
 classifier=test-sources
 ----
+

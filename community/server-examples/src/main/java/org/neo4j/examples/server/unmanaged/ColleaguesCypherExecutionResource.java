@@ -41,15 +41,15 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 
-//START SNIPPET: ColleaguesExecutionEngineResource
-@Path("/colleagues-execution-engine")
-public class ColleaguesExecutionEngineResource
+//START SNIPPET: ColleaguesCypherExecutionResource
+@Path("/colleagues-cypher-execution")
+public class ColleaguesCypherExecutionResource
 {
     private final ExecutionEngine executionEngine;
     private final ObjectMapper objectMapper;
     private GraphDatabaseService graphDb;
 
-    public ColleaguesExecutionEngineResource( @Context GraphDatabaseService graphDb )
+    public ColleaguesCypherExecutionResource( @Context GraphDatabaseService graphDb )
     {
         this.graphDb = graphDb;
         this.objectMapper = new ObjectMapper();
@@ -98,4 +98,4 @@ public class ColleaguesExecutionEngineResource
         return "MATCH (p:Person {name: {personName} })-[:ACTED_IN]->()<-[:ACTED_IN]-(colleague) RETURN colleague";
     }
 }
-// END SNIPPET: ColleaguesExecutionEngineResource
+// END SNIPPET: ColleaguesCypherExecutionResource
