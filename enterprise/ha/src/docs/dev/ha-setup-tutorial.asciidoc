@@ -94,7 +94,7 @@ as +0.0.0.0+ (the "all interfaces" address).
 [[package-download]]
 === Download and unpack Neo4j Enterprise ===
 
-Download Neo4j Enterprise from http://neo4j.org/download[the Neo4j download site], and unpack on 3 separate machines.
+Download Neo4j Enterprise from http://neo4j.com/download/[the Neo4j download site], and unpack on 3 separate machines.
 
 === Configure HA related settings for each installation ===
 
@@ -229,7 +229,7 @@ This is easy to achieve, although it requires some additional configuration as t
 
 === Download and unpack Neo4j Enterprise ===
 
-Download Neo4j Enterprise from http://neo4j.org/download[the Neo4j download site], and unpack into 3 separate directories on your test machine.
+Download Neo4j Enterprise from http://neo4j.com/download/[the Neo4j download site], and unpack into 3 separate directories on your test machine.
 
 === Configure HA related settings for each installation ===
 

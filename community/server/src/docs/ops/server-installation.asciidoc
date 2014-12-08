@@ -27,7 +27,7 @@ We recommend that you install http://openjdk.java.net/[OpenJDK 7] or http://www.
 [[windows-installer]]
 === Windows Installer ===
 
-1. Download the version that you want from http://www.neo4j.org/download.
+1. Download the version that you want from http://neo4j.com/download/.
    * Select the appropriate version and architecture for your platform.
 2. Double-click the downloaded installer file.
 3. Follow the prompts.
@@ -38,37 +38,12 @@ Newer versions of Windows come with a SmartScreen feature that may prevent the i
 
 [[windows-console]]
 === Windows Console Application ===
-1. Download the latest release from http://www.neo4j.org/download.
+1. Download the latest release from http://neo4j.com/download/.
    * Select the appropriate Zip distribution.
 2. Right-click the downloaded file, click Extract All.
    * Refer to the top-level extracted directory as: +NEO4J_HOME+
 3. Double-click on '%NEO4J_HOME%\bin\Neo4j.bat'
 4. Stop the server by typing Ctrl-C in the console that got opened.
-
-=== As a Windows service ===
-
-1. Download the latest release from http://www.neo4j.org/download.
-   * Select the appropriate Zip distribution.
-2. Right-click the downloaded file, click Extract All.
-   * Refer to the top-level extracted directory as: +NEO4J_HOME+
-
-With administrative rights, Neo4j can be installed as a Windows service.
-
-1. Click Start -> All Programs -> Accessories.
-2. Right click Command Prompt -> Run as Administrator.
-3. Provide authorization and/or the Administrator password.
-4. Navigate to: `%NEO4J_HOME%`
-5. Run: `bin\Neo4jInstaller.bat install`
-
-To uninstall, run `bin\Neo4jInstaller.bat remove` as Administrator.
-
-To query the status of the service, run: `bin\Neo4jInstaller.bat status`
-
-To start the service from the command prompt, run: `sc start Neo4j-Server`
-
-To stop the service from the command prompt, run: `sc stop Neo4j-Server`
-
-You can also start and stop Neo4j from the Windows Service Manager.
 
 [NOTE]
 Some users have reported problems on Windows when using the ZoneAlarm firewall.
@@ -81,12 +56,15 @@ Contact ZoneAlarm support to get information on how to resolve this.
 [[linux-packages]]
 === Linux Packages ===
 
-For Debian packages, see the instructions at  http://debian.neo4j.org.
+* For Debian packages, see the instructions at  http://debian.neo4j.org.
+
+After installation you may have to do some platform specific configuration and performance tuning.
+For that, refer to <<linux-performance-guide>>.
 
 [[unix-console]]
 === Unix Console Application ===
 
-1. Download the latest release from http://www.neo4j.org/download.
+1. Download the latest release from http://neo4j.com/download/.
    * Select the appropriate tar.gz distribution for your platform.
 2. Extract the contents of the archive, using: `tar -xf <filename>`
    * Refer to the top-level extracted directory as: +NEO4J_HOME+
@@ -96,68 +74,19 @@ For Debian packages, see the instructions at  http://debian.neo4j.org.
 
 === Linux Service ===
 
-Neo4j can participate in the normal system startup and shutdown process.
-The following procedure should work on most popular Linux distributions:
-
-[NOTE]
-You will require adminstrative rights on the machine to perform these tasks.
-
-. `cd $NEO4J_HOME`
-. `sudo ./bin/neo4j-installer install`
-+
-If asked, enter your password to gain super-user privileges.
-
-. `sudo service neo4j-service status`
-+
-This should indicate that the server is not running.
-
-. `sudo service neo4j-service start`
-+
-This will start the server.
-
-. `sudo service neo4j-service stop`
-+
-This will stop the server.
-
-During installation you will be given the option to select the user Neo4j will run as.
-You will be asked to supply a username (defaulting to `neo4j`) and if that user is not present on the system it will be created as a system account and the '$NEO4J_HOME/data' directory will be ++chown++'ed to that user.
-
-You are encouraged to create a dedicated user for running the service and for that reason it is suggested that you unpack the distribution package under '/opt' or your site specific optional packages directory.
-
-After installation you may have to do some platform specific configuration and performance tuning.
-For that, refer to <<linux-performance-guide>>.
-
-To remove the server from the set of startup services, the proper commands are:
-
-. `cd $NEO4J_HOME`
-. `sudo ./bin/neo4j-installer remove`
-
-This will stop the server, if running, and remove it.
-
-Note that if you chose to create a new user account, on uninstall you will be prompted to remove it from the system.
+The `neo4j` command can also be used with `start`, `stop`, `restart` or `status` instead of `console`.
+By using these actions, you can create a Neo4j service.
+See the <<neo4j-manpage,neo4j man page>> for further details.
 
 [CAUTION]
 This approach to running Neo4j as a server is deprecated.
 We strongly advise you to run Neo4j from a package where feasible.
 
-You can alternatively build your own init.d script. See for instance the Linux Standard Base specification on http://refspecs.linuxfoundation.org/LSB_3.1.0/LSB-Core-generic/LSB-Core-generic/tocsysinit.html[system initialization], or one of the many https://gist.github.com/chrisvest/7673244[samples] and http://www.linux.com/learn/tutorials/442412-managing-linux-daemons-with-init-scripts[tutorials].
+You can build your own `init.d` script.
+See for instance the Linux Standard Base specification on http://refspecs.linuxfoundation.org/LSB_3.1.0/LSB-Core-generic/LSB-Core-generic/tocsysinit.html[system initialization], or one of the many https://gist.github.com/chrisvest/7673244[samples] and http://www.linux.com/learn/tutorials/442412-managing-linux-daemons-with-init-scripts[tutorials].
 
 [[osx-install]]
 == Mac OSX ==
-
-=== OSX via Homebrew ===
-
-Using Homebrew (see http://brew.sh/), to install the latest stable version of Neo4j Server, issue the following command:
-
-[source,shell]
-----
-brew install neo4j && neo4j start
-----
-
-This will get a Neo4j instance running on http://localhost:7474.
-The installation files will reside in `ls /usr/local/Cellar/neo4j/community-{NEO4J_VERSION}/libexec/` -- to tweak settings and symlink the database directory if desired.
-
-After the installation, Neo4j can run either as a service or from a terminal.
 
 === Running Neo4j from the Terminal ===
 
@@ -171,35 +100,13 @@ can access the database files at a time.
 
 === OSX Service ===
 
-Neo4j can be installed as a Mac launchd job:
-
-1. `cd $NEO4J_HOME`
-2. `./bin/neo4j-installer install`
-3. `launchctl list | grep neo`
-+
-This should reveal the launchd "org.neo4j.server.7474" job for running the Neo4j Server.
-
-4. `launchctl list | grep neo4j`
-+
-This should indicate that the server is running.
-
-5. `launchctl stop org.neo4j.server`
-+
-This should stop the server.
-   
-6. `launchctl start org.neo4j.server`
-+
-This should start the server again.
-
-To remove the launchctl service, issue the following command:
-
-`./bin/neo4j-installer remove`
+Use the standard OSX system tools to create a service based on the `neo4j` command.
 
 === A note on Java on OS X Mavericks ===
 
 Unlike previous versions, OS X Mavericks does not come with Java pre-installed. You might encounter that the first time you run Neo4j, where OS X will trigger a popup offering you to install Java SE 6.
 
-Java SE 6 is incompatible with Neo4j 2.0, so we strongly advise you to skip installing Java SE 6 if you have no other uses for it. Instead, for Neo4j 2.0 we recommend you install Java SE 7 from Oracle (http://www.oracle.com/technetwork/java/javase/downloads/index.html) as that is what we support for production use.
+Java SE 6 is incompatible with Neo4j {neo4j-version}, so we strongly advise you to skip installing Java SE 6 if you have no other uses for it. Instead, for Neo4j {neo4j-version} we recommend you install Java SE 7 from Oracle (http://www.oracle.com/technetwork/java/javase/downloads/index.html) as that is what we support for production use.
 
 == Multiple Server instances on one machine ==
 

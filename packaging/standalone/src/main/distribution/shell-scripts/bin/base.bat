@@ -63,7 +63,6 @@ goto:eof
   if %command% == "" (
       if not "%1" == "" (
              echo This command is not supported by the Neo4j utility. Please try "Neo4j.bat help" for more info.
-             echo For installing Neo4j as a Windows Service, see Neo4jInstaller.bat
              goto:eof
       )
       set command=console

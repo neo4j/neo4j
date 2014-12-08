@@ -386,7 +386,7 @@ case "${!OPTIND}" in
     exit 1
     ;;
   *)
-    echo "Usage: neo4j { console | start | start-no-wait | stop | restart | status | info | install | remove }"
+    echo "Usage: neo4j { console | start | start-no-wait | stop | restart | status | info }"
     exit 0;;
 
 esac
