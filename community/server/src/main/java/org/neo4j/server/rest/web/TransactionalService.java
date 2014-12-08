@@ -65,16 +65,16 @@ public class TransactionalService
     @POST
     @Consumes({MediaType.APPLICATION_JSON})
     @Produces({MediaType.APPLICATION_JSON})
-    public Response executeStatementsInNewTransaction( final InputStream input )
+    public Response executeStatementsInNewTransaction( final InputStream input, @Context final UriInfo uriInfo )
     {
         try
         {
             TransactionHandle transactionHandle = facade.newTransactionHandle( uriScheme );
-            return createdResponse( transactionHandle, executeStatements( input, transactionHandle ) );
+            return createdResponse( transactionHandle, executeStatements( input, transactionHandle, uriInfo.getRequestUri() ) );
         }
         catch ( TransactionLifecycleException e )
         {
-            return invalidTransaction( e );
+            return invalidTransaction( e, uriInfo.getRequestUri() );
         }
     }
 
@@ -82,7 +82,8 @@ public class TransactionalService
     @Path("/{id}")
     @Consumes({MediaType.APPLICATION_JSON})
     @Produces({MediaType.APPLICATION_JSON})
-    public Response executeStatements( @PathParam("id") final long id, final InputStream input )
+    public Response executeStatements( @PathParam("id") final long id, final InputStream input,
+                                       @Context final UriInfo uriInfo )
     {
         final TransactionHandle transactionHandle;
         try
@@ -91,16 +92,16 @@ public class TransactionalService
         }
         catch ( TransactionLifecycleException e )
         {
-            return invalidTransaction( e );
+            return invalidTransaction( e, uriInfo.getRequestUri() );
         }
-        return okResponse( executeStatements( input, transactionHandle ) );
+        return okResponse( executeStatements( input, transactionHandle, uriInfo.getRequestUri() ) );
     }
 
     @POST
     @Path("/{id}/commit")
     @Consumes({MediaType.APPLICATION_JSON})
     @Produces({MediaType.APPLICATION_JSON})
-    public Response commitTransaction( @PathParam("id") final long id, final InputStream input )
+    public Response commitTransaction( @PathParam("id") final long id, final InputStream input, @Context final UriInfo uriInfo )
     {
         final TransactionHandle transactionHandle;
         try
@@ -109,16 +110,16 @@ public class TransactionalService
         }
         catch ( TransactionLifecycleException e )
         {
-            return invalidTransaction( e );
+            return invalidTransaction( e, uriInfo.getRequestUri() );
         }
-        return okResponse( executeStatementsAndCommit( input, transactionHandle, false ) );
+        return okResponse( executeStatementsAndCommit( input, transactionHandle, uriInfo.getRequestUri(), false ) );
     }
 
     @POST
     @Path("/commit")
     @Consumes({MediaType.APPLICATION_JSON})
     @Produces({MediaType.APPLICATION_JSON})
-    public Response commitNewTransaction( final InputStream input )
+    public Response commitNewTransaction( final InputStream input, @Context final UriInfo uriInfo )
     {
         final TransactionHandle transactionHandle;
         try
@@ -127,15 +128,20 @@ public class TransactionalService
         }
         catch ( TransactionLifecycleException e )
         {
-            return invalidTransaction( e );
+            return invalidTransaction( e, uriInfo.getRequestUri() );
         }
-        return okResponse( executeStatementsAndCommit( input, transactionHandle, true ) );
+
+        final StreamingOutput streamingResults = executeStatementsAndCommit( input,
+                transactionHandle,
+                uriInfo.getRequestUri(),
+                true );
+        return okResponse( streamingResults );
     }
 
     @DELETE
     @Path("/{id}")
     @Consumes({MediaType.APPLICATION_JSON})
-    public Response rollbackTransaction( @PathParam("id") final long id )
+    public Response rollbackTransaction( @PathParam("id") final long id, @Context UriInfo uriInfo )
     {
         final TransactionHandle transactionHandle;
         try
@@ -144,15 +150,15 @@ public class TransactionalService
         }
         catch ( TransactionLifecycleException e )
         {
-            return invalidTransaction( e );
+            return invalidTransaction( e, uriInfo.getRequestUri() );
         }
-        return okResponse( rollback( transactionHandle ) );
+        return okResponse( rollback( transactionHandle, uriInfo.getBaseUri() ) );
     }
 
-    private Response invalidTransaction( TransactionLifecycleException e )
+    private Response invalidTransaction( final TransactionLifecycleException e, final URI requestUri )
     {
         return Response.status( Response.Status.NOT_FOUND )
-                .entity( serializeError( e.toNeo4jError() ) )
+                .entity( serializeError( e.toNeo4jError(), requestUri ) )
                 .build();
     }
 
@@ -170,20 +176,22 @@ public class TransactionalService
                 .build();
     }
 
-    private StreamingOutput executeStatements( final InputStream input, final TransactionHandle transactionHandle )
+    private StreamingOutput executeStatements( final InputStream input, final TransactionHandle transactionHandle,
+                                               final URI requestUri )
     {
         return new StreamingOutput()
         {
             @Override
             public void write( OutputStream output ) throws IOException, WebApplicationException
             {
-                transactionHandle.execute( facade.deserializer( input ), facade.serializer( output ) );
+                transactionHandle.execute( facade.deserializer( input ), facade.serializer( output, requestUri ) );
             }
         };
     }
 
-    private StreamingOutput executeStatementsAndCommit( final InputStream input, 
+    private StreamingOutput executeStatementsAndCommit( final InputStream input,
                                                         final TransactionHandle transactionHandle,
+                                                        final URI requestUri,
                                                         final boolean pristine )
     {
         return new StreamingOutput()
@@ -191,31 +199,31 @@ public class TransactionalService
             @Override
             public void write( OutputStream output ) throws IOException, WebApplicationException
             {
-                transactionHandle.commit( facade.deserializer( input ), facade.serializer( output ), pristine );
+                transactionHandle.commit( facade.deserializer( input ), facade.serializer( output, requestUri ), pristine );
             }
         };
     }
 
-    private StreamingOutput rollback( final TransactionHandle transactionHandle )
+    private StreamingOutput rollback( final TransactionHandle transactionHandle, final URI requestUri )
     {
         return new StreamingOutput()
         {
             @Override
             public void write( OutputStream output ) throws IOException, WebApplicationException
             {
-                transactionHandle.rollback( facade.serializer( output ) );
+                transactionHandle.rollback( facade.serializer( output, requestUri ) );
             }
         };
     }
 
-    private StreamingOutput serializeError( final Neo4jError neo4jError )
+    private StreamingOutput serializeError( final Neo4jError neo4jError, final URI requestUri )
     {
         return new StreamingOutput()
         {
             @Override
             public void write( OutputStream output ) throws IOException, WebApplicationException
             {
-                ExecutionResultSerializer serializer = facade.serializer( output );
+                ExecutionResultSerializer serializer = facade.serializer( output, requestUri );
                 serializer.errors( asList( neo4jError ) );
                 serializer.finish();
             }

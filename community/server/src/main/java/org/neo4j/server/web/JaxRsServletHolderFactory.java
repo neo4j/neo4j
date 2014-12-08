@@ -73,6 +73,7 @@ public abstract class JaxRsServletHolderFactory
 
     private String getRequestFilterConfig()
     {
+        // Ordering of execution of filters goes from left to right
         return XForwardFilter.class.getName() + "," + CollectUserAgentFilter.class.getName();
     }
 
