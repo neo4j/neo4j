@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.QueryPlanningStrategy.patternExpressionRewriter
 import org.neo4j.cypher.internal.compiler.v2_2._
+import org.neo4j.cypher.internal.compiler.v2_2.ast._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.QueryPlanningStrategy.patternExpressionRewriter
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter.LogicalPlanRewriter
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.ExpressionConverters._
 
 class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default,
                             rewriter: Rewriter = LogicalPlanRewriter)
@@ -124,17 +124,29 @@ class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStra
 }
 
 object QueryPlanningStrategy {
-  case class patternExpressionRewriter(planArguments: Set[IdName], exprArguments: IdentityMap[Expression, Set[IdName]])(implicit context: LogicalPlanningContext) extends Rewriter {
+
+  def planPatternExpression(planArguments: Set[IdName], expr: PatternExpression)
+                           (implicit context: LogicalPlanningContext): (LogicalPlan, PatternExpression) = {
+    val dependencies = expr.dependencies.map(IdName.fromIdentifier)
+    val qgArguments = planArguments intersect dependencies
+    val (namedExpr, namedMap) = PatternExpressionPatternElementNamer(expr)
+    val qg = namedExpr.asQueryGraph.withArgumentIds(qgArguments)
+
+    val argLeafPlan = Some(planQueryArgumentRow(qg))
+    val namedNodes = namedMap.collect { case (elem: NodePattern, identifier) => identifier }
+    val namedRels = namedMap.collect { case (elem: RelationshipChain, identifier) => identifier }
+    val patternPlanningContext = context.forExpressionPlanning(namedNodes, namedRels)
+    val queryGraphSolver = patternPlanningContext.strategy
+    val plan = queryGraphSolver.plan(qg)(patternPlanningContext, argLeafPlan)
+    (plan, namedExpr)
+  }
+
+  private case class patternExpressionRewriter(planArguments: Set[IdName], exprArguments: IdentityMap[Expression, Set[IdName]])
+                                              (implicit context: LogicalPlanningContext) extends Rewriter {
     val instance = Rewriter.lift {
-      case pattern: ast.PatternExpression =>
-        val dependencies = pattern.dependencies.map(IdName.fromIdentifier)
-        val qgArguments = (planArguments ++ exprArguments(pattern)) intersect dependencies
-        val qg = pattern.asQueryGraph.withArgumentIds(qgArguments)
-        val argLeafPlan = Some(planQueryArgumentRow(qg))
-        val patternPlanningContext = context.forExpressionPlanning
-        val queryGraphSolver = patternPlanningContext.strategy
-        val plan = queryGraphSolver.plan(qg)(patternPlanningContext, argLeafPlan)
-        ast.NestedPlanExpression(plan, pattern)(pattern.position)
+      case expr @ PatternExpression(pattern) =>
+        val (plan, namedExpr) =  planPatternExpression(planArguments ++ exprArguments(expr), expr)
+        NestedPlanExpression(plan, namedExpr)(namedExpr.position)
     }
 
     def apply(that: AnyRef): AnyRef = bottomUp(instance).apply(that)

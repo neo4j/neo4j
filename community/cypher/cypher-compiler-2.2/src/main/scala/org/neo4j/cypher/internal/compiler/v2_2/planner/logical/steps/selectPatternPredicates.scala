@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
@@ -40,10 +39,10 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer[QueryGraph])
         yield {
           pattern match {
             case patternExpression: PatternExpression =>
-              val rhs = rhsPlan(context, patternExpression)
+              val rhs = rhsPlan(lhs.availableSymbols, patternExpression)
               planSemiApply(lhs, rhs, patternExpression)
             case p@Not(patternExpression: PatternExpression) =>
-              val rhs = rhsPlan(context, patternExpression)
+              val rhs = rhsPlan(lhs.availableSymbols, patternExpression)
               planAntiSemiApply(lhs, rhs, patternExpression, p)
             case p@Ors(exprs) =>
               val (patternExpressions, expressions) = exprs.partition {
@@ -63,23 +62,23 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer[QueryGraph])
                               (implicit context: LogicalPlanningContext): (LogicalPlan, Set[Expression]) = {
       patternExpressions.toList match {
         case (patternExpression: PatternExpression) :: Nil =>
-          val rhs = rhsPlan(context, patternExpression)
+          val rhs = rhsPlan(lhs.availableSymbols, patternExpression)
           val plan = planSelectOrSemiApply(lhs, rhs, onePredicate(expressions ++ letExpression.toSet))
           (plan, expressions + patternExpression)
 
         case (p@Not(patternExpression: PatternExpression)) :: Nil =>
-          val rhs = rhsPlan(context, patternExpression)
+          val rhs = rhsPlan(lhs.availableSymbols, patternExpression)
           val plan = planSelectOrAntiSemiApply(lhs, rhs, onePredicate(expressions ++ letExpression.toSet))
           (plan, expressions + p)
 
         case (patternExpression: PatternExpression) :: tail =>
-          val rhs = rhsPlan(context, patternExpression)
+          val rhs = rhsPlan(lhs.availableSymbols, patternExpression)
           val (newLhs, newLetExpr) = createLetSemiApply(lhs, rhs, patternExpression, expressions, letExpression)
           val (plan, solvedPredicates) = planPredicates(newLhs, tail.toSet, Set.empty, Some(newLetExpr))
           (plan, solvedPredicates ++ Set(patternExpression) ++ expressions)
 
         case (p@Not(patternExpression: PatternExpression)) :: tail =>
-          val rhs = rhsPlan(context, patternExpression)
+          val rhs = rhsPlan(lhs.availableSymbols, patternExpression)
           val (newLhs, newLetExpr) = createLetAntiSemiApply(lhs, rhs, patternExpression, p, expressions, letExpression)
           val (plan, solvedPredicates) = planPredicates(newLhs, tail.toSet, Set.empty, Some(newLetExpr))
           (plan, solvedPredicates ++ Set(p) ++ expressions)
@@ -105,8 +104,10 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer[QueryGraph])
         (planLetSelectOrAntiSemiApply(lhs, rhs, idName, onePredicate(expressions ++ letExpression.toSet)), ident)
     }
 
-    private def rhsPlan(context: LogicalPlanningContext, pattern: PatternExpression) =
-      context.strategy.plan(pattern.asQueryGraph)(context)
+    private def rhsPlan(planArguments: Set[IdName], pattern: PatternExpression)(implicit context: LogicalPlanningContext): LogicalPlan = {
+      val (plan, _) = QueryPlanningStrategy.planPatternExpression(planArguments, pattern)
+      plan
+    }
 
     private def onePredicate(expressions: Set[Expression]): Expression = if (expressions.size == 1)
       expressions.head

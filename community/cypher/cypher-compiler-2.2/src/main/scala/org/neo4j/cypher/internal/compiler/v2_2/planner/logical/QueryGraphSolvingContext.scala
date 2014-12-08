@@ -35,8 +35,15 @@ case class LogicalPlanningContext(planContext: PlanContext,
     copy(cardinalityInput = newInput)
   }
 
-  def forExpressionPlanning =
-    copy(cardinalityInput = cardinalityInput.copy(inboundCardinality = Cardinality(1)))
+  def forExpressionPlanning(nodes: Iterable[Identifier], rels: Iterable[Identifier]) = {
+    val tableWithNodes = nodes.foldLeft(semanticTable) { case (table, node) => table.addNode(node) }
+    val tableWithRels = rels.foldLeft(tableWithNodes) { case (table, rel) => table.addRelationship(rel) }
+
+    copy(
+      cardinalityInput = cardinalityInput.copy(inboundCardinality = Cardinality(1)),
+      semanticTable = tableWithRels
+    )
+  }
 
   def statistics = planContext.statistics
   def cost = metrics.cost

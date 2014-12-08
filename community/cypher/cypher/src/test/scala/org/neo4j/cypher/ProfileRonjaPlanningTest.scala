@@ -22,6 +22,7 @@ package org.neo4j.cypher
 import org.json4s.JsonAST._
 import org.json4s.native.JsonMethods
 import org.neo4j.cypher.internal.compiler.v2_2._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_2.parser.{CypherParser, ParserMonitor}
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
@@ -53,7 +54,7 @@ class ProfileRonjaPlanningTest extends ExecutionEngineFunSuite with QueryStatist
   def buildCompiler(metricsFactoryInput: MetricsFactory = SimpleMetricsFactory)(graph: GraphDatabaseService) = {
     val kernelMonitors = new KernelMonitors()
     val monitors = new Monitors(kernelMonitors)
-    val parser = new CypherParser(monitors.newMonitor[ParserMonitor[ast.Statement]](monitorTag))
+    val parser = new CypherParser(monitors.newMonitor[ParserMonitor[Statement]](monitorTag))
     val checker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
     val rewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag))
     val planBuilderMonitor = monitors.newMonitor[NewLogicalPlanSuccessRateMonitor](monitorTag)
