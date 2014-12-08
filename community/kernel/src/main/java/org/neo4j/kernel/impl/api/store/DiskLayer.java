@@ -207,38 +207,35 @@ public class DiskLayer implements StoreReadLayer
     @Override
     public PrimitiveIntIterator nodeGetLabels( long nodeId )
     {
-        try
+        NodeRecord record = nodeStore.loadRecord( nodeId, null );
+        if ( record == null )
         {
-            final long[] labels = parseLabelsField( nodeStore.getRecord( nodeId ) ).get( nodeStore );
-            return new PrimitiveIntIterator()
-            {
-                private int cursor;
-
-
-                @Override
-                public boolean hasNext()
-                {
-                    return cursor < labels.length;
-                }
-
-
-                @Override
-                public int next()
-                {
-                    if ( !hasNext() )
-                    {
-                        throw new NoSuchElementException();
-                    }
-                    return safeCastLongToInt( labels[cursor++] );
-                }
-            };
-
-        }
-        catch ( InvalidRecordException e )
-        {   // TODO Might hide invalid dynamic record problem. It's here because this method
-            // might get called with a nodeId that doesn't exist.
             return PrimitiveIntCollections.emptyIterator();
         }
+
+        final long[] labels = parseLabelsField( record ).get( nodeStore );
+        return new PrimitiveIntIterator()
+        {
+            private int cursor;
+
+
+            @Override
+            public boolean hasNext()
+            {
+                return cursor < labels.length;
+            }
+
+
+            @Override
+            public int next()
+            {
+                if ( !hasNext() )
+                {
+                    throw new NoSuchElementException();
+                }
+                return safeCastLongToInt( labels[cursor++] );
+            }
+        };
     }
 
     @Override
@@ -690,18 +687,10 @@ public class DiskLayer implements StoreReadLayer
                     {
                         try
                         {
-                            try
+                            NodeRecord record = store.loadRecord( currentId, reusableNodeRecord );
+                            if ( record != null && record.inUse() )
                             {
-                                NodeRecord record = store.getRecord( currentId, reusableNodeRecord );
-                                if ( record != null && record.inUse() )
-                                {
-                                    return next( record.getId() );
-                                }
-                            }
-                            catch ( InvalidRecordException e )
-                            {
-                                // TODO please don't rely on exceptions for flow control
-                                // OK, just continue
+                                return next( record.getId() );
                             }
                         }
                         finally
@@ -744,16 +733,9 @@ public class DiskLayer implements StoreReadLayer
                     {
                         try
                         {
-                            try
+                            if ( store.fillRecord( currentId, reusableRecord, CHECK ) && reusableRecord.inUse() )
                             {
-                                if ( store.fillRecord( currentId, reusableRecord, CHECK ) && reusableRecord.inUse() )
-                                {
-                                    return next( reusableRecord.getId() );
-                                }
-                            }
-                            catch ( InvalidRecordException e )
-                            {
-                                // OK, just continue
+                                return next( reusableRecord.getId() );
                             }
                         }
                         finally
