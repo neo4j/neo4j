@@ -85,12 +85,12 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
     public void test1()
     {
         graph.makeEdge( "a", "b", "cost", (double) 1 );
-        graph.makeEdge( "b", "d", "cost", (double) 1 );
-        graph.makeEdge( "a", "c", "cost", (double) 1 );
-        graph.makeEdge( "c", "d", "cost", (double) 1 );
-        graph.makeEdge( "d", "e", "cost", (double) 1 );
-        graph.makeEdge( "e", "f", "cost", (double) 1 );
-        graph.makeEdge( "f", "h", "cost", (double) 1 );
+        graph.makeEdge( "b", "d", "cost", (float) 1 );
+        graph.makeEdge( "a", "c", "cost", (int) 1 );
+        graph.makeEdge( "c", "d", "cost", (long) 1 );
+        graph.makeEdge( "d", "e", "cost", (short) 1 );
+        graph.makeEdge( "e", "f", "cost", (byte) 1 );
+        graph.makeEdge( "f", "h", "cost", (float) 1 );
         graph.makeEdge( "e", "g", "cost", (double) 1 );
         graph.makeEdge( "g", "h", "cost", (double) 1 );
         Dijkstra<Double> dijkstra = getDijkstra( graph, 0.0, "a", "h" );
@@ -108,12 +108,12 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
     public void test2()
     {
         graph.makeEdge( "a", "b", "cost", (double) 1 );
-        graph.makeEdge( "a", "f", "cost", (double) 1 );
-        graph.makeEdge( "b", "c", "cost", (double) 1 );
-        graph.makeEdge( "f", "g", "cost", (double) 1 );
-        graph.makeEdge( "c", "d", "cost", (double) 1 );
-        graph.makeEdge( "g", "h", "cost", (double) 1 );
-        graph.makeEdge( "d", "e", "cost", (double) 1 );
+        graph.makeEdge( "a", "f", "cost", (float) 1 );
+        graph.makeEdge( "b", "c", "cost", (long) 1 );
+        graph.makeEdge( "f", "g", "cost", (int) 1 );
+        graph.makeEdge( "c", "d", "cost", (short) 1 );
+        graph.makeEdge( "g", "h", "cost", (byte) 1 );
+        graph.makeEdge( "d", "e", "cost", (float) 1 );
         graph.makeEdge( "h", "e", "cost", (double) 1 );
         Dijkstra<Double> dijkstra = getDijkstra( graph, 0.0, "a", "e" );
         assertTrue( dijkstra.getPaths().size() == 2 );
@@ -131,12 +131,12 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
     {
         // "zero" side
         graph.makeEdge( "a", "b", "cost", (double) 0 );
-        graph.makeEdge( "b", "c", "cost", (double) 0 );
-        graph.makeEdge( "c", "d", "cost", (double) 0 );
-        graph.makeEdge( "d", "e", "cost", (double) 0 );
-        graph.makeEdge( "e", "f", "cost", (double) 0 );
-        graph.makeEdge( "f", "g", "cost", (double) 0 );
-        graph.makeEdge( "g", "h", "cost", (double) 0 );
+        graph.makeEdge( "b", "c", "cost", (float) 0 );
+        graph.makeEdge( "c", "d", "cost", (long) 0 );
+        graph.makeEdge( "d", "e", "cost", (int) 0 );
+        graph.makeEdge( "e", "f", "cost", (byte) 0 );
+        graph.makeEdge( "f", "g", "cost", (float) 0 );
+        graph.makeEdge( "g", "h", "cost", (short) 0 );
         graph.makeEdge( "h", "i", "cost", (double) 0 );
         graph.makeEdge( "i", "j", "cost", (double) 0 );
         graph.makeEdge( "j", "k", "cost", (double) 0 );
@@ -145,9 +145,9 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
         graph.makeEdge( "y", "x", "cost", (double) 0 );
         graph.makeEdge( "x", "w", "cost", (double) 0 );
         graph.makeEdge( "w", "b", "cost", (double) 1 );
-        graph.makeEdge( "x", "b", "cost", (double) 2 );
-        graph.makeEdge( "y", "b", "cost", (double) 1 );
-        graph.makeEdge( "z", "b", "cost", (double) 1 );
+        graph.makeEdge( "x", "b", "cost", (float) 2 );
+        graph.makeEdge( "y", "b", "cost", (long) 1 );
+        graph.makeEdge( "z", "b", "cost", (int) 1 );
         graph.makeEdge( "zz", "z", "cost", (double) 0 );
         Dijkstra<Double> dijkstra = getDijkstra( graph, 0.0, "a", "zz" );
         assertTrue( dijkstra.getPathsAsNodes().size() == 3 );
@@ -176,9 +176,9 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
         graph.makeEdge( "y", "x", "cost", (double) 0 );
         graph.makeEdge( "x", "w", "cost", (double) 0 );
         graph.makeEdge( "w", "b", "cost", (double) 1 );
-        graph.makeEdge( "x", "b", "cost", (double) 2 );
-        graph.makeEdge( "y", "b", "cost", (double) 1 );
-        graph.makeEdge( "z", "b", "cost", (double) 1 );
+        graph.makeEdge( "x", "b", "cost", (float) 2 );
+        graph.makeEdge( "y", "b", "cost", (long) 1 );
+        graph.makeEdge( "z", "b", "cost", (int) 1 );
         Dijkstra<Double> dijkstra = getDijkstra( graph, 0.0, "a", "z" );
         assertTrue( dijkstra.getPathsAsNodes().size() == 3 );
         assertTrue( dijkstra.getCost() == 1.0 );
@@ -191,10 +191,10 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
     public void test5()
     {
         graph.makeEdge( "a", "b", "cost", (double) 0 );
-        graph.makeEdge( "z", "y", "cost", (double) 0 );
-        graph.makeEdge( "y", "b", "cost", (double) 1 );
-        graph.makeEdge( "z", "b", "cost", (double) 1 );
-        graph.makeEdge( "y", "a", "cost", (double) 1 );
+        graph.makeEdge( "z", "y", "cost", (float) 0 );
+        graph.makeEdge( "y", "b", "cost", (long) 1 );
+        graph.makeEdge( "z", "b", "cost", (int) 1 );
+        graph.makeEdge( "y", "a", "cost", (byte) 1 );
         Dijkstra<Double> dijkstra = getDijkstra( graph, 0.0, "a", "z" );
         List<List<Node>> paths = dijkstra.getPathsAsNodes();
         assertTrue( paths.size() == 3 );
@@ -207,7 +207,7 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
         graph.makeEdgeChain( "a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,z", "cost",
             (double) 1 );
         graph.makeEdge( "a", "b2", "cost", (double) 4 );
-        graph.makeEdge( "b2", "c", "cost", (double) -2 );
+        graph.makeEdge( "b2", "c", "cost", (int) -2 );
         Dijkstra<Double> dijkstra = new Dijkstra<Double>( 0.0, graph
             .getNode( "a" ), graph.getNode( "z" ),
             CommonEvaluators.doubleCostEvaluator( "cost" ),

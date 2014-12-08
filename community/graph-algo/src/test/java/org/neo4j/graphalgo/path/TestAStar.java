@@ -86,12 +86,12 @@ public class TestAStar extends Neo4jAlgoTestCase
         graph.makeNode( "e", "x", 3d, "y", 1.5d );
         Node end = graph.makeNode( "end", "x", 3.3d, "y", 2.8d );
         graph.makeEdge( "start", "a", "length", 1.5d );
-        graph.makeEdge( "a", "b", "length", 2d );
-        graph.makeEdge( "b", "c", "length", 3d );
-        graph.makeEdge( "c", "end", "length", 4d );
-        graph.makeEdge( "start", "d", "length", 2d );
-        graph.makeEdge( "d", "e", "length", 3d );
-        graph.makeEdge( "e", "end", "length", 2d );
+        graph.makeEdge( "a", "b", "length", 2f );
+        graph.makeEdge( "b", "c", "length", 3 );
+        graph.makeEdge( "c", "end", "length", 4L );
+        graph.makeEdge( "start", "d", "length", (short)2 );
+        graph.makeEdge( "d", "e", "length", (byte)3 );
+        graph.makeEdge( "e", "end", "length", (int)2 );
 
         // WHEN
         WeightedPath path = finder.findSinglePath( start, end );
@@ -117,9 +117,9 @@ public class TestAStar extends Neo4jAlgoTestCase
         Node nodeB = graph.makeNode( "B", "x", 2d, "y", 1d );
         Node nodeC = graph.makeNode( "C", "x", 7d, "y", 0d );
         Relationship relAB = graph.makeEdge( "A", "B", "length", 2d );
-        Relationship relAB2 = graph.makeEdge( "A", "B", "length", 2d );
-        Relationship relBC = graph.makeEdge( "B", "C", "length", 3d );
-        Relationship relAC = graph.makeEdge( "A", "C", "length", 10d );
+        Relationship relAB2 = graph.makeEdge( "A", "B", "length", 2 );
+        Relationship relBC = graph.makeEdge( "B", "C", "length", 3f );
+        Relationship relAC = graph.makeEdge( "A", "C", "length", (short)10 );
 
         int counter = 0;
         for ( WeightedPath path : finder.findAllPaths( nodeA, nodeC ) )

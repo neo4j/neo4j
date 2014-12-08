@@ -66,17 +66,17 @@ public class TestDijkstra extends Neo4jAlgoTestCase
         Map<String, Object> propertiesForOnes = includeOnes ? map( "cost", (double) 1 ) : map();
 
         graph.makeEdge( "start", "a", "cost", (double) 1 );
-        graph.makeEdge( "a", "x", "cost", (double) 9 );
+        graph.makeEdge( "a", "x", "cost", (short) 9 );
         graph.makeEdge( "a", "b", propertiesForOnes );
         graph.makeEdge( "b", "x", "cost", (double) 7 );
         graph.makeEdge( "b", "c", propertiesForOnes );
-        graph.makeEdge( "c", "x", "cost", (double) 5 );
-        Relationship shortCTOXRelationship = graph.makeEdge( "c", "x", "cost", (double) 3 );
+        graph.makeEdge( "c", "x", "cost", (int) 5 );
+        Relationship shortCTOXRelationship = graph.makeEdge( "c", "x", "cost", (float) 3 );
         graph.makeEdge( "c", "d", propertiesForOnes );
         graph.makeEdge( "d", "x", "cost", (double) 3 );
         graph.makeEdge( "d", "e", propertiesForOnes );
         graph.makeEdge( "e", "x", propertiesForOnes );
-        graph.makeEdge( "e", "f", "cost", (double) 2 );
+        graph.makeEdge( "e", "f", "cost", (byte) 2 );
         graph.makeEdge( "x", "y", "cost", (double) 2 );
         return shortCTOXRelationship;
     }

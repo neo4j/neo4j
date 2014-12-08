@@ -25,26 +25,24 @@ import org.neo4j.graphdb.Relationship;
 
 public class DoubleEvaluator implements CostEvaluator<Double>
 {
-    private String costpropertyName;
+    private String costPropertyName;
 
-    public DoubleEvaluator( String costpropertyName )
+    public DoubleEvaluator( String costPropertyName )
     {
         super();
-        this.costpropertyName = costpropertyName;
+        this.costPropertyName = costPropertyName;
     }
 
     public Double getCost( Relationship relationship, Direction direction )
     {
-        Object costProp = relationship.getProperty( costpropertyName );
-        if(costProp instanceof Double)
+        Object costProp = relationship.getProperty(costPropertyName);
+        if(costProp instanceof Number)
         {
-            return (Double)costProp;
-        } else if (costProp instanceof Integer)
+            return ((Number) costProp).doubleValue();
+        }
+        else
         {
-            return (double)(Integer)costProp;
-        } else
-        {
-            return Double.parseDouble( costProp.toString() );
+            return Double.parseDouble(costProp.toString());
         }
     }
 }
