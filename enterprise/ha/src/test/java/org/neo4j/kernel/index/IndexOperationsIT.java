@@ -23,6 +23,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 
 import java.util.HashMap;
@@ -30,6 +31,7 @@ import java.util.Map;
 import java.util.concurrent.Future;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
@@ -67,7 +69,7 @@ public class IndexOperationsIT extends AbstractClusterTest
             assertNodeAndIndexingExists( db, node, key, value );
         }
     }
-    
+
     @Test
     public void index_objects_can_be_reused_after_role_switch() throws Exception
     {
@@ -138,7 +140,7 @@ public class IndexOperationsIT extends AbstractClusterTest
             }
         }
     }
-    
+
     @Test
     public void put_if_absent_works_across_instances() throws Exception
     {
@@ -174,11 +176,11 @@ public class IndexOperationsIT extends AbstractClusterTest
         assertNodeAndIndexingExists( db2, node, key, value );
         cluster.sync();
         assertNodeAndIndexingExists( cluster.getAnySlave( db1, db2 ), node, key, value );
-        
+
         w2.close();
         w1.close();
     }
-    
+
     private long createNode( HighlyAvailableGraphDatabase author, String key, Object value, boolean index )
     {
         Transaction tx = author.beginTx();
@@ -191,12 +193,17 @@ public class IndexOperationsIT extends AbstractClusterTest
             tx.success();
             return node.getId();
         }
+        catch( Exception e)
+        {
+            e.printStackTrace( System.err );
+            throw e;
+        }
         finally
         {
             tx.finish();
         }
     }
-    
+
     private void assertNodeAndIndexingExists( HighlyAvailableGraphDatabase db, long nodeId, String key, Object value )
     {
         Transaction transaction = db.beginTx();
@@ -212,7 +219,7 @@ public class IndexOperationsIT extends AbstractClusterTest
             transaction.finish();
         }
     }
-    
+
     private static class PutIfAbsent implements WorkerCommand<HighlyAvailableGraphDatabase, Node>
     {
         private final long node;
