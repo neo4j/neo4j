@@ -65,6 +65,14 @@
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>org.neo4j.test</groupId>
+      <artifactId>neo4j-harness</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
+
     <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server</artifactId>
@@ -90,6 +98,12 @@
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.codehaus.jackson</groupId>
+      <artifactId>jackson-mapper-asl</artifactId>
+      <version>1.9.7</version>
     </dependency>
   </dependencies>
 

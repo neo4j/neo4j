@@ -9,6 +9,8 @@ Apache Software License, Version 2.0
   Commons Lang
   Commons Logging
   ConcurrentLinkedHashMap
+  Data Mapper for Jackson
+  Jackson
   Lucene Core
   opencsv
   parboiled-core

@@ -20,16 +20,14 @@ The needed classes reside in the http://search.maven.org/#search|gav|1|g%3A%22or
 See the linked page for downloads and instructions on how to include it using dependency management.
 For Maven projects, add the Server API dependencies in your +pom.xml+ like this:
 
-[source,xml]
+["source","xml","unnumbered","2",presubs="attributes"]
 ----
 <dependency>
   <groupId>org.neo4j</groupId>
   <artifactId>server-api</artifactId>
-  <version>${neo4j-version}</version>
+  <version>{neo4j-version}</version>
 </dependency>
 ----
-
-_Where $\{neo4j-version} is the intended version._
 
 To create a plugin, your code must inherit from the link:javadocs/org/neo4j/server/plugins/ServerPlugin.html[ServerPlugin] class.
 Your plugin should also:
