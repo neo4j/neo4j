@@ -98,7 +98,7 @@ public class CountsStore extends SortedKeyValueStore<CountsKey, CopyableDoubleLo
 
             return countsStore;
         }
-        catch ( RuntimeException e )
+        catch ( Exception e )
         {
             pageCache.unmap( storeFile );
             throw e;
