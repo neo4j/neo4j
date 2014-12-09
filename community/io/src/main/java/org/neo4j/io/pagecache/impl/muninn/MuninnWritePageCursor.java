@@ -36,7 +36,6 @@ final class MuninnWritePageCursor extends MuninnPageCursor
             pinEvent.done();
             assert page.isWriteLocked(): "page pinned for writing was not write locked: " + page;
             page.unlockWrite( lockStamp );
-            UnsafeUtil.retainReference( page );
             page = null;
         }
         lockStamp = 0;
