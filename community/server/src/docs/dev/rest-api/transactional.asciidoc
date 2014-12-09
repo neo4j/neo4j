@@ -12,7 +12,7 @@ The default timeout is 60 seconds.
 
 The key difference between the transactional HTTP endpoint for Cypher and the Cypher endpoint (see <<rest-api-cypher>>) is the ability to use the same transaction across multiple HTTP requests.
 The Cypher endpoint always attempts to commit a transaction at the end of each HTTP request.
-Theere has also been improvements to the serialization format.
+There has also been improvements to the serialization format.
 
 [NOTE]
 The serialization format for Cypher results is mostly the same as the <<rest-api-cypher,Cypher endpoint>>.
