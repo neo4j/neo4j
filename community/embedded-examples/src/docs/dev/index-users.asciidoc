@@ -2,7 +2,9 @@
 User database with legacy index
 ===============================
 
-NOTE: Please read <<tutorials-java-embedded-resource-iteration>> on how to properly close ResourceIterators returned from index lookups.
+Unless you have specific reasons to use the legacy indexing, see <<tutorials-java-embedded-new-index>> instead.
+
+NOTE: Please read <<tutorials-java-embedded-resource-iteration>> on how to properly close `ResourceIterators` returned from index lookups.
 
 You have a user database, and want to retrieve users by name using the legacy indexing system.
 

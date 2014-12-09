@@ -26,15 +26,23 @@ tag=execute
 classifier=test-sources
 ----
 
-NOTE: Keep the +ExecutionEngine+ around, don't create a new one for each query!
+In the above example, we also show how to iterate over the rows of the +link:javadocs/org/neo4j/graphdb/Result.html[Result]+.
 
-The result will be:
+The code will generate:
 
-include::java-cypher-queries-result.asciidoc[]
+include::java-cypher-queries-rows.asciidoc[]
 
-CAUTION: The classes used here are from the +org.neo4j.cypher.javacompat+ package, _not_ +org.neo4j.cypher+, see link to the Java API below.
+[CAUTION]
+When using an `Result`, you should consume the entire result (iterate over all rows using `next()`, iterating over the iterator from `columnAs()` or calling for example `resultAsString()`).
+Failing to do so will not properly clean up resources used by the `Result` object, leading to unwanted behavior, such as leaking transactions.
+In case you don't want to iterate over all of the results, make sure to invoke `close()` as soon as you are done, to release the resources tied to the result.
 
-You can get a list of the columns in the result:
+[TIP]
+Using a http://docs.oracle.com/javase/tutorial/essential/exceptions/tryResourceClose.html[try-with-resources statement]
+will make sure that the result is closed at the end of the statement.
+This is the recommended way to handle results.
+
+You can also get a list of the columns in the result like this:
 
 [snippet,java]
 ----
@@ -44,11 +52,12 @@ tag=columns
 classifier=test-sources
 ----
 
-This contains:
+This gives us:
 
 include::java-cypher-queries-columns.asciidoc[]
 
-To fetch the result items from a single column, do like this:
+To fetch the result items from a single column, do like below.
+In this case we'll have to read the property from the node and not from the result.
 
 [snippet,java]
 ----
@@ -62,23 +71,12 @@ In this case there's only one node in the result:
 
 include::java-cypher-queries-node.asciidoc[]
 
-To get all columns, do like this instead:
+Only use this if the result only contains a single column, or you are only interested in a single column of the result.
 
-[snippet,java]
-----
-component=neo4j-cypher-docs
-source=org/neo4j/cypher/example/JavaQuery.java
-tag=rows
-classifier=test-sources
-----
-
-This outputs:
-
-include::java-cypher-queries-rows.asciidoc[]
-
-CAUTION: +dumpToString()+, +columnAs()+ and +iterator()+ cannot be called more than once on the same ExecutionResult object. You should instead use only one and if you need the facilities of the other methods on the same query result instead create a new ExecutionResult.
-
-CAUTION: When using an ExecutionResult, you'll need to exhaust it by using any of the iterating methods (+columnAs()+ and +iterator()+) on it. Failing to do so will not properly clean up resources used by the ExecutionResult, leading to unwanted behavior, such as leaking transactions.
+[NOTE]
+`resultAsString()`, `writeAsStringTo()`, `columnAs()` cannot be called more than once on the same `Result` object, as they consume the result.
+In the same way, part of the result gets consumed for every call to `next()`.
+You should instead use only one and if you need the facilities of the other methods on the same query result instead create a new `Result`.
 
 For more information on the Java interface to Cypher, see the 
 link:javadocs/index.html[Java API].

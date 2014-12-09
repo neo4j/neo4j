@@ -82,7 +82,7 @@ It is not meant to be implemented by users of the traversal framework, but rathe
 ==== Relationships ====
 
 Adds a relationship type to the list of relationship types to traverse.
-By default that list is empty and it means that it will traverse _all relationships_, irregardless of type.
+By default that list is empty and it means that it will traverse _all relationships_, regardless of type.
 If one or more relationships are added to this list _only the added_ types will be traversed.
 There are two methods, one link:javadocs/org/neo4j/graphdb/traversal/TraversalDescription.html#relationships[including direction] and another one link:javadocs/org/neo4j/graphdb/traversal/TraversalDescription.html#relationships[excluding direction], where the latter traverses relationships in link:javadocs/org/neo4j/graphdb/Direction.html#BOTH[both directions].
 

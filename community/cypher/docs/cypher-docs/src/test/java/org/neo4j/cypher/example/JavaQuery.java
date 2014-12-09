@@ -33,7 +33,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.IteratorUtil;
 
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 
 public class JavaQuery
@@ -66,40 +65,39 @@ public class JavaQuery
         // END SNIPPET: addData
 
         // START SNIPPET: execute
-        Result result;
-        try ( Transaction ignored = db.beginTx() )
+        try ( Transaction ignored = db.beginTx();
+              Result result = db.execute( "match (n {name: 'my node'}) return n, n.name" ) )
         {
-            result = db.execute( "match (n {name: 'my node'}) return n, n.name" );
-            // END SNIPPET: execute
+            while ( result.hasNext() )
+            {
+                Map<String,Object> row = result.next();
+                for ( Entry<String,Object> column : row.entrySet() )
+                {
+                    rows += column.getKey() + ": " + column.getValue() + "; ";
+                }
+                rows += "\n";
+            }
+        }
+        // END SNIPPET: execute
+        // the result is now empty, get a new one
+        try ( Transaction ignored = db.beginTx();
+              Result result = db.execute( "match (n {name: 'my node'}) return n, n.name" ) )
+        {
             // START SNIPPET: items
             Iterator<Node> n_column = result.columnAs( "n" );
             for ( Node node : IteratorUtil.asIterable( n_column ) )
             {
-                // note: we're grabbing the name property from the node,
-                // not from the n.name in this case.
                 nodeResult = node + ": " + node.getProperty( "name" );
             }
             // END SNIPPET: items
+
+            // START SNIPPET: columns
+            List<String> columns = result.columns();
+            // END SNIPPET: columns
+            columnsString = columns.toString();
+            resultString = db.execute( "match (n {name: 'my node'}) return n, n.name" ).resultAsString();
         }
 
-        // START SNIPPET: columns
-        List<String> columns = result.columns();
-        // END SNIPPET: columns
-
-        // the result is now empty, get a new one
-        result = db.execute( "match (n {name: 'my node'}) return n, n.name" );
-        // START SNIPPET: rows
-        for ( Map<String, Object> row : loop( result ) )
-        {
-            for ( Entry<String, Object> column : row.entrySet() )
-            {
-                rows += column.getKey() + ": " + column.getValue() + "; ";
-            }
-            rows += "\n";
-        }
-        // END SNIPPET: rows
-        resultString = db.execute( "match (n {name: 'my node'}) return n, n.name" ).resultAsString();
-        columnsString = columns.toString();
         db.shutdown();
     }
 

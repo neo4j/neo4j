@@ -4,8 +4,8 @@ Basic unit testing
 
 The basic pattern of unit testing with Neo4j is illustrated by the following example.
 
-To access the Neo4j testing facilities you should have the +neo4j-kernel+ 'tests.jar' on the classpath during tests.
-You can download it from Maven Central: http://search.maven.org/#search|ga|1|g%3A%22org.neo4j%22%20AND%20a%3A%22neo4j-kernel%22[org.neo4j:neo4j-kernel].
+To access the Neo4j testing facilities you should have the `neo4j-kernel` 'tests.jar' together with the `neo4j-io` 'tests.jar' on the classpath during tests.
+You can download them from Maven Central: http://search.maven.org/#search|ga|1|g%3A%22org.neo4j%22%20AND%20a%3A%22neo4j-kernel%22[org.neo4j:neo4j-kernel] and http://search.maven.org/#search|ga|1|g%3A%22org.neo4j%22%20AND%20a%3A%22neo4j-io%22[org.neo4j:neo4j-io].
 
 Using Maven as a dependency manager you would typically add this dependency together with JUnit and Hamcrest like so:
 
@@ -23,9 +23,16 @@ Using Maven as a dependency manager you would typically add this dependency toge
    <scope>test</scope>
   </dependency>
   <dependency>
+   <groupId>org.neo4j</groupId>
+   <artifactId>neo4j-io</artifactId>
+   <version>{neo4j-version}</version>
+   <type>test-jar</type>
+   <scope>test</scope>
+  </dependency>
+  <dependency>
    <groupId>junit</groupId>
-   <artifactId>junit-dep</artifactId>
-   <version>4.11</version>
+   <artifactId>junit</artifactId>
+   <version>4.12</version>
    <scope>test</scope>
   </dependency>
   <dependency>

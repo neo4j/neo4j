@@ -31,7 +31,7 @@ tag=getOrCreateWithCypher
 == Get or create unique node using a legacy index ==
 
 [IMPORTANT]
-While this is a working solution, please consider using the preferred  <<tutorials-java-embedded-unique-get-or-create>> instead.
+While this is a working solution, please consider using the preferred solution at <<tutorials-java-embedded-unique-get-or-create>> instead.
 
 By using link:javadocs/org/neo4j/graphdb/index/Index.html#putIfAbsent%28T,%20java.lang.String,%20java.lang.Object%29[+put-if-absent+] functionality,
 entity uniqueness can be guaranteed using an index.
@@ -61,7 +61,7 @@ tag=getOrCreateWithFactory
 == Pessimistic locking for node creation ==
 
 [IMPORTANT]
-While this is a working solution, please consider using the preferred  <<tutorials-java-embedded-unique-get-or-create>> instead.
+While this is a working solution, please consider using the preferred solution at <<tutorials-java-embedded-unique-get-or-create>> instead.
 
 One might be tempted to use Java synchronization for pessimistic locking, but this is dangerous.
 By mixing locks in Neo4j and in the Java runtime, it is easy to produce deadlocks that are not detectable by Neo4j.
