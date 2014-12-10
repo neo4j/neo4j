@@ -1,6 +1,8 @@
 [[rest-api-transactional]]
 == Transactional Cypher HTTP endpoint ==
 
+The default way to interact with Neo4j is by using this endpoint.
+
 The Neo4j transactional HTTP endpoint allows you to execute a series of Cypher statements within the scope of a transaction.
 The transaction may be kept open across multiple HTTP requests, until the client chooses to commit or roll back.
 Each HTTP request can include a list of statements, and for convenience you can include statements along with a request to begin or commit a transaction.
@@ -15,15 +17,14 @@ The Cypher endpoint always attempts to commit a transaction at the end of each H
 There has also been improvements to the serialization format.
 
 [NOTE]
-The serialization format for Cypher results is mostly the same as the <<rest-api-cypher,Cypher endpoint>>.
+--
+* Literal line breaks are not allowed inside Cypher statements.
+* Open transactions are not shared among members of an HA cluster.
+  Therefore, if you use this endpoint in an HA cluster, you must ensure that all requests for a given transaction are sent to the same Neo4j instance.
+* Cypher queries with +USING PERIODIC COMMIT+  (see <<query-periodic-commit>>) may only be executed when creating a new transaction and immediately committing it with a single HTTP request (see <<rest-api-begin-and-commit-a-transaction-in-one-request>> for how to do that).
+* The serialization format for Cypher results is mostly the same as the <<rest-api-cypher,Cypher endpoint>>.
 However, the format for raw entities is slightly less verbose and does not include hypermedia links.
-
-[NOTE]
-Open transactions are not shared among members of an HA cluster.
-Therefore, if you use this endpoint in an HA cluster, you must ensure that all requests for a given transaction are sent to the same Neo4j instance.
-
-[NOTE]
-Cypher queries with +USING PERIODIC COMMIT+  (see <<query-periodic-commit>>) may only be executed when creating a new transaction and immediately committing it with a single HTTP request (see <<rest-api-begin-and-commit-a-transaction-in-one-request>> for how to do that).
+--
 
 [TIP]
 In order to speed up queries in repeated scenarios, try not to use literals but replace them with parameters wherever possible.

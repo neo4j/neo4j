@@ -78,7 +78,7 @@ class QueryPlanTest extends DocumentingTestBase {
     profileQuery(
       title = "Node index seek",
       text = """Finds nodes using an index seek. The node identifier and the index used is shown in the arguments of the operator.
-                |The following query will return all nodes which have label `Company` where the property `name` has the value "Malmo" using the `Location` index.""".stripMargin,
+                |The following query will return all nodes which have label `Location` where the property `name` has the value "Malmo" using the `Location` index.""".stripMargin,
       queryText = """MATCH (location:Location {name: "Malmo"}) RETURN location""",
       assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("NodeIndexSeek"))
     )
@@ -110,7 +110,7 @@ class QueryPlanTest extends DocumentingTestBase {
     profileQuery(
       title = "Projection",
       text =
-        """For each row from it's input, projection executes a set of expressions and produces a row with the results of the expressions.
+        """For each row from its input, projection executes a set of expressions and produces a row with the results of the expressions.
           |The following query will produce one row with the value "hello".""".stripMargin,
       queryText = """RETURN "hello" AS greeting""",
       assertion = (p) => assertThat(p.executionPlanDescription().toString, startsWith("Projection"))

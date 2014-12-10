@@ -235,7 +235,7 @@ enum BlockType
 
             try ( Transaction tx = state.database.beginTx() )
             {
-                state.database.schema().awaitIndexesOnline( 2000, TimeUnit.MILLISECONDS );
+                state.database.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
                 tx.success();
             }
 

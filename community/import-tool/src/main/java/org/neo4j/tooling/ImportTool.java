@@ -118,12 +118,13 @@ public class ImportTool
                         + IdType.INTEGER + ": arbitrary integer values for identifying nodes.\n"
                         + IdType.ACTUAL + ": (advanced) actual node ids." ),
         PROCESSORS( "processors", "<max processor count>",
-                "(advanced) Max number of processors used by the importer. Defaults to number of, by the JVM reported, "
-                        + "available processors (in your case " + Runtime.getRuntime().availableProcessors()
-                        + "). There is a certain amount of minimum threads needed so for that reason there "
+                "(advanced) Max number of processors used by the importer. Defaults to the number of "
+                        + "available processors reported by the JVM"
+                        + availableProcessorsHint()
+                        + ". There is a certain amount of minimum threads needed so for that reason there "
                         + "is no lower bound for this value. For optimal performance this value shouldn't be "
-                        + "greater than number of available processors." ),
-        STACKTRACE( "stacktrace", "", "Enable printing of stack traces when something goes wrong with the import.");
+                        + "greater than the number of available processors." ),
+        STACKTRACE( "stacktrace", "", "Enable printing of error stack traces." );
 
         private final String key;
         private final String usage;
@@ -152,7 +153,14 @@ public class ImportTool
 
         String manPageEntry()
         {
-            return "*--" + key + " " + usage + "*::\n" + description + "\n\n";
+            String filteredDescription = description.replace( availableProcessorsHint(), "" );
+            String usageString = (usage.length() > 0) ? " " + usage : "";
+            return "*--" + key + usageString + "*::\n" + filteredDescription + "\n\n";
+        }
+
+        private static String availableProcessorsHint()
+        {
+            return " (in your case " + Runtime.getRuntime().availableProcessors() + ")";
         }
     }
 

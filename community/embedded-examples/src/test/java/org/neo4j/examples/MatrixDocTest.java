@@ -18,12 +18,14 @@
  */
 package org.neo4j.examples;
 
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
-
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.neo4j.test.JavaDocsGenerator;
+
+import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
 
 public class MatrixDocTest
 {
@@ -33,19 +35,6 @@ public class MatrixDocTest
     public static void setUpBeforeClass() throws Exception
     {
         gen = new JavaDocsGenerator( "matrix-traversal-java", "dev" );
-    }
-
-    @Test
-    public void matrix() throws Exception
-    {
-        Matrix matrix = new Matrix();
-        matrix.setUp();
-        String friends = matrix.printNeoFriends();
-        String hackers = matrix.printMatrixHackers();
-        matrix.shutdown();
-        check( friends, hackers );
-        gen.saveToFile( "friends", createOutputSnippet( friends ) );
-        gen.saveToFile( "hackers", createOutputSnippet( hackers ) );
     }
 
     @Test

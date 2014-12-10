@@ -50,9 +50,9 @@ classifier=sources
 tag=addUsers
 ----
 
-And here's how to find a user by id:
+NOTE: Please read <<tutorials-java-embedded-resource-iteration>> on how to properly close `ResourceIterators` returned from index lookups.
 
-NOTE: Please read <<tutorials-java-embedded-resource-iteration>> on how to properly close ResourceIterators returned from index lookups.
+And here's how to find a user by id:
 
 [snippet,java]
 ----
