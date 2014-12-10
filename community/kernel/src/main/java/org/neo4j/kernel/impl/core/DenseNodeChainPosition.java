@@ -123,7 +123,7 @@ public class DenseNodeChainPosition implements RelationshipLoadingPosition
         for ( int type : types )
         {
             RelationshipLoadingPosition position = positions.get( type );
-            if ( position == null || position.hasMore( direction, types ) )
+            if ( position != null && position.hasMore( direction, types ) )
             {
                 return true;
             }
