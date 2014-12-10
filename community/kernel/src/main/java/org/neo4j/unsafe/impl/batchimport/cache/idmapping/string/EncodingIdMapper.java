@@ -21,8 +21,10 @@ package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
@@ -200,9 +202,7 @@ public class EncodingIdMapper implements IdMapper
 
                 if ( trackerCache.get( i ) > trackerCache.get( i + 1 ) )
                 {   // swap
-                    int temp = trackerCache.get( i );
-                    trackerCache.set( i, trackerCache.get( i + 1 ) );
-                    trackerCache.set( i + 1, temp );
+                    trackerCache.swap( i, i+1, 1 );
                 }
                 long value = dataCache.get( trackerCache.get( i ) );
                 value = setCollision( value );
@@ -219,12 +219,19 @@ public class EncodingIdMapper implements IdMapper
     private void buildCollisionInfo( Iterator<Object> ids )
     {
         int collisionIndex = 0;
+        Set<Object> collidedIds = new HashSet<>();
         for ( long i = 0; ids.hasNext(); i++ )
         {
             Object id = ids.next();
             long value = dataCache.get( i );
             if ( isCollision( value ) )
             {
+                if ( !collidedIds.add( id ) )
+                {
+                    throw new IllegalStateException( "Duplicate input ids. '" +
+                            id + "' existed in input more than once" );
+                }
+
                 long val = encoder.encode( id );
                 assert val == clearCollision( value );
                 int valueIndex = collisionValues.size();
@@ -311,21 +318,17 @@ public class EncodingIdMapper implements IdMapper
             return -1;
         }
 
-        long val = dataCache.get( trackerCache.get( index ) );
+        long val = clearCollision( dataCache.get( trackerCache.get( index ) ) );
+        assert val == encoder.encode( inputId );
 
-        // This assertion doesn't work since an Encoder can be stateful, and so to code a certain value
-        // into a certain long, any previous encoded values would have to be encoded as well, from a reset state.
-        // An assertion like this would be nice to have, although it would require an added Encoder#reset()
-        // and also making sure the algorithm would end up here through the same "encode path" as last time
-        // we encoded this exact value.
-//        assert val == encoder.encode( inputId );
-
-        while ( unsignedCompare( val, dataCache.get( trackerCache.get( index - 1 ) ), CompareType.EQ ) )
+        while ( index > 0 &&
+                unsignedCompare( val, clearCollision( dataCache.get( trackerCache.get( index - 1 ) ) ), CompareType.EQ ) )
         {
             index--;
         }
         long fromIndex = index;
-        while ( unsignedCompare( val, dataCache.get( trackerCache.get( index + 1 ) ), CompareType.EQ ) )
+        while ( index < trackerCache.highestSetIndex() &&
+                unsignedCompare( val, clearCollision( dataCache.get( trackerCache.get( index + 1 ) ) ), CompareType.EQ ) )
         {
             index++;
         }

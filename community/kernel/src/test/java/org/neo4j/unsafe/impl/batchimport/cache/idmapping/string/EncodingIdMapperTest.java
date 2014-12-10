@@ -20,6 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
@@ -32,6 +33,7 @@ import org.neo4j.function.Factory;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.test.RepeatRule;
@@ -45,7 +47,11 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
 import static java.lang.System.currentTimeMillis;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import static org.neo4j.graphdb.Resource.EMPTY;
 import static org.neo4j.helpers.collection.IteratorUtil.resourceIterator;
@@ -169,6 +175,59 @@ public class EncodingIdMapperTest
         {
             throw Exceptions.withMessage( e, e.getMessage() + ", seed:" + seed );
         }
+    }
+
+    @Test
+    public void shouldRefuseCollisionsBasedOnSameInputId() throws Exception
+    {
+        // GIVEN
+        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new StringEncoder(), new Radix.String() );
+        ResourceIterable<Object> ids =
+                IteratorUtil.<Object>resourceIterable( Arrays.<Object>asList( "10", "9", "10" ) );
+        try ( ResourceIterator<Object> iterator = ids.iterator() )
+        {
+            for ( int i = 0; iterator.hasNext(); i++ )
+            {
+                mapper.put( iterator.next(), i );
+            }
+        }
+
+        // WHEN
+        try
+        {
+            mapper.prepare( ids );
+            fail( "Should have failed" );
+        }
+        catch ( IllegalStateException e )
+        {
+            // THEN
+            assertTrue( e.getMessage().contains( "10" ) );
+        }
+    }
+
+    @Test
+    public void shouldCopyWithCollisionsBasedOnDifferentInputIds() throws Exception
+    {
+        // GIVEN
+        Encoder encoder = mock( Encoder.class );
+        when( encoder.encode( any() ) ).thenReturn( 12345L );
+        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, encoder, new Radix.String() );
+        ResourceIterable<Object> ids =
+                IteratorUtil.<Object>resourceIterable( Arrays.<Object>asList( "10", "9" ) );
+        try ( ResourceIterator<Object> iterator = ids.iterator() )
+        {
+            for ( int i = 0; iterator.hasNext(); i++ )
+            {
+                mapper.put( iterator.next(), i );
+            }
+        }
+
+        // WHEN
+        mapper.prepare( ids );
+
+        // THEN
+        assertEquals( 0L, mapper.get( "10" ) );
+        assertEquals( 1L, mapper.get( "9" ) );
     }
 
     private class ValueGenerator implements ResourceIterable<Object>

@@ -38,6 +38,7 @@ import java.util.Set;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Resource;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.CloneableInPublic;
 import org.neo4j.helpers.Function;
@@ -45,6 +46,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
 
 import static java.util.EnumSet.allOf;
+
 import static org.neo4j.helpers.collection.Iterables.map;
 
 /**
@@ -1097,6 +1099,18 @@ public abstract class IteratorUtil
             protected T fetchNextOrNull()
             {
                 return iterator.hasNext() ? iterator.next() : null;
+            }
+        };
+    }
+
+    public static <T> ResourceIterable<T> resourceIterable( final Iterable<T> iterable )
+    {
+        return new ResourceIterable<T>()
+        {
+            @Override
+            public ResourceIterator<T> iterator()
+            {
+                return resourceIterator( iterable.iterator(), Resource.EMPTY );
             }
         };
     }
