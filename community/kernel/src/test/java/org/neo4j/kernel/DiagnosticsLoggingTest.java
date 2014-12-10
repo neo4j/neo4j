@@ -21,28 +21,43 @@ package org.neo4j.kernel;
 
 import org.junit.Test;
 
+import java.util.HashMap;
+
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.LogMarker;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
-import static org.junit.matchers.JUnitMatchers.containsString;
 
 public class DiagnosticsLoggingTest
 {
     @Test
     public void shouldSeeHelloWorld()
     {
-        FakeDatabase db = new FakeDatabase();
+        FakeDatabase db = new FakeDatabase( new HashMap<String,String>() );
         FakeLogger logger = db.getLogger();
         String messages = logger.getMessages();
         assertThat( messages, containsString( "Network information" ) );
         assertThat( messages, containsString( "Disk space on partition" ) );
         assertThat( messages, containsString( "Local timezone" ) );
+        db.shutdown();
+    }
+
+    @Test
+    public void shouldSeePageCacheConfigurationWithDumpConfigurationEnabled()
+    {
+        HashMap<String,String> settings = new HashMap<>();
+        settings.put( GraphDatabaseSettings.dump_configuration.name(), "true" );
+        settings.put( GraphDatabaseSettings.mapped_memory_total_size.name(), "8M" );
+        FakeDatabase db = new FakeDatabase( settings );
+        FakeLogger logger = db.getLogger();
+        String messages = logger.getMessages();
+        assertThat( messages, containsString( "Page cache size: 8MB" ) );
         db.shutdown();
     }
 
@@ -116,14 +131,7 @@ public class DiagnosticsLoggingTest
         @Override
         public StringLogger getMessagesLog( Class loggingClass )
         {
-            if ( loggingClass.equals( DiagnosticsManager.class ) )
-            {
-                return this;
-            }
-            else
-            {
-                return StringLogger.DEV_NULL;
-            }
+            return this;
         }
 
         @Override
@@ -156,6 +164,11 @@ public class DiagnosticsLoggingTest
     @SuppressWarnings("deprecation")
     private class FakeDatabase extends ImpermanentGraphDatabase
     {
+        public FakeDatabase( HashMap<String, String> settings )
+        {
+            super( settings );
+        }
+
         @Override
         protected Logging createLogging()
         {

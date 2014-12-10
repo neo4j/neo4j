@@ -45,6 +45,7 @@ public class LifecycledPageCache extends LifecycleAdapter implements PageCache
     private final PageCacheMonitor monitor;
 
     private RunnablePageCache pageCache;
+    private boolean stopped;
     private JobScheduler.JobHandle pageEvictionJobHandle;
 
     public LifecycledPageCache(
@@ -57,17 +58,16 @@ public class LifecycledPageCache extends LifecycleAdapter implements PageCache
         this.scheduler = scheduler;
         this.config = config;
         this.monitor = monitor;
+        initialisePageCache();
     }
 
-    @Override
-    public synchronized void start()
+    private void initialisePageCache()
     {
         pageCache = new MuninnPageCache(
                 swapperFactory,
                 calculateMaxPages( config ),
                 calculatePageSize( config ),
                 monitor );
-        pageEvictionJobHandle = scheduler.schedule( JobScheduler.Group.pageCacheEviction, pageCache );
     }
 
     private static int calculateMaxPages( Config config )
@@ -84,6 +84,17 @@ public class LifecycledPageCache extends LifecycleAdapter implements PageCache
     }
 
     @Override
+    public synchronized void start()
+    {
+        if ( stopped )
+        {
+            initialisePageCache();
+            stopped = false;
+        }
+        pageEvictionJobHandle = scheduler.schedule( JobScheduler.Group.pageCacheEviction, pageCache );
+    }
+
+    @Override
     public synchronized void stop() throws IOException
     {
         JobScheduler.JobHandle handle = pageEvictionJobHandle;
@@ -92,7 +103,7 @@ public class LifecycledPageCache extends LifecycleAdapter implements PageCache
             handle.cancel( true );
         }
         pageCache.close();
-        pageCache = null;
+        stopped = true;
     }
 
     @Override
