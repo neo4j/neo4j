@@ -37,7 +37,8 @@ class SimpleTripletCardinalityEstimatorTest
   with CardinalityTestHelper
   with ForumPostsCardinalityData {
 
-  implicit val input = QueryGraphCardinalityInput.empty
+  private val TOLERANCE = 0.0001d
+  private implicit val input = QueryGraphCardinalityInput.empty
 
   test("(a)-[r]->(b)") {
     import ForumPosts._
@@ -49,9 +50,9 @@ class SimpleTripletCardinalityEstimatorTest
 
     val estimates = ForumPosts.asTriplets("(a)-[r]->(b)", nodeCardinalities)
 
-    estimates should equal(cardinalitiesMap(
+    estimates should equalWithTolerance(cardinalitiesMap(
       "r" -> R
-    ))
+    ), TOLERANCE)
   }
 
   test("(a)-[r]-(b)") {
@@ -64,9 +65,9 @@ class SimpleTripletCardinalityEstimatorTest
 
     val estimates = ForumPosts.asTriplets("(a)-[r]-(b)", nodeCardinalities)
 
-    estimates should equal(cardinalitiesMap(
+    estimates should equalWithTolerance(cardinalitiesMap(
       "r" -> 2 * R
-    ))
+    ), TOLERANCE)
   }
 
   test("(a:Forum)-[r:MEMBER_IN]->(b:Forum:Person)") {
@@ -79,9 +80,9 @@ class SimpleTripletCardinalityEstimatorTest
 
     val estimates = ForumPosts.asTriplets("(a:Forum)-[r:MEMBER_IN]->(b:Forum:Person)", nodeCardinalities)
 
-    estimates should equal(cardinalitiesMap(
+    estimates should equalWithTolerance(cardinalitiesMap(
       "r" -> degree(Forums_MEMBER_IN_Forums, Forums) * N
-    ))
+    ), TOLERANCE)
   }
 
   test("(a:Person)-[r:KNOWS]->(b:Person)") {
@@ -94,9 +95,9 @@ class SimpleTripletCardinalityEstimatorTest
 
     val estimates = ForumPosts.asTriplets("(a:Person)-[r:KNOWS]->(b:Person)", nodeCardinalities)
 
-    estimates should equal(cardinalitiesMap(
+    estimates should equalWithTolerance(cardinalitiesMap(
       "r" -> degree(Persons_KNOWS_Persons, Persons)
-    ))
+    ), TOLERANCE)
   }
 
   test("(a:Person)-[r:KNOWS]->(b:Person:Clown)") {
@@ -107,9 +108,9 @@ class SimpleTripletCardinalityEstimatorTest
 
     val estimates = ForumPosts.asTriplets("(a:Person)-[r:KNOWS]->(b:Person:Clown)", nodeCardinalities)
 
-    estimates should equal(cardinalitiesMap(
+    estimates should equalWithTolerance(cardinalitiesMap(
       "r" -> 0.0d
-    ))
+    ), TOLERANCE)
   }
 
   test("(a:Person)-[r:XXX]->(b:Person)") {
@@ -120,9 +121,9 @@ class SimpleTripletCardinalityEstimatorTest
 
     val estimates = ForumPosts.asTriplets("(a:Person)-[r:XXX]->(b:Person)", nodeCardinalities)
 
-    estimates should equal(cardinalitiesMap(
+    estimates should equalWithTolerance(cardinalitiesMap(
       "r" -> 0.0d
-    ))
+    ), TOLERANCE)
   }
 
   implicit class RichCardinalityData(cardinalityData: CardinalityData) {

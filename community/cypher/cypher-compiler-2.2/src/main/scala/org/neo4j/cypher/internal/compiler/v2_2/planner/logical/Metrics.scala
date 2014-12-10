@@ -103,6 +103,20 @@ object Cardinality {
 
   def max(l: Cardinality, r: Cardinality): Cardinality =
     Cardinality(Math.max(l.amount, r.amount))
+
+  object NumericCardinality extends Numeric[Cardinality] {
+    def toDouble(x: Cardinality): Double = x.amount
+    def toFloat(x: Cardinality): Float = x.amount.toFloat
+    def toInt(x: Cardinality): Int = x.amount.toInt
+    def toLong(x: Cardinality): Long = x.amount.toLong
+    def fromInt(x: Int): Cardinality = Cardinality(x)
+
+    def negate(x: Cardinality): Cardinality = Cardinality(-x.amount)
+    def plus(x: Cardinality, y: Cardinality): Cardinality = Cardinality(x.amount + y.amount)
+    def times(x: Cardinality, y: Cardinality): Cardinality = Cardinality(x.amount * y.amount)
+    def minus(x: Cardinality, y: Cardinality): Cardinality = Cardinality(x.amount - y.amount)
+    def compare(x: Cardinality, y: Cardinality): Int = x.compare(y)
+  }
 }
 
 case class CostPerRow(cost: Double) {
