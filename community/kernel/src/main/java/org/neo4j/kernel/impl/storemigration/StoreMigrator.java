@@ -95,7 +95,6 @@ import static org.neo4j.kernel.impl.store.StoreFactory.buildTypeDescriptorAndVer
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 import static org.neo4j.unsafe.impl.batchimport.WriterFactories.parallel;
 
@@ -257,7 +256,7 @@ public class StoreMigrator implements StoreMigrationParticipant
         try ( NodeStore nodeStore = storeFactory.newNodeStore();
               RelationshipStore relationshipStore = storeFactory.newRelationshipStore();
               CountsTracker tracker = new CountsTracker( logging.getMessagesLog( CountsTracker.class ),
-                      fileSystem, pageCache, storeFileBase, BASE_TX_ID ) )
+                      fileSystem, pageCache, storeFileBase ) )
         {
             CountsComputer.computeCounts( nodeStore, relationshipStore ).
                     accept( new CountsAccessor.Initializer( tracker ) );

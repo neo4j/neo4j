@@ -177,7 +177,7 @@ public class StoreFactory
                 newNodeStore(),
                 newSchemaStore(),
                 newRelationshipGroupStore(),
-                newCountsStore( txId ),
+                newCountsStore(),
                 versionMismatchHandler, monitors );
     }
 
@@ -205,7 +205,7 @@ public class StoreFactory
             try ( NodeStore nodeStore = newNodeStore();
                   RelationshipStore relationshipStore = newRelationshipStore();
                   CountsTracker tracker = new CountsTracker(
-                          stringLogger, fileSystemAbstraction, pageCache, storeFileBase, BASE_TX_ID ) )
+                          stringLogger, fileSystemAbstraction, pageCache, storeFileBase ) )
             {
                 CountsComputer.computeCounts( nodeStore, relationshipStore ).
                         accept( new CountsAccessor.Initializer( tracker ) );
@@ -381,9 +381,9 @@ public class StoreFactory
                 fileSystemAbstraction, stringLogger, dynamicLabelStore, versionMismatchHandler, monitors );
     }
 
-    private CountsTracker newCountsStore( long txId )
+    private CountsTracker newCountsStore()
     {
-        return new CountsTracker( stringLogger, fileSystemAbstraction, pageCache, storeFileName( COUNTS_STORE ), txId );
+        return new CountsTracker( stringLogger, fileSystemAbstraction, pageCache, storeFileName( COUNTS_STORE ) );
     }
 
     public NeoStore createNeoStore()

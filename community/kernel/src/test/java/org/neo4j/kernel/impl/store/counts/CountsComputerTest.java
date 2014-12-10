@@ -329,7 +329,7 @@ public class CountsComputerTest
     private void rebuildCounts( CountsRecordState countsState, long lastCommittedTransactionId ) throws IOException
     {
         CountsTracker tracker = new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
-                new File( dir, COUNTS_STORE_BASE ), BASE_TX_ID );
+                new File( dir, COUNTS_STORE_BASE ) );
         countsState.accept( new CountsAccessor.Initializer( tracker ) );
         tracker.rotate( lastCommittedTransactionId );
         tracker.close();
