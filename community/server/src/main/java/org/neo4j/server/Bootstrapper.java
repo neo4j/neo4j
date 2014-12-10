@@ -32,6 +32,7 @@ import org.neo4j.kernel.logging.BufferingConsoleLogger;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.DefaultLogging;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.logging.SystemOutLogging;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.configuration.Configurator;
@@ -105,9 +106,9 @@ public abstract class Bootstrapper
         	log = dependencies.logging().getConsoleLog( getClass() );
         	consoleBuffer.replayInto( log );
 
-        	life.start();
+            life.start();
 
-        	checkCompatibility();
+            checkCompatibility();
 
             server = createNeoServer();
             server.start();
@@ -118,30 +119,36 @@ public abstract class Bootstrapper
         }
         catch ( TransactionFailureException tfe )
         {
-            log.error( format( "Failed to start Neo Server on port [%d], because ",
-            		configurator.configuration().get( ServerSettings.webserver_port ) )
-                       + tfe + ". Another process may be using database location " + server.getDatabase()
-                       .getLocation(), tfe );
+            String locationMsg = (server == null) ? "" : " Another process may be using database location " +
+                                                         server.getDatabase().getLocation();
+            log.error( format( "Failed to start Neo Server on port [%s].", webServerPort() ) + locationMsg, tfe );
             return GRAPH_DATABASE_STARTUP_ERROR_CODE;
         }
         catch ( IllegalArgumentException e )
         {
-            log.error( format( "Failed to start Neo Server on port [%s]",
-                    configurator.configuration().get( ServerSettings.webserver_port ) ), e );
+            log.error( format( "Failed to start Neo Server on port [%s]", webServerPort() ), e );
             return WEB_SERVER_STARTUP_ERROR_CODE;
         }
         catch ( Exception e )
         {
-            log.error( format( "Failed to start Neo Server on port [%s]",
-                    configurator.configuration().get( ServerSettings.webserver_port ) ), e );
+            log.error( format( "Failed to start Neo Server on port [%s]", webServerPort() ), e );
             return WEB_SERVER_STARTUP_ERROR_CODE;
         }
     }
 
     private Logging createLogging(ConfigurationBuilder configurator, Monitors monitors)
     {
-        Config config = new Config( configurator.getDatabaseTuningProperties() );
-        return life.add( DefaultLogging.createDefaultLogging( config, monitors ) );
+        try
+        {
+            Config config = new Config( configurator.getDatabaseTuningProperties() );
+            return life.add( DefaultLogging.createDefaultLogging( config, monitors ) );
+        }
+        catch ( RuntimeException e )
+        {
+            Logging logging = new SystemOutLogging();
+            logging.getConsoleLog( getClass() ).error( "Unable to initialize logging. Will fallback to System.out", e );
+            return logging;
+        }
     }
 
     private void checkCompatibility()
@@ -167,9 +174,7 @@ public abstract class Bootstrapper
             {
                 server.stop();
             }
-            log.log( "Successfully shutdown Neo Server on port [%d], database [%s]",
-                    configurator.configuration().get( ServerSettings.webserver_port ),
-                    location );
+            log.log( "Successfully shutdown Neo Server on port [%s], database [%s]", webServerPort(), location );
 
             removeShutdownHook();
 
@@ -179,8 +184,8 @@ public abstract class Bootstrapper
         }
         catch ( Exception e )
         {
-            log.error( "Failed to cleanly shutdown Neo Server on port [%d], database [%s]. Reason [%s] ",
-                    configurator.configuration().get( ServerSettings.webserver_port ), location, e.getMessage(), e );
+            log.error( "Failed to cleanly shutdown Neo Server on port [%s], database [%s]. Reason [%s] ",
+                    webServerPort(), location, e.getMessage(), e );
             return 1;
         }
     }
@@ -236,5 +241,12 @@ public abstract class Bootstrapper
         // Default implementation just checks if this is a subclass of other
         return other.getClass()
                 .isAssignableFrom( getClass() );
+    }
+
+    private String webServerPort()
+    {
+        return (configurator == null)
+               ? "unknown port"
+               : String.valueOf( configurator.configuration().get( ServerSettings.webserver_port ) );
     }
 }
