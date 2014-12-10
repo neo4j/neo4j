@@ -43,7 +43,6 @@ import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadRule;
 import org.neo4j.test.RepeatRule;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertThat;
@@ -87,11 +86,15 @@ public class UniqueConstraintStressIT extends AbstractClusterTest
         HighlyAvailableGraphDatabase master = cluster.getMaster();
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
 
-        Future<Object> constraintCreation = null;
+        Future<Boolean> constraintCreation = null;
         Future<Integer> constraintViolation = null;
 
         abstract void perform();
     }
+
+    /* The different orders and delays in the below variations try to stress all known scenarios, as well as
+     * of course stress for unknown concurrency issues. See the exception handling structure further below
+     * for explanations. */
 
     @RepeatRule.Repeat ( times = REPETITIONS )
     @Test
@@ -171,6 +174,54 @@ public class UniqueConstraintStressIT extends AbstractClusterTest
         } );
     }
 
+    @RepeatRule.Repeat ( times = REPETITIONS )
+    @Test
+    public void shouldNotAllowUniquenessViolationsUnderStress_E() throws Exception
+    {
+        shouldNotAllowUniquenessViolationsUnderStress( new Operation()
+        {
+            @Override
+            void perform()
+            {
+                constraintCreation = masterWork.execute( createConstraint( master ) );
+
+                try
+                {
+                    Thread.sleep( 2000 );
+                }
+                catch ( InterruptedException e )
+                {
+                }
+
+                constraintViolation = slaveWork.execute( performInsert( slave ) );
+            }
+        } );
+    }
+
+    @RepeatRule.Repeat ( times = REPETITIONS )
+    @Test
+    public void shouldNotAllowUniquenessViolationsUnderStress_F() throws Exception
+    {
+        shouldNotAllowUniquenessViolationsUnderStress( new Operation()
+        {
+            @Override
+            void perform()
+            {
+                constraintViolation = slaveWork.execute( performInsert( slave ) );
+
+                try
+                {
+                    Thread.sleep( 2000 );
+                }
+                catch ( InterruptedException e )
+                {
+                }
+
+                constraintCreation = masterWork.execute( createConstraint( master ) );
+            }
+        } );
+    }
+
     public void shouldNotAllowUniquenessViolationsUnderStress(Operation ops) throws Exception
     {
         // Given
@@ -222,20 +273,10 @@ public class UniqueConstraintStressIT extends AbstractClusterTest
         assertThat( successfulAttempts, greaterThan( 0 ) );
     }
 
-    private void assertConstraintsNotViolated( Future<Object> constraintCreation, Future<Integer> constraintViolation,
+    private void assertConstraintsNotViolated( Future<Boolean> constraintCreation, Future<Integer> constraintViolation,
                                                HighlyAvailableGraphDatabase master ) throws InterruptedException, ExecutionException
     {
-        boolean constraintCreationFailed = false;
-
-        try
-        {
-            constraintCreation.get();
-        }
-        catch(ExecutionException e)
-        {
-            assertThat(e.getCause(), instanceOf( ConstraintViolationException.class));
-            constraintCreationFailed = true;
-        }
+        boolean constraintCreationFailed = constraintCreation.get();
 
         int txSuccessCount = constraintViolation.get();
 
@@ -275,19 +316,27 @@ public class UniqueConstraintStressIT extends AbstractClusterTest
         return true;
     }
 
-    private OtherThreadExecutor.WorkerCommand<Object, Object> createConstraint( final HighlyAvailableGraphDatabase master )
+    private OtherThreadExecutor.WorkerCommand<Object, Boolean> createConstraint( final HighlyAvailableGraphDatabase master )
     {
-        return new OtherThreadExecutor.WorkerCommand<Object, Object>()
+        return new OtherThreadExecutor.WorkerCommand<Object, Boolean>()
         {
             @Override
-            public Object doWork( Object state ) throws Exception
+            public Boolean doWork( Object state ) throws Exception
             {
+                boolean constraintCreationFailed = false;
+
                 try( Transaction tx = master.beginTx() )
                 {
                     master.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
                     tx.success();
                 }
-                return null;
+                catch( ConstraintViolationException e )
+                {
+                    /* Unable to create constraint since it is not consistent with existing data. */
+                    constraintCreationFailed = true;
+                }
+
+                return constraintCreationFailed;
             }
         };
     }
@@ -320,8 +369,12 @@ public class UniqueConstraintStressIT extends AbstractClusterTest
                 catch ( TransactionFailureException e )
                 {
                     // Swallowed on purpose, we except it to fail sometimes due to either
-                    //  - constraint violation
+                    //  - constraint violation on master
                     //  - concurrent schema operation on master
+                }
+                catch ( ConstraintViolationException e )
+                {
+                    // Constraint violation detected on slave while building transaction
                 }
                 catch ( ComException e )
                 {
