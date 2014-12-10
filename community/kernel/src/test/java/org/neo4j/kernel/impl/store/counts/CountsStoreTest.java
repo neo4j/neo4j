@@ -44,6 +44,8 @@ import org.neo4j.test.PageCacheRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.store.StoreFactory.buildTypeDescriptorAndVersion;
 import static org.neo4j.kernel.impl.store.counts.CountsStore.RECORD_SIZE;
@@ -282,6 +284,39 @@ public class CountsStoreTest
             // then
             assertEquals( "Counts store contains unexpected value (0,0)", ex.getMessage() );
         }
+    }
+
+    @Test
+    public void shouldCloseFileIfOpenFailsWithIOExceptionOnHeaderFormat() throws Exception
+    {
+        // given
+           // A header with invalid data that will lead to IOException being thrown
+        PageCache myCache = spy( pageCache );
+        try ( StoreChannel channel = fs.open( alpha, "rw" ) )
+        {
+            // header
+            ByteBuffer buffer = ByteBuffer.allocate( 4 );
+            buffer.putInt( 0xA );
+            buffer.flip();
+            channel.write( buffer );
+            channel.force( false );
+        }
+
+        // when
+           // opening the file fails while verifying contents
+        try
+        {
+            CountsStore.open( fs, myCache, alpha );
+            fail("Test setup error, this should have thrown an IOException");
+        }
+        catch( IOException expected )
+        {
+            // totally expected, continue
+        }
+
+        // then
+           // ensure that whatever was opened is unmapped before returning
+        verify( myCache ).unmap( alpha );
     }
 
     @Rule
