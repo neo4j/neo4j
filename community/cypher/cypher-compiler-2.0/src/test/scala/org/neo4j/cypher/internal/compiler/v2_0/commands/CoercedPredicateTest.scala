@@ -51,7 +51,7 @@ class CoercedPredicateTest {
     // Then
     assertFalse(s"$collection should return false", result)
   }
-  
+
   @Test def should_pass_through_false() {
     // Given
     val inner = Not(True())
@@ -83,5 +83,49 @@ class CoercedPredicateTest {
 
     // Then
     assertFalse(s"$inner should return false", result)
+  }
+
+  @Test def should_coerce_integer_zero_to_boolean_false() {
+    // Given
+    val inner = Literal(0)
+
+    // When
+    val result = CoercedPredicate(inner).isTrue(ctx)
+
+    // Then
+    assertFalse(s"$inner should return false", result)
+  }
+
+  @Test def should_coerce_integer_non_zero_to_boolean_false() {
+    // Given
+    val inner = Literal(1)
+
+    // When
+    val result = CoercedPredicate(inner).isTrue(ctx)
+
+    // Then
+    assertTrue(s"$inner should return true", result)
+  }
+
+  @Test def should_coerce_float_zero_to_boolean_false() {
+    // Given
+    val inner = Literal(0.0)
+
+    // When
+    val result = CoercedPredicate(inner).isTrue(ctx)
+
+    // Then
+    assertFalse(s"$inner should return false", result)
+  }
+
+  @Test def should_coerce_float_non_zero_to_boolean_false() {
+    // Given
+    val inner = Literal(0.0000067)
+
+    // When
+    val result = CoercedPredicate(inner).isTrue(ctx)
+
+    // Then
+    assertTrue(s"$inner should return true", result)
   }
 }
