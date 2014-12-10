@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.graphdb._
-import org.junit.Assert._
 import org.neo4j.cypher.internal.PathImpl
+import org.neo4j.graphdb._
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport {
 
@@ -1089,8 +1088,6 @@ RETURN x0.name""")
     result.toList should equal (List(Map("b" -> b)))
   }
 
-
-
   test("issue #2907 should only check label on end node") {
 
     val a = createLabeledNode("BLUE")
@@ -1125,5 +1122,19 @@ RETURN x0.name""")
     result.columnAs[List[Relationship]]("r").toList.head should equal(List(r1, r2))
   }
 
+  test("should coerce number to boolean")
+  {
+    // given
+    createLabeledNode(Map("prop" -> 0), "A")
+    createLabeledNode(Map("prop" -> 2), "A")
 
+    // when
+    val n = executeScalar[Node]("MATCH (n:A) WHERE NOT(n.prop) RETURN n")
+
+    // then
+    graph.inTx {
+      n.labels should equal(Seq("A"))
+      n.getProperty("prop") should equal(0)
+    }
+  }
 }

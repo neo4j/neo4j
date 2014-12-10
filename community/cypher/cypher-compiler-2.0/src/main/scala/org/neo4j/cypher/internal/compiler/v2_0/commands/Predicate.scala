@@ -272,6 +272,7 @@ case class CoercedPredicate(inner:Expression) extends Predicate with CollectionS
     case x: Boolean         => Some(x)
     case null               => None
     case IsCollection(coll) => Some(coll.nonEmpty)
+    case x: Number          => Some(x.doubleValue()!=0.0)
     case x                  => throw new CypherTypeException(s"Don't know how to treat that as a predicate: $x")
   }
 
