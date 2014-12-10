@@ -71,6 +71,10 @@ public class AStar implements PathFinder<WeightedPath>
     @Override
     public WeightedPath findSinglePath( Node start, Node end )
     {
+    	// As per documentation it should return null if start and end are both same node
+    	if(start.equals(end))
+    		return null;
+    	
         lastMetadata = new Metadata();
         AStarIterator iterator = new AStarIterator( start, end );
         while ( iterator.hasNext() )

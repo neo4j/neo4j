@@ -94,6 +94,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
                 Iterable<Path> paths = finder.findAllPaths( graph.getNode( "s" ), graph.getNode( "t" ) );
                 assertPaths( paths, "s,t", "s,t" );
                 assertPaths( asList( finder.findSinglePath( graph.getNode( "s" ), graph.getNode( "t" ) ) ), "s,t" );
+                
             }
         }, PathExpanders.forTypeAndDirection( R1, BOTH ), 1 );
     }

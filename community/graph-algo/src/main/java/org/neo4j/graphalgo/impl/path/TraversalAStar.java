@@ -120,6 +120,10 @@ public class TraversalAStar implements PathFinder<WeightedPath>
 
     private Iterable<WeightedPath> findPaths( Node start, Node end, boolean multiplePaths )
     {
+    	// As per documentation it should return null if start and end are both same node
+    	if(start.equals(end))
+    		return null;
+    	
         lastTraverser = traversalDescription.order(
                 new SelectorFactory( end, pathInterest( true, stopAfterLowestWeight ) ) )
                 .evaluator( includeWhereEndNodeIs( end ) )
