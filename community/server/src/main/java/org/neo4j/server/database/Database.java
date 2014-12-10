@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.database;
 
-import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;

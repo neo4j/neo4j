@@ -42,12 +42,16 @@ public enum FileOperation
          * @throws IOException if the file couldn't be copied
          */
         @Override
-        public void perform( FileSystemAbstraction fs, String fileName, File fromDirectory, File toDirectory )
+        public void perform( FileSystemAbstraction fs, String fileName,
+                File fromDirectory, boolean skipNonExistentFromFile,
+                File toDirectory, boolean overwrite )
                 throws IOException
         {
-            File fromFile = new File( fromDirectory, fileName );
-            File toFile = new File( toDirectory, fileName );
-            fs.copyFile( fromFile, toFile );
+            File fromFile = fromFile( fs, fromDirectory, fileName, skipNonExistentFromFile );
+            if ( fromFile != null )
+            {
+                fs.copyFile( fromFile, toFile( fs, toDirectory, fileName, overwrite ) );
+            }
         }
     },
     MOVE
@@ -62,23 +66,58 @@ public enum FileOperation
          * @throws IOException if the file couldn't be moved
          */
         @Override
-        public void perform( FileSystemAbstraction fs, String fileName, File fromDirectory, File toDirectory )
+        public void perform( FileSystemAbstraction fs, String fileName,
+                File fromDirectory, boolean skipNonExistentFromFile,
+                File toDirectory, boolean overwrite )
                 throws IOException
         {
-            File fromFile = new File( fromDirectory, fileName );
-            fs.moveToDirectory( fromFile, toDirectory );
+            File fromFile = fromFile( fs, fromDirectory, fileName, skipNonExistentFromFile );
+            if ( fromFile != null )
+            {
+                toFile( fs, toDirectory, fileName, overwrite );
+                fs.moveToDirectory( fromFile, toDirectory );
+            }
         }
     },
     DELETE
     {
         @Override
-        public void perform( FileSystemAbstraction fs, String fileName, File fromDirectory, File toDirectory )
+        public void perform( FileSystemAbstraction fs, String fileName,
+                File directory, boolean skipNonExistentFromFile,
+                File unusedFile, boolean unusedBoolean )
                 throws IOException
         {
-            fs.deleteFile( new File( fromDirectory, fileName ) );
+            File file = fromFile( fs, directory, fileName, skipNonExistentFromFile );
+            if ( file != null )
+            {
+                fs.deleteFile( file );
+            }
         }
     };
 
-    public abstract void perform( FileSystemAbstraction fs, String fileName, File fromDirectory, File toDirectory )
-            throws IOException;
+    public abstract void perform( FileSystemAbstraction fs, String fileName,
+            File fromDirectory, boolean skipNonExistentFromFile,
+            File toDirectory, boolean overwrite ) throws IOException;
+
+    protected File fromFile( FileSystemAbstraction fs, File directory, String name, boolean skipNonExistent )
+    {
+        File fromFile = new File( directory, name );
+        if ( skipNonExistent && !fs.fileExists( fromFile ) )
+        {
+            return null;
+        }
+        // Return the file even if it doesn't exist here (and we don't allow skipping) so that the actual
+        // file operation will fail later
+        return fromFile;
+    }
+
+    protected File toFile( FileSystemAbstraction fs, File directory, String name, boolean overwrite )
+    {
+        File file = new File( directory, name );
+        if ( overwrite )
+        {
+            fs.deleteFile( file );
+        }
+        return file;
+    }
 }

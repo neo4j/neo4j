@@ -81,6 +81,7 @@ import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.store.NeoStore.Position;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -105,6 +106,7 @@ import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -1212,8 +1214,10 @@ public class TestNeoStore
         FileSystemAbstraction fileSystem = fs.get();
         File storeDir = new File("target/test-data/set-version");
         new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( storeDir.getAbsolutePath() ).shutdown();
-        assertEquals( 1, NeoStore.setVersion( fileSystem, new File( storeDir, NeoStore.DEFAULT_NAME ).getAbsoluteFile(), 10 ) );
-        assertEquals( 10, NeoStore.setVersion( fileSystem, new File( storeDir, NeoStore.DEFAULT_NAME ).getAbsoluteFile(), 12 ) );
+        assertEquals( 1, NeoStore.setRecord( fileSystem, new File( storeDir,
+                NeoStore.DEFAULT_NAME ).getAbsoluteFile(), Position.LOG_VERSION, 10 ) );
+        assertEquals( 10, NeoStore.setRecord( fileSystem, new File( storeDir,
+                NeoStore.DEFAULT_NAME ).getAbsoluteFile(), Position.LOG_VERSION, 12 ) );
 
         Monitors monitors = new Monitors();
         Config config = new Config( new HashMap<String, String>(), GraphDatabaseSettings.class );
@@ -1294,7 +1298,7 @@ public class TestNeoStore
         neoStore.setCreationTime( 3 );
         neoStore.setRandomNumber( 4 );
         neoStore.setCurrentLogVersion( 5 );
-        neoStore.setLastCommittedAndClosedTransactionId( 6 );
+        neoStore.setLastCommittedAndClosedTransactionId( 6, 0 );
         neoStore.setStoreVersion( 7 );
         neoStore.setGraphNextProp( 8 );
         neoStore.setLatestConstraintIntroducingTx( 9 );
@@ -1311,11 +1315,12 @@ public class TestNeoStore
             channel.write( ByteBuffer.wrap( trailer ) );
         }
 
-        assertNotEquals( 10, neoStore.getUpgradeId() );
+        assertNotEquals( 10, neoStore.getUpgradeTransaction()[0] );
         assertNotEquals( 11, neoStore.getUpgradeTime() );
 
-        NeoStore.setOrAddUpgradeIdOnMigration( fileSystem, file, 10 );
-        NeoStore.setOrAddUpgradeTimeOnMigration( fileSystem, file, 11 );
+        NeoStore.setRecord( fileSystem, file, Position.UPGRADE_TRANSACTION_ID, 10 );
+        NeoStore.setRecord( fileSystem, file, Position.UPGRADE_TRANSACTION_CHECKSUM, 11 );
+        NeoStore.setRecord( fileSystem, file, Position.UPGRADE_TIME, 12 );
 
         neoStore = factory.newNeoStore( false, false );
         assertEquals( 3, neoStore.getCreationTime() );
@@ -1325,8 +1330,8 @@ public class TestNeoStore
         assertEquals( 7, neoStore.getStoreVersion() );
         assertEquals( 8, neoStore.getGraphNextProp() );
         assertEquals( 9, neoStore.getLatestConstraintIntroducingTx() );
-        assertEquals( 10, neoStore.getUpgradeId() );
-        assertEquals( 11, neoStore.getUpgradeTime() );
+        assertArrayEquals( new long[] {10, 11}, neoStore.getUpgradeTransaction() );
+        assertEquals( 12, neoStore.getUpgradeTime() );
         neoStore.close();
     }
 }

@@ -38,6 +38,8 @@ import static org.neo4j.collection.primitive.PrimitiveCommons.closeSafely;
  */
 public class PrimitiveLongCollections
 {
+    public static final long[] EMPTY_LONG_ARRAY = new long[0];
+
     /**
      * Base iterator for simpler implementations of {@link PrimitiveLongIterator}s.
      */

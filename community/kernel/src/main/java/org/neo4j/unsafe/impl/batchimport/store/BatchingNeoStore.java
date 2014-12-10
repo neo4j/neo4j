@@ -72,7 +72,7 @@ public class BatchingNeoStore implements AutoCloseable
 
     public BatchingNeoStore( FileSystemAbstraction fileSystem, String storeDir,
                              Configuration config, Monitor writeMonitor, Logging logging,
-                             Monitors monitors, WriterFactory writerFactory, AdditionalInitialIds highTokenIds )
+                             Monitors monitors, WriterFactory writerFactory, AdditionalInitialIds initialIds )
     {
         this.fileSystem = fileSystem;
         this.monitors = monitors;
@@ -92,13 +92,14 @@ public class BatchingNeoStore implements AutoCloseable
             neoStore.close();
             throw new IllegalStateException( storeDir + " already contains data, cannot do import here" );
         }
-        neoStore.setLastCommittedAndClosedTransactionId( highTokenIds.lastCommittedTransactionId() );
+        neoStore.setLastCommittedAndClosedTransactionId(
+                initialIds.lastCommittedTransactionId(), initialIds.lastCommittedTransactionChecksum() );
         this.propertyKeyRepository = new BatchingPropertyKeyTokenRepository(
-                neoStore.getPropertyKeyTokenStore(), highTokenIds.highPropertyKeyTokenId() );
+                neoStore.getPropertyKeyTokenStore(), initialIds.highPropertyKeyTokenId() );
         this.labelRepository = new BatchingLabelTokenRepository(
-                neoStore.getLabelTokenStore(), highTokenIds.highLabelTokenId() );
+                neoStore.getLabelTokenStore(), initialIds.highLabelTokenId() );
         this.relationshipTypeRepository = new BatchingRelationshipTypeTokenRepository(
-                neoStore.getRelationshipTypeTokenStore(), highTokenIds.highRelationshipTypeTokenId() );
+                neoStore.getRelationshipTypeTokenStore(), initialIds.highRelationshipTypeTokenId() );
     }
 
     private boolean alreadyContainsData( NeoStore neoStore )

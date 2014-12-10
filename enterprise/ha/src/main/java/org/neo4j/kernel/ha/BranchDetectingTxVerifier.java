@@ -22,8 +22,7 @@ package org.neo4j.kernel.ha;
 import java.io.IOException;
 
 import org.neo4j.com.TxChecksumVerifier;
-import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
+import org.neo4j.function.primitive.FunctionFromPrimitiveLongToPrimitiveLong;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
@@ -33,46 +32,44 @@ import org.neo4j.kernel.impl.util.StringLogger;
 public class BranchDetectingTxVerifier implements TxChecksumVerifier
 {
     private final StringLogger logger;
-    private final LogicalTransactionStore txStore;
+    private final FunctionFromPrimitiveLongToPrimitiveLong<IOException> txChecksumLookup;
 
-    public BranchDetectingTxVerifier( StringLogger logger, LogicalTransactionStore logicalTransactionStore)
+    public BranchDetectingTxVerifier( StringLogger logger,
+            FunctionFromPrimitiveLongToPrimitiveLong<IOException> txChecksumLookup )
     {
         this.logger = logger;
-        this.txStore = logicalTransactionStore;
+        this.txChecksumLookup = txChecksumLookup;
     }
 
     @Override
-    public void assertMatch( long txId, int masterId, long checksum )
+    public void assertMatch( long txId, long checksum )
     {
         if ( txId == 0 )
         {
             return;
         }
-        TransactionMetadataCache.TransactionMetadata metadata = null;
+        long readChecksum;
         try
         {
-            metadata = txStore.getMetadataFor( txId );
+            readChecksum = txChecksumLookup.apply( txId );
         }
         catch ( IOException e )
         {
-            logger.logMessage( "Couldn't verify checksum for " + stringify( txId, masterId, checksum ), e );
+            logger.logMessage( "Couldn't verify checksum for " + stringify( txId, checksum ), e );
             throw new BranchedDataException( "Unable to perform a mandatory sanity check due to an IO error.", e );
         }
-        int readMaster = metadata.getMasterId();
-        long readChecksum = metadata.getChecksum();
-        boolean match = masterId == readMaster && checksum == readChecksum;
 
-        if ( !match )
+        if ( checksum != readChecksum )
         {
             throw new BranchedDataException(
                     "The cluster contains two logically different versions of the database. " +
-                            "This will be automatically resolved. Details: " + stringify( txId, masterId, checksum ) +
+                            "This will be automatically resolved. Details: " + stringify( txId, checksum ) +
                             " does not match " + readChecksum );
         }
     }
 
-    private String stringify( long txId, int masterId, long checksum )
+    private String stringify( long txId, long checksum )
     {
-        return "txId:" + txId + ", masterId:" + masterId + ", checksum:" + checksum;
+        return "txId:" + txId + ", checksum:" + checksum;
     }
 }

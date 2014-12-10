@@ -114,6 +114,15 @@ public class IndexConfigStore extends LifecycleAdapter
         read();
     }
 
+    @Override
+    public void start() throws Throwable
+    {
+        // Refresh the read config
+        nodeConfig.clear();
+        relConfig.clear();
+        read();
+    }
+
     private Map<String, Map<String, String>> readMap( StoreChannel channel,
             Map<String, Map<String, String>> map, Integer sizeOrTillEof ) throws IOException
     {

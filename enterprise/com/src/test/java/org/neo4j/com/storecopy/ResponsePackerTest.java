@@ -56,7 +56,7 @@ public class ResponsePackerTest
         IOCursor<CommittedTransactionRepresentation> endlessCursor = new EndlessCursor( lastAppliedTransactionId+1 );
         when( transactionStore.getTransactions( anyLong() ) ).thenReturn( endlessCursor );
         final long targetTransactionId = 8L;
-        final TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( targetTransactionId );
+        final TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( targetTransactionId, 0 );
         ResponsePacker packer = new ResponsePacker( transactionStore, transactionIdStore,
                 singletonProvider( new StoreId() ) );
 
@@ -86,7 +86,7 @@ public class ResponsePackerTest
 
                         // Move the target transaction id forward one step, effectively always keeping it out of reach
                         transactionIdStore.setLastCommittedAndClosedTransactionId(
-                                transactionIdStore.getLastCommittedTransactionId()+1 );
+                                transactionIdStore.getLastCommittedTransactionId()+1, 0 );
                         return true;
                     }
                 };
@@ -96,7 +96,7 @@ public class ResponsePackerTest
 
     private RequestContext requestContextStartingAt( long txId )
     {
-        return new RequestContext( 0, 0, 0, txId, 0, 0 );
+        return new RequestContext( 0, 0, 0, txId, 0 );
     }
 
     public class EndlessCursor implements IOCursor<CommittedTransactionRepresentation>

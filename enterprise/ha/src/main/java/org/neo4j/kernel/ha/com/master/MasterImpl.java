@@ -34,7 +34,6 @@ import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.function.Consumer;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Factory;
-import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -57,7 +56,6 @@ import org.neo4j.kernel.impl.util.collection.TimedRepository;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.kernel.impl.util.JobScheduler.Group.slaveLocksTimeout;
 
 /**
@@ -91,7 +89,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
 
         Integer createRelationshipType( String name );
 
-        Pair<Integer, Long> getMasterIdForCommittedTx( long txId ) throws IOException;
+        long getTransactionChecksum( long txId ) throws IOException;
 
         RequestContext flushStoresAndStreamStoreFiles( StoreWriter writer );
 
@@ -243,7 +241,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
     private Response<Long> commit0( RequestContext context, TransactionRepresentation preparedTransaction, Locks
             .Client locks ) throws IOException, org.neo4j.kernel.api.exceptions.TransactionFailureException
     {
-        if(locks.trySharedLock( ResourceTypes.SCHEMA, ResourceTypes.schemaResource() ))
+        if ( locks.trySharedLock( ResourceTypes.SCHEMA, ResourceTypes.schemaResource() ) )
         {
             long txId = spi.applyPreparedTransaction( preparedTransaction );
             return spi.packTransactionObligationResponse( context, txId );
@@ -286,14 +284,10 @@ public class MasterImpl extends LifecycleAdapter implements Master
     @Override
     public Response<HandshakeResult> handshake( long txId, StoreId storeId )
     {
-        if ( txId <= BASE_TX_ID )
-        {
-            return spi.packEmptyResponse( new HandshakeResult( -1, 0, epoch ) );
-        }
         try
         {
-            Pair<Integer, Long> masterId = spi.getMasterIdForCommittedTx( txId );
-            return spi.packEmptyResponse( new HandshakeResult( masterId.first(), masterId.other(), epoch ) );
+            long checksum = spi.getTransactionChecksum( txId );
+            return spi.packEmptyResponse( new HandshakeResult( checksum, epoch ) );
         }
         catch ( IOException e )
         {

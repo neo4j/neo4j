@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.test.DoubleLatch;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -103,7 +104,7 @@ public class TransactionCommittingResponseUnpackerTest
         unpacker.unpackResponse( response, stoppingTxHandler );
 
         // Then
-        verify( txIdStore, times( 1 ) ).transactionCommitted( committingTransactionId );
+        verify( txIdStore, times( 1 ) ).transactionCommitted( committingTransactionId, 0 );
         verify( txIdStore, times( 1 ) ).transactionClosed( committingTransactionId );
         verify( appender, times( 1 ) ).append( any( TransactionRepresentation.class ), anyLong() );
         verify( appender, times( 1 ) ).force();
@@ -296,6 +297,9 @@ public class TransactionCommittingResponseUnpackerTest
             LogEntryCommit mockCommitEntry = mock( LogEntryCommit.class );
             when( mockCommitEntry.getTxId() ).thenReturn( id );
             when( tx.getCommitEntry() ).thenReturn( mockCommitEntry );
+            LogEntryStart mockStartEntry = mock( LogEntryStart.class );
+            when( mockStartEntry.checksum() ).thenReturn( id*10 );
+            when( tx.getStartEntry() ).thenReturn( mockStartEntry );
             TransactionRepresentation txRepresentation = mock( TransactionRepresentation.class );
             when( tx.getTransactionRepresentation() ).thenReturn( txRepresentation );
             return tx;

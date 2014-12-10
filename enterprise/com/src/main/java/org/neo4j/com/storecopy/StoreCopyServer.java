@@ -19,10 +19,6 @@
  */
 package org.neo4j.com.storecopy;
 
-import static org.neo4j.com.RequestContext.anonymous;
-import static org.neo4j.io.fs.FileUtils.getMostCanonicalFile;
-import static org.neo4j.io.fs.FileUtils.relativePath;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -35,6 +31,10 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+
+import static org.neo4j.com.RequestContext.anonymous;
+import static org.neo4j.io.fs.FileUtils.getMostCanonicalFile;
+import static org.neo4j.io.fs.FileUtils.relativePath;
 
 /**
  * Is able to feed store files in a consistent way to a {@link Response} to be picked up by a
@@ -83,7 +83,7 @@ public class StoreCopyServer
                 }
             }
 
-            return anonymous( transactionIdWhenStartingCopy - 1 );
+            return anonymous( transactionIdWhenStartingCopy );
         }
         catch ( IOException e )
         {

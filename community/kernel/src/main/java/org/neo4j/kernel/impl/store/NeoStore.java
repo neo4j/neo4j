@@ -80,18 +80,36 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     public static final String DEFAULT_NAME = "neostore";
     // Positions of meta-data records
 
-    public static final int TIME_POSITION = 0;
-    public static final int RANDOM_NUMBER_POSITION = 1;
-    public static final int VERSION_POSITION = 2;
-    public static final int LATEST_TX_POSITION = 3;
-    public static final int STORE_VERSION_POSITION = 4;
-    public static final int NEXT_GRAPH_PROP_POSITION = 5;
-    public static final int LATEST_CONSTRAINT_TX_POSITION = 6;
-    public static final int UPGRADE_ID_POSITION = 7;
-    public static final int UPGRADE_TIME_POSITION = 8;
-    public static final int META_DATA_RECORD_COUNT = UPGRADE_TIME_POSITION + 1;
-    // NOTE: When adding new constants, remember to update the fields bellow,
-    // and the apply() method!
+    public static enum Position
+    {
+        TIME( 0, "Creation time" ),
+        RANDOM_NUMBER( 1, "Random number for store id" ),
+        LOG_VERSION( 2, "Current log version" ),
+        LAST_TRANSACTION_ID( 3, "Last committed transaction" ),
+        STORE_VERSION( 4, "Store format version" ),
+        FIRST_GRAPH_PROPERTY( 5, "First property record containing graph properties" ),
+        LAST_CONSTRAINT_TRANSACTION( 6, "Last committed transaction containing constraint changes" ),
+        UPGRADE_TRANSACTION_ID( 7, "Transaction id most recent upgrade was performed at" ),
+        UPGRADE_TIME( 8, "Time of last upgrade" ),
+        LAST_TRANSACTION_CHECKSUM( 9, "Checksum of last committed transaction" ),
+        UPGRADE_TRANSACTION_CHECKSUM( 10, "Checksum of transaction id the most recent upgrade was performed at" );
+
+        private final int id;
+        private final String description;
+
+        private Position( int id, String description )
+        {
+            this.id = id;
+            this.description = description;
+        }
+
+        public String description()
+        {
+            return description;
+        }
+    }
+
+    public static final int META_DATA_RECORD_COUNT = Position.values().length;
 
     public static boolean isStorePresent( FileSystemAbstraction fs, Config config )
     {
@@ -118,8 +136,10 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     private volatile long storeVersionField = FIELD_NOT_INITIALIZED;
     private volatile long graphNextPropField = FIELD_NOT_INITIALIZED;
     private volatile long latestConstraintIntroducingTxField = FIELD_NOT_INITIALIZED;
-    private volatile long upgradeIdField = FIELD_NOT_INITIALIZED;
+    private volatile long upgradeTxIdField = FIELD_NOT_INITIALIZED;
     private volatile long upgradeTimeField = FIELD_NOT_INITIALIZED;
+    private volatile long lastTransactionChecksum = FIELD_NOT_INITIALIZED;
+    private volatile long upgradeTxChecksumField = FIELD_NOT_INITIALIZED;
 
     // This is not a field in the store, but something keeping track of which of the committed
     // transactions have been closed. Useful in rotation and shutdown.
@@ -184,8 +204,8 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
                  * in garbage.
                  * Yes, this has to be fixed to be prettier.
                  */
-                String foundVersion = versionLongToString( getStoreVersion( fileSystemAbstraction, configuration
-                        .get( org.neo4j.kernel.impl.store.CommonAbstractStore.Configuration.neo_store ) ) );
+                String foundVersion = versionLongToString( getRecord( fileSystemAbstraction,
+                        configuration.get( Configuration.neo_store ), Position.STORE_VERSION ) );
                 if ( !CommonAbstractStore.ALL_STORES_VERSION.equals( foundVersion ) )
                 {
                     throw new IllegalStateException(
@@ -285,59 +305,16 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     }
 
     /**
-     * Sets the version for the given {@code neoStore} file.
-     * @param neoStore the NeoStore file.
-     * @param version the version to set.
-     * @return the previous version before writing.
-     * @throws IOException
-     */
-    public static long setVersion( FileSystemAbstraction fileSystem, File neoStore, long version ) throws IOException
-    {
-        return setRecord( fileSystem, neoStore, VERSION_POSITION, version );
-    }
-
-    /**
-     * Sets the store version for the given {@code neoStore} file.
-     * @param neoStore the NeoStore file.
-     * @param storeVersion the version to set.
-     * @return the previous version before writing.
-     * @throws IOException
-     */
-    public static long setStoreVersion( FileSystemAbstraction fileSystem, File neoStore, long storeVersion )
-            throws IOException
-    {
-        return setRecord( fileSystem, neoStore, STORE_VERSION_POSITION, storeVersion );
-    }
-
-    /**
-     * Sets the upgrade id for the given {@code neoStore} file.
+     * Writes a record in a neostore file.
      *
-     * @param neoStore the NeoStore file.
-     * @param id       the version to set.
-     * @return the previous version before writing.
-     * @throws IOException
+     * @param fileSystem {@link FileSystemAbstraction} the {@code neoStore} file lives in.
+     * @param neoStore {@link File} pointing to the neostore.
+     * @param position record {@link Position}.
+     * @param value value to write in that record.
+     * @return the previous value before writing.
+     * @throws IOException if any I/O related error occurs.
      */
-    public static long setOrAddUpgradeIdOnMigration( FileSystemAbstraction fileSystem, File neoStore, long id )
-            throws IOException
-    {
-        return setRecord( fileSystem, neoStore, UPGRADE_ID_POSITION, id );
-    }
-
-    /**
-     * Sets the upgrade time for the given {@code neoStore} file.
-     *
-     * @param neoStore the NeoStore file.
-     * @param time     the version to set.
-     * @return the previous version before writing.
-     * @throws IOException
-     */
-    public static long setOrAddUpgradeTimeOnMigration( FileSystemAbstraction fileSystem, File neoStore, long time )
-            throws IOException
-    {
-        return setRecord( fileSystem, neoStore, UPGRADE_TIME_POSITION, time );
-    }
-
-    private static long setRecord( FileSystemAbstraction fileSystem, File neoStore, int position, long value )
+    public static long setRecord( FileSystemAbstraction fileSystem, File neoStore, Position position, long value )
             throws IOException
     {
         int trailerSize = UTF8.encode( buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ) ).length;
@@ -345,37 +322,43 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         {
             long previous = FIELD_NOT_INITIALIZED;
 
-            long actualFieldsSize = channel.size() - trailerSize;
-            ByteBuffer buffer = ByteBuffer.allocate( RECORD_SIZE - 1/*inUse*/ );
+            long trailerOffset = channel.size() - trailerSize;
+            ByteBuffer buffer = ByteBuffer.allocate( RECORD_SIZE );
             ByteBuffer trailerBuffer = null;
-            int recordOffset = RECORD_SIZE * position + 1/*inUse*/;
-            if ( recordOffset < actualFieldsSize )
+            int recordOffset = RECORD_SIZE * position.id;
+            if ( recordOffset < trailerOffset )
             {
+                // We're overwriting a record, get the previous value
                 channel.position( recordOffset );
                 channel.read( buffer );
                 buffer.flip();
+                buffer.get(); // inUse
                 previous = buffer.getLong();
             }
             else
             {
+                // We're adding a new record, first cut off and keep the trailer
                 trailerBuffer = ByteBuffer.allocate( trailerSize );
-                channel.position( actualFieldsSize );
+                channel.position( trailerOffset );
                 channel.read( trailerBuffer );
                 trailerBuffer.flip();
-                channel.truncate( actualFieldsSize );
+                channel.truncate( trailerOffset );
             }
             buffer.clear();
 
+            // Write the value
             channel.position( recordOffset );
+            buffer.put( Record.IN_USE.byteValue() );
             buffer.putLong( value );
             buffer.flip();
             channel.write( buffer );
 
-            int afterRecordSize = recordOffset + RECORD_SIZE - 1/*inUse*/;
-            if ( afterRecordSize > actualFieldsSize )
+            // Append the trailer if we cut it off previously
+            int newTrailerOffset = recordOffset + RECORD_SIZE;
+            if ( newTrailerOffset > trailerOffset )
             {
                 assert trailerBuffer != null;
-                channel.position( afterRecordSize );
+                channel.position( newTrailerOffset );
                 channel.write( trailerBuffer );
             }
             return previous;
@@ -383,22 +366,14 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     }
 
     /**
-     * Warning: This method only works for stores where there is no database running!
+     * Reads a record from a neostore file.
+     *
+     * @param fileSystem {@link FileSystemAbstraction} the {@code neoStore} file lives in.
+     * @param neoStore {@link File} pointing to the neostore.
+     * @param position record {@link Position}.
+     * @return the read record value specified by {@link Position}.
      */
-    public static long getStoreVersion( FileSystemAbstraction fs, File neoStore )
-    {
-        return getRecord( fs, neoStore, STORE_VERSION_POSITION );
-    }
-
-    /**
-     * Warning: This method only works for stores where there is no database running!
-     */
-    public static long getTxId( FileSystemAbstraction fs, File neoStore )
-    {
-        return getRecord( fs, neoStore, LATEST_TX_POSITION );
-    }
-
-    private static long getRecord( FileSystemAbstraction fs, File neoStore, int recordPosition )
+    public static long getRecord( FileSystemAbstraction fs, File neoStore, Position recordPosition )
     {
         try ( StoreChannel channel = fs.open( neoStore, "r" ) )
         {
@@ -407,11 +382,11 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
              * field was introduced with 1.5, so if there is a non-clean
              * shutdown we may have a buffer underflow.
              */
-            if ( recordPosition > 3 && channel.size() < RECORD_SIZE * 5 )
+            if ( recordPosition.id >= Position.STORE_VERSION.id && channel.size() < RECORD_SIZE * 5 )
             {
                 return -1;
             }
-            channel.position( RECORD_SIZE * recordPosition + 1/*inUse*/);
+            channel.position( RECORD_SIZE * recordPosition.id + 1/*inUse*/);
             ByteBuffer buffer = ByteBuffer.allocate( 8 );
             channel.read( buffer );
             buffer.flip();
@@ -425,7 +400,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
 
     public StoreId getStoreId()
     {
-        return new StoreId( getCreationTime(), getRandomNumber(), getUpgradeTime(), getUpgradeId() );
+        return new StoreId( getCreationTime(), getRandomNumber(), getUpgradeTime(), upgradeTxIdField );
     }
 
     public long getUpgradeTime()
@@ -436,20 +411,16 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
 
     public synchronized void setUpgradeTime( long time )
     {
-        setRecord( UPGRADE_TIME_POSITION, time );
+        setRecord( Position.UPGRADE_TIME, time );
         upgradeTimeField = time;
     }
 
-    public long getUpgradeId()
+    public synchronized void setUpgradeTransaction( long id, long checksum )
     {
-        checkInitialized( upgradeIdField );
-        return upgradeIdField;
-    }
-
-    public synchronized void setUpgradeId( long id )
-    {
-        setRecord( UPGRADE_ID_POSITION, id );
-        upgradeIdField = id;
+        setRecord( Position.UPGRADE_TRANSACTION_ID, id );
+        upgradeTxIdField = id;
+        setRecord( Position.UPGRADE_TRANSACTION_CHECKSUM, checksum );
+        upgradeTxChecksumField = checksum;
     }
 
     public long getCreationTime()
@@ -460,7 +431,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
 
     public synchronized void setCreationTime( long time )
     {
-        setRecord( TIME_POSITION, time );
+        setRecord( Position.TIME, time );
         creationTimeField = time;
     }
 
@@ -472,7 +443,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
 
     public synchronized void setRandomNumber( long nr )
     {
-        setRecord( RANDOM_NUMBER_POSITION, nr );
+        setRecord( Position.RANDOM_NUMBER, nr );
         randomNumberField = nr;
     }
 
@@ -485,7 +456,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
 
     public void setCurrentLogVersion( long version )
     {
-        setRecord( VERSION_POSITION, version );
+        setRecord( Position.LOG_VERSION, version );
         versionField = version;
     }
 
@@ -495,7 +466,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         // This method can expect synchronisation at a higher level,
         // and be effectively single-threaded.
         // The call to getVersion() will most likely optimise to a volatile-read.
-        long pageId = pageIdForRecord( VERSION_POSITION );
+        long pageId = pageIdForRecord( Position.LOG_VERSION.id );
         try ( PageCursor cursor = storeFile.io( pageId, PF_EXCLUSIVE_LOCK ) )
         {
             if ( cursor.next() )
@@ -532,7 +503,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
 
     public void setStoreVersion( long version )
     {
-        setRecord( STORE_VERSION_POSITION, version );
+        setRecord( Position.STORE_VERSION, version );
         storeVersionField = version;
     }
 
@@ -544,7 +515,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
 
     public void setGraphNextProp( long propId )
     {
-        setRecord( NEXT_GRAPH_PROP_POSITION, propId );
+        setRecord( Position.FIRST_GRAPH_PROPERTY, propId );
         graphNextPropField = propId;
     }
 
@@ -556,7 +527,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
 
     public void setLatestConstraintIntroducingTx( long latestConstraintIntroducingTx )
     {
-        setRecord( LATEST_CONSTRAINT_TX_POSITION, latestConstraintIntroducingTx );
+        setRecord( Position.LAST_CONSTRAINT_TRANSACTION, latestConstraintIntroducingTx );
         latestConstraintIntroducingTxField = latestConstraintIntroducingTx;
     }
 
@@ -564,32 +535,34 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     {
         do
         {
-            creationTimeField = getRecordValue( cursor, TIME_POSITION );
-            randomNumberField = getRecordValue( cursor, RANDOM_NUMBER_POSITION );
-            versionField = getRecordValue( cursor, VERSION_POSITION );
-            upgradeIdField = getRecordValue( cursor, UPGRADE_ID_POSITION );
-            upgradeTimeField = getRecordValue( cursor, UPGRADE_TIME_POSITION );
-            long lastCommittedTxId = getRecordValue( cursor, LATEST_TX_POSITION );
+            creationTimeField = getRecordValue( cursor, Position.TIME );
+            randomNumberField = getRecordValue( cursor, Position.RANDOM_NUMBER );
+            versionField = getRecordValue( cursor, Position.LOG_VERSION );
+            upgradeTxIdField = getRecordValue( cursor, Position.UPGRADE_TRANSACTION_ID );
+            upgradeTimeField = getRecordValue( cursor, Position.UPGRADE_TIME );
+            long lastCommittedTxId = getRecordValue( cursor, Position.LAST_TRANSACTION_ID );
             lastCommittingTxField.set( lastCommittedTxId );
-            storeVersionField = getRecordValue( cursor, STORE_VERSION_POSITION );
-            graphNextPropField = getRecordValue( cursor, NEXT_GRAPH_PROP_POSITION );
-            latestConstraintIntroducingTxField = getRecordValue( cursor, LATEST_CONSTRAINT_TX_POSITION );
-            lastClosedTx.set( lastCommittedTxId );
-            lastCommittedTx.set( lastCommittedTxId );
+            storeVersionField = getRecordValue( cursor, Position.STORE_VERSION );
+            graphNextPropField = getRecordValue( cursor, Position.FIRST_GRAPH_PROPERTY );
+            latestConstraintIntroducingTxField = getRecordValue( cursor, Position.LAST_CONSTRAINT_TRANSACTION );
+            lastTransactionChecksum = getRecordValue( cursor, Position.LAST_TRANSACTION_CHECKSUM );
+            lastClosedTx.set( lastCommittedTxId, 0 );
+            lastCommittedTx.set( lastCommittedTxId, lastTransactionChecksum );
+            upgradeTxChecksumField = getRecordValue( cursor, Position.UPGRADE_TRANSACTION_CHECKSUM );
         } while ( cursor.shouldRetry() );
     }
 
-    private long getRecordValue( PageCursor cursor, int position )
+    private long getRecordValue( PageCursor cursor, Position position )
     {
         // The "+ 1" to skip over the inUse byte.
-        int offset = position * getEffectiveRecordSize() + 1;
+        int offset = position.id * getEffectiveRecordSize() + 1;
         cursor.setOffset( offset );
         return cursor.getLong();
     }
 
     private void incrementVersion( PageCursor cursor ) throws IOException
     {
-        int offset = VERSION_POSITION * getEffectiveRecordSize();
+        int offset = Position.LOG_VERSION.id * getEffectiveRecordSize();
         long value;
         do
         {
@@ -621,8 +594,9 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         }
     }
 
-    private void setRecord( long id, long value )
+    private void setRecord( Position recordPosition, long value )
     {
+        long id = recordPosition.id;
         long pageId = pageIdForRecord( id );
 
         // We need to do a little special handling of high id in neostore since it's not updated in the same
@@ -874,13 +848,14 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     }
 
     @Override
-    public void transactionCommitted( long transactionId )
+    public void transactionCommitted( long transactionId, long checksum )
     {
-        long previous = lastCommittedTx.get();
-        lastCommittedTx.offer( transactionId );
-        if ( transactionId > previous )
+        if ( lastCommittedTx.offer( transactionId, checksum ) )
         {
-            setRecord( LATEST_TX_POSITION, lastCommittedTx.get() );
+            long[] transactionData = lastCommittedTx.get();
+            setRecord( Position.LAST_TRANSACTION_ID, transactionData[0] );
+            setRecord( Position.LAST_TRANSACTION_CHECKSUM, transactionData[1] );
+            lastTransactionChecksum = checksum;
         }
     }
 
@@ -888,14 +863,28 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     public long getLastCommittedTransactionId()
     {
         checkInitialized( lastCommittingTxField.get() );
+        return lastCommittedTx.getHighestGapFreeNumber();
+    }
+
+    @Override
+    public long[] getLastCommittedTransaction()
+    {
+        checkInitialized( lastCommittingTxField.get() );
         return lastCommittedTx.get();
+    }
+
+    @Override
+    public long[] getUpgradeTransaction()
+    {
+        checkInitialized( upgradeTxChecksumField );
+        return new long[] {upgradeTxIdField, upgradeTxChecksumField};
     }
 
     @Override
     public long getLastClosedTransactionId()
     {
         checkInitialized( lastCommittingTxField.get() );
-        return lastClosedTx.get();
+        return lastClosedTx.getHighestGapFreeNumber();
     }
 
     // Ensures that all fields are read from the store, by checking the initial value of the field in question
@@ -908,25 +897,27 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     }
 
     @Override
-    public void setLastCommittedAndClosedTransactionId( long transactionId )
+    public void setLastCommittedAndClosedTransactionId( long transactionId, long checksum )
     {
-        setRecord( LATEST_TX_POSITION, transactionId );
+        setRecord( Position.LAST_TRANSACTION_ID, transactionId );
+        setRecord( Position.LAST_TRANSACTION_CHECKSUM, checksum );
         checkInitialized( lastCommittingTxField.get() );
         lastCommittingTxField.set( transactionId );
-        lastClosedTx.set( transactionId );
-        lastCommittedTx.set( transactionId );
+        lastClosedTx.set( transactionId, 0 );
+        lastCommittedTx.set( transactionId, checksum );
+        lastTransactionChecksum = checksum;
     }
 
     @Override
     public void transactionClosed( long transactionId )
     {
-        lastClosedTx.offer( transactionId );
+        lastClosedTx.offer( transactionId, 0 );
     }
 
     @Override
     public boolean closedTransactionIdIsOnParWithCommittedTransactionId()
     {
-        boolean onPar = lastClosedTx.get() == lastCommittedTx.get();
+        boolean onPar = lastClosedTx.getHighestGapFreeNumber() == lastCommittedTx.getHighestGapFreeNumber();
         if ( !onPar )
         {   // Trigger some logging here, max logged every 30 secs or so
             transactionCloseWaitLogger.event( null );

@@ -21,12 +21,20 @@ package org.neo4j.kernel.impl.storemigration.legacylogs;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.storemigration.FileOperation;
 import org.neo4j.kernel.impl.transaction.log.IOCursor;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
+import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 
 import static org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogFilenames.allLegacyLogFilesFilter;
@@ -40,6 +48,43 @@ public class LegacyLogs
     private final FileSystemAbstraction fs;
     private final LegacyLogEntryReader reader;
     private final LegacyLogEntryWriter writer;
+    private final Comparator<File> NEWEST_FIRST = new Comparator<File>()
+    {
+        @Override
+        public int compare( File o1, File o2 )
+        {
+            return versionOf( o1 ).compareTo( versionOf( o2 ) );
+        }
+
+        private Long versionOf( File file )
+        {
+            Pair<LogHeader, IOCursor<LogEntry>> pair = null;
+            try
+            {
+                pair = reader.openReadableChannel( file );
+                LogHeader header = pair.first();
+                return Long.valueOf( header.logVersion );
+            }
+            catch ( IOException e )
+            {   // Shouldn't happen
+                throw new RuntimeException( e );
+            }
+            finally
+            {
+                if ( pair != null )
+                {
+                    try
+                    {
+                        pair.other().close();
+                    }
+                    catch ( IOException e )
+                    {
+                        throw new RuntimeException( e );
+                    }
+                }
+            }
+        }
+    };
 
     public LegacyLogs( FileSystemAbstraction fs )
     {
@@ -56,7 +101,6 @@ public class LegacyLogs
     public void migrateLogs( File storeDir, File migrationDir ) throws IOException
     {
         File[] logFiles = fs.listFiles( storeDir, versionedLegacyLogFilesFilter );
-
         for ( File file : logFiles )
         {
             final Pair<LogHeader, IOCursor<LogEntry>> pair = reader.openReadableChannel( file );
@@ -72,17 +116,51 @@ public class LegacyLogs
         }
     }
 
-    public void moveLogs( File migrationDir, File storeDir ) throws IOException
+    public long getTransactionChecksum( File storeDir, long transactionId ) throws IOException
     {
-        File[] logFiles = fs.listFiles( migrationDir, versionedLegacyLogFilesFilter );
+        List<File> logFiles = Arrays.asList( fs.listFiles( storeDir, versionedLegacyLogFilesFilter ) );
+        Collections.sort( logFiles, NEWEST_FIRST );
         for ( File file : logFiles )
         {
-            final File originalFile = new File( storeDir, file.getName() );
-            if ( originalFile.exists() )
+            Pair<LogHeader, IOCursor<LogEntry>> pair = reader.openReadableChannel( file );
+            boolean hadAnyTransactions = false;
+            try ( IOCursor<LogEntry> cursor = pair.other() )
             {
-                fs.deleteFile( originalFile );
+                // The log entries will come sorted from this cursor, so no need to keep track of identifiers and such.
+                LogEntryStart startEntry = null;
+                while ( cursor.next() )
+                {
+                    LogEntry logEntry = cursor.get();
+                    if ( logEntry instanceof LogEntryStart )
+                    {
+                        startEntry = (LogEntryStart) logEntry;
+                    }
+                    else if ( logEntry instanceof LogEntryCommit )
+                    {
+                        hadAnyTransactions = true;
+                        LogEntryCommit commitEntry = logEntry.as();
+                        if ( commitEntry.getTxId() == transactionId )
+                        {
+                            return startEntry.checksum();
+                        }
+                    }
+                }
             }
-            fs.moveToDirectory( file, storeDir );
+            if ( hadAnyTransactions )
+            {
+                // No need to go further back than this. We're looking for the last transaction
+                break;
+            }
+        }
+        throw new NoSuchTransactionException( transactionId );
+    }
+
+    public void operate( FileOperation op, File from, File to ) throws IOException
+    {
+        File[] logFiles = fs.listFiles( from, versionedLegacyLogFilesFilter );
+        for ( File file : logFiles )
+        {
+            op.perform( fs, file.getName(), from, false, to, true );
         }
     }
 
@@ -97,6 +175,11 @@ public class LegacyLogs
             fs.renameFile( file, new File( file.getParent(), newName ) );
         }
 
+        deleteUnusedLogFiles( storeDir );
+    }
+
+    public void deleteUnusedLogFiles( File storeDir )
+    {
         // delete old an unused log files
         for ( File file : fs.listFiles( storeDir, allLegacyLogFilesFilter ) )
         {

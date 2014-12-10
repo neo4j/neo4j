@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import static java.lang.Math.max;
 import static java.lang.String.format;
 
 /**
@@ -27,38 +26,76 @@ import static java.lang.String.format;
  */
 public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
 {
-    private volatile long highestGapFreeNumber;
-    private final SortedArray outOfOrderQueue;
+    // odd means updating, even means no one is updating
+    private volatile int version;
+    // These don't need to be volatile, reading them is "guarded" by version access
+    private long highestGapFreeNumber;
+    private long highestGapFreeMeta;
+    private final SequenceArray outOfOrderQueue;
+    private final long[] metaArray = new long[1];
 
     public ArrayQueueOutOfOrderSequence( long startingNumber, int initialArraySize )
     {
         this.highestGapFreeNumber = startingNumber;
-        this.outOfOrderQueue = new SortedArray( initialArraySize );
+        this.outOfOrderQueue = new SequenceArray( 2, initialArraySize );
     }
 
     @Override
-    public synchronized void offer( long number )
+    public synchronized boolean offer( long number, long meta )
     {
         if ( highestGapFreeNumber + 1 == number )
         {
-            highestGapFreeNumber = outOfOrderQueue.pollHighestGapFree( number );
+            version++;
+            highestGapFreeNumber = outOfOrderQueue.pollHighestGapFree( number, metaArray );
+            highestGapFreeMeta = highestGapFreeNumber == number ? meta : metaArray[0];
+            version++;
+            return true;
         }
-        else
-        {
-            outOfOrderQueue.offer( highestGapFreeNumber, number );
-        }
+
+        outOfOrderQueue.offer( highestGapFreeNumber, number, pack( meta ) );
+        return false;
+    }
+
+    private long[] pack( long meta )
+    {
+        metaArray[0] = meta;
+        return metaArray;
     }
 
     @Override
-    public long get()
+    public long[] get()
+    {
+        long number = 0, meta = 0;
+        while ( true )
+        {
+            int versionBefore = version;
+            if ( versionBefore % 2 == 1 ) // TODO there must be a more efficient way of checking this
+            {   // Someone else is updating those values as we speak, go another round
+                continue;
+            }
+
+            number = highestGapFreeNumber;
+            meta = highestGapFreeMeta;
+            if ( version == versionBefore )
+            {   // We read a consistent version of these two values
+                break;
+            }
+        }
+
+        return new long[] {number, meta};
+    }
+
+    @Override
+    public long getHighestGapFreeNumber()
     {
         return highestGapFreeNumber;
     }
 
     @Override
-    public synchronized void set( long number )
+    public synchronized void set( long number, long meta )
     {
         highestGapFreeNumber = number;
+        highestGapFreeMeta = meta;
         outOfOrderQueue.clear();
     }
 
@@ -66,96 +103,5 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
     public synchronized String toString()
     {
         return format( "out-of-order-sequence:%d [%s]", highestGapFreeNumber, outOfOrderQueue );
-    }
-
-    private static class SortedArray
-    {
-        private static final long UNSET = -1L;
-        // This is the backing store, treated as a ring courtesy of cursor
-        private long[] array;
-        private int cursor;
-        private int length;
-
-        public SortedArray( int initialArraySize )
-        {
-            this.array = new long[initialArraySize];
-        }
-
-        public void clear()
-        {
-            cursor = 0;
-            length = 0;
-        }
-
-        void offer( long baseNumber, long number )
-        {
-            int diff = (int) (number-baseNumber);
-            ensureArrayCapacity( diff );
-            int index = cursor+diff-1;
-            for ( int i = cursor+length; i < index; i++ )
-            {
-                array[i%array.length] = UNSET;
-            }
-            array[index%array.length] = number;
-            length = max( length, diff );
-        }
-
-        long pollHighestGapFree( long given )
-        {
-            // assume that "given" would be placed at cursor
-            long number = given;
-            int length = this.length-1;
-            for ( int i = 0; i < length; i++ )
-            {
-                int index = advanceCursor();
-                if ( array[index] == UNSET )
-                {
-                    break;
-                }
-
-                number++;
-                assert array[index] == number : "Expected index " + index + " to be " + number +
-                        ", but was " + array[index] + ". This is for i=" + i;
-            }
-            return number;
-        }
-
-        private int advanceCursor()
-        {
-            cursor = (cursor+1)%array.length;
-            length--;
-            assert length >= 0;
-            return cursor;
-        }
-
-        private void ensureArrayCapacity( int capacity )
-        {
-            while ( capacity > array.length )
-            {
-                long[] newArray = new long[array.length*2];
-                // Copy contents to new array, newArray starting at 0
-                for ( int i = 0; i < length; i++ )
-                {
-                    newArray[i] = array[(cursor+i)%array.length];
-                }
-                array = newArray;
-                cursor = 0;
-            }
-        }
-
-        @Override
-        public String toString()
-        {
-            StringBuilder builder = new StringBuilder();
-            for ( int i = 0; i < length; i++ )
-            {
-                long value = array[(cursor+i)%array.length];
-                if ( value != UNSET )
-                {
-                    builder.append( builder.length() > 0 ? "," : "" ).append( value );
-                }
-            }
-            return builder.toString();
-        }
     }
 }

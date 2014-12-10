@@ -84,7 +84,7 @@ public class AppendAndRotationRaceIT
     public void shouldOnlyRotateAwayTransactionsThatHaveBeenFullyApliedAndForced() throws Throwable
     {
         // GIVEN a bunch of dependencies just to be able to tie the log file and appender together
-        DeadSimpleTransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( BASE_TX_ID );
+        DeadSimpleTransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( BASE_TX_ID, 0 );
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory, fsr.get() );
         LogVersionRepository logVersionRepository = new DeadSimpleLogVersionRepository( 0 );
         Monitor monitor = mock( Monitor.class );
@@ -239,7 +239,7 @@ public class AppendAndRotationRaceIT
 
                 try
                 {
-                    transactionIdStore.transactionCommitted( transactionId );
+                    transactionIdStore.transactionCommitted( transactionId, 0 );
                     // apply
                     parkNanos( random.nextInt( 10 ) * 1_000_000 );
                 }

@@ -78,9 +78,15 @@ public class GraphDatabaseFactory
             {
                 config.put( "ephemeral", "false" );
                 Dependencies dependencies = state.databaseDependencies();
-                return new EmbeddedGraphDatabase( path, config, dependencies );
+                return GraphDatabaseFactory.this.newDatabase( path, config, dependencies );
             }
         } );
+    }
+
+    @SuppressWarnings( "deprecation" )
+    protected GraphDatabaseService newDatabase( String path, Map<String,String> config, Dependencies dependencies )
+    {
+        return new EmbeddedGraphDatabase( path, config, dependencies );
     }
 
     /**

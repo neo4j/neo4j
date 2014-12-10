@@ -304,7 +304,7 @@ public class PhysicalLogFileTest
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     public final @Rule TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
     private final LogVersionRepository logVersionRepository = new DeadSimpleLogVersionRepository( 1L );
-    private final TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 5L );
+    private final TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 5L, 0 );
     private static final Visitor<ReadableVersionableLogChannel, IOException> NO_RECOVERY_EXPECTED =
             new Visitor<ReadableVersionableLogChannel, IOException>()
             {

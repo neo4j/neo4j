@@ -91,7 +91,7 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
     private RequestContext getRequestContext()
     {
         return new RequestContext( EMPTY.getEpoch(), EMPTY.machineId(), EMPTY.getEventIdentifier(), 1,
-                EMPTY.getMasterId(), EMPTY.getChecksum() );
+                EMPTY.getChecksum() );
     }
 
     @Override

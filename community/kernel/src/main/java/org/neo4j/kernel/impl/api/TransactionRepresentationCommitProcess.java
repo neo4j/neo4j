@@ -27,6 +27,8 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart.checksum;
+
 public class TransactionRepresentationCommitProcess implements TransactionCommitProcess
 {
     private final LogicalTransactionStore logicalTransactionStore;
@@ -54,7 +56,8 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
         // apply changes to the store
         try
         {
-            transactionIdStore.transactionCommitted( transactionId );
+            transactionIdStore.transactionCommitted( transactionId,
+                    checksum( transaction.additionalHeader(), transaction.getMasterId(), transaction.getAuthorId() ) );
             storeApplier.apply( transaction, locks, transactionId, mode );
         }
         // TODO catch different types of exceptions here, some which are OK

@@ -33,6 +33,7 @@ import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStore.Position;
 import org.neo4j.management.BranchedStore;
 import org.neo4j.management.BranchedStoreInfo;
 
@@ -112,7 +113,7 @@ public final class BranchedStoreBean extends ManagementBeanProvider
         private BranchedStoreInfo parseBranchedStore( File branchDirectory )
         {
             final File neoStoreFile = new File( branchDirectory, NeoStore.DEFAULT_NAME );
-            long txId = NeoStore.getTxId( new DefaultFileSystemAbstraction(), neoStoreFile );
+            long txId = NeoStore.getRecord( new DefaultFileSystemAbstraction(), neoStoreFile, Position.LAST_TRANSACTION_ID );
             long timestamp = Long.parseLong( branchDirectory.getName() );
             return new BranchedStoreInfo( branchDirectory.getName(), txId, timestamp );
         }

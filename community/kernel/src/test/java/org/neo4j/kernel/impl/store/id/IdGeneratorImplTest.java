@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.store.id;
 
+import java.io.File;
+
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.io.File;
 
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.test.EphemeralFileSystemRule;

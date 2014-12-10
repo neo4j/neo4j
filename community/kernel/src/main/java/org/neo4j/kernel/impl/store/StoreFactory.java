@@ -35,6 +35,7 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCache;
+import org.neo4j.kernel.impl.store.NeoStore.Position;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -43,6 +44,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 /**
@@ -158,7 +160,7 @@ public class StoreFactory
 
         if ( txId == -1)
         {
-            txId = NeoStore.getTxId( fileSystemAbstraction, neoStoreFileName );
+            txId = NeoStore.getRecord( fileSystemAbstraction, neoStoreFileName, Position.LAST_TRANSACTION_ID );
         }
 
         if ( storeExists && allowRebuild && !countsStoreExists() )
@@ -427,12 +429,12 @@ public class StoreFactory
         }
         neoStore.setCreationTime( storeId.getCreationTime() );
         neoStore.setRandomNumber( storeId.getRandomId() );
-        // If neoStore.creationTime == neoStore.upgradeTime && neoStore.randomNumber == neoStore.upgradeId
+        // If neoStore.creationTime == neoStore.upgradeTime && neoStore.upgradeTransactionId == BASE_TX_ID
         // then store has never been upgraded
         neoStore.setUpgradeTime( storeId.getCreationTime() );
-        neoStore.setUpgradeId( storeId.getRandomId() );
+        neoStore.setUpgradeTransaction( BASE_TX_ID, BASE_TX_CHECKSUM );
         neoStore.setCurrentLogVersion( 0 );
-        neoStore.setLastCommittedAndClosedTransactionId( BASE_TX_ID );
+        neoStore.setLastCommittedAndClosedTransactionId( BASE_TX_ID, BASE_TX_CHECKSUM );
         neoStore.setStoreVersion( NeoStore.versionStringToLong( CommonAbstractStore.ALL_STORES_VERSION ) );
         neoStore.setGraphNextProp( -1 );
         neoStore.setLatestConstraintIntroducingTx( 0 );

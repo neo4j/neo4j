@@ -33,17 +33,15 @@ public final class RequestContext
     private final int eventIdentifier;
     private final int hashCode;
     private final long epoch;
-    private final int masterId;
     private final long checksum;
 
     public RequestContext( long epoch, int machineId, int eventIdentifier,
-            long lastAppliedTransaction, int masterId, long checksum )
+            long lastAppliedTransaction, long checksum )
     {
         this.epoch = epoch;
         this.machineId = machineId;
         this.eventIdentifier = eventIdentifier;
         this.lastAppliedTransaction = lastAppliedTransaction;
-        this.masterId = masterId;
         this.checksum = checksum;
 
         long hash = epoch;
@@ -72,11 +70,6 @@ public final class RequestContext
         return epoch;
     }
 
-    public int getMasterId()
-    {
-        return masterId;
-    }
-
     public long getChecksum()
     {
         return checksum;
@@ -91,7 +84,6 @@ public final class RequestContext
                 ", eventIdentifier=" + eventIdentifier +
                 ", hashCode=" + hashCode +
                 ", epoch=" + epoch +
-                ", masterId=" + masterId +
                 ", checksum=" + checksum +
                 ']';
     }
@@ -113,11 +105,11 @@ public final class RequestContext
         return this.hashCode;
     }
 
-    public static final RequestContext EMPTY = new RequestContext( -1, -1, -1, -1, -1, -1 );
+    public static final RequestContext EMPTY = new RequestContext( -1, -1, -1, -1, -1 );
 
     public static RequestContext anonymous( long lastAppliedTransaction )
     {
         return new RequestContext( EMPTY.epoch, EMPTY.machineId, EMPTY.eventIdentifier,
-                lastAppliedTransaction, EMPTY.masterId, EMPTY.checksum );
+                lastAppliedTransaction, EMPTY.checksum );
     }
 }

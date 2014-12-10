@@ -65,16 +65,14 @@ import org.neo4j.kernel.ha.com.slave.MasterClientResolver;
 import org.neo4j.kernel.ha.com.slave.SlaveImpl;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
+import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.store.InconsistentlyUpgradedClusterException;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.UnableToCopyStoreFromOldMasterException;
 import org.neo4j.kernel.impl.store.UnavailableMembersException;
-import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.MissingLogDataException;
-import org.neo4j.kernel.impl.transaction.log.NoSuchLogVersionException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -103,6 +101,7 @@ public class SwitchToSlave
             NeoStoreDataSource.class,
             RequestContextFactory.class,
             TransactionCommittingResponseUnpacker.class,
+            IndexConfigStore.class,
     };
 
     public interface Monitor
@@ -334,21 +333,6 @@ public class SwitchToSlave
             checkDataConsistencyWithMaster( masterUri, masterClient, nioneoDataSource, txIdStore );
             console.log( "Store is consistent" );
         }
-        catch ( NoSuchLogVersionException e )
-        {
-            msgLog.logMessage( "Cannot catch up to master by pulling updates, because I cannot find the archived " +
-                    "logical log file that has the transaction I would start from. I'm going to copy the whole " +
-                    "store from the master instead." );
-            try
-            {
-                stopServicesAndHandleBranchedStore( config.get( HaSettings.branched_data_policy ) );
-            }
-            catch ( Throwable throwable )
-            {
-                msgLog.warn( "Failed preparing for copying the store from the master instance", throwable );
-            }
-            throw e;
-        }
         catch ( StoreUnableToParticipateInClusterException upe )
         {
             console.log( "The store is inconsistent. Will treat it as branched and fetch a new one from the master" );
@@ -497,7 +481,7 @@ public class SwitchToSlave
                     public Response<?> copyStore( StoreWriter writer )
                     {
                         return masterClient.copyStore( new RequestContext( 0,
-                                config.get( ClusterSettings.server_id ).toIntegerIndex(), 0, BASE_TX_ID, 0, 0 ), writer );
+                                config.get( ClusterSettings.server_id ).toIntegerIndex(), 0, BASE_TX_ID, 0 ), writer );
                     }
 
                     @Override
@@ -543,9 +527,9 @@ public class SwitchToSlave
     private void checkDataConsistencyWithMaster( URI availableMasterId, Master master,
                                                  NeoStoreDataSource nioneoDataSource,
                                                  TransactionIdStore transactionIdStore )
-            throws IOException
     {
-        long myLastCommittedTx = transactionIdStore.getLastCommittedTransactionId();
+        long[] myLastCommittedTxData = transactionIdStore.getLastCommittedTransaction();
+        long myLastCommittedTx = myLastCommittedTxData[0];
         HandshakeResult handshake;
         try ( Response<HandshakeResult> response = master.handshake( myLastCommittedTx, nioneoDataSource.getStoreId() ) )
         {
@@ -576,21 +560,17 @@ public class SwitchToSlave
             throw e;
         }
 
-        final TransactionMetadataCache.TransactionMetadata metadata = nioneoDataSource.getDependencyResolver()
-                .resolveDependency( LogicalTransactionStore.class ).getMetadataFor( myLastCommittedTx );
-
-        int myMaster = metadata.getMasterId();
-        long myChecksum = metadata.getChecksum();
-        if ( myMaster != -1 &&
-                ( myMaster != handshake.txAuthor() || myChecksum != handshake.txChecksum() ) )
+        long myChecksum = myLastCommittedTxData[1];
+        if ( myChecksum != handshake.txChecksum() )
         {
             String msg = "The cluster contains two logically different versions of the database.. This will be " +
-                    "automatically resolved. Details: I (machineId:" + config.get( ClusterSettings.server_id ) +
-                    ") think machineId for txId (" + myLastCommittedTx + ") is " + myMaster +
-                    ", but master (machineId:" + getServerId( availableMasterId ) + ") says that it's " + handshake;
+                    "automatically resolved. Details: I (server_id:" + config.get( ClusterSettings.server_id ) +
+                    ") think checksum for txId (" + myLastCommittedTx + ") is " + myChecksum +
+                    ", but master (server_id:" + getServerId( availableMasterId ) + ") says that it's " +
+                    handshake.txChecksum() + ", where handshake is " + handshake;
             throw new BranchedDataException( msg );
         }
-        msgLog.logMessage( "Master id for last committed tx ok with highestTxId=" +
-                myLastCommittedTx + " with masterId=" + myMaster, true );
+        msgLog.logMessage( "Checksum for last committed tx ok with lastTxId=" +
+                myLastCommittedTx + " with checksum=" + myChecksum, true );
     }
 }

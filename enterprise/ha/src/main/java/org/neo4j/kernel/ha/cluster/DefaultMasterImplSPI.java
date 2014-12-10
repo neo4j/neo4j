@@ -29,7 +29,6 @@ import org.neo4j.com.storecopy.ResponsePacker;
 import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Provider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -37,6 +36,7 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.ha.TransactionChecksumLookup;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
@@ -50,7 +50,6 @@ import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.JobScheduler;
 
@@ -61,6 +60,7 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     private final GraphDatabaseAPI graphDb;
     private final LogicalTransactionStore txStore;
     private final TransactionIdStore transactionIdStore;
+    private final TransactionChecksumLookup txChecksumLookup;
     private final FileSystemAbstraction fileSystem;
     private final File storeDir;
     private final ResponsePacker responsePacker;
@@ -76,6 +76,7 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
         this.fileSystem = dependencyResolver.resolveDependency( FileSystemAbstraction.class );
         this.storeDir = new File( graphDb.getStoreDir() );
         this.txStore = dependencyResolver.resolveDependency( LogicalTransactionStore.class );
+        this.txChecksumLookup = new TransactionChecksumLookup( transactionIdStore, txStore );
         this.responsePacker = new ResponsePacker( txStore, transactionIdStore, new Provider<StoreId>()
         {
             @Override
@@ -147,10 +148,9 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     }
 
     @Override
-    public Pair<Integer, Long> getMasterIdForCommittedTx( long txId ) throws IOException
+    public long getTransactionChecksum( long txId ) throws IOException
     {
-        TransactionMetadataCache.TransactionMetadata metadata = txStore.getMetadataFor( txId );
-        return Pair.of( metadata.getMasterId(), metadata.getChecksum() );
+        return txChecksumLookup.apply( txId );
     }
 
     @Override

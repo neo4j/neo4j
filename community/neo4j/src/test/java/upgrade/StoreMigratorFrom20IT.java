@@ -24,7 +24,6 @@ import java.io.IOException;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -99,7 +98,6 @@ public class StoreMigratorFrom20IT
         assertConsistentStore( storeDir.directory() );
     }
 
-    @Ignore( "TODO Temporarily disabled" )
     @Test
     public void shouldMigrateCluster() throws Throwable
     {

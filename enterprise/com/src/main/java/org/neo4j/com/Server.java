@@ -19,6 +19,19 @@
  */
 package org.neo4j.com;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.net.InetSocketAddress;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -37,19 +50,6 @@ import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.net.InetSocketAddress;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Exceptions;
@@ -66,6 +66,7 @@ import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.Executors.newScheduledThreadPool;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
+
 import static org.neo4j.com.DechunkingChannelBuffer.assertSameProtocolVersion;
 import static org.neo4j.com.Protocol.addLengthFieldPipes;
 import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
@@ -576,16 +577,14 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         int machineId = buffer.readInt();
         int eventIdentifier = buffer.readInt();
         long neoTx = buffer.readLong();
-        int masterId = buffer.readInt();
         long checksum = buffer.readLong();
 
-        RequestContext readRequestContext = new RequestContext( sessionId, machineId, eventIdentifier, neoTx, masterId,
-                checksum );
+        RequestContext readRequestContext = new RequestContext( sessionId, machineId, eventIdentifier, neoTx, checksum );
         // Only perform checksum checks on the neo data source. If there's none in the request
         // then don't perform any such check.
         if ( neoTx > 0 )
         {
-            txVerifier.assertMatch( neoTx, masterId, checksum );
+            txVerifier.assertMatch( neoTx, checksum );
         }
         return readRequestContext;
     }

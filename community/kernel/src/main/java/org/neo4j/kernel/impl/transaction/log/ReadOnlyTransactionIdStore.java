@@ -27,11 +27,20 @@ import org.neo4j.kernel.impl.store.record.NeoStoreUtil;
 public class ReadOnlyTransactionIdStore implements TransactionIdStore
 {
     private final long transactionId;
+    private final long transactionChecksum;
 
     public ReadOnlyTransactionIdStore( FileSystemAbstraction fs, File storeDir )
     {
-        this.transactionId = NeoStoreUtil.neoStoreExists( fs, storeDir ) ?
-                new NeoStoreUtil( storeDir, fs ).getLastCommittedTx() : 0;
+        long id = 0, checksum = 0;
+        if ( NeoStoreUtil.neoStoreExists( fs, storeDir ) )
+        {
+            NeoStoreUtil access = new NeoStoreUtil( storeDir, fs );
+            id = access.getLastCommittedTx();
+            checksum = access.getLastCommittedTxChecksum();
+        }
+
+        this.transactionId = id;
+        this.transactionChecksum = checksum;
     }
 
     @Override
@@ -41,7 +50,7 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public void transactionCommitted( long transactionId )
+    public void transactionCommitted( long transactionId, long checksum )
     {
         throw new UnsupportedOperationException( "Read-only transaction ID store" );
     }
@@ -53,13 +62,25 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
     }
 
     @Override
+    public long[] getLastCommittedTransaction()
+    {
+        return new long[] {transactionId, transactionChecksum};
+    }
+
+    @Override
+    public long[] getUpgradeTransaction()
+    {
+        return getLastCommittedTransaction();
+    }
+
+    @Override
     public long getLastClosedTransactionId()
     {
         return transactionId;
     }
 
     @Override
-    public void setLastCommittedAndClosedTransactionId( long transactionId )
+    public void setLastCommittedAndClosedTransactionId( long transactionId, long checksum )
     {
         throw new UnsupportedOperationException( "Read-only transaction ID store" );
     }

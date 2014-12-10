@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import java.util.Map;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.util.Map;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -37,7 +37,9 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.PageCacheRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertThat;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class StoreFactoryTest
@@ -73,8 +75,16 @@ public class StoreFactoryTest
         neostore = storeFactory.createNeoStore();
 
         // Then
-        assertThat( neostore.getUpgradeId(), equalTo( neostore.getRandomNumber() ) );
         assertThat( neostore.getUpgradeTime(), equalTo( neostore.getCreationTime() ) );
     }
 
+    @Test
+    public void shouldHaveSameCommittedTransactionAndUpgradeTransactionOnStartup() throws Exception
+    {
+        // When
+        neostore = storeFactory.createNeoStore();
+
+        // Then
+        assertArrayEquals( neostore.getUpgradeTransaction(), neostore.getLastCommittedTransaction() );
+    }
 }

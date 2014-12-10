@@ -112,6 +112,11 @@ public class LogEntryStart extends AbstractLogEntry
         return checksum( entry.additionalHeader, entry.masterId, entry.authorId );
     }
 
+    public long checksum()
+    {
+        return checksum( this );
+    }
+
     @Override
     public String toString()
     {

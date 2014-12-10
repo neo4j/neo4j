@@ -35,15 +35,19 @@ public class DeadSimpleTransactionIdStore implements TransactionIdStore
     private final AtomicLong committingTransactionId = new AtomicLong();
     private final OutOfOrderSequence committedTransactionId = new ArrayQueueOutOfOrderSequence( -1, 100 );
     private final OutOfOrderSequence closedTransactionId = new ArrayQueueOutOfOrderSequence( -1, 100 );
+    private final long initialTransactionId;
+    private final long initialTransactionChecksum;
 
     public DeadSimpleTransactionIdStore()
     {
-        this( TransactionIdStore.BASE_TX_ID );
+        this( TransactionIdStore.BASE_TX_ID, 0 );
     }
 
-    public DeadSimpleTransactionIdStore( long initialTransactionId )
+    public DeadSimpleTransactionIdStore( long initialTransactionId, long checksum )
     {
-        setLastCommittedAndClosedTransactionId( initialTransactionId );
+        setLastCommittedAndClosedTransactionId( initialTransactionId, checksum );
+        this.initialTransactionId = initialTransactionId;
+        this.initialTransactionChecksum = checksum;
     }
 
     // Only exposed in tests that needs it
@@ -59,41 +63,53 @@ public class DeadSimpleTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public void transactionCommitted( long transactionId )
+    public void transactionCommitted( long transactionId, long checksum )
     {
-        committedTransactionId.offer( transactionId );
+        committedTransactionId.offer( transactionId, checksum );
     }
 
     @Override
     public long getLastCommittedTransactionId()
     {
+        return committedTransactionId.getHighestGapFreeNumber();
+    }
+
+    @Override
+    public long[] getLastCommittedTransaction()
+    {
         return committedTransactionId.get();
+    }
+
+    @Override
+    public long[] getUpgradeTransaction()
+    {
+        return new long[] {initialTransactionId, initialTransactionChecksum};
     }
 
     @Override
     public long getLastClosedTransactionId()
     {
-        return closedTransactionId.get();
+        return closedTransactionId.getHighestGapFreeNumber();
     }
 
     @Override
-    public void setLastCommittedAndClosedTransactionId( long transactionId )
+    public void setLastCommittedAndClosedTransactionId( long transactionId, long checksum )
     {
         committingTransactionId.set( transactionId );
-        committedTransactionId.set( transactionId );
-        closedTransactionId.set( transactionId );
+        committedTransactionId.set( transactionId, checksum );
+        closedTransactionId.set( transactionId, checksum );
     }
 
     @Override
     public void transactionClosed( long transactionId )
     {
-        closedTransactionId.offer( transactionId );
+        closedTransactionId.offer( transactionId, 0 );
     }
 
     @Override
     public boolean closedTransactionIdIsOnParWithCommittedTransactionId()
     {
-        return closedTransactionId.get() == committedTransactionId.get();
+        return closedTransactionId.getHighestGapFreeNumber() == committedTransactionId.getHighestGapFreeNumber();
     }
 
     @Override

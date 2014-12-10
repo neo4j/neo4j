@@ -46,6 +46,7 @@ import static org.mockito.Mockito.when;
 
 import static org.neo4j.helpers.Exceptions.contains;
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.INTERNAL;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart.checksum;
 
 public class TransactionRepresentationCommitProcessTest
 {
@@ -77,7 +78,7 @@ public class TransactionRepresentationCommitProcessTest
             assertTrue( contains( e, rootCause.getMessage(), rootCause.getClass() ) );
         }
 
-        verify( transactionIdStore, times( 0 ) ).transactionCommitted( txId );
+        verify( transactionIdStore, times( 0 ) ).transactionCommitted( txId, 0 );
     }
 
     @Test
@@ -97,11 +98,12 @@ public class TransactionRepresentationCommitProcessTest
                 any( TransactionRepresentation.class ), any( LockGroup.class ), eq( txId ), eq( INTERNAL ) );
         TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess(
                 logicalTransactionStore, kernelHealth, transactionIdStore, storeApplier, INTERNAL );
+        TransactionRepresentation transaction = mockedTransaction();
 
         // WHEN
         try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess.commit( mockedTransaction(), locks );
+            commitProcess.commit( transaction, locks );
         }
         catch ( TransactionFailureException e )
         {
@@ -110,7 +112,8 @@ public class TransactionRepresentationCommitProcessTest
         }
 
         // THEN
-        verify( transactionIdStore, times( 1 ) ).transactionCommitted( txId );
+        verify( transactionIdStore, times( 1 ) ).transactionCommitted( txId,
+                checksum( transaction.additionalHeader(), transaction.getMasterId(), transaction.getAuthorId() ) );
         verify( transactionIdStore, times( 1 ) ).transactionClosed( txId );
         verifyNoMoreInteractions( transactionIdStore );
     }

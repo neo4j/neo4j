@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -61,6 +61,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
+
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.NO_PRUNING;
 import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
@@ -83,7 +84,7 @@ public class PhysicalLogicalTransactionStoreTest
     public void shouldOpenCleanStore() throws Exception
     {
         // GIVEN
-        TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 0l );
+        TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 0l, 0 );
         LogRotationControl logRotationControl = mock( LogRotationControl.class );
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 1000 );
 
@@ -112,7 +113,7 @@ public class PhysicalLogicalTransactionStoreTest
     {
         // GIVEN
         LogRotationControl logRotationControl = mock( LogRotationControl.class );
-        TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 0l );
+        TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 0l, 0 );
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
         final byte[] additionalHeader = new byte[]{1, 2, 5};
         final int masterId = 2, authorId = 1;
@@ -181,7 +182,7 @@ public class PhysicalLogicalTransactionStoreTest
     {
         // GIVEN
         LogRotationControl logRotationControl = mock( LogRotationControl.class );
-        TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 0l );
+        TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 0l, 0 );
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
         final byte[] additionalHeader = new byte[]{1, 2, 5};
         final int masterId = 2, authorId = 1;

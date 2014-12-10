@@ -19,16 +19,6 @@
  */
 package org.neo4j.backup;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.test.DoubleLatch.awaitLatch;
-
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
@@ -47,6 +37,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -54,7 +45,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.helpers.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
@@ -63,15 +53,13 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStore.Position;
+import org.neo4j.kernel.impl.store.record.NeoStoreUtil;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
-import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.TransactionMetadata;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
@@ -81,6 +69,17 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.Mute;
 import org.neo4j.test.TargetDirectory;
+
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.test.DoubleLatch.awaitLatch;
 
 public class BackupServiceIT
 {
@@ -197,7 +196,7 @@ public class BackupServiceIT
         try
         {
             // when
-            new BackupService( fileSystem ).doFullBackup( "", 0, backupDir.getAbsolutePath(), 
+            new BackupService( fileSystem ).doFullBackup( "", 0, backupDir.getAbsolutePath(),
                     true, new Config(), BackupClient.BIG_READ_TIMEOUT );
         }
         catch ( RuntimeException ex )
@@ -216,7 +215,7 @@ public class BackupServiceIT
 
         // when
         BackupService backupService = new BackupService( fileSystem );
-        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), 
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(),
                 false, defaultConfig(), BackupClient.BIG_READ_TIMEOUT);
         db.shutdown();
 
@@ -282,7 +281,7 @@ public class BackupServiceIT
     }
 
     @Test
-    public void shouldFindTransactionLogContainingLastNeoStoreTransactionInAnEmptyStore() throws IOException
+    public void shouldFindTransactionLogContainingLastNeoStoreTransactionInAnEmptyStore()
     {
         // This test highlights a special case where an empty store can return transaction metadata for transaction 0.
 
@@ -291,14 +290,14 @@ public class BackupServiceIT
 
         // when
         BackupService backupService = new BackupService( fileSystem );
-        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), 
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(),
                 false, defaultConfig(), BackupClient.BIG_READ_TIMEOUT);
         db.shutdown();
 
         // then
         assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
 
-        assertNotNull( getLastMasterForCommittedTx() );
+        assertEquals( 0, getLastTxChecksum() );
     }
 
     @Test
@@ -310,20 +309,20 @@ public class BackupServiceIT
 
         // when
         BackupService backupService = new BackupService( fileSystem );
-        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), 
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(),
                 false, defaultConfig(), BackupClient.BIG_READ_TIMEOUT );
         db.shutdown();
 
         // then
         assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
-        assertNotNull( getLastMasterForCommittedTx() );
+        assertNotEquals( 0, getLastTxChecksum() );
     }
 
     @Test
     public void shouldFindValidPreviousCommittedTxIdInFirstNeoStoreLog() throws Throwable
     {
         // given
-        GraphDatabaseAPI db = (GraphDatabaseAPI) createDb( storeDir, defaultBackupPortHostParams() );
+        GraphDatabaseAPI db = createDb( storeDir, defaultBackupPortHostParams() );
         createAndIndexNode( db, 1 );
         createAndIndexNode( db, 2 );
         createAndIndexNode( db, 3 );
@@ -352,13 +351,13 @@ public class BackupServiceIT
 
         // when
         BackupService backupService = new BackupService( fileSystem );
-        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), 
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(),
                 false, defaultConfig(), BackupClient.BIG_READ_TIMEOUT );
         db.shutdown();
 
         // then
         assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
-        assertNotNull( getLastMasterForCommittedTx() );
+        assertNotEquals( 0, getLastTxChecksum() );
     }
 
     @Test
@@ -375,7 +374,7 @@ public class BackupServiceIT
         createAndIndexNode( db, 1 );
 
         // A full backup
-        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), 
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(),
                 false, defaultConfig(), BackupClient.BIG_READ_TIMEOUT );
 
         // And the log the backup uses is rotated out
@@ -387,7 +386,7 @@ public class BackupServiceIT
         // when
         try
         {
-            backupService.doIncrementalBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), 
+            backupService.doIncrementalBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(),
                     false, BackupClient.BIG_READ_TIMEOUT );
             fail( "Should have thrown exception." );
         }
@@ -412,7 +411,7 @@ public class BackupServiceIT
         createAndIndexNode( db, 1 );
 
         // A full backup
-        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), 
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(),
                 false, defaultConfig(), BackupClient.BIG_READ_TIMEOUT );
 
         // And the log the backup uses is rotated out
@@ -422,7 +421,7 @@ public class BackupServiceIT
 
         // when
         backupService.doIncrementalBackupOrFallbackToFull(
-                BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), 
+                BACKUP_HOST, backupPort, backupDir.getAbsolutePath(),
                 false, defaultConfig(), BackupClient.BIG_READ_TIMEOUT );
 
         // Then
@@ -443,7 +442,7 @@ public class BackupServiceIT
 
         // A full backup
         backupService.doIncrementalBackupOrFallbackToFull(
-                BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), 
+                BACKUP_HOST, backupPort, backupDir.getAbsolutePath(),
                 false, defaultConfig(), BackupClient.BIG_READ_TIMEOUT );
 
         // And the log the backup uses is rotated out
@@ -455,7 +454,7 @@ public class BackupServiceIT
 
         // when
         backupService.doIncrementalBackupOrFallbackToFull(
-                BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), 
+                BACKUP_HOST, backupPort, backupDir.getAbsolutePath(),
                 false, defaultConfig(), BackupClient.BIG_READ_TIMEOUT );
 
         // Then
@@ -494,7 +493,7 @@ public class BackupServiceIT
 
         // when
         backupService.doIncrementalBackupOrFallbackToFull(
-                BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), 
+                BACKUP_HOST, backupPort, backupDir.getAbsolutePath(),
                 false, defaultConfig(), BackupClient.BIG_READ_TIMEOUT );
 
         // then
@@ -580,7 +579,7 @@ public class BackupServiceIT
         createAndIndexNode( db1, 1 );
 
         new BackupService( fileSystem ).doFullBackup(
-                BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), 
+                BACKUP_HOST, backupPort, backupDir.getAbsolutePath(),
                 false, defaultConfig(), BackupClient.BIG_READ_TIMEOUT );
 
         db1.shutdown();
@@ -597,7 +596,7 @@ public class BackupServiceIT
         try
         {
             new BackupService( fileSystem ).doIncrementalBackupOrFallbackToFull(
-                    BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig(), 
+                    BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig(),
                     BackupClient.BIG_READ_TIMEOUT );
 
             fail( "Should have thrown exception about mismatching store ids" );
@@ -683,28 +682,9 @@ public class BackupServiceIT
         assertEquals( txId, logHeader.lastCommittedTxId );
     }
 
-    private Pair<Integer,Long> getLastMasterForCommittedTx() throws IOException
+    private long getLastTxChecksum()
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase(
-                backupDir.getAbsolutePath() );
-        try
-        {
-            LogicalTransactionStore transactionStore =
-                    db.getDependencyResolver().resolveDependency( LogicalTransactionStore.class );
-            TransactionIdStore transactionIdStore =
-                    db.getDependencyResolver().resolveDependency( TransactionIdStore.class );
-            TransactionMetadata metadata = transactionStore.getMetadataFor(
-                    transactionIdStore.getLastCommittedTransactionId() );
-            return Pair.of( metadata.getMasterId(), metadata.getChecksum() );
-        }
-        catch ( NoSuchTransactionException e )
-        {   // Test assertions seem to want null as an indication that it didn't exist
-            return null;
-        }
-        finally
-        {
-            db.shutdown();
-        }
+        return new NeoStoreUtil( backupDir ).getValue( Position.LAST_TRANSACTION_CHECKSUM );
     }
 
     private void deleteAllBackedUpTransactionLogs()

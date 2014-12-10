@@ -45,6 +45,8 @@ public interface AdditionalInitialIds
 
     long lastCommittedTransactionId();
 
+    long lastCommittedTransactionChecksum();
+
     /**
      * High ids of zero, useful when creating a completely new store with {@link ParallelBatchImporter}.
      */
@@ -72,6 +74,12 @@ public interface AdditionalInitialIds
         public long lastCommittedTransactionId()
         {
             return TransactionIdStore.BASE_TX_ID;
+        }
+
+        @Override
+        public long lastCommittedTransactionChecksum()
+        {
+            return TransactionIdStore.BASE_TX_CHECKSUM;
         }
     };
 }
