@@ -33,7 +33,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.CountsOracle;
-import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader;
@@ -45,7 +44,6 @@ import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.ThreadingRule;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.store.CommonAbstractStore.buildTypeDescriptorAndVersion;
 import static org.neo4j.kernel.impl.store.counts.CountsStore.RECORD_SIZE;
 import static org.neo4j.kernel.impl.store.counts.CountsStore.WRITER_FACTORY;
@@ -78,16 +76,14 @@ public class CountsTrackerTest
         CountsOracle oracle = oracle();
 
         // when
-        try ( CountsTracker tracker = new CountsTracker( StringLogger.DEV_NULL, fs.get(), pageCache(),
-                storeFile(), BASE_TX_ID ) )
+        try ( CountsTracker tracker = new CountsTracker( StringLogger.DEV_NULL, fs.get(), pageCache(), storeFile() ) )
         {
             oracle.update( tracker );
             tracker.rotate( 1 );
         }
 
         // then
-        try ( CountsTracker tracker = new CountsTracker( StringLogger.DEV_NULL, fs.get(), pageCache(),
-                storeFile(), BASE_TX_ID ) )
+        try ( CountsTracker tracker = new CountsTracker( StringLogger.DEV_NULL, fs.get(), pageCache(), storeFile() ) )
         {
             oracle.verify( tracker );
         }
@@ -100,8 +96,7 @@ public class CountsTrackerTest
         CountsTracker.createEmptyCountsStore( pageCache(), storeFile(), VERSION );
         CountsOracle oracle = oracle();
         int newTxId = 2;
-        try ( CountsTracker tracker = new CountsTracker( StringLogger.DEV_NULL, fs.get(), pageCache(),
-                storeFile(), BASE_TX_ID ) )
+        try ( CountsTracker tracker = new CountsTracker( StringLogger.DEV_NULL, fs.get(), pageCache(), storeFile() ) )
         {
             oracle.update( tracker );
             tracker.rotate( 1 );
@@ -127,8 +122,7 @@ public class CountsTrackerTest
         }
 
         // then
-        try ( CountsTracker tracker = new CountsTracker( StringLogger.DEV_NULL, fs.get(), pageCache(),
-                storeFile(), newTxId ) )
+        try ( CountsTracker tracker = new CountsTracker( StringLogger.DEV_NULL, fs.get(), pageCache(), storeFile() ) )
         {
             oracle.verify( tracker );
         }
@@ -141,8 +135,7 @@ public class CountsTrackerTest
         CountsTracker.createEmptyCountsStore( pageCache(), storeFile(), VERSION );
         CountsOracle oracle = oracle();
         int newTxId = 2;
-        try ( CountsTracker tracker = new CountsTracker( StringLogger.DEV_NULL, fs.get(), pageCache(),
-                storeFile(), BASE_TX_ID ) )
+        try ( CountsTracker tracker = new CountsTracker( StringLogger.DEV_NULL, fs.get(), pageCache(), storeFile() ) )
         {
             oracle.update( tracker );
             tracker.rotate( newTxId );
@@ -159,8 +152,7 @@ public class CountsTrackerTest
         delta.update( oracle );
 
         Barrier.Control barrier = new Barrier.Control();
-        try ( CountsTracker tracker =
-                      new InstrumentedCountsTracker( fs.get(), pageCache(), storeFile(), newTxId, barrier ) )
+        try ( CountsTracker tracker = new InstrumentedCountsTracker( fs.get(), pageCache(), storeFile(), barrier ) )
         {
             @SuppressWarnings( "deprecation" )
             Future<Void> task = threading.execute( new Function<CountsTracker, Void>()
@@ -202,8 +194,7 @@ public class CountsTrackerTest
             createStoreFile( fs, pageCache, alphaFile, BASE_TX_ID );
             createStoreFile( fs, pageCache, betaFile, BASE_TX_ID + 1 );
 
-            CountsTracker tracker = new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
-                    storeFile(), BASE_TX_ID + 1 );
+            CountsTracker tracker = new CountsTracker( StringLogger.DEV_NULL, fs, pageCache, storeFile() );
             assertEquals( betaFile, tracker.storeFile() );
             tracker.close();
         }
@@ -212,8 +203,7 @@ public class CountsTrackerTest
             createStoreFile( fs, pageCache, alphaFile, BASE_TX_ID + 1 );
             createStoreFile( fs, pageCache, betaFile, BASE_TX_ID );
 
-            CountsTracker tracker = new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
-                    storeFile(), BASE_TX_ID + 1 );
+            CountsTracker tracker = new CountsTracker( StringLogger.DEV_NULL, fs, pageCache, storeFile() );
             assertEquals( alphaFile, tracker.storeFile() );
             tracker.close();
         }
@@ -231,8 +221,7 @@ public class CountsTrackerTest
         createStoreFile( fs, pageCache, betaFile, BASE_TX_ID );
 
         {
-            CountsTracker tracker = new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
-                    storeFile(), BASE_TX_ID + 1 );
+            CountsTracker tracker = new CountsTracker( StringLogger.DEV_NULL, fs, pageCache, storeFile() );
             assertEquals( alphaFile, tracker.storeFile() );
             tracker.incrementNodeCount( 1, 1l );
             tracker.rotate( BASE_TX_ID + 1 );
@@ -241,8 +230,7 @@ public class CountsTrackerTest
         }
 
         {
-            CountsTracker tracker = new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
-                    storeFile(), BASE_TX_ID + 1 );
+            CountsTracker tracker = new CountsTracker( StringLogger.DEV_NULL, fs, pageCache, storeFile() );
             assertEquals( betaFile, tracker.storeFile() );
             tracker.close();
         }
@@ -264,27 +252,9 @@ public class CountsTrackerTest
         }
 
         // when
-        try ( CountsTracker tracker = new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
-                storeFile(), BASE_TX_ID + 1 ) )
+        try ( CountsTracker tracker = new CountsTracker( StringLogger.DEV_NULL, fs, pageCache, storeFile() ) )
         {
             assertEquals( alphaStoreFile(), tracker.storeFile() );
-        }
-    }
-
-    @Test(expected = UnderlyingStorageException.class)
-    public void shouldFailToConstructACountsTrackerIfStoreIsTooOld() throws IOException
-    {
-        // given
-        EphemeralFileSystemAbstraction fs = this.fs.get();
-        PageCache pageCache = pageCache();
-        createStoreFile( fs, pageCache, alphaStoreFile(), BASE_TX_ID );
-        createStoreFile( fs, pageCache, betaStoreFile(), BASE_TX_ID + 1 );
-
-        // when
-        try ( @SuppressWarnings( "UnusedDeclaration" ) CountsTracker tracker = new CountsTracker(
-                StringLogger.DEV_NULL, fs, pageCache, storeFile(), BASE_TX_ID + 42 ) )
-        {
-            fail( "should have thrown" );
         }
     }
 
@@ -343,10 +313,9 @@ public class CountsTrackerTest
     {
         private final Barrier barrier;
 
-        InstrumentedCountsTracker( FileSystemAbstraction fs, PageCache pageCache, File storeFileBase, long txId,
-                                   Barrier barrier )
+        InstrumentedCountsTracker( FileSystemAbstraction fs, PageCache pageCache, File storeFileBase, Barrier barrier )
         {
-            super( StringLogger.DEV_NULL, fs, pageCache, storeFileBase, txId );
+            super( StringLogger.DEV_NULL, fs, pageCache, storeFileBase );
             this.barrier = barrier;
         }
 

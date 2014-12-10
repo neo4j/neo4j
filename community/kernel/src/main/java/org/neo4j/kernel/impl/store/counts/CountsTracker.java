@@ -63,22 +63,12 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     private final StringLogger logger;
     private volatile CountsTrackerState state;
 
-    public CountsTracker( StringLogger logger, FileSystemAbstraction fs, PageCache pageCache,
-                          File storeFileBase, long neoStoreTxId )
+    public CountsTracker( StringLogger logger, FileSystemAbstraction fs, PageCache pageCache, File storeFileBase )
     {
         this.logger = logger;
         this.alphaFile = storeFile( storeFileBase, ALPHA );
         this.betaFile = storeFile( storeFileBase, BETA );
         CountsStore store = openStore( logger, fs, pageCache, this.alphaFile, this.betaFile );
-        if ( store.lastTxId() < neoStoreTxId )
-        {
-            IOException exOnClose = safelyCloseTheStore( store );
-            throw new UnderlyingStorageException(
-                    "Counts store seems to be out of date (last count store txid is " + store.lastTxId() + " but " +
-                    "database wide last txid is " + neoStoreTxId + "). Please shut down the database and manually " +
-                    "delete the counts store files: " + alphaFile + " and " + betaFile + " to have the database " +
-                    "recreate them on next startup", exOnClose );
-        }
         this.state = new ConcurrentCountsTrackerState( store );
     }
 
