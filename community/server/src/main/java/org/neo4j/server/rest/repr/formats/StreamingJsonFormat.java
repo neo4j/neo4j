@@ -19,6 +19,12 @@
  */
 package org.neo4j.server.rest.repr.formats;
 
+import org.codehaus.jackson.JsonFactory;
+import org.codehaus.jackson.JsonGenerator;
+import org.codehaus.jackson.impl.Utf8Generator;
+import org.codehaus.jackson.io.IOContext;
+import org.codehaus.jackson.map.ObjectMapper;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
@@ -27,13 +33,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import javax.ws.rs.WebApplicationException;
-
-import org.codehaus.jackson.JsonFactory;
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.impl.Utf8Generator;
-import org.codehaus.jackson.io.IOContext;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.SerializationConfig;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -61,7 +60,6 @@ public class StreamingJsonFormat extends RepresentationFormat implements Streami
     private JsonFactory createJsonFactory()
     {
         final ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.getSerializationConfig().disable( SerializationConfig.Feature.FLUSH_AFTER_WRITE_VALUE );
         JsonFactory factory = new JsonFactory( objectMapper )
         {
             @Override
@@ -77,7 +75,7 @@ public class StreamingJsonFormat extends RepresentationFormat implements Streami
                 return gen;
             }
         };
-        factory.enable( JsonGenerator.Feature.FLUSH_PASSED_TO_STREAM );
+        factory.disable( JsonGenerator.Feature.FLUSH_PASSED_TO_STREAM );
         return factory;
     }
 

@@ -19,6 +19,13 @@
  */
 package org.neo4j.server.rest.batch;
 
+import org.codehaus.jackson.JsonFactory;
+import org.codehaus.jackson.JsonGenerator;
+import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.JsonParser;
+import org.codehaus.jackson.JsonToken;
+import org.codehaus.jackson.map.ObjectMapper;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
@@ -27,18 +34,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.UriInfo;
 
-import org.codehaus.jackson.JsonFactory;
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.JsonParser;
-import org.codehaus.jackson.JsonToken;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.neo4j.server.rest.web.InternalJettyServletRequest;
 import org.neo4j.server.rest.web.InternalJettyServletResponse;
 import org.neo4j.server.web.WebServer;
@@ -49,7 +49,7 @@ public abstract class BatchOperations
     protected static final String METHOD_KEY = "method";
     protected static final String BODY_KEY = "body";
     protected static final String TO_KEY = "to";
-    protected static final JsonFactory jsonFactory = new JsonFactory();
+    protected static final JsonFactory jsonFactory = new JsonFactory().disable( JsonGenerator.Feature.FLUSH_PASSED_TO_STREAM );
     protected final WebServer webServer;
     protected final ObjectMapper mapper;
 
