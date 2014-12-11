@@ -289,7 +289,7 @@ public class ParallelBatchImporter implements BatchImporter
             RelationshipStore relationshipStore = neoStore.getRelationshipStore();
             PropertyStore propertyStore = neoStore.getPropertyStore();
             add( new RelationshipPreparationStep( control(), config, idMapper ) );
-            add( new RelationshipEncoderStep( control(), config, idMapper,
+            add( new RelationshipEncoderStep( control(), config,
                     neoStore.getRelationshipTypeRepository(), relationshipStore, nodeRelationshipLink ) );
             add( new PropertyEncoderStep<>( control(), config, 1, neoStore.getPropertyKeyRepository(), propertyStore ) );
             add( new EntityStoreUpdaterStep<>( control(), "WRITER", config,

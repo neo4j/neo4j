@@ -19,8 +19,11 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping;
 
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
+import org.neo4j.function.primitive.PrimitiveIntPredicate;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
+import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 
@@ -30,12 +33,19 @@ import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
  */
 public interface IdMapper
 {
+    public static final PrimitiveIntPredicate ANY_GROUP = PrimitiveIntCollections.alwaysTrue();
+
     /**
      * Maps an {@code inputId} to an actual node id.
      * @param inputId an id of an unknown type, coming from input.
      * @param actualId the actual node id that the inputId will represent.
+     * @param group {@link Group} this input id will be added to. Used for handling input ids collisions
+     * where multiple equal input ids might be added, as long as all input ids within a single group is unique.
+     * Group ids are also passed into {@link #get(Object, PrimitiveIntPredicate)}.
+     * It is required that all input ids belonging to a specific group are put in sequence before putting any
+     * input ids for another group.
      */
-    void put( Object inputId, long actualId );
+    void put( Object inputId, long actualId, Group group );
 
     /**
      * @return whether or not a call to {@link #prepare()} needs to commence after all calls to
@@ -62,9 +72,14 @@ public interface IdMapper
      * @link #put(Object, long) being put}
      *
      * @param inputId the input id to get the actual node id for.
+     * @param inGroup a {@link PrimitiveIntPredicate} helping out with resolving collisions stemming from
+     * multiple equal input ids.
      * @return the actual node id previously specified by {@link #put(Object, long)}, or {@code -1} if not found.
      */
-    long get( Object inputId );
+    long get( Object inputId, PrimitiveIntPredicate inGroup );
 
+    /**
+     * Gathers statistics about memory usage in this object.
+     */
     void visitMemoryStats( MemoryStatsVisitor visitor );
 }

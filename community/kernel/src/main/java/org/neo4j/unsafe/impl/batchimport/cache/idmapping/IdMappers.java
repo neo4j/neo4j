@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping;
 
+import org.neo4j.function.primitive.PrimitiveIntPredicate;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
@@ -26,6 +27,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.EncodingIdMapper
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.LongEncoder;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.Radix;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.StringEncoder;
+import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 
@@ -37,7 +39,7 @@ public class IdMappers
     private static class ActualIdMapper implements IdMapper
     {
         @Override
-        public void put( Object inputId, long actualId )
+        public void put( Object inputId, long actualId, Group group )
         {   // No need to remember anything
         }
 
@@ -53,7 +55,7 @@ public class IdMappers
         }
 
         @Override
-        public long get( Object inputId )
+        public long get( Object inputId, PrimitiveIntPredicate inGroup )
         {
             return ((Long)inputId).longValue();
         }

@@ -98,6 +98,12 @@ public class Empty
         {
             return false;
         }
+
+        @Override
+        public boolean accept( long value )
+        {
+            return false;
+        }
     }
 
     public static final PrimitiveLongSet EMPTY_PRIMITIVE_LONG_SET = new EmptyPrimitiveLongSet();
@@ -139,6 +145,12 @@ public class Empty
 
         @Override
         public boolean remove( int value )
+        {
+            return false;
+        }
+
+        @Override
+        public boolean accept( int value )
         {
             return false;
         }
