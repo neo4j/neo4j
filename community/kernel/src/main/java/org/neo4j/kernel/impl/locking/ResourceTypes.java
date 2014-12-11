@@ -25,6 +25,8 @@ import java.util.Map;
 import org.neo4j.kernel.impl.util.concurrent.LockWaitStrategies;
 import org.neo4j.kernel.impl.util.concurrent.WaitStrategy;
 
+import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.DEFAULT_HASHING;
+
 public enum ResourceTypes implements Locks.ResourceType
 {
     NODE        (0, LockWaitStrategies.INCREMENTAL_BACKOFF),
@@ -74,12 +76,32 @@ public enum ResourceTypes implements Locks.ResourceType
         return (long)name.hashCode() << 32 | key.hashCode();
     }
 
+    /**
+     * This is the schema index entry hashing method used since 2.2.0 and onwards.
+     */
     public static long indexEntryResourceId( long labelId, long propertyKeyId, String propertyValue )
     {
-        long result = labelId;
-        result = 31 * result + propertyKeyId;
-        result = 31 * result + propertyValue.hashCode();
-        return result;
+        long hob = hash( labelId + hash( propertyKeyId ) );
+        hob <<= 32;
+        return hob + propertyValue.hashCode();
+
+        // The previous schema index entry hashing method used up until and
+        // including Neo4j 2.1.x looks like the following:
+        //
+        //   long result = labelId;
+        //   result = 31 * result + propertyKeyId;
+        //   result = 31 * result + propertyValue.hashCode();
+        //   return result;
+        //
+        // It was replaced because it was prone to collisions. I left it in
+        // this comment in case we need it for supporting rolling upgrades.
+        // This comment can be deleted once RU from 2.1 to 2.2 is no longer a
+        // concern.
+    }
+
+    private static int hash( long value )
+    {
+        return DEFAULT_HASHING.hash( value );
     }
 
     public static long graphPropertyResource()

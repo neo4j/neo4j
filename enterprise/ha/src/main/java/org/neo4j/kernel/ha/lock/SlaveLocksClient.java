@@ -280,7 +280,7 @@ class SlaveLocksClient implements Locks.Client
     {
         makeSureTxHasBeenInitialized();
         return receiveLockResponse(
-                master.acquireExclusiveLock( requestContextFactory.newRequestContext( (int) getLockSessionId() ), resourceType, resourceId ));
+                master.acquireExclusiveLock( requestContextFactory.newRequestContext( getLockSessionId() ), resourceType, resourceId ));
     }
 
     private boolean receiveLockResponse( Response<LockResult> response )
