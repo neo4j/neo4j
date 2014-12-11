@@ -37,8 +37,9 @@ import static org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor.DEF
  */
 public abstract class ExecutorServiceStep<T> extends AbstractStep<T>
 {
-    private final TaskExecutor executor;
+    private TaskExecutor executor;
     private final int workAheadSize;
+    private final int initialProcessorCount;
     private final boolean allowMultipleProcessors;
     private final PrimitiveLongPredicate catchUp = new PrimitiveLongPredicate()
     {
@@ -58,14 +59,20 @@ public abstract class ExecutorServiceStep<T> extends AbstractStep<T>
     {
         super( control, name, movingAverageSize );
         this.workAheadSize = workAheadSize;
+        this.initialProcessorCount = initialProcessorCount;
         this.allowMultipleProcessors = allowMultipleProcessors;
-        this.executor = new DynamicTaskExecutor( initialProcessorCount, workAheadSize, DEFAULT_PARK_STRATEGY, name );
     }
 
     protected ExecutorServiceStep( StageControl control, String name, int workAheadSize, int movingAverageSize,
             int initialProcessorCount )
     {
         this( control, name, workAheadSize, movingAverageSize, initialProcessorCount, initialProcessorCount > 1 );
+    }
+
+    @Override
+    public void start()
+    {
+        this.executor = new DynamicTaskExecutor( initialProcessorCount, workAheadSize, DEFAULT_PARK_STRATEGY, name() );
     }
 
     @Override

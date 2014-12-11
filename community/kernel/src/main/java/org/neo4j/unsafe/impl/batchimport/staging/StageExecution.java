@@ -74,6 +74,10 @@ public class StageExecution implements StageControl
     public void start()
     {
         this.startTime = currentTimeMillis();
+        for ( Step<?> step : pipeline )
+        {
+            step.start();
+        }
     }
 
     public long getExecutionTime()

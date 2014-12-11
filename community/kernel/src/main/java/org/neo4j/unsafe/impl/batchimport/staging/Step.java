@@ -39,6 +39,11 @@ import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
 public interface Step<T> extends Parallelizable
 {
     /**
+     * Starts the processing in this step.
+     */
+    void start();
+
+    /**
      * @return name of this step.
      */
     String name();

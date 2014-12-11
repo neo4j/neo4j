@@ -43,7 +43,7 @@ public abstract class AbstractStep<T> implements Step<T>
     @SuppressWarnings( "rawtypes" )
     private volatile Step downstream;
     private volatile boolean endOfUpstream;
-    private volatile boolean panic;
+    private volatile Throwable panic;
     private volatile boolean completed;
     protected final PrimitiveLongPredicate rightTicket = new PrimitiveLongPredicate()
     {
@@ -72,6 +72,11 @@ public abstract class AbstractStep<T> implements Step<T>
         this.control = control;
         this.name = name;
         this.totalProcessingTime = new MovingAverage( movingAverageSize );
+    }
+
+    @Override
+    public void start()
+    {   // Do nothing by default
     }
 
     /**
@@ -105,12 +110,12 @@ public abstract class AbstractStep<T> implements Step<T>
     @Override
     public void receivePanic( Throwable cause )
     {
-        this.panic = true;
+        this.panic = cause;
     }
 
     protected boolean stillWorking()
     {
-        if ( panic )
+        if ( panic != null )
         {   // There has been a panic, so we'll just stop working
             return false;
         }
@@ -175,9 +180,9 @@ public abstract class AbstractStep<T> implements Step<T>
 
     protected void assertHealthy()
     {
-        if ( panic )
+        if ( panic != null )
         {
-            throw new RuntimeException( "Panic called, so exiting" );
+            throw new RuntimeException( "Panic called, so exiting", panic );
         }
     }
 

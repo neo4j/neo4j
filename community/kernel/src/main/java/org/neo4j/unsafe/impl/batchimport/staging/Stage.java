@@ -53,8 +53,8 @@ public class Stage
     public StageExecution execute()
     {
         linkSteps();
-        pipeline.get( 0 ).receive( 1 /*a ticket, ignored anyway*/, null /*serves only as a start signal anyway*/ );
         execution.start();
+        pipeline.get( 0 ).receive( 1 /*a ticket, ignored anyway*/, null /*serves only as a start signal anyway*/ );
         return execution;
     }
 
