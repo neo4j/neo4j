@@ -67,7 +67,7 @@ public class ConsoleService implements AdvertisableService
     public ConsoleService( @Context Config config, @Context Database database, @Context HttpServletRequest req,
                            @Context OutputFormat output, @Context CypherExecutor cypherExecutor )
     {
-        this( new SessionFactoryImpl( req.getSession( true ), config.get( ServerSettings.management_console_engines ),
+        this( new SessionFactoryImpl( req, config.get( ServerSettings.management_console_engines ),
                 cypherExecutor ), database, database.getLogging(), output );
     }
 

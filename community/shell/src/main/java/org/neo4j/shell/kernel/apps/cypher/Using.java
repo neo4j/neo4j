@@ -20,7 +20,6 @@
 package org.neo4j.shell.kernel.apps.cypher;
 
 import java.rmi.RemoteException;
-import java.util.Map;
 
 import org.neo4j.graphdb.Result;
 import org.neo4j.helpers.Service;
@@ -30,13 +29,14 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.shell.App;
+import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 
 @Service.Implementation(App.class)
 public class Using extends Start
 {
     @Override
-    protected Result getResult( String query, Map<String, Object> parameters )
+    protected Result getResult( String query, final Session session )
             throws ShellException, RemoteException, QueryExecutionKernelException
     {
         GraphDatabaseAPI graphDatabaseAPI = getServer().getDb();
@@ -50,7 +50,7 @@ public class Using extends Start
 
             try
             {
-                return super.getResult( query, parameters );
+                return super.getResult( query, session );
             }
             finally
             {
@@ -59,7 +59,7 @@ public class Using extends Start
         }
         else
         {
-            return super.getResult( query, parameters );
+            return super.getResult( query, session );
         }
     }
 }

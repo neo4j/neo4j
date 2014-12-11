@@ -23,11 +23,12 @@ import org.neo4j.cypher.ExtendedExecutionResult
 import org.neo4j.graphdb.Transaction
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.Statement
+import org.neo4j.kernel.impl.query.QuerySession
 
 final case class TransactionInfo(tx: Transaction, isTopLevelTx: Boolean, statement: Statement)
 
 trait ExecutionPlan {
-  def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, executionMode: ExecutionMode, params: Map[String, Any]): ExtendedExecutionResult
+  def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, executionMode: ExecutionMode, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult
 
   def isPeriodicCommit: Boolean
 

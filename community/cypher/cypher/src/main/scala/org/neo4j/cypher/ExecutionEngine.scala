@@ -21,17 +21,18 @@ package org.neo4j.cypher
 
 import java.util.{Map => JavaMap}
 
-import org.neo4j.cypher.internal._
+import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.parser.ParserMonitor
 import org.neo4j.cypher.internal.compiler.v2_2.prettifier.Prettifier
-import org.neo4j.cypher.internal.compiler.v2_2.{CypherCacheMonitor, MonitoringCacheAccessor}
+import org.neo4j.cypher.internal.{CypherCompiler, _}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession, QueryEngineProvider}
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
 import org.neo4j.kernel.impl.util.StringLogger
-import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase, api}
+import org.neo4j.kernel.{monitoring, GraphDatabaseAPI, InternalAbstractGraphDatabase, api}
 
 import scala.collection.JavaConverters._
 
@@ -47,7 +48,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   protected val kernel = graphAPI.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.api.KernelAPI])
   private val lastTxId: () => Long =
       graphAPI.getDependencyResolver.resolveDependency( classOf[TransactionIdStore]).getLastCommittedTransactionId
-  protected val kernelMonitors = graphAPI.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])
+  protected val kernelMonitors: monitoring.Monitors = graphAPI.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])
   protected val compiler = createCompiler(logger)
 
   private val cacheMonitor = kernelMonitors.newMonitor(classOf[StringCacheMonitor])
@@ -57,33 +58,53 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
     }
   })
 
+  private val executionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
+
   private val cacheAccessor = new MonitoringCacheAccessor[String, (ExecutionPlan, Map[String, Any])](cacheMonitor)
 
   private val preParsedQueries = new LRUCache[String, PreParsedQuery](getPlanCacheSize)
   private val parsedQueries = new LRUCache[String, ParsedQuery](getPlanCacheSize)
 
   @throws(classOf[SyntaxException])
-  def profile(query: String): ExtendedExecutionResult = profile(query, Map[String, Any]())
+  def profile(query: String): ExtendedExecutionResult = profile(query, Map[String, Any](), QueryEngineProvider.embeddedSession)
 
   @throws(classOf[SyntaxException])
-  def profile(query: String, params: JavaMap[String, Any]): ExtendedExecutionResult = profile(query, params.asScala.toMap)
+  def profile(query: String, params: JavaMap[String, Any]): ExtendedExecutionResult = profile(query, params.asScala.toMap, QueryEngineProvider.embeddedSession)
 
   @throws(classOf[SyntaxException])
-  def profile(query: String, params: Map[String, Any]): ExtendedExecutionResult = {
+  def profile(query: String, params: Map[String, Any]): ExtendedExecutionResult = profile(query, params, QueryEngineProvider.embeddedSession)
+
+  @throws(classOf[SyntaxException])
+  def profile(query: String, params: Map[String, Any],session: QuerySession): ExtendedExecutionResult = {
+    executionMonitor.startQueryExecution(session, query)
+
     val (preparedPlanExecution, txInfo) = planQuery(query)
-    preparedPlanExecution.profile(graphAPI, txInfo, params)
+    preparedPlanExecution.profile(graphAPI, txInfo, params, session)
   }
+
+  @throws(classOf[SyntaxException])
+  def profile(query: String, params: JavaMap[String, Any], session: QuerySession): ExtendedExecutionResult =
+    profile(query, params.asScala.toMap, session)
 
   @throws(classOf[SyntaxException])
   def execute(query: String): ExtendedExecutionResult = execute(query, Map[String, Any]())
 
   @throws(classOf[SyntaxException])
-  def execute(query: String, params: JavaMap[String, Any]): ExtendedExecutionResult = execute(query, params.asScala.toMap)
+  def execute(query: String, params: JavaMap[String, Any]): ExtendedExecutionResult = execute(query, params.asScala.toMap, QueryEngineProvider.embeddedSession)
 
   @throws(classOf[SyntaxException])
-  def execute(query: String, params: Map[String, Any]): ExtendedExecutionResult = {
+  def execute(query: String, params: Map[String, Any]): ExtendedExecutionResult =
+    execute(query, params, QueryEngineProvider.embeddedSession)
+
+  @throws(classOf[SyntaxException])
+  def execute(query: String, params: JavaMap[String, Any], session: QuerySession): ExtendedExecutionResult =
+    execute(query, params.asScala.toMap, session)
+
+  @throws(classOf[SyntaxException])
+  def execute(query: String, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult = {
+    executionMonitor.startQueryExecution(session, query)
     val (preparedPlanExecution, txInfo) = planQuery(query)
-    preparedPlanExecution.execute(graphAPI, txInfo, params)
+    preparedPlanExecution.execute(graphAPI, txInfo, params, session)
   }
 
   @throws(classOf[SyntaxException])
@@ -195,7 +216,6 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
     def optGraphAs[T <: GraphDatabaseService : Manifest]: PartialFunction[GraphDatabaseService, T] = {
       case (db: T) => db
     }
-
     optGraphAs[InternalAbstractGraphDatabase]
       .andThen(g => Option(g.getConfig.get(setting)))
       .andThen(_.getOrElse(defaultValue))

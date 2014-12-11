@@ -27,6 +27,7 @@ import java.util.Map;
 import org.neo4j.graphdb.Result;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
+import org.neo4j.kernel.impl.query.QuerySession;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
@@ -64,7 +65,7 @@ public class Start extends TransactionProvidingApp
             try
             {
                 final long startTime = System.currentTimeMillis();
-                Result result = getResult( trimQuery( query ), getParameters( session ) );
+                Result result = getResult( trimQuery( query ), session );
                 handleResult( out, result, startTime );
             }
             catch ( QueryExecutionKernelException e )
@@ -79,10 +80,10 @@ public class Start extends TransactionProvidingApp
         }
     }
 
-    protected Result getResult( String query, Map<String, Object> parameters )
+    protected Result getResult( String query, Session session )
             throws ShellException, RemoteException, QueryExecutionKernelException
     {
-        return getEngine().executeQuery( query, parameters );
+        return getEngine().executeQuery( query, getParameters( session ), shellSession( session ) );
     }
 
     protected String trimQuery( String query )
@@ -138,5 +139,26 @@ public class Start extends TransactionProvidingApp
     protected long now()
     {
         return System.currentTimeMillis();
+    }
+
+    static QuerySession shellSession( Session session )
+    {
+        return new ShellQuerySession( session );
+    }
+
+    private static class ShellQuerySession extends QuerySession
+    {
+        private final Session session;
+
+        ShellQuerySession( Session session )
+        {
+            this.session = session;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("shell-session(%s)", session.getId());
+        }
     }
 }

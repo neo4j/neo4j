@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
 import org.neo4j.helpers.collection.IteratorUtil;
@@ -41,10 +42,12 @@ public class SessionFactoryImpl implements ConsoleSessionFactory
     private final HttpSession httpSession;
     private final CypherExecutor cypherExecutor;
     private final Map<String, ConsoleSessionCreator> engineCreators = new HashMap<String, ConsoleSessionCreator>();
+    private final HttpServletRequest request;
 
-    public SessionFactoryImpl( HttpSession httpSession, List<String> supportedEngines, CypherExecutor cypherExecutor )
+    public SessionFactoryImpl( HttpServletRequest request, List<String> supportedEngines, CypherExecutor cypherExecutor )
     {
-        this.httpSession = httpSession;
+        this.request = request;
+        this.httpSession = request.getSession(true);
         this.cypherExecutor = cypherExecutor;
 
         enableEngines( supportedEngines );
@@ -73,7 +76,7 @@ public class SessionFactoryImpl implements ConsoleSessionFactory
         Object session = httpSession.getAttribute( key );
         if ( session == null )
         {
-            session = creator.newSession( database, cypherExecutor );
+            session = creator.newSession( database, cypherExecutor, request );
             httpSession.setAttribute( key, session );
         }
         return (ScriptSession) session;

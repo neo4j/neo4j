@@ -932,7 +932,7 @@ public abstract class InternalAbstractGraphDatabase
         availabilityGuard.checkAvailability( transactionStartTimeout, TransactionFailureException.class );
         try
         {
-            return queryExecutor.executeQuery( query, parameters );
+            return queryExecutor.executeQuery( query, parameters, QueryEngineProvider.embeddedSession() );
         }
         catch ( QueryExecutionKernelException e )
         {

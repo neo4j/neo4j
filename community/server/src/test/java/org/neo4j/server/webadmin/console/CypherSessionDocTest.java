@@ -41,6 +41,7 @@ package org.neo4j.server.webadmin.console;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
 
 import org.junit.Test;
 import org.neo4j.helpers.Pair;
@@ -51,6 +52,8 @@ import org.neo4j.server.database.Database;
 import org.neo4j.server.database.WrappedDatabase;
 import org.neo4j.server.rest.management.console.CypherSession;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import javax.servlet.http.HttpServletRequest;
 
 public class CypherSessionDocTest
 {
@@ -63,7 +66,7 @@ public class CypherSessionDocTest
         executor.start();
         try
         {
-            CypherSession session = new CypherSession( executor, DevNullLoggingService.DEV_NULL );
+            CypherSession session = new CypherSession( executor, DevNullLoggingService.DEV_NULL, mock(HttpServletRequest.class));
             Pair<String, String> result = session.evaluate( "create (a) return a" );
             assertThat( result.first(), containsString( "Node[0]" ) );
         }

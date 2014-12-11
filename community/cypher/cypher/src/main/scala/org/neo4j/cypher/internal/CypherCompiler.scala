@@ -51,8 +51,8 @@ class CypherCompiler(graph: GraphDatabaseService,
 
   private val queryCacheSize: Int = getQueryCacheSize
   private val queryPlanTTL: Long = getQueryPlanTTL
-  private val compatibilityFor1_9 = CompatibilityFor1_9(graph, queryCacheSize)
-  private val compatibilityFor2_0 = CompatibilityFor2_0(graph, queryCacheSize)
+  private val compatibilityFor1_9 = CompatibilityFor1_9(graph, queryCacheSize, kernelMonitors)
+  private val compatibilityFor2_0 = CompatibilityFor2_0(graph, queryCacheSize, kernelMonitors)
   private val compatibilityFor2_1 = CompatibilityFor2_1(graph, queryCacheSize, kernelMonitors, kernelAPI)
   private val compatibilityFor2_2Rule =
     CompatibilityFor2_2Rule(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK,

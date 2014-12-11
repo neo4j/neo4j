@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.POST;
@@ -66,12 +67,13 @@ public class TransactionalService
     @POST
     @Consumes({MediaType.APPLICATION_JSON})
     @Produces({MediaType.APPLICATION_JSON})
-    public Response executeStatementsInNewTransaction( final InputStream input, @Context final UriInfo uriInfo )
+    public Response executeStatementsInNewTransaction( final InputStream input, @Context final UriInfo uriInfo,
+                                                       @Context final HttpServletRequest request )
     {
         try
         {
             TransactionHandle transactionHandle = facade.newTransactionHandle( uriScheme );
-            return createdResponse( transactionHandle, executeStatements( input, transactionHandle, uriInfo.getRequestUri() ) );
+            return createdResponse( transactionHandle, executeStatements( input, transactionHandle, uriInfo.getRequestUri(), request ) );
         }
         catch ( TransactionLifecycleException e )
         {
@@ -84,7 +86,7 @@ public class TransactionalService
     @Consumes({MediaType.APPLICATION_JSON})
     @Produces({MediaType.APPLICATION_JSON})
     public Response executeStatements( @PathParam("id") final long id, final InputStream input,
-                                       @Context final UriInfo uriInfo )
+                                       @Context final UriInfo uriInfo, @Context final HttpServletRequest request )
     {
         final TransactionHandle transactionHandle;
         try
@@ -95,14 +97,15 @@ public class TransactionalService
         {
             return invalidTransaction( e, uriInfo.getRequestUri() );
         }
-        return okResponse( executeStatements( input, transactionHandle, uriInfo.getRequestUri() ) );
+        return okResponse( executeStatements( input, transactionHandle, uriInfo.getRequestUri(), request ) );
     }
 
     @POST
     @Path("/{id}/commit")
     @Consumes({MediaType.APPLICATION_JSON})
     @Produces({MediaType.APPLICATION_JSON})
-    public Response commitTransaction( @PathParam("id") final long id, final InputStream input, @Context final UriInfo uriInfo )
+    public Response commitTransaction( @PathParam("id") final long id, final InputStream input, @Context final UriInfo uriInfo,
+                                       @Context final HttpServletRequest request )
     {
         final TransactionHandle transactionHandle;
         try
@@ -113,14 +116,15 @@ public class TransactionalService
         {
             return invalidTransaction( e, uriInfo.getRequestUri() );
         }
-        return okResponse( executeStatementsAndCommit( input, transactionHandle, uriInfo.getRequestUri(), false ) );
+        return okResponse( executeStatementsAndCommit( input, transactionHandle, uriInfo.getRequestUri(), false, request ) );
     }
 
     @POST
     @Path("/commit")
     @Consumes({MediaType.APPLICATION_JSON})
     @Produces({MediaType.APPLICATION_JSON})
-    public Response commitNewTransaction( final InputStream input, @Context final UriInfo uriInfo )
+    public Response commitNewTransaction( final InputStream input, @Context final UriInfo uriInfo,
+                                          @Context final HttpServletRequest request )
     {
         final TransactionHandle transactionHandle;
         try
@@ -134,7 +138,7 @@ public class TransactionalService
         final StreamingOutput streamingResults = executeStatementsAndCommit( input,
                 transactionHandle,
                 uriInfo.getRequestUri(),
-                true );
+                true, request );
         return okResponse( streamingResults );
     }
 
@@ -177,14 +181,15 @@ public class TransactionalService
     }
 
     private StreamingOutput executeStatements( final InputStream input, final TransactionHandle transactionHandle,
-                                               final URI requestUri )
+                                               final URI requestUri, final HttpServletRequest request )
     {
         return new StreamingOutput()
         {
             @Override
             public void write( OutputStream output ) throws IOException, WebApplicationException
             {
-                transactionHandle.execute( facade.deserializer( input ), facade.serializer( output, requestUri ) );
+                transactionHandle.execute( facade.deserializer( input ), facade.serializer( output, requestUri ),
+                        request );
             }
         };
     }
@@ -192,7 +197,8 @@ public class TransactionalService
     private StreamingOutput executeStatementsAndCommit( final InputStream input,
                                                         final TransactionHandle transactionHandle,
                                                         final URI requestUri,
-                                                        final boolean pristine )
+                                                        final boolean pristine,
+                                                        final HttpServletRequest request )
     {
         return new StreamingOutput()
         {
@@ -202,7 +208,7 @@ public class TransactionalService
                 OutputStream wrappedOutput = pristine ? new InterruptingOutputStream( output,
                         transactionHandle ) : output;
                 transactionHandle.commit( facade.deserializer( input ), facade.serializer( wrappedOutput,
-                        requestUri ), pristine );
+                        requestUri ), pristine, request );
             }
         };
     }

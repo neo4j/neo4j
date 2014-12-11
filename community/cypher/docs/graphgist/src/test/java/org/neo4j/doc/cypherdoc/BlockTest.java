@@ -34,6 +34,7 @@ import org.mockito.ArgumentCaptor;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
+import org.neo4j.kernel.impl.query.QuerySession;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -44,6 +45,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assume.assumeFalse;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyMapOf;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -232,8 +234,8 @@ public class BlockTest
         ArgumentCaptor<String> fileQuery = ArgumentCaptor.forClass( String.class );
         ArgumentCaptor<String> httpQuery = ArgumentCaptor.forClass( String.class );
 
-        when( engine.profileQuery( fileQuery.capture(), anyMapOf( String.class, Object.class ) ) ).
-                thenReturn( mock( org.neo4j.graphdb.Result.class ) );
+        when(engine.profileQuery(fileQuery.capture(), anyMapOf(String.class, Object.class), any(QuerySession.class))).
+                thenReturn(mock(org.neo4j.graphdb.Result.class));
 
         when( engine.prettify( httpQuery.capture() ) ).
                 thenReturn( "apa" );

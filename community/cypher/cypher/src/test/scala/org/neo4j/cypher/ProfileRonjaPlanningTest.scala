@@ -37,6 +37,7 @@ import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.impl.query.{QueryEngineProvider, QueryExecutionEngine}
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 
 import scala.collection.mutable
@@ -97,6 +98,7 @@ class ProfileRonjaPlanningTest extends ExecutionEngineFunSuite with QueryStatist
   }
 
   private def runQueryWith(query: String, compiler: CypherCompiler, db: GraphDatabaseAPI): (List[Map[String, Any]], InternalExecutionResult) = {
+    val session = QueryEngineProvider.embeddedSession()
     val (plan, parameters) = db.withTx {
       tx =>
         val planContext = new TransactionBoundPlanContext(db.statement, db) with RealStatistics

@@ -27,6 +27,7 @@ import java.net.URISyntaxException;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.rest.transactional.error.TransactionLifecycleException;
+import org.neo4j.server.rest.web.QuerySessionProvider;
 import org.neo4j.server.rest.web.TransactionUriScheme;
 
 /**
@@ -67,7 +68,7 @@ public class TransactionFacade
 
     public TransactionHandle newTransactionHandle( TransactionUriScheme uriScheme ) throws TransactionLifecycleException
     {
-        return new TransactionHandle( kernel, engine, registry, uriScheme, log );
+        return new TransactionHandle( kernel, engine, registry, uriScheme, log, QuerySessionProvider.provider );
     }
 
     public TransactionHandle findTransactionHandle( long txId ) throws TransactionLifecycleException

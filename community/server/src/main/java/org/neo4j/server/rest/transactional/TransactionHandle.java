@@ -24,6 +24,8 @@ import java.net.URI;
 import java.util.LinkedList;
 import java.util.List;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.InvalidSemanticsException;
 import org.neo4j.graphdb.Result;
@@ -36,6 +38,7 @@ import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.rest.transactional.error.InternalBeginTransactionError;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
+import org.neo4j.server.rest.web.QuerySessionProvider;
 import org.neo4j.server.rest.web.TransactionUriScheme;
 
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
@@ -68,10 +71,12 @@ public class TransactionHandle implements TransactionTerminationHandle
     private final TransactionUriScheme uriScheme;
     private final StringLogger log;
     private final long id;
+    private final QuerySessionProvider sessionFactory;
     private TransitionalTxManagementKernelTransaction context;
 
     public TransactionHandle( TransitionalPeriodTransactionMessContainer txManagerFacade, QueryExecutionEngine engine,
-                              TransactionRegistry registry, TransactionUriScheme uriScheme, StringLogger log )
+                              TransactionRegistry registry, TransactionUriScheme uriScheme, StringLogger log,
+                              QuerySessionProvider sessionFactory )
     {
         this.txManagerFacade = txManagerFacade;
         this.engine = engine;
@@ -79,6 +84,7 @@ public class TransactionHandle implements TransactionTerminationHandle
         this.uriScheme = uriScheme;
         this.log = log;
         this.id = registry.begin( this );
+        this.sessionFactory = sessionFactory;
     }
 
     public URI uri()
@@ -86,14 +92,14 @@ public class TransactionHandle implements TransactionTerminationHandle
         return uriScheme.txUri( id );
     }
 
-    public void execute( StatementDeserializer statements, ExecutionResultSerializer output )
+    public void execute( StatementDeserializer statements, ExecutionResultSerializer output, HttpServletRequest request )
     {
         List<Neo4jError> errors = new LinkedList<>();
         try
         {
             output.transactionCommitUri( uriScheme.txCommitUri( id ) );
             ensureActiveTransaction();
-            execute( statements, output, errors );
+            execute( statements, output, errors, request );
         }
         catch ( InternalBeginTransactionError e )
         {
@@ -116,7 +122,7 @@ public class TransactionHandle implements TransactionTerminationHandle
         return true;
     }
 
-    public void commit( StatementDeserializer statements, ExecutionResultSerializer output, boolean pristine )
+    public void commit( StatementDeserializer statements, ExecutionResultSerializer output, boolean pristine, HttpServletRequest request )
     {
         List<Neo4jError> errors = new LinkedList<>();
         try
@@ -129,14 +135,14 @@ public class TransactionHandle implements TransactionTerminationHandle
                     case EXECUTE_STATEMENT_USING_PERIODIC_COMMIT:
                         // If there is an open transaction at this point this will cause an immediate error
                         // as soon as Cypher tries to execute the initial PERIODIC COMMIT statement
-                        executePeriodicCommitStatement(statements, output, errors);
+                        executePeriodicCommitStatement(statements, output, errors, request);
                         break;
 
                     case EXECUTE_STATEMENT:
                         ensureActiveTransaction();
                         // If any later statement is an PERIODIC COMMIT query, executeStatements will fail
                         // as Cypher does refuse to execute PERIODIC COMMIT queries in an open transaction
-                        executeStatements( statements, output, errors );
+                        executeStatements( statements, output, errors, request );
                         closeContextAndCollectErrors( errors );
                         break;
 
@@ -246,9 +252,9 @@ public class TransactionHandle implements TransactionTerminationHandle
     }
 
     private void execute( StatementDeserializer statements, ExecutionResultSerializer output,
-                          List<Neo4jError> errors )
+                          List<Neo4jError> errors, HttpServletRequest request )
     {
-        executeStatements( statements, output, errors );
+        executeStatements( statements, output, errors, request );
 
         if ( Neo4jError.shouldRollBackOn( errors ) )
         {
@@ -308,7 +314,7 @@ public class TransactionHandle implements TransactionTerminationHandle
     }
 
     private void executeStatements( StatementDeserializer statements, ExecutionResultSerializer output,
-                                    List<Neo4jError> errors )
+                                    List<Neo4jError> errors, HttpServletRequest request )
     {
         try
         {
@@ -317,7 +323,8 @@ public class TransactionHandle implements TransactionTerminationHandle
                 Statement statement = statements.next();
                 try
                 {
-                    Result result = engine.executeQuery( statement.statement(), statement.parameters() );
+                    Result result = engine.executeQuery( statement.statement(), statement.parameters(),
+                            sessionFactory.create( request ) );
                     output.statementResult( result, statement.includeStats(), statement.resultDataContents() );
                 }
                 catch ( KernelException | CypherException e )
@@ -351,7 +358,7 @@ public class TransactionHandle implements TransactionTerminationHandle
 
 
     private void executePeriodicCommitStatement(
-           StatementDeserializer statements, ExecutionResultSerializer output, List<Neo4jError> errors )
+           StatementDeserializer statements, ExecutionResultSerializer output, List<Neo4jError> errors, HttpServletRequest request )
     {
         try
         {
@@ -365,7 +372,8 @@ public class TransactionHandle implements TransactionTerminationHandle
                                                            "PERIODIC COMMIT statement in the same transaction" ) );
                 }
 
-                Result result = engine.executeQuery( statement.statement(), statement.parameters() );
+                Result result = engine.executeQuery( statement.statement(), statement.parameters(), sessionFactory
+                        .create(request) );
                 ensureActiveTransaction();
                 output.statementResult( result, statement.includeStats(), statement.resultDataContents() );
                 closeContextAndCollectErrors(errors);

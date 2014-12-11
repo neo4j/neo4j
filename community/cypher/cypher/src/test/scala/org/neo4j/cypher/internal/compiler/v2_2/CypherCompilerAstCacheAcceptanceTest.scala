@@ -132,6 +132,6 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     graph.inTx { compiler.planQuery(query, planContext) }
 
     // then
-    logger.assertAtLeastOnce(LogCall.info(s"Discarded stale query from the query cache: $query"))
+    logger.assertExactly(LogCall.info(s"Discarded stale query from the query cache: $query"))
   }
 }

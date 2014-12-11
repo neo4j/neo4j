@@ -21,11 +21,14 @@ package org.neo4j.server.rest.web;
 
 import java.util.HashMap;
 import java.util.Map;
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
+
+import org.apache.commons.lang.StringUtils;
 
 import org.neo4j.cypher.CypherException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -71,6 +74,7 @@ public class CypherService
     @POST
     @SuppressWarnings({"unchecked", "ParameterCanBeLocal"})
     public Response cypher(String body,
+                           @Context HttpServletRequest request,
                            @QueryParam( INCLUDE_STATS_PARAM ) boolean includeStats,
                            @QueryParam( INCLUDE_PLAN_PARAM ) boolean includePlan,
                            @QueryParam( PROFILE_PARAM ) boolean profile) throws BadInputException {
@@ -106,12 +110,12 @@ public class CypherService
             Result result;
             if ( profile )
             {
-                result = executionEngine.profileQuery( query, params );
+                result = executionEngine.profileQuery( query, params, new ServerQuerySession( request ) );
                 includePlan = true;
             }
             else
             {
-                result = executionEngine.executeQuery( query, params );
+                result = executionEngine.executeQuery( query, params, new ServerQuerySession( request ) );
                 includePlan = result.getQueryExecutionType().requestedExecutionPlanDescription();
             }
 
