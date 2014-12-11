@@ -19,6 +19,9 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import org.codehaus.jackson.JsonFactory;
+import org.codehaus.jackson.JsonGenerator;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
@@ -26,9 +29,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
-
-import org.codehaus.jackson.JsonFactory;
-import org.codehaus.jackson.JsonGenerator;
 
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.cypher.javacompat.QueryStatistics;
@@ -249,7 +249,8 @@ public class ExecutionResultSerializer
 
     private State currentState = State.EMPTY;
 
-    private static final JsonFactory JSON_FACTORY = new JsonFactory( new Neo4jJsonCodec() );
+    private static final JsonFactory JSON_FACTORY = new JsonFactory( new Neo4jJsonCodec() )
+            .disable( JsonGenerator.Feature.FLUSH_PASSED_TO_STREAM );
     private final JsonGenerator out;
     private final URI baseUri;
     private final StringLogger log;
