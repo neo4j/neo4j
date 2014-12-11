@@ -67,6 +67,7 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
     private static final String PAGED_TRAVERSE_LINK_REL = "paged_traverse";
     private static final int SHORT_LIST_LENGTH = 33;
     private static final int LONG_LIST_LENGTH = 444;
+    private static final int VERY_LONG_LIST_LENGTH = LONG_LIST_LENGTH*2;
 
     @ClassRule
     public static TemporaryFolder staticFolder = new TemporaryFolder();
@@ -415,10 +416,10 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
     public void shouldHaveTransportEncodingChunkedOnResponseHeader()
     {
         // given
-        theStartNode = createLinkedList( SHORT_LIST_LENGTH, server.getDatabase() );
+        theStartNode = createLinkedList( VERY_LONG_LIST_LENGTH, server.getDatabase() );
 
         // when
-        JaxRsResponse response = createStreamingPagedTraverserWithTimeoutInMinutesAndPageSize( 60, 1 );
+        JaxRsResponse response = createStreamingPagedTraverserWithTimeoutInMinutesAndPageSize( 60, 1000 );
 
         // then
         assertEquals( 201, response.getStatus() );
