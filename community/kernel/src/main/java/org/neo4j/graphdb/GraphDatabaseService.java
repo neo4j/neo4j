@@ -119,7 +119,7 @@ public interface GraphDatabaseService
      * @param label consider nodes with this label
      * @param key   required property key
      * @param value required property value
-     * @return an iterator containing all matching nodes. See { @link ResourceIterator } for responsibilities.
+     * @return an iterator containing all matching nodes. See {@link ResourceIterator} for responsibilities.
      */
     ResourceIterator<Node> findNodes( Label label, String key, Object value );
 
@@ -130,7 +130,7 @@ public interface GraphDatabaseService
      * @param label consider nodes with this label
      * @param key   required property key
      * @param value required property value
-     * @return an iterator containing all matching nodes. See { @link ResourceIterator } for responsibilities.
+     * @return an iterator containing all matching nodes. See {@link ResourceIterator} for responsibilities.
      * @throws MultipleFoundException if more than one matching {@link Node node} is found
      */
     Node findNode( Label label, String key, Object value );
@@ -167,7 +167,7 @@ public interface GraphDatabaseService
      * @param label consider nodes with this label
      * @param key   required property key
      * @param value required property value
-     * @return an iterable containing all matching nodes. See { @link ResourceIterable } for responsibilities.
+     * @return an iterable containing all matching nodes. See {@link ResourceIterable} for responsibilities.
      * @deprecated Use {@link #findNodes(Label, String, Object)}
      */
     @Deprecated
