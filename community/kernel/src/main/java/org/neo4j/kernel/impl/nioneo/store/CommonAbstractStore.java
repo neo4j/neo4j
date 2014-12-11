@@ -324,8 +324,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
             }
             else
             {
-                defraggedCount = fullScanIdRebuild( fileChannel, fileSize, recordSize,
-                        reserveIdsDuringRebuild() );
+                defraggedCount = fullScanIdRebuild( fileChannel, fileSize, recordSize );
             }
         }
         catch ( IOException e )
@@ -345,17 +344,11 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         }
     }
 
-    protected boolean reserveIdsDuringRebuild()
-    {
-        return false;
-    }
-
-    private long fullScanIdRebuild( StoreChannel fileChannel, long fileSize, int recordSize, boolean justReserveIds )
-            throws IOException
+    private long fullScanIdRebuild( StoreChannel fileChannel, long fileSize, int recordSize ) throws IOException
     {
         long defraggedCount = 0;
         ByteBuffer byteBuffer = ByteBuffer.allocate( recordSize );
-        LinkedList<Long> freeIdList = new LinkedList<Long>();
+        LinkedList<Long> freeIdList = new LinkedList<>();
         for ( long i = getNumberOfReservedLowIds(); i * recordSize < fileSize; i++ )
         {
             fileChannel.position( i * recordSize );
@@ -364,19 +357,15 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
             byteBuffer.flip();
             if ( !isRecordInUse( byteBuffer ) )
             {
-                if ( justReserveIds )
-                {
-                    byteBuffer.clear();
-                    byteBuffer.put( Record.IN_USE.byteValue() ).putInt(
-                        Record.RESERVED.intValue() );
-                    byteBuffer.flip();
-                    fileChannel.write( byteBuffer, i * recordSize );
-                    byteBuffer.clear();
-                }
-                else
-                {
-                    freeIdList.add( i );
-                }
+                freeIdList.add( i );
+            }
+            else if ( isRecordReserved( byteBuffer ) )
+            {
+                byteBuffer.clear();
+                byteBuffer.put( Record.NOT_IN_USE.byteValue() ).putInt( 0 );
+                byteBuffer.flip();
+                fileChannel.write( byteBuffer, i * recordSize );
+                freeIdList.add( i );
             }
             else
             {
@@ -647,6 +636,11 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     protected int bytesRequiredToDetermineInUse()
     {   // For most records it's enough with looking at the first byte
         return 1;
+    }
+
+    protected boolean isRecordReserved( ByteBuffer recordData )
+    {
+        return false;
     }
 
     protected void createIdGenerator( File fileName )

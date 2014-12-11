@@ -523,47 +523,41 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     }
 
     /**
-     * Rebuilds the internal id generator keeping track of what blocks are free
-     * or taken.
+     * Rebuilds the internal id generator keeping track of what blocks are free or taken.
      */
     @Override
     protected void rebuildIdGenerator()
     {
         if ( getBlockSize() <= 0 )
         {
-            throw new InvalidRecordException( "Illegal blockSize: " +
-                getBlockSize() );
+            throw new InvalidRecordException( "Illegal blockSize: " + getBlockSize() );
         }
         stringLogger.debug( "Rebuilding id generator for[" + getStorageFileName() + "] ..." );
         closeIdGenerator();
         File idFile = new File( getStorageFileName().getPath() + ".id" );
-        if ( fileSystemAbstraction.fileExists( idFile) )
+        if ( fileSystemAbstraction.fileExists( idFile ) )
         {
             boolean success = fileSystemAbstraction.deleteFile( idFile );
             assert success : "Couldn't delete " + idFile.getPath() + ", still open?";
         }
-        createIdGenerator( idFile);
+        createIdGenerator( idFile );
         openIdGenerator();
         setHighId( 1 ); // reserved first block containing blockSize
         StoreChannel fileChannel = getFileChannel();
-        long highId = 0;
         long defraggedCount = 0;
         try
         {
-            long fileSize = fileChannel.size();
-            boolean fullRebuild = true;
-
-            if ( conf.get( Configuration.rebuild_idgenerators_fast ) )
+            boolean useFastRebuild = conf.get( Configuration.rebuild_idgenerators_fast );
+            if ( useFastRebuild )
             {
-                fullRebuild = false;
-                highId = findHighIdBackwards();
+                setHighId( findHighIdBackwards() );
             }
-
-            ByteBuffer byteBuffer = ByteBuffer.wrap( new byte[1] );
-            LinkedList<Long> freeIdList = new LinkedList<>();
-            if ( fullRebuild )
+            else
             {
-                for ( long i = 1; i * getBlockSize() < fileSize; i++ )
+                ByteBuffer byteBuffer = ByteBuffer.wrap( new byte[1] );
+                LinkedList<Long> freeIdList = new LinkedList<>();
+
+                for ( long i = 1; i * getBlockSize() < fileChannel.size(); i++ )
                 {
                     fileChannel.position( i * getBlockSize() );
                     byteBuffer.clear();
@@ -575,8 +569,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
                     }
                     else
                     {
-                        highId = i;
-                        setHighId( highId + 1 );
+                        setHighId( i + 1 ); // increment by one because highId is (highest possible inUse id + 1)
                         while ( !freeIdList.isEmpty() )
                         {
                             freeId( freeIdList.removeFirst() );
@@ -589,13 +582,12 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         catch ( IOException e )
         {
             throw new UnderlyingStorageException(
-                "Unable to rebuild id generator " + getStorageFileName(), e );
+                    "Unable to rebuild id generator " + getStorageFileName(), e );
         }
-        setHighId( highId + 1 );
         stringLogger.debug( "[" + getStorageFileName() + "] high id=" + getHighId()
-            + " (defragged=" + defraggedCount + ")" );
+                            + " (defragged=" + defraggedCount + ")" );
         stringLogger.logMessage( getStorageFileName() + " rebuild id generator, highId=" + getHighId() +
-                " defragged count=" + defraggedCount, true );
+                                 " defragged count=" + defraggedCount, true );
         closeIdGenerator();
         openIdGenerator();
     }
