@@ -56,6 +56,7 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.transaction.log.LogRotation;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -327,7 +328,7 @@ public class IndexRecoveryIT
 
     private void rotateLogs() throws IOException
     {
-        db.getDependencyResolver().resolveDependency( NeoStoreDataSource.class ).rotateLogFile();
+        db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
     }
 
     private void createIndexAndAwaitPopulation( Label label )

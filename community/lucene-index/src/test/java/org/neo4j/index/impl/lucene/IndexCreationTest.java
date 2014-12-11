@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.IOCursor;
 import org.neo4j.kernel.impl.transaction.log.LogDeserializer;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
@@ -127,9 +128,9 @@ public class IndexCreationTest
     private void verifyThatIndexCreationTransactionIsTheFirstOne() throws Exception
     {
         NeoStoreDataSource ds = db.getDependencyResolver().resolveDependency( NeoStoreDataSource.class );
-        PhysicalLogFile pLogFile = ds.getDependencyResolver().resolveDependency( PhysicalLogFile.class );
+        PhysicalLogFile pLogFile = db.getDependencyResolver().resolveDependency( PhysicalLogFile.class );
         long version = ds.getCurrentLogVersion();
-        ds.rotateLogFile();
+        db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
 
         ReadableVersionableLogChannel logChannel =pLogFile.getReader( new LogPosition( version, LOG_HEADER_SIZE ) );
 

@@ -29,6 +29,11 @@ import java.io.IOException;
  */
 public interface LogRotation
 {
+    public interface Monitor
+    {
+        void rotatedLog();
+    }
+
     public static LogRotation NO_ROTATION = new LogRotation()
     {
         @Override

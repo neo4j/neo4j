@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.LogRotationControl;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
@@ -158,7 +159,9 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     {
         NeoStoreDataSource dataSource = graphDb.getDependencyResolver().resolveDependency(
                 DataSourceManager.class ).getDataSource();
-        StoreCopyServer streamer = new StoreCopyServer( transactionIdStore, dataSource, fileSystem, storeDir );
+        StoreCopyServer streamer = new StoreCopyServer( transactionIdStore, dataSource, graphDb.getDependencyResolver
+                ().resolveDependency( LogRotationControl.class ), fileSystem, 
+                storeDir );
         return streamer.flushStoresAndStreamStoreFiles( writer );
     }
 

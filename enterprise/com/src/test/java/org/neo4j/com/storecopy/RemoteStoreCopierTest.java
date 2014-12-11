@@ -52,6 +52,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.IOCursor;
+import org.neo4j.kernel.impl.transaction.log.LogRotationControl;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
@@ -136,7 +137,7 @@ public class RemoteStoreCopierTest
                 final long transactionIdWhenStartingCopy = transactionIdStore.getLastCommittedTransactionId();
                 NeoStoreDataSource dataSource =
                         resolver.resolveDependency( DataSourceManager.class ).getDataSource();
-                dataSource.forceEverything();
+                resolver.resolveDependency( LogRotationControl.class ).forceEverything();
                 File baseDir = getMostCanonicalFile( originalDir );
                 ByteBuffer temporaryBuffer = ByteBuffer.allocateDirect( 1024 * 1024 );
 

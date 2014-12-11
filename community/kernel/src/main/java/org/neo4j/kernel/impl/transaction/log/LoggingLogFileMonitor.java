@@ -29,7 +29,8 @@ import org.neo4j.kernel.impl.util.StringLogger;
 
 import static java.lang.String.format;
 
-public class LoggingLogFileMonitor implements PhysicalLogFile.Monitor, RecoveryVisitor.Monitor, NeoStoreDataSource.Monitor, Recovery.Monitor
+public class LoggingLogFileMonitor implements PhysicalLogFile.Monitor, RecoveryVisitor.Monitor, LogRotation.Monitor,
+        Recovery.Monitor
 {
     private int numberOfRecoveredTransactions;
     private long firstTransactionRecovered, lastTransactionRecovered;

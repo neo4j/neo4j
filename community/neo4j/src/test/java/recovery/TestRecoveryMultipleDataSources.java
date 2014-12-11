@@ -30,6 +30,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.kernel.impl.transaction.log.LogRotation;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.Runtime.getRuntime;
@@ -84,7 +85,7 @@ public class TestRecoveryMultipleDataSources
         tx.success();
         tx.close();
 
-        db.getDependencyResolver().resolveDependency( NeoStoreDataSource.class ).rotateLogFile();
+        db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
 
         tx = db.beginTx();
         db.index().forNodes( "index" ).add( db.createNode(), dir, db.createNode() );

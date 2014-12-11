@@ -58,6 +58,9 @@ import org.neo4j.kernel.impl.store.record.NeoStoreUtil;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
+import org.neo4j.kernel.impl.transaction.log.LogRotationControl;
+import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
@@ -548,8 +551,7 @@ public class BackupServiceIT
                     }
                     finally
                     {
-                        db.getDependencyResolver().resolveDependency( DataSourceManager.class )
-                                .getDataSource().forceEverything();
+                        db.getDependencyResolver().resolveDependency( LogRotationControl.class ).forceEverything();
                         transactionCommitted.countDown();
                     }
                 }

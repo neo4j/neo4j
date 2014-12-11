@@ -23,13 +23,13 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.impl.transaction.log.LogRotation;
 
 /**
  * This class listens for rotations and does log pruning.
- *
  */
 public class LogPruning
-    extends NeoStoreDataSource.Monitor.Adapter
+    implements LogRotation.Monitor
 {
     private final Lock pruneLock = new ReentrantLock();
     private final LogPruneStrategy pruneStrategy;
