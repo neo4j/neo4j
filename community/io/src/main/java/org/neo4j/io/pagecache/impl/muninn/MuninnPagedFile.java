@@ -135,7 +135,11 @@ final class MuninnPagedFile implements PagedFile
 
     public void close() throws IOException
     {
-        flush();
+        pageCache.unmap( this );
+    }
+
+    void closeSwapper() throws IOException
+    {
         swapper.close();
     }
 

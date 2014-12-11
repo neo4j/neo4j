@@ -195,7 +195,7 @@ public abstract class SortedKeyValueStore<K extends Comparable<K>, VR> implement
 
     public void close() throws IOException
     {
-        pageCache.unmap( file );
+        pages.close();
     }
 
 }

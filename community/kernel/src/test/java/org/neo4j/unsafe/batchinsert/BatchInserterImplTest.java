@@ -19,17 +19,17 @@
  */
 package org.neo4j.unsafe.batchinsert;
 
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
-import org.junit.Test;
-
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.StoreLocker;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.test.ReflectionUtil;
 import org.neo4j.test.TargetDirectory;
@@ -38,7 +38,6 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class BatchInserterImplTest
@@ -46,9 +45,10 @@ public class BatchInserterImplTest
     @Test
     public void testHonorsPassedInParams() throws Exception
     {
-        Long mappedMemoryTotalSize = createInserterAndGetMemoryMappingConfig( stringMap(
-                GraphDatabaseSettings.mapped_memory_total_size.name(), "16K" ) );
-        assertThat( "memory mapped config is active", mappedMemoryTotalSize, is( 16 * 1024L ) );
+        int mappedMemoryTotalSize = createInserterAndGetMemoryMappingConfig( stringMap(
+                GraphDatabaseSettings.mapped_memory_total_size.name(), "16K",
+                GraphDatabaseSettings.mapped_memory_page_size.name(), "1K" ) );
+        assertThat( "memory mapped config is active", mappedMemoryTotalSize, is( 16 * 1024 ) );
     }
 
     @Test
@@ -91,13 +91,13 @@ public class BatchInserterImplTest
         }
     }
     
-    private Long createInserterAndGetMemoryMappingConfig( Map<String, String> initialConfig ) throws Exception
+    private int createInserterAndGetMemoryMappingConfig( Map<String, String> initialConfig ) throws Exception
     {
         BatchInserter inserter = BatchInserters.inserter(
                 TargetDirectory.forTest( getClass() ).makeGraphDbDir().getAbsolutePath(), initialConfig );
         NeoStore neoStore = ReflectionUtil.getPrivateField( inserter, "neoStore", NeoStore.class );
-        Config config = ReflectionUtil.getPrivateField( neoStore, "conf", Config.class );
+        PageCache pageCache = ReflectionUtil.getPrivateField( neoStore, "pageCache", PageCache.class );
         inserter.shutdown();
-        return config.get( GraphDatabaseSettings.mapped_memory_total_size );
+        return pageCache.maxCachedPages() * pageCache.pageSize();
     }
 }

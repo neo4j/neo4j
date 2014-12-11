@@ -94,12 +94,6 @@ public final class StandalonePageCacheFactory
         }
 
         @Override
-        public void unmap( File file ) throws IOException
-        {
-            delegate.unmap( file );
-        }
-
-        @Override
         public void flush() throws IOException
         {
             delegate.flush();

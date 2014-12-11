@@ -51,15 +51,9 @@ public class CountsStore extends SortedKeyValueStore<CountsKey, CopyableDoubleLo
     {
         try
         {
-            PagedFile pages = mapCountsStore( pageCache, storeFile );
-            try
+            try ( PagedFile pages = mapCountsStore( pageCache, storeFile ) )
             {
                 header.write( pages );
-            }
-            finally
-            {
-                pages.flush();
-                pageCache.unmap( storeFile );
             }
         }
         catch ( IOException e )
@@ -100,7 +94,7 @@ public class CountsStore extends SortedKeyValueStore<CountsKey, CopyableDoubleLo
         }
         catch ( Exception e )
         {
-            pageCache.unmap( storeFile );
+            pages.close();
             throw e;
         }
     }

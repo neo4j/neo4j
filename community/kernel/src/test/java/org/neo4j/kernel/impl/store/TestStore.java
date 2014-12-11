@@ -179,8 +179,8 @@ public class TestStore
                     pageCache,
                     FILE_SYSTEM,
                     StringLogger.DEV_NULL,
-                    StoreVersionMismatchHandler.FORCE_CURRENT_VERSION,
-                    new Monitors() );
+                    StoreVersionMismatchHandler.FORCE_CURRENT_VERSION
+            );
         }
 
         @Override

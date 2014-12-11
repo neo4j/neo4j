@@ -70,10 +70,8 @@ public class CountsStoreWriterTest
         writer.close();
 
         // then
-        try
+        try ( SortedKeyValueStore counts = writer.openForReading() )
         {
-            final SortedKeyValueStore counts = writer.openForReading();
-
             assertEquals( lastTxId, counts.lastTxId() );
             assertEquals( 4, counts.totalRecordsStored() );
             assertEquals( file, counts.file() );
@@ -122,10 +120,6 @@ public class CountsStoreWriterTest
                 }
             }, Registers.newDoubleLongRegister() );
 
-        }
-        finally
-        {
-            pageCache.unmap( file );
         }
     }
 

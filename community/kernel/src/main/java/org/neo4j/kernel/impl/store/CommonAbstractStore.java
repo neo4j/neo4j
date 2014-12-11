@@ -44,10 +44,8 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.nio.ByteBuffer.wrap;
-
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.UTF8.encode;
 import static org.neo4j.io.fs.FileUtils.windowsSafeIOOperation;
@@ -74,6 +72,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     private IdGenerator idGenerator;
     private StoreChannel fileChannel;
     private boolean storeOk = true;
+    @SuppressWarnings( "unused" /* We keep this for debugging purpose */)
     private Throwable causeOfStoreNotOk;
     private FileLock fileLock;
     private String readTypeDescriptorAndVersion;
@@ -92,7 +91,6 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
      * <CODE>initStorage</CODE> method fails
      *
      * @param idType The Id used to index into this store
-     * @param monitors
      */
     public CommonAbstractStore(
             File fileName,
@@ -102,8 +100,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
             PageCache pageCache,
             FileSystemAbstraction fileSystemAbstraction,
             StringLogger stringLogger,
-            StoreVersionMismatchHandler versionMismatchHandler,
-            Monitors monitors )
+            StoreVersionMismatchHandler versionMismatchHandler )
     {
         this.storageFileName = fileName;
         this.configuration = configuration;
@@ -337,7 +334,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
      * Should rebuild the id generator from scratch.
      * <p/>
      * Note: This method may be called both while the store has the store file mapped in the
-     * page cache, and while the store file is not mapped. Implementors must therefore
+     * page cache, and while the store file is not mapped. Implementers must therefore
      * map their own temporary PagedFile for the store file, and do their file IO through that,
      * if they need to access the data in the store file.
      */
@@ -580,7 +577,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
      * Opens the {@link IdGenerator} used by this store.
      * <p/>
      * Note: This method may be called both while the store has the store file mapped in the
-     * page cache, and while the store file is not mapped. Implementors must therefore
+     * page cache, and while the store file is not mapped. Implementers must therefore
      * map their own temporary PagedFile for the store file, and do their file IO through that,
      * if they need to access the data in the store file.
      */
@@ -593,7 +590,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
      * Opens the {@link IdGenerator} given by the fileName.
      * <p/>
      * Note: This method may be called both while the store has the store file mapped in the
-     * page cache, and while the store file is not mapped. Implementors must therefore
+     * page cache, and while the store file is not mapped. Implementers must therefore
      * map their own temporary PagedFile for the store file, and do their file IO through that,
      * if they need to access the data in the store file.
      */
@@ -615,8 +612,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     {
         try ( PageCursor cursor = storeFile.io( 0, PF_SHARED_LOCK ) )
         {
-            long lastPageId = storeFile.getLastPageId();
-            long nextPageId = lastPageId;
+            long nextPageId = storeFile.getLastPageId();
             int recordsPerPage = recordsPerPage();
             int recordSize = getRecordSize();
             while ( nextPageId >= 0 && cursor.next( nextPageId ) )
@@ -700,7 +696,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         closeStorage();
         try
         {
-            pageCache.unmap( getStorageFileName() );
+            storeFile.close();
         }
         catch ( IOException e )
         {

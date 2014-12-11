@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.standard;
 
-import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
-import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
-
 import java.io.File;
 import java.io.IOException;
 
@@ -35,6 +31,10 @@ import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.format.Store;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+
+import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 
 public class StandardStore<RECORD, CURSOR extends Store.RecordCursor> extends LifecycleAdapter
              implements Store<RECORD, CURSOR>
@@ -160,8 +160,8 @@ public class StandardStore<RECORD, CURSOR extends Store.RecordCursor> extends Li
     {
         if(file != null)
         {
+            file.close();
             file = null;
-            pageCache.unmap( dbFileName );
         }
         if( channel != null)
         {

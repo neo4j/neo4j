@@ -52,7 +52,7 @@ final class MuninnReadPageCursor extends MuninnPageCursor
     @Override
     public boolean next() throws IOException
     {
-        if ( pagedFile.getRefCount() == 0 )
+        if ( pagedFile.getRefCount() == 0 ) // TODO racing with flush from close, must do this after pin
         {
             throw new IllegalStateException( "File has been unmapped" );
         }

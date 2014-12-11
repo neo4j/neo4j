@@ -19,6 +19,10 @@
  */
 package org.neo4j.test;
 
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -32,10 +36,6 @@ import java.util.logging.LogManager;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 import java.util.logging.StreamHandler;
-
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
 
 /**
  * Mutes outputs such as System.out, System.err and java.util.logging for example when running a test.
@@ -230,7 +230,7 @@ public final class Mute implements TestRule
         List<Throwable> failures = null;
         try
         {
-            failures = new ArrayList<Throwable>( voices.length );
+            failures = new ArrayList<>( voices.length );
         }
         catch ( Throwable oom )
         {
