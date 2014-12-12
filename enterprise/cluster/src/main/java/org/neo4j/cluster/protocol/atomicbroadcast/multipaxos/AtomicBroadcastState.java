@@ -132,21 +132,24 @@ public enum AtomicBroadcastState
                         case broadcast:
                         case failed:
                         {
-                            org.neo4j.cluster.InstanceId coordinator = context.getCoordinator();
-                            if ( coordinator != null )
+                            if( context.hasQuorum() )
                             {
-                                URI coordinatorUri = context.getUriForId( coordinator );
-                                outgoing.offer( message.copyHeadersTo(
-                                        to( ProposerMessage.propose, coordinatorUri, message.getPayload() ) ) );
-                                context.setTimeout( "broadcast-" + message.getHeader( Message.CONVERSATION_ID ),
-                                        timeout( AtomicBroadcastMessage.broadcastTimeout, message,
-                                                message.getPayload() ) );
-                            }
-                            else
-                            {
-                                outgoing.offer( message.copyHeadersTo( internal( ProposerMessage.propose,
-                                        message.getPayload() ), Message.CONVERSATION_ID, org.neo4j.cluster.protocol
-                                  .atomicbroadcast.multipaxos.InstanceId.INSTANCE ) );
+                                org.neo4j.cluster.InstanceId coordinator = context.getCoordinator();
+                                if ( coordinator != null )
+                                {
+                                    URI coordinatorUri = context.getUriForId( coordinator );
+                                    outgoing.offer( message.copyHeadersTo(
+                                            to( ProposerMessage.propose, coordinatorUri, message.getPayload() ) ) );
+                                    context.setTimeout( "broadcast-" + message.getHeader( Message.CONVERSATION_ID ),
+                                            timeout( AtomicBroadcastMessage.broadcastTimeout, message,
+                                                    message.getPayload() ) );
+                                }
+                                else
+                                {
+                                    outgoing.offer( message.copyHeadersTo( internal( ProposerMessage.propose,
+                                            message.getPayload() ), Message.CONVERSATION_ID, org.neo4j.cluster.protocol
+                                            .atomicbroadcast.multipaxos.InstanceId.INSTANCE ) );
+                                }
                             }
                             break;
                         }

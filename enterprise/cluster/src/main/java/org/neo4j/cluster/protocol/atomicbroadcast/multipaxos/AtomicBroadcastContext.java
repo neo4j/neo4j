@@ -33,4 +33,5 @@ public interface AtomicBroadcastContext
     void addAtomicBroadcastListener( AtomicBroadcastListener listener );
     void removeAtomicBroadcastListener( AtomicBroadcastListener listener );
     void receive( final Payload value );
+    boolean hasQuorum();
 }
