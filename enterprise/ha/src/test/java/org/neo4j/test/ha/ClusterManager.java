@@ -463,7 +463,7 @@ public class ClusterManager
         };
     }
 
-    public static String printState( ManagedCluster cluster )
+    public static String stateToString( ManagedCluster cluster )
     {
         StringBuilder buf = new StringBuilder( "\n" );
         for ( HighlyAvailableGraphDatabase database : cluster.getAllMembers() )
@@ -846,7 +846,7 @@ public class ClusterManager
                     return graphDatabaseService;
                 }
             }
-            throw new IllegalStateException( "No master found in cluster " + name + printState( this ) );
+            throw new IllegalStateException( "No master found in cluster " + name + stateToString( this ) );
         }
 
         /**
@@ -865,7 +865,7 @@ public class ClusterManager
                     return graphDatabaseService;
                 }
             }
-            throw new IllegalStateException( "No slave found in cluster " + name + printState( this ) );
+            throw new IllegalStateException( "No slave found in cluster " + name + stateToString( this ) );
         }
 
         /**
@@ -880,7 +880,7 @@ public class ClusterManager
             if ( db == null )
             {
                 throw new IllegalStateException( "Db " + serverId + " not found at the moment in " + name +
-                                                 printState( this ) );
+                                                 stateToString( this ) );
             }
             return db;
         }
@@ -914,7 +914,7 @@ public class ClusterManager
                 }
             }
             throw new IllegalArgumentException( "Db " + db + " not a member of this cluster " + name +
-                                                printState( this ) );
+                                                stateToString( this ) );
         }
 
         /**
@@ -1086,7 +1086,7 @@ public class ClusterManager
                     // Ignore
                 }
             }
-            String state = printState( this );
+            String state = stateToString( this );
             throw new IllegalStateException( format(
                     "Awaited condition never met, waited %s secondes for %s:%n%s", maxSeconds, predicate, state ) );
         }
@@ -1118,7 +1118,18 @@ public class ClusterManager
             {
                 if ( !exceptSet.contains( db ) )
                 {
-                    db.getDependencyResolver().resolveDependency( UpdatePullerClient.class ).pullUpdates();
+                    UpdatePullerClient client = db.getDependencyResolver().resolveDependency( UpdatePullerClient.class );
+                    try
+                    {
+                        if ( db.isAvailable( 60000 ) ) // wait for 1 min for db to become available
+                        {
+                            client.pullUpdates();
+                        }
+                    }
+                    catch ( Exception e )
+                    {
+                        throw new IllegalStateException( stateToString( this ), e );
+                    }
                 }
             }
         }
