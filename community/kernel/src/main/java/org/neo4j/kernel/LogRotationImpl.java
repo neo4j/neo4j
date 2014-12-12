@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.transaction.log.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.LogRotationControl;
 
 /**
- * TODO
+ * Default implementation of the LogRotation interface.
  */
 public class LogRotationImpl
     implements LogRotation
