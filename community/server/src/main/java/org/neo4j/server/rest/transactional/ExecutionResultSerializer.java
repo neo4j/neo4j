@@ -249,7 +249,7 @@ public class ExecutionResultSerializer
 
     private State currentState = State.EMPTY;
 
-    private static final JsonFactory JSON_FACTORY = new JsonFactory( new Neo4jJsonCodec() );
+    private static final JsonFactory JSON_FACTORY = new JsonFactory( new Neo4jJsonCodec() ).disable( JsonGenerator.Feature.FLUSH_PASSED_TO_STREAM );
     private final JsonGenerator out;
     private final URI baseUri;
     private final StringLogger log;

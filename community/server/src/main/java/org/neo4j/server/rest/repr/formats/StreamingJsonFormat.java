@@ -77,7 +77,7 @@ public class StreamingJsonFormat extends RepresentationFormat implements Streami
                 return gen;
             }
         };
-        factory.enable( JsonGenerator.Feature.FLUSH_PASSED_TO_STREAM );
+        factory.disable( JsonGenerator.Feature.FLUSH_PASSED_TO_STREAM );
         return factory;
     }
 
