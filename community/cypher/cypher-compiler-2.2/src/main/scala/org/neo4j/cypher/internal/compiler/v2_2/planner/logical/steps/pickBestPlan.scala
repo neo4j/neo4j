@@ -41,7 +41,6 @@ object pickBestPlan extends CandidateSelector {
 
         println("Best is:")
         println(sortedPlans.head.toString)
-        println()
       }
 
       sortedPlans.headOption

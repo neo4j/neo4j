@@ -41,8 +41,7 @@ case class Planner(monitors: Monitors,
                    tokenResolver: SimpleTokenResolver = new SimpleTokenResolver(),
                    maybeExecutionPlanBuilder: Option[PipeExecutionPlanBuilder] = None,
                    strategy: PlanningStrategy = new QueryPlanningStrategy,
-                   queryGraphSolver: QueryGraphSolver =
-                   new CompositeQueryGraphSolver(
+                   queryGraphSolver: QueryGraphSolver = new CompositeQueryGraphSolver(
                      new GreedyQueryGraphSolver(expandsOrJoins),
                      new GreedyQueryGraphSolver(expandsOnly)
                    )) extends PipeBuilder {

@@ -26,6 +26,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, Lo
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryGraph, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 
+import scala.language.implicitConversions
+
 object Metrics {
 
   object QueryGraphCardinalityInput {

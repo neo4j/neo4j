@@ -24,6 +24,11 @@ import org.neo4j.graphdb._
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
+
+  test("apa") {
+    executeWithNewPlanner("match a-[r1]->b-[r2]->c-[r3]->d-[r4]->e-[r5]->f-[r6]->g-[r7]->f-[r8]->h return *")
+  }
+
   test("should be able to use multiple MATCH clauses to do a cartesian product") {
     createNode("value" -> 1)
     createNode("value" -> 2)

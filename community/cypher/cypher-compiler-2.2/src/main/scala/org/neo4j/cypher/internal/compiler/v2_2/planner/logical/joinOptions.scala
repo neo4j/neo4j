@@ -20,15 +20,28 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{LogicalPlan, ShortestPathPattern}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.ExhaustiveQueryGraphSolver._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 
-object findShortestPaths extends CandidateGenerator[PlanTable] {
-  def apply(input: PlanTable, qg: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] =
-    qg.shortestPathPatterns.flatMap { (shortestPath: ShortestPathPattern) =>
-      input.plans.collect {
-        case plan if shortestPath.isFindableFrom(plan.availableSymbols) =>
-          planShortestPaths(plan, shortestPath)
-      }
-    }.toSeq
+case object joinOptions extends PlanProducer {
+
+  def apply(qg: QueryGraph, cache: collection.Map[QueryGraph, LogicalPlan]): Seq[LogicalPlan] = {
+    (1 to qg.size - 1) flatMap {
+      size =>
+        qg.combinations(size).flatMap {
+          subQg: QueryGraph =>
+            val otherSideQG: QueryGraph = qg -- subQg
+            val overlappingNodeIds = subQg.patternNodes intersect otherSideQG.patternNodes
+
+            if (overlappingNodeIds.isEmpty)
+              None
+            else {
+              val lhs = cache(subQg)
+              val rhs = cache(otherSideQG)
+              Some(planNodeHashJoin(overlappingNodeIds, lhs, rhs))
+            }
+        }
+    }
+  }
 }

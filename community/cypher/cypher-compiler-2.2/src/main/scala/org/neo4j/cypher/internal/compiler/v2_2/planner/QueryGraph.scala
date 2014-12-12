@@ -34,9 +34,9 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
                       hints: Set[Hint] = Set.empty,
                       shortestPathPatterns: Set[ShortestPathPattern] = Set.empty)
   extends PageDocFormatting { // with ToPrettyString[QueryGraph] {
-
 //  def toDefaultPrettyString(formatter: DocFormatter) =
 //    toPrettyString(formatter)(InternalDocHandler.docGen)
+  def size = patternRelationships.size
 
   def addPatternNodes(nodes: IdName*): QueryGraph = copy(patternNodes = patternNodes ++ nodes)
 
