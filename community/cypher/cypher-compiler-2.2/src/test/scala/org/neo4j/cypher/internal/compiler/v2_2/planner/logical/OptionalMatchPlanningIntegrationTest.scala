@@ -27,7 +27,7 @@ import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{PlannerQuery, LogicalPlanningTestSupport2}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_2.{InputPosition, ast}
+import org.neo4j.cypher.internal.compiler.v2_2.{InputPosition}
 
 class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -89,7 +89,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
                   )
                 )
       ), _) =>
-        val predicate: ast.Expression = ast.Equals(ast.Identifier("a1")_, ast.Identifier("a1$$$_")_)_
+        val predicate: Expression = Equals(Identifier("a1")_, Identifier("a1$$$_")_)_
         predicates should equal(Seq(predicate))
     }
   }
@@ -110,10 +110,10 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       ), _) =>
         args should equal(Set(IdName("r"), IdName("a1")))
 
-        val predicate1: ast.Expression = ast.Equals(ast.Identifier("a2")_, ast.Identifier("a2$$$_")_)_
+        val predicate1: Expression = Equals(Identifier("a2")_, Identifier("a2$$$_")_)_
         predicates1 should equal(Seq(predicate1))
 
-        val predicate2: ast.Expression = ast.Equals(ast.Identifier("a1")_, ast.Identifier("a2")_)_
+        val predicate2: Expression = Equals(Identifier("a1")_, Identifier("a2")_)_
         predicates2 should equal(Seq(predicate2))
     }
   }
@@ -132,7 +132,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
           )
         )
       ), _) =>
-        val predicate: ast.Expression = ast.Equals(ast.Identifier("a2")_, ast.Identifier("a2$$$_")_)_
+        val predicate: Expression = Equals(Identifier("a2")_, Identifier("a2$$$_")_)_
         predicates should equal(Seq(predicate))
     }
   }
@@ -144,8 +144,8 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
         OptionalExpand(
           OptionalExpand(
             AllNodesScan(IdName("a"), Set.empty)(PlannerQuery.empty),
-            IdName("a"), Direction.OUTGOING, List(ast.RelTypeName("R1") _), IdName("x1"), IdName("  UNNAMED27"), ExpandAll, Seq.empty)(PlannerQuery.empty),
-          IdName("a"), Direction.OUTGOING, List(ast.RelTypeName("R2") _), IdName("x2"), IdName("  UNNAMED58"), ExpandAll, Seq.empty)(PlannerQuery.empty),
+            IdName("a"), Direction.OUTGOING, List(RelTypeName("R1") _), IdName("x1"), IdName("  UNNAMED27"), ExpandAll, Seq.empty)(PlannerQuery.empty),
+          IdName("a"), Direction.OUTGOING, List(RelTypeName("R2") _), IdName("x2"), IdName("  UNNAMED58"), ExpandAll, Seq.empty)(PlannerQuery.empty),
         Map("a" -> ident("a"), "x1" -> ident("x1"), "x2" -> ident("x2"))
       )(PlannerQuery.empty)
     )

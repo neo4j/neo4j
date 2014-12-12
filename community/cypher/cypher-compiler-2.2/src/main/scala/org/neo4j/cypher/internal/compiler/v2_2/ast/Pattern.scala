@@ -193,11 +193,16 @@ case class ShortestPaths(element: PatternElement, single: Boolean)(val position:
 }
 
 sealed abstract class PatternElement extends ASTNode with ASTParticle {
+  def identifier: Option[Identifier]
   def declareIdentifiers(ctx: SemanticContext): SemanticCheck
   def semanticCheck(ctx: SemanticContext): SemanticCheck
 }
 
-case class RelationshipChain(element: PatternElement, relationship: RelationshipPattern, rightNode: NodePattern)(val position: InputPosition) extends PatternElement {
+case class RelationshipChain(element: PatternElement, relationship: RelationshipPattern, rightNode: NodePattern)(val position: InputPosition)
+  extends PatternElement {
+
+  def identifier: Option[Identifier] = relationship.identifier
+
   def declareIdentifiers(ctx: SemanticContext): SemanticCheck =
     element.declareIdentifiers(ctx) chain
     relationship.declareIdentifiers(ctx) chain

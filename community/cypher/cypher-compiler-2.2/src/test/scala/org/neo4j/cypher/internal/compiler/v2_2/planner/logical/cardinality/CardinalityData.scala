@@ -186,6 +186,14 @@ trait ABCDCardinalityData {
 
     def forQuery(testUnit: CardinalityTestHelper#TestUnit) =
       testUnit.
+        withNodeName("a").
+        withNodeName("b").
+        withNodeName("c").
+        withNodeName("d").
+        withRelationshipName("r1").
+        withRelationshipName("r2").
+        withRelationshipName("r3").
+        withRelationshipName("r4").
         withGraphNodes(N).
         withLabel('A, A).
         withLabel('B, B).

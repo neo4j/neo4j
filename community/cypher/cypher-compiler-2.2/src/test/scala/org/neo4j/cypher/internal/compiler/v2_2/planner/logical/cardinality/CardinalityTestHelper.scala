@@ -50,10 +50,16 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
                       knownIndexSelectivity: Map[(String, String), Double] = Map.empty,
                       knownProperties: Set[String] = Set.empty,
                       knownRelationshipCardinality: Map[(String, String, String), Double] = Map.empty,
+                      knownNodeNames: Set[String] = Set.empty,
+                      knownRelNames: Set[String] = Set.empty,
                       queryGraphArgumentIds: Set[IdName] = Set.empty,
                       inboundCardinality: Cardinality = Cardinality(1)) {
 
     self =>
+
+    def withNodeName(nodeName: String) = copy(knownNodeNames = knownNodeNames + nodeName)
+
+    def withRelationshipName(relName: String) = copy(knownRelNames = knownRelNames + relName)
 
     def withInboundCardinality(d: Double) = copy(inboundCardinality = Cardinality(d))
 
@@ -171,9 +177,13 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
         }
       }
 
-      val semanticTable: SemanticTable = new SemanticTable() {
-        override def isRelationship(expr: Identifier): Boolean = true
+      val semanticTable: SemanticTable = {
+        val empty = SemanticTable()
+        val withNodes = knownNodeNames.foldLeft(empty) { case (table, node) => table.addNode(Identifier(node)(pos)) }
+        val withNodesAndRels = knownRelNames.foldLeft(withNodes) { case (table, rel) => table.addRelationship(Identifier(rel)(pos)) }
+        withNodesAndRels
       }
+
       fill(semanticTable.resolvedLabelIds, labelIds, LabelId.apply)
       fill(semanticTable.resolvedPropertyKeyNames, propertyIds, PropertyKeyId.apply)
       fill(semanticTable.resolvedRelTypeNames, relTypeIds, RelTypeId.apply)

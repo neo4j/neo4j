@@ -100,8 +100,7 @@ object Planner {
       nameUpdatingClauses,
       projectNamedPaths,
       projectFreshSortExpressions,
-      inlineProjections,
-      namePatternPredicates
+      inlineProjections
     )
 
     statement.endoRewrite(rewriter)

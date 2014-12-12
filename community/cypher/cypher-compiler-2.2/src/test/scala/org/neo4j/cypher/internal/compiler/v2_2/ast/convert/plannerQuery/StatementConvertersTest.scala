@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.StatementConverters._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{namePatternPredicatePatternElements, nameAllPatternElements, normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport, _}
-import org.neo4j.cypher.internal.compiler.v2_2.{SemanticCheckMonitor, SemanticChecker, inSequence}
 import org.neo4j.graphdb.Direction
 
 class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -51,8 +51,17 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     val semanticChecker = new SemanticChecker(mock[SemanticCheckMonitor])
     val semanticState = semanticChecker.check(query, cleanedStatement)
-    val (rewrittenAst: Statement, _) = Planner.rewriteStatement(astRewriter.rewrite(query, cleanedStatement, semanticState)._1, semanticState.scopeTree, SemanticTable(types = semanticState.typeTable))
-    rewrittenAst.asInstanceOf[Query].asUnionQuery
+    val (rewrittenAst: Statement, rewrittenTable: SemanticTable) = Planner.rewriteStatement(astRewriter.rewrite(query, cleanedStatement, semanticState)._1, semanticState.scopeTree, SemanticTable(types = semanticState.typeTable))
+
+    // This fakes pattern expression naming for testing purposes
+    // In the actual code path, this renaming happens as part of planning
+    //
+    // cf. QueryPlanningStrategy
+    //
+
+    val namedAst = rewrittenAst.endoRewrite(namePatternPredicatePatternElements)
+    val unionQuery = namedAst.asInstanceOf[Query].asUnionQuery
+    unionQuery
   }
 
   test("RETURN 42") {

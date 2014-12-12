@@ -33,14 +33,22 @@ class SemanticTable(
     val resolvedLabelIds: mutable.Map[String, LabelId] = new mutable.HashMap[String, LabelId],
     val resolvedPropertyKeyNames: mutable.Map[String, PropertyKeyId] = new mutable.HashMap[String, PropertyKeyId],
     val resolvedRelTypeNames: mutable.Map[String, RelTypeId] = new mutable.HashMap[String, RelTypeId]
-  ) {
+  ) extends Cloneable {
 
   def isNode(expr: Identifier) = types(expr).specified == symbols.CTNode.invariant
 
   def isRelationship(expr: Identifier) = types(expr).specified == symbols.CTRelationship.invariant
 
+  def addNode(expr: Identifier) =
+    copy(types = types.updated(expr, ExpressionTypeInfo(symbols.CTNode.invariant, None)))
+
+  def addRelationship(expr: Identifier) =
+    copy(types = types.updated(expr, ExpressionTypeInfo(symbols.CTRelationship.invariant, None)))
+
   def replaceKeys(replacements: (Identifier, Identifier)*): SemanticTable =
     copy(types = types.replaceKeys(replacements: _*))
+
+  override def clone() = copy()
 
   def copy(
     types: ASTAnnotationMap[Expression, ExpressionTypeInfo] = types,
@@ -48,5 +56,5 @@ class SemanticTable(
     resolvedPropertyKeyNames: mutable.Map[String, PropertyKeyId] = resolvedPropertyKeyNames,
     resolvedRelTypeNames: mutable.Map[String, RelTypeId] = resolvedRelTypeNames
   ) =
-    new SemanticTable(types, resolvedLabelIds, resolvedPropertyKeyNames, resolvedRelTypeNames)
+    new SemanticTable(types, resolvedLabelIds.clone(), resolvedPropertyKeyNames.clone(), resolvedRelTypeNames.clone())
 }
