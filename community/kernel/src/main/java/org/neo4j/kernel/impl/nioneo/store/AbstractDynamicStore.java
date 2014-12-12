@@ -557,7 +557,8 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
                 ByteBuffer byteBuffer = ByteBuffer.wrap( new byte[1] );
                 LinkedList<Long> freeIdList = new LinkedList<>();
 
-                for ( long i = 1; i * getBlockSize() < fileChannel.size(); i++ )
+                long fileSize = fileChannel.size();
+                for ( long i = 1; i * getBlockSize() < fileSize; i++ )
                 {
                     fileChannel.position( i * getBlockSize() );
                     byteBuffer.clear();
