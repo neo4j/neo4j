@@ -23,9 +23,11 @@ import java.io.File;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -85,8 +87,8 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
     }
 
     @Override
-    protected boolean reserveIdsDuringRebuild()
+    protected boolean isRecordReserved( PageCursor cursor )
     {
-        return true;
+        return cursor.getInt() == Record.RESERVED.intValue();
     }
 }

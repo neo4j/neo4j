@@ -42,6 +42,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.id.IdSequence;
+import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -368,10 +369,10 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
             setHighId( foundHighId );
             if ( !fastRebuild )
             {
-                try ( PageCursor cursor = storeFile.io( 0, PF_SHARED_LOCK | PF_READ_AHEAD ) )
+                try ( PageCursor cursor = storeFile.io( 0, PagedFile.PF_EXCLUSIVE_LOCK | PF_READ_AHEAD ) )
                 {
                     defraggedCount = rebuildIdGeneratorSlow( cursor, recordsPerPage(), blockSize,
-                            reserveIdsDuringRebuild(), foundHighId );
+                            foundHighId );
                 }
             }
         }
@@ -394,7 +395,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     }
 
     private long rebuildIdGeneratorSlow( PageCursor cursor, int recordsPerPage, int blockSize,
-                                         boolean justReserveIds, long foundHighId )
+                                         long foundHighId )
             throws IOException
     {
         long defragCount = 0;
@@ -413,7 +414,8 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
                 done = false;
                 for ( int i = startingId; i < recordsPerPage; i++ )
                 {
-                    cursor.setOffset( i * blockSize );
+                    int offset = i * blockSize;
+                    cursor.setOffset( offset );
                     long recordId = idPageOffset + i;
                     if ( recordId >= foundHighId )
                     {   // We don't have to go further than the high id we found earlier
@@ -423,8 +425,14 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
 
                     if ( !isRecordInUse( cursor ) )
                     {
-                        freedBatch[defragged] = recordId;
-                        defragged++;
+                        freedBatch[defragged++] = recordId;
+                    }
+                    else if ( isRecordReserved( cursor ) )
+                    {
+                        cursor.setOffset( offset );
+                        cursor.putByte( Record.NOT_IN_USE.byteValue() );
+                        cursor.putInt( 0 );
+                        freedBatch[defragged++] = recordId;
                     }
                 }
             }
@@ -432,22 +440,12 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
 
             for ( int i = 0; i < defragged; i++ )
             {
-                long freedId = freedBatch[i];
-                if ( !justReserveIds )
-                {
-                    freeId( freedId );
-                }
-                // TODO else although in previous versions of neo4j we put a RESERVED byte here
+                freeId( freedBatch[i] );
             }
             defragCount += defragged;
             startingId = 0;
         }
         return defragCount;
-    }
-
-    protected boolean reserveIdsDuringRebuild()
-    {
-        return false;
     }
 
     protected boolean doFastIdGeneratorRebuild()
@@ -650,6 +648,11 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     protected boolean isRecordInUse( PageCursor cursor )
     {
         return isInUse( cursor.getByte() );
+    }
+
+    protected boolean isRecordReserved( PageCursor cursor )
+    {
+        return false;
     }
 
     protected void createIdGenerator( File fileName )
