@@ -467,7 +467,7 @@ public class SchemaAcceptanceTest
         }
         catch ( ConstraintViolationException e )
         {
-            assertEquals( "Label 'MY_LABEL' and property 'my_property_key' have a unique constraint defined on them.",
+            assertEquals( "Label 'MY_LABEL' and property 'my_property_key' already have a unique constraint defined on them.",
                           e.getMessage() );
         }
     }
