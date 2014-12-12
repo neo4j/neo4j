@@ -19,24 +19,31 @@
  */
 package org.neo4j.kernel.ha;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.kernel.configuration.Config.parseLongWithUnit;
-import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
-
 import org.junit.Test;
+
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.TransactionTemplate;
 import org.neo4j.test.AbstractClusterTest;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.kernel.configuration.Config.parseLongWithUnit;
+import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 
 public class BiggerThanLogTxIT extends AbstractClusterTest
 {
     private static final String ROTATION_THRESHOLD = "1M";
+
+    private TransactionTemplate template = new TransactionTemplate().retries( 10 ).backoff( 3, TimeUnit.SECONDS );
 
     @Test
     public void shouldHandleSlaveCommittingLargeTx() throws Exception
@@ -44,18 +51,24 @@ public class BiggerThanLogTxIT extends AbstractClusterTest
         // GIVEN
         cluster.await( allSeesAllAsAvailable() );
         GraphDatabaseService slave = cluster.getAnySlave();
-        int initialNodeCount = nodeCount( slave );;
+        int initialNodeCount = nodeCount( slave );
 
         // WHEN
+        cluster.info( "Before commit large" );
         int nodeCount = commitLargeTx( slave );
+        cluster.info( "Before sync" );
         cluster.sync();
+        cluster.info( "After sync" );
 
         // THEN all should have that tx
-        assertAllMembersHasNodeCount( initialNodeCount+nodeCount );
+        assertAllMembersHasNodeCount( initialNodeCount + nodeCount );
         // and if then master commits something, they should all get that too
+        cluster.info( "Before commit small" );
         commitSmallTx( cluster.getMaster() );
+        cluster.info( "Before sync small" );
         cluster.sync();
-        assertAllMembersHasNodeCount( initialNodeCount+nodeCount+1 );
+        cluster.info( "After sync small" );
+        assertAllMembersHasNodeCount( initialNodeCount + nodeCount + 1 );
     }
 
     @Test
@@ -71,11 +84,11 @@ public class BiggerThanLogTxIT extends AbstractClusterTest
         cluster.sync();
 
         // THEN all should have that tx
-        assertAllMembersHasNodeCount( initialNodeCount+nodeCount );
+        assertAllMembersHasNodeCount( initialNodeCount + nodeCount );
         // and if then master commits something, they should all get that too
         commitSmallTx( cluster.getMaster() );
         cluster.sync();
-        assertAllMembersHasNodeCount( initialNodeCount+nodeCount+1 );
+        assertAllMembersHasNodeCount( initialNodeCount + nodeCount + 1 );
     }
 
     @Override
@@ -116,27 +129,26 @@ public class BiggerThanLogTxIT extends AbstractClusterTest
         }
     }
 
-    private int commitLargeTx( GraphDatabaseService db )
+    private int commitLargeTx( final GraphDatabaseService db )
     {
-        // We're not actually asserting that this transaction produces log data bigger than the threshold.
-        long rotationThreshold = parseLongWithUnit( ROTATION_THRESHOLD );
-        int nodeCount = 100;
-        byte[] arrayProperty = new byte[(int) (rotationThreshold/nodeCount)];
-        Transaction tx = db.beginTx();
-        try
+        return template.with( db ).execute( new Function<Transaction,Integer>()
         {
-            for ( int i = 0; i < nodeCount; i++ )
+            @Override
+            public Integer apply( Transaction transaction ) throws RuntimeException
             {
-                Node node = db.createNode();
-                node.setProperty( "name", "big" + i );
-                node.setProperty( "data", arrayProperty );
+                // We're not actually asserting that this transaction produces log data
+                // bigger than the threshold.
+                long rotationThreshold = parseLongWithUnit( ROTATION_THRESHOLD );
+                int nodeCount = 100;
+                byte[] arrayProperty = new byte[(int) (rotationThreshold / nodeCount)];
+                for ( int i = 0; i < nodeCount; i++ )
+                {
+                    Node node = db.createNode();
+                    node.setProperty( "name", "big" + i );
+                    node.setProperty( "data", arrayProperty );
+                }
+                return nodeCount;
             }
-            tx.success();
-            return nodeCount;
-        }
-        finally
-        {
-            tx.finish();
-        }
+        } );
     }
 }
