@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_0.symbols
 object FloatType {
   val instance = new FloatType() {
     val parentType = CTNumber
-    override lazy val coercibleTo: Set[CypherType] = Set(CTBoolean)
     override val toString = "Float"
   }
 }
