@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
@@ -53,13 +54,15 @@ public class RecoveryVisitorTest
     private final TransactionRepresentationStoreApplier storeApplier =
             mock( TransactionRepresentationStoreApplier.class );
 
-    private final LogEntryStart startEntry = null;
+    private final LogEntryStart startEntry = new LogEntryStart( 1, 2, 123, 456, "tx".getBytes(),
+            new LogPosition( 1, 198 ) );
     private final LogEntryCommit commitEntry = new OnePhaseCommit( 42, 0 );
 
     @Test
     public void shouldNotSetLastCommittedAndClosedTransactionIdWhenNoRecoveryHappened() throws IOException
     {
-        final RecoveryVisitor visitor = new RecoveryVisitor( store, storeApplier, mock( RecoveryVisitor.Monitor.class ) );
+        final RecoveryVisitor visitor =
+                new RecoveryVisitor( store, storeApplier, mock( RecoveryVisitor.Monitor.class ) );
 
         visitor.close();
 

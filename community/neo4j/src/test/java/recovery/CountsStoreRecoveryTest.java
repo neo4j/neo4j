@@ -38,6 +38,8 @@ import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.kernel.impl.transaction.log.LogRotation;
+import org.neo4j.kernel.impl.transaction.log.LogRotationControl;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.ReflectionUtil;
@@ -100,10 +102,7 @@ public class CountsStoreRecoveryTest
     private void rotateLog() throws IOException
     {
         ((GraphDatabaseAPI) db).getDependencyResolver()
-                               .resolveDependency( NeoStoreDataSource.class )
-                               .getDependencyResolver()
-                               .resolveDependency( PhysicalLogFile.class )
-                               .forceRotate();
+                               .resolveDependency( LogRotation.class ).rotateLogFile();
     }
 
     private void crashAndRestart()
