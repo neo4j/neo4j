@@ -19,33 +19,31 @@
  */
 package recovery;
 
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.log.LogRotation;
-import org.neo4j.kernel.impl.transaction.log.LogRotationControl;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.ReflectionUtil;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.test.EphemeralFileSystemRule.shutdownDb;
 
@@ -124,7 +122,7 @@ public class CountsStoreRecoveryTest
     @Rule
     public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     private GraphDatabaseService db;
-    private InMemoryIndexProvider indexProvider = new InMemoryIndexProvider( 100 );
+    private final InMemoryIndexProvider indexProvider = new InMemoryIndexProvider( 100 );
 
     @Before
     public void before()
