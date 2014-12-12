@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.Recovery;
 import org.neo4j.kernel.impl.transaction.state.RecoveryVisitor;
 import org.neo4j.kernel.impl.util.StringLogger;

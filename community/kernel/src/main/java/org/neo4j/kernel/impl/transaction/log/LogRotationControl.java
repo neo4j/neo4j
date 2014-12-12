@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import java.util.Collection;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.graphdb.index.IndexImplementation;
@@ -29,10 +28,10 @@ import org.neo4j.kernel.impl.store.NeoStore;
 
 public class LogRotationControl
 {
-    private NeoStore neoStore;
-    private IndexingService indexingService;
-    private LabelScanStore labelScanStore;
-    private Iterable<IndexImplementation> indexProviders;
+    private final NeoStore neoStore;
+    private final IndexingService indexingService;
+    private final LabelScanStore labelScanStore;
+    private final Iterable<IndexImplementation> indexProviders;
 
     public LogRotationControl( NeoStore neoStore, IndexingService indexingService,
             LabelScanStore labelScanStore,

@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.log.pruning;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.log.LogRotation;
 
 /**

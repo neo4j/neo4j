@@ -63,7 +63,7 @@ public class RecoveryTest
     public final @Rule
     TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
     private final LogVersionRepository logVersionRepository = new DeadSimpleLogVersionRepository( 1L );
-    private final TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 5L );
+    private final TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 5L, 0 );
 
     @Test
     public void shouldRecoverExistingData() throws Exception
