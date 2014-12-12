@@ -19,21 +19,22 @@
  */
 package org.neo4j.consistency;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.mockito.ArgumentCaptor;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Properties;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+
 import org.neo4j.consistency.checking.full.TaskExecutionOrder;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.kernel.Recovery;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.recovery.StoreRecoverer;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
@@ -58,6 +59,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.test.EphemeralFileSystemRule.shutdownDb;
 
@@ -177,7 +179,7 @@ public class ConsistencyCheckToolTest
         createGraphDbAndKillIt();
 
         Monitors monitors = new Monitors();
-        PhysicalLogFile.Monitor listener = mock( PhysicalLogFile.Monitor.class );
+        Recovery.Monitor listener = mock( Recovery.Monitor.class );
         monitors.addMonitorListener( listener );
 
         ConsistencyCheckTool consistencyCheckTool = newConsistencyCheckToolWith( monitors,

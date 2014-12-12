@@ -22,12 +22,15 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.Recovery;
 import org.neo4j.kernel.impl.transaction.state.RecoveryVisitor;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 import static java.lang.String.format;
 
-public class LoggingLogFileMonitor implements PhysicalLogFile.Monitor, RecoveryVisitor.Monitor
+public class LoggingLogFileMonitor implements PhysicalLogFile.Monitor, RecoveryVisitor.Monitor, LogRotation.Monitor,
+        Recovery.Monitor
 {
     private int numberOfRecoveredTransactions;
     private long firstTransactionRecovered, lastTransactionRecovered;
@@ -45,14 +48,8 @@ public class LoggingLogFileMonitor implements PhysicalLogFile.Monitor, RecoveryV
     }
 
     @Override
-    public void transactionRecovered( long txId )
+    public void logRecovered()
     {
-        if ( numberOfRecoveredTransactions == 0 )
-        {
-            firstTransactionRecovered = txId;
-        }
-        lastTransactionRecovered = txId;
-        numberOfRecoveredTransactions++;
     }
 
     @Override
@@ -67,6 +64,22 @@ public class LoggingLogFileMonitor implements PhysicalLogFile.Monitor, RecoveryV
         {
             logger.info( "No recovery required" );
         }
+    }
+
+    @Override
+    public void rotatedLog()
+    {
+    }
+
+    @Override
+    public void transactionRecovered( long txId )
+    {
+        if ( numberOfRecoveredTransactions == 0 )
+        {
+            firstTransactionRecovered = txId;
+        }
+        lastTransactionRecovered = txId;
+        numberOfRecoveredTransactions++;
     }
 
     @Override

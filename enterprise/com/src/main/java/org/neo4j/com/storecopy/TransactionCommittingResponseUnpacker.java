@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
+import org.neo4j.kernel.impl.transaction.log.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -92,6 +93,7 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
     private TransactionIdStore transactionIdStore;
     private TransactionObligationFulfiller obligationFulfiller;
     private LogFile logFile;
+    private LogRotation logRotation;
     private volatile boolean stopped = false;
     private KernelHealth kernelHealth;
 
@@ -152,11 +154,7 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
         synchronized ( logFile )
         {
             // Check rotation explicitly, since the version of append that we're calling isn't doing that.
-            if ( logFile.checkRotation() )
-            {
-                // TODO do pruning in another dedicated thread?
-                logFile.prune();
-            }
+            logRotation.rotateLogIfNeeded();
 
             try
             {
@@ -197,6 +195,7 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
         this.transactionIdStore = resolver.resolveDependency( TransactionIdStore.class );
         this.obligationFulfiller = resolveTransactionObligationFulfiller( resolver );
         this.logFile = resolver.resolveDependency( LogFile.class );
+        this.logRotation = resolver.resolveDependency( LogRotation.class );
         this.kernelHealth = resolver.resolveDependency( KernelHealth.class );
         this.stopped = false;
     }

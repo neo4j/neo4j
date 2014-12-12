@@ -25,11 +25,11 @@ import org.neo4j.kernel.impl.util.IdOrderingQueue;
 
 public class PhysicalTransactionAppender extends AbstractPhysicalTransactionAppender
 {
-    public PhysicalTransactionAppender( LogFile logFile,
+    public PhysicalTransactionAppender( LogFile logFile, LogRotation logRotation,
             TransactionMetadataCache transactionMetadataCache, TransactionIdStore transactionIdStore,
             IdOrderingQueue legacyIndexTransactionOrdering )
     {
-        super( logFile, transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering );
+        super( logFile, logRotation, transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering );
     }
 
     @Override

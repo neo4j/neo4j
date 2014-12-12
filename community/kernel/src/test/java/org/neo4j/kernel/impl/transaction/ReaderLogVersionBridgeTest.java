@@ -66,7 +66,8 @@ public class ReaderLogVersionBridgeTest
         when( channel.getVersion() ).thenReturn( version );
         when( channel.getLogFormatVersion() ).thenReturn( CURRENT_LOG_VERSION );
         when( logFiles.getLogFileForVersion( version + 1 ) ).thenReturn( file );
-        when( fs.open( file, "r" ) ).thenReturn( newStoreChannel );
+        when( fs.fileExists( file ) ).thenReturn( true );
+        when( fs.open( file, "rw" ) ).thenReturn( newStoreChannel );
         when( newStoreChannel.read( Matchers.<ByteBuffer>any() ) ).then( new Answer<Integer>()
         {
             @Override
@@ -97,7 +98,7 @@ public class ReaderLogVersionBridgeTest
 
         when( channel.getVersion() ).thenReturn( version );
         when( logFiles.getLogFileForVersion( version + 1 ) ).thenReturn( file );
-        when( fs.open( file, "r" ) ).thenThrow( new FileNotFoundException() );
+        when( fs.open( file, "rw" ) ).thenThrow( new FileNotFoundException() );
 
         // when
         final LogVersionedStoreChannel result = bridge.next( channel );

@@ -19,22 +19,47 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-public interface LogRotationControl
+import java.util.Collection;
+import java.util.concurrent.locks.LockSupport;
+
+import org.neo4j.graphdb.index.IndexImplementation;
+import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.store.NeoStore;
+
+public class LogRotationControl
 {
-    void awaitAllTransactionsClosed();
+    private NeoStore neoStore;
+    private IndexingService indexingService;
+    private LabelScanStore labelScanStore;
+    private Iterable<IndexImplementation> indexProviders;
 
-    void forceEverything();
-
-    public static final LogRotationControl NO_ROTATION_CONTROL = new LogRotationControl()
+    public LogRotationControl( NeoStore neoStore, IndexingService indexingService,
+            LabelScanStore labelScanStore,
+            Iterable<IndexImplementation> indexProviders )
     {
-        @Override
-        public void forceEverything()
-        {
-        }
+        this.neoStore = neoStore;
+        this.indexingService = indexingService;
+        this.labelScanStore = labelScanStore;
+        this.indexProviders = indexProviders;
+    }
 
-        @Override
-        public void awaitAllTransactionsClosed()
+    public void awaitAllTransactionsClosed()
+    {
+        while ( !neoStore.closedTransactionIdIsOnParWithCommittedTransactionId() )
         {
+            LockSupport.parkNanos( 1_000_000 ); // 1 ms
         }
-    };
+    }
+
+    public void forceEverything()
+    {
+        indexingService.flushAll();
+        labelScanStore.force();
+        for ( IndexImplementation index : indexProviders )
+        {
+            index.force();
+        }
+        neoStore.flush();
+    }
 }

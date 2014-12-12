@@ -22,15 +22,15 @@ package org.neo4j.kernel.impl.transaction;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-
+import java.util.Iterator;
+import java.util.List;
 import javax.transaction.xa.Xid;
 
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
-import org.neo4j.graphdb.ResourceIterable;
-import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.command.Command;
@@ -57,7 +57,7 @@ import static org.neo4j.kernel.impl.util.Cursors.iterable;
  */
 public class LogMatchers
 {
-    public static ResourceIterable<LogEntry> logEntries( FileSystemAbstraction fileSystem, String logPath ) throws IOException
+    public static List<LogEntry> logEntries( FileSystemAbstraction fileSystem, String logPath ) throws IOException
     {
         StoreChannel fileChannel = fileSystem.open( new File( logPath ), "r" );
         ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE + Xid.MAXBQUALSIZE * 10 );
@@ -72,22 +72,22 @@ public class LogMatchers
                 new PhysicalLogVersionedStoreChannel( fileChannel, header.logVersion, header.logFormatVersion );
         ReadableVersionableLogChannel logChannel =
                 new ReadAheadLogChannel( versionedStoreChannel, NO_MORE_CHANNELS, 4096 );
-        return iterable( deserializer.logEntries( logChannel ) );
+        return Iterables.toList( iterable( deserializer.logEntries( logChannel ) ) );
     }
 
-    public static ResourceIterable<LogEntry> logEntries( FileSystemAbstraction fileSystem, File file ) throws IOException
+    public static List<LogEntry> logEntries( FileSystemAbstraction fileSystem, File file ) throws IOException
     {
         return logEntries( fileSystem, file.getPath() );
     }
 
-    public static Matcher<ResourceIterable<LogEntry>> containsExactly( final Matcher<? extends LogEntry>... matchers )
+    public static Matcher<List<LogEntry>> containsExactly( final Matcher<? extends LogEntry>... matchers )
     {
-        return new TypeSafeMatcher<ResourceIterable<LogEntry>>()
+        return new TypeSafeMatcher<List<LogEntry>>()
         {
             @Override
-            public boolean matchesSafely( ResourceIterable<LogEntry> item )
+            public boolean matchesSafely( List<LogEntry> item )
             {
-                try (ResourceIterator<LogEntry> actualEntries = item.iterator())
+                Iterator<LogEntry> actualEntries = item.iterator();
                 {
                     for ( Matcher<? extends LogEntry> matcher : matchers )
                     {

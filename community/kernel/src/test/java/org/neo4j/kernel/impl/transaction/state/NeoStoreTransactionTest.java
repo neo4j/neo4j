@@ -19,14 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.mockito.Matchers;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -40,6 +32,14 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Test;
+import org.mockito.Matchers;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -108,6 +108,7 @@ import org.neo4j.test.PageCacheRule;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static java.lang.Integer.parseInt;
+
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -126,6 +127,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -1559,7 +1561,7 @@ public class NeoStoreTransactionTest
         SchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( NO_INDEX_PROVIDER );
         Logging logging = new SingleLoggingService( DEV_NULL );
         IndexingService.Monitor monitor = IndexingService.NO_MONITOR;
-        UpdateableSchemaState schemaState = new KernelSchemaStateStore( logging );
+        UpdateableSchemaState schemaState = new KernelSchemaStateStore( logging.getMessagesLog( KernelSchemaStateStore.class ) );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
         TokenNameLookup tokenNameLookup = mock( TokenNameLookup.class );
         IndexMapReference indexMapRef = new IndexMapReference();

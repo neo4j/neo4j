@@ -35,6 +35,7 @@ import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
@@ -209,7 +210,7 @@ class RebuildFromLogs
         Config tuningConfiguration = new Config( stringMap(),
                 GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
         new FullCheck( tuningConfiguration, ProgressMonitorFactory.textual( System.err ) )
-                .execute( new DirectStoreAccess( stores, dataSource.getLabelScanStore(), dataSource.getIndexProvider() ),
+                .execute( new DirectStoreAccess( stores, dataSource.getLabelScanStore(), dataSource.getDependencyResolver().resolveDependency( SchemaIndexProvider.class ) ),
                         StringLogger.SYSTEM );
     }
 

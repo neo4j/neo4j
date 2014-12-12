@@ -42,18 +42,20 @@ import static org.neo4j.kernel.impl.util.Counter.ATOMIC_LONG;
 public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements LogicalTransactionStore
 {
     private final LogFile logFile;
+    private LogRotation logRotation;
     private final TransactionMetadataCache transactionMetadataCache;
     private TransactionAppender appender;
     private final TransactionIdStore transactionIdStore;
     private final boolean batchedWrites;
     private final IdOrderingQueue legacyIndexTransactionOrdering;
 
-    public PhysicalLogicalTransactionStore( LogFile logFile,
+    public PhysicalLogicalTransactionStore( LogFile logFile, LogRotation logRotation,
             TransactionMetadataCache transactionMetadataCache,
             TransactionIdStore transactionIdStore, IdOrderingQueue legacyIndexTransactionOrdering,
             boolean batchedWrites )
     {
         this.logFile = logFile;
+        this.logRotation = logRotation;
         this.transactionMetadataCache = transactionMetadataCache;
         this.transactionIdStore = transactionIdStore;
         this.legacyIndexTransactionOrdering = legacyIndexTransactionOrdering;
@@ -61,12 +63,12 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
     }
 
     @Override
-    public void init() throws Throwable
+    public void start() throws Throwable
     {
         this.appender = batchedWrites ?
-                new BatchingPhysicalTransactionAppender( logFile, transactionMetadataCache, transactionIdStore,
+                new BatchingPhysicalTransactionAppender( logFile, logRotation, transactionMetadataCache, transactionIdStore,
                         legacyIndexTransactionOrdering, ATOMIC_LONG, DEFAULT_WAIT_STRATEGY ) :
-                new PhysicalTransactionAppender( logFile,
+                new PhysicalTransactionAppender( logFile, logRotation,
                         transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering );
     }
 

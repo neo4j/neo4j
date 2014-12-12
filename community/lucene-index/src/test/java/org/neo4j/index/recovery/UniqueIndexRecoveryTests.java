@@ -45,7 +45,8 @@ import org.neo4j.kernel.api.impl.index.LuceneLabelScanStoreExtension;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProviderFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
+import org.neo4j.kernel.impl.transaction.log.LogRotation;
+import org.neo4j.kernel.impl.transaction.log.LogRotationControl;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -246,12 +247,11 @@ public class UniqueIndexRecoveryTests
 
     private void rotateLog() throws IOException
     {
-        NeoStoreDataSource ds = db.getDependencyResolver().resolveDependency( NeoStoreDataSource.class );
-        ds.getDependencyResolver().resolveDependency( PhysicalLogFile.class ).forceRotate();
+        db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
     }
 
     private void flushAll()
     {
-        db.getDependencyResolver().resolveDependency( NeoStoreDataSource.class ).forceEverything();
+        db.getDependencyResolver().resolveDependency( LogRotationControl.class ).forceEverything();
     }
 }

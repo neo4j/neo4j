@@ -40,6 +40,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
+import org.neo4j.kernel.impl.transaction.log.LogRotationControl;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
@@ -84,6 +85,7 @@ public class OnlineBackupKernelExtension implements Lifecycle
                 StoreCopyServer copier = new StoreCopyServer(
                         transactionIdStore,
                         resolver.resolveDependency( DataSourceManager.class ).getDataSource(),
+                        resolver.resolveDependency( LogRotationControl.class ),
                         resolver.resolveDependency( FileSystemAbstraction.class ),
                         new File( graphDatabaseAPI.getStoreDir() ) );
                 LogicalTransactionStore logicalTransactionStore = resolver.resolveDependency( LogicalTransactionStore.class );

@@ -21,23 +21,19 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.InOrder;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.LogFile.LogFileVisitor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.Monitor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
@@ -46,13 +42,9 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
 
 public class PhysicalLogFileTest
 {
@@ -64,9 +56,9 @@ public class PhysicalLogFileTest
         LogRotationControl logRotationControl = mock( LogRotationControl.class );
         LifeSupport life = new LifeSupport();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
-        life.add( new PhysicalLogFile( fs, logFiles, 1000, LogPruneStrategyFactory.NO_PRUNING,
-                transactionIdStore, logVersionRepository, mock( Monitor.class ), logRotationControl,
-                new TransactionMetadataCache( 10, 100 ), NO_RECOVERY_EXPECTED ));
+        life.add( new PhysicalLogFile( fs, logFiles, 1000,
+                transactionIdStore, logVersionRepository, mock( Monitor.class ),
+                new TransactionMetadataCache( 10, 100 ) ));
 
         // WHEN
         life.start();
@@ -89,9 +81,8 @@ public class PhysicalLogFileTest
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
         Monitor monitor = mock( Monitor.class );
         LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000,
-                LogPruneStrategyFactory.NO_PRUNING,
-                transactionIdStore, logVersionRepository, monitor, logRotationControl,
-                new TransactionMetadataCache( 10, 100 ), NO_RECOVERY_EXPECTED ) );
+                transactionIdStore, logVersionRepository, monitor,
+                new TransactionMetadataCache( 10, 100 ) ) );
 
         // WHEN
         try
@@ -129,9 +120,9 @@ public class PhysicalLogFileTest
         LogRotationControl logRotationControl = mock( LogRotationControl.class );
         LifeSupport life = new LifeSupport();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
-        LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 50, LogPruneStrategyFactory.NO_PRUNING,
-                transactionIdStore, logVersionRepository, mock( Monitor.class ), logRotationControl,
-                new TransactionMetadataCache( 10, 100 ), NO_RECOVERY_EXPECTED ) );
+        LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 50,
+                transactionIdStore, logVersionRepository, mock( Monitor.class ),
+                new TransactionMetadataCache( 10, 100 ) ) );
 
         // WHEN
         life.start();
@@ -184,9 +175,9 @@ public class PhysicalLogFileTest
         LogRotationControl logRotationControl = mock( LogRotationControl.class );
         LifeSupport life = new LifeSupport();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
-        LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 50, LogPruneStrategyFactory.NO_PRUNING,
-                transactionIdStore, logVersionRepository, mock( Monitor.class ), logRotationControl,
-                new TransactionMetadataCache( 10, 100 ), NO_RECOVERY_EXPECTED ) );
+        LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 50,
+                transactionIdStore, logVersionRepository, mock( Monitor.class ),
+                new TransactionMetadataCache( 10, 100 )) );
         life.start();
         WritableLogChannel writer = logFile.getWriter();
         LogPositionMarker mark = new LogPositionMarker();
@@ -214,74 +205,6 @@ public class PhysicalLogFileTest
         }, mark.newPosition() );
         assertTrue( called.get() );
         life.shutdown();
-    }
-
-    @Test
-    public void shouldRecoverExistingData() throws Exception
-    {
-        String name = "log";
-        File file = new File( directory.directory(), name + ".1" );
-        final int logVersion = 1;
-        writeSomeData( file, new Visitor<ByteBuffer, IOException>()
-        {
-            @Override
-            public boolean visit( ByteBuffer buffer ) throws IOException
-            {
-                writeLogHeader( buffer, logVersion, 3 );
-                buffer.clear();
-                buffer.position( LOG_HEADER_SIZE );
-                buffer.put( (byte) 2 );
-                buffer.putInt( 23324 );
-                return true;
-            }
-        } );
-
-        LogRotationControl logRotationControl = mock( LogRotationControl.class );
-        LifeSupport life = new LifeSupport();
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
-        Monitor monitor = mock( Monitor.class );
-        life.add( new PhysicalLogFile( fs, logFiles, 50, LogPruneStrategyFactory.NO_PRUNING,
-                transactionIdStore, logVersionRepository, monitor, logRotationControl,
-                new TransactionMetadataCache( 10, 100 ), new Visitor<ReadableVersionableLogChannel, IOException>()
-                        {
-                            @Override
-                            public boolean visit( ReadableVersionableLogChannel element ) throws IOException
-                            {
-                                assertEquals( (byte) 2, element.get() );
-                                assertEquals( 23324, element.getInt() );
-                                try
-                                {
-                                    element.get();
-                                    fail( "There should be no more" );
-                                }
-                                catch ( ReadPastEndException e )
-                                {   // Good
-                                }
-                                return true;
-                            }
-                        } ) );
-        try
-        {
-            life.start();
-            InOrder order = inOrder( monitor );
-            order.verify( monitor, times( 1 ) ).recoveryRequired( logVersion );
-            order.verify( monitor, times( 1 ) ).recoveryCompleted();
-        }
-        finally
-        {
-            life.shutdown();
-        }
-    }
-
-    private void writeSomeData( File file, Visitor<ByteBuffer, IOException> visitor ) throws IOException
-    {
-        try ( StoreChannel channel = fs.open( file, "rw" ) )
-        {
-            ByteBuffer buffer = ByteBuffer.allocate( 1024 );
-            visitor.visit( buffer );
-            buffer.flip();
-            channel.write( buffer );
-        }
     }
 
     private byte[] readBytes( ReadableLogChannel reader, int length ) throws IOException

@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.util.concurrent.TimeUnit;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -47,7 +47,9 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.String.format;
+
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.index_background_sampling_enabled;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.warn;
@@ -105,7 +107,7 @@ public class IndexStatisticsIT
     {
         TestLogger logger = logging.getMessagesLog( IndexSamplingController.class );
         logger.assertAtLeastOnce( warn(
-                format( "Recovering index sampling for index :label[%d](property[%d])", label, property )
+                format( "Recovering index sampling for index :Alien(specimen)", label, property )
         ) );
     }
 

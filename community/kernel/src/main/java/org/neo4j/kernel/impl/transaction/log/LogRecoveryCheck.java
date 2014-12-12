@@ -27,15 +27,8 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_S
 
 public class LogRecoveryCheck
 {
-    private final StoreChannel fileChannel;
-
-    public LogRecoveryCheck( StoreChannel fileChannel )
+    public static boolean recoveryRequired(StoreChannel storeChannel) throws IOException
     {
-        this.fileChannel = fileChannel;
-    }
-
-    public boolean recoveryRequired() throws IOException
-    {
-        return fileChannel.size() > LOG_HEADER_SIZE;
+        return storeChannel.size() > LOG_HEADER_SIZE;
     }
 }

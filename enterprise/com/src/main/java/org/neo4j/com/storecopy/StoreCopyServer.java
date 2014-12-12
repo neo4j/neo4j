@@ -30,6 +30,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.impl.transaction.log.LogRotationControl;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 
 import static org.neo4j.com.RequestContext.anonymous;
@@ -46,14 +47,18 @@ public class StoreCopyServer
 {
     private final TransactionIdStore transactionIdStore;
     private final NeoStoreDataSource dataSource;
+    private final LogRotationControl logRotationControl;
     private final FileSystemAbstraction fileSystem;
     private final File storeDirectory;
 
     public StoreCopyServer( TransactionIdStore transactionIdStore,
-            NeoStoreDataSource dataSource, FileSystemAbstraction fileSystem, File storeDirectory )
+            NeoStoreDataSource dataSource, LogRotationControl logRotationControl, FileSystemAbstraction fileSystem,
+            File
+            storeDirectory )
     {
         this.transactionIdStore = transactionIdStore;
         this.dataSource = dataSource;
+        this.logRotationControl = logRotationControl;
         this.fileSystem = fileSystem;
         this.storeDirectory = getMostCanonicalFile( storeDirectory );
     }
@@ -66,7 +71,7 @@ public class StoreCopyServer
         try
         {
             long transactionIdWhenStartingCopy = transactionIdStore.getLastCommittedTransactionId();
-            dataSource.forceEverything();
+            logRotationControl.forceEverything();
             ByteBuffer temporaryBuffer = ByteBuffer.allocateDirect( 1024 * 1024 );
 
             // Copy the store files
