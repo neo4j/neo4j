@@ -27,18 +27,35 @@ import static java.lang.String.format;
 
 public class AlreadyConstrainedException extends SchemaKernelException
 {
-    private final UniquenessConstraint constraint;
-    private final static String message = "Already constrained %s.";
+    private final static String NO_CONTEXT_FORMAT = "Already constrained %s.";
 
-    public AlreadyConstrainedException( UniquenessConstraint constraint )
+    private static final String CONSTRAINT_CONTEXT_FORMAT = "Label '%s' and property '%s' already have a unique constraint defined on them.";
+    private static final String INDEX_CONTEXT_FORMAT = "Label '%s' and property '%s' have a unique constraint defined on them, so an index is " +
+                                                       "already created that matches this.";
+
+    private final UniquenessConstraint constraint;
+    private final OperationContext context;
+
+    public AlreadyConstrainedException( UniquenessConstraint constraint, OperationContext context )
     {
-        super( Status.Schema.ConstraintAlreadyExists, format( message, constraint ) );
+        super( Status.Schema.ConstraintAlreadyExists, format( NO_CONTEXT_FORMAT, constraint ) );
         this.constraint = constraint;
+        this.context = context;
     }
 
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
-        return format( message, constraint.userDescription( tokenNameLookup ) );
+        switch ( context )
+        {
+            case INDEX_CREATION:
+                return messageWithLabelAndPropertyName( tokenNameLookup, INDEX_CONTEXT_FORMAT,
+                        constraint.label(), constraint.propertyKeyId() );
+            case CONSTRAINT_CREATION:
+                return messageWithLabelAndPropertyName( tokenNameLookup, CONSTRAINT_CONTEXT_FORMAT,
+                        constraint.label(), constraint.propertyKeyId() );
+            default:
+                return String.format( NO_CONTEXT_FORMAT, constraint );
+        }
     }
 }

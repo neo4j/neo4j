@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBelongsToConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
+import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException.OperationContext;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
@@ -104,7 +105,7 @@ public class DataIntegrityValidatingStatementOperations implements
     public IndexDescriptor indexCreate( KernelStatement state, int labelId, int propertyKey )
             throws AddIndexFailureException, AlreadyIndexedException, AlreadyConstrainedException
     {
-        checkIndexExistence( state, labelId, propertyKey );
+        checkIndexExistence( state, OperationContext.INDEX_CREATION, labelId, propertyKey );
         return schemaWriteDelegate.indexCreate( state, labelId, propertyKey );
     }
 
@@ -138,11 +139,11 @@ public class DataIntegrityValidatingStatementOperations implements
                 state, labelId, propertyKey );
         if ( constraints.hasNext() )
         {
-            throw new AlreadyConstrainedException( constraints.next() );
+            throw new AlreadyConstrainedException( constraints.next(), OperationContext.CONSTRAINT_CREATION );
         }
 
         // It is not allowed to create uniqueness constraints on indexed label/property pairs
-        checkIndexExistence( state, labelId, propertyKey );
+        checkIndexExistence( state, OperationContext.CONSTRAINT_CREATION, labelId, propertyKey );
 
         return schemaWriteDelegate.uniquenessConstraintCreate( state, labelId, propertyKey );
     }
@@ -162,14 +163,14 @@ public class DataIntegrityValidatingStatementOperations implements
         schemaWriteDelegate.constraintDrop( state, constraint );
     }
 
-    private void checkIndexExistence( KernelStatement state, int labelId, int propertyKey )
+    private void checkIndexExistence( KernelStatement state, OperationContext context,  int labelId, int propertyKey )
             throws AlreadyIndexedException, AlreadyConstrainedException
     {
         for ( IndexDescriptor descriptor : loop( schemaReadDelegate.indexesGetForLabel( state, labelId ) ) )
         {
             if ( descriptor.getPropertyKeyId() == propertyKey )
             {
-                throw new AlreadyIndexedException( descriptor );
+                throw new AlreadyIndexedException( descriptor, context );
             }
         }
         for ( IndexDescriptor descriptor : loop( schemaReadDelegate.uniqueIndexesGetForLabel( state, labelId ) ) )
@@ -177,7 +178,7 @@ public class DataIntegrityValidatingStatementOperations implements
             if ( descriptor.getPropertyKeyId() == propertyKey )
             {
                 throw new AlreadyConstrainedException(
-                        new UniquenessConstraint( descriptor.getLabelId(), descriptor.getPropertyKeyId() ) );
+                        new UniquenessConstraint( descriptor.getLabelId(), descriptor.getPropertyKeyId() ), context );
             }
         }
     }
