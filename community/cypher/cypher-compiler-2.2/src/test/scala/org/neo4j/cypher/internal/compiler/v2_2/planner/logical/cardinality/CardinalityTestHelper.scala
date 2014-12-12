@@ -21,17 +21,18 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Identifier
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.MapSupport._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Cardinality.NumericCardinality
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, QueryGraphProducer, Selectivity}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport, QueryGraph, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 import org.neo4j.cypher.internal.compiler.v2_2.{LabelId, PropertyKeyId, RelTypeId}
+import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.collection.mutable
 
-import org.neo4j.cypher.internal.compiler.v2_2.helpers.MapSupport._
-
-trait CardinalityTestHelper extends QueryGraphProducer {
+trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMatchers {
 
   self: CypherFunSuite with LogicalPlanningTestSupport =>
 
@@ -190,5 +191,31 @@ trait CardinalityTestHelper extends QueryGraphProducer {
       produceQueryGraphForPattern(query)
         .withArgumentIds(queryGraphArgumentIds)
     }
+  }
+}
+
+trait CardinalityCustomMatchers {
+
+  class MapEqualityWithDouble[T](expected: Map[T, Cardinality], tolerance: Double)(implicit num: Numeric[Cardinality])
+    extends Matcher[Map[T, Cardinality]] {
+
+    def apply(other: Map[T, Cardinality]) = {
+      MatchResult(
+        expected.size == other.size && expected.foldLeft(true) {
+          case (acc, (key, value)) =>
+            import org.scalautils.Tolerance._
+            import org.scalautils.TripleEquals._
+            import Cardinality._
+            acc && other.contains(key) && other(key) === value +- tolerance
+        },
+        s"""$other did not equal "$expected" wrt a tolerance of $tolerance""",
+        s"""$other equals "$expected" wrt a tolerance of $tolerance"""
+      )
+    }
+
+  }
+
+  def equalWithTolerance[T](expected: Map[T, Cardinality], tolerance: Double): Matcher[Map[T, Cardinality]] = {
+    new MapEqualityWithDouble[T](expected, tolerance)(NumericCardinality)
   }
 }
