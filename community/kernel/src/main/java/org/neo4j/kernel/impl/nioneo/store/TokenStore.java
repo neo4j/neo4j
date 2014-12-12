@@ -146,7 +146,7 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
                 continue;
             }
             found++;
-            if ( record != null && record.getNameId() != Record.RESERVED.intValue() )
+            if ( record != null && record.inUse() && record.getNameId() != Record.RESERVED.intValue() )
             {
                 String name = getStringFor( record );
                 recordList.add( new Token( name, i ) );

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
+import java.nio.ByteBuffer;
 
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
@@ -75,8 +76,8 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
     }
 
     @Override
-    protected boolean reserveIdsDuringRebuild()
+    protected boolean isRecordReserved( ByteBuffer recordData )
     {
-        return true;
+        return recordData.getInt( 1 ) == Record.RESERVED.intValue();
     }
 }
