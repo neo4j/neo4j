@@ -42,6 +42,10 @@ object Predicate {
   implicit val byPosition = Ordering.by { (predicate: Predicate) => predicate.expr.position }
 }
 
+object Selections {
+  def from(expressions: Expression*): Selections = new Selections(expressions.flatMap(_.asPredicates).toSet)
+}
+
 case class Selections(predicates: Set[Predicate] = Set.empty) extends PageDocFormatting { // with ToPrettyString[Selections] {
 
 //  def toDefaultPrettyString(formatter: DocFormatter) =

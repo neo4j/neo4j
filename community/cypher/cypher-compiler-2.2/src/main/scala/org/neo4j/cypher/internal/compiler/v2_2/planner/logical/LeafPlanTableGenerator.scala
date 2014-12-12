@@ -20,15 +20,17 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{LogicalPlan, ShortestPathPattern}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 
-object findShortestPaths extends CandidateGenerator[PlanTable] {
-  def apply(input: PlanTable, qg: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] =
-    qg.shortestPathPatterns.flatMap { (shortestPath: ShortestPathPattern) =>
-      input.plans.collect {
-        case plan if shortestPath.isFindableFrom(plan.availableSymbols) =>
-          planShortestPaths(plan, shortestPath)
-      }
-    }.toSeq
+case class LeafPlanTableGenerator(config: PlanningStrategyConfiguration) extends PlanTableGenerator {
+  def apply(queryGraph: QueryGraph, leafPlan: Option[LogicalPlan])(implicit context: LogicalPlanningContext): PlanTable = {
+    val select = config.applySelections.asFunctionInContext
+    val pickBest = config.pickBestCandidate.asFunctionInContext
+
+    val leafPlanCandidateLists = config.leafPlanners.candidates(queryGraph)
+    val leafPlanCandidateListsWithSelections = leafPlanCandidateLists.map(_.map(select(_, queryGraph)))
+    val bestLeafPlans: Iterable[LogicalPlan] = leafPlanCandidateListsWithSelections.flatMap(pickBest(_))
+    val startTable: PlanTable = leafPlan.foldLeft(PlanTable.empty)(_ + _)
+    bestLeafPlans.foldLeft(startTable)(_ + _)
+  }
 }
