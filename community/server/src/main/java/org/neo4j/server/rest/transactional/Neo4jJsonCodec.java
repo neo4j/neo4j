@@ -27,12 +27,18 @@ import java.util.Set;
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.map.ObjectMapper;
 
+import org.codehaus.jackson.map.SerializationConfig;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 
 public class Neo4jJsonCodec extends ObjectMapper
 {
 
+    public Neo4jJsonCodec()
+    {
+        getSerializationConfig().without( SerializationConfig.Feature.FLUSH_AFTER_WRITE_VALUE );
+    }
+    
     @Override
     public void writeValue( JsonGenerator out, Object value ) throws IOException
     {

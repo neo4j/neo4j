@@ -48,7 +48,7 @@ public abstract class BatchOperations
     protected static final String METHOD_KEY = "method";
     protected static final String BODY_KEY = "body";
     protected static final String TO_KEY = "to";
-    protected static final JsonFactory jsonFactory = new JsonFactory();
+    protected static final JsonFactory jsonFactory = new JsonFactory().disable( JsonGenerator.Feature.FLUSH_PASSED_TO_STREAM );
     protected final WebServer webServer;
     protected final ObjectMapper mapper;
 
