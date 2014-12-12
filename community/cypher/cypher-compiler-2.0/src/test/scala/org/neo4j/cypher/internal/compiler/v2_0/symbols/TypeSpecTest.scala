@@ -290,9 +290,8 @@ class TypeSpecTest extends CypherFunSuite {
   }
 
   test("should identify coercions") {
-    assertEquals(CTBoolean.invariant, CTFloat.covariant.coercions)
-    assertEquals(CTBoolean | CTFloat, CTInteger.covariant.coercions)
-    assertEquals(CTBoolean | CTFloat, (CTFloat | CTInteger).coercions)
+    assertEquals(CTFloat.invariant, CTInteger.covariant.coercions)
+    assertEquals(CTFloat.invariant, (CTFloat | CTInteger).coercions)
     assertEquals(CTBoolean.invariant, CTCollection(CTAny).covariant.coercions)
     assertEquals(CTBoolean.invariant, TypeSpec.exact(CTCollection(CTPath)).coercions)
     assertEquals(CTBoolean | CTFloat, TypeSpec.all.coercions)
@@ -304,7 +303,7 @@ class TypeSpecTest extends CypherFunSuite {
     assertEquals(CTFloat.invariant, CTInteger intersectOrCoerce CTFloat)
     assertEquals(TypeSpec.none, CTNumber intersectOrCoerce CTFloat)
     assertEquals(CTBoolean.invariant, CTCollection(CTAny).covariant intersectOrCoerce CTBoolean)
-    assertEquals(CTBoolean.invariant, CTNumber.covariant intersectOrCoerce CTBoolean)
+    assertEquals(TypeSpec.none, CTNumber.covariant intersectOrCoerce CTBoolean)
     assertEquals(CTBoolean.invariant, CTCollection(CTAny).covariant intersectOrCoerce CTBoolean)
     assertEquals(TypeSpec.none, CTInteger intersectOrCoerce CTString)
   }
@@ -314,7 +313,7 @@ class TypeSpecTest extends CypherFunSuite {
     assertEquals(CTFloat.invariant, CTInteger constrainOrCoerce CTFloat)
     assertEquals(TypeSpec.none, CTNumber constrainOrCoerce CTFloat)
     assertEquals(CTBoolean.invariant, CTCollection(CTAny).covariant constrainOrCoerce CTBoolean)
-    assertEquals(CTBoolean.invariant, CTNumber.covariant constrainOrCoerce CTBoolean)
+    assertEquals(TypeSpec.none, CTNumber.covariant constrainOrCoerce CTBoolean)
     assertEquals(CTBoolean.invariant, CTCollection(CTAny).covariant constrainOrCoerce CTBoolean)
     assertEquals(TypeSpec.none, CTInteger constrainOrCoerce CTString)
   }
