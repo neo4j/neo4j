@@ -35,12 +35,33 @@ import static java.lang.reflect.Array.newInstance;
  */
 public class ArrayCollection<T> implements Collection<T>
 {
+    private final int initialCapacity;
     private Object[] array;
     private int size;
+    private final int fastClearThreshold;
 
+    /**
+     * Sets fastClearThreshold == initialCapacity.
+     *
+     * @param initialCapacity initial capacity of the backing array.
+     */
     public ArrayCollection( int initialCapacity )
     {
-        array = new Object[initialCapacity];
+        this( initialCapacity, initialCapacity );
+    }
+
+    /**
+     * @param initialCapacity initial capacity of the backing array.
+     * @param fastClearThreshold if {@link #size()} is {@code <= fastClearThreshold} then the items in
+     * the backing array are still referenced by the backing array after a call to {@link #clear()} just
+     * the internal cursor is reset, otherwise a new backing array of capacity {@code initialCapacity} is
+     * created to take its place.
+     */
+    public ArrayCollection( int initialCapacity, int fastClearThreshold )
+    {
+        this.initialCapacity = initialCapacity;
+        this.fastClearThreshold = Math.min( fastClearThreshold, initialCapacity );
+        this.array = new Object[initialCapacity];
     }
 
     @Override
@@ -184,6 +205,10 @@ public class ArrayCollection<T> implements Collection<T>
     @Override
     public void clear()
     {
+        if ( size > fastClearThreshold )
+        {
+            array = new Object[initialCapacity];
+        }
         size = 0;
     }
 }
