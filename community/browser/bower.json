@@ -17,6 +17,7 @@
     "codemirror": "4.5",
     "css": "https://raw.github.com/marijnh/CodeMirror/master/mode/css/css.js",
     "d3": "3.2.8",
+    "d3-sankey": "https://raw.githubusercontent.com/d3/d3-plugins/master/sankey/sankey.js",
     "es5-shim": "2.0.12",
     "file-saver": "latest",
     "font-awesome": "~4.2.0",

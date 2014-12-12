@@ -1,12 +1,5 @@
 .code-bar
   ul.actions.list-inline
-    li.toggle(ng-if='frame.type == "cypher" && availableModes.length > 1')
-      a.toggle-graph(ng-class='{active: isActive("graph")}', ng-click='setActive("graph")') Graph
-      .switch
-        label(ng-class='{right: isActive("table")}', ng-click='setActive()')
-          .switch-inner
-          .handle
-      a.toggle-table(ng-class='{active: isActive("table")}', ng-click='setActive("table")') Table
     li.dropdown(ng-if='frame.type == "cypher"')
       a.button.fa.fa-download.dropdown-toggle(ng-show='frame.exportable')
       ul.dropdown-menu

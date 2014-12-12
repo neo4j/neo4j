@@ -1,0 +1,25 @@
+@import 'nib'
+@import 'variables'
+
+svg.query-plan
+  .operator rect
+    cursor: move
+    fill-opacity: .9
+
+  .operator tspan
+    font-size: 10px
+
+  .operator tspan.operator-name
+    font-weight: bold
+    font-size: 8px
+
+  .operator tspan.operator-expression
+    font-family: monospace
+    font-size: 8px
+
+  .link
+    fill: #000
+    fill-opacity: .2
+
+  .link:hover
+    fill-opacity: .5

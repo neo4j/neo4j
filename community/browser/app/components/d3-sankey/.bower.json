@@ -1,0 +1,13 @@
+{
+  "name": "d3-sankey",
+  "_cacheHeaders": {
+    "ETag": "\"abe137b211bf669622bc2f048b6385775167a81b\"",
+    "Content-Length": "7438",
+    "Content-Type": "text/plain; charset=utf-8"
+  },
+  "_release": "e-tag:abe137b21",
+  "main": "index.js",
+  "_source": "https://raw.githubusercontent.com/d3/d3-plugins/master/sankey/sankey.js",
+  "_target": "*",
+  "_originalSource": "https://raw.githubusercontent.com/d3/d3-plugins/master/sankey/sankey.js"
+}
