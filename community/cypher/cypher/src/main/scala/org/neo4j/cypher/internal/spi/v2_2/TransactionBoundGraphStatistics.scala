@@ -39,7 +39,7 @@ class TransactionBoundGraphStatistics(statement: KernelStatement) extends GraphS
       val frequencyOfNodesWithSameValue = 1.0 / indexEntrySelectivity
       val indexSelectivity = frequencyOfNodesWithSameValue / labeledNodes
 
-      Some(Selectivity(indexSelectivity))
+      Selectivity.of(indexSelectivity)
     }
     catch {
       case e: IndexNotFoundKernelException => None

@@ -19,14 +19,17 @@
  */
 package org.neo4j.test;
 
-import org.junit.rules.ExternalResource;
-
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
+
+import org.junit.rules.ExternalResource;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.QueryExecutionException;
+import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -93,6 +96,16 @@ public abstract class DatabaseRule extends ExternalResource
             }
             return result;
         }
+    }
+
+    public Result execute( String query ) throws QueryExecutionException
+    {
+        return database.execute( query );
+    }
+
+    public Result execute( String query, Map<String, Object> parameters ) throws QueryExecutionException
+    {
+        return database.execute( query, parameters );
     }
 
     public Transaction beginTx()
