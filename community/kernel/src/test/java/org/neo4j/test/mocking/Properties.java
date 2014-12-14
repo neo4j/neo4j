@@ -22,6 +22,8 @@ package org.neo4j.test.mocking;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -41,7 +43,7 @@ public class Properties implements Answer<Object>, Iterable<String>
         return new Properties( properties );
     }
 
-    private final Map<String, Object> properties = new HashMap<>();
+    private final SortedMap<String, Object> properties = new TreeMap<>();
 
     private Properties( Property[] properties )
     {
