@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.CachedFunction
 import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 
 case class CachedMetricsFactory(metricsFactory: MetricsFactory) extends MetricsFactory {
@@ -34,7 +33,4 @@ case class CachedMetricsFactory(metricsFactory: MetricsFactory) extends MetricsF
 
   def newQueryGraphCardinalityModel(statistics: GraphStatistics, semanticTable: SemanticTable) =
     CachedFunction.byIdentity(metricsFactory.newQueryGraphCardinalityModel(statistics, semanticTable))
-
-  def newCandidateListCreator(): (Seq[LogicalPlan]) => CandidateList =
-    metricsFactory.newCandidateListCreator()
 }

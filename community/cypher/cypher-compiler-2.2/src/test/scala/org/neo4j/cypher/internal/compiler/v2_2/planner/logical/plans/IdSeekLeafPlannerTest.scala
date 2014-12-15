@@ -19,18 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityInput
-import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.planner._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.idSeekLeafPlanner
-import org.neo4j.cypher.internal.compiler.v2_2.RelTypeId
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, Candidates}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
-
 import org.mockito.Matchers._
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_2.RelTypeId
+import org.neo4j.cypher.internal.compiler.v2_2.ast._
+import org.neo4j.cypher.internal.compiler.v2_2.planner._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Cardinality
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityInput
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.idSeekLeafPlanner
+import org.neo4j.graphdb.Direction
+
 import scala.collection.mutable
 
 class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupport {
@@ -69,11 +69,11 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val resultPlans = idSeekLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Candidates(
-      planNodeByIdSeek(IdName("n"), EntityByIdExprs(Seq(
+    resultPlans should equal(
+      Seq(planNodeByIdSeek(IdName("n"), EntityByIdExprs(Seq(
         SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_
-      )), Seq(expr), Set.empty)
-    ))
+      )), Seq(expr), Set.empty))
+    )
   }
 
   test("simple directed relationship by id seek with a collection of relationship ids") {
@@ -109,7 +109,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val resultPlans = idSeekLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Candidates(planDirectedRelationshipByIdSeek(IdName("r"), EntityByIdExprs(Seq(
+    resultPlans should equal(Seq(planDirectedRelationshipByIdSeek(IdName("r"), EntityByIdExprs(Seq(
       SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_
     )), from, end, patternRel, Set.empty, Seq(expr))))
   }
@@ -146,7 +146,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val resultPlans = idSeekLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Candidates(planUndirectedRelationshipByIdSeek(IdName("r"), EntityByIdExprs(Seq(
+    resultPlans should equal(Seq(planUndirectedRelationshipByIdSeek(IdName("r"), EntityByIdExprs(Seq(
       SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_
     )), from, end, patternRel, Set.empty, Seq(expr))))
   }
@@ -189,12 +189,12 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val resultPlans = idSeekLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Candidates(
-      planHiddenSelection(
+    resultPlans should equal(
+      Seq(planHiddenSelection(
         Seq(Equals(FunctionInvocation(FunctionName("type")_, rIdent)_, StringLiteral("X")_)_),
         planUndirectedRelationshipByIdSeek(IdName("r"), EntityByIdExprs(Seq(SignedDecimalIntegerLiteral("42")_)), from, end, patternRel, Set.empty, Seq(expr))
-      )
-    ))
+      ))
+    )
   }
 
   test("simple undirected multi-typed relationship by id seek with  a collection of relationship ids") {
@@ -236,8 +236,8 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val resultPlans = idSeekLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Candidates(
-      planHiddenSelection(
+    resultPlans should equal(
+      Seq(planHiddenSelection(
         Seq(
           Ors(Set(
             Equals(FunctionInvocation(FunctionName("type")_, rIdent)_, StringLiteral("X")_)(pos),

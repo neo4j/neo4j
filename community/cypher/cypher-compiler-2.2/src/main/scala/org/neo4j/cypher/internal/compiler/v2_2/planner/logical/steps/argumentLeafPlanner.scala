@@ -27,8 +27,8 @@ object argumentLeafPlanner extends LeafPlanner {
   def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext) = {
     val givenNodeIds = qg.argumentIds intersect qg.patternNodes
     if (givenNodeIds.isEmpty)
-      context.metrics.candidateListCreator(Seq.empty)
+      Seq.empty
     else
-      context.metrics.candidateListCreator(Seq(planQueryArgumentRow(qg)))
+      Seq(planQueryArgumentRow(qg))
   }
 }

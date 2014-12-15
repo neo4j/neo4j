@@ -197,8 +197,6 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
       def newQueryGraphCardinalityModel(statistics: GraphStatistics, semanticTable: SemanticTable) =
         QueryGraphCardinalityModel.default(statistics, semanticTable)
-
-      def newCandidateListCreator(): (Seq[LogicalPlan]) => CandidateList = CandidateList.apply
     }
 
     def table = Map.empty[PatternExpression, QueryGraph]

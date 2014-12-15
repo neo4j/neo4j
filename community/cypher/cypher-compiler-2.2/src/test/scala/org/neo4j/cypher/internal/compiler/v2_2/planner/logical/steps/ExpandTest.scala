@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{Predicate, Selections, QueryGraph, LogicalPlanningTestSupport}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Candidates, CandidateList, PlanTable}
-import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.PlanTable
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport, Predicate, QueryGraph, Selections}
+import org.neo4j.graphdb.Direction
 
 class ExpandTest
   extends CypherFunSuite
@@ -49,7 +49,7 @@ class ExpandTest
 
     val qg = createQuery()
 
-    expand(plan, qg) should equal(Candidates())
+    expand(plan, qg) shouldBe empty
   }
 
   test("finds single pattern relationship when start point is picked") {
@@ -61,8 +61,8 @@ class ExpandTest
 
     val qg = createQuery(rRel)
 
-    expand(plan, qg) should equal(Candidates(
-      planSimpleExpand(planA, aNode, Direction.OUTGOING, bNode, rRel, ExpandAll))
+    expand(plan, qg) should equal(
+      Seq(planSimpleExpand(planA, aNode, Direction.OUTGOING, bNode, rRel, ExpandAll))
     )
   }
 
@@ -76,10 +76,10 @@ class ExpandTest
 
     val qg = createQuery(rRel)
 
-    expand(plan, qg) should equal(CandidateList(Seq(
+    expand(plan, qg) should equal(Seq(
       planSimpleExpand(left = planA, from = aNode, Direction.OUTGOING, to = bNode, pattern = rRel, mode = ExpandAll),
       planSimpleExpand(left = planB, from = bNode, Direction.INCOMING, to = aNode, pattern = rRel, mode = ExpandAll)
-    )))
+    ))
   }
 
   test("does not include plan that has the relationship name already covered") {
@@ -91,7 +91,7 @@ class ExpandTest
 
     val qg = createQuery()
 
-    expand(plan, qg) should equal(Candidates())
+    expand(plan, qg) shouldBe empty
   }
 
   test("self referencing pattern is handled correctly") {
@@ -103,9 +103,9 @@ class ExpandTest
 
     val qg = createQuery(rSelfRel)
 
-    expand(plan, qg) should equal(CandidateList(Seq(
+    expand(plan, qg) should equal(Seq(
       planSimpleExpand(left = planA, from = aNode, dir = Direction.OUTGOING, to = IdName(aNode.name), pattern = rSelfRel, mode = ExpandInto)
-    )))
+    ))
   }
 
   test("looping pattern is handled as it should") {
@@ -117,7 +117,7 @@ class ExpandTest
 
     val qg = createQuery(rRel)
 
-    expand(plan, qg) should equal(Candidates(
+    expand(plan, qg) should equal(Seq(
       planSimpleExpand(left = aAndB, from = aNode, dir = Direction.OUTGOING, to = IdName(bNode.name), pattern =mockRel, mode = ExpandInto),
       planSimpleExpand(left = aAndB, from = bNode, dir = Direction.INCOMING, to = IdName(aNode.name), pattern =mockRel, mode = ExpandInto)
       ))
@@ -132,9 +132,9 @@ class ExpandTest
 
     val qg = createQuery(rVarRel)
 
-    expand(plan, qg) should equal(Candidates(
-      planVarExpand(left = planA, from = aNode, dir = Direction.OUTGOING, to = bNode, pattern = rVarRel, mode = ExpandAll, predicates = Seq.empty, allPredicates = Seq.empty)
-    ))
+    expand(plan, qg) should equal(
+      Seq(planVarExpand(left = planA, from = aNode, dir = Direction.OUTGOING, to = bNode, pattern = rVarRel, mode = ExpandAll, predicates = Seq.empty, allPredicates = Seq.empty))
+    )
   }
 
   test("unlimited variable length relationship with a predicate on each relationship") {
@@ -155,9 +155,9 @@ class ExpandTest
     val qg = createQuery(rVarRel).addSelections(Selections(Set(predicate)))
     val fooIdentifier: Identifier = Identifier("foo")_
     val result = expand(plan, qg)
-    result should equal(Candidates(
-      planVarExpand(left = planA, from = aNode, dir = Direction.OUTGOING, to = bNode, pattern = rVarRel,
-        predicates = Seq(fooIdentifier -> innerPredicate), allPredicates = Seq(allPredicate), mode = ExpandAll)
-    ))
+    result should equal(
+      Seq(planVarExpand(left = planA, from = aNode, dir = Direction.OUTGOING, to = bNode, pattern = rVarRel,
+        predicates = Seq(fooIdentifier -> innerPredicate), allPredicates = Seq(allPredicate), mode = ExpandAll))
+    )
   }
 }

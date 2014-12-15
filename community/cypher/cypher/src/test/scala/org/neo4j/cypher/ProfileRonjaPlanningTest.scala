@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_2.parser.{CypherParser, ParserMonitor}
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.{QueryGraphCardinalityInput, QueryGraphCardinalityModel, CardinalityModel, CostModel}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.{CardinalityModel, CostModel, QueryGraphCardinalityInput, QueryGraphCardinalityModel}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
@@ -119,8 +119,6 @@ class ProfileRonjaPlanningTest extends ExecutionEngineFunSuite with QueryStatist
       SimpleMetricsFactory.newCardinalityEstimator(queryGraphCardinalityModel)
 
     def newCostModel(cardinality: CardinalityModel) = SimpleMetricsFactory.newCostModel(cardinality)
-
-    def newCandidateListCreator(): (Seq[LogicalPlan]) => CandidateList = SimpleMetricsFactory.newCandidateListCreator()
   }
 
   class LoggingState() {
@@ -199,23 +197,6 @@ class ProfileRonjaPlanningTest extends ExecutionEngineFunSuite with QueryStatist
         result
       }
     }
-
-    class LoggingCandidateList(plans: Seq[LogicalPlan] = Seq.empty) extends CandidateList(plans) {
-      override def ++(other: CandidateList) = new LoggingCandidateList(super.++(other).plans)
-
-      override def +(plan: LogicalPlan) = new LoggingCandidateList(super.+(plan).plans)
-
-      override def bestPlan(implicit context: LogicalPlanningContext) = if (plans.size > 1) {
-        log.startNewSelection(plans)
-        val winner: Option[LogicalPlan] = super.bestPlan
-        log.finishedSelection(winner)
-        winner
-      } else super.bestPlan
-
-      override def map(f: (LogicalPlan) => LogicalPlan) = new LoggingCandidateList(super.map(f).plans)
-    }
-
-    def newCandidateListCreator(): (Seq[LogicalPlan]) => CandidateList = plans => new LoggingCandidateList(plans)
 
     def newQueryGraphCardinalityModel(statistics: GraphStatistics, semanticTable: SemanticTable) =
       inner.newQueryGraphCardinalityModel(statistics, semanticTable)

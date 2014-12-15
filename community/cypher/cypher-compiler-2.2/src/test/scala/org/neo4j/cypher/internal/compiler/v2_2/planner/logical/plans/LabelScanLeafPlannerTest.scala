@@ -19,17 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
+import org.mockito.Matchers._
+import org.mockito.Mockito._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.LabelId
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Cardinality
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityInput
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.labelScanLeafPlanner
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, Candidates}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
-import org.mockito.Mockito._
-import org.mockito.Matchers._
-import collection.mutable
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.labelScanLeafPlanner
+
+import scala.collection.mutable
 
 class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -64,7 +65,9 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val resultPlans = labelScanLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Candidates(planNodeByLabelScan(idName, Left("Awesome"), Seq(hasLabels), None, Set.empty)))
+    resultPlans should equal(Seq(
+      planNodeByLabelScan(idName, Left("Awesome"), Seq(hasLabels), None, Set.empty))
+    )
   }
 
   test("simple label scan with a compile-time label ID") {
@@ -95,6 +98,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val resultPlans = labelScanLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Candidates(planNodeByLabelScan(idName, Right(labelId), Seq(hasLabels), None, Set.empty)))
+    resultPlans should equal(
+      Seq(planNodeByLabelScan(idName, Right(labelId), Seq(hasLabels), None, Set.empty)))
   }
 }
