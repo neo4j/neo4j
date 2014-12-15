@@ -73,6 +73,7 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydeduplication.PropertyDeduplicator;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -263,7 +264,9 @@ public class StoreMigrator implements StoreMigrationParticipant
                 // so just generate a random new one. I don't think it matters since we know that in a
                 // multi-database scenario there can only be one of them upgrading, the other ones will have to
                 // copy that database.
-                return Math.abs( new Random().nextLong() );
+                return txId == TransactionIdStore.BASE_TX_ID
+                        ? TransactionIdStore.BASE_TX_CHECKSUM
+                        : Math.abs( new Random().nextLong() );
             }
         }
     }

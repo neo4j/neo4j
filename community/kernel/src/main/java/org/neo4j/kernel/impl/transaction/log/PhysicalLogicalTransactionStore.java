@@ -42,7 +42,7 @@ import static org.neo4j.kernel.impl.util.Counter.ATOMIC_LONG;
 public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements LogicalTransactionStore
 {
     private final LogFile logFile;
-    private LogRotation logRotation;
+    private final LogRotation logRotation;
     private final TransactionMetadataCache transactionMetadataCache;
     private TransactionAppender appender;
     private final TransactionIdStore transactionIdStore;
@@ -120,7 +120,8 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
     }
 
     private static final TransactionMetadataCache.TransactionMetadata METADATA_FOR_EMPTY_STORE =
-            new TransactionMetadataCache.TransactionMetadata( -1, -1, new LogPosition( 0, LOG_HEADER_SIZE ), 0 );
+            new TransactionMetadataCache.TransactionMetadata( -1, -1, new LogPosition( 0, LOG_HEADER_SIZE ),
+                    TransactionIdStore.BASE_TX_CHECKSUM );
 
     @Override
     public TransactionMetadata getMetadataFor( long transactionId ) throws IOException
