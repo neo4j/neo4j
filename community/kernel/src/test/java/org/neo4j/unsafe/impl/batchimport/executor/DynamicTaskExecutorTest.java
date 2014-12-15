@@ -153,6 +153,39 @@ public class DynamicTaskExecutorTest
         task.latch.await();
 
         // THEN
+        assertExceptionOnSubmit( executor, exception );
+    }
+
+    @Test
+    public void shouldShutDownOnTaskFailureEvenIfOtherTasksArePending() throws Exception
+    {
+        // GIVEN
+        TaskExecutor executor = new DynamicTaskExecutor( 2, 10, new ParkStrategy.Park( 1 ), getClass().getSimpleName() );
+        IOException exception = new IOException( "Test message" );
+        ControlledTask firstBlockingTask = new ControlledTask();
+        ControlledTask secondBlockingTask = new ControlledTask();
+        executor.submit( firstBlockingTask );
+        executor.submit( secondBlockingTask );
+        firstBlockingTask.latch.awaitStart();
+        secondBlockingTask.latch.awaitStart();
+
+        FailingTask failingTask = new FailingTask( exception );
+        executor.submit( failingTask );
+
+        ControlledTask thirdBlockingTask = new ControlledTask();
+        executor.submit( thirdBlockingTask );
+
+        // WHEN
+        firstBlockingTask.latch.finish();
+        failingTask.latch.await();
+
+        // THEN
+        assertExceptionOnSubmit( executor, exception );
+        executor.shutdown( false ); // call would block if the shutdown as part of failure doesn't complete properly
+    }
+
+    private void assertExceptionOnSubmit( TaskExecutor executor, IOException exception )
+    {
         Exception submitException = null;
         for ( int i = 0; i < 5 && submitException == null; i++ )
         {
