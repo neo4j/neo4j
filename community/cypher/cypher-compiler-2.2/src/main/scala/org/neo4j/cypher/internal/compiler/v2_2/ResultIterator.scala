@@ -57,13 +57,15 @@ class ClosingIterator(inner: Iterator[collection.Map[String, Any]],
   def wasMaterialized: Boolean = isEmpty
 
   def hasNext: Boolean = failIfThrows {
-    if (closer.isClosed) return false
-
-    val innerHasNext: Boolean = inner.hasNext
-    if (!innerHasNext) {
-      close(success = true)
+    if (!closer.isClosed) {
+      val innerHasNext: Boolean = inner.hasNext
+      if (!innerHasNext) {
+        close(success = true)
+      }
+      innerHasNext
+    } else {
+      false
     }
-    innerHasNext
   }
 
   def next(): Map[String, Any] = failIfThrows {
