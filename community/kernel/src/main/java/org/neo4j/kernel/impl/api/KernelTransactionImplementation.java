@@ -138,7 +138,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final StoreReadLayer storeLayer;
     private final Clock clock;
     private final TransactionToRecordStateVisitor txStateToRecordStateVisitor = new TransactionToRecordStateVisitor();
-    private final Collection<Command> extractedCommands = new ArrayCollection<>( 20 );
+    private final Collection<Command> extractedCommands = new ArrayCollection<>( 32 );
     private TransactionState txState;
     private LegacyIndexTransactionState legacyIndexTransactionState;
     private TransactionType transactionType = TransactionType.ANY;
