@@ -157,7 +157,8 @@ public abstract class AbstractStep<T> implements Step<T>
         }
 
         while ( !predicate.accept( value ) )
-        {   // Sleeping wait
+        {
+            // Sleeping wait
             try
             {
                 Thread.sleep( 1 );
@@ -166,6 +167,8 @@ public abstract class AbstractStep<T> implements Step<T>
             catch ( InterruptedException e )
             {   // It's OK
             }
+
+            assertHealthy();
         }
         return currentTimeMillis()-startTime;
     }

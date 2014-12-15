@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.executor;
 
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.Arrays;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -143,11 +144,16 @@ public class DynamicTaskExecutor implements TaskExecutor
         shutdown0( awaitAllCompleted, null );
     }
 
-    private void shutdown0( boolean awaitAllCompleted, Throwable cause )
+    private synchronized void shutdown0( boolean awaitAllCompleted, Throwable cause )
     {
+        if ( shutDown )
+        {
+            return;
+        }
+
         this.shutDownCause = cause;
         this.shutDown = true;
-        while ( !queue.isEmpty() )
+        while ( awaitAllCompleted && !queue.isEmpty() )
         {
             parkAWhile();
         }
@@ -178,6 +184,14 @@ public class DynamicTaskExecutor implements TaskExecutor
         parkStrategy.park( Thread.currentThread() );
     }
 
+    private static final UncaughtExceptionHandler SILENT_UNCAUGHT_EXCEPTION_HANDLER = new UncaughtExceptionHandler()
+    {
+        @Override
+        public void uncaughtException( Thread t, Throwable e )
+        {   // Don't print about it
+        }
+    };
+
     private class Processor extends Thread
     {
         private volatile boolean shutDown;
@@ -185,6 +199,7 @@ public class DynamicTaskExecutor implements TaskExecutor
         Processor( String name )
         {
             super( name );
+            setUncaughtExceptionHandler( SILENT_UNCAUGHT_EXCEPTION_HANDLER );
             start();
         }
 
