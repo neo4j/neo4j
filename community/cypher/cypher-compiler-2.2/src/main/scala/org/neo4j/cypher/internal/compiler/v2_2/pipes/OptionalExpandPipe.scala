@@ -66,7 +66,7 @@ case class OptionalExpandPipe(source: Pipe, from: String, relName: String, to: S
 
   def planDescription =
     source.planDescription.
-      andThen(this, "OptionalExpand", identifiers, ExpandExpression(from, relName, to, dir))
+      andThen(this, "OptionalExpand", identifiers, ExpandExpression(from, relName, types, to, dir))
 
   def symbols = source.symbols.add(to, CTNode).add(relName, CTRelationship)
 

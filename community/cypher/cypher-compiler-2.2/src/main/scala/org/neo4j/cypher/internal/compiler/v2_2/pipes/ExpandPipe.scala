@@ -26,12 +26,12 @@ import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.cypher.internal.compiler.v2_2.{ExecutionContext, InternalException}
 import org.neo4j.graphdb.{Direction, Node, Relationship}
 
-sealed abstract class ExpandPipe[T](source: Pipe,
+sealed abstract class ExpandPipe(source: Pipe,
                                  from: String,
                                  relName: String,
                                  to: String,
                                  dir: Direction,
-                                 types: Seq[T],
+                                 typeNames: Seq[String],
                                  pipeMonitor: PipeMonitor)
                     extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
@@ -59,7 +59,7 @@ sealed abstract class ExpandPipe[T](source: Pipe,
     row.getOrElse(from, throw new InternalException(s"Expected to find a node at $from but found nothing"))
 
   def planDescription = {
-    source.planDescription.andThen(this, "Expand", identifiers, ExpandExpression(from, relName, to, dir))
+    source.planDescription.andThen(this, "Expand", identifiers, ExpandExpression(from, relName, typeNames, to, dir))
   }
 
   val symbols = source.symbols.add(to, CTNode).add(relName, CTRelationship)
@@ -72,10 +72,11 @@ case class ExpandPipeForIntTypes(source: Pipe,
                                 relName: String,
                                 to: String,
                                 dir: Direction,
+                                typeNames: Seq[String],
                                 types: Seq[Int])
                                (val estimatedCardinality: Option[Long] = None)
                                (implicit pipeMonitor: PipeMonitor)
-  extends ExpandPipe[Int](source, from, relName, to, dir, types, pipeMonitor) {
+  extends ExpandPipe(source, from, relName, to, dir, typeNames, pipeMonitor) {
 
   override def getRelationships: (Node, QueryContext, Direction) => Iterator[Relationship] =
     (n:Node, query: QueryContext, dir:Direction) => query.getRelationshipsForIds(n, dir, types)
@@ -97,7 +98,7 @@ case class ExpandPipeForStringTypes(source: Pipe,
                                     types: Seq[String])
                                    (val estimatedCardinality: Option[Long] = None)
                                    (implicit pipeMonitor: PipeMonitor)
-  extends ExpandPipe[String](source, from, relName, to, dir, types, pipeMonitor) {
+  extends ExpandPipe(source, from, relName, to, dir, types, pipeMonitor) {
 
   override def getRelationships: (Node, QueryContext, Direction) => Iterator[Relationship] =
     (n:Node, query: QueryContext, dir:Direction) => query.getRelationshipsFor(n, dir, types)

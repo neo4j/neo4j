@@ -28,13 +28,13 @@ import org.neo4j.graphdb.{Direction, Node, Relationship}
 
 import scala.collection.mutable
 
-sealed abstract class VarLengthExpandPipe[T](source: Pipe,
+sealed abstract class VarLengthExpandPipe(source: Pipe,
                                              fromName: String,
                                              relName: String,
                                              toName: String,
                                              dir: Direction,
                                              projectedDir: Direction,
-                                             types: Seq[T],
+                                             typeNames: Seq[String],
                                              min: Int,
                                              max: Option[Int],
                                              filteringStep: (ExecutionContext, QueryState, Relationship) => Boolean = (_, _, _) => true,
@@ -93,7 +93,7 @@ sealed abstract class VarLengthExpandPipe[T](source: Pipe,
     row.getOrElse(fromName, throw new InternalException(s"Expected to find a node at $fromName but found nothing"))
 
   def planDescription = source.planDescription.
-    andThen(this, "Var length expand", identifiers, ExpandExpression(fromName, relName, toName, projectedDir, true))
+    andThen(this, "Var length expand", identifiers, ExpandExpression(fromName, relName, typeNames, toName, projectedDir, varLength = true))
 
   def symbols = source.symbols.add(toName, CTNode).add(relName, CTRelationship)
 
@@ -110,12 +110,13 @@ case class VarLengthExpandPipeForIntTypes(source: Pipe,
                                              toName: String,
                                              dir: Direction,
                                              projectedDir: Direction,
+                                             typeNames: Seq[String],
                                              types: Seq[Int],
                                              min: Int,
                                              max: Option[Int],
                                              filteringStep: (ExecutionContext, QueryState, Relationship) => Boolean = (_, _, _) => true)
                                             (val estimatedCardinality: Option[Long] = None)
-                                            (implicit pipeMonitor: PipeMonitor) extends VarLengthExpandPipe[Int](source, fromName, relName, toName, dir, projectedDir, types, min, max, filteringStep, pipeMonitor) {
+                                            (implicit pipeMonitor: PipeMonitor) extends VarLengthExpandPipe(source, fromName, relName, toName, dir, projectedDir, typeNames, min, max, filteringStep, pipeMonitor) {
 
   override def getRelationships: (Node, QueryContext, Direction) => Iterator[Relationship] =
     (n: Node, query: QueryContext, dir: Direction) => query.getRelationshipsForIds(n, dir, types)
@@ -140,7 +141,7 @@ case class VarLengthExpandPipeForStringTypes(source: Pipe,
                                              max: Option[Int],
                                              filteringStep: (ExecutionContext, QueryState, Relationship) => Boolean = (_, _, _) => true)
                                             (val estimatedCardinality: Option[Long] = None)
-                                            (implicit pipeMonitor: PipeMonitor) extends VarLengthExpandPipe[String](source, fromName, relName, toName, dir, projectedDir, types, min, max, filteringStep, pipeMonitor) {
+                                            (implicit pipeMonitor: PipeMonitor) extends VarLengthExpandPipe(source, fromName, relName, toName, dir, projectedDir, types, min, max, filteringStep, pipeMonitor) {
 
   override def getRelationships: (Node, QueryContext, Direction) => Iterator[Relationship] =
     (n: Node, query: QueryContext, dir: Direction) => query.getRelationshipsFor(n, dir, types)

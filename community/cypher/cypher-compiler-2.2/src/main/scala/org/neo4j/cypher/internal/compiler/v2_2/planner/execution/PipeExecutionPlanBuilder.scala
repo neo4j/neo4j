@@ -137,7 +137,7 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
           if (types.exists(_.id == None))
             VarLengthExpandPipeForStringTypes(buildPipe(left, input), fromName, relName, toName, dir, projectedDir, types.map(_.name), min, max, predicate)()
           else
-            VarLengthExpandPipeForIntTypes(buildPipe(left, input), fromName, relName, toName, dir, projectedDir, types.flatMap(_.id).map(_.id), min, max, predicate)()
+            VarLengthExpandPipeForIntTypes(buildPipe(left, input), fromName, relName, toName, dir, projectedDir, types.map(_.name), types.flatMap(_.id).map(_.id), min, max, predicate)()
 
         case NodeHashJoin(nodes, left, right) =>
           NodeHashJoinPipe(nodes.map(_.name), buildPipe(left, input), buildPipe(right, input))()
@@ -244,7 +244,7 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
       if (types.exists(_.id == None))
         ExpandPipeForStringTypes(left, fromName, relName, toName, dir, types.map(_.name))()
       else
-        ExpandPipeForIntTypes(left, fromName, relName, toName, dir, types.flatMap(_.id).map(_.id))()
+        ExpandPipeForIntTypes(left, fromName, relName, toName, dir, types.map(_.name), types.flatMap(_.id).map(_.id))()
 
     def buildExpression(expr: ast.Expression): CommandExpression = {
       val rewrittenExpr = expr.endoRewrite(buildPipeExpressions)

@@ -148,7 +148,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
     val logicalPlan = Expand(AllNodesScan("a", Set.empty)(solved), "a", Direction.INCOMING, Seq(), "b", "r1")_
     val pipeInfo = build(logicalPlan)
 
-    pipeInfo.pipe should equal(ExpandPipeForIntTypes( AllNodesScanPipe("a")(), "a", "r1", "b", Direction.INCOMING, Seq() )())
+    pipeInfo.pipe should equal(ExpandPipeForIntTypes( AllNodesScanPipe("a")(), "a", "r1", "b", Direction.INCOMING, Seq.empty, Seq.empty )())
   }
 
   test("simple expand into existing identifier MATCH a-[r]->a ") {
@@ -156,7 +156,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
       AllNodesScan("a", Set.empty)(solved), "a", Direction.INCOMING, Seq(), "a", "r", ExpandInto)_
     val pipeInfo = build(logicalPlan)
 
-    val inner: Pipe = ExpandPipeForIntTypes( AllNodesScanPipe("a")(), "a", "r", "a$$$", Direction.INCOMING, Seq() )()
+    val inner: Pipe = ExpandPipeForIntTypes( AllNodesScanPipe("a")(), "a", "r", "a$$$", Direction.INCOMING, Seq.empty, Seq.empty )()
 
     pipeInfo.pipe should equal(FilterPipe(inner, Equals(Identifier("a"), Identifier("a$$$")))())
   }
@@ -182,8 +182,8 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
 
     pipeInfo.pipe should equal(NodeHashJoinPipe(
       Set("b"),
-      ExpandPipeForIntTypes( AllNodesScanPipe("a")(), "a", "r1", "b", Direction.INCOMING, Seq() )(),
-      ExpandPipeForIntTypes( AllNodesScanPipe("c")(), "c", "r2", "b", Direction.INCOMING, Seq() )()
+      ExpandPipeForIntTypes( AllNodesScanPipe("a")(), "a", "r1", "b", Direction.INCOMING, Seq.empty, Seq.empty )(),
+      ExpandPipeForIntTypes( AllNodesScanPipe("c")(), "c", "r2", "b", Direction.INCOMING, Seq.empty, Seq.empty )()
     )())
   }
 
@@ -202,7 +202,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
     val logicalPlan = Expand(AllNodesScan("a", Set.empty)(solved), "a", Direction.INCOMING, relTypeNames, "b", "r1")_
     val pipeInfo = build(logicalPlan)
 
-    pipeInfo.pipe should equal(ExpandPipeForIntTypes( AllNodesScanPipe("a")(), "a", "r1", "b", Direction.INCOMING, Seq(1, 2, 3))())
+    pipeInfo.pipe should equal(ExpandPipeForIntTypes( AllNodesScanPipe("a")(), "a", "r1", "b", Direction.INCOMING, names, Seq(1, 2, 3))())
   }
 
   test("use VarExpandPipeForStringTypes when at least one is unknown") {
@@ -227,7 +227,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
 
     pipeInfo.pipe match {
       case pipe: VarLengthExpandPipeForIntTypes => pipe.copy(filteringStep = null)(pipe.estimatedCardinality) should equal(
-        VarLengthExpandPipeForIntTypes(AllNodesScanPipe("a")(), "a", "r1", "b", Direction.INCOMING, Direction.INCOMING, Seq(1, 2, 3), 2, Some(5))().copy(filteringStep = null)(pipe.estimatedCardinality))
+        VarLengthExpandPipeForIntTypes(AllNodesScanPipe("a")(), "a", "r1", "b", Direction.INCOMING, Direction.INCOMING, names, Seq(1, 2, 3), 2, Some(5))().copy(filteringStep = null)(pipe.estimatedCardinality))
 
       case _ => fail("expected VarLengthExpandPipeForIntTypes")
     }

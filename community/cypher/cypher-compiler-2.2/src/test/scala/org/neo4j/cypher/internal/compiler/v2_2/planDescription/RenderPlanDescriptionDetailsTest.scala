@@ -118,7 +118,7 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
       """+----------+---------------+-------------+---------------------+
         || Operator | EstimatedRows | Identifiers |               Other |
         |+----------+---------------+-------------+---------------------+
-        ||   Expand |             1 |     rel, to | (from)<-[:rel]-(to) |
+        ||   Expand |             1 |     rel, to | (from)<-[rel:]-(to) |
         |+----------+---------------+-------------+---------------------+
         |""".stripMargin)
   }
@@ -133,7 +133,7 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
       """+-------------------+---------------+-------------+----------------------+
         ||          Operator | EstimatedRows | Identifiers |                Other |
         |+-------------------+---------------+-------------+----------------------+
-        || Var length expand |             1 |     rel, to | (from)-[:rel*]->(to) |
+        || Var length expand |             1 |     rel, to | (from)-[rel:*]->(to) |
         |+-------------------+---------------+-------------+----------------------+
         |""".stripMargin)
   }
@@ -142,16 +142,33 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
     val arguments = Seq(
       Rows(42),
       DbHits(33),
-      ExpandExpression("  UNNAMED123", "R", "  UNNAMED24", Direction.OUTGOING)
+      ExpandExpression("  UNNAMED123", "R", Seq("WHOOP"), "  UNNAMED24", Direction.OUTGOING)
     )
 
     val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n", "  UNNAMED123", "  UNNAMED2", "  UNNAMED24"))
     renderDetails(plan) should equal(
-      """|+----------+---------------+------+--------+-------------+-------------+
-        || Operator | EstimatedRows | Rows | DbHits | Identifiers |       Other |
-        |+----------+---------------+------+--------+-------------+-------------+
-        ||     NAME |             1 |   42 |     33 |           n | ()-[:R]->() |
-        |+----------+---------------+------+--------+-------------+-------------+
+      """+----------+---------------+------+--------+-------------+------------------+
+        || Operator | EstimatedRows | Rows | DbHits | Identifiers |            Other |
+        |+----------+---------------+------+--------+-------------+------------------+
+        ||     NAME |             1 |   42 |     33 |           n | ()-[R:WHOOP]->() |
+        |+----------+---------------+------+--------+-------------+------------------+
+        |""".stripMargin)
+  }
+
+  test("show multiple relationship types") {
+    val arguments = Seq(
+      Rows(42),
+      DbHits(33),
+      ExpandExpression("source", "through", Seq("SOME","OTHER","THING"), "target", Direction.OUTGOING)
+    )
+
+    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n", "  UNNAMED123", "  UNNAMED2", "  UNNAMED24"))
+    renderDetails(plan) should equal(
+      """+----------+---------------+------+--------+-------------+-------------------------------------------------+
+        || Operator | EstimatedRows | Rows | DbHits | Identifiers |                                           Other |
+        |+----------+---------------+------+--------+-------------+-------------------------------------------------+
+        ||     NAME |             1 |   42 |     33 |           n | (source)-[through:SOME|:OTHER|:THING]->(target) |
+        |+----------+---------------+------+--------+-------------+-------------------------------------------------+
         |""".stripMargin)
   }
 }
