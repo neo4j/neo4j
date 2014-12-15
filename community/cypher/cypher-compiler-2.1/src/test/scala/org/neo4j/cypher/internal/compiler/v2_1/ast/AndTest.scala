@@ -29,8 +29,8 @@ class AndTest extends InfixExpressionTestBase(And(_, _)(DummyPosition(0))) {
   }
 
   test("shouldCoerceArguments") {
-    testValidTypes(CTInteger, CTBoolean)(CTBoolean)
-    testValidTypes(CTBoolean, CTInteger)(CTBoolean)
+    testInvalidApplication(CTInteger, CTBoolean)("Type mismatch: expected Boolean but was Integer")
+    testInvalidApplication(CTBoolean, CTInteger)("Type mismatch: expected Boolean but was Integer")
   }
 
   test("shouldReturnErrorIfInvalidArgumentTypes") {
