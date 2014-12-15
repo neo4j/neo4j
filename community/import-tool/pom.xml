@@ -12,6 +12,7 @@
     <bundle.namespace>org.neo4j.tooling.batchimport</bundle.namespace>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
+    <version-package>tooling.import</version-package>
   </properties>
 
   <modelVersion>4.0.0</modelVersion>
