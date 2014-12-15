@@ -56,8 +56,10 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
       logger.info(s"Discarded stale query from the query cache: $query")
     }
   })
+
   private val cacheAccessor = new MonitoringCacheAccessor[String, (ExecutionPlan, Map[String, Any])](cacheMonitor)
 
+  private val preParsedQueries = new LRUCache[String, PreParsedQuery](getPlanCacheSize)
   private val parsedQueries = new LRUCache[String, ParsedQuery](getPlanCacheSize)
 
   @throws(classOf[SyntaxException])
@@ -68,8 +70,8 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
 
   @throws(classOf[SyntaxException])
   def profile(query: String, params: Map[String, Any]): ExtendedExecutionResult = {
-    val (plan, extractedParams, txInfo) = planQuery(query)
-    plan.profile(graphAPI, txInfo, params ++ extractedParams)
+    val (preparedPlanExecution, txInfo) = planQuery(query)
+    preparedPlanExecution.profile(graphAPI, txInfo, params)
   }
 
   @throws(classOf[SyntaxException])
@@ -80,17 +82,30 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
 
   @throws(classOf[SyntaxException])
   def execute(query: String, params: Map[String, Any]): ExtendedExecutionResult = {
-    val (plan, extractedParams, txInfo) = planQuery(query)
-    plan.execute(graphAPI, txInfo, params ++ extractedParams)
+    val (preparedPlanExecution, txInfo) = planQuery(query)
+    preparedPlanExecution.execute(graphAPI, txInfo, params)
   }
 
   @throws(classOf[SyntaxException])
   protected def parseQuery(queryText: String): ParsedQuery =
-    parsedQueries.getOrElseUpdate( queryText, compiler.parseQuery( queryText ) )
+    parsePreParsedQuery(preParseQuery(queryText))
 
   @throws(classOf[SyntaxException])
-  protected def planQuery(queryText: String): (ExecutionPlan, Map[String, Any], TransactionInfo) = {
+  private def parsePreParsedQuery(preParsedQuery: PreParsedQuery): ParsedQuery =
+    parsedQueries.getOrElseUpdate(preParsedQuery.statementWithVersion, compiler.parseQuery(preParsedQuery))
+
+  @throws(classOf[SyntaxException])
+  private def preParseQuery(queryText: String): PreParsedQuery =
+    preParsedQueries.getOrElseUpdate(queryText, compiler.preParseQuery(queryText))
+
+  @throws(classOf[SyntaxException])
+  protected def planQuery(queryText: String): (PreparedPlanExecution, TransactionInfo) = {
     logger.debug(queryText)
+
+    val preParsedQuery = preParseQuery(queryText)
+    val planType = preParsedQuery.planType
+    val cacheKey = preParsedQuery.statementWithVersion
+
     var n = 0
     while (n < ExecutionEngine.PLAN_BUILDING_TRIES) {
       // create transaction and query context
@@ -107,17 +122,17 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
         })
 
         Iterator.continually {
-          cacheAccessor.getOrElseUpdate(cache)(queryText, {
+          cacheAccessor.getOrElseUpdate(cache)(cacheKey, {
             touched = true
-            val parsedQuery: ParsedQuery = parseQuery(queryText)
+            val parsedQuery = parsePreParsedQuery(preParsedQuery)
             parsedQuery.plan(kernelStatement)
           })
-        }.flatMap { case (plan, params) =>
-          if (!touched && plan.isStale(lastTxId, kernelStatement)) {
-            cacheAccessor.remove(cache)(queryText)
+        }.flatMap { case (candidatePlan, params) =>
+          if (!touched && candidatePlan.isStale(lastTxId, kernelStatement)) {
+            cacheAccessor.remove(cache)(cacheKey)
             None
           } else {
-            Some((plan, params))
+            Some((candidatePlan, params))
           }
         }.next()
       }
@@ -138,7 +153,9 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
         // close the old statement reference after the statement has been "upgraded"
         // to either a schema data or a schema statement, so that the locks are "handed over".
         kernelStatement.close()
-        return (plan, extractedParameters, TransactionInfo(tx, isTopLevelTx, txBridge.instance()))
+        val preparedPlanExecution = PreparedPlanExecution(plan, planType, extractedParameters)
+        val txInfo = TransactionInfo(tx, isTopLevelTx, txBridge.instance())
+        return (preparedPlanExecution, txInfo)
       }
 
       n += 1

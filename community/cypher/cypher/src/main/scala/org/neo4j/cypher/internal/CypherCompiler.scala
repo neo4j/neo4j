@@ -36,7 +36,9 @@ object CypherCompiler {
   val STATISTICS_DIVERGENCE_THRESHOLD = 0.5
 }
 
-case class PreParsedQuery(statement: String, version: CypherVersion, planType: PlanType)
+case class PreParsedQuery(statement: String, version: CypherVersion, planType: PlanType) {
+  val statementWithVersion = s"CYPHER ${version.name} $statement"
+}
 
 
 class CypherCompiler(graph: GraphDatabaseService,
@@ -60,20 +62,25 @@ class CypherCompiler(graph: GraphDatabaseService,
       kernelMonitors, kernelAPI, logger)
 
   @throws(classOf[SyntaxException])
-  def parseQuery(queryText: String): ParsedQuery = {
+  def preParseQuery(queryText: String): PreParsedQuery = {
     val queryWithOptions = optionParser(queryText)
     val preParsedQuery: PreParsedQuery = preParse(queryWithOptions)
+    preParsedQuery
+  }
+
+  @throws(classOf[SyntaxException])
+  def parseQuery(preParsedQuery: PreParsedQuery): ParsedQuery = {
     val planType = preParsedQuery.planType
     val version = preParsedQuery.version
     val statementAsText = preParsedQuery.statement
 
     version match {
-      case CypherVersion.`v2_2_cost` => compatibilityFor2_2Cost.produceParsedQuery(statementAsText, planType)
-      case CypherVersion.`v2_2_rule` => compatibilityFor2_2Rule.produceParsedQuery(statementAsText, planType)
-      case CypherVersion.v2_2 => compatibilityFor2_2Cost.produceParsedQuery(statementAsText, planType)
-      case CypherVersion.v2_1 => compatibilityFor2_1.parseQuery(statementAsText, planType == Profiled)
-      case CypherVersion.v2_0 => compatibilityFor2_0.parseQuery(statementAsText, planType == Profiled)
-      case CypherVersion.v1_9 => compatibilityFor1_9.parseQuery(statementAsText, planType == Profiled)
+      case CypherVersion.`v2_2_cost` => compatibilityFor2_2Cost.produceParsedQuery(statementAsText)
+      case CypherVersion.`v2_2_rule` => compatibilityFor2_2Rule.produceParsedQuery(statementAsText)
+      case CypherVersion.v2_2 => compatibilityFor2_2Cost.produceParsedQuery(statementAsText)
+      case CypherVersion.v2_1 => compatibilityFor2_1.parseQuery(statementAsText)
+      case CypherVersion.v2_0 => compatibilityFor2_0.parseQuery(statementAsText)
+      case CypherVersion.v1_9 => compatibilityFor1_9.parseQuery(statementAsText)
     }
   }
 

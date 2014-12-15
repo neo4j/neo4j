@@ -35,32 +35,36 @@ import scala.util.Try
 case class CompatibilityFor2_1(graph: GraphDatabaseService, queryCacheSize: Int, kernelMonitors: KernelMonitors, kernelAPI: KernelAPI) {
   private val compiler = CypherCompilerFactory.legacyCompiler(graph, queryCacheSize, kernelMonitors)
 
-  def parseQuery(statementAsText: String, profiled: Boolean) = new ParsedQuery {
+  def parseQuery(statementAsText: String) = new ParsedQuery {
     val preparedQueryForV_2_1 = Try(compiler.prepareQuery(statementAsText))
 
     override def plan(statement: Statement): (ExecutionPlan, Map[String, Any]) = {
       val planContext = new PlanContext_v2_1(statement, kernelAPI, graph)
       val (planImpl, extractedParameters) = compiler.planPreparedQuery(preparedQueryForV_2_1.get, planContext)
-      (new ExecutionPlanWrapper(planImpl, profiled), extractedParameters)
+      (new ExecutionPlanWrapper(planImpl), extractedParameters)
     }
 
     def isPeriodicCommit = preparedQueryForV_2_1.map(_.isPeriodicCommit).getOrElse(false)
   }
 
-  class ExecutionPlanWrapper(inner: ExecutionPlan_v2_1, profile: Boolean) extends ExecutionPlan {
+  class ExecutionPlanWrapper(inner: ExecutionPlan_v2_1) extends ExecutionPlan {
 
     private def queryContext(graph: GraphDatabaseAPI, txInfo: TransactionInfo) = {
       val ctx = new QueryContext_v2_1(graph, txInfo.tx, txInfo.isTopLevelTx, txInfo.statement)
       new ExceptionTranslatingQueryContext_v2_1(ctx)
     }
 
-    def profile(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
-      LegacyExecutionResultWrapper(inner.profile(queryContext(graph, txInfo), params), planDescriptionRequested = true, CypherVersion.v2_1)
+    def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, planType: PlanType, params: Map[String, Any]) = planType match {
+      case Normal   => execute(graph, txInfo, params)
+      case Profiled => profile(graph, txInfo, params)
+      case _        => throw new UnsupportedOperationException(s"${CypherVersion.v2_1.name}: $planType is unsupported")
+    }
 
-    def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) = if (profile)
-      profile(graph, txInfo, params)
-    else
+    private def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
       LegacyExecutionResultWrapper(inner.execute(queryContext(graph, txInfo), params), planDescriptionRequested = false, CypherVersion.v2_1)
+
+    private def profile(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
+      LegacyExecutionResultWrapper(inner.profile(queryContext(graph, txInfo), params), planDescriptionRequested = true, CypherVersion.v2_1)
 
     def isPeriodicCommit = inner.isPeriodicCommit
 

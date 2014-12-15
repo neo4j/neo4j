@@ -100,13 +100,13 @@ class ProfileRonjaPlanningTest extends ExecutionEngineFunSuite with QueryStatist
     val (plan, parameters) = db.withTx {
       tx =>
         val planContext = new TransactionBoundPlanContext(db.statement, db) with RealStatistics
-        compiler.planQuery(query, planContext, Profiled)
+        compiler.planQuery(query, planContext)
     }
 
     db.withTx {
       tx =>
         val queryContext = new TransactionBoundQueryContext(db, tx, true, db.statement)
-        val result = plan.execute(queryContext, parameters)
+        val result = plan.run(queryContext, Profiled, parameters)
         (result.toList, result)
     }
   }

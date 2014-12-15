@@ -211,9 +211,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     val result = legacyProfile(query)
 
     // then
-
     val expectedTxCount = 1 + // First tx used to compile the query
-                          1 + // Last tx to close it all down
                           10  // One per 10 rows of CSV file
 
     graph.txCounts-initialTxCounts should equal(TxCounts(commits = expectedTxCount))
@@ -286,7 +284,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   override def profile(q: String, params: (String, Any)*): InternalExecutionResult = profileWithPlanner(executeWithNewPlanner(_,_:_*), q, params:_*)
 
-  def legacyProfile(q: String, params: (String, Any)*): InternalExecutionResult = profileWithPlanner(super.execute(_,_:_*), q, params:_*)
+  def legacyProfile(q: String, params: (String, Any)*): InternalExecutionResult = profileWithPlanner(innerExecute(_,_:_*), q, params:_*)
 
 
 

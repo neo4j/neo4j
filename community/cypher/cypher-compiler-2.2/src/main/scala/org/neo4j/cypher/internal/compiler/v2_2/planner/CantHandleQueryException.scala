@@ -25,6 +25,7 @@ import org.neo4j.kernel.api.exceptions.Status
 
 class CantHandleQueryException(message: String = "Internal error - should have used fall back to execute query, but something went horribly wrong")
   extends CypherException() {
+
   def status = Status.Statement.ExecutionFailure
 
   def mapToPublic[T <: Throwable](thrower: MapToPublicExceptions[T]) = throw new CantHandleQueryException(message)

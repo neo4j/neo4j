@@ -23,7 +23,8 @@ import org.neo4j.cypher.internal.PlanType.cantMixProfileAndExplain
 import org.neo4j.cypher.internal.compiler.v2_2.InvalidSemanticsException
 
 object PlanType {
-  def cantMixProfileAndExplain: Nothing =  throw new InvalidSemanticsException("Can't mix PROFILE and EXPLAIN")
+  def cantMixProfileAndExplain: Nothing =
+    throw new InvalidSemanticsException("Can't mix PROFILE and EXPLAIN")
 }
 
 sealed trait PlanType {
@@ -37,14 +38,14 @@ case object Normal extends PlanType {
 case object Explained extends PlanType {
   def combineWith(other: PlanType) = other match {
     case Profiled => cantMixProfileAndExplain
-    case _ => this
+    case _        => this
   }
 }
 
 case object Profiled extends PlanType {
   def combineWith(other: PlanType) = other match {
     case Explained => cantMixProfileAndExplain
-    case _ => this
+    case _         => this
   }
 }
 

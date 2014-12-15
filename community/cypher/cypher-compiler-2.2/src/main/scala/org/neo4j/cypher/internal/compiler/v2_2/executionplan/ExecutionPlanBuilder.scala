@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 
-import org.neo4j.cypher.internal.Profiled
+import org.neo4j.cypher.internal.{Profiled, PlanType}
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_2.commands._
@@ -60,15 +60,15 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold
     val PipeInfo(pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
 
     val columns = getQueryResultColumns(abstractQuery, pipe.symbols)
-    val resultBuilderFactory = new DefaultExecutionResultBuilderFactory(pipeInfo, columns, inputQuery.planType)
+    val resultBuilderFactory = new DefaultExecutionResultBuilderFactory(pipeInfo, columns)
     val func = getExecutionPlanFunction(periodicCommitInfo, abstractQuery.getQueryText, updating, resultBuilderFactory)
-
-    val profileMarker = inputQuery.planType == Profiled
 
     new ExecutionPlan {
       private val fingerprint = PlanFingerprintReference(clock, queryPlanTTL, statsDivergenceThreshold, fp)
-      def execute(queryContext: QueryContext, params: Map[String, Any]) = func(queryContext, params, profileMarker)
-      def profile(queryContext: QueryContext, params: Map[String, Any]) = func(new UpdateCountingQueryContext(queryContext), params, true)
+
+      def run(queryContext: QueryContext, planType: PlanType, params: Map[String, Any]) =
+        func(queryContext, planType, params)
+
       def isPeriodicCommit = periodicCommitInfo.isDefined
       def plannerUsed = planner
       def isStale(lastTxId: () => Long, statistics: GraphStatistics) = fingerprint.isStale(lastTxId, statistics)
@@ -102,11 +102,12 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold
                                        queryId: AnyRef,
                                        updating: Boolean,
                                        resultBuilderFactory: ExecutionResultBuilderFactory):
-  (QueryContext, Map[String, Any], Boolean) => InternalExecutionResult =
-    (queryContext: QueryContext, params: Map[String, Any], profile: Boolean) => {
+  (QueryContext, PlanType, Map[String, Any]) => InternalExecutionResult =
+    (queryContext: QueryContext, planType: PlanType, params: Map[String, Any]) => {
       val builder = resultBuilderFactory.create()
 
-      val builderContext = if (updating) new UpdateCountingQueryContext(queryContext) else queryContext
+      val profiling = planType == Profiled
+      val builderContext = if (updating || profiling) new UpdateCountingQueryContext(queryContext) else queryContext
       builder.setQueryContext(builderContext)
 
       if (periodicCommit.isDefined) {
@@ -115,9 +116,9 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold
         builder.setLoadCsvPeriodicCommitObserver(periodicCommit.get.batchRowCount)
       }
 
-      if (profile)
+      if (profiling)
         builder.setPipeDecorator(new Profiler())
 
-      builder.build(graph, queryId, params)
+      builder.build(graph, queryId, planType, params)
     }
 }

@@ -86,7 +86,7 @@ trait NewPlannerTestSupport extends CypherTestSupport {
       }
     }
 
-  private def innerExecute(queryText: String, params: (String, Any)*): InternalExecutionResult =
+  protected def innerExecute(queryText: String, params: (String, Any)*): InternalExecutionResult =
     eengine.execute(queryText, params.toMap) match {
       case ExecutionResultWrapperFor2_2(inner: InternalExecutionResult, _) => RewindableExecutionResult(inner)
     }
@@ -96,9 +96,11 @@ trait NewPlannerTestSupport extends CypherTestSupport {
 
   override def execute(queryText: String, params: (String, Any)*) =
     monitoringNewPlanner(innerExecute(queryText, params: _*)) { trace =>
-      trace.collectFirst {
-        case UnableToHandleQuery(stackTrace) =>
-      }.orElse {
+      val unableToHandle = trace.collectFirst {
+        case event: UnableToHandleQuery => event
+      }
+
+      unableToHandle.orElse {
         fail(s"Unexpectedly used the new planner on: $queryText")
       }
     }
