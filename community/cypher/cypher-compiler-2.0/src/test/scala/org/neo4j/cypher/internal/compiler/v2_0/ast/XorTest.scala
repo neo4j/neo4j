@@ -32,8 +32,8 @@ class XorTest extends InfixExpressionTestBase(Xor(_, _)(DummyPosition(0))) {
 
   @Test
   def shouldCoerceArguments() {
-    testValidTypes(CTInteger, CTBoolean)(CTBoolean)
-    testValidTypes(CTBoolean, CTInteger)(CTBoolean)
+    testInvalidApplication(CTInteger, CTBoolean)("Type mismatch: expected Boolean but was Integer")
+    testInvalidApplication(CTBoolean, CTInteger)("Type mismatch: expected Boolean but was Integer")
   }
 
   @Test
