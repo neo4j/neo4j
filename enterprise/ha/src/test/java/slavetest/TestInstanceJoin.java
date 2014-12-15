@@ -28,7 +28,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePullerClient;
