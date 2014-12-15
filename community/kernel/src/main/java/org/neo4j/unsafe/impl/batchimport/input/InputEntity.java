@@ -75,7 +75,7 @@ public abstract class InputEntity
             arguments[cursor++] = item.first() + ": " + item.other();
         }
 
-        return format( builder.toString(), arguments );
+        return format( builder.append( "%n" ).toString(), arguments );
     }
 
     protected void toStringFields( Collection<Pair<String, ?>> fields )
