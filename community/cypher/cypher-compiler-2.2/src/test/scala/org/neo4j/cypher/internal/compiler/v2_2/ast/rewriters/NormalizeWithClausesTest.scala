@@ -346,25 +346,25 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
   test("aggregating: does not change grouping set when introducing aliases for WHERE") {
     assertRewrite(
       """MATCH n
-        |WITH DISTINCT n.prop AS prop WHERE length(n.prop)
+        |WITH DISTINCT n.prop AS prop WHERE length(n.prop) = 1
         |RETURN prop
       """.stripMargin,
       """MATCH n
         |WITH DISTINCT n.prop AS prop
-        |WITH prop AS prop, length(prop) AS `  FRESHID43` WHERE `  FRESHID43`
-        |_PRAGMA WITHOUT `  FRESHID43`
+        |WITH prop AS prop, length(prop) = 1 AS `  FRESHID58` WHERE `  FRESHID58`
+        |_PRAGMA WITHOUT `  FRESHID58`
         |RETURN prop
       """.stripMargin)
 
     assertRewrite(
       """MATCH n
-        |WITH n.prop AS prop, count(*) AS count WHERE length(n.prop)
+        |WITH n.prop AS prop, count(*) AS count WHERE length(n.prop) = 1
         |RETURN prop, count
       """.stripMargin,
       """MATCH n
         |WITH n.prop AS prop, count(*) AS count
-        |WITH prop AS prop, count AS count, length(prop) AS `  FRESHID53` WHERE `  FRESHID53`
-        |_PRAGMA WITHOUT `  FRESHID53`
+        |WITH prop AS prop, count AS count, length(prop) = 1 AS `  FRESHID68` WHERE `  FRESHID68`
+        |_PRAGMA WITHOUT `  FRESHID68`
         |RETURN prop, count
       """.stripMargin)
   }
