@@ -159,6 +159,8 @@ case class Selectivity(factor: Double) extends Ordered[Selectivity] {
 }
 
 object Selectivity {
+  def of( value: Double ): Option[Selectivity] = if ( value.isInfinite || value.isNaN ) None else Some(value)
+
   val ZERO = Selectivity(0.0d)
   val ONE = Selectivity(1.0d)
 

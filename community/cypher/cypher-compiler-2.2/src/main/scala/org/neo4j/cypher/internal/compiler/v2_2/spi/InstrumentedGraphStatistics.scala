@@ -59,8 +59,14 @@ case class GraphStatisticsSnapshot(map: Map[StatisticsKey, Double] = Map.empty) 
       .map(_.map(_._2).product)
       .kahanSum
 
-    val cosine = dotProduct / (vectorLength(map) * vectorLength(snapshot.map))
-    val divergence = Math.acos(cosine) * 2 / Math.PI
+    // the dot product between _any_ vector with a "zero vector" is always 0, so
+    // if the dot product is 0 we call it diverged unless both vectors are equal
+    if (dotProduct == 0) {
+      return map != snapshot.map
+    }
+    // otherwise we compute the angular difference between the two vectors, and compare to the given threshold
+    val cosine = dotProduct / (vectorLength(map) * vectorLength(snapshot.map)) // range: [0, pi/2]
+    val divergence = Math.acos(cosine) * 2 / Math.PI // range: [0, 1]
     divergence >= minThreshold
   }
 
