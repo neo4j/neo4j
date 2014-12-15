@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes.matching
 
 import org.neo4j.cypher.internal.compiler.v2_2._
 import commands._
-import pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.{LazyTypes, QueryState}
 import org.neo4j.cypher.internal.helpers._
 import org.neo4j.graphdb.{Node, Relationship, Direction}
 
@@ -47,6 +47,8 @@ case class VarLengthStep(id: Int,
                          nodePredicate: Predicate) extends ExpanderStep {
   def createCopy(next: Option[ExpanderStep], direction: Direction, nodePredicate: Predicate): ExpanderStep =
     copy(next = next, direction = direction, nodePredicate = nodePredicate)
+
+  private val types = LazyTypes(typ)
 
   def expand(node: Node, parameters: ExecutionContext, state: QueryState): (Iterable[Relationship], Option[ExpanderStep]) = {
     def filter(r: Relationship, n: Node): Boolean = {
@@ -81,7 +83,7 @@ case class VarLengthStep(id: Int,
       }
     }
 
-    val matchingRelationships = DynamicIterable( state.query.getRelationshipsFor(node, direction, typ) )
+    val matchingRelationships = DynamicIterable( state.query.getRelationshipsForIds(node, direction, types.types(state.query)) )
 
 
     val result = if (matchingRelationships.isEmpty && min == 0) {

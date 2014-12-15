@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planDescription
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.pipes.{VarLengthExpandPipeForStringTypes, ExpandPipeForStringTypes, SingleRowPipe, PipeMonitor}
+import org.neo4j.cypher.internal.compiler.v2_2.pipes._
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.graphdb.Direction
 
@@ -112,7 +112,7 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
     val arguments = Seq(
       Rows(42),
       DbHits(33))
-    val expandPipe = ExpandPipeForStringTypes(pipe, "from", "rel", "to", Direction.INCOMING, Seq.empty)(Some(1L))(mock[PipeMonitor])
+    val expandPipe = ExpandPipe(pipe, "from", "rel", "to", Direction.INCOMING, LazyTypes.empty)(Some(1L))(mock[PipeMonitor])
 
     renderDetails(expandPipe.planDescription) should equal(
       """+----------+---------------+-------------+---------------------+
@@ -127,7 +127,7 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
     val arguments = Seq(
       Rows(42),
       DbHits(33))
-    val expandPipe = VarLengthExpandPipeForStringTypes(pipe, "from", "rel", "to", Direction.INCOMING, Direction.OUTGOING, Seq.empty, 0, None)(Some(1L))(mock[PipeMonitor])
+    val expandPipe = VarLengthExpandPipe(pipe, "from", "rel", "to", Direction.INCOMING, Direction.OUTGOING, LazyTypes.empty, 0, None)(Some(1L))(mock[PipeMonitor])
 
     renderDetails(expandPipe.planDescription) should equal(
       """+-------------------+---------------+-------------+----------------------+

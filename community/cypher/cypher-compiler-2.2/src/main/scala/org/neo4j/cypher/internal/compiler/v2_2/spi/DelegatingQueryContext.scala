@@ -52,9 +52,7 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
 
   def getOrCreateLabelId(labelName: String): Int = singleDbHit(inner.getOrCreateLabelId(labelName))
 
-  def getRelationshipsFor(node: Node, dir: Direction, types: Seq[String]): Iterator[Relationship] = manyDbHits(inner.getRelationshipsFor(node, dir, types))
-
-  def getRelationshipsForIds(node: Node, dir: Direction, types: Seq[Int]): Iterator[Relationship] = manyDbHits(inner.getRelationshipsForIds(node, dir, types))
+  def getRelationshipsForIds(node: Node, dir: Direction, types: Option[Seq[Int]]): Iterator[Relationship] = manyDbHits(inner.getRelationshipsForIds(node, dir, types))
 
   def nodeOps = inner.nodeOps
 

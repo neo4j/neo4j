@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.helpers.Eagerly
 import org.neo4j.graphdb.{Direction, Relationship}
 import org.neo4j.helpers.Clock
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.LazyTypes
 
 case class PipeExecutionBuilderContext(cardinality: Metrics.CardinalityModel, semanticTable: SemanticTable)
 
@@ -101,7 +102,8 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
 
         case OptionalExpand(left, IdName(fromName), dir, types, IdName(toName), IdName(relName), ExpandAll, predicates) =>
           val predicate = predicates.map(buildPredicate).reduceOption(_ ++ _).getOrElse(True())
-          OptionalExpandPipe(buildPipe(left, input), fromName, relName, toName, dir, types.map(_.name), predicate)()
+          implicit val table: SemanticTable = context.semanticTable
+          OptionalExpandPipe(buildPipe(left, input), fromName, relName, toName, dir, LazyTypes(types), predicate)()
 
         case Expand(left, IdName(fromName), dir, types: Seq[RelTypeName], IdName(toName), IdName(relName), ExpandInto) =>
           implicit val table: SemanticTable = context.semanticTable
@@ -118,7 +120,8 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
           val id2: CommandExpression = commands.expressions.Identifier(tmpName)
           val pred: CommandPredicate = commands.Equals(id1, id2)
           val predicate = (predicates.map(buildPredicate) :+ pred).reduceOption(_ ++ _).getOrElse(True())
-          OptionalExpandPipe(buildPipe(left, input), fromName, relName, tmpName, dir, types.map(_.name), predicate)()
+          implicit val table: SemanticTable = context.semanticTable
+          OptionalExpandPipe(buildPipe(left, input), fromName, relName, tmpName, dir, LazyTypes(types), predicate)()
 
         case VarExpand(left, IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName), VarPatternLength(min, max), expansionMode, predicates) =>
           val (keys, exprs) = predicates.unzip
@@ -134,10 +137,7 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
 
           implicit val table: SemanticTable = context.semanticTable
 
-          if (types.exists(_.id == None))
-            VarLengthExpandPipeForStringTypes(buildPipe(left, input), fromName, relName, toName, dir, projectedDir, types.map(_.name), min, max, predicate)()
-          else
-            VarLengthExpandPipeForIntTypes(buildPipe(left, input), fromName, relName, toName, dir, projectedDir, types.map(_.name), types.flatMap(_.id).map(_.id), min, max, predicate)()
+          VarLengthExpandPipe(buildPipe(left, input), fromName, relName, toName, dir, projectedDir, LazyTypes(types), min, max, predicate)()
 
         case NodeHashJoin(nodes, left, right) =>
           NodeHashJoinPipe(nodes.map(_.name), buildPipe(left, input), buildPipe(right, input))()
@@ -241,10 +241,7 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
 
     def buildExpandPipe(types: Seq[RelTypeName], left: Pipe, fromName: String, relName: String, toName: String, dir: Direction)
                        (implicit table: SemanticTable, monitor: PipeMonitor) =
-      if (types.exists(_.id == None))
-        ExpandPipeForStringTypes(left, fromName, relName, toName, dir, types.map(_.name))()
-      else
-        ExpandPipeForIntTypes(left, fromName, relName, toName, dir, types.map(_.name), types.flatMap(_.id).map(_.id))()
+        ExpandPipe(left, fromName, relName, toName, dir, LazyTypes(types))()
 
     def buildExpression(expr: ast.Expression): CommandExpression = {
       val rewrittenExpr = expr.endoRewrite(buildPipeExpressions)

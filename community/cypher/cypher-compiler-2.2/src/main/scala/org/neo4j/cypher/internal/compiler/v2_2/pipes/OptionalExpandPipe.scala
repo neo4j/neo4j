@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.commands.Predicate
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.graphdb.{Direction, Node}
 
-case class OptionalExpandPipe(source: Pipe, from: String, relName: String, to: String, dir: Direction, types: Seq[String], predicate: Predicate)
+case class OptionalExpandPipe(source: Pipe, from: String, relName: String, to: String, dir: Direction, types: LazyTypes, predicate: Predicate)
                              (val estimatedCardinality: Option[Long] = None)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
@@ -38,7 +38,7 @@ case class OptionalExpandPipe(source: Pipe, from: String, relName: String, to: S
         val fromNode = getFromNode(row)
         fromNode match {
           case n: Node =>
-            val relationships = state.query.getRelationshipsFor(n, dir, types)
+            val relationships = state.query.getRelationshipsForIds(n, dir, types.types(state.query))
             val contextWithRelationships = relationships.map {
               case r => row.newWith2(relName, r, to, r.getOtherNode(n))
             }.filter(ctx => predicate.isTrue(ctx))
@@ -66,7 +66,7 @@ case class OptionalExpandPipe(source: Pipe, from: String, relName: String, to: S
 
   def planDescription =
     source.planDescription.
-      andThen(this, "OptionalExpand", identifiers, ExpandExpression(from, relName, types, to, dir))
+      andThen(this, "OptionalExpand", identifiers, ExpandExpression(from, relName, types.names, to, dir))
 
   def symbols = source.symbols.add(to, CTNode).add(relName, CTRelationship)
 

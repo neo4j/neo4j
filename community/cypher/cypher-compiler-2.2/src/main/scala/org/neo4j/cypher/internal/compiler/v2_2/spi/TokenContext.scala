@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.spi
 
-import org.neo4j.kernel.api.exceptions.KernelException
-
 trait TokenContext {
   def getLabelName(id: Int): String
   def getOptLabelId(labelName: String): Option[Int]

@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.helpers.DynamicIterable
 import org.neo4j.graphdb._
 import org.mockito.Mockito._
 import org.neo4j.kernel.api._
-import org.neo4j.kernel.impl.api.{KernelTransactionImplementation, KernelStatement}
+import org.neo4j.kernel.impl.api.{StatementOperationParts, KernelTransactionImplementation, KernelStatement}
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.test.ImpermanentGraphDatabase
 
 class TransactionBoundQueryContextTest extends CypherFunSuite {
@@ -40,7 +41,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     statement = new KernelStatement(mock[KernelTransactionImplementation], null, null, null, null, null)
   }
 
-    test ("should_mark_transaction_successful_if_successful") {
+  test ("should_mark_transaction_successful_if_successful") {
     // GIVEN
     when (outerTx.failure () ).thenThrow (new AssertionError ("Shouldn't be called") )
     val context = new TransactionBoundQueryContext(graph, outerTx, isTopLevelTx = true, statement)
@@ -52,9 +53,9 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     verify (outerTx).success ()
     verify (outerTx).close ()
     verifyNoMoreInteractions (outerTx)
-    }
+  }
 
-    test ("should_mark_transaction_failed_if_not_successful") {
+  test ("should_mark_transaction_failed_if_not_successful") {
     // GIVEN
     when (outerTx.success () ).thenThrow (new AssertionError ("Shouldn't be called") )
     val context = new TransactionBoundQueryContext(graph, outerTx, isTopLevelTx = true, statement)
@@ -66,23 +67,24 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     verify (outerTx).failure ()
     verify (outerTx).close ()
     verifyNoMoreInteractions (outerTx)
-    }
+  }
 
-    test ("should_return_fresh_but_equal_iterators") {
+  test ("should_return_fresh_but_equal_iterators") {
     // GIVEN
     val relTypeName = "LINK"
     val node = createMiniGraph(relTypeName)
 
     val tx = graph.beginTx()
-    val context = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, statement)
+    val stmt = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).instance()
+    val context = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, stmt)
 
     // WHEN
-    val iterable = DynamicIterable( context.getRelationshipsFor(node, Direction.BOTH, Seq.empty) )
+    val iterable = DynamicIterable( context.getRelationshipsForIds(node, Direction.BOTH, None) )
 
     // THEN
     val iteratorA: Iterator[Relationship] = iterable.iterator
     val iteratorB: Iterator[Relationship] = iterable.iterator
-    iteratorA should not equal (iteratorB)
+    iteratorA should not equal iteratorB
     iteratorA.toList should equal (iteratorB.toList)
     2 should equal (iterable.size)
 
