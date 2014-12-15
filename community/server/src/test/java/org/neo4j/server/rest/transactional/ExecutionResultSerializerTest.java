@@ -38,6 +38,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Node;
@@ -309,7 +311,7 @@ public class ExecutionResultSerializerTest
         // then
         String result = output.toString( "UTF-8" );
         assertEquals( "{\"results\":[{\"columns\":[\"node\"]," +
-                      "\"data\":[{\"row\":[{\"d\":[1,0,1,2],\"e\":[\"a\",\"b\",\"ääö\"],\"b\":true,\"c\":[1,0,1,2],\"a\":12}]}]}]," +
+                      "\"data\":[{\"row\":[{\"a\":12,\"b\":true,\"c\":[1,0,1,2],\"d\":[1,0,1,2],\"e\":[\"a\",\"b\",\"ääö\"]}]}]}]," +
                       "\"errors\":[]}", result );
     }
 
@@ -320,15 +322,15 @@ public class ExecutionResultSerializerTest
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
 
-        Node a = node(1, properties(property("foo", 12)));
+        Node a = node( 1, properties( property( "foo", 12 ) ) );
         Node b = node( 2, properties( property( "bar", false ) ) );
         Relationship r = relationship( 1, properties( property( "baz", "quux" ) ), a, "FRAZZLE", b );
         Result executionResult = mockExecutionResult( map(
-                "nested", map(
+                "nested", new TreeMap<>( map(
                         "node", a,
                         "edge", r,
                         "path", path( a, link( r, b ) )
-                ) ) );
+                ) ) ) );
 
         // when
         serializer.statementResult( executionResult, false );
@@ -337,7 +339,7 @@ public class ExecutionResultSerializerTest
         // then
         String result = output.toString( "UTF-8" );
         assertEquals( "{\"results\":[{\"columns\":[\"nested\"]," +
-                      "\"data\":[{\"row\":[{\"node\":{\"foo\":12},\"edge\":{\"baz\":\"quux\"},\"path\":[{\"foo\":12},{\"baz\":\"quux\"},{\"bar\":false}]}]}]}]," +
+                      "\"data\":[{\"row\":[{\"edge\":{\"baz\":\"quux\"},\"node\":{\"foo\":12},\"path\":[{\"foo\":12},{\"baz\":\"quux\"},{\"bar\":false}]}]}]}]," +
                       "\"errors\":[]}", result );
     }
 
@@ -801,7 +803,7 @@ public class ExecutionResultSerializerTest
     @SafeVarargs
     private static Result mockExecutionResult( ExecutionPlanDescription planDescription, Map<String, Object>... rows )
     {
-        Set<String> keys = new HashSet<>();
+        Set<String> keys = new TreeSet<>();
         for ( Map<String, Object> row : rows )
         {
             keys.addAll( row.keySet() );

@@ -27,10 +27,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import org.codehaus.jackson.JsonFactory;
-import org.codehaus.jackson.JsonParseException;
-import org.codehaus.jackson.JsonParser;
-import org.codehaus.jackson.JsonToken;
+import org.codehaus.jackson.*;
 import org.codehaus.jackson.map.JsonMappingException;
 
 import org.neo4j.helpers.collection.PrefetchingIterator;
@@ -51,7 +48,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class StatementDeserializer extends PrefetchingIterator<Statement>
 {
-    private static final JsonFactory JSON_FACTORY = new JsonFactory().setCodec( new Neo4jJsonCodec() );
+    private static final JsonFactory JSON_FACTORY = new JsonFactory().setCodec( new Neo4jJsonCodec() ).disable( JsonGenerator.Feature.FLUSH_PASSED_TO_STREAM );
     private static final Map<String, Object> NO_PARAMETERS = unmodifiableMap( map() );
     private static final Iterator<Neo4jError> NO_ERRORS = emptyIterator();
 
