@@ -72,13 +72,19 @@ public class RelationshipStoreFormat_v2_2 extends FixedSizeRecordStoreFormat<Rel
         @Override
         public String recordName()
         {
-            return "NodeRecord";
+            return "RelationshipRecord";
         }
 
         @Override
-        public long id( RelationshipRecord nodeRecord )
+        public long id( RelationshipRecord record )
         {
-            return nodeRecord.getId();
+            return record.getId();
+        }
+
+        @Override
+        public RelationshipRecord newRecord( long id )
+        {
+            return new RelationshipRecord( id );
         }
 
         @Override
@@ -144,9 +150,9 @@ public class RelationshipStoreFormat_v2_2 extends FixedSizeRecordStoreFormat<Rel
         }
 
         @Override
-        public RelationshipRecord deserialize( PageCursor cursor, int offset, long id )
+        public void deserialize( PageCursor cursor, int offset, long id, RelationshipRecord record )
         {
-            RelationshipRecord record = new RelationshipRecord( id );
+            record.setId( id );
 
             // [    ,   x] in use flag
             // [    ,xxx ] first node high order bits
@@ -179,8 +185,6 @@ public class RelationshipStoreFormat_v2_2 extends FixedSizeRecordStoreFormat<Rel
             record.setFirstInFirstChain( (extraByte & 0x1) != 0 );
             record.setFirstInSecondChain( (extraByte & 0x2) != 0 );
             record.setNextProp( longFromIntAndMod( nextProp, (inUseByte & 0xF0L) << 28 ) );
-
-            return record;
         }
 
         @Override

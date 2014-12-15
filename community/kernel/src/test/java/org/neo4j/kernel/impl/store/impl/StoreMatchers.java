@@ -32,7 +32,7 @@ public class StoreMatchers
         Store.RecordCursor<R> cursor = store.cursor(0);
         while(cursor.next())
         {
-            records.add(cursor.record());
+            records.add( cursor.clonedRecord() );
         }
         return records;
     }

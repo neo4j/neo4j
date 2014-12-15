@@ -84,6 +84,12 @@ public class NodeStoreFormat_v2_2 extends FixedSizeRecordStoreFormat<NodeRecord,
         }
 
         @Override
+        public NodeRecord newRecord( long id )
+        {
+            return new NodeRecord( id );
+        }
+
+        @Override
         public void serialize( PageCursor cursor, int offset, NodeRecord record )
         {
             if(record.inUse())
@@ -120,9 +126,9 @@ public class NodeStoreFormat_v2_2 extends FixedSizeRecordStoreFormat<NodeRecord,
         }
 
         @Override
-        public NodeRecord deserialize( PageCursor cursor, int offset, long id )
+        public void deserialize( PageCursor cursor, int offset, long id, NodeRecord record )
         {
-            NodeRecord record = new NodeRecord( id );
+            record.setId( id );
             byte inUseByte = cursor.getByte(offset + IN_USE);
             long nextRel   = cursor.getUnsignedInt( offset + NEXT_REL_BASE );
             long nextProp  = cursor.getUnsignedInt(offset + NEXT_PROP_BASE);
@@ -140,7 +146,6 @@ public class NodeStoreFormat_v2_2 extends FixedSizeRecordStoreFormat<NodeRecord,
             record.setNextProp( longFromIntAndMod( nextProp, propModifier ) );
             record.setInUse( (inUseByte & 0x1) == 1 );
             record.setLabelField( labels, Collections.<DynamicRecord>emptyList() );
-            return record;
         }
 
         @Override

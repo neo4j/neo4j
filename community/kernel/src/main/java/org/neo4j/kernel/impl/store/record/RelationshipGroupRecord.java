@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.store.record;
 
 public class RelationshipGroupRecord extends Abstract64BitRecord
 {
-    private final int type;
+    private int type;
     private long next = Record.NO_NEXT_RELATIONSHIP.intValue();
     private long firstOut = Record.NO_NEXT_RELATIONSHIP.intValue();
     private long firstIn = Record.NO_NEXT_RELATIONSHIP.intValue();
@@ -60,6 +60,11 @@ public class RelationshipGroupRecord extends Abstract64BitRecord
     public int getType()
     {
         return type;
+    }
+
+    public void setType( int type )
+    {
+        this.type = type;
     }
 
     public long getFirstOut()
