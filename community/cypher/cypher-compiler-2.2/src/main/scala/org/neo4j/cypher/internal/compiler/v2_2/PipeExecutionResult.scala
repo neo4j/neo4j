@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
 import org.neo4j.cypher.internal.helpers.{CollectionSupport, Eagerly}
-import org.neo4j.cypher.internal.{Explained, PlanType, Profiled}
+import org.neo4j.cypher.internal.{ExplainMode, ExecutionMode, ProfileMode}
 import org.neo4j.graphdb.QueryExecutionType.{QueryType, profiled, query}
 import org.neo4j.graphdb.ResourceIterator
 
@@ -39,7 +39,7 @@ class PipeExecutionResult(val result: ResultIterator,
                           val columns: List[String],
                           val state: QueryState,
                           val executionPlanBuilder: () => InternalPlanDescription,
-                          val planType: PlanType,
+                          val executionMode: ExecutionMode,
                           val queryType: QueryType)
   extends InternalExecutionResult
   with CollectionSupport {
@@ -76,7 +76,7 @@ class PipeExecutionResult(val result: ResultIterator,
 
   def close() { result.close() }
 
-  def planDescriptionRequested = planType == Explained || planType == Profiled
+  def planDescriptionRequested = executionMode == ExplainMode || executionMode == ProfileMode
 
   private def getAnyColumn[T](column: String, m: Map[String, Any]): Any = {
     m.getOrElse(column, {
@@ -100,6 +100,6 @@ class PipeExecutionResult(val result: ResultIterator,
     def close() { self.close() }
   }
 
-  def executionType = if (planType == Profiled) profiled(queryType) else query(queryType)
+  def executionType = if (executionMode == ProfileMode) profiled(queryType) else query(queryType)
 }
 

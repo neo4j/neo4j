@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.parser.{CypherParser, ParserMonit
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
-import org.neo4j.cypher.internal.{LRUCache, PlanType}
+import org.neo4j.cypher.internal.{LRUCache, ExecutionMode}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.impl.util.StringLogger

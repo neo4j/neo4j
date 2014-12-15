@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 
-import org.neo4j.cypher.internal.{Profiled, PlanType}
+import org.neo4j.cypher.internal.{ProfileMode, ExecutionMode}
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_2.commands._
@@ -66,7 +66,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold
     new ExecutionPlan {
       private val fingerprint = PlanFingerprintReference(clock, queryPlanTTL, statsDivergenceThreshold, fp)
 
-      def run(queryContext: QueryContext, planType: PlanType, params: Map[String, Any]) =
+      def run(queryContext: QueryContext, planType: ExecutionMode, params: Map[String, Any]) =
         func(queryContext, planType, params)
 
       def isPeriodicCommit = periodicCommitInfo.isDefined
@@ -102,11 +102,11 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold
                                        queryId: AnyRef,
                                        updating: Boolean,
                                        resultBuilderFactory: ExecutionResultBuilderFactory):
-  (QueryContext, PlanType, Map[String, Any]) => InternalExecutionResult =
-    (queryContext: QueryContext, planType: PlanType, params: Map[String, Any]) => {
+  (QueryContext, ExecutionMode, Map[String, Any]) => InternalExecutionResult =
+    (queryContext: QueryContext, planType: ExecutionMode, params: Map[String, Any]) => {
       val builder = resultBuilderFactory.create()
 
-      val profiling = planType == Profiled
+      val profiling = planType == ProfileMode
       val builderContext = if (updating || profiling) new UpdateCountingQueryContext(queryContext) else queryContext
       builder.setQueryContext(builderContext)
 

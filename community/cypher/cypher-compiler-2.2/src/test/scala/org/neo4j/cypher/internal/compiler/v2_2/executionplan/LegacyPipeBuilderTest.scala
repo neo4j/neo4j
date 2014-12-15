@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.Normal
+import org.neo4j.cypher.internal.NormalMode
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.StatementConverters

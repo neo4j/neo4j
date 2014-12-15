@@ -46,10 +46,10 @@ case class CompatibilityFor1_9(graph: GraphDatabaseService, queryCacheSize: Int)
     private def queryContext(graph: GraphDatabaseAPI) =
       new QueryContext_v1_9(graph)
 
-    def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, planType: PlanType, params: Map[String, Any]) = planType match {
-      case Normal   => execute(graph, txInfo, params)
-      case Profiled => profile(graph, txInfo, params)
-      case _        => throw new UnsupportedOperationException(s"${CypherVersion.v1_9.name}: $planType is unsupported")
+    def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, exeuctionMode: ExecutionMode, params: Map[String, Any]) = exeuctionMode match {
+      case NormalMode   => execute(graph, txInfo, params)
+      case ProfileMode => profile(graph, txInfo, params)
+      case _        => throw new UnsupportedOperationException(s"${CypherVersion.v1_9.name}: $exeuctionMode is unsupported")
     }
 
     private def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =

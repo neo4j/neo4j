@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 
-import org.neo4j.cypher.internal.PlanType
+import org.neo4j.cypher.internal.ExecutionMode
 import org.neo4j.cypher.internal.compiler.v2_2.CypherException
 import org.neo4j.cypher.internal.compiler.v2_2.pipes._
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
@@ -30,7 +30,7 @@ trait ExecutionResultBuilder {
   def setLoadCsvPeriodicCommitObserver(batchRowCount: Long)
   def setPipeDecorator(newDecorator: PipeDecorator)
   def setExceptionDecorator(newDecorator: CypherException => CypherException)
-  def build(graph: GraphDatabaseService, queryId: AnyRef, planType: PlanType, params: Map[String, Any]): InternalExecutionResult
+  def build(graph: GraphDatabaseService, queryId: AnyRef, planType: ExecutionMode, params: Map[String, Any]): InternalExecutionResult
 }
 
 trait ExecutionResultBuilderFactory {

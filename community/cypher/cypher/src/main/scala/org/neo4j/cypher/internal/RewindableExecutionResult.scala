@@ -30,7 +30,7 @@ object RewindableExecutionResult {
   def apply(inner: InternalExecutionResult): InternalExecutionResult = inner match {
     case other: PipeExecutionResult  =>
       exceptionHandlerFor2_2.runSafely {
-        new PipeExecutionResult(other.result.toEager, other.columns, other.state, other.executionPlanBuilder, other.planType, QueryType.READ_WRITE)
+        new PipeExecutionResult(other.result.toEager, other.columns, other.state, other.executionPlanBuilder, other.executionMode, QueryType.READ_WRITE)
       }
     case _ =>
       inner

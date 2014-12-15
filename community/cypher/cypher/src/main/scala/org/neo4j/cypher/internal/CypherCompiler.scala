@@ -36,7 +36,7 @@ object CypherCompiler {
   val STATISTICS_DIVERGENCE_THRESHOLD = 0.5
 }
 
-case class PreParsedQuery(statement: String, version: CypherVersion, planType: PlanType) {
+case class PreParsedQuery(statement: String, version: CypherVersion, executionMode: ExecutionMode) {
   val statementWithVersion = s"CYPHER ${version.name} $statement"
 }
 
@@ -70,7 +70,7 @@ class CypherCompiler(graph: GraphDatabaseService,
 
   @throws(classOf[SyntaxException])
   def parseQuery(preParsedQuery: PreParsedQuery): ParsedQuery = {
-    val planType = preParsedQuery.planType
+    val exeuctionMode = preParsedQuery.executionMode
     val version = preParsedQuery.version
     val statementAsText = preParsedQuery.statement
 
@@ -97,25 +97,25 @@ class CypherCompiler(graph: GraphDatabaseService,
       case Left(versions) => throw new SyntaxException(s"You must specify only one version for a query (found: $versions)")
     }
 
-    val planType: PlanType = calculatePlanType(queryWithOption.options)
+    val executionMode: ExecutionMode = calculateExecutionMode(queryWithOption.options)
 
-    if (planType == Explained &&
+    if (executionMode == ExplainMode &&
       cypherVersion != CypherVersion.v2_2 &&
       cypherVersion != CypherVersion.v2_2_cost &&
       cypherVersion != CypherVersion.v2_2_rule) {
       throw new InvalidArgumentException("EXPLAIN not supported in versions older than Neo4j v2.2")
     }
 
-    PreParsedQuery(queryWithOption.statement, cypherVersion, planType)
+    PreParsedQuery(queryWithOption.statement, cypherVersion, executionMode)
   }
 
-  private def calculatePlanType(options: Seq[CypherOption]) = {
-    val planTypes: Seq[PlanType] = options.collect {
-      case ExplainOption => Explained
-      case ProfileOption => Profiled
+  private def calculateExecutionMode(options: Seq[CypherOption]) = {
+    val executionModes: Seq[ExecutionMode] = options.collect {
+      case ExplainOption => ExplainMode
+      case ProfileOption => ProfileMode
     }
 
-    planTypes.reduceOption(_ combineWith _).getOrElse(Normal)
+    executionModes.reduceOption(_ combineWith _).getOrElse(NormalMode)
   }
 
   private def getQueryCacheSize : Int =

@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 
-import org.neo4j.cypher.internal.PlanType
+import org.neo4j.cypher.internal.ExecutionMode
 import org.neo4j.cypher.internal.compiler.v2_2.PlannerName
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{GraphStatistics, QueryContext}
 
 abstract class ExecutionPlan {
-  def run(queryContext: QueryContext, planType: PlanType, params: Map[String, Any]): InternalExecutionResult
+  def run(queryContext: QueryContext, planType: ExecutionMode, params: Map[String, Any]): InternalExecutionResult
   def isPeriodicCommit: Boolean
   def plannerUsed: PlannerName
   def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean

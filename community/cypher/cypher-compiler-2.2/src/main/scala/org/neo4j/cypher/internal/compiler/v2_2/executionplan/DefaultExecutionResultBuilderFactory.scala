@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.pipes._
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{CSVResources, QueryContext}
-import org.neo4j.cypher.internal.{Explained, PlanType}
+import org.neo4j.cypher.internal.{ExplainMode, ExecutionMode}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.QueryExecutionType.QueryType
 
@@ -56,7 +56,7 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo, columns: Lis
       exceptionDecorator = newDecorator
     }
 
-    def build(graph: GraphDatabaseService, queryId: AnyRef, planType: PlanType, params: Map[String, Any]): InternalExecutionResult = {
+    def build(graph: GraphDatabaseService, queryId: AnyRef, planType: ExecutionMode, params: Map[String, Any]): InternalExecutionResult = {
       taskCloser.addTask(queryContext.close)
       val state = new QueryState(graph, queryContext, externalResource, params, pipeDecorator, queryId = queryId)
       try {
@@ -75,7 +75,7 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo, columns: Lis
       }
     }
 
-    private def createResults(state: QueryState, planType: PlanType): InternalExecutionResult = {
+    private def createResults(state: QueryState, planType: ExecutionMode): InternalExecutionResult = {
       val queryType =
         if (pipeInfo.pipe.isInstanceOf[IndexOperationPipe] || pipeInfo.pipe.isInstanceOf[ConstraintOperationPipe])
           QueryType.SCHEMA_WRITE
@@ -86,7 +86,7 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo, columns: Lis
             QueryType.READ_WRITE
         } else
           QueryType.READ_ONLY
-      if (planType == Explained) {
+      if (planType == ExplainMode) {
         new ExplainExecutionResult(columns, pipeInfo.pipe.planDescription, queryType)
       } else {
         val results = pipeInfo.pipe.createResults(state)

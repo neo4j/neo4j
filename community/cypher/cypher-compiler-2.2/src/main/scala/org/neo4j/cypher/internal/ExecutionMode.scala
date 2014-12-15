@@ -19,32 +19,32 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.PlanType.cantMixProfileAndExplain
+import org.neo4j.cypher.internal.ExecutionMode.cantMixProfileAndExplain
 import org.neo4j.cypher.internal.compiler.v2_2.InvalidSemanticsException
 
-object PlanType {
+object ExecutionMode {
   def cantMixProfileAndExplain: Nothing =
     throw new InvalidSemanticsException("Can't mix PROFILE and EXPLAIN")
 }
 
-sealed trait PlanType {
-  def combineWith(other: PlanType): PlanType
+sealed trait ExecutionMode {
+  def combineWith(other: ExecutionMode): ExecutionMode
 }
 
-case object Normal extends PlanType {
-  def combineWith(other: PlanType) = other
+case object NormalMode extends ExecutionMode {
+  def combineWith(other: ExecutionMode) = other
 }
 
-case object Explained extends PlanType {
-  def combineWith(other: PlanType) = other match {
-    case Profiled => cantMixProfileAndExplain
+case object ExplainMode extends ExecutionMode {
+  def combineWith(other: ExecutionMode) = other match {
+    case ProfileMode => cantMixProfileAndExplain
     case _        => this
   }
 }
 
-case object Profiled extends PlanType {
-  def combineWith(other: PlanType) = other match {
-    case Explained => cantMixProfileAndExplain
+case object ProfileMode extends ExecutionMode {
+  def combineWith(other: ExecutionMode) = other match {
+    case ExplainMode => cantMixProfileAndExplain
     case _         => this
   }
 }

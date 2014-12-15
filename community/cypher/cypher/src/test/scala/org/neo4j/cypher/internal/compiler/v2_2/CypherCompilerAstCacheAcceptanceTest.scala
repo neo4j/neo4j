@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2
 
 import org.neo4j.cypher.GraphDatabaseTestSupport
-import org.neo4j.cypher.internal.Normal
+import org.neo4j.cypher.internal.NormalMode
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.ExecutionPlan
 import org.neo4j.graphdb.factory.GraphDatabaseSettings

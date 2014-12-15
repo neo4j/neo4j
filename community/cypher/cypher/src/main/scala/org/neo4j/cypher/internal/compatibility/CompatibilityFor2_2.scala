@@ -131,9 +131,9 @@ trait CompatibilityFor2_2 {
       new ExceptionTranslatingQueryContext(ctx)
     }
 
-    def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, planType: PlanType, params: Map[String, Any]): ExtendedExecutionResult =
+    def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, executionMode: ExecutionMode, params: Map[String, Any]): ExtendedExecutionResult =
       exceptionHandlerFor2_2.runSafely {
-        ExecutionResultWrapperFor2_2(inner.run(queryContext(graph, txInfo), planType, params), translate(inner.plannerUsed))
+        ExecutionResultWrapperFor2_2(inner.run(queryContext(graph, txInfo), executionMode, params), translate(inner.plannerUsed))
       }
 
     def isPeriodicCommit = inner.isPeriodicCommit

@@ -27,7 +27,7 @@ import org.neo4j.kernel.api.Statement
 final case class TransactionInfo(tx: Transaction, isTopLevelTx: Boolean, statement: Statement)
 
 trait ExecutionPlan {
-  def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, planType: PlanType, params: Map[String, Any]): ExtendedExecutionResult
+  def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, executionMode: ExecutionMode, params: Map[String, Any]): ExtendedExecutionResult
 
   def isPeriodicCommit: Boolean
 

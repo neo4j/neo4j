@@ -49,10 +49,10 @@ case class CompatibilityFor2_0(graph: GraphDatabaseService, queryCacheSize: Int)
       new ExceptionTranslatingQueryContext_v2_0(ctx)
     }
 
-    def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, planType: PlanType, params: Map[String, Any]) = planType match {
-      case Normal   => execute(graph, txInfo, params)
-      case Profiled => profile(graph, txInfo, params)
-      case _        => throw new UnsupportedOperationException(s"${CypherVersion.v2_0.name}: $planType is unsupported")
+    def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, executionMode: ExecutionMode, params: Map[String, Any]) = executionMode match {
+      case NormalMode   => execute(graph, txInfo, params)
+      case ProfileMode => profile(graph, txInfo, params)
+      case _        => throw new UnsupportedOperationException(s"${CypherVersion.v2_0.name}: $executionMode is unsupported")
     }
 
     private def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =

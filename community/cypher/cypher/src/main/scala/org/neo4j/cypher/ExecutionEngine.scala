@@ -103,7 +103,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
     logger.debug(queryText)
 
     val preParsedQuery = preParseQuery(queryText)
-    val planType = preParsedQuery.planType
+    val executionMode = preParsedQuery.executionMode
     val cacheKey = preParsedQuery.statementWithVersion
 
     var n = 0
@@ -153,7 +153,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
         // close the old statement reference after the statement has been "upgraded"
         // to either a schema data or a schema statement, so that the locks are "handed over".
         kernelStatement.close()
-        val preparedPlanExecution = PreparedPlanExecution(plan, planType, extractedParameters)
+        val preparedPlanExecution = PreparedPlanExecution(plan, executionMode, extractedParameters)
         val txInfo = TransactionInfo(tx, isTopLevelTx, txBridge.instance())
         return (preparedPlanExecution, txInfo)
       }

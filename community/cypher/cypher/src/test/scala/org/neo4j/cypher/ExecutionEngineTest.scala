@@ -19,21 +19,21 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v2_2.CypherCacheHitMonitor
+import java.io.{File, PrintWriter}
+import java.util.concurrent.TimeUnit
+
+import org.neo4j.cypher.internal.PathImpl
+import org.neo4j.cypher.internal.commons.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compiler.v2_2.planner.PlanningMonitor
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.graphdb._
+import org.neo4j.graphdb.factory.{GraphDatabaseFactory, GraphDatabaseSettings}
+import org.neo4j.io.fs.FileUtils
 import org.neo4j.kernel.TopLevelTransaction
 import org.neo4j.test.ImpermanentGraphDatabase
-import scala.collection.JavaConverters._
-import java.util.concurrent.TimeUnit
-import org.neo4j.cypher.internal.PathImpl
-import org.neo4j.graphdb.factory.{GraphDatabaseSettings, GraphDatabaseFactory}
-import java.io.{PrintWriter, File}
-import org.neo4j.cypher.internal.commons.CreateTempFileTestSupport
-import org.neo4j.io.fs.FileUtils
 
+import scala.collection.JavaConverters._
 import scala.collection.mutable
 
 class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CreateTempFileTestSupport {
