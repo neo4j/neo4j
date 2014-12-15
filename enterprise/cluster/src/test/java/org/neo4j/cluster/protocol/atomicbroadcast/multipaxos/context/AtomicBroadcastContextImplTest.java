@@ -19,17 +19,13 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context;
 
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.junit.Test;
 
-import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
+
+import static org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ClusterProtocolAtomicbroadcastTestUtil.ids;
+import static org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ClusterProtocolAtomicbroadcastTestUtil.members;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -96,25 +92,5 @@ public class AtomicBroadcastContextImplTest
         boolean hasQuorum = context.hasQuorum();
         //Then
         assertTrue( hasQuorum );
-    }
-
-    private Iterable<InstanceId> ids( int count )
-    {
-        List<InstanceId> ids = new ArrayList<InstanceId>();
-        for ( int i = 0; i < count; i++ )
-        {
-            ids.add( new InstanceId( i ) );
-        }
-        return ids;
-    }
-
-    private Map<InstanceId,URI> members( int size )
-    {
-        Map<InstanceId,URI> members = new HashMap<InstanceId,URI>();
-        for ( int i = 0; i < size; i++ )
-        {
-            members.put( new InstanceId( i ), URI.create( "http://localhost:" + (6000 + i) + "?serverId=" + i ) );
-        }
-        return members;
     }
 }

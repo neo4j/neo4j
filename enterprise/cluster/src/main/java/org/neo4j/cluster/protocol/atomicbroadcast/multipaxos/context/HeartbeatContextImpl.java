@@ -98,7 +98,7 @@ class HeartbeatContextImpl
         if ( !isFailed( node ) && failed.remove( node ) )
         {
             getLogger( HeartbeatContext.class ).info( "Notifying listeners that instance " + node + " is alive" );
-            Listeners.notifyListeners( heartBeatListeners, new Listeners.Notification<HeartbeatListener>()
+            Listeners.notifyListeners( heartBeatListeners, executor, new Listeners.Notification<HeartbeatListener>()
             {
                 @Override
                 public void notify( HeartbeatListener listener )
