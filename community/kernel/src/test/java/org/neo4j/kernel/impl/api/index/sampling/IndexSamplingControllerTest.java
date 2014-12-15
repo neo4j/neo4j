@@ -107,7 +107,8 @@ public class IndexSamplingControllerTest
         final AtomicInteger totalCount = new AtomicInteger( 0 );
         final AtomicInteger concurrentCount = new AtomicInteger( 0 );
         final DoubleLatch jobLatch = new DoubleLatch();
-        final DoubleLatch testLatch = new DoubleLatch();
+        final DoubleLatch firstTestLatch = new DoubleLatch();
+        final DoubleLatch secondTestLatch = new DoubleLatch();
 
         IndexSamplingJobFactory jobFactory = new IndexSamplingJobFactory()
         {
@@ -121,12 +122,13 @@ public class IndexSamplingControllerTest
                 totalCount.incrementAndGet();
 
                 jobLatch.awaitStart();
-                testLatch.start();
+                firstTestLatch.start();
                 jobLatch.awaitFinish();
+                firstTestLatch.finish();
 
+                secondTestLatch.start();
                 concurrentCount.decrementAndGet();
-
-                testLatch.finish();
+                secondTestLatch.awaitFinish();
                 return null;
             }
         };
@@ -141,7 +143,7 @@ public class IndexSamplingControllerTest
         new Thread( runController( controller, BACKGROUND_REBUILD_UPDATED  ) ).start();
 
         jobLatch.start();
-        testLatch.awaitStart();
+        firstTestLatch.awaitStart();
 
         // then blocking on first job
         assertEquals( 1, concurrentCount.get() );
@@ -150,12 +152,15 @@ public class IndexSamplingControllerTest
         // when running a second time
         controller.sampleIndexes( BACKGROUND_REBUILD_UPDATED );
 
-        // then no concurrent job execution
+        // then no concurrent job execution (i.e., no exception has been thrown)
         jobLatch.finish();
-        testLatch.awaitFinish();
+        firstTestLatch.awaitFinish();
 
-        // and finally exactly one job has run to completion
+        secondTestLatch.awaitStart();
+        // the job should complete and no other should access to the factory when completing
         assertEquals( 0, concurrentCount.get() );
+        secondTestLatch.finish();
+
         // it might happen that the thread which does not acquire the lock readd the index to the queue if it has
         // been removed, so the total count in the end might be either 1 or 2, for this test it is important to
         // not fail by having 2 threads calling IndexSamplingJobFactory.create()
