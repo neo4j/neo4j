@@ -99,11 +99,11 @@ angular.module('neo4jApp.controllers')
         item.style = graphStyle.changeForSelector(item.style.selector, size)
 
       $scope.selectCaption = (item, caption) ->
-        item.style = graphStyle.changeForSelector(item.style.selector, { caption: '{' + caption + '}'})
+        item.style = graphStyle.changeForSelector(item.style.selector, { caption: caption})
 
       $scope.isSelectedCaption = (item, caption) ->
         grassProps = graphStyle.findRule(item.style.selector).props
-        grassProps.caption is "{#{caption}}" or (!grassProps.caption and caption is "id")
+        grassProps.caption is "#{caption}" or (!grassProps.caption and caption in ["<id>", "<type>"])
 
       $scope.selectScheme = (item, scheme) ->
         item.style = graphStyle.changeForSelector(item.style.selector, angular.copy(scheme))

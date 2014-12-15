@@ -31,13 +31,13 @@ script(id="inspector/label.html", type="text/ng-template")
       ul.list-inline
         li Caption:
         li
-          a.attribute(ng-click='selectCaption(item, "id")'
-            ng-class="{selected: isSelectedCaption(item, 'id')}") id
+          a.attribute(ng-click='selectCaption(item, "<id>")'
+            ng-class="{selected: isSelectedCaption(item, '<id>')}") &lt;id&gt;
         li(ng-repeat='property in item.attrs')
           a.attribute(
-            ng-click='selectCaption(item, property)'
+            ng-click='selectCaption(item, "{" + property + "}")'
             ng-bind="property"
-            ng-class="{selected: isSelectedCaption(item, property)}")
+            ng-class="{selected: isSelectedCaption(item, '{' + property + '}')}")
 
 script(id="inspector/relationshipType.html", type="text/ng-template")
   ul.list-inline
@@ -61,10 +61,10 @@ script(id="inspector/relationshipType.html", type="text/ng-template")
       ul.list-inline
         li Caption:
         li
-          a.attribute(ng-click='selectCaption(item, "type")'
-            ng-class="{selected: isSelectedCaption(item, 'type')}") type
+          a.attribute(ng-click='selectCaption(item, "<type>")'
+            ng-class="{selected: isSelectedCaption(item, '<type>')}") &lt;type&gt;
         li(ng-repeat='property in item.attrs')
           a.attribute(
-            ng-click='selectCaption(item, property)'
+            ng-click='selectCaption(item, "{" + property + "}")'
             ng-bind="property"
-            ng-class="{selected: isSelectedCaption(item, property)}")
+            ng-class="{selected: isSelectedCaption(item, '{' + property + '}')}")
