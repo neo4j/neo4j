@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{NotEquals, Identifier}
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{PlannerQuery, LogicalPlanningTestSupport2}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.graphdb.Direction
@@ -52,10 +53,10 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         NodeHashJoin(
           Set(IdName("b")),
           Expand(
-            NodeByLabelScan(IdName("a"), Left("X"), Set.empty)(PlannerQuery.empty),
+            NodeByLabelScan(IdName("a"), LazyLabel("X"), Set.empty)(PlannerQuery.empty),
             IdName("a"), Direction.INCOMING, Seq.empty, IdName("b"), IdName("r1"))(PlannerQuery.empty),
           Expand(
-            NodeByLabelScan(IdName("c"), Left("X"), Set.empty)(PlannerQuery.empty),
+            NodeByLabelScan(IdName("c"), LazyLabel("X"), Set.empty)(PlannerQuery.empty),
             IdName("c"), Direction.INCOMING, Seq.empty, IdName("b"), IdName("r2"))(PlannerQuery.empty)
         )(PlannerQuery.empty)
       )(PlannerQuery.empty),

@@ -20,11 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.execution
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.LabelId
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.ExpressionConverters._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{Collection, RelTypeName, SignedDecimalIntegerLiteral, SignedIntegerLiteral}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{Collection, SignedDecimalIntegerLiteral, SignedIntegerLiteral}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Identifier
-import org.neo4j.cypher.internal.compiler.v2_2.commands.{expressions => legacy, Equals}
+import org.neo4j.cypher.internal.compiler.v2_2.commands.{Equals, expressions => legacy}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.{EntityByIdExprs => PipeEntityByIdExprs, _}
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
@@ -65,12 +64,12 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
   }
 
   test("simple label scan query") {
-    val logicalPlan = NodeByLabelScan(IdName("n"), Right(LabelId(12)), Set.empty)_
+    val logicalPlan = NodeByLabelScan(IdName("n"), LazyLabel("Foo"), Set.empty)_
     val pipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
-    pipeInfo.pipe should equal(NodeByLabelScanPipe("n", Right(LabelId(12)))())
+    pipeInfo.pipe should equal(NodeByLabelScanPipe("n", LazyLabel("Foo"))())
   }
 
   test("simple node by id seek query") {

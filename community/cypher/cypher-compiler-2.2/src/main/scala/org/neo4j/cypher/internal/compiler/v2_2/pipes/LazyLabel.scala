@@ -17,34 +17,39 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.LabelId
 import org.neo4j.cypher.internal.compiler.v2_2.ast.LabelName
 import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
-import org.neo4j.graphdb.Node
 
-class NodeByLabelScanPipeTest extends CypherFunSuite {
+case class LazyLabel(name:String) {
+  private var id : Option[LabelId] = None
 
-  implicit val monitor = mock[PipeMonitor]
-  import org.mockito.Mockito.when
+  def id(context: QueryContext): Option[LabelId] = id match {
+    case None => {
+      id = context.getOptLabelId(name).map(LabelId)
+      id
+    }
+    case x    => x
+  }
 
-  test("should scan labeled nodes") {
-    // given
-    val nodes = List(mock[Node], mock[Node])
-    val queryState = QueryStateHelper.emptyWith(
-      query = when(mock[QueryContext].getNodesByLabel(12)).thenReturn(nodes.iterator).getMock[QueryContext]
-    )
+  // yuck! this is only used by tests...
+  def id(table:SemanticTable):Option[LabelId] = id match {
+    case None => {
+      id = table.resolvedLabelIds.get(name)
+      id
+    }
+    case x    => x
+  }
+}
 
-    implicit val table = new SemanticTable()
-    table.resolvedLabelIds.put("Foo", LabelId(12))
-
-    // when
-    val result = NodeByLabelScanPipe("a", LazyLabel(LabelName("Foo")(null)))().createResults(queryState)
-
-    // then
-    result.map(_("a")).toList should equal(nodes)
+object LazyLabel {
+  def apply(name: LabelName)(implicit table:SemanticTable): LazyLabel = {
+    val label = new LazyLabel(name.name)
+    label.id = name.id
+    label
   }
 }

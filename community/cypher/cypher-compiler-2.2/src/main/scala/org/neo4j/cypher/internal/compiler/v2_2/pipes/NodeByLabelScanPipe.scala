@@ -19,24 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
+import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v2_2.{LabelId, _}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.LabelName
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.{SymbolTable, _}
 
-case class NodeByLabelScanPipe(ident: String, label: Either[String, LabelId])
+case class NodeByLabelScanPipe(ident: String, label: LazyLabel)
                               (val estimatedCardinality: Option[Long] = None)(implicit pipeMonitor: PipeMonitor)
   extends Pipe
   with RonjaPipe {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    val optLabelId = label match {
-      case Left(str)      => state.query.getOptLabelId(str).map(LabelId)
-      case Right(labelId) => Some(labelId)
-    }
 
-    optLabelId match {
+    label.id(state.query) match {
       case Some(labelId) =>
         val nodes = state.query.getNodesByLabel(labelId.id)
         val baseContext = state.initialContext.getOrElse(ExecutionContext.empty)
@@ -48,12 +44,7 @@ case class NodeByLabelScanPipe(ident: String, label: Either[String, LabelId])
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 
-  private def labelName = label match {
-    case Left(name) => name
-    case Right(id) => id.id.toString
-  }
-
-  def planDescription = new PlanDescriptionImpl(this, "NodeByLabelScan", NoChildren, Seq(LabelName(labelName)), identifiers)
+  def planDescription = new PlanDescriptionImpl(this, "NodeByLabelScan", NoChildren, Seq(LabelName(label.name)), identifiers)
 
   def symbols: SymbolTable = new SymbolTable(Map(ident -> CTNode))
 

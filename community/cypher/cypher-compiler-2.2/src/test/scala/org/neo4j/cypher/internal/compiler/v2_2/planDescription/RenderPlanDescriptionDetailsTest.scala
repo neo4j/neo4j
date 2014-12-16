@@ -123,6 +123,18 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
         |""".stripMargin)
   }
 
+  test("Label scan should be just as pretty as you would expect") {
+    val pipe = NodeByLabelScanPipe("n", LazyLabel("Foo"))(Some(1L))(mock[PipeMonitor])
+
+    renderDetails( pipe.planDescription ) should equal(
+      """+-----------------+---------------+-------------+-------+
+        ||        Operator | EstimatedRows | Identifiers | Other |
+        |+-----------------+---------------+-------------+-------+
+        || NodeByLabelScan |             1 |           n |  :Foo |
+        |+-----------------+---------------+-------------+-------+
+        |""".stripMargin )
+  }
+
   test("Var length expand contains information about its relations") {
     val arguments = Seq(
       Rows(42),

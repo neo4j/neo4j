@@ -24,6 +24,7 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.LabelId
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Cardinality
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityInput
@@ -66,7 +67,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
     // then
     resultPlans should equal(Seq(
-      planNodeByLabelScan(idName, Left("Awesome"), Seq(hasLabels), None, Set.empty))
+      planNodeByLabelScan(idName, LazyLabel("Awesome"), Seq(hasLabels), None, Set.empty))
     )
   }
 
@@ -85,7 +86,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       case _                  => Cardinality(Double.MaxValue)
     })
 
-    val semanticTable = newMockedSemanticTable
+    implicit val semanticTable = newMockedSemanticTable
     when(semanticTable.resolvedLabelIds).thenReturn(mutable.Map("Awesome" -> labelId))
 
     implicit val context = newMockedLogicalPlanningContext(
@@ -99,6 +100,6 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
     // then
     resultPlans should equal(
-      Seq(planNodeByLabelScan(idName, Right(labelId), Seq(hasLabels), None, Set.empty)))
+      Seq(planNodeByLabelScan(idName, LazyLabel(LabelName("Awesome")_), Seq(hasLabels), None, Set.empty)))
   }
 }

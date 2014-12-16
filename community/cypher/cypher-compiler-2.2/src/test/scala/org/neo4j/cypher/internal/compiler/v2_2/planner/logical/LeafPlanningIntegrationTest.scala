@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{PlannerQuery, LogicalPlanningTestSupport2}
@@ -49,7 +50,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         case _ => Double.MaxValue
       }
     } planFor "MATCH (n:Awesome) RETURN n").plan should equal(
-      NodeByLabelScan("n", Left("Awesome"), Set.empty)(PlannerQuery.empty)
+      NodeByLabelScan("n", LazyLabel("Awesome"), Set.empty)(PlannerQuery.empty)
     )
   }
 
@@ -65,7 +66,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } planFor "MATCH (n:Awesome) RETURN n"
 
     plan.plan should equal(
-      NodeByLabelScan("n", Right(labelId("Awesome")), Set.empty)(PlannerQuery.empty)
+      NodeByLabelScan("n", lazyLabel("Awesome"), Set.empty)(PlannerQuery.empty)
     )
   }
 
@@ -192,7 +193,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan.plan should equal(
       Selection(
         Seq(HasLabels(ident("n"), Seq(LabelName("Foo")_))_, HasLabels(ident("n"), Seq(LabelName("Baz")_))_),
-        NodeByLabelScan("n", Left("Bar"), Set.empty)(PlannerQuery.empty)
+        NodeByLabelScan("n", LazyLabel("Bar"), Set.empty)(PlannerQuery.empty)
       )(PlannerQuery.empty)
     )
   }

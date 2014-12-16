@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.Limit
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.Limit
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter.unnestOptional
@@ -44,8 +45,8 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
     } planFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b").plan should equal(
       Projection(
         OuterHashJoin(Set("b"),
-          Expand(NodeByLabelScan("a", Left("X"), Set.empty)(PlannerQuery.empty), "a", Direction.OUTGOING, Seq(), "b", "r1")(PlannerQuery.empty),
-          Expand(NodeByLabelScan("c", Left("Y"), Set.empty)(PlannerQuery.empty), "c", Direction.INCOMING, Seq(), "b", "r2")(PlannerQuery.empty)
+          Expand(NodeByLabelScan("a", LazyLabel("X"), Set.empty)(PlannerQuery.empty), "a", Direction.OUTGOING, Seq(), "b", "r1")(PlannerQuery.empty),
+          Expand(NodeByLabelScan("c", LazyLabel("Y"), Set.empty)(PlannerQuery.empty), "c", Direction.INCOMING, Seq(), "b", "r2")(PlannerQuery.empty)
         )(PlannerQuery.empty),
         expressions = Map("b" -> ident("b"))
       )(PlannerQuery.empty)

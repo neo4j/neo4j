@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{PlannerQuery, LogicalPlanningTestSupport2}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.BeLikeMatcher._
@@ -60,10 +61,10 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
 
     plan.plan should equal(
       CartesianProduct(
-        NodeByLabelScan("a", Right(labelId("A")), Set.empty)(PlannerQuery.empty),
+        NodeByLabelScan("a", LazyLabel("A"), Set.empty)(PlannerQuery.empty),
         CartesianProduct(
-          NodeByLabelScan("c", Right(labelId("C")), Set.empty)(PlannerQuery.empty),
-          NodeByLabelScan("b", Right(labelId("B")), Set.empty)(PlannerQuery.empty)
+          NodeByLabelScan("c", LazyLabel("C"), Set.empty)(PlannerQuery.empty),
+          NodeByLabelScan("b", LazyLabel("B"), Set.empty)(PlannerQuery.empty)
         )(PlannerQuery.empty)
       )(PlannerQuery.empty)
     )
@@ -82,8 +83,8 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
 
     plan.plan should equal(
       CartesianProduct(
-        NodeByLabelScan("b", Right(labelId("B")), Set.empty)(PlannerQuery.empty),
-        NodeByLabelScan("a", Right(labelId("A")), Set.empty)(PlannerQuery.empty)
+        NodeByLabelScan("b", LazyLabel("B"), Set.empty)(PlannerQuery.empty),
+        NodeByLabelScan("a", LazyLabel("A"), Set.empty)(PlannerQuery.empty)
       )(PlannerQuery.empty)
     )
   }
