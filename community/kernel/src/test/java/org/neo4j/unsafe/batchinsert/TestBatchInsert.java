@@ -37,6 +37,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -1041,6 +1042,98 @@ public class TestBatchInsert
         {
             graphdb.shutdown();
         }
+    }
+
+    @Test
+    public void shouldNotAllowCreationOfDuplicateIndex() throws Exception
+    {
+        // GIVEN
+        BatchInserter inserter = newBatchInserter();
+
+        // WHEN
+        inserter.createDeferredSchemaIndex( label( "Hacker" ) ).on( "handle" ).create();
+
+        try
+        {
+            inserter.createDeferredSchemaIndex( label( "Hacker" ) ).on( "handle" ).create();
+            fail( "Should have thrown exception." );
+        }
+        catch ( ConstraintViolationException e )
+        {
+            // Good
+        }
+
+        // THEN
+        inserter.shutdown();
+    }
+
+    @Test
+    public void shouldNotAllowCreationOfDuplicateConstraint() throws Exception
+    {
+        // GIVEN
+        BatchInserter inserter = newBatchInserter();
+
+        // WHEN
+        inserter.createDeferredConstraint( label( "Hacker" ) ).assertPropertyIsUnique( "handle" ).create();
+
+        try
+        {
+            inserter.createDeferredConstraint( label( "Hacker" ) ).assertPropertyIsUnique( "handle" ).create();
+            fail( "Should have thrown exception." );
+        }
+        catch ( ConstraintViolationException e )
+        {
+            // Good
+        }
+
+        // THEN
+        inserter.shutdown();
+    }
+
+    @Test
+    public void shouldNotAllowCreationOfDeferredSchemaConstraintAfterIndexOnSameKeys() throws Exception
+    {
+        // GIVEN
+        BatchInserter inserter = newBatchInserter();
+
+        // WHEN
+        inserter.createDeferredSchemaIndex( label( "Hacker" ) ).on( "handle" ).create();
+
+        try
+        {
+            inserter.createDeferredConstraint( label( "Hacker" ) ).assertPropertyIsUnique( "handle" ).create();
+            fail( "Should have thrown exception." );
+        }
+        catch ( ConstraintViolationException e )
+        {
+            // Good
+        }
+
+        // THEN
+        inserter.shutdown();
+    }
+
+    @Test
+    public void shouldNotAllowCreationOfDeferredSchemaIndexAfterConstraintOnSameKeys() throws Exception
+    {
+        // GIVEN
+        BatchInserter inserter = newBatchInserter();
+
+        // WHEN
+        inserter.createDeferredConstraint( label( "Hacker" ) ).assertPropertyIsUnique( "handle" ).create();
+
+        try
+        {
+            inserter.createDeferredSchemaIndex( label( "Hacker" ) ).on( "handle" ).create();
+            fail( "Should have thrown exception." );
+        }
+        catch ( ConstraintViolationException e )
+        {
+            // Good
+        }
+
+        // THEN
+        inserter.shutdown();
     }
 
     @Test
