@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes.matching
 import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_2.commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.{LazyTypes, QueryState}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription}
@@ -37,6 +37,7 @@ class PatternRelationship(key: String,
                           val properties: Map[KeyToken, Expression] = Map.empty,
                           val dir: Direction)
   extends PatternElement(key) {
+  private val types = LazyTypes(relTypes)
 
   def identifiers2: Map[String, CypherType] = Map(startNode.key -> CTNode, endNode.key -> CTNode, key -> CTRelationship)
 
@@ -46,7 +47,7 @@ class PatternRelationship(key: String,
 
     val result: Iterator[GraphRelationship] =
       state.query.
-        getRelationshipsFor(realNode, getDirection(node), relTypes).
+        getRelationshipsForIds(realNode, getDirection(node), types.types(state.query)).
         filter(r => canUseThis(r, state, f)).
         map(new SingleGraphRelationship(_))
 

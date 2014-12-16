@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
 import org.mockito.Mockito._
 import org.mockito.Matchers._
+import org.mockito.Matchers
 import org.mockito.stubbing.Answer
 import org.neo4j.graphdb.{Node, Direction, Relationship}
 import org.mockito.invocation.InvocationOnMock
@@ -49,11 +50,37 @@ class ExpandPipeTest extends CypherFunSuite {
       row("a" -> startNode))
 
     // when
-    val result = ExpandPipeForStringTypes(left, "a", "r", "b", Direction.OUTGOING, Seq.empty)().createResults(queryState).toList
+    val result = ExpandPipe(left, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty)().createResults(queryState).toList
 
     // then
     val (single :: Nil) = result
     single.m should equal(Map("a" -> startNode, "r" -> relationship1, "b" -> endNode1))
+  }
+
+  test("should return no relationships for types that have not been defined yet") {
+    // given
+    when(query.getRelationshipsForIds(any(), any(), Matchers.eq(Some(Seq.empty)))).thenAnswer(new Answer[Iterator[Relationship]]{
+      override def answer(invocationOnMock: InvocationOnMock): Iterator[Relationship] = Iterator.empty
+    })
+    when(query.getRelationshipsForIds(any(), any(), Matchers.eq(Some(Seq(1,2))))).thenAnswer(new Answer[Iterator[Relationship]]{
+      override def answer(invocationOnMock: InvocationOnMock): Iterator[Relationship] = Iterator(relationship1, relationship2)
+    })
+
+    val pipe = ExpandPipe(newMockedPipe("a", row("a"-> startNode)), "a", "r", "b", Direction.OUTGOING, LazyTypes(Seq("FOO", "BAR")))()
+
+    // when
+    when(query.getOptRelTypeId("FOO")).thenReturn(None)
+    when(query.getOptRelTypeId("BAR")).thenReturn(None)
+    val result1 = pipe.createResults(queryState).toList
+
+    // when
+    when(query.getOptRelTypeId("FOO")).thenReturn(Some(1))
+    when(query.getOptRelTypeId("BAR")).thenReturn(Some(2))
+    val result2 = pipe.createResults(queryState).toList
+
+    // then
+    result1 should be(empty)
+    result2 should not be empty
   }
 
   test("should support expand between two nodes with multiple relationships") {
@@ -63,7 +90,7 @@ class ExpandPipeTest extends CypherFunSuite {
       row("a" -> startNode))
 
     // when
-    val result = ExpandPipeForStringTypes(left, "a", "r", "b", Direction.OUTGOING, Seq.empty)().createResults(queryState).toList
+    val result = ExpandPipe(left, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty)().createResults(queryState).toList
 
     // then
     val (first :: second :: Nil) = result
@@ -78,7 +105,7 @@ class ExpandPipeTest extends CypherFunSuite {
       row("a" -> startNode))
 
     // when
-    val result = ExpandPipeForStringTypes(left, "a", "r", "b", Direction.OUTGOING, Seq.empty)().createResults(queryState).toList
+    val result = ExpandPipe(left, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty)().createResults(queryState).toList
 
     // then
     val (first :: second :: Nil) = result
@@ -92,7 +119,7 @@ class ExpandPipeTest extends CypherFunSuite {
     val left = newMockedPipe("a", row("a" -> null))
 
     // when
-    val result = ExpandPipeForStringTypes(left, "a", "r", "b", Direction.OUTGOING, Seq.empty)().createResults(queryState).toList
+    val result = ExpandPipe(left, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty)().createResults(queryState).toList
 
     // then
     result should be (empty)
@@ -105,7 +132,7 @@ class ExpandPipeTest extends CypherFunSuite {
       row("a" -> startNode))
 
     // when
-    val result = ExpandPipeForStringTypes(left, "a", "r", "b", Direction.OUTGOING, Seq.empty)().createResults(queryState).toList
+    val result = ExpandPipe(left, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty)().createResults(queryState).toList
 
     // then
     val (single :: Nil) = result
@@ -115,7 +142,7 @@ class ExpandPipeTest extends CypherFunSuite {
   private def row(values: (String, Any)*) = ExecutionContext.from(values: _*)
 
   private def mockRelationships(rels: Relationship*) {
-    when(query.getRelationshipsFor(any(), any(), any())).thenAnswer(new Answer[Iterator[Relationship]] {
+    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[Relationship]] {
       def answer(invocation: InvocationOnMock): Iterator[Relationship] = rels.iterator
     })
   }

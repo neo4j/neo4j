@@ -56,9 +56,6 @@ class ExceptionTranslatingQueryContext(inner: QueryContext) extends DelegatingQu
   override def getOrCreateLabelId(labelName: String): Int =
     translateException(super.getOrCreateLabelId(labelName))
 
-  override def getRelationshipsFor(node: Node, dir: Direction, types: Seq[String]): Iterator[Relationship] =
-    translateException(super.getRelationshipsFor(node, dir, types))
-
   override def nodeOps: Operations[Node] =
     new ExceptionTranslatingOperations[Node](super.nodeOps)
 

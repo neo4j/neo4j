@@ -86,7 +86,7 @@ object InternalPlanDescription {
     case class Version(value: String) extends Argument {
       override def name = "version"
     }
-    case class ExpandExpression(from: String, relName: String, to: String, direction: Direction, varLength: Boolean = false) extends Argument
+    case class ExpandExpression(from: String, relName: String, relTypes:Seq[String], to: String, direction: Direction, varLength: Boolean = false) extends Argument
   }
 }
 

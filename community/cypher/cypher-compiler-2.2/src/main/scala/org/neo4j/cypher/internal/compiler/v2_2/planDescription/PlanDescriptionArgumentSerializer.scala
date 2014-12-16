@@ -40,11 +40,11 @@ object PlanDescriptionArgumentSerializer {
       case Rows(value) => value.toString
       case EstimatedRows(value) => value.toString
       case Version(version) => version
-      case ExpandExpression(from, rel, to, dir: Direction, varLength) =>
+      case ExpandExpression(from, rel, typeNames, to, dir: Direction, varLength) =>
         val left = if (dir == Direction.INCOMING) "<-[" else "-["
         val right = if (dir == Direction.OUTGOING) "]->" else "]-"
         val asterisk = if (varLength) "*" else ""
-        s"($from)$left:$rel$asterisk$right($to)"
+        s"($from)$left$rel:${typeNames.mkString("|:")}$asterisk$right($to)"
 
       // Do not add a fallthrough here - we rely on exhaustive checking to ensure
       // that we don't forget to add new types of arguments here

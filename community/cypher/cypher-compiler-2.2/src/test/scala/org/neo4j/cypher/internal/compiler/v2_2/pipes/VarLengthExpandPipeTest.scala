@@ -39,7 +39,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val endNode = newMockedNode(2)
     val relationship = newMockedRealtionship(1, startNode, endNode)
     val query = mock[QueryContext]
-    when(query.getRelationshipsFor(any(), any(), any())).thenAnswer(new Answer[Iterator[Relationship]] {
+    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[Relationship]] {
       def answer(invocation: InvocationOnMock): Iterator[Relationship] = Iterator(relationship)
     })
 
@@ -52,7 +52,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
     // when
     val result =
-      VarLengthExpandPipeForStringTypes(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, Seq.empty, 1, None)()
+      VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 1, None)()
       .createResults(queryState).toList
 
     // then
@@ -85,7 +85,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
     // when
     val result =
-      VarLengthExpandPipeForStringTypes(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, Seq.empty, 1, None)().
+      VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 1, None)().
         createResults(queryState).toList
 
     // then
@@ -121,7 +121,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode)))
 
     // when
-    val result = VarLengthExpandPipeForStringTypes(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, Seq.empty, 1, None)().
+    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 1, None)().
       createResults(queryState).toList
 
     // then
@@ -163,7 +163,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode)))
 
     // when
-    val result = VarLengthExpandPipeForStringTypes(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, Seq.empty, 1, Some(1))().
+    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 1, Some(1))().
       createResults(queryState).toList
 
     // then
@@ -199,7 +199,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode)))
 
     // when
-    val result = VarLengthExpandPipeForStringTypes(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, Seq.empty, 2, Some(2))().
+    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 2, Some(2))().
       createResults(queryState).toList
 
     // then
@@ -239,7 +239,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> firstNode)))
 
     // when
-    val result = VarLengthExpandPipeForStringTypes(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, Seq.empty, 2, Some(3))().
+    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 2, Some(3))().
       createResults(queryState).toList
 
     // then
@@ -282,7 +282,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     // (b)-[r]->(a)
 
     // when
-    val result = VarLengthExpandPipeForStringTypes(left, "a", "r", "b", Direction.OUTGOING, Direction.INCOMING, Seq.empty, 1, None)().
+    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.INCOMING, LazyTypes.empty, 1, None)().
       createResults(queryState).toList
 
     // then
@@ -324,8 +324,8 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
 
     // when
-    val result = VarLengthExpandPipeForStringTypes(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING,
-                                     Seq.empty, 3, None, filteringStep)().createResults(queryState).toList
+    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING,
+                                     LazyTypes.empty, 3, None, filteringStep)().createResults(queryState).toList
 
     // then
     val (single :: Nil) = result
@@ -353,7 +353,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
   }
 
   private def replyWithMap(query: QueryContext, mapping: Map[(Node, Direction), Seq[Relationship]]) {
-    when(query.getRelationshipsFor(any(), any(), any())).thenAnswer(new Answer[Iterator[Relationship]] {
+    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[Relationship]] {
       def answer(invocation: InvocationOnMock): Iterator[Relationship] = {
         val (startNode :: dir :: _ :: Nil) = invocation.getArguments.toList
         mapping((startNode.asInstanceOf[Node], dir.asInstanceOf[Direction])).iterator

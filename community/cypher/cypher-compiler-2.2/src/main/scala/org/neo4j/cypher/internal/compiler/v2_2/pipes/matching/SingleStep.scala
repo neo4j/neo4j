@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes.matching
 import SingleStep.FilteringIterator
 import org.neo4j.cypher.internal.compiler.v2_2._
 import commands._
-import pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.{LazyTypes, QueryState}
 import org.neo4j.cypher.internal.helpers._
 import org.neo4j.graphdb.{Node, Relationship, Direction}
 
@@ -38,10 +38,11 @@ case class SingleStep(id: Int,
 
   private val combinedPredicate: Predicate = And(relPredicate, nodePredicate)
   private val needToFilter = combinedPredicate != True()
+  private val types = LazyTypes(typ)
 
   def expand(node: Node, parameters: ExecutionContext, state: QueryState): (Iterable[Relationship], Option[ExpanderStep]) = {
     val rels = DynamicIterable {
-      val allRelationships = state.query.getRelationshipsFor(node, direction, typ)
+      val allRelationships = state.query.getRelationshipsForIds(node, direction, types.types(state.query))
       if (needToFilter) FilteringIterator( node, combinedPredicate, state, allRelationships ) else allRelationships
     }
     (rels, next)

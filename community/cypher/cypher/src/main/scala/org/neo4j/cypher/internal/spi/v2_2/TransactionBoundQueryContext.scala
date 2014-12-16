@@ -109,13 +109,9 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   def getOrCreateLabelId(labelName: String) =
     statement.tokenWriteOperations().labelGetOrCreateForName(labelName)
 
-  def getRelationshipsFor(node: Node, dir: Direction, types: Seq[String]): Iterator[Relationship] = types match {
-    case Seq() => node.getRelationships(dir).iterator().asScala
-    case _     => node.getRelationships(dir, types.map(withName): _*).iterator().asScala
-  }
-  def getRelationshipsForIds(node: Node, dir: Direction, types: Seq[Int]): Iterator[Relationship] = types match {
-    case Seq() => JavaConversionSupport.asScala(statement.readOperations().nodeGetRelationships(node.getId, dir)).map(relationshipOps.getById)
-    case _ => JavaConversionSupport.asScala(statement.readOperations().nodeGetRelationships(node.getId, dir, types: _* )).map(relationshipOps.getById)
+  def getRelationshipsForIds(node: Node, dir: Direction, types: Option[Seq[Int]]): Iterator[Relationship] = types match {
+    case None => JavaConversionSupport.asScala(statement.readOperations().nodeGetRelationships(node.getId, dir)).map(relationshipOps.getById)
+    case Some(typeIds) => JavaConversionSupport.asScala(statement.readOperations().nodeGetRelationships(node.getId, dir, typeIds: _* )).map(relationshipOps.getById)
   }
 
   def exactIndexSearch(index: IndexDescriptor, value: Any) =
