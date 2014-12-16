@@ -366,14 +366,12 @@ public class SchemaImpl implements Schema
                 catch ( AlreadyIndexedException e )
                 {
                     throw new ConstraintViolationException(
-                            format( "There already exists an index for label '%s' on property '%s'.",
-                                    label.name(), propertyKey ), e );
+                            e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
                 }
                 catch ( AlreadyConstrainedException e )
                 {
-                    throw new ConstraintViolationException( format(
-                            "Label '%s' and property '%s' have a unique constraint defined on them, so an index is " +
-                            "already created that matches this.", label.name(), propertyKey ), e );
+                    throw new ConstraintViolationException(
+                            e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
                 }
                 catch ( AddIndexFailureException e )
                 {
@@ -434,9 +432,8 @@ public class SchemaImpl implements Schema
                 }
                 catch ( AlreadyConstrainedException e )
                 {
-                    throw new ConstraintViolationException( format(
-                            "Label '%s' and property '%s' have a unique constraint defined on them.",
-                            label.name(), propertyKey ), e );
+                    throw new ConstraintViolationException(
+                            e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
                 }
                 catch ( CreateConstraintFailureException e )
                 {
@@ -446,9 +443,7 @@ public class SchemaImpl implements Schema
                 catch ( AlreadyIndexedException e )
                 {
                     throw new ConstraintViolationException(
-                            format( "There already exists an index for label '%s' on property '%s'. " +
-                                    "A constraint cannot be created until the index has been dropped.",
-                                    label.name(), propertyKey ), e );
+                            e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
                 }
                 catch ( IllegalTokenNameException e )
                 {

@@ -180,8 +180,8 @@ public class IndexIT extends KernelIntegrationTest
         // then
         catch ( SchemaKernelException e )
         {
-            assertEquals( "Already constrained CONSTRAINT ON ( n:label[5] ) " +
-                          "ASSERT n.property[8] IS UNIQUE.", e.getMessage() );
+            assertEquals( "Label 'label[5]' and property 'key[8]' have a unique constraint defined on " +
+                          "them, so an index is already created that matches this.", e.getMessage() );
         }
     }
 

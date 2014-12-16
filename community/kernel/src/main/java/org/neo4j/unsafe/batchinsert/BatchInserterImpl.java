@@ -32,6 +32,7 @@ import java.util.Map.Entry;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.function.primitive.FunctionFromPrimitiveLong;
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.NotFoundException;
@@ -348,13 +349,37 @@ public class BatchInserterImpl implements BatchInserter
         return new IndexCreatorImpl( actions, label );
     }
 
-    private void createIndexRule( Label label, String propertyKey )
+    private void checkSchemaCreationConstraints( int labelId, int propertyKeyId )
     {
-        // TODO: Do not create duplicate index
+        for ( SchemaRule rule : schemaCache.schemaRulesForLabel( labelId ) )
+        {
+            int otherPropertyKeyId;
 
+            switch ( rule.getKind() )
+            {
+                case INDEX_RULE:
+                case CONSTRAINT_INDEX_RULE:
+                    otherPropertyKeyId = ((IndexRule) rule).getPropertyKey();
+                    break;
+                case UNIQUENESS_CONSTRAINT:
+                    otherPropertyKeyId = ((UniquenessConstraintRule) rule).getPropertyKey();
+                    break;
+                default:
+                    throw new IllegalStateException( "Case not handled.");
+            }
+
+            if ( otherPropertyKeyId == propertyKeyId )
+            {
+                throw new ConstraintViolationException(
+                        "It is not allowed to create schema constraints and indexes on the same {label;property}." );
+            }
+        }
+    }
+
+    private void createIndexRule( int labelId, int propertyKeyId )
+    {
         SchemaStore schemaStore = getSchemaStore();
-        IndexRule schemaRule = IndexRule.indexRule( schemaStore.nextId(), getOrCreateLabelId( label.name() ),
-                                                    getOrCreatePropertyKeyId( propertyKey ),
+        IndexRule schemaRule = IndexRule.indexRule( schemaStore.nextId(), labelId, propertyKeyId,
                                                     this.schemaIndexProviders.getDefaultProvider()
                                                                              .getProviderDescriptor() );
         for ( DynamicRecord record : schemaStore.allocateFrom( schemaRule ) )
@@ -998,7 +1023,12 @@ public class BatchInserterImpl implements BatchInserter
         @Override
         public IndexDefinition createIndexDefinition( Label label, String propertyKey )
         {
-            createIndexRule( label, propertyKey );
+            int labelId = getOrCreateLabelId( label.name() );
+            int propertyKeyId = getOrCreatePropertyKeyId( propertyKey );
+
+            checkSchemaCreationConstraints( labelId, propertyKeyId );
+
+            createIndexRule( labelId, propertyKeyId );
             return new IndexDefinitionImpl( this, label, propertyKey, false );
         }
 
@@ -1013,6 +1043,9 @@ public class BatchInserterImpl implements BatchInserter
         {
             int labelId = getOrCreateLabelId( label.name() );
             int propertyKeyId = getOrCreatePropertyKeyId( propertyKey );
+
+            checkSchemaCreationConstraints( labelId, propertyKeyId );
+
             createConstraintRule( new UniquenessConstraint( labelId, propertyKeyId ) );
             return new PropertyUniqueConstraintDefinition( this, label, propertyKey );
         }
