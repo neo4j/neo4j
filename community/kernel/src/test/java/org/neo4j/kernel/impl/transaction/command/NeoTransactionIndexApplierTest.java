@@ -66,13 +66,16 @@ public class NeoTransactionIndexApplierTest
     private final Map<Long,List<Command.PropertyCommand>> emptyPropCommands = Collections.emptyMap();
 
     private final long transactionId = 42;
+    private WorkSync<LabelScanStore,IndexTransactionApplier.LabelUpdateWork>
+            labelScanStoreSynchronizer = new WorkSync<>( labelScanStore );
 
     @Test
     public void shouldUpdateIndexesOnNodeCommands() throws IOException
     {
         // given
-        final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService, labelScanStore,
-                nodeStore, propertyStore, cacheAccess, propertyLoader, transactionId, EXTERNAL );
+        final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService,
+                nodeStore, propertyStore, cacheAccess, propertyLoader, transactionId, EXTERNAL,
+                labelScanStoreSynchronizer );
 
         final NodeRecord before = new NodeRecord( 11 );
         final NodeRecord after = new NodeRecord( 12 );
@@ -97,8 +100,9 @@ public class NeoTransactionIndexApplierTest
     public void shouldUpdateLabelStoreScanOnNodeCommands() throws IOException
     {
         // given
-        final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService, labelScanStore,
-                nodeStore, propertyStore, cacheAccess, propertyLoader, transactionId, EXTERNAL );
+        final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService,
+                nodeStore, propertyStore, cacheAccess, propertyLoader, transactionId, EXTERNAL,
+                labelScanStoreSynchronizer );
 
         final NodeRecord before = new NodeRecord( 11 );
         before.setLabelField( 17, Collections.<DynamicRecord>emptySet() );
@@ -132,8 +136,9 @@ public class NeoTransactionIndexApplierTest
     public void shouldUpdateIndexesOnPropertyCommandsWhenThePropertyIsOnANode() throws IOException
     {
         // given
-        final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService, labelScanStore,
-                nodeStore, propertyStore, cacheAccess, propertyLoader, transactionId, EXTERNAL );
+        final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService,
+                nodeStore, propertyStore, cacheAccess, propertyLoader, transactionId, EXTERNAL,
+                labelScanStoreSynchronizer );
 
         final PropertyRecord before = new PropertyRecord( 11 );
         final PropertyRecord after = new PropertyRecord( 12 );
@@ -161,8 +166,9 @@ public class NeoTransactionIndexApplierTest
     public void shouldNotUpdateIndexesOnPropertyCommandsWhenThePropertyIsNotOnANode() throws IOException
     {
         // given
-        final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService, labelScanStore,
-                nodeStore, propertyStore, cacheAccess, propertyLoader, transactionId, EXTERNAL );
+        final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService,
+                nodeStore, propertyStore, cacheAccess, propertyLoader, transactionId, EXTERNAL,
+                labelScanStoreSynchronizer );
 
         final PropertyRecord before = new PropertyRecord( 11 );
         final PropertyRecord after = new PropertyRecord( 12 );

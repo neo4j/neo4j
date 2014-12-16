@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.junit.Test;
+
 import java.util.Arrays;
 import java.util.Collection;
-
-import org.junit.Test;
 
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
 import org.neo4j.kernel.impl.transaction.command.IndexTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.NeoStoreTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogNeoCommandReaderV2;
+import org.neo4j.kernel.impl.transaction.command.WorkSync;
 import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
 
@@ -52,13 +53,13 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.store.UniquenessConstraintRule.uniquenessConstraintRule;
 
 public class SchemaRuleCommandTest
 {
+
     @Test
     public void shouldWriteCreatedSchemaRuleToStore() throws Exception
     {
@@ -210,9 +211,11 @@ public class SchemaRuleCommandTest
     private final LabelScanStore labelScanStore = mock( LabelScanStore.class );
     private final NeoStoreTransactionApplier storeApplier = new NeoStoreTransactionApplier( neoStore,
             mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE, new LockGroup(), txId );
+    private WorkSync<LabelScanStore,IndexTransactionApplier.LabelUpdateWork>
+            labelScanStoreSynchronizer = new WorkSync<>( labelScanStore );
     private final IndexTransactionApplier indexApplier = new IndexTransactionApplier( indexes,
-            labelScanStore, mock( NodeStore.class ), mock( PropertyStore.class ), mock( CacheAccessBackDoor.class ),
-            mock( PropertyLoader.class ), txId, TransactionApplicationMode.INTERNAL );
+            mock( NodeStore.class ), mock( PropertyStore.class ), mock( CacheAccessBackDoor.class ),
+            mock( PropertyLoader.class ), txId, TransactionApplicationMode.INTERNAL, labelScanStoreSynchronizer );
     private final PhysicalLogNeoCommandReaderV2 reader = new PhysicalLogNeoCommandReaderV2();
     private final IndexRule rule = IndexRule.indexRule( id, labelId, propertyKey, PROVIDER_DESCRIPTOR );
 
