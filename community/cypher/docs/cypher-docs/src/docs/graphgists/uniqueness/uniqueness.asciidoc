@@ -18,11 +18,12 @@ CREATE (adam:User {name: 'Adam'}),
   (pernilla)-[:FRIEND]->(david)
 ----
 
-////
+[source,querytest]
+----
 Nodes created: 3
 Relationships created: 2
 Properties set: 3
-////
+----
 
 Which gives us the following graph:
 
@@ -38,10 +39,11 @@ MATCH (user:User {name: 'Adam'})-[r1:FRIEND]-()-[r2:FRIEND]-(friend_of_a_friend)
 RETURN friend_of_a_friend
 ----
 
-////
+[source,querytest]
+----
 David
 1 row
-////
+----
 
 //table
 
@@ -57,11 +59,12 @@ MATCH (friend)-[r2:FRIEND]-(friend_of_a_friend)
 RETURN friend_of_a_friend
 ----
 
-////
+[source,querytest]
+----
 2 rows
 David
 Adam
-////
+----
 
 //table
 
@@ -77,10 +80,11 @@ RETURN friend_of_a_friend
 Here, the +MATCH+ clause has a single pattern with two paths, while the previous query has two distinct patterns.
 
 
-////
+[source,querytest]
+----
 David
 1 row
-////
+----
 
 //table
 

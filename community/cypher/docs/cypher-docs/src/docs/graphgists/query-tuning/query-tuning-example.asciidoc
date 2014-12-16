@@ -1,4 +1,4 @@
-== Query tuning example
+= Query tuning example
 
 We start with the following data set:
 

@@ -71,7 +71,7 @@ abstract class RefcardTest extends Assertions with DocumentationHelper with Grap
     val testQuery = filePaths.foldLeft(query)((acc, entry) => acc.replace(entry._1, entry._2))
     val docQuery = urls.foldLeft(query)((acc, entry) => acc.replace(entry._1, entry._2))
 
-    val fullQuerySnippet = AsciidocHelper.createCypherSnippetFromPreformattedQuery(Prettifier(docQuery))
+    val fullQuerySnippet = AsciidocHelper.createCypherSnippetFromPreformattedQuery(Prettifier(docQuery), true)
     allQueriesWriter.append(fullQuerySnippet).append("\n\n")
 
     val result = engine.execute(testQuery, params)

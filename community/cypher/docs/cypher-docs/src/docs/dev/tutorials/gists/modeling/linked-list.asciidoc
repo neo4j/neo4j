@@ -17,12 +17,13 @@ CREATE (root {name: 'ROOT'})-[:LINK]->(root)
 RETURN root
 ----
 
-////
+[source,querytest]
+----
 1 row
 Nodes created: 1
 Relationships created: 1
 Properties set: 1
-////
+----
 
 // graph
 
@@ -43,12 +44,13 @@ CREATE UNIQUE (before)-[:LINK]->({value:25})-[:LINK]->(after)
 DELETE old
 ----
 
-////
+[source,querytest]
+----
 Nodes created: 1
 Relationships created: 2
 Properties set: 1
 Relationships deleted: 1
-////
+----
 
 // graph
 
@@ -67,12 +69,13 @@ CREATE UNIQUE (before)-[:LINK]->({value:10})-[:LINK]->(after)
 DELETE old
 ----
 
-////
+[source,querytest]
+----
 Nodes created: 1
 Relationships created: 2
 Properties set: 1
 Relationships deleted: 1
-////
+----
 
 // graph
 
@@ -89,11 +92,12 @@ CREATE UNIQUE (before)-[:LINK]->(after)
 DELETE del, delBefore, delAfter
 ----
 
-////
+[source,querytest]
+----
 Relationships created: 1
 Nodes deleted: 1
 Relationships deleted: 2
-////
+----
 
 // graph
 
@@ -110,11 +114,12 @@ CREATE UNIQUE (before)-[:LINK]->(after)
 DELETE del, delBefore, delAfter
 ----
 
-////
+[source,querytest]
+----
 Relationships created: 1
 Nodes deleted: 1
 Relationships deleted: 2
-////
+----
 
 // graph
 

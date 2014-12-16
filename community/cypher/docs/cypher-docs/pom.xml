@@ -57,12 +57,12 @@
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
       <type>test-jar</type>
-      <scope>test</scope>
+      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-graphviz</artifactId>
-      <scope>test</scope>
+      <scope>compile</scope>
     </dependency>
 
     <!-- neo4j-cypher -->
@@ -77,13 +77,13 @@
       <artifactId>neo4j-cypher</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
-      <scope>test</scope>
+      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-compiler-2.2</artifactId>
       <version>${project.version}</version>
-      <scope>test</scope>
+      <scope>compile</scope>
     </dependency>
 
     <!-- other -->
@@ -91,15 +91,25 @@
     <dependency>
       <groupId>org.codehaus.jackson</groupId>
       <artifactId>jackson-mapper-asl</artifactId>
-      <scope>test</scope>
+      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-io</artifactId>
-      <version>${project.version}</version>
       <type>test-jar</type>
-      <scope>test</scope>
+      <scope>compile</scope>
+    </dependency>
+
+    <!-- Help older mvn versions include this for exec-maven-plugin. -->
+    <dependency>
+      <groupId>org.hsqldb</groupId>
+      <artifactId>hsqldb</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j.doc</groupId>
+      <artifactId>neo4j-graphgist</artifactId>
+      <version>${project.version}</version>
     </dependency>
 
   </dependencies>
@@ -118,29 +128,17 @@
                         </goals>
                         <configuration>
                             <mainClass>org.neo4j.doc.cypherdoc.Main</mainClass>
-                            <includePluginDependencies>true</includePluginDependencies>
-                            <includeProjectDependencies>false</includeProjectDependencies>
+                            <includePluginDependencies>false</includePluginDependencies>
+                            <includeProjectDependencies>true</includeProjectDependencies>
                             <arguments>
                                 <argument>${project.build.directory}/docs/parsed-graphgists</argument>
                                 <argument>${remote-csv-upload}</argument>
                                 <argument>${project.build.directory}/../src/docs/graphgists</argument>
+                                <argument>${project.build.directory}/../src/docs/dev/tutorials/gists</argument>
                             </arguments>
                         </configuration>
                     </execution>
                 </executions>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.neo4j.doc</groupId>
-                        <artifactId>neo4j-graphgist</artifactId>
-                        <version>${project.version}</version>
-                    </dependency>
-                    <dependency>
-                      <groupId>org.neo4j</groupId>
-                      <artifactId>neo4j-io</artifactId>
-                      <version>${project.version}</version>
-                      <type>test-jar</type>
-                    </dependency>
-                </dependencies>
             </plugin>
         </plugins>
         <pluginManagement>
