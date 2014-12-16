@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
+import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -28,6 +29,12 @@ import org.neo4j.kernel.api.exceptions.Status;
  */
 public abstract class SchemaKernelException extends KernelException
 {
+    public enum OperationContext
+    {
+        INDEX_CREATION,
+        CONSTRAINT_CREATION
+    }
+
     protected SchemaKernelException( Status statusCode, Throwable cause, String message, Object... parameters )
     {
         super( statusCode, cause, message, parameters );
@@ -41,5 +48,22 @@ public abstract class SchemaKernelException extends KernelException
     public SchemaKernelException( Status statusCode, String message )
     {
         super( statusCode, message );
+    }
+
+    protected static String messageWithLabelAndPropertyName( TokenNameLookup tokenNameLookup, String formatString,
+            int labelId, int propertyKeyId )
+    {
+        if ( tokenNameLookup != null )
+        {
+            return String.format( formatString,
+                    tokenNameLookup.labelGetName( labelId ),
+                    tokenNameLookup.propertyKeyGetName( propertyKeyId ) );
+        }
+        else
+        {
+            return String.format( formatString,
+                    "label[" + labelId + "]",
+                    "key[" + propertyKeyId + "]" );
+        }
     }
 }

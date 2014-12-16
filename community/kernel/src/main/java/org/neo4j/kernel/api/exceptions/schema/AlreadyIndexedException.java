@@ -25,19 +25,41 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 
 public class AlreadyIndexedException extends SchemaKernelException
 {
-    private static final String MESSAGE = "Already indexed %s.";
+    private static final String NO_CONTEXT_FORMAT = "Already indexed %s.";
+
+    private static final String INDEX_CONTEXT_FORMAT = "There already exists an index for label '%s' on property '%s'.";
+    private static final String CONSTRAINT_CONTEXT_FORMAT = "There already exists an index for label '%s' on property '%s'. " +
+                                                            "A constraint cannot be created until the index has been dropped.";
 
     private final IndexDescriptor descriptor;
+    private final OperationContext context;
 
-    public AlreadyIndexedException( IndexDescriptor descriptor )
+    public AlreadyIndexedException( IndexDescriptor descriptor, OperationContext context )
     {
-        super( Status.Schema.IndexAlreadyExists, String.format( MESSAGE, descriptor ) );
+        super( Status.Schema.IndexAlreadyExists, constructUserMessage( context, null, descriptor ) );
+
         this.descriptor = descriptor;
+        this.context = context;
+    }
+
+    private static String constructUserMessage( OperationContext context, TokenNameLookup tokenNameLookup, IndexDescriptor descriptor )
+    {
+        switch ( context )
+        {
+            case INDEX_CREATION:
+                return messageWithLabelAndPropertyName( tokenNameLookup, INDEX_CONTEXT_FORMAT,
+                        descriptor.getLabelId(), descriptor.getPropertyKeyId() );
+            case CONSTRAINT_CREATION:
+                return messageWithLabelAndPropertyName( tokenNameLookup, CONSTRAINT_CONTEXT_FORMAT,
+                        descriptor.getLabelId(), descriptor.getPropertyKeyId() );
+            default:
+                return String.format( NO_CONTEXT_FORMAT, descriptor );
+        }
     }
 
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
-        return String.format( String.format( MESSAGE, descriptor.userDescription( tokenNameLookup ) ) );
+        return constructUserMessage( context, tokenNameLookup, descriptor );
     }
 }
