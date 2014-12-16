@@ -2,7 +2,7 @@
 Languages
 =========
 
-Please see http://www.neo4j.org/drivers for the current set of drivers!
+Please see http://neo4j.com/developer/language-guides/ for the current set of drivers!
 
 There's an included Java example which shows a ``low-level'' approach to using the Neo4j REST API from Java.
 

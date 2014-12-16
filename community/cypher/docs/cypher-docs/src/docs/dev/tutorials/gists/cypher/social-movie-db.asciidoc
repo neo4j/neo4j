@@ -25,11 +25,12 @@ CREATE (carrieanne)-[:ACTS_IN {role : 'Trinity'}]->(matrix2)
 CREATE (carrieanne)-[:ACTS_IN {role : 'Trinity'}]->(matrix3)
 ----
 
-////
+[source,querytest]
+----
 Nodes created: 6
 Relationships created: 9
 Properties set: 18
-////
+----
 
 //console
 
@@ -43,9 +44,10 @@ CREATE (me:User {name: "Me"})
 RETURN me;
 ----
 
-////
+[source,querytest]
+----
 Nodes created: 1
-////
+----
 
 //table
 
@@ -57,10 +59,11 @@ MATCH (me:User {name: "Me"})
 RETURN me.name;
 ----
 
-////
+[source,querytest]
+----
 1 row
 Me
-////
+----
 
 Add a movie rating:
 
@@ -70,10 +73,11 @@ MATCH (me:User {name: "Me"}), (movie:Movie {title: "The Matrix"})
 CREATE (me)-[:RATED {stars : 5, comment : "I love that movie!"}]->(movie);
 ----
 
-////
+[source,querytest]
+----
 Relationships created: 1
 Properties set: 2
-////
+----
 
 Which movies did I rate?
 
@@ -83,9 +87,10 @@ MATCH (me:User {name: "Me"}), (me)-[rating:RATED]->(movie)
 RETURN movie.title, rating.stars, rating.comment;
 ----
 
-////
+[source,querytest]
+----
 1 row
-////
+----
 
 //table
 
@@ -107,9 +112,10 @@ CREATE UNIQUE (me)-[friendship:FRIEND]->(friend)
 RETURN friendship;
 ----
 
-////
+[source,querytest]
+----
 Relationships created: 1
-////
+----
 
 You can rerun the query, see that it doesn't change anything the second time!
 
@@ -122,9 +128,10 @@ SET friendship.since='forever'
 RETURN friendship;
 ----
 
-////
+[source,querytest]
+----
 Properties set: 1
-////
+----
 
 Let's pretend us being our friend and wanting to see which movies our friends have rated.
 
@@ -134,9 +141,10 @@ MATCH (me:User {name: "A Friend"})-[:FRIEND]-(friend)-[rating:RATED]->(movie)
 RETURN movie.title, avg(rating.stars) as stars, collect(rating.comment) as comments, count(*);
 ----
 
-////
+[source,querytest]
+----
 1 row
-////
+----
 
 //table
 
@@ -149,11 +157,12 @@ FOREACH (i in range(1,10) |
   CREATE (friend:User {name: "Friend " + i}), (me)-[:FRIEND]->(friend));
 ----
 
-////
+[source,querytest]
+----
 Nodes created: 10
 Relationships created: 10
 Properties set: 10
-////
+----
 
 Show all our friends:
 
@@ -163,9 +172,10 @@ MATCH (me:User {name: "Me"})-[r:FRIEND]->(friend)
 RETURN type(r) as friendship, friend.name;
 ----
 
-////
+[source,querytest]
+----
 11 rows
-////
+----
 
 //table
 

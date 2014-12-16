@@ -59,4 +59,5 @@ And here are examples of clauses that are used to update the graph:
 
 For more Cypher examples, see <<data-modeling-examples>> as well as the rest of the Cypher part with details on the language.
 To use Cypher from Java, see <<tutorials-cypher-java>>.
+To take your first steps with Cypher, see <<cypher-getting-started>>.
 

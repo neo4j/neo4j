@@ -23,10 +23,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.neo4j.cypher.javacompat.internal.DocsExecutionEngine;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -66,15 +70,23 @@ public final class CypherDoc
 
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         GraphDatabaseService database = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase();
+        Connection conn = null;
         TestFailureException failure = null;
         try
         {
-            return executeBlocks( blocks, new State( database, parentDirectory, url ) );
+            DocsExecutionEngine engine = new DocsExecutionEngine( database );
+            conn = DriverManager.getConnection( "jdbc:hsqldb:mem:graphgist;shutdown=true" );
+            conn.setAutoCommit( true );
+            return executeBlocks( blocks, new State( engine, database, conn, parentDirectory, url ) );
         }
         catch ( TestFailureException exception )
         {
             dumpStoreFiles( fs, failure = exception, "before-shutdown" );
             throw exception;
+        }
+        catch ( SQLException sqlException )
+        {
+            throw new RuntimeException( sqlException );
         }
         finally
         {
@@ -82,6 +94,17 @@ public final class CypherDoc
             if ( failure != null )
             {
                 dumpStoreFiles( fs, failure, "after-shutdown" );
+            }
+            if ( conn != null )
+            {
+                try
+                {
+                    conn.close();
+                }
+                catch ( SQLException sqlException )
+                {
+                    throw new RuntimeException( sqlException );
+                }
             }
         }
     }

@@ -29,6 +29,8 @@ Apache Software License, Version 2.0
   Apache Commons Lang
   Commons IO
   ConcurrentLinkedHashMap
+  Data Mapper for Jackson
+  Jackson
   Lucene Core
   opencsv
   parboiled-core
@@ -39,4 +41,7 @@ BSD - Scala License
 
 BSD License
   Scala Compiler
+
+HSQLDB License, a BSD open source license
+  HyperSQL Database
 

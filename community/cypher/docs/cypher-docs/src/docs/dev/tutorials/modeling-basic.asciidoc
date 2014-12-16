@@ -1,0 +1,29 @@
+[[data-modeling-examples]]
+= Basic Data Modeling Examples
+
+The following chapters contain simple examples to get you started thinking about data modeling with graphs. 
+If you are looking for more advanced examples you can head straight to <<data-modeling-examples-advanced>>.
+
+The examples use Cypher queries a lot, read <<cypher-query-lang>> for more information.
+
+:leveloffset: 2
+
+include::../../parsed-graphgists/cypher/movie-db.asciidoc[]
+
+:leveloffset: 2
+
+include::../../parsed-graphgists/cypher/social-movie-db.asciidoc[]
+
+:leveloffset: 2
+
+include::../../parsed-graphgists/cypher/finding-paths.asciidoc[]
+
+:leveloffset: 2
+
+include::../../parsed-graphgists/modeling/linked-list.asciidoc[]
+
+:leveloffset: 2
+
+include::../../parsed-graphgists/modeling/tvshows.asciidoc[]
+
+

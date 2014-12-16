@@ -27,7 +27,7 @@
     <docs.tools>${project.build.directory}/tools</docs.tools>
     <docs.resources>${docs.tools}/main/resources</docs.resources>
     <neo4j.version>${project.version}</neo4j.version>
-    <doctools.version>26</doctools.version>
+    <doctools.version>27</doctools.version>
     <attach-docs-phase>none</attach-docs-phase>
   </properties>
 
@@ -245,7 +245,7 @@
       <scope>provided</scope>
     </dependency>
   </dependencies>
-
+  
   <build>
     <resources>
       <resource>
@@ -432,21 +432,6 @@
         <artifactId>exec-maven-plugin</artifactId>
         <executions>
           <execution>
-            <id>parse-cypherdoc</id>
-            <phase>compile</phase>
-            <goals><goal>java</goal></goals>
-            <configuration>
-              <mainClass>org.neo4j.doc.cypherdoc.Main</mainClass>
-              <includePluginDependencies>true</includePluginDependencies>
-              <includeProjectDependencies>false</includeProjectDependencies>
-              <arguments>
-                <argument>${docs.sources}/cypherdoc</argument>
-                <argument>http://neo4j.com/docs/${project.version}/csv</argument>
-                <argument>${project.build.directory}/../src/tutorials/gists</argument>
-              </arguments>
-            </configuration>
-          </execution>
-          <execution>
             <id>execute-asciidoc</id>
             <phase>compile</phase>
             <goals>
@@ -495,11 +480,36 @@
             <groupId>org.neo4j.doc</groupId>
             <artifactId>neo4j-graphgist</artifactId>
             <version>${neo4j.version}</version>
+            <exclusions>
+              <exclusion>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-jdk14</artifactId>
+              </exclusion>
+            </exclusions>
           </dependency>
           <dependency>
             <groupId>org.neo4j.build.plugins</groupId>
             <artifactId>neo4j-doctools</artifactId>
             <version>${doctools.version}</version>
+            <exclusions>
+              <exclusion>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-jdk14</artifactId>
+              </exclusion>
+            </exclusions>
+          </dependency>
+          <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-jdk14</artifactId>
+            <version>1.7.7</version>
           </dependency>
         </dependencies>
       </plugin>

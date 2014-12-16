@@ -26,3 +26,4 @@ CodeMirror.colorize = (function() {
     }
   };
 })();
+

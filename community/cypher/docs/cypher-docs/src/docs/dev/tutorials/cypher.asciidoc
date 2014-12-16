@@ -12,21 +12,21 @@ See <<tools-webadmin>> or <<shell>>.
 
 :leveloffset: 2
 
-include::{importdir}/cypherdoc/cypher/create-nodes-and-rels.asciidoc[]
+include::../../parsed-graphgists/cypher/create-nodes-and-rels.asciidoc[]
 
 :leveloffset: 2
 
-include::{importdir}/cypherdoc/cypher/movie-db.asciidoc[]
+include::../../parsed-graphgists/cypher/movie-db.asciidoc[]
 
 :leveloffset: 2
 
-include::{importdir}/cypherdoc/cypher/social-movie-db.asciidoc[]
+include::../../parsed-graphgists/cypher/social-movie-db.asciidoc[]
 
 :leveloffset: 2
 
-include::{importdir}/cypherdoc/cypher/finding-paths.asciidoc[]
+include::../../parsed-graphgists/cypher/finding-paths.asciidoc[]
 
 :leveloffset: 2
 
-include::{importdir}/cypherdoc/cypher/labels.asciidoc[]
+include::../../parsed-graphgists/cypher/labels.asciidoc[]
 

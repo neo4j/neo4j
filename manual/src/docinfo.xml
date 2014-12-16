@@ -46,11 +46,6 @@
       </listitem>
       <listitem>
         <para>
-          <link linkend="languages">Languages / Remote Client Libraries</link>
-        </para>
-      </listitem>
-      <listitem>
-        <para>
           <link linkend="rest-api">REST API</link>
         </para>
       </listitem>
@@ -67,6 +62,11 @@
       <listitem>
         <para>
           <link linkend="operations-security">Security</link>
+        </para>
+      </listitem>
+      <listitem>
+        <para>
+          <link linkend="resources">Resources</link>
         </para>
       </listitem>
     </itemizedlist>

@@ -5,7 +5,8 @@ Cypher Query Language
 [partintro]
 --
 The Cypher part is the authoritative source for details on the Cypher Query Language.
-For an introduction, see <<cypher-introduction>>.
+For a short introduction, see <<cypher-introduction>>.
+To take your first steps with Cypher, see <<cypher-getting-started>>.
 --
 
 :leveloffset: 1
@@ -35,10 +36,6 @@ include::ql/functions/index.asciidoc[]
 :leveloffset: 1
 
 include::schema.asciidoc[]
-
-:leveloffset: 1
-
-include::{importdir}/neo4j-examples-docs-jar/dev/examples/from-sql-to-cypher.asciidoc[]
 
 :leveloffset: 1
 
