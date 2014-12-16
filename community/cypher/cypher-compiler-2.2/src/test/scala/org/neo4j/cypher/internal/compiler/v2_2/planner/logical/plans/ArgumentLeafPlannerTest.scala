@@ -20,11 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryGraph, LogicalPlanningTestSupport}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.argumentLeafPlanner
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Candidates, CandidateList}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.argumentLeafPlanner
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport, QueryGraph}
 
 class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -38,7 +37,7 @@ class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
       patternNodes = Set("a", "b")
     )
 
-    argumentLeafPlanner(qg) should equal(CandidateList())
+    argumentLeafPlanner(qg) shouldBe empty
   }
 
   test("should return an empty candidate list pattern nodes is empty") {
@@ -49,7 +48,7 @@ class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
       patternNodes = Set()
     )
 
-    argumentLeafPlanner(qg) should equal(CandidateList())
+    argumentLeafPlanner(qg) shouldBe empty
   }
 
   test("should return a plan containing all the id in argument ids and in pattern nodes") {
@@ -60,8 +59,8 @@ class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
       patternNodes = Set("a", "b", "d")
     )
 
-    argumentLeafPlanner(qg) should equal(Candidates(
-      planArgumentRow(Set("a", "b"), Set.empty, Set("c"))
-    ))
+    argumentLeafPlanner(qg) should equal(
+      Seq(planArgumentRow(Set("a", "b"), Set.empty, Set("c")))
+    )
   }
 }

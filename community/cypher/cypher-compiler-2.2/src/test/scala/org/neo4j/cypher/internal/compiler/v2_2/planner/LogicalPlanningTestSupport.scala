@@ -59,9 +59,6 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       SimpleMetricsFactory.newCostModel(cardinality)
     def newQueryGraphCardinalityModel(statistics: GraphStatistics, semanticTable: SemanticTable): QueryGraphCardinalityModel =
       SimpleMetricsFactory.newQueryGraphCardinalityModel(statistics, semanticTable)
-
-    def newCandidateListCreator(): (Seq[LogicalPlan]) => CandidateList = SimpleMetricsFactory.newCandidateListCreator()
-
   }
 
   def newMockedQueryGraph = mock[QueryGraph]
@@ -100,11 +97,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     strategy
   }
 
-  def mockedMetrics: Metrics = {
-    val metrics: Metrics = self.mock[Metrics]
-    when(metrics.candidateListCreator).thenReturn((plans: Seq[LogicalPlan]) => CandidateList(plans))
-    metrics
-  }
+  def mockedMetrics: Metrics = self.mock[Metrics]
 
   def newMockedLogicalPlanningContext(planContext: PlanContext,
                                       metrics: Metrics = mockedMetrics,

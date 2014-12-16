@@ -21,12 +21,13 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityInput
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{PlannerQuery, LogicalPlanningTestSupport2}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{LabelName, UsingIndexHint}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityInput
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.pickBestPlan
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport2, PlannerQuery}
 
-class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class PickBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   val GIVEN_FIXED_COST = new given {
     cost = {
@@ -94,9 +95,9 @@ class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport2 
 
   private def assertTopPlan(winner: LogicalPlan, candidates: LogicalPlan*)(GIVEN: given) {
     val environment = LogicalPlanningEnvironment(GIVEN)
-    val context = LogicalPlanningContext(null, environment.metricsFactory.newMetrics(GIVEN.graphStatistics, environment.semanticTable), null, null, QueryGraphCardinalityInput(Map.empty, Cardinality(1)))
-    CandidateList(candidates).bestPlan(context) should equal(Some(winner))
-    CandidateList(candidates.reverse).bestPlan(context) should equal(Some(winner))
+    implicit val context = LogicalPlanningContext(null, environment.metricsFactory.newMetrics(GIVEN.graphStatistics, environment.semanticTable), null, null, QueryGraphCardinalityInput(Map.empty, Cardinality(1)))
+    pickBestPlan(candidates) should equal(Some(winner))
+    pickBestPlan(candidates.reverse) should equal(Some(winner))
   }
 }
 

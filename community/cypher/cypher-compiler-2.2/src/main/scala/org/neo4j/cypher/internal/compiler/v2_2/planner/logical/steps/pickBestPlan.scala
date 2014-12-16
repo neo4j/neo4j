@@ -20,11 +20,33 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{LogicalPlanningContext, CandidateList, CandidateSelector}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{CandidateSelector, LogicalPlanningContext}
 
 object pickBestPlan extends CandidateSelector {
-  def apply(candidateList: CandidateList)(implicit context: LogicalPlanningContext): Option[LogicalPlan] =
-    candidateList.bestPlan
+  private final val VERBOSE = false
+
+  def apply(plans: Seq[LogicalPlan])(implicit context: LogicalPlanningContext): Option[LogicalPlan] = {
+    val costs = context.cost
+    val comparePlans = (c: LogicalPlan) =>
+      (-c.solved.numHints, costs(c, context.cardinalityInput), -c.availableSymbols.size)
+
+    if (VERBOSE) {
+      val sortedPlans = plans.sortBy(comparePlans)
+
+      if (sortedPlans.size > 1) {
+        println("Get best of:")
+        for (plan <- sortedPlans) {
+          println("* " + plan.toString + s"\n${costs(plan, context.cardinalityInput)}\n")
+        }
+
+        println("Best is:")
+        println(sortedPlans.head.toString)
+        println()
+      }
+
+      sortedPlans.headOption
+    } else {
+      if (plans.isEmpty) None else Some(plans.minBy(comparePlans))
+    }
+  }
 }

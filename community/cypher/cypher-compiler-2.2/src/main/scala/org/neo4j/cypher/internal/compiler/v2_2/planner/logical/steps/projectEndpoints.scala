@@ -21,16 +21,16 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_2.InputPosition.NONE
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{PlannerQuery, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer.planEndpointProjection
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{CandidateGenerator, CandidateList, LogicalPlanningContext, PlanTable}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{CandidateGenerator, LogicalPlanningContext, PlanTable}
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 
 object projectEndpoints extends CandidateGenerator[PlanTable] with CollectionSupport {
 
-  def apply(planTable: PlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): CandidateList = {
-    val projectedEndpointPlans = for {
+  def apply(planTable: PlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
+    for {
       plan <- planTable.plans
       patternRel <- queryGraph.patternRelationships
       if canProjectPatternRelationshipEndpoints(plan, patternRel)
@@ -42,7 +42,6 @@ object projectEndpoints extends CandidateGenerator[PlanTable] with CollectionSup
       val predicates = Seq(optStartPredicate, optEndPredicate, optRelPredicate).flatten
       planEndpointProjection(plan, projectedStart, projectedEnd, predicates, patternRel)
     }
-    context.metrics.candidateListCreator(projectedEndpointPlans)
   }
 
   private def projectAndSelectIfNecessary(inScope: Set[IdName], node: IdName): (IdName, Option[Expression]) =

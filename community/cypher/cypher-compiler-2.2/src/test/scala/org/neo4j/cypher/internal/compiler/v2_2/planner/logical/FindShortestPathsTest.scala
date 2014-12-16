@@ -20,15 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryGraph, LogicalPlanningTestSupport2}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, PatternRelationship, ShortestPathPattern, _}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport2, QueryGraph}
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.PatternRelationship
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.ShortestPathPattern
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer
-import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
-import LogicalPlanProducer._
 
 class FindShortestPathsTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -47,7 +42,7 @@ class FindShortestPathsTest extends CypherFunSuite with LogicalPlanningTestSuppo
       withLogicalPlanningContext { (ctx: LogicalPlanningContext) =>
         val left = planCartesianProduct(planAllNodesScan("a", Set.empty), planAllNodesScan("b", Set.empty))
         val candidates = findShortestPaths(PlanTable(Map(Set[IdName]("a", "b") -> left)), qg)(ctx)
-        candidates should equal(Candidates(
+        candidates should equal(Seq(
           planShortestPaths(left, shortestPath)
         ))
       }
@@ -69,7 +64,7 @@ class FindShortestPathsTest extends CypherFunSuite with LogicalPlanningTestSuppo
       withLogicalPlanningContext { (ctx: LogicalPlanningContext) =>
         val left = planCartesianProduct(planAllNodesScan("a", Set.empty), planAllNodesScan("b", Set.empty))
         val candidates = findShortestPaths(PlanTable(Map(Set[IdName]("a", "b") -> left)), qg)(ctx)
-        candidates should equal(Candidates(
+        candidates should equal(Seq(
           planShortestPaths(left, shortestPath)
         ))
       }
@@ -91,7 +86,7 @@ class FindShortestPathsTest extends CypherFunSuite with LogicalPlanningTestSuppo
       withLogicalPlanningContext { (ctx: LogicalPlanningContext) =>
         val left = planCartesianProduct(planAllNodesScan("a", Set.empty), planAllNodesScan("b", Set.empty))
         val candidates = findShortestPaths(PlanTable(Map(Set[IdName]("a", "b") -> left)), qg)(ctx)
-        candidates should equal(Candidates(
+        candidates should equal(Seq(
           planShortestPaths(left, shortestPath)
         ))
       }

@@ -59,8 +59,7 @@ object Metrics {
 
 case class Metrics(cost: CostModel,
                    cardinality: CardinalityModel,
-                   queryGraphCardinalityModel: QueryGraphCardinalityModel,
-                   candidateListCreator: Seq[LogicalPlan] => CandidateList)
+                   queryGraphCardinalityModel: QueryGraphCardinalityModel)
 
 case class Cost(gummyBears: Double) extends Ordered[Cost] {
 
@@ -174,13 +173,12 @@ trait MetricsFactory {
   def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel): CardinalityModel
   def newCostModel(cardinality: CardinalityModel): CostModel
   def newQueryGraphCardinalityModel(statistics: GraphStatistics, semanticTable: SemanticTable): QueryGraphCardinalityModel
-  def newCandidateListCreator(): Seq[LogicalPlan] => CandidateList
 
   def newMetrics(statistics: GraphStatistics, semanticTable: SemanticTable) = {
     val queryGraphCardinalityModel = newQueryGraphCardinalityModel(statistics, semanticTable)
     val cardinality = newCardinalityEstimator(queryGraphCardinalityModel)
     val cost = newCostModel(cardinality)
-    Metrics(cost, cardinality, queryGraphCardinalityModel, newCandidateListCreator())
+    Metrics(cost, cardinality, queryGraphCardinalityModel)
   }
 }
 

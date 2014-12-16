@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryGraph, LogicalPlanningTestSupport}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Candidates, CandidateList, PlanTable}
-import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.PlanTable
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport, QueryGraph}
+import org.neo4j.graphdb.Direction
 
 class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -57,7 +57,7 @@ class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val qg = createQuery(r1Rel, r2Rel)
 
-    join(planTable, qg) should equal(Candidates(
+    join(planTable, qg) should equal(Seq(
       planNodeHashJoin(Set(bNode), left, right),
       planNodeHashJoin(Set(bNode), right, left)
     ))
@@ -76,7 +76,7 @@ class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val qg = createQuery(r1Rel, r2Rel)
 
-    join(planTable, qg) should equal(Candidates(
+    join(planTable, qg) should equal(Seq(
       planNodeHashJoin(Set(bNode, cNode), left, right),
       planNodeHashJoin(Set(bNode, cNode), right, left)
     ))
@@ -97,7 +97,7 @@ class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val qg = createQuery(r1Rel, r2Rel, r3Rel)
 
-    join(planTable, qg) should equal(Candidates(
+    join(planTable, qg) should equal(Seq(
       planNodeHashJoin(Set(bNode), left, middle),
       planNodeHashJoin(Set(bNode), middle, left),
       planNodeHashJoin(Set(cNode), middle, right),
@@ -118,7 +118,7 @@ class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val qg = createQuery(r1Rel)
 
-    join(planTable, qg) should equal(CandidateList())
+    join(planTable, qg) shouldBe empty
   }
 
   test("does not join a plan with itself") {
@@ -132,7 +132,7 @@ class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val qg = createQuery()
 
-    join(planTable, qg) should equal(CandidateList())
+    join(planTable, qg) shouldBe empty
   }
 
   test("does not join relationships") {
@@ -147,6 +147,6 @@ class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
     ))
 
     val qg = createQuery(r1Rel)
-    join(planTable, qg) should equal(CandidateList())
+    join(planTable, qg) shouldBe empty
   }
 }

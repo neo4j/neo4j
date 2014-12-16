@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 
 object expand extends CandidateGenerator[PlanTable] {
-  def apply(planTable: PlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): CandidateList = {
-    val expandPlans: Seq[LogicalPlan] = for {
+  def apply(planTable: PlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
+    for {
       plan <- planTable.plans
       nodeId <- plan.solved.graph.patternNodes
       patternRel <- queryGraph.findRelationshipsEndingOn(nodeId)
@@ -60,7 +60,6 @@ object expand extends CandidateGenerator[PlanTable] {
             expandF(otherSide)
       }
     }
-    context.metrics.candidateListCreator(expandPlans.toList)
   }
 
   /*

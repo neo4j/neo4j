@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.{uniqueIndexSeekLeafPlanner, indexSeekLeafPlanner}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.compiler.v2_2.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.ManyQueryExpression
+import org.neo4j.cypher.internal.compiler.v2_2.planner.BeLikeMatcher._
+import org.neo4j.cypher.internal.compiler.v2_2.planner._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.{indexSeekLeafPlanner, uniqueIndexSeekLeafPlanner}
 
 class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -46,7 +46,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
         val resultPlans = indexSeekLeafPlanner(qg)(ctx)
 
         // then
-        resultPlans.plans shouldBe empty
+        resultPlans shouldBe empty
       }
     }
   }
@@ -59,7 +59,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
         val resultPlans = uniqueIndexSeekLeafPlanner(qg)(ctx)
 
         // then
-        resultPlans.plans shouldBe empty
+        resultPlans shouldBe empty
       }
     }
   }
@@ -75,7 +75,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
         val resultPlans = indexSeekLeafPlanner(qg)(ctx)
 
         // then
-        resultPlans.plans should beLike {
+        resultPlans should beLike {
           case Seq(NodeIndexSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(lit42))), _)) => ()
         }
       }
@@ -93,7 +93,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
         val resultPlans = indexSeekLeafPlanner(qg)(ctx)
 
         // then
-        resultPlans.plans should beLike {
+        resultPlans should beLike {
           case Seq(NodeIndexSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(lit42))), _)) => ()
         }
       }
@@ -111,7 +111,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
         val resultPlans = uniqueIndexSeekLeafPlanner(qg)(ctx)
 
         // then
-        resultPlans.plans should beLike {
+        resultPlans should beLike {
           case Seq(NodeIndexUniqueSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(lit42))), _)) => ()
         }
       }
@@ -131,11 +131,11 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
         val resultPlans = indexSeekLeafPlanner(qg)(ctx)
 
         // then
-        resultPlans.plans should beLike {
+        resultPlans should beLike {
           case Seq(NodeIndexSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(lit42))), _)) => ()
         }
 
-        resultPlans.plans.map(_.solved.graph) should beLike {
+        resultPlans.map(_.solved.graph) should beLike {
           case (Seq(plannedQG: QueryGraph)) if plannedQG.hints == Set(hint) => ()
         }
       }
@@ -155,11 +155,11 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
         val resultPlans = uniqueIndexSeekLeafPlanner(qg)(ctx)
 
         // then
-        resultPlans.plans should beLike {
+        resultPlans should beLike {
           case Seq(NodeIndexUniqueSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(lit42))), _)) => ()
         }
 
-        resultPlans.plans.map(_.solved.graph) should beLike {
+        resultPlans.map(_.solved.graph) should beLike {
           case (Seq(plannedQG: QueryGraph)) if plannedQG.hints == Set(hint) => ()
         }
       }

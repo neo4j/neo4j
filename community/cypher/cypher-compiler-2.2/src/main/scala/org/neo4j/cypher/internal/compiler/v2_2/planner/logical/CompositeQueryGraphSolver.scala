@@ -21,13 +21,13 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.pickBestPlan
 
 class CompositeQueryGraphSolver(solver1: TentativeQueryGraphSolver, solver2: TentativeQueryGraphSolver)
   extends TentativeQueryGraphSolver {
 
   def tryPlan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]) = {
-    val availableSolutions: Seq[LogicalPlan] = solver1.tryPlan(queryGraph).toSeq ++ solver2.tryPlan(queryGraph).toSeq
-    CandidateList(availableSolutions).bestPlan
+    val availableSolutions = solver1.tryPlan(queryGraph).toSeq ++ solver2.tryPlan(queryGraph).toSeq
+    pickBestPlan(availableSolutions)
   }
-
 }

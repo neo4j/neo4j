@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.solveOptionalMatches.OptionalSolver
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{CandidateList, LogicalPlanningContext, LogicalPlanningFunction2, PlanTable}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{LogicalPlanningContext, LogicalPlanningFunction2, PlanTable}
 
 import scala.annotation.tailrec
 
@@ -42,8 +42,7 @@ case class solveOptionalMatches(solvers: Seq[OptionalSolver]) {
           case (lhs: LogicalPlan, optionalQg: QueryGraph) =>
             val plans = solvers.flatMap(_.apply(optionalQg, lhs))
             assert(plans.map(_.solved).distinct.size == 1) // All plans are solving the same query
-
-            CandidateList(plans).bestPlan.get
+            pickBestPlan(plans).get
         }
         table + newPlan
     }

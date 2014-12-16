@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.{InputPosition, functions}
+import org.neo4j.cypher.internal.compiler.v2_2.functions
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
@@ -58,7 +58,7 @@ object idSeekLeafPlanner extends LeafPlanner {
         }
     }
 
-    context.metrics.candidateListCreator(candidatePlans)
+    candidatePlans
   }
 
   private def planRelationshipByIdSeek(relationship: PatternRelationship, idValues: EntityByIdRhs, predicates: Seq[Expression], argumentIds: Set[IdName]): LogicalPlan = {

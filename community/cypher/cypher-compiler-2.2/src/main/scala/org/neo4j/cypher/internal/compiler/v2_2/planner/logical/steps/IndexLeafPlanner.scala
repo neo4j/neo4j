@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.kernel.api.index.IndexDescriptor
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_2.commands.{ManyQueryExpression, QueryExpression}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
-import org.neo4j.cypher.internal.compiler.v2_2.commands.{SingleQueryExpression, ManyQueryExpression, QueryExpression}
+import org.neo4j.kernel.api.index.IndexDescriptor
 
 
 abstract class IndexLeafPlanner extends LeafPlanner {
@@ -52,12 +52,10 @@ abstract class IndexLeafPlanner extends LeafPlanner {
       }
     }
 
-    context.metrics.candidateListCreator(
-      predicates.collect {
-        case inPredicate@In(Property(identifier@Identifier(name), propertyKeyName), ConstantExpression(valueExpr)) if !qg.argumentIds.contains(IdName(name)) =>
-          producePlanFor(name, propertyKeyName, inPredicate, ManyQueryExpression(valueExpr))
-      }.flatten
-    )
+    predicates.collect {
+      case inPredicate@In(Property(identifier@Identifier(name), propertyKeyName), ConstantExpression(valueExpr)) if !qg.argumentIds.contains(IdName(name)) =>
+        producePlanFor(name, propertyKeyName, inPredicate, ManyQueryExpression(valueExpr))
+    }.flatten
   }
 
   protected def constructPlan(idName: IdName,
@@ -107,8 +105,8 @@ object indexSeekLeafPlanner extends IndexLeafPlanner {
 
 object legacyHintLeafPlanner extends LeafPlanner {
   def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext) = {
-    context.metrics.candidateListCreator(qg.hints.toSeq.collect {
+    qg.hints.toSeq.collect {
       case hint: LegacyIndexHint => planLegacyHintSeek(IdName(hint.identifier.name), hint, qg.argumentIds)
-    })
+    }
   }
 }

@@ -19,15 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
+import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{CartesianProduct, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.CandidateList
-import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 
 object cartesianProduct extends CandidateGenerator[PlanTable] {
-  def apply(planTable: PlanTable, ignored: QueryGraph)(implicit context: LogicalPlanningContext): CandidateList = {
+  def apply(planTable: PlanTable, ignored: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
     val usablePlans = iterateUntilConverged { usablePlans: Set[LogicalPlan] =>
       val cartesianProducts = for (planA <- usablePlans; planB <- usablePlans if planA != planB) yield planCartesianProduct(planA, planB)
       if (cartesianProducts.isEmpty) {
@@ -37,6 +36,6 @@ object cartesianProduct extends CandidateGenerator[PlanTable] {
         usablePlans - worstCartesianProduct.left - worstCartesianProduct.right + worstCartesianProduct
       }
     } (planTable.plans.filter(_.solved.graph.argumentIds.isEmpty).toSet)
-    context.metrics.candidateListCreator(usablePlans.toSeq.collect { case c: CartesianProduct => c })
+    usablePlans.toSeq.collect { case c: CartesianProduct => c }
   }
 }

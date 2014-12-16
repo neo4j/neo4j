@@ -19,21 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.ShortestPathPattern
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
-import LogicalPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{LogicalPlan, ShortestPathPattern}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 
 object findShortestPaths extends CandidateGenerator[PlanTable] {
-  def apply(input: PlanTable, qg: QueryGraph)(implicit context: LogicalPlanningContext): CandidateList = {
-
-    val patterns = qg.shortestPathPatterns
-    val plans = patterns.flatMap { (shortestPath: ShortestPathPattern) =>
-        input.plans.collect {
-          case plan if shortestPath.isFindableFrom(plan.availableSymbols) =>
-            planShortestPaths(plan, shortestPath)
-        }
+  def apply(input: PlanTable, qg: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] =
+    qg.shortestPathPatterns.flatMap { (shortestPath: ShortestPathPattern) =>
+      input.plans.collect {
+        case plan if shortestPath.isFindableFrom(plan.availableSymbols) =>
+          planShortestPaths(plan, shortestPath)
       }
-    context.metrics.candidateListCreator(plans.toSeq)
-  }
+    }.toSeq
 }

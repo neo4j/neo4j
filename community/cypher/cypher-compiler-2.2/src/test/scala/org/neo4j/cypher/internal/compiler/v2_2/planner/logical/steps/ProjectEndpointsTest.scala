@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.InputPosition.NONE
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.PlanTable
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Candidates, PlanTable}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport, QueryGraph}
 import org.neo4j.graphdb.Direction
 
@@ -46,7 +46,7 @@ class ProjectEndpointsTest
     val patternRel = PatternRelationship(rName, (aName, bName), Direction.OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph.empty.addPatternRel(patternRel)
 
-    projectEndpoints(planTable, qg) should equal(Candidates(
+    projectEndpoints(planTable, qg) should equal(Seq(
       planEndpointProjection(inputPlan, aName, bName, Seq.empty, patternRel)
     ))
   }
@@ -59,7 +59,7 @@ class ProjectEndpointsTest
     val patternRel = PatternRelationship(rName, (aName, bName), Direction.OUTGOING, Seq(RelTypeName("X")_), SimplePatternLength)
     val qg = QueryGraph.empty.addPatternRel(patternRel)
 
-    projectEndpoints(planTable, qg) should equal(Candidates(
+    projectEndpoints(planTable, qg) should equal(Seq(
       planEndpointProjection(
         inputPlan, aName, bName,
         Seq(In(FunctionInvocation(FunctionName("type")_, Identifier("r")_)_, Collection(Seq(StringLiteral("X")_))_)_), patternRel)
@@ -74,7 +74,7 @@ class ProjectEndpointsTest
     val patternRel = PatternRelationship(rName, (aName, bName), Direction.INCOMING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph.empty.addPatternRel(patternRel)
 
-    projectEndpoints(planTable, qg) should equal(Candidates(
+    projectEndpoints(planTable, qg) should equal(Seq(
       planEndpointProjection(inputPlan, bName, aName, Seq.empty, patternRel)
     ))
   }
@@ -87,7 +87,7 @@ class ProjectEndpointsTest
     val patternRel = PatternRelationship(rName, (aName, bName), Direction.OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph.empty.addPatternRel(patternRel)
 
-    projectEndpoints(planTable, qg) should equal(Candidates(
+    projectEndpoints(planTable, qg) should equal(Seq(
       planEndpointProjection(inputPlan, freshName(aName), bName, Seq(freshlyEqualTo(aName)), patternRel)
     ))
   }
@@ -100,7 +100,7 @@ class ProjectEndpointsTest
     val patternRel = PatternRelationship(rName, (aName, bName), Direction.OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph.empty.addPatternRel(patternRel)
 
-    projectEndpoints(planTable, qg) should equal(Candidates(
+    projectEndpoints(planTable, qg) should equal(Seq(
       planEndpointProjection(inputPlan, aName, freshName(bName), Seq(freshlyEqualTo(bName)), patternRel)
     ))
   }
@@ -113,7 +113,7 @@ class ProjectEndpointsTest
     val patternRel = PatternRelationship(rName, (aName, bName), Direction.OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph.empty.addPatternRel(patternRel)
 
-    projectEndpoints(planTable, qg) should equal(Candidates(
+    projectEndpoints(planTable, qg) should equal(Seq(
       planEndpointProjection(inputPlan, freshName(aName), freshName(bName), Seq(freshlyEqualTo(aName), freshlyEqualTo(bName)), patternRel)
     ))
   }

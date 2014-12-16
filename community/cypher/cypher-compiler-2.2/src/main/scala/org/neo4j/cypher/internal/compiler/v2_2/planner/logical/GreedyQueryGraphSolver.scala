@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter.LogicalPlanRewriter
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.{cartesianProduct, solveOptionalMatches}
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
@@ -36,7 +35,7 @@ class GreedyQueryGraphSolver(planCombiner: CandidateGenerator[PlanTable],
     val pickBest = config.pickBestCandidate.asFunctionInContext
 
     def generateLeafPlanTable(): PlanTable = {
-      val leafPlanCandidateLists = config.leafPlanners.candidateLists(queryGraph)
+      val leafPlanCandidateLists = config.leafPlanners.candidates(queryGraph)
       val leafPlanCandidateListsWithSelections = leafPlanCandidateLists.map(_.map(select(_, queryGraph)))
       val bestLeafPlans: Iterable[LogicalPlan] = leafPlanCandidateListsWithSelections.flatMap(pickBest(_))
       val startTable: PlanTable = leafPlan.foldLeft(PlanTable.empty)(_ + _)
@@ -46,7 +45,7 @@ class GreedyQueryGraphSolver(planCombiner: CandidateGenerator[PlanTable],
     def findBestPlan(planGenerator: CandidateGenerator[PlanTable]): PlanTable => PlanTable = {
       (planTable: PlanTable) =>
         val step: CandidateGenerator[PlanTable] = planGenerator +||+ findShortestPaths
-        val generated: Seq[LogicalPlan] = step(planTable, queryGraph).plans
+        val generated: Seq[LogicalPlan] = step(planTable, queryGraph)
 
         if (generated.nonEmpty) {
           val selected: Seq[LogicalPlan] = generated.map(select(_, queryGraph))
@@ -54,11 +53,11 @@ class GreedyQueryGraphSolver(planCombiner: CandidateGenerator[PlanTable],
           //          println("Produced: " + selected.map(_.availableSymbols).mkString(" | "))
 
           // We want to keep the best plan per set of covered ids.
-          val candidatesPerIds: Map[Set[IdName], CandidateList] =
-            selected.foldLeft(Map.empty[Set[IdName], CandidateList]) {
+          val candidatesPerIds: Map[Set[IdName], Seq[LogicalPlan]] =
+            selected.foldLeft(Map.empty[Set[IdName], Seq[LogicalPlan]]) {
               case (acc, plan) =>
                 val ids = plan.availableSymbols.filterNot(idName => idName.name.endsWith("$$$_") || idName.name.endsWith("$$$"))
-                val candidates = acc.getOrElse(ids, context.metrics.candidateListCreator(Seq.empty)) + plan
+                val candidates = acc.getOrElse(ids, Seq.empty) :+ plan
                 acc + (ids -> candidates)
             }
 

@@ -20,42 +20,39 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.FreshIdNameGenerator
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
-import org.neo4j.cypher.internal.compiler.v2_2.helpers.FreshIdNameGenerator
 
 case class selectPatternPredicates(simpleSelection: PlanTransformer[QueryGraph]) extends PlanTransformer[QueryGraph] {
-  private object candidateListProducer extends CandidateGenerator[PlanTable] {
-    def apply(planTable: PlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): CandidateList = {
-      val applyCandidates =
-        for (
-          lhs <- planTable.plans;
-          pattern <- queryGraph.selections.patternPredicatesGiven(lhs.availableSymbols)
-          if applicable(lhs, queryGraph, pattern))
-        yield {
-          pattern match {
-            case patternExpression: PatternExpression =>
-              val rhs = rhsPlan(lhs.availableSymbols, patternExpression)
-              planSemiApply(lhs, rhs, patternExpression)
-            case p@Not(patternExpression: PatternExpression) =>
-              val rhs = rhsPlan(lhs.availableSymbols, patternExpression)
-              planAntiSemiApply(lhs, rhs, patternExpression, p)
-            case p@Ors(exprs) =>
-              val (patternExpressions, expressions) = exprs.partition {
-                case _: PatternExpression => true
-                case Not(_: PatternExpression) => true
-                case _ => false
-              }
-              val (outerMostPlan, solvedPredicates) = planPredicates(lhs, patternExpressions, expressions, None)
-              solvePredicate(outerMostPlan, onePredicate(solvedPredicates))
-          }
+  private object candidatesProducer extends CandidateGenerator[PlanTable] {
+    def apply(planTable: PlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
+      for (
+        lhs <- planTable.plans;
+        pattern <- queryGraph.selections.patternPredicatesGiven(lhs.availableSymbols)
+        if applicable(lhs, queryGraph, pattern))
+      yield {
+        pattern match {
+          case patternExpression: PatternExpression =>
+            val rhs = rhsPlan(lhs.availableSymbols, patternExpression)
+            planSemiApply(lhs, rhs, patternExpression)
+          case p@Not(patternExpression: PatternExpression) =>
+            val rhs = rhsPlan(lhs.availableSymbols, patternExpression)
+            planAntiSemiApply(lhs, rhs, patternExpression, p)
+          case p@Ors(exprs) =>
+            val (patternExpressions, expressions) = exprs.partition {
+              case _: PatternExpression => true
+              case Not(_: PatternExpression) => true
+              case _ => false
+            }
+            val (outerMostPlan, solvedPredicates) = planPredicates(lhs, patternExpressions, expressions, None)
+            solvePredicate(outerMostPlan, onePredicate(solvedPredicates))
         }
-
-      context.metrics.candidateListCreator(applyCandidates)
+      }
     }
 
     private def planPredicates(lhs: LogicalPlan, patternExpressions: Set[Expression], expressions: Set[Expression], letExpression: Option[Expression])
@@ -131,8 +128,8 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer[QueryGraph])
 
     def findBestPlanForPatternPredicates(plan: LogicalPlan): LogicalPlan = {
       val secretPlanTable = PlanTable(Map(plan.availableSymbols -> plan))
-      val result: CandidateList = candidateListProducer(secretPlanTable, queryGraph)
-      result.bestPlan.getOrElse(plan)
+      val result = candidatesProducer(secretPlanTable, queryGraph)
+      pickBestPlan(result).getOrElse(plan)
     }
 
     iterateUntilConverged(findBestPlanForPatternPredicates)(plan)

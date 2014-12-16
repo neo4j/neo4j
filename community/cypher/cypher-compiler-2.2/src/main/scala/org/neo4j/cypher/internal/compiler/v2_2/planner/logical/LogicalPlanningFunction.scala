@@ -34,19 +34,19 @@ trait LogicalPlanningFunction2[-A1, -A2, +B] {
   def asFunctionInContext(implicit context: LogicalPlanningContext): (A1, A2) => B = apply
 }
 
-trait CandidateGenerator[T] extends LogicalPlanningFunction2[T, QueryGraph, CandidateList]
+trait CandidateGenerator[T] extends LogicalPlanningFunction2[T, QueryGraph, Seq[LogicalPlan]]
 
 object CandidateGenerator {
   implicit final class RichCandidateGenerator[T](self: CandidateGenerator[T]) {
     def orElse(other: CandidateGenerator[T]): CandidateGenerator[T] = new CandidateGenerator[T] {
-      def apply(input1: T, input2: QueryGraph)(implicit context: LogicalPlanningContext): CandidateList = {
+      def apply(input1: T, input2: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
         val ownCandidates = self(input1, input2)
         if (ownCandidates.isEmpty) other(input1, input2) else ownCandidates
       }
     }
 
     def +||+(other: CandidateGenerator[T]): CandidateGenerator[T] = new CandidateGenerator[T] {
-      override def apply(input1: T, input2: QueryGraph)(implicit context: LogicalPlanningContext): CandidateList =
+      override def apply(input1: T, input2: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] =
         self(input1, input2) ++ other(input1, input2)
     }
   }
@@ -54,6 +54,6 @@ object CandidateGenerator {
 
 trait PlanTransformer[-T] extends LogicalPlanningFunction2[LogicalPlan, T, LogicalPlan]
 
-trait CandidateSelector extends LogicalPlanningFunction1[CandidateList, Option[LogicalPlan]]
+trait CandidateSelector extends LogicalPlanningFunction1[Seq[LogicalPlan], Option[LogicalPlan]]
 
-trait LeafPlanner  extends LogicalPlanningFunction1[QueryGraph, CandidateList]
+trait LeafPlanner  extends LogicalPlanningFunction1[QueryGraph, Seq[LogicalPlan]]

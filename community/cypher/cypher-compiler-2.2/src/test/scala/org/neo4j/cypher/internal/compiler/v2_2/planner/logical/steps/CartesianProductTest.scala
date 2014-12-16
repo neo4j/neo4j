@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityInput
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{CartesianProduct, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, Candidates, Cost, PlanTable}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cost, PlanTable}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport, QueryGraph}
 
 class CartesianProductTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -41,7 +41,7 @@ class CartesianProductTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val cost = Map(plan -> 1.0)
     implicit val (table, context) = prepare(cost, plan)
 
-    cartesianProduct(table, qg) should equal(Candidates())
+    cartesianProduct(table, qg) shouldBe empty
   }
 
   test("cartesian product produces the best possible combination") {
@@ -53,7 +53,7 @@ class CartesianProductTest extends CypherFunSuite with LogicalPlanningTestSuppor
       case CartesianProduct(a, b) => cost(a) + 10 * cost(b)
     }
     implicit val (table, context) = prepare(cost, plan1, plan2)
-    cartesianProduct(table, qg).plans.toSet should equal(Set(planCartesianProduct(plan2, plan1)))
+    cartesianProduct(table, qg).toSet should equal(Set(planCartesianProduct(plan2, plan1)))
   }
 
   private def prepare(cost: LogicalPlan => Double, plans: LogicalPlan*) = {

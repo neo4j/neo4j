@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, LogicalPlan}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 
 object join extends CandidateGenerator[PlanTable] {
-  def apply(planTable: PlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): CandidateList = {
+  def apply(planTable: PlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
 
     def isApplicable(id: IdName): Boolean =  queryGraph.patternNodes(id) && !queryGraph.argumentIds(id)
 
@@ -39,7 +39,8 @@ object join extends CandidateGenerator[PlanTable] {
         case _ => None
       }
     }).flatten.toList
-    context.metrics.candidateListCreator(joinPlans)
+
+    joinPlans
   }
 
 }
