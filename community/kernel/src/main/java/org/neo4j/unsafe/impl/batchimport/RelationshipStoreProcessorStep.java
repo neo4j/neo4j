@@ -29,15 +29,17 @@ import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
  * Convenient step for processing all in use {@link RelationshipRecord records} in the
  * {@link RelationshipStore relationship store}.
  */
-public abstract class RelationshipStoreProcessorStep extends LonelyProcessingStep
+public class RelationshipStoreProcessorStep extends LonelyProcessingStep
 {
     private final RelationshipStore relationshipStore;
+    private final StoreProcessor<RelationshipRecord> processor;
 
     protected RelationshipStoreProcessorStep( StageControl control, String name, Configuration config,
-            RelationshipStore relationshipStore )
+            RelationshipStore relationshipStore, StoreProcessor<RelationshipRecord> processor )
     {
         super( control, name, config.batchSize(), config.movingAverageSize() );
         this.relationshipStore = relationshipStore;
+        this.processor = processor;
     }
 
     @Override
@@ -48,18 +50,12 @@ public abstract class RelationshipStoreProcessorStep extends LonelyProcessingSte
         for ( long i = highId; i >= 0; i-- )
         {
             if ( relationshipStore.fillRecord( i, heavilyReusedRecord, RecordLoad.CHECK )
-                    && process( heavilyReusedRecord ) )
+                    && processor.process( heavilyReusedRecord ) )
             {
                 relationshipStore.updateRecord( heavilyReusedRecord );
             }
             itemProcessed();
         }
+        processor.done();
     }
-
-    /**
-     * Processes a {@link RelationshipRecord relationship}.
-     *
-     * @return {@code true} if the relationship changed and should be updated in the store.
-     */
-    protected abstract boolean process( RelationshipRecord record );
 }

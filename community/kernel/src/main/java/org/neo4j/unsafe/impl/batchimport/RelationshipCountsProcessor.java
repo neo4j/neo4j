@@ -20,16 +20,14 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
-import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 /**
  * Calculates counts as labelId --[type]--> labelId for relationships with the labels coming from its start/end nodes.
  */
-public class RelationshipCountsStep extends RelationshipStoreProcessorStep
+public class RelationshipCountsProcessor implements StoreProcessor<RelationshipRecord>
 {
     /** Don't support these counts at the moment so don't compute them */
     private static final boolean COMPUTE_DOUBLE_SIDED_RELATIONSHIP_COUNTS = false;
@@ -41,10 +39,9 @@ public class RelationshipCountsStep extends RelationshipStoreProcessorStep
     private final int anyLabel;
     private final int anyRelationshipType;
 
-    protected RelationshipCountsStep( StageControl control, Configuration config, RelationshipStore relationshipStore,
-            NodeLabelsCache nodeLabelCache, int highLabelId, int highRelationshipTypeId, CountsTracker countsTracker )
+    protected RelationshipCountsProcessor( NodeLabelsCache nodeLabelCache,
+            int highLabelId, int highRelationshipTypeId, CountsTracker countsTracker )
     {
-        super( control, "RELATIONSHIP COUNTS", config, relationshipStore );
         this.nodeLabelCache = nodeLabelCache;
         this.countsTracker = countsTracker;
 
@@ -55,7 +52,7 @@ public class RelationshipCountsStep extends RelationshipStoreProcessorStep
     }
 
     @Override
-    protected boolean process( RelationshipRecord record )
+    public boolean process( RelationshipRecord record )
     {
         long startNode = record.getFirstNode();
         long endNode = record.getSecondNode();
@@ -104,7 +101,7 @@ public class RelationshipCountsStep extends RelationshipStoreProcessorStep
     }
 
     @Override
-    protected void done()
+    public void done()
     {
         for ( int startNodeLabelId = 0; startNodeLabelId < counts.length; startNodeLabelId++ )
         {

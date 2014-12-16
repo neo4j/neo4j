@@ -148,7 +148,7 @@ public class NodeRelationshipLinkImpl implements NodeRelationshipLink
         return IdFieldManipulator.getCount( field );
     }
 
-    private static class RelGroupCache implements AutoCloseable
+    private static class RelGroupCache implements AutoCloseable, MemoryStatsVisitor.Home
     {
         private static final int ENTRY_SIZE = 4;
 
@@ -334,6 +334,12 @@ public class NodeRelationshipLinkImpl implements NodeRelationshipLink
         {
             array.close();
         }
+
+        @Override
+        public void visit( MemoryStatsVisitor visitor )
+        {
+            array.visit( visitor );
+        }
     }
 
     @Override
@@ -347,5 +353,12 @@ public class NodeRelationshipLinkImpl implements NodeRelationshipLink
     {
         array.close();
         relGroupCache.close();
+    }
+
+    @Override
+    public void visit( MemoryStatsVisitor visitor )
+    {
+        array.visit( visitor );
+        relGroupCache.visit( visitor );
     }
 }

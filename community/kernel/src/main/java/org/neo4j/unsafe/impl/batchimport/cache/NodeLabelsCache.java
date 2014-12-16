@@ -29,7 +29,7 @@ import static org.neo4j.kernel.impl.util.Bits.bitsFromLongs;
  * Caches labels for each node. Tries to keep memory as 8b (a long) per node. If a particular node has many labels
  * it will spill over into two or more longs in a separate array.
  */
-public class NodeLabelsCache
+public class NodeLabelsCache implements MemoryStatsVisitor.Home
 {
     private final LongArray cache;
     private final LongArray spillOver;
@@ -136,10 +136,11 @@ public class NodeLabelsCache
         return target;
     }
 
-    public void visitMemoryStats( MemoryStatsVisitor visitor )
+    @Override
+    public void visit( MemoryStatsVisitor visitor )
     {
-        cache.visitMemoryStats( visitor );
-        spillOver.visitMemoryStats( visitor );
+        cache.visit( visitor );
+        spillOver.visit( visitor );
     }
 
     private void decode( Bits bits, int length, int[] target )

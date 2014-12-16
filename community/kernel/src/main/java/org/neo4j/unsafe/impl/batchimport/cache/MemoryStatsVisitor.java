@@ -24,6 +24,11 @@ package org.neo4j.unsafe.impl.batchimport.cache;
  */
 public interface MemoryStatsVisitor
 {
+    interface Home
+    {
+        void visit( MemoryStatsVisitor visitor );
+    }
+
     void heapUsage( long bytes );
 
     void offHeapUsage( long bytes );
