@@ -27,10 +27,11 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryGraph, Selections}
 
 import scala.collection.mutable
 
-case class ExhaustiveQueryGraphSolver(leafPlanTableGenerator: PlanTableGenerator = LeafPlanTableGenerator(PlanningStrategyConfiguration.default),
-                                      planProducers: Seq[PlanProducer] = Seq(expandOptions, joinOptions),
-                                      bestPlanFinder: CandidateSelector = pickBestPlan
-  )
+
+case class ExhaustiveQueryGraphSolver(leafPlanTableGenerator: PlanTableGenerator,
+                                      planProducers: Seq[PlanProducer],
+                                      bestPlanFinder: CandidateSelector,
+                                      config: PlanningStrategyConfiguration)
   extends TentativeQueryGraphSolver {
 
   def tryPlan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): Option[LogicalPlan] = {
@@ -40,7 +41,7 @@ case class ExhaustiveQueryGraphSolver(leafPlanTableGenerator: PlanTableGenerator
     (1 to queryGraph.size) foreach { x =>
       queryGraph.combinations(x).foreach {
           subQG =>
-            val plans = planProducers.flatMap(_(subQG, cache))
+            val plans = planProducers.flatMap(_(subQG, cache)).map(config.applySelections(_, subQG))
             val bestPlan = bestPlanFinder(plans)
             bestPlan.foreach(p => cache(subQG) = p)
         }
@@ -59,6 +60,12 @@ case class ExhaustiveQueryGraphSolver(leafPlanTableGenerator: PlanTableGenerator
   }
 
 object ExhaustiveQueryGraphSolver {
+
+  def withDefaults(leafPlanTableGenerator: PlanTableGenerator = LeafPlanTableGenerator(PlanningStrategyConfiguration.default),
+             planProducers: Seq[PlanProducer] = Seq(expandOptions, joinOptions),
+             bestPlanFinder: CandidateSelector = pickBestPlan,
+             config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default) =
+    new ExhaustiveQueryGraphSolver(leafPlanTableGenerator, planProducers, bestPlanFinder, config)
 
   type PlanProducer = ((QueryGraph, collection.Map[QueryGraph, LogicalPlan]) => Seq[LogicalPlan])
 
