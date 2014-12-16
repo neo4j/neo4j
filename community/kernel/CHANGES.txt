@@ -1,6 +1,8 @@
 2.2.0-SNAPSHOT
 --------------
 o Introduced GraphDatabaseService.execute(...) for executing cypher queries.
+o For projects using Neo4j, usage of ImpermanentGraphDatabase testing facility
+  requires explicit dependency on "test-jar" from the "neo4j-io" module.
 
 2.2.0-M01
 ---------
