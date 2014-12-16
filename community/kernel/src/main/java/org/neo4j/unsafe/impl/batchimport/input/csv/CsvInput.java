@@ -19,6 +19,9 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.ResourceIterable;
@@ -63,14 +66,33 @@ public class CsvInput implements Input
             Iterable<DataFactory<InputRelationship>> relationshipDataFactory, Header.Factory relationshipHeaderFactory,
             IdType idType, Configuration config )
     {
+        assertSaneConfiguration( config );
+
         this.nodeDataFactory = nodeDataFactory;
         this.nodeHeaderFactory = nodeHeaderFactory;
         this.relationshipDataFactory = relationshipDataFactory;
         this.relationshipHeaderFactory = relationshipHeaderFactory;
         this.idType = idType;
         this.config = config;
-
         this.delimiter = new int[] {config.delimiter()};
+    }
+
+    private void assertSaneConfiguration( Configuration config )
+    {
+        Map<Character,String> delimiters = new HashMap<>();
+        delimiters.put( config.delimiter(), "delimiter" );
+        checkUniqueCharacter( delimiters, config.arrayDelimiter(), "array delimiter" );
+        checkUniqueCharacter( delimiters, config.quotationCharacter(), "quotation character" );
+    }
+
+    private void checkUniqueCharacter( Map<Character,String> characters, char character, String characterDescription )
+    {
+        String conflict = characters.put( character, characterDescription );
+        if ( conflict != null )
+        {
+            throw new IllegalArgumentException( "Character '" + character + "' specified by " + characterDescription +
+                    " is the same as specified by " + conflict );
+        }
     }
 
     @Override

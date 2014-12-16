@@ -44,6 +44,8 @@ import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -400,6 +402,80 @@ public class CsvInputTest
             assertNode( nodes.next(), 1L, new Object[] {"name", "Johan", "extra", 10}, labels() );
             assertFalse( nodes.hasNext() );
         }
+    }
+
+    @Test
+    public void shouldFailOnArrayDelimiterBeingSameAsDelimiter() throws Exception
+    {
+        // WHEN
+        try
+        {
+            new CsvInput( null, null, null, null, IdType.ACTUAL, customConfig( ',', ',', '"' ) );
+            fail( "Should not be possible" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // THEN
+            assertTrue( e.getMessage().contains( "array delimiter" ) );
+        }
+    }
+
+    @Test
+    public void shouldFailOnQuotationCharacterBeingSameAsDelimiter() throws Exception
+    {
+        // WHEN
+        try
+        {
+            new CsvInput( null, null, null, null, IdType.ACTUAL, customConfig( ',', ';', ',' ) );
+            fail( "Should not be possible" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // THEN
+            assertTrue( e.getMessage().contains( "delimiter" ) );
+            assertTrue( e.getMessage().contains( "quotation" ) );
+        }
+    }
+
+    @Test
+    public void shouldFailOnQuotationCharacterBeingSameAsArrayDelimiter() throws Exception
+    {
+        // WHEN
+        try
+        {
+            new CsvInput( null, null, null, null, IdType.ACTUAL, customConfig( ',', ';', ';' ) );
+            fail( "Should not be possible" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // THEN
+            assertTrue( e.getMessage().contains( "array delimiter" ) );
+            assertTrue( e.getMessage().contains( "quotation" ) );
+        }
+    }
+
+    private Configuration customConfig( final char delimiter, final char arrayDelimiter, final char quote )
+    {
+        return new Configuration()
+        {
+            @Override
+            public char quotationCharacter()
+            {
+                return quote;
+            }
+
+            @Override
+            public char delimiter()
+            {
+                return delimiter;
+            }
+
+            @Override
+            public char arrayDelimiter()
+            {
+                return arrayDelimiter;
+            }
+        };
     }
 
     private <ENTITY extends InputEntity> DataFactory<ENTITY> given( final CharSeeker data )
