@@ -139,7 +139,6 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     }
   }
 
-
   def execStatement[T](f: (DataWriteOperations => T)): T = {
     val tx = graph.beginTx
     val result = f(statement.dataWriteOperations())
