@@ -46,3 +46,5 @@ include::indexes-configurable-auto.asciidoc[]
 
 include::wadl.asciidoc[]
 
+include::weblogic.asciidoc[]
+
