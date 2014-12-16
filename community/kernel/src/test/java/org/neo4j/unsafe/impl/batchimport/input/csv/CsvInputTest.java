@@ -36,6 +36,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
+import org.neo4j.unsafe.impl.batchimport.input.DataException;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
@@ -113,7 +114,8 @@ public class CsvInputTest
         CharSeeker relationshipData = spy( charSeeker( "test" ) );
         IdType idType = IdType.STRING;
         Iterable<DataFactory<InputNode>> nodeDataIterable = dataIterable( given( nodeData ) );
-        Iterable<DataFactory<InputRelationship>> relationshipDataIterable = dataIterable( given( relationshipData ) );
+        Iterable<DataFactory<InputRelationship>> relationshipDataIterable =
+                dataIterable( data( relationshipData, defaultRelationshipType( "TYPE" ) ) );
         Input input = new CsvInput(
                 nodeDataIterable, header(
                         entry( null, Type.ID, idType.extractor( extractors ) ) ),
@@ -260,6 +262,34 @@ public class CsvInputTest
             assertRelationship( relationships.next(), 1L, 1L, 2L, customType, NO_PROPERTIES );
             assertRelationship( relationships.next(), 2L, 2L, 1L, defaultType, NO_PROPERTIES );
             assertFalse( relationships.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldFailOnMissingRelationshipType() throws Exception
+    {
+        // GIVEN
+        String type = "CUSTOM";
+        DataFactory<InputRelationship> data = data( ":START_ID,:END_ID,:TYPE\n" +
+                "0,1," + type + "\n" +
+                "1,2," );
+        Iterable<DataFactory<InputRelationship>> dataIterable = dataIterable( data );
+        Input input = new CsvInput( null, null,
+                dataIterable, defaultFormatRelationshipFileHeader(), IdType.ACTUAL, Configuration.COMMAS );
+
+        // WHEN/THEN
+        try ( ResourceIterator<InputRelationship> relationships = input.relationships().iterator() )
+        {
+            assertRelationship( relationships.next(), 0L, 0L, 1L, type, NO_PROPERTIES );
+            try
+            {
+                relationships.next();
+                fail( "Should have failed" );
+            }
+            catch ( DataException e )
+            {
+                assertTrue( e.getMessage().contains( Type.TYPE.name() ) );
+            }
         }
     }
 
@@ -532,6 +562,29 @@ public class CsvInputTest
         };
     }
 
+    @Test
+    public void shouldDoWithoutRelationshipTypeHeaderIfDefaultSupplied() throws Exception
+    {
+        // GIVEN relationship data w/o :TYPE header
+        String defaultType = "HERE";
+        DataFactory<InputRelationship> data = data(
+                ":START_ID,:END_ID,name\n" +
+                "0,1,First\n" +
+                "2,3,Second\n", defaultRelationshipType( defaultType ) );
+        Iterable<DataFactory<InputRelationship>> dataIterable = dataIterable( data );
+        Input input = new CsvInput( null, null, dataIterable, defaultFormatRelationshipFileHeader(),
+                IdType.ACTUAL, COMMAS );
+
+        // WHEN
+        try ( ResourceIterator<InputRelationship> relationships = input.relationships().iterator() )
+        {
+            // THEN
+            assertRelationship( relationships.next(), 0, 0L, 1L, defaultType, properties( "name", "First" ) );
+            assertRelationship( relationships.next(), 1, 2L, 3L, defaultType, properties( "name", "Second" ) );
+            assertFalse( relationships.hasNext() );
+        }
+    }
+
     private <ENTITY extends InputEntity> DataFactory<ENTITY> given( final CharSeeker data )
     {
         return new DataFactory<ENTITY>()
@@ -539,12 +592,25 @@ public class CsvInputTest
             @Override
             public Data<ENTITY> create( Configuration config )
             {
-                return noDecoratorData( data, Functions.<ENTITY>identity() );
+                return dataItem( data, Functions.<ENTITY>identity() );
             }
         };
     }
 
-    private <ENTITY extends InputEntity> Data<ENTITY> noDecoratorData( final CharSeeker data,
+    private <ENTITY extends InputEntity> DataFactory<ENTITY> data( final CharSeeker data,
+            final Function<ENTITY,ENTITY> decorator )
+    {
+        return new DataFactory<ENTITY>()
+        {
+            @Override
+            public Data<ENTITY> create( Configuration config )
+            {
+                return dataItem( data, decorator );
+            }
+        };
+    }
+
+    private <ENTITY extends InputEntity> Data<ENTITY> dataItem( final CharSeeker data,
             final Function<ENTITY,ENTITY> decorator )
     {
         return new Data<ENTITY>()
@@ -641,7 +707,7 @@ public class CsvInputTest
             @Override
             public Data<ENTITY> create( Configuration config )
             {
-                return noDecoratorData( charSeeker( data ), decorator );
+                return dataItem( charSeeker( data ), decorator );
             }
         };
     }

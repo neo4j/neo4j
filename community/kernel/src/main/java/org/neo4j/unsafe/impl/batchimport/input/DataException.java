@@ -19,9 +19,9 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input;
 
-public class HeaderException extends InputException
+public class DataException extends InputException
 {
-    public HeaderException( String message )
+    public DataException( String message )
     {
         super( message );
     }

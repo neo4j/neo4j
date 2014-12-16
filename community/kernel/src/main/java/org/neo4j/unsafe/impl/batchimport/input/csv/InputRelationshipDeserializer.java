@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.input.csv;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.function.Function;
 import org.neo4j.kernel.impl.store.id.IdSequence;
+import org.neo4j.unsafe.impl.batchimport.input.DataException;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
@@ -72,5 +73,14 @@ class InputRelationshipDeserializer extends InputEntityDeserializer<InputRelatio
     {
         return new InputRelationship( idSequence.nextId(), properties, null,
                 startNodeGroup, startNode, endNodeGroup, endNode, type, null );
+    }
+
+    @Override
+    protected void validate( InputRelationship entity )
+    {
+        if ( !entity.hasTypeId() && entity.type() == null )
+        {
+            throw new DataException( entity + " is missing " + Type.TYPE + " field" );
+        }
     }
 }

@@ -239,7 +239,7 @@ public class ImportToolTest
                                    nodeData( false, config, groupOneNodeIds, alwaysTrue() ),
                 "--nodes",         nodeHeader( config, groupTwo ) + MULTI_FILE_DELIMITER +
                                    nodeData( false, config, groupTwoNodeIds, alwaysTrue() ),
-                "--relationships", relationshipHeader( config, groupOne, groupTwo ) + MULTI_FILE_DELIMITER +
+                "--relationships", relationshipHeader( config, groupOne, groupTwo, true ) + MULTI_FILE_DELIMITER +
                                    relationshipData( false, config, rels.iterator(), alwaysTrue(), true )
 
                 ) );
@@ -288,6 +288,26 @@ public class ImportToolTest
         {
             assertTrue( Exceptions.contains( e, "Mixing specified", IllegalStateException.class ) );
         }
+    }
+
+    @Test
+    public void shouldImportWithoutTypeSpecifiedInRelationshipHeaderbutWithDefaultTypeInArgument() throws Exception
+    {
+        // GIVEN
+        List<String> nodeIds = nodeIds();
+        Configuration config = Configuration.COMMAS;
+        String type = randomType();
+
+        // WHEN
+        ImportTool.main( arguments(
+                "--into",          directory.absolutePath(),
+                "--nodes",         nodeData( true, config, nodeIds, alwaysTrue() ).getAbsolutePath(),
+                                   // there will be no :TYPE specified in the header of the relationships below
+                "--relationships:" + type,
+                                   relationshipData( true, config, nodeIds, alwaysTrue(), false ).getAbsolutePath() ) );
+
+        // THEN
+        verifyData();
     }
 
     protected void assertNodeHasLabels( Node node, String[] names )
@@ -457,7 +477,7 @@ public class ImportToolTest
         {
             if ( includeHeader )
             {
-                writeRelationshipHeader( writer, config, null, null );
+                writeRelationshipHeader( writer, config, null, null, specifyType );
             }
             writeRelationshipData( writer, config, data, linePredicate, specifyType );
         }
@@ -466,16 +486,16 @@ public class ImportToolTest
 
     private File relationshipHeader( Configuration config ) throws FileNotFoundException
     {
-        return relationshipHeader( config, null, null );
+        return relationshipHeader( config, null, null, true );
     }
 
-    private File relationshipHeader( Configuration config, String startIdGroup, String endIdGroup )
+    private File relationshipHeader( Configuration config, String startIdGroup, String endIdGroup, boolean specifyType )
             throws FileNotFoundException
     {
         File file = directory.file( fileName( "relationships-header.csv" ) );
         try ( PrintStream writer = new PrintStream( file ) )
         {
-            writeRelationshipHeader( writer, config, startIdGroup, endIdGroup );
+            writeRelationshipHeader( writer, config, startIdGroup, endIdGroup, specifyType );
         }
         return file;
     }
@@ -486,13 +506,14 @@ public class ImportToolTest
     }
 
     private void writeRelationshipHeader( PrintStream writer, Configuration config,
-            String startIdGroup, String endIdGroup )
+            String startIdGroup, String endIdGroup, boolean specifyType )
     {
         char delimiter = config.delimiter();
         writer.println(
                 idEntry( null, Type.START_ID, startIdGroup ) + delimiter +
-                idEntry( null, Type.END_ID, endIdGroup ) + delimiter +
-                ":" + Type.TYPE + delimiter + "created:long" );
+                idEntry( null, Type.END_ID, endIdGroup ) +
+                (specifyType ? (delimiter + ":" + Type.TYPE) : "") +
+                delimiter + "created:long" );
     }
 
     private void writeRelationshipData( PrintStream writer, Configuration config,
@@ -508,11 +529,10 @@ public class ImportToolTest
                     break;
                 }
                 Triplet<String,String,String> entry = data.next();
-                writer.println(
-                        entry.first() + delimiter +
-                        entry.second() + delimiter +
-                        (specifyType ? entry.third() : "") + delimiter +
-                        currentTimeMillis() );
+                writer.println( entry.first() +
+                        delimiter + entry.second() +
+                        (specifyType ? (delimiter + entry.third()) : "") +
+                        delimiter + currentTimeMillis() );
             }
         }
     }
