@@ -19,13 +19,13 @@
  */
 package org.neo4j.server.rest.web;
 
+import com.sun.jersey.spi.container.ContainerRequest;
+import com.sun.jersey.spi.container.ContainerRequestFilter;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-
-import com.sun.jersey.spi.container.ContainerRequest;
-import com.sun.jersey.spi.container.ContainerRequestFilter;
 
 public class CollectUserAgentFilter implements ContainerRequestFilter
 {
@@ -65,7 +65,7 @@ public class CollectUserAgentFilter implements ContainerRequestFilter
         try
         {
             List<String> headers = request.getRequestHeader( "User-Agent" );
-            if ( ! headers.isEmpty() )
+            if ( headers != null && !headers.isEmpty() )
             {
                 userAgents.add( headers.get( 0 ).split( " " )[0] );
             }
