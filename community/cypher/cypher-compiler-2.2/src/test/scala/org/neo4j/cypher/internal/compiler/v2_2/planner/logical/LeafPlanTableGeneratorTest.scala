@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.LabelId
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{Expression, HasLabels, LabelName}
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{AllNodesScan, NodeByLabelScan, Selection}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{PlannerQuery, LogicalPlanningTestSupport2, QueryGraph, Selections}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport2, PlannerQuery, QueryGraph, Selections}
 
 class LeafPlanTableGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   private val solver = LeafPlanTableGenerator(PlanningStrategyConfiguration.default)
@@ -57,11 +57,12 @@ class LeafPlanTableGeneratorTest extends CypherFunSuite with LogicalPlanningTest
       withLogicalPlanningContext { (ctx) =>
         // when
         implicit val x = ctx
+        implicit val table = ctx.semanticTable
         val result = solver.apply(qg, None)
 
         // then
         result should equal(PlanTable(
-          NodeByLabelScan("a", Right(LabelId(0)), Set.empty)(solved),
+          NodeByLabelScan("a", LazyLabel(label), Set.empty)(solved),
           AllNodesScan("b", Set.empty)(solved)
         ))
       }
@@ -88,11 +89,12 @@ class LeafPlanTableGeneratorTest extends CypherFunSuite with LogicalPlanningTest
       withLogicalPlanningContext { (ctx) =>
         // when
         implicit val x = ctx
+        implicit val table = ctx.semanticTable
         val result = solver.apply(qg, None)
 
         // then
         result should equal(PlanTable(
-          Selection(Seq(hasLabels1), NodeByLabelScan("a", Right(LabelId(1)), Set.empty)(solved))(solved),
+          Selection(Seq(hasLabels1), NodeByLabelScan("a", LazyLabel(label2), Set.empty)(solved))(solved),
           AllNodesScan("b", Set.empty)(solved)
         ))
       }

@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.ast.Identifier
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{LabelName, Identifier}
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{PlannerQuery, LogicalPlanningTestSupport2}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 
@@ -35,11 +36,11 @@ class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     logicalPlan should equal(
       Union(
         Projection(
-          NodeByLabelScan("  a@7", Right(semanticTable.resolvedLabelIds("A")), Set.empty)(PlannerQuery.empty),
+          NodeByLabelScan("  a@7", LazyLabel(LabelName("A")_), Set.empty)(PlannerQuery.empty),
           Map("a" -> Identifier("  a@7")_)
         )(PlannerQuery.empty),
         Projection(
-          NodeByLabelScan("  a@43", Right(semanticTable.resolvedLabelIds("B")), Set.empty)(PlannerQuery.empty),
+          NodeByLabelScan("  a@43", LazyLabel(LabelName("B")_), Set.empty)(PlannerQuery.empty),
           Map("a" -> Identifier("  a@43")_)
         )(PlannerQuery.empty)
       )(PlannerQuery.empty)
@@ -55,11 +56,11 @@ class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
       Aggregation(
         left = Union(
           Projection(
-            NodeByLabelScan("  a@7", Right(semanticTable.resolvedLabelIds("A")), Set.empty)(PlannerQuery.empty),
+            NodeByLabelScan("  a@7", LazyLabel(LabelName("A")_), Set.empty)(PlannerQuery.empty),
             Map("a" -> Identifier("  a@7")_)
           )(PlannerQuery.empty),
           Projection(
-            NodeByLabelScan("  a@39", Right(semanticTable.resolvedLabelIds("B")), Set.empty)(PlannerQuery.empty),
+            NodeByLabelScan("  a@39", LazyLabel(LabelName("B")_), Set.empty)(PlannerQuery.empty),
             Map("a" -> Identifier("  a@39")_)
           )(PlannerQuery.empty)
         )(PlannerQuery.empty),

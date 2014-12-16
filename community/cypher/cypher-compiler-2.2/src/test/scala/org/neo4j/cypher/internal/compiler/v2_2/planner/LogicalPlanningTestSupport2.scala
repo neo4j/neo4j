@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.compiler.v2_2.parser.{CypherParser, ParserMonitor}
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.QueryGraphCardinalityModel
@@ -150,8 +151,9 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
           semanticTable.resolvedLabelIds(name) -> cardinality
       }
       val labelScanCardinality: PartialFunction[LogicalPlan, Cardinality] = {
-        case NodeByLabelScan(_, Right(labelId), _) if labelIdCardinality.contains(labelId) =>
-          labelIdCardinality(labelId)
+        case NodeByLabelScan(_, label, _) if label.id(semanticTable).isDefined &&
+          labelIdCardinality.contains(label.id(semanticTable).get) =>
+          labelIdCardinality(label.id(semanticTable).get)
       }
 
       val r: PartialFunction[LogicalPlan, Cardinality] =
@@ -298,8 +300,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   class given extends StubbedLogicalPlanningConfiguration(realConfig)
 
   implicit def idName(name: String): IdName = IdName(name)
-  implicit def labelId(label: String)(implicit plan: SemanticPlan): LabelId =
-    plan.semanticTable.resolvedLabelIds(label)
+  implicit def lazyLabel(label: String)(implicit plan: SemanticPlan): LazyLabel =
+    LazyLabel(LabelName(label)(_))(plan.semanticTable)
   implicit def propertyKeyId(label: String)(implicit plan: SemanticPlan): PropertyKeyId =
     plan.semanticTable.resolvedPropertyKeyNames(label)
 }

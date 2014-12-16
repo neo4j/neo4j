@@ -29,11 +29,6 @@ trait SymbolicName extends ASTNode with ASTParticle {
 
 trait SymbolicNameWithId[+ID <: NameId] extends SymbolicName {
   def id(implicit semanticTable: SemanticTable): Option[ID]
-
-  def either(implicit semanticTable: SemanticTable) = id match {
-    case Some(id) => Right(id)
-    case None     => Left(name)
-  }
 }
 
 case class LabelName(name: String)(val position: InputPosition) extends SymbolicNameWithId[LabelId] {
