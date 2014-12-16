@@ -356,6 +356,12 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
       "Properties containing arrays of non-primitive types are not supported")
   }
 
+  test("should give nice error when trying to parse multiple statements") {
+    expectError(
+      "RETURN 42; RETURN 42",
+      "Expected exactly one statement per query but got: 2")
+  }
+
   def expectError(query: String, expectedError: String) {
     val error = intercept[CypherException](executeQuery(query))
     assertThat(error.getMessage, containsString(expectedError))
