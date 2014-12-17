@@ -111,34 +111,37 @@ trait Base extends Parser {
     ) memoMismatches) ~~> (_.reduce(_ + '`' + _))
   }
 
-  def parseOrThrow[T](input: String, rule: Rule1[T], monitor: Option[ParserMonitor[T]]): T = {
+  def parseOrThrow[T](input: String, rule: Rule1[Seq[T]], monitor: Option[ParserMonitor[T]]): T = {
     monitor.foreach(_.startParsing(input))
-
-    val parsingResult = ReportingParseRunner(rule).run(input)
-
-    parsingResult.result match {
-      case Some(result) =>
-        monitor.foreach(_.finishParsingSuccess(input, result))
-
-        result
-
-      case _ =>
-        val parseErrors: List[ParseError] = parsingResult.parseErrors
-        parseErrors.map {
-          error =>
-            val message = if (error.getErrorMessage != null) {
-              error.getErrorMessage
-            } else {
-              error match {
-                case invalidInput: InvalidInputError => new InvalidInputErrorFormatter().format(invalidInput)
-                case _ => error.getClass.getSimpleName
-              }
+    val parsingResults = ReportingParseRunner(rule).run(input)
+    parsingResults.result match {
+      case Some(statements) =>
+        if (statements.size == 1) {
+          val statement = statements.head
+          monitor.foreach(_.finishParsingSuccess(input, statement))
+          statement
+        } else {
+          monitor.foreach(_.finishParsingError(input, Seq.empty))
+          throw new SyntaxException(s"Expected exactly one statement per query but got: ${statements.size}")
+        }
+      case _ => {
+        val parseErrors: List[ParseError] = parsingResults.parseErrors
+        monitor.foreach(_.finishParsingError(input, parseErrors))
+        parseErrors.map { error =>
+          val message = if (error.getErrorMessage != null) {
+            error.getErrorMessage
+          } else {
+            error match {
+              case invalidInput: InvalidInputError => new InvalidInputErrorFormatter().format(invalidInput)
+              case _ => error.getClass.getSimpleName
             }
-            val position = BufferPosition(error.getInputBuffer, error.getStartIndex)
-            throw new SyntaxException(s"$message ($position)", input, position.offset)
+          }
+          val position = BufferPosition(error.getInputBuffer, error.getStartIndex)
+          throw new SyntaxException(s"$message ($position)", input, position.offset)
         }
 
-        throw new ThisShouldNotHappenError("stefan & andres", "Parsing failed but no parse errors were provided")
+        throw new ThisShouldNotHappenError("cleishm", "Parsing failed but no parse errors were provided")
+      }
     }
   }
 

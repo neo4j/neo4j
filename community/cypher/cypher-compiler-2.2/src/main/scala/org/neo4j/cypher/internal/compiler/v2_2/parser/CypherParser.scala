@@ -31,12 +31,12 @@ class CypherParser(monitor: ParserMonitor[ast.Statement]) extends Parser
 
   @throws(classOf[SyntaxException])
   def parse(queryText: String): ast.Statement =
-    parseOrThrow(queryText, CypherParser.SingleStatement, Some(monitor))
+    parseOrThrow(queryText, CypherParser.Statements, Some(monitor))
 }
 
 object CypherParser extends Parser with Statement with Expressions {
-  val SingleStatement: Rule1[ast.Statement] = rule {
-    WS ~ Statement ~~ optional(ch(';') ~ WS) ~ EOI.label("end of input")
+  val Statements: Rule1[Seq[ast.Statement]] = rule {
+    oneOrMore(WS ~ Statement ~ WS, separator = ch(';')) ~~ optional(ch(';')) ~~ EOI.label("end of input")
   }
 }
 
