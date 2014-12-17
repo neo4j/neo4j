@@ -33,7 +33,7 @@ public interface SchemaStateOperations
      * of the LRU cache is determined by GraphDatabaseSettings.query_cache_size
      *
      * NOTE: This currently is solely used by Cypher and might or might not be turned into
-     * a more generic facility in teh future
+     * a more generic facility in the future
      */
     <K, V> V schemaStateGetOrCreate( KernelStatement state, K key, Function<K, V> creator );
 
@@ -41,4 +41,9 @@ public interface SchemaStateOperations
      * Check if some key is in the schema state.
      */
     <K> boolean schemaStateContains( KernelStatement state, K key );
+
+    /**
+     * Flush the schema state.
+     */
+    void schemaStateFlush( KernelStatement state );
 }

@@ -142,6 +142,13 @@ public class LockingStatementOperations implements
     }
 
     @Override
+    public void schemaStateFlush( KernelStatement state )
+    {
+        state.locks().acquireShared( ResourceTypes.SCHEMA, schemaResource() );
+        schemaStateDelegate.schemaStateFlush( state );
+    }
+
+    @Override
     public Iterator<IndexDescriptor> indexesGetForLabel( KernelStatement state, int labelId )
     {
         state.locks().acquireShared( ResourceTypes.SCHEMA, schemaResource() );
