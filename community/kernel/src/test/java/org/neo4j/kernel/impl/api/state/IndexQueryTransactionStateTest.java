@@ -345,6 +345,7 @@ public class IndexQueryTransactionStateTest
                 .<IndexDescriptor>emptyList() ) );
         when( store.indexesGetAll() ).then( answerAsIteratorFrom( Collections.<IndexDescriptor>emptyList() ) );
         when( store.constraintsGetForLabel( labelId ) ).thenReturn( Collections.<UniquenessConstraint>emptyIterator() );
+        when( store.nodeExists( anyLong() ) ).thenReturn( true );
         when( store.indexesGetForLabelAndPropertyKey( labelId, propertyKeyId ) )
                 .thenReturn( new IndexDescriptor( labelId, propertyKeyId ) );
 

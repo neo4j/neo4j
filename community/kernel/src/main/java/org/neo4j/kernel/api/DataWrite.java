@@ -29,12 +29,12 @@ interface DataWrite
 {
     long nodeCreate();
 
-    void nodeDelete( long nodeId );
+    void nodeDelete( long nodeId ) throws EntityNotFoundException;
 
     long relationshipCreate( int relationshipTypeId, long startNodeId, long endNodeId )
             throws RelationshipTypeIdNotFoundKernelException, EntityNotFoundException;
 
-    void relationshipDelete( long relationshipId );
+    void relationshipDelete( long relationshipId ) throws EntityNotFoundException;
 
     /**
      * Labels a node with the label corresponding to the given label id.

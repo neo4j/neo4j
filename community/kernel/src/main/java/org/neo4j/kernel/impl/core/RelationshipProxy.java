@@ -91,6 +91,11 @@ public class RelationshipProxy implements Relationship
         {
             throw new ReadOnlyDbException();
         }
+        catch ( EntityNotFoundException e )
+        {
+            throw new IllegalStateException( "Unable to delete relationship[" +
+                                             relId + "] since it is already deleted." );
+        }
     }
 
     @Override

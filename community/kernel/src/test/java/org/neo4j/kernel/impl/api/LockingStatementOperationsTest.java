@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.mockito.InOrder;
 
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
@@ -122,7 +123,7 @@ public class LockingStatementOperationsTest
     }
 
     @Test
-    public void shouldAcquireEntityWriteLockBeforeDeletingNode()
+    public void shouldAcquireEntityWriteLockBeforeDeletingNode() throws EntityNotFoundException
     {
         // WHEN
         lockingOps.nodeDelete( state, 123 );

@@ -195,7 +195,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public void nodeDelete( KernelStatement state, long nodeId )
+    public void nodeDelete( KernelStatement state, long nodeId ) throws EntityNotFoundException
     {
         state.locks().acquireExclusive( ResourceTypes.NODE, nodeId );
         entityWriteDelegate.nodeDelete( state, nodeId );
@@ -225,7 +225,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public void relationshipDelete( KernelStatement state, long relationshipId )
+    public void relationshipDelete( KernelStatement state, long relationshipId ) throws EntityNotFoundException
     {
         state.locks().acquireExclusive( ResourceTypes.RELATIONSHIP, relationshipId );
         entityWriteDelegate.relationshipDelete( state, relationshipId );

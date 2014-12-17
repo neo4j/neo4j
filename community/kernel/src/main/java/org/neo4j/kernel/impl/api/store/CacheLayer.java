@@ -150,16 +150,7 @@ public class CacheLayer implements StoreReadLayer
     @Override
     public boolean nodeExists( long nodeId )
     {
-        // Write a proper implementation later
-        try
-        {
-            persistenceCache.getNode( nodeId );
-            return true;
-        }
-        catch ( EntityNotFoundException e )
-        {
-            return false;
-        }
+        return persistenceCache.nodeExists( nodeId );
     }
 
     @Override
@@ -270,6 +261,12 @@ public class CacheLayer implements StoreReadLayer
     public Iterator<DefinedProperty> nodeGetAllProperties( long nodeId ) throws EntityNotFoundException
     {
         return persistenceCache.nodeGetProperties( nodeId, nodePropertyLoader );
+    }
+
+    @Override
+    public boolean relationshipExists( long relationshipId )
+    {
+        return persistenceCache.relationshipExists( relationshipId );
     }
 
     @Override
