@@ -18,7 +18,7 @@ class NeoD3Geometry
 
   fitCaptionIntoCircle = (node, style) ->
     template = style.forNode(node).get("caption")
-    captionText = style.interpolate(template, node.id, node.propertyMap)
+    captionText = style.interpolate(template, node)
     fontFamily = 'sans-serif'
     fontSize = parseFloat(style.forNode(node).get('font-size'))
     lineHeight = fontSize
@@ -71,7 +71,7 @@ class NeoD3Geometry
   formatRelationshipCaptions: (relationships) ->
     for relationship in relationships
       template = @style.forRelationship(relationship).get("caption")
-      relationship.caption = @style.interpolate(template, relationship.type, relationship.propertyMap)
+      relationship.caption = @style.interpolate(template, relationship)
 
   setNodeRadii: (nodes) ->
     for node in nodes

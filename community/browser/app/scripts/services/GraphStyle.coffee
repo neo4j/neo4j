@@ -166,7 +166,7 @@ angular.module('neo4jApp.services')
         rule = @findRule(selector)
 
         if not rule?
-          rule = new StyleRule(selector, angular.extend({color: provider.defaultStyle.relationship.color}, @getDefaultRelationshipCaption()))
+          rule = new StyleRule(selector, angular.extend(provider.defaultStyle.relationship, @getDefaultRelationshipCaption()))
           @rules.push(rule)
           @persist()
         if not rule.props.caption?
@@ -188,12 +188,12 @@ angular.module('neo4jApp.services')
           @persist()
 
       getDefaultCaption: (item) ->
-        return {caption: '{id}'} if not item or not item.propertyList?.length > 0
+        return {caption: '<id>'} if not item or not item.propertyList?.length > 0
         default_caption = {caption: "{#{item.propertyList?[0].key}}"}
         default_caption
 
       getDefaultRelationshipCaption: (item) ->
-        return {caption: '{type}'} 
+        return {caption: '<type>'} 
 
       #
       # Methods for getting and modifying rules
@@ -328,17 +328,21 @@ angular.module('neo4jApp.services')
       defaultSizes: -> provider.defaultSizes
       defaultArrayWidths: -> provider.defaultArrayWidths
       defaultColors: -> angular.copy(provider.defaultColors)
-      interpolate: (str, fallback, properties) ->
-        # Supplant
-        # http://javascript.crockford.com/remedial.html
-        str.replace(
+      interpolate: (str, item) ->
+        str.replace( #Caption from user set properties as {property} 
           /\{([^{}]*)\}/g,
           (a, b) ->
-            r = properties[b] or fallback
+            r = item.propertyMap[b]
             if typeof r is 'object'
               r = r.join(', ')
-            return if (typeof r is 'string' or typeof r is 'number') then r else a
+            return if (typeof r is 'string' or typeof r is 'number') then r else ''
+        ).replace( #<id> and <type> from item properties
+          /^<(id|type)>$/,
+          (a,b) ->
+            r = item[b]
+            return if (typeof r is 'string' or typeof r is 'number') then r else ''
         )
+
 
     @$get = ['localStorageService', (localStorageService) ->
       new GraphStyle(localStorageService)
