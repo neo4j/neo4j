@@ -56,6 +56,12 @@ public class BranchDetectingTxVerifier implements TxChecksumVerifier
         }
         catch ( NoSuchTransactionException e )
         {
+            // This can happen if it's the first commit from a slave in a cluster where all instances
+            // just restored from backup (i.e. no previous tx logs exist), OR if a reporting instance
+            // is so far behind that logs have been pruned to the point where the slave cannot catch up anymore.
+            // In the first case it's fine (slave had to do checksum match to join cluster), and the second case
+            // it's an operational issue solved by making sure enough logs are retained.
+
             return; // Ok!
         }
         catch ( IOException e )
