@@ -32,7 +32,7 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
     protected final WritableLogChannel channel;
     private final TransactionMetadataCache transactionMetadataCache;
     protected final LogFile logFile;
-    private LogRotation logRotation;
+    private final LogRotation logRotation;
     private final TransactionIdStore transactionIdStore;
     private final TransactionLogWriter transactionLogWriter;
     private final LogPositionMarker positionMarker = new LogPositionMarker();
@@ -70,9 +70,10 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
         indexCommandDetector.reset();
         transactionLogWriter.append( transaction, transactionId );
 
+        long transactionChecksum = LogEntryStart.checksum( transaction.additionalHeader(),
+                transaction.getMasterId(), transaction.getAuthorId() );
         transactionMetadataCache.cacheTransactionMetadata( transactionId, logPosition, transaction.getMasterId(),
-                transaction.getAuthorId(), LogEntryStart.checksum( transaction.additionalHeader(),
-                        transaction.getMasterId(), transaction.getAuthorId() ) );
+                transaction.getAuthorId(), transactionChecksum );
 
         emptyBufferIntoChannel();
 
@@ -81,7 +82,9 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
         {
             legacyIndexTransactionOrdering.offer( transactionId );
         }
-        return indexCommandDetector.hasWrittenAnyLegacyIndexCommand();
+        boolean containsLegacyIndexCommands = indexCommandDetector.hasWrittenAnyLegacyIndexCommand();
+        transactionIdStore.transactionCommitted( transactionId, transactionChecksum );
+        return containsLegacyIndexCommands;
     }
 
     protected abstract void emptyBufferIntoChannel() throws IOException;
@@ -92,21 +95,36 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
         long transactionId = -1;
         long ticket;
         boolean hasLegacyIndexChanges;
+        int phase = 0;
         // We put log rotation check outside the private append method since it must happen before
         // we generate the next transaction id
         logRotation.rotateLogIfNeeded();
 
-        // Synchronized with logFile to get absolute control over concurrent rotations happening
-        synchronized ( logFile )
+        try
         {
-            transactionId = transactionIdStore.nextCommittingTransactionId();
-            hasLegacyIndexChanges = append0( transaction, transactionId );
-            ticket = getNextTicket();
-        }
+            // Synchronized with logFile to get absolute control over concurrent rotations happening
+            synchronized ( logFile )
+            {
+                transactionId = transactionIdStore.nextCommittingTransactionId();
+                hasLegacyIndexChanges = append0( transaction, transactionId );
+                phase = 1;
+                ticket = getNextTicket();
+            }
 
-        forceAfterAppend( ticket );
-        coordinateMultipleThreadsApplyingLegacyIndexChanges( hasLegacyIndexChanges, transactionId );
-        return transactionId;
+            forceAfterAppend( ticket );
+            coordinateMultipleThreadsApplyingLegacyIndexChanges( hasLegacyIndexChanges, transactionId );
+            phase = 2;
+            return transactionId;
+        }
+        finally
+        {
+            if ( phase == 1 )
+            {
+                // So we end up here if we enter phase 1, but fails to reach phase 2, which means that
+                // we told TransactionIdStore that we committed transaction, but something failed right after
+                transactionIdStore.transactionClosed( transactionId );
+            }
+        }
     }
 
     @Override

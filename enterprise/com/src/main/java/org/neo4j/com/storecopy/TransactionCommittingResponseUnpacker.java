@@ -37,7 +37,6 @@ import org.neo4j.kernel.impl.transaction.log.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
@@ -56,7 +55,7 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
     private final DependencyResolver resolver;
     private final TransactionQueue transactionQueue;
     // Visits all queued transactions, committing them
-    private final TransactionVisitor batchAppender = new TransactionVisitor()
+    private final TransactionVisitor batchCommitter = new TransactionVisitor()
     {
         @Override
         public void visit( CommittedTransactionRepresentation transaction, TxHandler handler ) throws IOException
@@ -65,14 +64,12 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
         }
     };
     // Visits all queued, and recently appended, transactions, applying them to the store
-    private final TransactionVisitor batchCommitterAndApplier = new TransactionVisitor()
+    private final TransactionVisitor batchApplier = new TransactionVisitor()
     {
         @Override
         public void visit( CommittedTransactionRepresentation transaction, TxHandler handler ) throws IOException
         {
             long transactionId = transaction.getCommitEntry().getTxId();
-            long checksum = LogEntryStart.checksum( transaction.getStartEntry() );
-            transactionIdStore.transactionCommitted( transactionId, checksum );
             try
             {
                 try ( LockGroup locks = new LockGroup() )
@@ -159,14 +156,14 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
             try
             {
                 // Apply whatever is in the queue
-                if ( transactionQueue.accept( batchAppender ) > 0 )
+                if ( transactionQueue.accept( batchCommitter ) > 0 )
                 {
                     // TODO if this instance is set to "slave_only" then we can actually skip the force call here.
                     // Reason being that even if there would be a reordering in some layer where a store file would be
                     // changed before that change would have ended up in the log, it would be fine sine as a slave
                     // you would pull that transaction again anyhow before making changes to (after reading) any record.
                     appender.force();
-                    transactionQueue.accept( batchCommitterAndApplier );
+                    transactionQueue.accept( batchApplier );
                 }
             }
             catch ( IOException e )
