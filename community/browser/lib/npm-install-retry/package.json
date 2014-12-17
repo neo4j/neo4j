@@ -1,0 +1,53 @@
+{
+  "name": "npm-install-retry",
+  "description": "retry npm install when it fails",
+  "version": "1.0.0",
+  "repository": {
+    "url": "git://github.com/jfromaniello/npm-install-retry.git"
+  },
+  "author": {
+    "name": "José F. Romaniello",
+    "email": "jfromaniello@gmail.com",
+    "url": "http://joseoncode.com"
+  },
+  "bin": {
+    "npm-install-retry": "./bin/npm-install-retry"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "dependencies": {
+    "colors": "~0.6.0-1",
+    "commander": "~1.1.1"
+  },
+  "devDependencies": {
+    "mocha": "~1.11.0",
+    "chai": "~1.7.0"
+  },
+  "gitHead": "e82a346b914d0cdbe4a8b4e5a783fe9f6e9838d3",
+  "bugs": {
+    "url": "https://github.com/jfromaniello/npm-install-retry/issues"
+  },
+  "homepage": "https://github.com/jfromaniello/npm-install-retry",
+  "_id": "npm-install-retry@1.0.0",
+  "_shasum": "313acc582f10ffd1657a592ce6f67bf84f8b5ef6",
+  "_from": "npm-install-retry@*",
+  "_npmVersion": "1.4.21",
+  "_npmUser": {
+    "name": "jfromaniello",
+    "email": "jfromaniello@gmail.com"
+  },
+  "maintainers": [
+    {
+      "name": "jfromaniello",
+      "email": "jfromaniello@gmail.com"
+    }
+  ],
+  "dist": {
+    "shasum": "313acc582f10ffd1657a592ce6f67bf84f8b5ef6",
+    "tarball": "http://registry.npmjs.org/npm-install-retry/-/npm-install-retry-1.0.0.tgz"
+  },
+  "directories": {},
+  "_resolved": "https://registry.npmjs.org/npm-install-retry/-/npm-install-retry-1.0.0.tgz",
+  "readme": "ERROR: No README data found!"
+}

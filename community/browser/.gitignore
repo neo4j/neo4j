@@ -1,4 +1,5 @@
-node_modules
+/node_modules
+/app/**/node_modules
 npm-debug.log
 /dist
 .tmp
