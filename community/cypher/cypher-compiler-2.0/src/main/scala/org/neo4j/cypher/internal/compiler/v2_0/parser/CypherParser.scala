@@ -19,32 +19,34 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.parser
 
+import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.compiler.v2_0._
 import org.neo4j.cypher.internal.compiler.v2_0.ast.convert.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_0.commands.AbstractQuery
-import org.neo4j.cypher.SyntaxException
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.parboiled.scala._
 import org.parboiled.errors.InvalidInputError
+import org.parboiled.scala._
 
-case class CypherParser() extends Parser
-  with Statement
-  with Expressions {
-
+case class CypherParser() extends Parser with Statement with Expressions {
 
   @throws(classOf[SyntaxException])
   def parse(text: String): ast.Statement = {
-    val parsingResult = ReportingParseRunner(CypherParser.SingleStatement).run(text)
-    parsingResult.result match {
-      case Some(statement: ast.Statement) => statement
+    val parsingResults = ReportingParseRunner(CypherParser.Statements).run(text)
+    parsingResults.result match {
+      case Some(statements: Seq[Statement]) =>
+        if (statements.size == 1) {
+          statements.head
+        } else {
+          throw new SyntaxException(s"Expected exactly one statement per query but got: ${statements.size}")
+        }
       case _ => {
-        parsingResult.parseErrors.map { error =>
+        parsingResults.parseErrors.map { error =>
           val message = if (error.getErrorMessage != null) {
             error.getErrorMessage
           } else {
             error match {
               case invalidInput: InvalidInputError => new InvalidInputErrorFormatter().format(invalidInput)
-              case _                               => error.getClass.getSimpleName
+              case _ => error.getClass.getSimpleName
             }
           }
           val position = BufferPosition(error.getInputBuffer, error.getStartIndex)
@@ -66,7 +68,7 @@ case class CypherParser() extends Parser
 }
 
 object CypherParser extends Parser with Statement with Expressions {
-  val SingleStatement: Rule1[ast.Statement] = rule {
-    WS ~ Statement ~~ optional(ch(';') ~ WS) ~ EOI.label("end of input")
+  val Statements: Rule1[Seq[ast.Statement]] = rule {
+    oneOrMore(WS ~ Statement ~ WS, separator = ch(';')) ~~ optional(ch(';')) ~~ EOI.label("end of input")
   }
 }
