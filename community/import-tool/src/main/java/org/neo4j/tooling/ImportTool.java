@@ -184,6 +184,7 @@ public class ImportTool
         Collection<Option<File[]>> nodesFiles, relationshipsFiles;
         boolean enableStacktrace;
         Number processors = null;
+        Input input = null;
         try
         {
             storeDir =
@@ -199,6 +200,13 @@ public class ImportTool
                             Validators.FILES_EXISTS, Validators.<File> atLeast( 1 ) );
             enableStacktrace = args.getBoolean( Options.STACKTRACE.key(), Boolean.FALSE, Boolean.TRUE );
             processors = args.getNumber( Options.PROCESSORS.key(), null );
+            input = new CsvInput(
+                    nodeData( nodesFiles ),
+                    defaultFormatNodeFileHeader(),
+                    relationshipData( relationshipsFiles ),
+                    defaultFormatRelationshipFileHeader(),
+                    args.interpretOption( Options.ID_TYPE.key(), withDefault( IdType.STRING ), TO_ID_TYPE ),
+                    csvConfiguration( args ) );
         }
         catch ( IllegalArgumentException e )
         {
@@ -213,13 +221,6 @@ public class ImportTool
                 importConfiguration( processors ),
                 logging,
                 ExecutionMonitors.defaultVisible() );
-        Input input = new CsvInput(
-                nodeData( nodesFiles ),
-                defaultFormatNodeFileHeader(),
-                relationshipData( relationshipsFiles ),
-                defaultFormatRelationshipFileHeader(),
-                args.interpretOption( Options.ID_TYPE.key(), withDefault( IdType.STRING ), TO_ID_TYPE ),
-                csvConfiguration( args ) );
         boolean success = false;
         try
         {
