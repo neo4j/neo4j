@@ -27,7 +27,8 @@ case object LogicalPlanRewriter extends Rewriter {
     fuseSelections,
     unnestApply,
     simplifyEquality,
-    unnestOptional
+    unnestOptional,
+    predicateRemovalThroughJoins
   ))
 
   def apply(that: AnyRef) = instance(that)

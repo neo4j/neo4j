@@ -169,6 +169,11 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     }
   }
 
+  def identHasLabel(name: String, labelName: String): HasLabels = {
+    val labelNameObj: LabelName = LabelName(labelName)_
+    HasLabels(Identifier(name)_, Seq(labelNameObj))_
+  }
+
   implicit def idName(name: String): IdName = IdName(name)
 }
 
