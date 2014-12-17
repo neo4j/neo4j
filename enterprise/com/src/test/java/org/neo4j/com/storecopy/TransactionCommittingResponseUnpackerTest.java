@@ -107,7 +107,7 @@ public class TransactionCommittingResponseUnpackerTest
         unpacker.unpackResponse( response, stoppingTxHandler );
 
         // Then
-        verify( txIdStore, times( 1 ) ).transactionCommitted( committingTransactionId, 0 );
+        // we can't verify transactionCommitted since that's part of the TransactionAppender, which we have mocked
         verify( txIdStore, times( 1 ) ).transactionClosed( committingTransactionId );
         verify( appender, times( 1 ) ).append( any( TransactionRepresentation.class ), anyLong() );
         verify( appender, times( 1 ) ).force();

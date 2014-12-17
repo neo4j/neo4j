@@ -31,9 +31,9 @@ import org.neo4j.kernel.impl.transaction.log.LogRotationControl;
 public class LogRotationImpl
     implements LogRotation
 {
-    private LogRotation.Monitor monitor;
-    private LogFile logFile;
-    private LogRotationControl logRotationControl;
+    private final LogRotation.Monitor monitor;
+    private final LogFile logFile;
+    private final LogRotationControl logRotationControl;
 
     public LogRotationImpl( Monitor monitor, LogFile logFile,
             LogRotationControl logRotationControl )
@@ -52,33 +52,24 @@ public class LogRotationImpl
              * doing force (think batching of writes), such that it can't see a bad state of the writer
              * even when rotating underlying channels.
              */
-            boolean rotate;
+            boolean rotated;
             synchronized ( logFile )
             {
-                if ( rotate = logFile.rotationNeeded() )
+                if ( rotated = logFile.rotationNeeded() )
                 {
-                    /*
-                     * First we flush the store. If we fail now or during the flush, on recovery we'll discover
-                     * the current log file and replay it. Everything will be ok.
-                     */
-                    logRotationControl.awaitAllTransactionsClosed();
-                    logRotationControl.forceEverything();
-
-                    logFile.rotate();
+                    doRotate();
                 }
             }
 
-            if ( rotate )
+            if ( rotated )
             {
                 monitor.rotatedLog();
             }
 
-            return rotate;
+            return rotated;
         }
-        else
-        {
-            return false;
-        }
+
+        return false;
     }
 
     @Override
@@ -86,17 +77,22 @@ public class LogRotationImpl
     {
         synchronized ( logFile )
         {
-            /*
-             * First we flush the store. If we fail now or during the flush, on recovery we'll discover
-             * the current log file and replay it. Everything will be ok.
-             */
-            logRotationControl.awaitAllTransactionsClosed();
-            logRotationControl.forceEverything();
-
-            logFile.rotate();
+            doRotate();
         }
 
         monitor.rotatedLog();
 
+    }
+
+    private void doRotate() throws IOException
+    {
+        /*
+         * First we flush the store. If we fail now or during the flush, on recovery we'll discover
+         * the current log file and replay it. Everything will be ok.
+         */
+        logRotationControl.awaitAllTransactionsClosed();
+        logRotationControl.forceEverything();
+
+        logFile.rotate();
     }
 }

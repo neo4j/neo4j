@@ -145,7 +145,7 @@ public class MasterClientTest
 
         // Then
         verify( txAppender, times( TX_LOG_COUNT ) ).append( any( TransactionRepresentation.class ), anyLong() );
-        verify( txIdStore, times( TX_LOG_COUNT ) ).transactionCommitted( anyLong(), anyLong() );
+        // we can't verify transactionCommitted since that's part of the TransactionAppender, which we have mocked
         verify( txApplier, times( TX_LOG_COUNT ) )
                 .apply( any( TransactionRepresentation.class ), any( LockGroup.class ), anyLong(),
                         any( TransactionApplicationMode.class ) );

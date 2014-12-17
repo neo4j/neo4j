@@ -59,7 +59,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.test.CleanupRule;
-import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -72,6 +71,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyInt;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -309,25 +309,40 @@ public class PhysicalTransactionAppenderTest
         }
     }
 
-    private TransactionRepresentation mockedTransaction()
+    @Test
+    public void shouldCloseTransactionThatWasAppendedAndMarkedAsCommitButFailedBeforeExitingAppend() throws Exception
     {
-        TransactionRepresentation tx = mock( TransactionRepresentation.class );
-        when( tx.additionalHeader() ).thenReturn( new byte[0] );
-        return tx;
-    }
+        // GIVEN
+        long txId = 3;
+        String failureMessage = "Forces a failure";
+        WritableLogChannel channel = spy( new InMemoryLogChannel() );
+        doThrow( new IOException( failureMessage ) ).when( channel ).force();
+        LogFile logFile = mock( LogFile.class );
+        when( logFile.getWriter() ).thenReturn( channel );
+        TransactionMetadataCache metadataCache = new TransactionMetadataCache( 10, 10 );
+        TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
+        when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( txId );
+        TransactionAppender appender = new PhysicalTransactionAppender( logFile, LogRotation.NO_ROTATION,
+                metadataCache, transactionIdStore, BYPASS );
 
-    private WorkerCommand<Void, Object> append( final TransactionAppender appender,
-            final TransactionRepresentation transaction )
-    {
-        return new WorkerCommand<Void, Object>()
+        // WHEN
+        TransactionRepresentation transaction = mock( TransactionRepresentation.class );
+        when( transaction.additionalHeader() ).thenReturn( new byte[0] );
+        try
         {
-            @Override
-            public Object doWork( Void state ) throws Exception
-            {
-                appender.append( transaction );
-                return null;
-            }
-        };
+            appender.append( transaction );
+            fail( "Expected append to fail. Something is wrong with the test itself" );
+        }
+        catch ( IOException e )
+        {
+            // THEN
+            assertTrue( contains( e, failureMessage, IOException.class ) );
+            verify( transactionIdStore, times( 1 ) ).nextCommittingTransactionId();
+            verify( transactionIdStore, times( 1 ) ).transactionCommitted( txId, LogEntryStart.checksum(
+                    transaction.additionalHeader(), transaction.getMasterId(), transaction.getAuthorId() ) );
+            verify( transactionIdStore, times( 1 ) ).transactionClosed( txId );
+            verifyNoMoreInteractions( transactionIdStore );
+        }
     }
 
     private Long tryComplete( Future future, int millis )
