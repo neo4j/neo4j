@@ -73,7 +73,8 @@ object ExhaustiveQueryGraphSolver {
 
     def --(other: QueryGraph): QueryGraph = {
       val remainingRels: Set[PatternRelationship] = inner.patternRelationships -- other.patternRelationships
-      createSubQueryWithRels(remainingRels)
+      val argumentIds = inner.argumentIds -- other.argumentIds
+      createSubQueryWithRels(remainingRels, argumentIds)
     }
 
     def combinations(size: Int): Seq[QueryGraph] = if (size < 0 || size > inner.patternRelationships.size )
@@ -81,25 +82,27 @@ object ExhaustiveQueryGraphSolver {
      else if (size == 0)
       inner.
         patternNodes.
-        map(createSubQueryWithNode).toSeq
+        map(createSubQueryWithNode(_, inner.argumentIds)).toSeq
     else {
       inner.
         patternRelationships.toList.combinations(size).
-        map(r => createSubQueryWithRels(r.toSet)).toSeq
+        map(r => createSubQueryWithRels(r.toSet, inner.argumentIds)).toSeq
     }
 
-    private def createSubQueryWithRels(rels: Set[PatternRelationship]) = {
+    private def createSubQueryWithRels(rels: Set[PatternRelationship], argumentIds: Set[IdName]) = {
       val nodes = rels.map(r => Seq(r.nodes._1, r.nodes._2)).flatten.toSet
       val availableIds = rels.map(_.name) ++ nodes
 
       QueryGraph(
-        patternRelationships = rels,
         patternNodes = nodes,
+        argumentIds = argumentIds,
+        patternRelationships = rels,
         selections = Selections.from(inner.selections.predicatesGiven(availableIds): _*))
     }
 
-    private def createSubQueryWithNode(id: IdName) = QueryGraph(
+    private def createSubQueryWithNode(id: IdName, argumentIds: Set[IdName]) = QueryGraph(
       patternNodes = Set(id),
+      argumentIds = argumentIds,
       selections = Selections.from(inner.selections.predicatesGiven(Set(id)): _*)
     )
   }
