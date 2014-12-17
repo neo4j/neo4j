@@ -50,7 +50,7 @@ define(
         )
 
         # Check if authorization is needed on startup
-        $.get(location.protocol + "//" + location.host + "/db/data", (->))
+        $.get(location.protocol + "//" + location.host + "/db/data/", (->))
 
         @appState = new ApplicationState
         @appState.set server : new neo4js.GraphDatabase(location.protocol + "//" + location.host)
