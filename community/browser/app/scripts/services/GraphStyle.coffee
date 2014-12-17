@@ -329,14 +329,20 @@ angular.module('neo4jApp.services')
       defaultArrayWidths: -> provider.defaultArrayWidths
       defaultColors: -> angular.copy(provider.defaultColors)
       interpolate: (str, item) ->
-        str.replace( #Caption from user set properties as {property} 
+        ips = str.replace( #Caption from user set properties as {property} 
           /\{([^{}]*)\}/g,
           (a, b) ->
             r = item.propertyMap[b]
             if typeof r is 'object'
               r = r.join(', ')
             return if (typeof r is 'string' or typeof r is 'number') then r else ''
-        ).replace( #<id> and <type> from item properties
+        )
+        
+        #Backwards compability
+        ips = '<type>' if ips.length < 1 and str == "{type}" and item.isRelationship
+        ips = '<id>' if ips.length < 1 and str == "{id}" and item.isNode
+
+        ips.replace( #<id> and <type> from item properties
           /^<(id|type)>$/,
           (a,b) ->
             r = item[b]
