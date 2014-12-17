@@ -20,51 +20,52 @@
 package org.neo4j.cypher.internal.compiler.v2_1.parser
 
 import org.neo4j.cypher.SyntaxException
-import org.neo4j.cypher.internal.compiler.v2_1.{ast, _}
+import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.parboiled.errors.{InvalidInputError, ParseError}
 import org.parboiled.scala._
 
-class CypherParser(monitor: ParserMonitor[ast.Statement]) extends Parser
-  with Statement
-  with Expressions {
-
+case class CypherParser(monitor: ParserMonitor[ast.Statement]) extends Parser with Statement with Expressions {
 
   @throws(classOf[SyntaxException])
   def parse(queryText: String): ast.Statement = {
     monitor.startParsing(queryText)
-    val parsingResult = ReportingParseRunner(CypherParser.SingleStatement).run(queryText)
-
-    parsingResult.result match {
-      case Some(statement: ast.Statement) =>
-        monitor.finishParsingSuccess(queryText, statement)
-        statement
-
-      case _ =>
-        val parseErrors: List[ParseError] = parsingResult.parseErrors
+    val parsingResults = ReportingParseRunner(CypherParser.Statements).run(queryText)
+    parsingResults.result match {
+      case Some(statements) =>
+        if (statements.size == 1) {
+          val statement = statements.head
+          monitor.finishParsingSuccess(queryText, statement)
+          statement
+        } else {
+          monitor.finishParsingError(queryText, Seq.empty)
+          throw new SyntaxException(s"Expected exactly one statement per query but got: ${statements.size}")
+        }
+      case _ => {
+        val parseErrors: List[ParseError] = parsingResults.parseErrors
         monitor.finishParsingError(queryText, parseErrors)
-        parseErrors.map {
-          error =>
-            val message = if (error.getErrorMessage != null) {
-              error.getErrorMessage
-            } else {
-              error match {
-                case invalidInput: InvalidInputError => new InvalidInputErrorFormatter().format(invalidInput)
-                case _ => error.getClass.getSimpleName
-              }
+        parseErrors.map { error =>
+          val message = if (error.getErrorMessage != null) {
+            error.getErrorMessage
+          } else {
+            error match {
+              case invalidInput: InvalidInputError => new InvalidInputErrorFormatter().format(invalidInput)
+              case _ => error.getClass.getSimpleName
             }
-            val position = BufferPosition(error.getInputBuffer, error.getStartIndex)
-            throw new SyntaxException(s"$message ($position)", queryText, position.offset)
+          }
+          val position = BufferPosition(error.getInputBuffer, error.getStartIndex)
+          throw new SyntaxException(s"$message ($position)", queryText, position.offset)
         }
 
         throw new ThisShouldNotHappenError("cleishm", "Parsing failed but no parse errors were provided")
+      }
     }
   }
 }
 
 object CypherParser extends Parser with Statement with Expressions {
-  val SingleStatement: Rule1[ast.Statement] = rule {
-    WS ~ Statement ~~ optional(ch(';') ~ WS) ~ EOI.label("end of input")
+  val Statements: Rule1[Seq[ast.Statement]] = rule {
+    oneOrMore(WS ~ Statement ~ WS, separator = ch(';')) ~~ optional(ch(';')) ~~ EOI.label("end of input")
   }
 }
 
