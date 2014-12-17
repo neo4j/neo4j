@@ -23,6 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.function.primitive.FunctionFromPrimitiveLongToPrimitiveLong;
+import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
@@ -52,6 +53,10 @@ public class BranchDetectingTxVerifier implements TxChecksumVerifier
         try
         {
             readChecksum = txChecksumLookup.apply( txId );
+        }
+        catch ( NoSuchTransactionException e )
+        {
+            return; // Ok!
         }
         catch ( IOException e )
         {
