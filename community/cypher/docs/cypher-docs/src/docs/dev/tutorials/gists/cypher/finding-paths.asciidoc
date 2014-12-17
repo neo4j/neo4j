@@ -36,9 +36,10 @@ RETURN movie.title, count(*)
 ORDER BY count(*) DESC;
 ----
 
-////
+[source,querytest]
+----
 2 rows
-////
+----
 
 //table
 
@@ -51,9 +52,10 @@ RETURN movie.title, collect(actor.name), count(*) as count
 ORDER BY count desc;
 ----
 
-////
+[source,querytest]
+----
 2 rows
-////
+----
 
 //table
 
@@ -65,9 +67,10 @@ MATCH (:Movie {title: "The Matrix"})<-[:ACTS_IN]-(actor)-[:ACTS_IN]->(movie)<-[:
 RETURN actor.name, collect(distinct colleague.name);
 ----
 
-////
+[source,querytest]
+----
 3 rows
-////
+----
 
 //table
 
@@ -95,9 +98,10 @@ RETURN p, length(p)
 LIMIT 10;
 ----
 
-////
+[source,querytest]
+----
 9 rows
-////
+----
 
 //table
 
@@ -113,9 +117,10 @@ ORDER BY length(p)
 LIMIT 10;
 ----
 
-////
+[source,querytest]
+----
 9 rows
-////
+----
 
 //table
 

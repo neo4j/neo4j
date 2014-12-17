@@ -18,7 +18,7 @@ include::introduction/index.asciidoc[]
 
 :leveloffset: 0
 
-include::tutorials/index.asciidoc[]
+include::{importdir}/neo4j-cypher-docs-docs-jar/dev/tutorials/index.asciidoc[]
 
 :leveloffset: 0
 
@@ -47,12 +47,16 @@ include::advanced/index.asciidoc[]
 :leveloffset: 0
 :numbered!:
 
+:leveloffset: 0
+
+include::terminology.asciidoc[]
+
+:leveloffset: 0
+
+include::resources.asciidoc[]
+
+:leveloffset: 0
+
 include::manpages.asciidoc[]
 
-
-
-////
-:leveloffset: 0
-include::glossary.asciidoc[]
-////
 

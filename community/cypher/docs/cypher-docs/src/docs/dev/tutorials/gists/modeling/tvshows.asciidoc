@@ -54,11 +54,12 @@ CREATE (wakenPayne:User {name: "WakenPayne"})
 CREATE (wakenPayne)-[:WROTE_REVIEW]->(himym_s1_e1_review1)<-[:HAS_REVIEW]-(himym_s1_e1)
 ----
 
-////
+[source,querytest]
+----
 Nodes created: 7
 Relationships created: 6
 Properties set: 8
-////
+----
 
 This is how the data looks in the database:
 
@@ -96,11 +97,12 @@ CREATE (atlasredux:User {name: "atlasredux"})
 CREATE (atlasredux)-[:WROTE_REVIEW]->(himym_s1_e1_review2)<-[:HAS_REVIEW]-(himym_s1_e1)
 ----
 
-////
+[source,querytest]
+----
 Nodes created: 10
 Relationships created: 10
 Properties set: 11
-////
+----
 
 == Information for a show ==
 
@@ -113,11 +115,12 @@ WHERE tvShow.name = "How I Met Your Mother"
 RETURN season.name, episode.name
 ----
 
-////
+[source,querytest]
+----
 HIMYM Season 1
 Pilot
 1 row
-////
+----
 
 //table
 
@@ -132,7 +135,8 @@ OPTIONAL MATCH (episode)-[:HAS_REVIEW]->(review)
 RETURN season.name, episode.name, review
 ----
 
-////
+[source,querytest]
+----
 HIMYM Season 1
 Pilot
 Meet Me At The Bar In 15 Minutes & Suit Up
@@ -140,7 +144,7 @@ It was awesome
 The humour is great.
 What a great pilot for a show
 2 rows
-////
+----
 
 //table
 
@@ -155,9 +159,10 @@ WHERE tvShow.name = "How I Met Your Mother"
 RETURN DISTINCT character.name
 ----
 
-////
+[source,querytest]
+----
 5 rows
-////
+----
 
 //table
 
@@ -170,9 +175,10 @@ WHERE tvShow.name = "How I Met Your Mother"
 RETURN DISTINCT actor.name
 ----
 
-////
+[source,querytest]
+----
 5 rows
-////
+----
 
 //table
 
@@ -198,11 +204,12 @@ CREATE UNIQUE (actor)-[:PLAYED_CHARACTER]->(keith)
 CREATE UNIQUE (episode)-[:FEATURED_CHARACTER]->(keith)
 ----
 
-////
+[source,querytest]
+----
 Nodes created: 5
 Relationships created: 4
 Properties set: 5
-////
+----
 
 And now we’ll create a query to find the episodes that he has appeared in:
 
@@ -213,13 +220,14 @@ WHERE actor.name = "Josh Radnor"
 RETURN episode.name AS Episode, character.name AS Character
 ----
 
-////
+[source,querytest]
+----
 Pilot
 Ted Mosby
 Peter's Progress
 Keith
 2 rows
-////
+----
 
 //table
 
@@ -233,7 +241,8 @@ WHERE actor.name = "Josh Radnor"
 RETURN tvshow.name AS Show, season.name AS Season, episode.name as Episode, character.name AS Character
 ----
 
-////
+[source,querytest]
+----
 How I Met Your Mother
 HIMYM Season 1
 Pilot
@@ -242,7 +251,7 @@ ER
 ER S7
 Peter's Progress
 Keith
-////
+----
 
 //table
 

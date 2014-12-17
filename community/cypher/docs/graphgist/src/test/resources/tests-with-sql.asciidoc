@@ -1,0 +1,40 @@
+= Tests with SQL =
+
+[source,cypher]
+----
+RETURN 'neo4j';
+----
+
+[source,sql]
+----
+VALUES('neo4j')
+----
+
+[source,querytest]
+----
+1 row
+neo4j
+----
+
+[source,cypher]
+----
+RETURN 'graphdb';
+----
+
+[source,querytest]
+----
+1 row
+graphdb
+----
+
+[source,sql]
+----
+VALUES('cypher')
+----
+
+[source,querytest]
+----
+1 row
+cypher
+----
+
