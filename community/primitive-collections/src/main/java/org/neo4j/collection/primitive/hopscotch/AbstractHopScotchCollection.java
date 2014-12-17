@@ -68,6 +68,7 @@ public abstract class AbstractHopScotchCollection<VALUE> implements PrimitiveCol
 
     @Override
     public void close()
-    {   // Do nothing by default
+    {
+        table.close();
     }
 }

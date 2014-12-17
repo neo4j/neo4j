@@ -62,7 +62,7 @@ public class PrimitiveLongMapTest
         PrimitiveLongObjectMap<Integer> map = Primitive.longObjectMap();
         for ( Map.Entry<Long, Integer> entry : expectedEntries.entrySet() )
         {
-            map.put( entry.getKey().longValue(), entry.getValue().intValue() );
+            map.put( entry.getKey(), entry.getValue() );
         }
 
         // WHEN/THEN
