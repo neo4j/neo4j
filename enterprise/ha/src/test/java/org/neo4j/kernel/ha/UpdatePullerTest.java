@@ -24,8 +24,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Matchers;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -34,6 +37,7 @@ import org.neo4j.cluster.protocol.election.Election;
 import org.neo4j.com.RequestContext;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.ha.UpdatePuller.Condition;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberChangeEvent;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberContext;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberListener;
@@ -45,9 +49,13 @@ import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.test.CleanupRule;
 import org.neo4j.test.OnDemandJobScheduler;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -71,6 +79,8 @@ public class UpdatePullerTest
     private final RequestContextFactory requestContextFactory = mock( RequestContextFactory.class );
     private final UpdatePuller updatePuller = new UpdatePuller( stateMachine, requestContextFactory,
             master, lastUpdateTime, logging, myId );
+
+    public final @Rule CleanupRule cleanup = new CleanupRule();
 
     @Before
     public void setup() throws Throwable
@@ -257,6 +267,92 @@ public class UpdatePullerTest
         stateMachine.masterIsElected(); // pauses the update puller
 
         verifyNoMoreInteractions( lastUpdateTime, availabilityGuard );
+    }
+
+    @Test
+    public void shouldReturnFalseIfPullerInitiallyInactiveNonStrict() throws Exception
+    {
+        // GIVEN
+        Condition condition = mock( Condition.class );
+        updatePuller.pause();
+
+        // WHEN
+        boolean result = updatePuller.await( condition, false );
+
+        // THEN
+        assertFalse( result );
+        verifyNoMoreInteractions( condition );
+    }
+
+    @Test
+    public void shouldReturnFalseIfPullerBecomesInactiveWhileWaitingNonStrict() throws Exception
+    {
+        // GIVEN
+        Condition condition = mock( Condition.class );
+        updatePuller.unpause();
+        when( condition.evaluate( anyInt(), anyInt() ) ).thenAnswer( new Answer<Boolean>()
+        {
+            @Override
+            public Boolean answer( InvocationOnMock invocation ) throws Throwable
+            {
+                updatePuller.pause();
+                return false;
+            }
+        } );
+
+        // WHEN
+        boolean result = updatePuller.await( condition, false );
+
+        // THEN
+        assertFalse( result );
+        verify( condition, times( 1 ) ).evaluate( anyInt(), anyInt() );
+    }
+
+    @Test
+    public void shouldThrowIfPullerInitiallyInactiveStrict() throws Exception
+    {
+        // GIVEN
+        Condition condition = mock( Condition.class );
+        updatePuller.pause();
+
+        // WHEN
+        try
+        {
+            updatePuller.await( condition, true );
+            fail( "Should have thrown" );
+        }
+        catch ( IllegalStateException e )
+        {   // THEN Good
+            verifyNoMoreInteractions( condition );
+        }
+    }
+
+    @Test
+    public void shouldThrowIfPullerBecomesInactiveWhileWaitingStrict() throws Exception
+    {
+        // GIVEN
+        Condition condition = mock( Condition.class );
+        updatePuller.unpause();
+        when( condition.evaluate( anyInt(), anyInt() ) ).thenAnswer( new Answer<Boolean>()
+        {
+            @Override
+            public Boolean answer( InvocationOnMock invocation ) throws Throwable
+            {
+                updatePuller.pause();
+                return false;
+            }
+        } );
+
+        // WHEN
+        try
+        {
+            updatePuller.await( condition, true );
+            fail( "Should have thrown" );
+        }
+        catch ( IllegalStateException e )
+        {   // THEN Good
+            verify( condition, times( 1 ) ).evaluate( anyInt(), anyInt() );
+        }
     }
 
     private static class CapturingHighAvailabilityMemberStateMachine extends HighAvailabilityMemberStateMachine

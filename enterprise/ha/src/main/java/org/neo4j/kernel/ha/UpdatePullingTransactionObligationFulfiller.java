@@ -61,11 +61,6 @@ public class UpdatePullingTransactionObligationFulfiller extends LifecycleAdapte
     @Override
     public void fulfill( final long toTxId ) throws InterruptedException
     {
-        if ( !updatePuller.isActive() )
-        {
-            throw new IllegalStateException( "Update puller not active " + updatePuller );
-        }
-
         updatePuller.await( new Condition()
         {
             @Override
@@ -78,7 +73,7 @@ public class UpdatePullingTransactionObligationFulfiller extends LifecycleAdapte
                  */
                 return transactionIdStore.getLastClosedTransactionId() >= toTxId;
             }
-        } );
+        }, true /*We strictly need the update puller to be and remain active while we wait*/ );
     }
 
     @Override

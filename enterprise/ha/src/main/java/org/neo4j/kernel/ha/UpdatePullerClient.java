@@ -54,7 +54,8 @@ public class UpdatePullerClient extends LifecycleAdapter
             return;
         }
 
-        updatePuller.await( UpdatePuller.NEXT_TICKET );
+        updatePuller.await( UpdatePuller.NEXT_TICKET,
+                false /*we're OK with the update puller becoming inactive while we await the condition*/ );
     }
 
     @Override
