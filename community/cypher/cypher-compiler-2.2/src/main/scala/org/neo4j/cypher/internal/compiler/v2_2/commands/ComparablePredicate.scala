@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_2.commands
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import expressions.{Identifier, Literal, Expression}
-import pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Expression, Identifier, Literal}
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
 import org.neo4j.cypher.internal.helpers.IsCollection
-import org.neo4j.graphdb.{Relationship, Node}
+import org.neo4j.graphdb.{Node, Relationship}
 
 abstract sealed class ComparablePredicate(left: Expression, right: Expression) extends Predicate with Comparer {
   def compare(comparisonResult: Int): Boolean
@@ -75,7 +75,7 @@ case class Equals(a: Expression, b: Expression) extends Predicate with Comparer 
   private def incomparable(lhs: Any, rhs: Any)(implicit state: QueryState): Nothing =
     throw new IncomparableValuesException(textWithType(lhs), textWithType(rhs))
 
-  override def toString = a.toString() + " == " + b.toString()
+  override def toString = s"$a == $b"
 
   def containsIsNull = (a, b) match {
     case (Identifier(_), Literal(null)) => true

@@ -26,9 +26,10 @@ import org.neo4j.graphdb.Direction
 object PlanDescriptionArgumentSerializer {
   def serialize(arg: Argument): String = {
     val SEPARATOR = ", "
+    val UNNAMED_PATTERN = """  (UNNAMED|FRESHID|AGGREGATION)(\d+)""".r
     arg match {
       case ColumnsLeft(columns) => s"keep columns ${columns.mkString(SEPARATOR)}"
-      case LegacyExpression(expr) => expr.toString
+      case LegacyExpression(expr) => UNNAMED_PATTERN.replaceAllIn(expr.toString, m => s"anon[${m group 2}]")
       case UpdateActionName(action) => action
       case LegacyIndex(index) => index
       case Index(label, property) => s":$label($property)"
