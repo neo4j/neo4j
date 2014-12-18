@@ -36,6 +36,11 @@ public enum Uniqueness implements UniquenessFactory
         {
             return org.neo4j.graphdb.traversal.Uniqueness.NODE_GLOBAL.create(optionalParameter);
         }
+
+        public boolean eagerStartBranches()
+        {
+            return true;
+        }
     },
     /**
      * @deprecated See {@link org.neo4j.graphdb.traversal.Uniqueness}
@@ -45,6 +50,11 @@ public enum Uniqueness implements UniquenessFactory
         public UniquenessFilter create( Object optionalParameter )
         {
             return org.neo4j.graphdb.traversal.Uniqueness.NODE_PATH.create(optionalParameter);
+        }
+
+        public boolean eagerStartBranches()
+        {
+            return true;
         }
     },
     /**
@@ -56,16 +66,25 @@ public enum Uniqueness implements UniquenessFactory
         {
             return org.neo4j.graphdb.traversal.Uniqueness.NODE_RECENT.create(optionalParameter);
         }
+
+        public boolean eagerStartBranches()
+        {
+            return true;
+        }
     },
     /**
      * @deprecated See {@link org.neo4j.graphdb.traversal.Uniqueness}
      */
     NODE_LEVEL
     {
-        @Override
         public UniquenessFilter create( Object optionalParameter )
         {
             return org.neo4j.graphdb.traversal.Uniqueness.NODE_LEVEL.create(optionalParameter);
+        }
+
+        public boolean eagerStartBranches()
+        {
+            return true;
         }
     },
 
@@ -78,6 +97,11 @@ public enum Uniqueness implements UniquenessFactory
         {
             return org.neo4j.graphdb.traversal.Uniqueness.RELATIONSHIP_GLOBAL.create(optionalParameter);
         }
+
+        public boolean eagerStartBranches()
+        {
+            return true;
+        }
     },
     /**
      * @deprecated See {@link org.neo4j.graphdb.traversal.Uniqueness}
@@ -87,6 +111,11 @@ public enum Uniqueness implements UniquenessFactory
         public UniquenessFilter create( Object optionalParameter )
         {
             return org.neo4j.graphdb.traversal.Uniqueness.RELATIONSHIP_PATH.create(optionalParameter);
+        }
+
+        public boolean eagerStartBranches()
+        {
+            return false;
         }
     },
     /**
@@ -98,16 +127,25 @@ public enum Uniqueness implements UniquenessFactory
         {
             return org.neo4j.graphdb.traversal.Uniqueness.RELATIONSHIP_RECENT.create(optionalParameter);
         }
+
+        public boolean eagerStartBranches()
+        {
+            return true;
+        }
     },
     /**
      * @deprecated See {@link org.neo4j.graphdb.traversal.Uniqueness}
      */
     RELATIONSHIP_LEVEL
     {
-        @Override
         public UniquenessFilter create( Object optionalParameter )
         {
             return org.neo4j.graphdb.traversal.Uniqueness.RELATIONSHIP_LEVEL.create(optionalParameter);
+        }
+
+        public boolean eagerStartBranches()
+        {
+            return true;
         }
     },
     
@@ -119,6 +157,11 @@ public enum Uniqueness implements UniquenessFactory
         public UniquenessFilter create( Object optionalParameter )
         {
             return org.neo4j.graphdb.traversal.Uniqueness.NONE.create(optionalParameter);
+        }
+
+        public boolean eagerStartBranches()
+        {
+            return true;
         }
     };
 }
