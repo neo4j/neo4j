@@ -24,9 +24,13 @@ import org.neo4j.kernel.api.Statement
 import org.neo4j.cypher.internal.compiler.v2_1.spi.TokenContext
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations
 
-abstract class TransactionBoundTokenContext(statement: Statement) extends TokenContext {
+abstract class TransactionBoundTokenContext(var statement: Statement) extends TokenContext {
   def getOptPropertyKeyId(propertyKeyName: String): Option[Int] =
     TokenContext.tryGet[PropertyKeyNotFoundException](getPropertyKeyId(propertyKeyName))
+
+  def setStatement(newStatement: Statement) = {
+    statement = newStatement
+  }
 
   def getPropertyKeyId(propertyKeyName: String) = {
     val propertyId: Int = statement.readOperations().propertyKeyGetForName(propertyKeyName)
