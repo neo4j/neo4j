@@ -157,6 +157,52 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
     }
   }
 
+  test("should plan a simple argument row when everything is covered") {
+    val solver = ExhaustiveQueryGraphSolver.withDefaults(
+      generatePlanTable(
+        Argument(Set("a"))(PlannerQuery(graph = QueryGraph(patternNodes = Set("a"), argumentIds = Set("a"))))()),
+      Seq(undefinedPlanProducer))
+
+    new given {
+      qg = QueryGraph(patternNodes = Set("a"), argumentIds = Set("a"))
+      withLogicalPlanningContext { (ctx) =>
+        implicit val x = ctx
+
+        solver.tryPlan(qg).get should equal(
+          Argument(Set("a"))(null)()
+        )
+      }
+    }
+  }
+
+  test("should plan a relationship pattern based on an argument row since part of the node pattern is already solved") {
+    val solver = ExhaustiveQueryGraphSolver.withDefaults(
+      generatePlanTable(
+        Argument(Set("a"))(PlannerQuery(graph = QueryGraph(patternNodes = Set("a"), argumentIds = Set("a"))))(),
+        AllNodesScan("b", Set.empty)(PlannerQuery(graph = QueryGraph(patternNodes = Set("b"), argumentIds = Set("a"))))
+      ),
+      Seq(expandOptions))
+
+    new given {
+      qg = QueryGraph(patternNodes = Set("a", "b"),
+        patternRelationships = Set(PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)),
+        argumentIds = Set("a"))
+
+      cardinality = Map(
+        Argument(Set("a"))(null)() -> Cardinality(10),
+        AllNodesScan("b", Set.empty)(null) -> Cardinality(100)
+      )
+
+      withLogicalPlanningContext { (ctx) =>
+        implicit val x = ctx
+
+        solver.tryPlan(qg).get should equal(
+          Expand(Argument(Set("a"))(null)(), "a", Direction.OUTGOING, Seq.empty, "b", "r", ExpandAll)(null)
+        )
+      }
+    }
+  }
+
   private val undefinedPlanProducer: PlanProducer = new PlanProducer {
     def apply(qg: QueryGraph, cache: Map[QueryGraph, LogicalPlan]): Seq[LogicalPlan] = ???
   }

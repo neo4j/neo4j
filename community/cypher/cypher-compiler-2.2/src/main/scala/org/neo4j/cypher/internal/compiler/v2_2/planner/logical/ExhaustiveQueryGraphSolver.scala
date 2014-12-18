@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
+import org.neo4j.cypher.internal.compiler.v2_2.ast.Hint
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.ExhaustiveQueryGraphSolver._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{LogicalPlan, _}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.pickBestPlan
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryGraph, Selections}
 
@@ -73,7 +73,9 @@ object ExhaustiveQueryGraphSolver {
 
     def --(other: QueryGraph): QueryGraph = {
       val remainingRels: Set[PatternRelationship] = inner.patternRelationships -- other.patternRelationships
-      createSubQueryWithRels(remainingRels)
+      val argumentIds = inner.argumentIds -- other.argumentIds
+      val hints = inner.hints -- other.hints
+      createSubQueryWithRels(remainingRels, argumentIds, hints)
     }
 
     def combinations(size: Int): Seq[QueryGraph] = if (size < 0 || size > inner.patternRelationships.size )
@@ -81,27 +83,37 @@ object ExhaustiveQueryGraphSolver {
      else if (size == 0)
       inner.
         patternNodes.
-        map(createSubQueryWithNode).toSeq
+        map(createSubQueryWithNode(_, inner.argumentIds, inner.hints)).toSeq
     else {
       inner.
-        patternRelationships.toList.combinations(size).
-        map(r => createSubQueryWithRels(r.toSet)).toSeq
+        patternRelationships.toSeq.combinations(size).
+        map(r => createSubQueryWithRels(r.toSet, inner.argumentIds, inner.hints)).toSeq
     }
 
-    private def createSubQueryWithRels(rels: Set[PatternRelationship]) = {
+    private def createSubQueryWithRels(rels: Set[PatternRelationship], argumentIds: Set[IdName], hints: Set[Hint]) = {
       val nodes = rels.map(r => Seq(r.nodes._1, r.nodes._2)).flatten.toSet
+      val filteredHints = hints.filter( h => nodes(IdName(h.identifier.name)))
       val availableIds = rels.map(_.name) ++ nodes
 
       QueryGraph(
-        patternRelationships = rels,
         patternNodes = nodes,
-        selections = Selections.from(inner.selections.predicatesGiven(availableIds): _*))
+        argumentIds = argumentIds,
+        patternRelationships = rels,
+        selections = Selections.from(inner.selections.predicatesGiven(availableIds): _*),
+        hints = filteredHints
+      )
     }
 
-    private def createSubQueryWithNode(id: IdName) = QueryGraph(
-      patternNodes = Set(id),
-      selections = Selections.from(inner.selections.predicatesGiven(Set(id)): _*)
-    )
+    private def createSubQueryWithNode(id: IdName, argumentIds: Set[IdName], hints: Set[Hint]) = {
+      val filteredHints = hints.filter(id.name == _.identifier.name)
+
+      QueryGraph(
+        patternNodes = Set(id),
+        argumentIds = argumentIds,
+        selections = Selections.from(inner.selections.predicatesGiven(Set(id)): _*),
+        hints = filteredHints
+      )
+    }
   }
 
 }

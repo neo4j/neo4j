@@ -20,12 +20,17 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{SimplePatternLength, PatternRelationship, IdName}
+import org.neo4j.cypher.internal.compiler.v2_2.ast._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{Selections, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, PatternRelationship, SimplePatternLength}
 import org.neo4j.graphdb.Direction
 
-class QueryGraphCombinationsTest extends CypherFunSuite {
+class QueryGraphCombinationsTest extends CypherFunSuite with AstConstructionTestSupport {
+  val labelA = LabelName("A")(pos)
+  val prop = ident("prop")
+  val propKeyName = PropertyKeyName(prop.name)(pos)
   val A = IdName("a")
+  val identA = ident(A.name)
   val B = IdName("b")
   val C = IdName("c")
   val X = IdName("x")
@@ -42,6 +47,16 @@ class QueryGraphCombinationsTest extends CypherFunSuite {
     QueryGraph(
       patternNodes = Set(A)))
 
+  val hintedLeaf = (
+    "MATCH (a:A) USING INDEX a:A(prop) WHERE a.prop = 'something'",
+    QueryGraph(
+      patternNodes = Set(A),
+      hints = Set(UsingIndexHint(identA, labelA, prop)(pos)),
+      selections = Selections.from(
+        HasLabels(identA, Seq(labelA))(pos),
+        Equals(Property(identA, propKeyName)(pos), StringLiteral("something")(pos))(pos))
+    ))
+
   val cartesianProduct = (
     "MATCH a, b",
     QueryGraph(
@@ -52,6 +67,17 @@ class QueryGraphCombinationsTest extends CypherFunSuite {
     QueryGraph(
       patternNodes = Set(A, B),
       patternRelationships = Set(R1)))
+
+  val hintedLeafSingleRel = (
+    "MATCH (a:A)-[r1]->b USING INDEX a:A(prop) WHERE a.prop = 'something'",
+    QueryGraph(
+      patternNodes = Set(A,B),
+      patternRelationships = Set(R1),
+      hints = Set(UsingIndexHint(identA, labelA, prop)(pos)),
+      selections = Selections.from(
+        HasLabels(identA, Seq(labelA))(pos),
+        Equals(Property(identA, propKeyName)(pos), StringLiteral("something")(pos))(pos))
+    ))
 
   val selfLoop = (
     "MATCH a-[r4]->a",
@@ -85,12 +111,31 @@ class QueryGraphCombinationsTest extends CypherFunSuite {
     (singleNode,       0, Set(
       QueryGraph(patternNodes = Set(A)))),
 
+    (hintedLeaf,       0, Set(
+      QueryGraph(
+        patternNodes = Set(A),
+        hints = Set(UsingIndexHint(identA, labelA, prop)(pos)),
+        selections = Selections.from(
+          HasLabels(identA, Seq(labelA))(pos),
+          Equals(Property(identA, propKeyName)(pos), StringLiteral("something")(pos))(pos))
+      ))),
+
     (cartesianProduct, 0, Set(
       QueryGraph(patternNodes = Set(A)),
       QueryGraph(patternNodes = Set(B)))),
 
     (singleRel,        0, Set(
       QueryGraph(patternNodes = Set(A)),
+      QueryGraph(patternNodes = Set(B)))),
+
+    (hintedLeafSingleRel, 0, Set(
+      QueryGraph(
+        patternNodes = Set(A),
+        hints = Set(UsingIndexHint(identA, labelA, prop)(pos)),
+        selections = Selections.from(
+          HasLabels(identA, Seq(labelA))(pos),
+          Equals(Property(identA, propKeyName)(pos), StringLiteral("something")(pos))(pos))
+      ),
       QueryGraph(patternNodes = Set(B)))),
 
     (selfLoop,         0, Set(
@@ -115,6 +160,16 @@ class QueryGraphCombinationsTest extends CypherFunSuite {
       QueryGraph(
         patternNodes = Set(A, B),
         patternRelationships = Set(R1)))),
+
+    (hintedLeafSingleRel, 1, Set(
+      QueryGraph(
+        patternNodes = Set(A,B),
+        patternRelationships = Set(R1),
+        hints = Set(UsingIndexHint(identA, labelA, prop)(pos)),
+        selections = Selections.from(
+          HasLabels(identA, Seq(labelA))(pos),
+          Equals(Property(identA, propKeyName)(pos), StringLiteral("something")(pos))(pos))
+      ))),
 
     (selfLoop,         1, Set(
       QueryGraph(
@@ -175,7 +230,7 @@ class QueryGraphCombinationsTest extends CypherFunSuite {
         patternRelationships = Set(R5, R6, R7))))
   )
 
-  import ExhaustiveQueryGraphSolver._
+  import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.ExhaustiveQueryGraphSolver._
 
   tests.foreach {
     case ((name, qg), size, expectedResult) =>
