@@ -23,14 +23,15 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{Expression, HasLabels, LabelName}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{AllNodesScan, NodeByLabelScan, Selection}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport2, PlannerQuery, QueryGraph, Selections}
+import org.neo4j.cypher.internal.compiler.v2_2.planner._
 
 class LeafPlanTableGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   private val solver = LeafPlanTableGenerator(PlanningStrategyConfiguration.default)
-  private val solved = PlannerQuery.empty
+
   test("single pattern node") {
     new given {
       qg = QueryGraph(patternNodes = Set("n"))
+      val solved = PlannerQuery.empty.withGraph(qg)
 
       withLogicalPlanningContext { (ctx) =>
         // when
@@ -51,6 +52,8 @@ class LeafPlanTableGeneratorTest extends CypherFunSuite with LogicalPlanningTest
         patternNodes = Set("a", "b"),
         selections = Selections.from(hasLabels)
       )
+      val solvedA = PlannerQuery.empty.withGraph(QueryGraph(patternNodes = Set("a"), selections = Selections.from(hasLabels)))
+      val solvedB = PlannerQuery.empty.withGraph(QueryGraph(patternNodes = Set("b")))
 
       knownLabels = Set("Label")
 
@@ -62,8 +65,8 @@ class LeafPlanTableGeneratorTest extends CypherFunSuite with LogicalPlanningTest
 
         // then
         result should equal(PlanTable(
-          NodeByLabelScan("a", LazyLabel(label), Set.empty)(solved),
-          AllNodesScan("b", Set.empty)(solved)
+          NodeByLabelScan("a", LazyLabel(label), Set.empty)(solvedA),
+          AllNodesScan("b", Set.empty)(solvedB)
         ))
       }
     }
@@ -79,6 +82,9 @@ class LeafPlanTableGeneratorTest extends CypherFunSuite with LogicalPlanningTest
         patternNodes = Set("a", "b"),
         selections = Selections.from(hasLabels1, hasLabels2)
       )
+      val solvedA = PlannerQuery.empty.withGraph(QueryGraph(patternNodes = Set("a"), selections = Selections.from(hasLabels2)))
+      val solvedAWithLabels1 = solvedA.updateGraph(_.addPredicates(hasLabels1))
+      val solvedB = PlannerQuery.empty.withGraph(QueryGraph(patternNodes = Set("b")))
 
       knownLabels = Set("Label1", "Label2")
       labelCardinality = Map(
@@ -94,8 +100,8 @@ class LeafPlanTableGeneratorTest extends CypherFunSuite with LogicalPlanningTest
 
         // then
         result should equal(PlanTable(
-          Selection(Seq(hasLabels1), NodeByLabelScan("a", LazyLabel(label2), Set.empty)(solved))(solved),
-          AllNodesScan("b", Set.empty)(solved)
+          Selection(Seq(hasLabels1), NodeByLabelScan("a", LazyLabel(label2), Set.empty)(solvedA))(solvedAWithLabels1),
+          AllNodesScan("b", Set.empty)(solvedB)
         ))
       }
     }

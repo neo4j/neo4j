@@ -110,7 +110,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     LogicalPlanningContext(planContext, metrics, semanticTable, strategy, QueryGraphCardinalityInput(Map.empty, cardinality))
 
   implicit class RichLogicalPlan(plan: LogicalPlan) {
-    def asTableEntry = plan.availableSymbols -> plan
+    def asTableEntry = plan.solved.lastQueryGraph -> plan
   }
 
   def newMockedStatistics = mock[GraphStatistics]

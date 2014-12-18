@@ -20,16 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_2.InternalException
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 
-case class PlanTable(m: Map[Set[IdName], LogicalPlan] = Map.empty) {
+case class PlanTable(m: Map[QueryGraph, LogicalPlan] = Map.empty) {
   def size = m.size
 
   def isEmpty = m.isEmpty
   def nonEmpty = !isEmpty
-
-  def -(ids: Set[IdName]) = copy(m = m - ids)
 
   def +(newPlan: LogicalPlan): PlanTable = {
     val newSolved = newPlan.solved
@@ -48,7 +47,7 @@ case class PlanTable(m: Map[Set[IdName], LogicalPlan] = Map.empty) {
           !(newSolved.graph.covers(solved.graph) &&
             solved.isCoveredByHints(newSolved))
       }
-      PlanTable(oldPlansNotCoveredByNewPlan + (newPlan.availableSymbols -> newPlan))
+      PlanTable(oldPlansNotCoveredByNewPlan + (newPlan.solved.lastQueryGraph -> newPlan))
     }
   }
 
@@ -67,5 +66,5 @@ case class PlanTable(m: Map[Set[IdName], LogicalPlan] = Map.empty) {
 object PlanTable {
   val empty = PlanTable()
 
-  def apply(plans: LogicalPlan*): PlanTable = PlanTable(plans.map(p => p.availableSymbols -> p).toMap)
+  def apply(plans: LogicalPlan*): PlanTable = PlanTable(plans.map(p => p.solved.lastQueryGraph -> p).toMap)
 }

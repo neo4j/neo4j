@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, PatternRelationship, ShortestPathPattern, _}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{PatternRelationship, ShortestPathPattern, _}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport2, QueryGraph}
 import org.neo4j.graphdb.Direction
@@ -41,7 +41,7 @@ class FindShortestPathsTest extends CypherFunSuite with LogicalPlanningTestSuppo
            .addShortestPath(shortestPath)
       withLogicalPlanningContext { (ctx: LogicalPlanningContext) =>
         val left = planCartesianProduct(planAllNodesScan("a", Set.empty), planAllNodesScan("b", Set.empty))
-        val candidates = findShortestPaths(PlanTable(Map(Set[IdName]("a", "b") -> left)), qg)(ctx)
+        val candidates = findShortestPaths(PlanTable(left), qg)(ctx)
         candidates should equal(Seq(
           planShortestPaths(left, shortestPath)
         ))
@@ -63,7 +63,7 @@ class FindShortestPathsTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
       withLogicalPlanningContext { (ctx: LogicalPlanningContext) =>
         val left = planCartesianProduct(planAllNodesScan("a", Set.empty), planAllNodesScan("b", Set.empty))
-        val candidates = findShortestPaths(PlanTable(Map(Set[IdName]("a", "b") -> left)), qg)(ctx)
+        val candidates = findShortestPaths(PlanTable(left), qg)(ctx)
         candidates should equal(Seq(
           planShortestPaths(left, shortestPath)
         ))
@@ -85,7 +85,7 @@ class FindShortestPathsTest extends CypherFunSuite with LogicalPlanningTestSuppo
            .addShortestPath(shortestPath)
       withLogicalPlanningContext { (ctx: LogicalPlanningContext) =>
         val left = planCartesianProduct(planAllNodesScan("a", Set.empty), planAllNodesScan("b", Set.empty))
-        val candidates = findShortestPaths(PlanTable(Map(Set[IdName]("a", "b") -> left)), qg)(ctx)
+        val candidates = findShortestPaths(PlanTable(left), qg)(ctx)
         candidates should equal(Seq(
           planShortestPaths(left, shortestPath)
         ))
