@@ -86,4 +86,68 @@ public class PrimitiveLongObjectHashMap<VALUE> extends AbstractLongHopScotchColl
             }
         }
     }
+
+    @SuppressWarnings( "EqualsWhichDoesntCheckParameterClass" ) // yes it does
+    @Override
+    public boolean equals( Object other )
+    {
+        if ( typeAndSizeEqual( other ) )
+        {
+            PrimitiveLongObjectHashMap<?> that = (PrimitiveLongObjectHashMap<?>) other;
+            LongObjEquality<VALUE> equality = new LongObjEquality<VALUE>( that );
+            visitEntries( equality );
+            return equality.isEqual();
+        }
+        return false;
+    }
+
+    private static class LongObjEquality<T> implements PrimitiveLongObjectVisitor<T,RuntimeException>
+    {
+        private PrimitiveLongObjectHashMap other;
+        private boolean equal = true;
+
+        public LongObjEquality( PrimitiveLongObjectHashMap that )
+        {
+            this.other = that;
+        }
+
+        @Override
+        public boolean visited( long key, T value )
+        {
+            Object otherValue = other.get( key );
+            equal = otherValue == value || (otherValue != null && otherValue.equals( value ) );
+            return !equal;
+        }
+
+        public boolean isEqual()
+        {
+            return equal;
+        }
+    }
+
+    @Override
+    public int hashCode()
+    {
+        HashCodeComputer<VALUE> hash = new HashCodeComputer<VALUE>();
+        visitEntries( hash );
+        return hash.hashCode();
+    }
+
+    private static class HashCodeComputer<T> implements PrimitiveLongObjectVisitor<T,RuntimeException>
+    {
+        private int hash = 1337;
+
+        @Override
+        public boolean visited( long key, T value ) throws RuntimeException
+        {
+            hash += DEFAULT_HASHING.hash( key + value.hashCode() );
+            return false;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return hash;
+        }
+    }
 }

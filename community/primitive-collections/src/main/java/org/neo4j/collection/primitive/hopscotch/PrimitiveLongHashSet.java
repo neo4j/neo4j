@@ -21,6 +21,7 @@ package org.neo4j.collection.primitive.hopscotch;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.Monitor;
 
 import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.DEFAULT_HASHING;
@@ -65,5 +66,68 @@ public class PrimitiveLongHashSet extends AbstractLongHopScotchCollection<Object
     public boolean remove( long value )
     {
         return HopScotchHashingAlgorithm.remove( table, monitor, DEFAULT_HASHING, value ) == valueMarker;
+    }
+
+    @SuppressWarnings( "EqualsWhichDoesntCheckParameterClass" ) // yes it does
+    @Override
+    public boolean equals( Object other )
+    {
+        if ( typeAndSizeEqual( other ) )
+        {
+            PrimitiveLongHashSet that = (PrimitiveLongHashSet) other;
+            LongKeyEquality equality = new LongKeyEquality( that );
+            visitKeys( equality );
+            return equality.isEqual();
+        }
+        return false;
+    }
+
+    private static class LongKeyEquality implements PrimitiveLongVisitor<RuntimeException>
+    {
+        private PrimitiveLongHashSet other;
+        private boolean equal = true;
+
+        public LongKeyEquality( PrimitiveLongHashSet that )
+        {
+            this.other = that;
+        }
+
+        @Override
+        public boolean visited( long value )
+        {
+            equal = other.contains( value );
+            return !equal;
+        }
+
+        public boolean isEqual()
+        {
+            return equal;
+        }
+    }
+
+    @Override
+    public int hashCode()
+    {
+        HashCodeComputer hash = new HashCodeComputer();
+        visitKeys( hash );
+        return hash.hashCode();
+    }
+
+    private static class HashCodeComputer implements PrimitiveLongVisitor<RuntimeException>
+    {
+        private int hash = 1337;
+
+        @Override
+        public boolean visited( long value ) throws RuntimeException
+        {
+            hash += DEFAULT_HASHING.hash( value );
+            return false;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return hash;
+        }
     }
 }

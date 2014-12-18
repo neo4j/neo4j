@@ -21,6 +21,7 @@ package org.neo4j.collection.primitive.hopscotch;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
+import org.neo4j.collection.primitive.PrimitiveIntVisitor;
 import org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.Monitor;
 
 import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.DEFAULT_HASHING;
@@ -65,5 +66,68 @@ public class PrimitiveIntHashSet extends AbstractIntHopScotchCollection<Object> 
     public boolean remove( int value )
     {
         return HopScotchHashingAlgorithm.remove( table, monitor, DEFAULT_HASHING, value ) == valueMarker;
+    }
+
+    @SuppressWarnings( "EqualsWhichDoesntCheckParameterClass" ) // yes it does
+    @Override
+    public boolean equals( Object other )
+    {
+        if ( typeAndSizeEqual( other ) )
+        {
+            PrimitiveIntHashSet that = (PrimitiveIntHashSet) other;
+            IntKeyEquality equality = new IntKeyEquality( that );
+            visitKeys( equality );
+            return equality.isEqual();
+        }
+        return false;
+    }
+
+    private static class IntKeyEquality implements PrimitiveIntVisitor<RuntimeException>
+    {
+        private PrimitiveIntHashSet other;
+        private boolean equal = true;
+
+        public IntKeyEquality( PrimitiveIntHashSet that )
+        {
+            this.other = that;
+        }
+
+        @Override
+        public boolean visited( int value )
+        {
+            equal = other.contains( value );
+            return !equal;
+        }
+
+        public boolean isEqual()
+        {
+            return equal;
+        }
+    }
+
+    @Override
+    public int hashCode()
+    {
+        HashCodeComputer hash = new HashCodeComputer();
+        visitKeys( hash );
+        return hash.hashCode();
+    }
+
+    private static class HashCodeComputer implements PrimitiveIntVisitor<RuntimeException>
+    {
+        private int hash = 1337;
+
+        @Override
+        public boolean visited( int value ) throws RuntimeException
+        {
+            hash += DEFAULT_HASHING.hash( value );
+            return false;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return hash;
+        }
     }
 }

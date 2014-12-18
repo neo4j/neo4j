@@ -26,6 +26,8 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntLongMap;
+import org.neo4j.collection.primitive.PrimitiveIntLongVisitor;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntObjectVisitor;
 import org.neo4j.collection.primitive.PrimitiveIntVisitor;
@@ -890,6 +892,52 @@ public class PrimitiveLongMapTest
         {
             @Override
             public boolean visited( long key, int value )
+            {
+                return counter.incrementAndGet() > 2;
+            }
+        } );
+
+        // THEN
+        assertThat( counter.get(), is( 3 ) );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    @Test
+    public void intLongEntryVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
+    {
+        // GIVEN
+        PrimitiveIntLongMap map = Primitive.intLongMap();
+        map.put( 1, 100 );
+        map.put( 2, 200 );
+        map.put( 3, 300 );
+        PrimitiveIntLongVisitor<RuntimeException> visitor = mock( PrimitiveIntLongVisitor.class );
+
+        // WHEN
+        map.visitEntries( visitor );
+
+        // THEN
+        verify( visitor ).visited( 1, 100 );
+        verify( visitor ).visited( 2, 200 );
+        verify( visitor ).visited( 3, 300 );
+        verifyNoMoreInteractions( visitor );
+    }
+
+    @Test
+    public void intLongEntryVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
+    {
+        // GIVEN
+        PrimitiveIntLongMap map = Primitive.intLongMap();
+        map.put( 1, 100 );
+        map.put( 2, 200 );
+        map.put( 3, 300 );
+        map.put( 4, 400 );
+        final AtomicInteger counter = new AtomicInteger();
+
+        // WHEN
+        map.visitEntries( new PrimitiveIntLongVisitor<RuntimeException>()
+        {
+            @Override
+            public boolean visited( int key, long value )
             {
                 return counter.incrementAndGet() > 2;
             }

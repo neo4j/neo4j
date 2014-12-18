@@ -74,7 +74,7 @@ public class PrimitiveIntLongHashMap extends AbstractIntHopScotchCollection<long
     }
 
     @Override
-    public void visitEntries( PrimitiveIntLongVisitor visitor )
+    public <E extends Exception> void visitEntries( PrimitiveIntLongVisitor<E> visitor ) throws E
     {
         long nullKey = table.nullKey();
         int capacity = table.capacity();
@@ -83,8 +83,11 @@ public class PrimitiveIntLongHashMap extends AbstractIntHopScotchCollection<long
             int key = (int) table.key( i );
             if ( key != nullKey )
             {
-                long value = table.value( i )[0];
-                visitor.visited( key, value );
+                long[] value = table.value( i );
+                if ( value != null && visitor.visited( key, value[0] ) )
+                {
+                    return;
+                }
             }
         }
     }
@@ -98,5 +101,68 @@ public class PrimitiveIntLongHashMap extends AbstractIntHopScotchCollection<long
     private long unpack( long[] result )
     {
         return result != null ? result[0] : IntKeyLongValueTable.NULL;
+    }
+
+    @SuppressWarnings( "EqualsWhichDoesntCheckParameterClass" ) // yes it does
+    @Override
+    public boolean equals( Object other )
+    {
+        if ( typeAndSizeEqual( other ) )
+        {
+            PrimitiveIntLongHashMap that = (PrimitiveIntLongHashMap) other;
+            IntLongEquality equality = new IntLongEquality( that );
+            visitEntries( equality );
+            return equality.isEqual();
+        }
+        return false;
+    }
+
+    private static class IntLongEquality implements PrimitiveIntLongVisitor<RuntimeException>
+    {
+        private PrimitiveIntLongHashMap other;
+        private boolean equal = true;
+
+        public IntLongEquality( PrimitiveIntLongHashMap that )
+        {
+            this.other = that;
+        }
+
+        @Override
+        public boolean visited( int key, long value )
+        {
+            equal = other.get( key ) == value;
+            return !equal;
+        }
+
+        public boolean isEqual()
+        {
+            return equal;
+        }
+    }
+
+    @Override
+    public int hashCode()
+    {
+        HashCodeComputer hash = new HashCodeComputer();
+        visitEntries( hash );
+        return hash.hashCode();
+    }
+
+    private static class HashCodeComputer implements PrimitiveIntLongVisitor<RuntimeException>
+    {
+        private int hash = 1337;
+
+        @Override
+        public boolean visited( int key, long value ) throws RuntimeException
+        {
+            hash += DEFAULT_HASHING.hash( key + DEFAULT_HASHING.hash( value ) );
+            return false;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return hash;
+        }
     }
 }

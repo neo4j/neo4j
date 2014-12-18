@@ -33,7 +33,19 @@ public class ClosingTablesTest
         // Given
         Table table = mock( Table.class );
         AbstractIntHopScotchCollection coll =
-                new AbstractIntHopScotchCollection( table );
+                new AbstractIntHopScotchCollection( table ) {
+                    @Override
+                    public boolean equals( Object other )
+                    {
+                        return false;
+                    }
+
+                    @Override
+                    public int hashCode()
+                    {
+                        return 0;
+                    }
+                };
 
         // When
         coll.close();
@@ -48,7 +60,20 @@ public class ClosingTablesTest
         // Given
         Table table = mock( Table.class );
         AbstractLongHopScotchCollection coll =
-                new AbstractLongHopScotchCollection( table );
+                new AbstractLongHopScotchCollection( table )
+                {
+                    @Override
+                    public boolean equals( Object other )
+                    {
+                        return false;
+                    }
+
+                    @Override
+                    public int hashCode()
+                    {
+                        return 0;
+                    }
+                };
 
         // When
         coll.close();
