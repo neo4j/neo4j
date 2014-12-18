@@ -22,10 +22,12 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.IOException;
 
 import org.neo4j.helpers.ThisShouldNotHappenError;
+import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterv1;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
+
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart.checksum;
 
 abstract class AbstractPhysicalTransactionAppender implements TransactionAppender
 {
@@ -37,6 +39,7 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
     private final TransactionLogWriter transactionLogWriter;
     private final LogPositionMarker positionMarker = new LogPositionMarker();
     private final IndexCommandDetector indexCommandDetector;
+    private final KernelHealth kernelHealth;
 
     // For the graph store and schema indexes order-of-updates are managed by the high level entity locks
     // such that changes are applied to the affected records in the same order that they are written to the
@@ -46,12 +49,13 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
 
     protected AbstractPhysicalTransactionAppender( LogFile logFile, LogRotation logRotation,
             TransactionMetadataCache transactionMetadataCache, TransactionIdStore transactionIdStore,
-            IdOrderingQueue legacyIndexTransactionOrdering )
+            IdOrderingQueue legacyIndexTransactionOrdering, KernelHealth kernelHealth )
     {
         this.logFile = logFile;
         this.logRotation = logRotation;
         this.transactionIdStore = transactionIdStore;
         this.legacyIndexTransactionOrdering = legacyIndexTransactionOrdering;
+        this.kernelHealth = kernelHealth;
         this.channel = logFile.getWriter();
         this.transactionMetadataCache = transactionMetadataCache;
         this.indexCommandDetector = new IndexCommandDetector( new CommandWriter( channel ) );
@@ -68,23 +72,35 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
         // Reset command writer so that we, after we've written the transaction, can ask it whether or
         // not any legacy index command was written. If so then there's additional ordering to care about below.
         indexCommandDetector.reset();
-        transactionLogWriter.append( transaction, transactionId );
 
-        long transactionChecksum = LogEntryStart.checksum( transaction.additionalHeader(),
-                transaction.getMasterId(), transaction.getAuthorId() );
-        transactionMetadataCache.cacheTransactionMetadata( transactionId, logPosition, transaction.getMasterId(),
-                transaction.getAuthorId(), transactionChecksum );
-
-        emptyBufferIntoChannel();
-
-        // Offer this transaction id to the queue so that the legacy index applier can take part in the ordering
-        if ( indexCommandDetector.hasWrittenAnyLegacyIndexCommand() )
+        // The outcome of this try block is either of:
+        // a) transaction successfully appended, at which point it is marked as committed
+        // b) transaction failed to be appended, at which point a kernel panic is issued
+        // The reason that we issue a kernel panic on failure in here is that at this point we're still
+        // holding the logFile monitor, and a failure to append needs to be communicated with potential
+        // log rotation, which will wait for all transactions closed or fail on kernel panic.
+        try
         {
-            legacyIndexTransactionOrdering.offer( transactionId );
+            transactionLogWriter.append( transaction, transactionId );
+            long transactionChecksum = checksum( transaction.additionalHeader(), transaction.getMasterId(),
+                    transaction.getAuthorId() );
+            transactionMetadataCache.cacheTransactionMetadata( transactionId, logPosition, transaction.getMasterId(),
+                    transaction.getAuthorId(), transactionChecksum );
+            emptyBufferIntoChannel();
+            boolean containsLegacyIndexCommands = indexCommandDetector.hasWrittenAnyLegacyIndexCommand();
+            if ( containsLegacyIndexCommands )
+            {
+                // Offer this transaction id to the queue so that the legacy index applier can take part in the ordering
+                legacyIndexTransactionOrdering.offer( transactionId );
+            }
+            transactionIdStore.transactionCommitted( transactionId, transactionChecksum );
+            return containsLegacyIndexCommands;
         }
-        boolean containsLegacyIndexCommands = indexCommandDetector.hasWrittenAnyLegacyIndexCommand();
-        transactionIdStore.transactionCommitted( transactionId, transactionChecksum );
-        return containsLegacyIndexCommands;
+        catch ( final Throwable panic )
+        {
+            kernelHealth.panic( panic );
+            throw panic;
+        }
     }
 
     protected abstract void emptyBufferIntoChannel() throws IOException;

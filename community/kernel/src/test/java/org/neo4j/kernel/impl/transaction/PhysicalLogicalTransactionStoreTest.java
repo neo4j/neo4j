@@ -32,6 +32,7 @@ import org.junit.Test;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.Recovery;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
@@ -95,7 +96,7 @@ public class PhysicalLogicalTransactionStoreTest
         LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000,
                 transactionIdStore, mock( LogVersionRepository.class ), monitor, positionCache ) );
         life.add( new PhysicalLogicalTransactionStore( logFile, LogRotation.NO_ROTATION, positionCache,
-                transactionIdStore, BYPASS, true ) );
+                transactionIdStore, BYPASS, mock( KernelHealth.class ), true ) );
 
         try
         {
@@ -159,7 +160,7 @@ public class PhysicalLogicalTransactionStoreTest
 
         PhysicalLogicalTransactionStore store = new PhysicalLogicalTransactionStore( logFile,
                 LogRotation.NO_ROTATION, positionCache,
-                transactionIdStore, BYPASS, true );
+                transactionIdStore, BYPASS, mock( KernelHealth.class ), true );
         life.add( store );
         life.add(new Recovery(new Recovery.SPI()
         {
@@ -253,7 +254,7 @@ public class PhysicalLogicalTransactionStoreTest
                 positionCache ) );
 
         LogicalTransactionStore store = life.add( new PhysicalLogicalTransactionStore( logFile, LogRotation.NO_ROTATION,
-                positionCache, transactionIdStore, BYPASS, true ) );
+                positionCache, transactionIdStore, BYPASS, mock( KernelHealth.class ), true ) );
 
         // WHEN
         life.start();
@@ -282,7 +283,8 @@ public class PhysicalLogicalTransactionStoreTest
         TransactionMetadataCache cache = new TransactionMetadataCache( 10, 10 );
         TransactionIdStore txIdStore = mock( TransactionIdStore.class );
         LogicalTransactionStore txStore =
-                new PhysicalLogicalTransactionStore( logFile, LogRotation.NO_ROTATION, cache, txIdStore, BYPASS, false );
+                new PhysicalLogicalTransactionStore( logFile, LogRotation.NO_ROTATION, cache, txIdStore, BYPASS,
+                        mock( KernelHealth.class ), false );
 
         // WHEN
         try
@@ -302,7 +304,8 @@ public class PhysicalLogicalTransactionStoreTest
                                            long latestCommittedTxWhenStarted, long timeCommitted ) throws IOException
     {
         TransactionAppender appender = new PhysicalTransactionAppender(
-                logFile, LogRotation.NO_ROTATION, positionCache, transactionIdStore, BYPASS );
+                logFile, LogRotation.NO_ROTATION, positionCache, transactionIdStore, BYPASS,
+                mock( KernelHealth.class ) );
         PhysicalTransactionRepresentation transaction =
                 new PhysicalTransactionRepresentation( singleCreateNodeCommand() );
         transaction.setHeader( additionalHeader, masterId, authorId, timeStarted, latestCommittedTxWhenStarted,

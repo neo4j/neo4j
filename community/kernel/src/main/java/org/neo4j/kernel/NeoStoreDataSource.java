@@ -812,13 +812,13 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
         final LogRotationControl logRotationControl = new LogRotationControl( neoStore, indexingService, labelScanStore,
                 indexProviders );
 
-        final LogRotation logRotation =
-                new LogRotationImpl( monitors.newMonitor( LogRotation.Monitor.class ), logFile, logRotationControl );
+        final LogRotation logRotation = new LogRotationImpl( monitors.newMonitor( LogRotation.Monitor.class ),
+                logFile, logRotationControl, kernelHealth );
 
         final LogicalTransactionStore logicalTransactionStore =
                 new PhysicalLogicalTransactionStore( logFile, logRotation,
                         transactionMetadataCache, neoStore, legacyIndexTransactionOrdering,
-                        config.get( GraphDatabaseSettings.batched_writes ) );
+                        kernelHealth, config.get( GraphDatabaseSettings.batched_writes ) );
 
         life.add( logFile );
         life.add( logicalTransactionStore );

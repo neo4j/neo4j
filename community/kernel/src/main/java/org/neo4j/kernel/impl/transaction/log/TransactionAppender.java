@@ -33,9 +33,16 @@ public interface TransactionAppender
      * Appends a transaction to a log, effectively committing it. After this method have returned the
      * returned transaction id should be visible in {@link TransactionIdStore#getLastCommittedTransactionId()}.
      *
+     * Any failure happening inside this method will automatically
+     * {@link TransactionIdStore#transactionClosed(long) close} the transaction if the execution got past
+     * {@link TransactionIdStore#transactionCommitted(long, long)}, so callers should not close transactions
+     * on exception thrown from this method. Although callers must make sure that successfully appended
+     * transactions exiting this method are {@link TransactionIdStore#transactionClosed(long)}.
+     *
      * @param transaction transaction representation to append.
      * @return transaction id the appended transaction got.
-     * @throws IOException if there was a problem appending the transaction.
+     * @throws IOException if there was a problem appending the transaction. See method javadoc body for
+     * how to handle exceptions in general thrown from this method.
      */
     long append( TransactionRepresentation transaction ) throws IOException;
 
@@ -43,6 +50,12 @@ public interface TransactionAppender
      * Appends a transaction to a log with an expected transaction id. The written data is not forced as
      * part of this method call, instead that is controlled manually by {@link #force()}. It's assumed
      * that only a single thread calls this method.
+     *
+     * Any failure happening inside this method will automatically
+     * {@link TransactionIdStore#transactionClosed(long) close} the transaction if the execution got past
+     * {@link TransactionIdStore#transactionCommitted(long, long)}, so callers should not close transactions
+     * on exception thrown from this method. Although callers must make sure that successfully appended
+     * transactions exiting this method are {@link TransactionIdStore#transactionClosed(long)}.
      *
      * @param transaction transaction representation to append.
      * @param transaction id the appended transaction is expected to have.

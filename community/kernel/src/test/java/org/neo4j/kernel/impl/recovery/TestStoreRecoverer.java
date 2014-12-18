@@ -27,6 +27,7 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.store.record.NeoStoreUtil;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
@@ -113,7 +114,7 @@ public class TestStoreRecoverer
         try
         {
             TransactionAppender appender = new PhysicalTransactionAppender( logFile, LogRotation.NO_ROTATION, positionCache,
-                    transactionIdStore, null );
+                    transactionIdStore, null, mock( KernelHealth.class ) );
             appender.append( singleNodeTransaction() );
         }
         finally

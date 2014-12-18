@@ -33,6 +33,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
@@ -99,7 +100,7 @@ public class PhysicalTransactionAppenderTest
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( txId );
         TransactionAppender appender = new PhysicalTransactionAppender( logFile, LogRotation.NO_ROTATION, positionCache,
-                transactionIdStore, BYPASS );
+                transactionIdStore, BYPASS, mock( KernelHealth.class ) );
 
         // WHEN
         PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation(
@@ -139,7 +140,8 @@ public class PhysicalTransactionAppenderTest
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( nextTxId );
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
         TransactionAppender appender = new PhysicalTransactionAppender(
-                logFile, LogRotation.NO_ROTATION, positionCache, transactionIdStore, BYPASS );
+                logFile, LogRotation.NO_ROTATION, positionCache, transactionIdStore, BYPASS,
+                mock( KernelHealth.class ) );
 
         // WHEN
         final byte[] additionalHeader = new byte[]{1, 2, 5};
@@ -184,7 +186,8 @@ public class PhysicalTransactionAppenderTest
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         TransactionAppender appender = new PhysicalTransactionAppender(
-                logFile, LogRotation.NO_ROTATION, positionCache, transactionIdStore, BYPASS );
+                logFile, LogRotation.NO_ROTATION, positionCache, transactionIdStore, BYPASS,
+                mock( KernelHealth.class ) );
 
         // WHEN
         final byte[] additionalHeader = new byte[]{1, 2, 5};
@@ -221,14 +224,16 @@ public class PhysicalTransactionAppenderTest
         long txId = 3;
         String failureMessage = "Forces a failure";
         WritableLogChannel channel = spy( new InMemoryLogChannel() );
-        when( channel.putInt( anyInt() ) ).thenThrow( new IOException( failureMessage ) );
+        IOException failure = new IOException( failureMessage );
+        when( channel.putInt( anyInt() ) ).thenThrow( failure );
         LogFile logFile = mock( LogFile.class );
         when( logFile.getWriter() ).thenReturn( channel );
         TransactionMetadataCache metadataCache = new TransactionMetadataCache( 10, 10 );
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( txId );
+        KernelHealth health = mock( KernelHealth.class );
         TransactionAppender appender = new PhysicalTransactionAppender( logFile, LogRotation.NO_ROTATION,
-                metadataCache, transactionIdStore, BYPASS );
+                metadataCache, transactionIdStore, BYPASS, health );
 
         // WHEN
         TransactionRepresentation transaction = mock( TransactionRepresentation.class );
@@ -243,6 +248,7 @@ public class PhysicalTransactionAppenderTest
             // THEN
             assertTrue( contains( e, failureMessage, IOException.class ) );
             verify( transactionIdStore, times( 1 ) ).nextCommittingTransactionId();
+            verify( health ).panic( failure );
             verifyNoMoreInteractions( transactionIdStore );
         }
     }
@@ -260,7 +266,8 @@ public class PhysicalTransactionAppenderTest
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( 1L, 2L, 3L, 4L, 5L );
         IdOrderingQueue legacyIndexOrdering = new SynchronizedArrayIdOrderingQueue( 5 );
         TransactionAppender appender = new BatchingPhysicalTransactionAppender( logFile, LogRotation.NO_ROTATION,
-                metadataCache, transactionIdStore, legacyIndexOrdering, ATOMIC_LONG, DEFAULT_WAIT_STRATEGY );
+                metadataCache, transactionIdStore, legacyIndexOrdering, ATOMIC_LONG, DEFAULT_WAIT_STRATEGY,
+                mock( KernelHealth.class ) );
 
         // WHEN appending 5 simultaneous transaction, of which 3 has legacy index changes [1*,2,3*,4,5*]
         // LEGEND: * = has legacy index changes
@@ -323,7 +330,7 @@ public class PhysicalTransactionAppenderTest
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( txId );
         TransactionAppender appender = new PhysicalTransactionAppender( logFile, LogRotation.NO_ROTATION,
-                metadataCache, transactionIdStore, BYPASS );
+                metadataCache, transactionIdStore, BYPASS, mock( KernelHealth.class ) );
 
         // WHEN
         TransactionRepresentation transaction = mock( TransactionRepresentation.class );
