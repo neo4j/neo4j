@@ -126,6 +126,11 @@ public class NodeProxy implements Node
         {
             throw new ReadOnlyDbException();
         }
+        catch ( EntityNotFoundException e )
+        {
+            throw new IllegalStateException( "Unable to delete Node[" + nodeId +
+                                             "] since it has already been deleted." );
+        }
     }
 
     @Override

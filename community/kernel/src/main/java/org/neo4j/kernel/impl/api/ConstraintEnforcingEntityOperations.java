@@ -142,7 +142,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
     // Simply delegate the rest of the invocations
 
     @Override
-    public void nodeDelete( KernelStatement state, long nodeId )
+    public void nodeDelete( KernelStatement state, long nodeId ) throws EntityNotFoundException
     {
         entityWriteOperations.nodeDelete( state, nodeId );
     }
@@ -154,7 +154,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
     }
 
     @Override
-    public void relationshipDelete( KernelStatement state, long relationshipId )
+    public void relationshipDelete( KernelStatement state, long relationshipId ) throws EntityNotFoundException
     {
         entityWriteOperations.relationshipDelete( state, relationshipId );
     }

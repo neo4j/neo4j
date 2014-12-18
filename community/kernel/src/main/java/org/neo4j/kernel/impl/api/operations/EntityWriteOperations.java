@@ -33,9 +33,9 @@ public interface EntityWriteOperations
 
     long nodeCreate( KernelStatement statement );
 
-    void nodeDelete( KernelStatement state, long nodeId );
+    void nodeDelete( KernelStatement state, long nodeId ) throws EntityNotFoundException;
 
-    void relationshipDelete( KernelStatement state, long relationshipId );
+    void relationshipDelete( KernelStatement state, long relationshipId ) throws EntityNotFoundException;
 
     /**
      * Labels a node with the label corresponding to the given label id.

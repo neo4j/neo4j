@@ -109,6 +109,11 @@ public class PersistenceCache
         return node;
     }
 
+    public boolean nodeExists( long nodeId )
+    {
+        return nodeCache.get( nodeId ) != null;
+    }
+
     public RelationshipImpl getRelationship( long relationshipId ) throws EntityNotFoundException
     {
         RelationshipImpl relationship = relationshipCache.get( relationshipId );
@@ -117,6 +122,11 @@ public class PersistenceCache
             throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId );
         }
         return relationship;
+    }
+
+    public boolean relationshipExists( long relationshipId )
+    {
+        return relationshipCache.get( relationshipId ) != null;
     }
 
     public void apply( Collection<NodeLabelUpdate> updates )

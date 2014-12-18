@@ -507,7 +507,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public void nodeDelete( long nodeId )
+    public void nodeDelete( long nodeId ) throws EntityNotFoundException
     {
         statement.assertOpen();
         dataWrite().nodeDelete( statement, nodeId );
@@ -522,7 +522,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public void relationshipDelete( long relationshipId )
+    public void relationshipDelete( long relationshipId ) throws EntityNotFoundException
     {
         statement.assertOpen();
         dataWrite().relationshipDelete( statement, relationshipId );

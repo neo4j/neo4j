@@ -31,6 +31,7 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.TxState.IdGeneration;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.api.KernelStatement;
@@ -46,6 +47,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -183,6 +185,82 @@ public class StateHandlingStatementOperationsTest
 
         // then
         assertEquals( asSet( constraint1, constraint2 ), result );
+    }
+
+    @Test
+    public void shouldAskTxStateIfNodeExistsDuringNodeDeletion() throws EntityNotFoundException
+    {
+        // Given
+        long nodeId = 42;
+        TxState txState = mock( TxState.class );
+        KernelStatement statement = mock( KernelStatement.class );
+        when( statement.hasTxStateWithChanges() ).thenReturn( true );
+        when( statement.txState() ).thenReturn( txState );
+        StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
+        when( storeReadLayer.nodeExists( nodeId ) ).thenReturn( true );
+        StateHandlingStatementOperations context = newTxStateOps( storeReadLayer );
+
+        // When
+        context.nodeDelete( statement, nodeId );
+
+        // Then
+        verify( txState ).nodeIsAddedInThisTx( nodeId );
+        verify( txState ).nodeIsDeletedInThisTx( nodeId );
+        verify( storeReadLayer ).nodeExists( nodeId );
+    }
+
+    @Test
+    public void shouldAskTxStateIfRelExistsDuringRelDeletion() throws EntityNotFoundException
+    {
+        // Given
+        long relationshipId = 42;
+        TxState txState = mock( TxState.class );
+        KernelStatement statement = mock( KernelStatement.class );
+        when( statement.hasTxStateWithChanges() ).thenReturn( true );
+        when( statement.txState() ).thenReturn( txState );
+        StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
+        when( storeReadLayer.relationshipExists( relationshipId ) ).thenReturn( true );
+        StateHandlingStatementOperations context = newTxStateOps( storeReadLayer );
+
+        // When
+        context.relationshipDelete( statement, relationshipId );
+
+        // Then
+        verify( txState, atLeastOnce() ).relationshipIsAddedInThisTx( relationshipId );
+        verify( txState ).relationshipIsDeletedInThisTx( relationshipId );
+        verify( storeReadLayer ).relationshipExists( relationshipId );
+    }
+
+    @Test( expected = EntityNotFoundException.class )
+    public void nodeDeletionShouldThrowExceptionWhenNodeWasAlreadyDeletedInSameTx() throws EntityNotFoundException
+    {
+        // Given
+        long nodeId = 42;
+        TxState txState = mock( TxState.class );
+        when( txState.nodeIsDeletedInThisTx( nodeId ) ).thenReturn( true );
+        KernelStatement statement = mock( KernelStatement.class );
+        when( statement.hasTxStateWithChanges() ).thenReturn( true );
+        when( statement.txState() ).thenReturn( txState );
+        StateHandlingStatementOperations context = newTxStateOps( mock( StoreReadLayer.class ) );
+
+        // When
+        context.nodeDelete( statement, nodeId );
+    }
+
+    @Test( expected = EntityNotFoundException.class )
+    public void relDeletionShouldThrowExceptionWhenRelWasAlreadyDeletedInSameTx() throws EntityNotFoundException
+    {
+        // Given
+        long relationshipId = 42;
+        TxState txState = mock( TxState.class );
+        when( txState.relationshipIsDeletedInThisTx( relationshipId ) ).thenReturn( true );
+        KernelStatement statement = mock( KernelStatement.class );
+        when( statement.hasTxStateWithChanges() ).thenReturn( true );
+        when( statement.txState() ).thenReturn( txState );
+        StateHandlingStatementOperations context = newTxStateOps( mock( StoreReadLayer.class ) );
+
+        // When
+        context.relationshipDelete( statement, relationshipId );
     }
 
     private static <T> Answer<Iterator<T>> asAnswer( final Iterable<T> values )

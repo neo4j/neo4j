@@ -33,6 +33,7 @@ import org.neo4j.function.primitive.PrimitiveLongPredicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.ThisShouldNotHappenError;
+import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -100,10 +101,37 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public void nodeDelete( KernelStatement state, long nodeId )
+    public void nodeDelete( KernelStatement state, long nodeId ) throws EntityNotFoundException
     {
+        assertNodeExists( state, nodeId );
         legacyPropertyTrackers.nodeDelete( nodeId );
         state.txState().nodeDoDelete( nodeId );
+    }
+
+    private void assertNodeExists( KernelStatement state, long nodeId ) throws EntityNotFoundException
+    {
+        if ( !nodeExists( state, nodeId ) )
+        {
+            throw new EntityNotFoundException( EntityType.NODE, nodeId );
+        }
+    }
+
+    private boolean nodeExists( KernelStatement state, long nodeId )
+    {
+        if ( state.hasTxStateWithChanges() )
+        {
+            if ( state.txState().nodeIsDeletedInThisTx( nodeId ) )
+            {
+                return false;
+            }
+
+            if ( state.txState().nodeIsAddedInThisTx( nodeId ) )
+            {
+                return true;
+            }
+        }
+
+        return storeLayer.nodeExists( nodeId );
     }
 
     @Override
@@ -115,8 +143,10 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public void relationshipDelete( KernelStatement state, long relationshipId )
+    public void relationshipDelete( KernelStatement state, long relationshipId ) throws EntityNotFoundException
     {
+        assertRelationshipExists( state, relationshipId );
+
         // NOTE: We implicitly delegate to neoStoreTransaction via txState.legacyState here. This is because that
         // call returns modified properties, which node manager uses to update legacy tx state. This will be cleaned up
         // once we've removed legacy tx state.
@@ -145,6 +175,32 @@ public class StateHandlingStatementOperations implements
                 return;
             }
         }
+    }
+
+    private void assertRelationshipExists( KernelStatement state, long relationshipId ) throws EntityNotFoundException
+    {
+        if ( !relationshipExists( state, relationshipId ) )
+        {
+            throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId );
+        }
+    }
+
+    private boolean relationshipExists( KernelStatement state, long relationshipId )
+    {
+        if ( state.hasTxStateWithChanges() )
+        {
+            if ( state.txState().relationshipIsDeletedInThisTx( relationshipId ) )
+            {
+                return false;
+            }
+
+            if ( state.txState().relationshipIsAddedInThisTx( relationshipId ) )
+            {
+                return true;
+            }
+        }
+
+        return storeLayer.relationshipExists( relationshipId );
     }
 
     @Override
