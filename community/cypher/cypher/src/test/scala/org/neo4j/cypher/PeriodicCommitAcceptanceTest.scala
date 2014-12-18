@@ -108,6 +108,18 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
     txCounts should equal(TxCounts(rollbacks = 1))
   }
 
+  test("should not mistakenly use closed statements") {
+    // given
+    val url = createTempCSVFile(20)
+    val queryText = s"USING PERIODIC COMMIT 10 LOAD CSV FROM '$url' AS line CREATE ();"
+
+    // when
+    val (_, txCounts) = executeAndTrackTxCounts(queryText)
+
+    // then
+    txCounts should equal(TxCounts(commits = 2, rollbacks = 0))
+  }
+
   test("should commit first tx and abort second tx when failing on second batch during periodic commit") {
     // given
     val url = createTempCSVFile(20)
