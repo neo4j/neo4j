@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planDescription
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Identifier
+import org.neo4j.cypher.internal.compiler.v2_2.commands.{Equals, GreaterThanOrEqual, Not}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes._
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.graphdb.Direction
@@ -181,6 +183,23 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
         |+----------+---------------+------+--------+-------------+-------------------------------------------------+
         ||     NAME |             1 |   42 |     33 |           n | (source)-[through:SOME|:OTHER|:THING]->(target) |
         |+----------+---------------+------+--------+-------------+-------------------------------------------------+
+        |""".stripMargin)
+  }
+
+  test("show nicer output instead of unnamed identifiers in equals expression") {
+    val arguments = Seq(
+      Rows(42),
+      DbHits(33),
+      LegacyExpression(Not(Equals(Identifier("  UNNAMED123"), Identifier("  UNNAMED321")))))
+
+    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n", "  UNNAMED123", "  UNNAMED2", "  UNNAMED24"))
+    val p = renderDetails(plan)
+    renderDetails(plan) should equal(
+      """+----------+---------------+------+--------+-------------+-----------------------------+
+        || Operator | EstimatedRows | Rows | DbHits | Identifiers |                       Other |
+        |+----------+---------------+------+--------+-------------+-----------------------------+
+        ||     NAME |             1 |   42 |     33 |           n | NOT(anon[123] == anon[321]) |
+        |+----------+---------------+------+--------+-------------+-----------------------------+
         |""".stripMargin)
   }
 }
