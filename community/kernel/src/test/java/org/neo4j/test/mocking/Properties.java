@@ -19,7 +19,6 @@
  */
 package org.neo4j.test.mocking;
 
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.SortedMap;

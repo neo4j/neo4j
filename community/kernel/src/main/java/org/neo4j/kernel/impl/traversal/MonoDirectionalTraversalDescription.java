@@ -119,7 +119,7 @@ public final class MonoDirectionalTraversalDescription implements TraversalDescr
                         statement,
                         uniqueness.create( uniquenessParameter ),
                         expander, branchOrdering, evaluator,
-                        iterableStartNodes, initialState );
+                        iterableStartNodes, initialState, uniqueness );
                 return sorting != null ? new SortingTraverserIterator( statement, sorting, iterator ) : iterator;
             }
         });
