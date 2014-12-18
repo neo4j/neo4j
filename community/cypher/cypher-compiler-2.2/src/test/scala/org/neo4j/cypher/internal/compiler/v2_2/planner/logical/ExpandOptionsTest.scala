@@ -43,11 +43,9 @@ class ExpandOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("match a-[r1]->b") {
     // GIVEN
     val qg = QueryGraph(patternNodes = Set(A, B), patternRelationships = Set(R1))
-    val qgA = QueryGraph(patternNodes = Set(A))
-    val qgB = QueryGraph(patternNodes = Set(B))
     val lpA = newMockedLogicalPlan("a")
     val lpB = newMockedLogicalPlan("b")
-    val cache = Map(qgA -> lpA, qgB -> lpB)
+    val cache = ExhaustivePlanTable(lpA, lpB)
 
     // WHEN
     val solutions = expandOptions(qg, cache)
@@ -62,9 +60,8 @@ class ExpandOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("match a-[r1]->a") {
     // GIVEN
     val qg = QueryGraph(patternNodes = Set(A, A), patternRelationships = Set(R4))
-    val qgA = QueryGraph(patternNodes = Set(A))
     val lpA = newMockedLogicalPlan("a")
-    val cache = Map(qgA -> lpA)
+    val cache = ExhaustivePlanTable(lpA)
 
     // WHEN
     val solutions = expandOptions(qg, cache)
@@ -78,11 +75,9 @@ class ExpandOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("match a-[r1]->b-[r2]->c") {
     // GIVEN
     val qg = QueryGraph(patternNodes = Set(A, B, C), patternRelationships = Set(R1, R2))
-    val qgR1 = QueryGraph(patternNodes = Set(A, B), patternRelationships = Set(R1))
-    val qgR2 = QueryGraph(patternNodes = Set(B, C), patternRelationships = Set(R2))
-    val lpR1 = newMockedLogicalPlan("a", "r1", "b")
-    val lpR2 = newMockedLogicalPlan("b", "r2", "c")
-    val cache = Map(qgR1 -> lpR1, qgR2 -> lpR2)
+    val lpR1 = newMockedLogicalPlanWithPatterns(Set("a", "b"), Seq(R1))
+    val lpR2 = newMockedLogicalPlanWithPatterns(Set("b", "c"), Seq(R2))
+    val cache = ExhaustivePlanTable(lpR1, lpR2)
 
     // WHEN
     val solutions = expandOptions(qg, cache)

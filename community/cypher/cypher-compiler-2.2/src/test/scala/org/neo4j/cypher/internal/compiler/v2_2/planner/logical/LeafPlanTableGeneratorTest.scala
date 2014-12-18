@@ -39,7 +39,7 @@ class LeafPlanTableGeneratorTest extends CypherFunSuite with LogicalPlanningTest
         val result = solver.apply(qg, None)
 
         // then
-        result should equal(PlanTable(AllNodesScan("n", Set.empty)(solved)))
+        result should equal(planTableWith(AllNodesScan("n", Set.empty)(solved)))
       }
     }
   }
@@ -64,7 +64,7 @@ class LeafPlanTableGeneratorTest extends CypherFunSuite with LogicalPlanningTest
         val result = solver.apply(qg, None)
 
         // then
-        result should equal(PlanTable(
+        result should equal(planTableWith(
           NodeByLabelScan("a", LazyLabel(label), Set.empty)(solvedA),
           AllNodesScan("b", Set.empty)(solvedB)
         ))
@@ -99,7 +99,7 @@ class LeafPlanTableGeneratorTest extends CypherFunSuite with LogicalPlanningTest
         val result = solver.apply(qg, None)
 
         // then
-        result should equal(PlanTable(
+        result should equal(planTableWith(
           Selection(Seq(hasLabels1), NodeByLabelScan("a", LazyLabel(label2), Set.empty)(solvedA))(solvedAWithLabels1),
           AllNodesScan("b", Set.empty)(solvedB)
         ))

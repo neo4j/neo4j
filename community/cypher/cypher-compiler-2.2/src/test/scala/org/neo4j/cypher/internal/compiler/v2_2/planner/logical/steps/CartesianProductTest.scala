@@ -24,10 +24,10 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.HardcodedGraphStatistics
 import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Cost
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityInput
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{CartesianProduct, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cost, PlanTable}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport, QueryGraph}
 
 class CartesianProductTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -65,7 +65,7 @@ class CartesianProductTest extends CypherFunSuite with LogicalPlanningTestSuppor
       metrics = factory.newMetrics(HardcodedGraphStatistics, newMockedSemanticTable)
     )
 
-    val table = PlanTable(plans.map(p => p.solved.lastQueryGraph -> p).toMap)
+    val table = planTableWith(plans:_*)
 
     (table, context)
   }

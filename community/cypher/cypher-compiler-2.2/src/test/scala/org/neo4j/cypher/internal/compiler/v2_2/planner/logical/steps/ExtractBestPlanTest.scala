@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
-import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.PlanTable
-import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
+import org.neo4j.graphdb.Direction
 
 class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -40,7 +39,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
     implicit val logicalPlanContext = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext)
     val plan = newMockedLogicalPlan("b")
-    val planTable = PlanTable(plan)
+    val planTable = planTableWith(plan)
 
     evaluating {
       verifyBestPlan(planTable.uniquePlan, query)
@@ -59,7 +58,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
       planContext= newMockedPlanContext
     )
     val plan = newMockedLogicalPlan("b")
-    val planTable = PlanTable(plan)
+    val planTable = planTableWith(plan)
 
     evaluating {
       verifyBestPlan(planTable.uniquePlan, query)

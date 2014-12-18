@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 
-class PlanTableTest extends CypherFunSuite with LogicalPlanningTestSupport {
+class GreedyPlanTableTest extends CypherFunSuite with LogicalPlanningTestSupport {
   implicit val planContext = newMockedPlanContext
   implicit val context = newMockedLogicalPlanningContext(planContext)
 
@@ -33,35 +33,35 @@ class PlanTableTest extends CypherFunSuite with LogicalPlanningTestSupport {
   val xAndY = newMockedLogicalPlan("x", "y")
 
   test("adding a new plan to an empty PlanTable returns a PlanTable with that plan in it") {
-    val plans = PlanTable()
+    val plans = GreedyPlanTable()
     val newPlans = plans + x
 
-    newPlans should equal(PlanTable(Map(x.asTableEntry)))
+    newPlans should equal(GreedyPlanTable(x))
   }
 
   test("adding a new plan that does not cover anything else simply adds the plan") {
-    val plans = PlanTable(Map(x.asTableEntry))
+    val plans = GreedyPlanTable(x)
     val newPlans = plans + y
 
-    newPlans should equal(PlanTable(Map(x.asTableEntry, y.asTableEntry)))
+    newPlans should equal(GreedyPlanTable(x, y))
   }
 
   test("adding a plan that covers one other plan will remove that plan") {
-    val plans = PlanTable(Map(x.asTableEntry))
+    val plans = GreedyPlanTable(x)
     val newPlans = plans + xAndY
 
-    newPlans should equal(PlanTable(Map(xAndY.asTableEntry)))
+    newPlans should equal(GreedyPlanTable(xAndY))
   }
 
   test("adding a plan that is already covered by an existing plan results in no change") {
-    val originalPlans = PlanTable(Map(xAndY.asTableEntry))
+    val originalPlans = GreedyPlanTable(xAndY)
     val newPlans = originalPlans + x
 
     newPlans should equal(originalPlans)
   }
 
   test("adding a plan with the same ids covered does not replace it") {
-    val originalPlans = PlanTable(Map(x.asTableEntry))
+    val originalPlans = GreedyPlanTable(x)
     val newPlans = originalPlans + x2
 
     newPlans should equal(originalPlans)

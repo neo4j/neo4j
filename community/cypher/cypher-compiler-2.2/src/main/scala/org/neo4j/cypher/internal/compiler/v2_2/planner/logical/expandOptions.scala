@@ -28,29 +28,28 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlan
 
 case object expandOptions extends PlanProducer with CollectionSupport {
 
-  def apply(qg: QueryGraph, cache: collection.Map[QueryGraph, LogicalPlan]): Seq[LogicalPlan] = {
-    val allSubQueriesOnRelSmaller = qg.combinations(qg.size - 1)
-
-    def createLogicalPlan(subQG: QueryGraph, to: IdName, from: IdName, r: PatternRelationship, dir: Direction): Expand = {
-      val overlapping = subQG.patternNodes.contains(to)
-      val mode = if (overlapping) ExpandInto else ExpandAll
-
-      planSimpleExpand(cache(subQG), from, dir, to, r, mode)
-    }
-
-    allSubQueriesOnRelSmaller.map {
+  def apply(qg: QueryGraph, cache: PlanTable): Seq[LogicalPlan] = {
+    qg.combinations(qg.size - 1).map {
       subQG =>
         val missingRel = (qg.patternRelationships -- subQG.patternRelationships).head
         val startsFromSubQG = subQG.patternNodes.contains(missingRel.nodes._1)
         if (startsFromSubQG) {
           val from = missingRel.nodes._1
           val to = missingRel.nodes._2
-          createLogicalPlan(subQG, to, from, missingRel, missingRel.dir)
+          createLogicalPlan(cache, subQG, to, from, missingRel, missingRel.dir)
         } else {
           val from = missingRel.nodes._2
           val to = missingRel.nodes._1
-          createLogicalPlan(subQG, to, from, missingRel, missingRel.dir.reverse())
+          createLogicalPlan(cache, subQG, to, from, missingRel, missingRel.dir.reverse())
         }
     }
+  }
+
+  private def createLogicalPlan(cache: PlanTable, subQG: QueryGraph,
+                                to: IdName, from: IdName, r: PatternRelationship, dir: Direction): Expand = {
+    val overlapping = subQG.patternNodes.contains(to)
+    val mode = if (overlapping) ExpandInto else ExpandAll
+
+    planSimpleExpand(cache(subQG), from, dir, to, r, mode)
   }
 }

@@ -28,6 +28,7 @@ trait PlanningStrategy {
 }
 
 trait QueryGraphSolver {
+  def emptyPlanTable: PlanTable
   def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan
 }
 
