@@ -42,8 +42,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings
 final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
                                          var tx: Transaction,
                                          val isTopLevelTx: Boolean,
-                                         var statement: Statement)
-  extends TransactionBoundTokenContext(statement) with QueryContext {
+                                         initialStatement: Statement)
+  extends TransactionBoundTokenContext(initialStatement) with QueryContext {
 
   private var open = true
   private val txBridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
@@ -279,6 +279,6 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     tx.close()
 
     tx = graph.beginTx()
-    statement = txBridge.instance()
+    setStatement(txBridge.instance())
   }
 }
