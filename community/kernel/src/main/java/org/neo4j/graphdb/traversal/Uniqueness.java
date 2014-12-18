@@ -29,24 +29,34 @@ public enum Uniqueness implements UniquenessFactory
      * traversal framework does.
      */
     NODE_GLOBAL
-            {
-                public UniquenessFilter create( Object optionalParameter )
-                {
-                    acceptNull( optionalParameter );
-                    return new GloballyUnique( PrimitiveTypeFetcher.NODE );
-                }
-            },
+    {
+        public UniquenessFilter create( Object optionalParameter )
+        {
+            acceptNull( optionalParameter );
+            return new GloballyUnique( PrimitiveTypeFetcher.NODE );
+        }
+
+        public boolean eagerStartBranches()
+        {
+            return true;
+        }
+    },
     /**
      * For each returned node there's a unique path from the start node to it.
      */
     NODE_PATH
-            {
-                public UniquenessFilter create( Object optionalParameter )
-                {
-                    acceptNull( optionalParameter );
-                    return new PathUnique( PrimitiveTypeFetcher.NODE );
-                }
-            },
+    {
+        public UniquenessFilter create( Object optionalParameter )
+        {
+            acceptNull( optionalParameter );
+            return new PathUnique( PrimitiveTypeFetcher.NODE );
+        }
+
+        public boolean eagerStartBranches()
+        {
+            return true;
+        }
+    },
     /**
      * This is like {@link Uniqueness#NODE_GLOBAL}, but only guarantees
      * uniqueness among the most recent visited nodes, with a configurable
@@ -58,84 +68,119 @@ public enum Uniqueness implements UniquenessFactory
      * visited more than once, but scales infinitely.
      */
     NODE_RECENT
-            {
-                public UniquenessFilter create( Object optionalParameter )
-                {
-                    acceptIntegerOrNull( optionalParameter );
-                    return new RecentlyUnique( PrimitiveTypeFetcher.NODE, optionalParameter );
-                }
-            },
+    {
+        public UniquenessFilter create( Object optionalParameter )
+        {
+            acceptIntegerOrNull( optionalParameter );
+            return new RecentlyUnique( PrimitiveTypeFetcher.NODE, optionalParameter );
+        }
+
+        public boolean eagerStartBranches()
+        {
+            return true;
+        }
+    },
     /**
      * Entities on the same level are guaranteed to be unique.
      */
     NODE_LEVEL
-            {
-                @Override
-                public UniquenessFilter create( Object optionalParameter )
-                {
-                    acceptNull( optionalParameter );
-                    return new LevelUnique( PrimitiveTypeFetcher.NODE );
-                }
-            },
+    {
+        @Override
+        public UniquenessFilter create( Object optionalParameter )
+        {
+            acceptNull( optionalParameter );
+            return new LevelUnique( PrimitiveTypeFetcher.NODE );
+        }
+
+        public boolean eagerStartBranches()
+        {
+            return true;
+        }
+    },
 
     /**
      * A relationship cannot be traversed more than once, whereas nodes can.
      */
     RELATIONSHIP_GLOBAL
-            {
-                public UniquenessFilter create( Object optionalParameter )
-                {
-                    acceptNull( optionalParameter );
-                    return new GloballyUnique( PrimitiveTypeFetcher.RELATIONSHIP );
-                }
-            },
+    {
+        public UniquenessFilter create( Object optionalParameter )
+        {
+            acceptNull( optionalParameter );
+            return new GloballyUnique( PrimitiveTypeFetcher.RELATIONSHIP );
+        }
+
+        public boolean eagerStartBranches()
+        {
+            return true;
+        }
+    },
     /**
      * For each returned node there's a (relationship wise) unique path from the
      * start node to it.
      */
     RELATIONSHIP_PATH
-            {
-                public UniquenessFilter create( Object optionalParameter )
-                {
-                    acceptNull( optionalParameter );
-                    return new PathUnique( PrimitiveTypeFetcher.RELATIONSHIP );
-                }
-            },
+    {
+        public UniquenessFilter create( Object optionalParameter )
+        {
+            acceptNull( optionalParameter );
+            return new PathUnique( PrimitiveTypeFetcher.RELATIONSHIP );
+        }
+
+        public boolean eagerStartBranches()
+        {
+            return false;
+        }
+    },
     /**
      * Same as for {@link Uniqueness#NODE_RECENT}, but for relationships.
      */
     RELATIONSHIP_RECENT
-            {
-                public UniquenessFilter create( Object optionalParameter )
-                {
-                    acceptIntegerOrNull( optionalParameter );
-                    return new RecentlyUnique( PrimitiveTypeFetcher.RELATIONSHIP, optionalParameter );
-                }
-            },
+    {
+        public UniquenessFilter create( Object optionalParameter )
+        {
+            acceptIntegerOrNull( optionalParameter );
+            return new RecentlyUnique( PrimitiveTypeFetcher.RELATIONSHIP, optionalParameter );
+        }
+
+        public boolean eagerStartBranches()
+        {
+            return true;
+        }
+    },
     /**
      * Entities on the same level are guaranteed to be unique.
      */
     RELATIONSHIP_LEVEL
-            {
-                @Override
-                public UniquenessFilter create( Object optionalParameter )
-                {
-                    acceptNull( optionalParameter );
-                    return new LevelUnique( PrimitiveTypeFetcher.RELATIONSHIP );
-                }
-            },
+    {
+        @Override
+        public UniquenessFilter create( Object optionalParameter )
+        {
+            acceptNull( optionalParameter );
+            return new LevelUnique( PrimitiveTypeFetcher.RELATIONSHIP );
+        }
+
+        public boolean eagerStartBranches()
+        {
+            return true;
+        }
+    },
 
     /**
      * No restriction (the user will have to manage it).
      */
     NONE
-            {
-                public UniquenessFilter create( Object optionalParameter )
-                {
-                    acceptNull( optionalParameter );
-                    return notUniqueInstance;
-                }
-            };
+    {
+        public UniquenessFilter create( Object optionalParameter )
+        {
+            acceptNull( optionalParameter );
+            return notUniqueInstance;
+        }
+
+        public boolean eagerStartBranches()
+        {
+            return true;
+        }
+    };
 
     private static final UniquenessFilter notUniqueInstance = new NotUnique();
 

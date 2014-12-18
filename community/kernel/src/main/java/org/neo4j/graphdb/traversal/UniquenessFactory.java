@@ -37,4 +37,13 @@ public interface UniquenessFactory
      * @return a new {@link UniquenessFilter} of the type that this factory creates.
      */
     UniquenessFilter create( Object optionalParameter );
+
+    /**
+     * Specifies if the {@link UniquenessFilter} must handle start branches eagerly. Depending on the
+     * level of {@link org.neo4j.kernel.Uniqueness} it is not always necessary to eagerly exhaust start
+     * branches which can speed up the execution of the traversal.
+     *
+     * @return <tt>true</tt> if eager start branches must be used, otherwise <tt>false</tt>.
+     */
+    boolean eagerStartBranches();
 }
