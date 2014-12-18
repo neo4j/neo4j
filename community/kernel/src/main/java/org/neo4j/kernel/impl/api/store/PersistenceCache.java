@@ -186,7 +186,7 @@ public class PersistenceCache
 
             @Override
             public void visitNodePropertyChanges( long id, Iterator<DefinedProperty> added,
-                    Iterator<DefinedProperty> changed, Iterator<Integer> removed )
+                                                  Iterator<DefinedProperty> changed, Iterator<Integer> removed )
             {
                 NodeImpl node = nodeCache.getIfCached( id );
                 if ( node != null )
@@ -197,7 +197,8 @@ public class PersistenceCache
 
             @Override
             public void visitNodeRelationshipChanges( long id,
-                    RelationshipChangesForNode added, RelationshipChangesForNode removed )
+                                                      RelationshipChangesForNode added,
+                                                      RelationshipChangesForNode removed )
             {
                 NodeImpl node = nodeCache.getIfCached( id );
                 if ( node != null )
@@ -215,7 +216,7 @@ public class PersistenceCache
 
             @Override
             public void visitRelPropertyChanges( long id, Iterator<DefinedProperty> added,
-                    Iterator<DefinedProperty> changed, Iterator<Integer> removed )
+                                                 Iterator<DefinedProperty> changed, Iterator<Integer> removed )
             {
                 RelationshipImpl relationship = relationshipCache.getIfCached( id );
                 if ( relationship != null )
@@ -226,7 +227,7 @@ public class PersistenceCache
 
             @Override
             public void visitGraphPropertyChanges( Iterator<DefinedProperty> added,
-                    Iterator<DefinedProperty> changed, Iterator<Integer> removed )
+                                                   Iterator<DefinedProperty> changed, Iterator<Integer> removed )
             {
                 graphProperties.commitPropertyMaps( translateAddedAndChangedProperties( added, changed ), removed );
             }
@@ -248,7 +249,7 @@ public class PersistenceCache
             }
 
             private void translateProperties( Iterator<DefinedProperty> properties,
-                    PrimitiveIntObjectMap<DefinedProperty> result )
+                                              PrimitiveIntObjectMap<DefinedProperty> result )
             {
                 if ( properties != null )
                 {
@@ -275,7 +276,7 @@ public class PersistenceCache
                     int type = types.next();
                     Iterator<Long> loopsChanges = added.loopsChanges( type );
                     RelIdArray ids = loopsChanges == null ? new RelIdArray( type ) :
-                        new RelIdArrayWithLoops( type );
+                                     new RelIdArrayWithLoops( type );
                     addIds( ids, added.outgoingChanges( type ), DirectionWrapper.OUTGOING );
                     addIds( ids, added.incomingChanges( type ), DirectionWrapper.INCOMING );
                     addIds( ids, loopsChanges, DirectionWrapper.BOTH );

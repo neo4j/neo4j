@@ -30,6 +30,8 @@ import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
@@ -83,6 +85,68 @@ public class NodeProxyTest
         catch ( NotFoundException exception )
         {
             assertThat( exception.getMessage(), containsString( PROPERTY_KEY ) );
+        }
+    }
+
+    @Test( expected = NotFoundException.class )
+    public void deletionOfSameNodeTwiceInOneTransactionShouldNotRollbackIt()
+    {
+        // Given
+        Node node;
+        try ( Transaction tx = db.beginTx() )
+        {
+            node = db.createNode();
+            tx.success();
+        }
+
+        // When
+        Exception exceptionThrownBySecondDelete = null;
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            node.delete();
+            try
+            {
+                node.delete();
+            }
+            catch ( Exception e )
+            {
+                exceptionThrownBySecondDelete = e;
+            }
+            tx.success();
+        }
+
+        // Then
+        assertThat( exceptionThrownBySecondDelete, instanceOf( IllegalStateException.class ) );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.getNodeById( node.getId() ); // should throw NotFoundException
+            tx.success();
+        }
+    }
+
+    @Test( expected = IllegalStateException.class )
+    public void deletionOfAlreadyDeletedNodeShouldThrow()
+    {
+        // Given
+        Node node;
+        try ( Transaction tx = db.beginTx() )
+        {
+            node = db.createNode();
+            tx.success();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            node.delete();
+            tx.success();
+        }
+
+        // When
+        try ( Transaction tx = db.beginTx() )
+        {
+            node.delete(); // should throw IllegalStateException as this node is already deleted
+            tx.success();
         }
     }
 

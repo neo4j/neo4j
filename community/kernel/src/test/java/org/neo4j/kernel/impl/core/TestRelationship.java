@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
-
-import org.junit.Test;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -39,9 +39,9 @@ import org.neo4j.kernel.impl.MyRelTypes;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
@@ -943,5 +943,70 @@ public class TestRelationship extends AbstractNeo4jTestCase
 
         // THEN
         assertEquals( two, one );
+    }
+
+    @Test( expected = NotFoundException.class )
+    public void deletionOfSameRelationshipTwiceInOneTransactionShouldNotRollbackIt()
+    {
+        // Given
+        GraphDatabaseService db = getGraphDb();
+
+        // transaction is opened by test
+        Node node1 = db.createNode();
+        Node node2 = db.createNode();
+        Relationship relationship = node1.createRelationshipTo( node2, TEST );
+        commit();
+
+        // When
+        Exception exceptionThrownBySecondDelete = null;
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            relationship.delete();
+            try
+            {
+                relationship.delete();
+            }
+            catch ( IllegalStateException e )
+            {
+                exceptionThrownBySecondDelete = e;
+            }
+            tx.success();
+        }
+
+        // Then
+        assertNotNull( exceptionThrownBySecondDelete );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.getRelationshipById( relationship.getId() ); // should throw NotFoundException
+            tx.success();
+        }
+    }
+
+    @Test( expected = IllegalStateException.class )
+    public void deletionOfAlreadyDeletedRelationshipShouldThrow()
+    {
+        // Given
+        GraphDatabaseService db = getGraphDb();
+
+        // transaction is opened by test
+        Node node1 = db.createNode();
+        Node node2 = db.createNode();
+        Relationship relationship = node1.createRelationshipTo( node2, TEST );
+        commit();
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            relationship.delete();
+            tx.success();
+        }
+
+        // When
+        try ( Transaction tx = db.beginTx() )
+        {
+            relationship.delete(); // should throw IllegalStateException as this relationship is already deleted
+            tx.success();
+        }
     }
 }

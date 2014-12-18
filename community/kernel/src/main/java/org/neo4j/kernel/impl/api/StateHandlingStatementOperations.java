@@ -151,10 +151,7 @@ public class StateHandlingStatementOperations implements
     @Override
     public void relationshipDelete( final KernelStatement state, long relationshipId ) throws EntityNotFoundException
     {
-        if ( !relationshipExists( state, relationshipId ) )
-        {
-            throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId );
-        }
+        assertRelationshipExists( state, relationshipId );
 
         // NOTE: We implicitly delegate to neoStoreTransaction via txState.legacyState here. This is because that
         // call returns modified properties, which node manager uses to update legacy tx state. This will be cleaned up
@@ -183,6 +180,14 @@ public class StateHandlingStatementOperations implements
                 // If it doesn't exist, it doesn't exist, and the user got what she wanted.
                 return;
             }
+        }
+    }
+
+    private void assertRelationshipExists( KernelStatement state, long relationshipId ) throws EntityNotFoundException
+    {
+        if ( !relationshipExists( state, relationshipId ) )
+        {
+            throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId );
         }
     }
 
