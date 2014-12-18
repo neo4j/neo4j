@@ -79,9 +79,9 @@ class BidirectionalTraverserIterator extends AbstractTraverserIterator
         // Solved this way for now, to have it return the start side to begin with.
         this.selector = alwaysOutgoingSide();
         BranchSelector startSelector = start.branchOrdering.create(
-                new AsOneStartBranch( this, startNodes, start.initialState ), start.expander );
+                new AsOneStartBranch( this, startNodes, start.initialState, start.uniqueness ), start.expander );
         BranchSelector endSelector = end.branchOrdering.create(
-                new AsOneStartBranch( this, endNodes, end.initialState ), end.expander );
+                new AsOneStartBranch( this, endNodes, end.initialState, start.uniqueness ), end.expander );
 
         this.selector = description.sideSelector.create( startSelector, endSelector, description.maxDepth );
         this.collisionDetector = description.collisionPolicy.create( description.collisionEvaluator );
