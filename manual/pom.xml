@@ -571,6 +571,8 @@
               <gzip src="${project.build.directory}/docbkx/manpages/man1/neo4j-installer.1" destfile="${project.build.directory}/manpages/neo4j-installer.1.gz"/>
               <gzip src="${project.build.directory}/docbkx/manpages/man1/neo4j-backup.1" destfile="${project.build.directory}/manpages/neo4j-backup.1.gz"/>
               <gzip src="${project.build.directory}/docbkx/manpages/man1/neo4j-arbiter.1" destfile="${project.build.directory}/manpages/neo4j-arbiter.1.gz"/>
+              <gzip src="${project.build.directory}/docbkx/manpages/man1/neo4j-coordinator.1" destfile="${project.build.directory}/manpages/neo4j-coordinator.1.gz"/>
+              <gzip src="${project.build.directory}/docbkx/manpages/man1/neo4j-coordinator-shell.1" destfile="${project.build.directory}/manpages/neo4j-coordinator-shell.1.gz"/>
               <gzip src="${project.build.directory}/docbkx/manpages/man1/neo4j-import.1" destfile="${project.build.directory}/manpages/neo4j-import.1.gz"/>
             </postProcess>
             </configuration>
@@ -907,3 +909,4 @@
 		</repository>
 	</repositories>
 </project>
+
