@@ -116,12 +116,7 @@ public class KernelStatement implements TxState.Holder, Statement
         if ( !closed && release() )
         {
             closed = true;
-            indexReaderFactory.close();
-            if ( null != labelScanReader )
-            {
-                labelScanReader.close();
-            }
-            transaction.releaseStatement( this );
+            cleanupResources();
         }
     }
 
@@ -164,12 +159,31 @@ public class KernelStatement implements TxState.Holder, Statement
 
     private boolean release()
     {
-        return --referenceCount == 0;
+        referenceCount--;
+
+        return (referenceCount == 0);
     }
 
     final void forceClose()
     {
-        referenceCount = 0;
-        close();
+        if ( !closed )
+        {
+            closed = true;
+            referenceCount = 0;
+
+            cleanupResources();
+        }
+    }
+
+    private void cleanupResources()
+    {
+        indexReaderFactory.close();
+
+        if ( null != labelScanReader )
+        {
+            labelScanReader.close();
+        }
+
+        transaction.releaseStatement( this );
     }
 }
