@@ -38,10 +38,7 @@
         <include>neo4j-import.*</include>
         <include>neo4j-backup.*</include>
         <include>neo4j-arbiter.*</include>
-        <include>neo4j-coordinator.*</include>
-        <include>neo4j-coordinator-shell.*</include>
       </includes>
     </fileSet>
   </fileSets>
 </assembly>
-
