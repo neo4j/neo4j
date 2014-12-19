@@ -7,13 +7,14 @@
 //
 //## Gray and brand colors for use across Bootstrap.
 
-@gray-darker:            lighten(#000, 13.5%); // #222
-@gray-dark:              lighten(#000, 20%);   // #333
-@gray:                   lighten(#000, 33.5%); // #555
-@gray-light:             lighten(#000, 60%);   // #999
-@gray-lighter:           lighten(#000, 93.5%); // #eee
+@gray-base:              #000;
+@gray-darker:            lighten(@gray-base, 13.5%); // #222
+@gray-dark:              lighten(@gray-base, 20%);   // #333
+@gray:                   lighten(@gray-base, 33.5%); // #555
+@gray-light:             lighten(@gray-base, 46.7%); // #777
+@gray-lighter:           lighten(@gray-base, 93.5%); // #eee
 
-@brand-primary:         #428bca;
+@brand-primary:         darken(#428bca, 6.5%);
 @brand-success:         #5cb85c;
 @brand-info:            #5bc0de;
 @brand-warning:         #f0ad4e;
@@ -22,7 +23,7 @@
 
 //== Scaffolding
 //
-// ## Settings for some of the most global styles.
+//## Settings for some of the most global styles.
 
 //** Background color for `<body>`.
 @body-bg:               #fff;
@@ -33,6 +34,8 @@
 @link-color:            @brand-primary;
 //** Link hover color set via `darken()` function.
 @link-hover-color:      darken(@link-color, 15%);
+//** Link hover decoration.
+@link-hover-decoration: underline;
 
 
 //== Typography
@@ -68,13 +71,17 @@
 @headings-color:          inherit;
 
 
-//-- Iconography
+//== Iconography
 //
-//## Specify custom locations of the include Glyphicons icon font. Useful for those including Bootstrap via Bower.
+//## Specify custom location and filename of the included Glyphicons icon font. Useful for those including Bootstrap via Bower.
 
+//** Load fonts from this directory.
 @icon-font-path:          "../fonts/";
+//** File name for all font files.
 @icon-font-name:          "glyphicons-halflings-regular";
+//** Element ID within SVG icon file.
 @icon-font-svg-id:        "glyphicons_halflingsregular";
+
 
 //== Components
 //
@@ -177,13 +184,20 @@
 @input-color:                    @gray;
 //** `<input>` border color
 @input-border:                   #ccc;
-//** `<input>` border radius
+
+// TODO: Rename `@input-border-radius` to `@input-border-radius-base` in v4
+//** Default `.form-control` border radius
 @input-border-radius:            @border-radius-base;
+//** Large `.form-control` border radius
+@input-border-radius-large:      @border-radius-large;
+//** Small `.form-control` border radius
+@input-border-radius-small:      @border-radius-small;
+
 //** Border color for inputs on focus
 @input-border-focus:             #66afe9;
 
 //** Placeholder text color
-@input-color-placeholder:        @gray-light;
+@input-color-placeholder:        #999;
 
 //** Default `.form-control` height
 @input-height-base:              (@line-height-computed + (@padding-base-vertical * 2) + 2);
@@ -199,6 +213,9 @@
 @input-group-addon-bg:           @gray-lighter;
 //** Border color for textual input addons
 @input-group-addon-border-color: @input-border;
+
+//** Disabled cursor for form controls and buttons.
+@cursor-disabled:                not-allowed;
 
 
 //== Dropdowns
@@ -232,7 +249,7 @@
 //** Text color for headers within dropdown menus.
 @dropdown-header-color:          @gray-light;
 
-// Note: Deprecated @dropdown-caret-color as of v3.1.0
+//** Deprecated `@dropdown-caret-color` as of v3.1.0
 @dropdown-caret-color:           #000;
 
 
@@ -245,11 +262,10 @@
 
 @zindex-navbar:            1000;
 @zindex-dropdown:          1000;
-@zindex-popover:           1010;
-@zindex-tooltip:           1030;
+@zindex-popover:           1060;
+@zindex-tooltip:           1070;
 @zindex-navbar-fixed:      1030;
-@zindex-modal-background:  1040;
-@zindex-modal:             1050;
+@zindex-modal:             1040;
 
 
 //== Media queries breakpoints
@@ -257,27 +273,32 @@
 //## Define the breakpoints at which your layout will change, adapting to different screen sizes.
 
 // Extra small screen / phone
-// Note: Deprecated @screen-xs and @screen-phone as of v3.0.1
+//** Deprecated `@screen-xs` as of v3.0.1
 @screen-xs:                  480px;
+//** Deprecated `@screen-xs-min` as of v3.2.0
 @screen-xs-min:              @screen-xs;
+//** Deprecated `@screen-phone` as of v3.0.1
 @screen-phone:               @screen-xs-min;
 
 // Small screen / tablet
-// Note: Deprecated @screen-sm and @screen-tablet as of v3.0.1
+//** Deprecated `@screen-sm` as of v3.0.1
 @screen-sm:                  768px;
 @screen-sm-min:              @screen-sm;
+//** Deprecated `@screen-tablet` as of v3.0.1
 @screen-tablet:              @screen-sm-min;
 
 // Medium screen / desktop
-// Note: Deprecated @screen-md and @screen-desktop as of v3.0.1
+//** Deprecated `@screen-md` as of v3.0.1
 @screen-md:                  992px;
 @screen-md-min:              @screen-md;
+//** Deprecated `@screen-desktop` as of v3.0.1
 @screen-desktop:             @screen-md-min;
 
 // Large screen / wide desktop
-// Note: Deprecated @screen-lg and @screen-lg-desktop as of v3.0.1
+//** Deprecated `@screen-lg` as of v3.0.1
 @screen-lg:                  1200px;
 @screen-lg-min:              @screen-lg;
+//** Deprecated `@screen-lg-desktop` as of v3.0.1
 @screen-lg-desktop:          @screen-lg-min;
 
 // So media queries don't overlap when required, provide a maximum
@@ -306,17 +327,17 @@
 //## Define the maximum width of `.container` for different screen sizes.
 
 // Small screen / tablet
-@container-tablet:             ((720px + @grid-gutter-width));
+@container-tablet:             (720px + @grid-gutter-width);
 //** For `@screen-sm-min` and up.
 @container-sm:                 @container-tablet;
 
 // Medium screen / desktop
-@container-desktop:            ((940px + @grid-gutter-width));
+@container-desktop:            (940px + @grid-gutter-width);
 //** For `@screen-md-min` and up.
 @container-md:                 @container-desktop;
 
 // Large screen / wide desktop
-@container-large-desktop:      ((1140px + @grid-gutter-width));
+@container-large-desktop:      (1140px + @grid-gutter-width);
 //** For `@screen-lg-min` and up.
 @container-lg:                 @container-large-desktop;
 
@@ -359,12 +380,12 @@
 
 // Inverted navbar
 // Reset inverted navbar basics
-@navbar-inverse-color:                      @gray-light;
+@navbar-inverse-color:                      lighten(@gray-light, 15%);
 @navbar-inverse-bg:                         #222;
 @navbar-inverse-border:                     darken(@navbar-inverse-bg, 10%);
 
 // Inverted navbar links
-@navbar-inverse-link-color:                 @gray-light;
+@navbar-inverse-link-color:                 lighten(@gray-light, 15%);
 @navbar-inverse-link-hover-color:           #fff;
 @navbar-inverse-link-hover-bg:              transparent;
 @navbar-inverse-link-active-color:          @navbar-inverse-link-hover-color;
@@ -393,8 +414,6 @@
 
 @nav-disabled-link-color:                   @gray-light;
 @nav-disabled-link-hover-color:             @gray-light;
-
-@nav-open-link-hover-color:                 #fff;
 
 //== Tabs
 @nav-tabs-border-color:                     #ddd;
@@ -520,7 +539,7 @@
 //** Popover arrow width
 @popover-arrow-width:                 10px;
 //** Popover arrow color
-@popover-arrow-color:                 #fff;
+@popover-arrow-color:                 @popover-bg;
 
 //** Popover outer arrow width
 @popover-arrow-outer-width:           (@popover-arrow-width + 1);
@@ -558,7 +577,7 @@
 //##
 
 //** Padding applied to the modal body
-@modal-inner-padding:         20px;
+@modal-inner-padding:         15px;
 
 //** Padding applied to the modal title
 @modal-title-padding:         15px;
@@ -619,6 +638,8 @@
 @progress-bg:                 #f5f5f5;
 //** Progress bar text color
 @progress-bar-color:          #fff;
+//** Variable for setting rounded corners on progress bar.
+@progress-border-radius:      @border-radius-base;
 
 //** Default progress bar color
 @progress-bar-bg:             @brand-primary;
@@ -643,17 +664,26 @@
 //** List group border radius
 @list-group-border-radius:      @border-radius-base;
 
-//** Background color of single list elements on hover
+//** Background color of single list items on hover
 @list-group-hover-bg:           #f5f5f5;
-//** Text color of active list elements
+//** Text color of active list items
 @list-group-active-color:       @component-active-color;
-//** Background color of active list elements
+//** Background color of active list items
 @list-group-active-bg:          @component-active-bg;
 //** Border color of active list elements
 @list-group-active-border:      @list-group-active-bg;
+//** Text color for content within active list items
 @list-group-active-text-color:  lighten(@list-group-active-bg, 40%);
 
+//** Text color of disabled list items
+@list-group-disabled-color:      @gray-light;
+//** Background color of disabled list items
+@list-group-disabled-bg:         @gray-lighter;
+//** Text color for content within disabled list items
+@list-group-disabled-text-color: @list-group-disabled-color;
+
 @list-group-link-color:         #555;
+@list-group-link-hover-color:   @list-group-link-color;
 @list-group-link-heading-color: #333;
 
 
@@ -663,6 +693,8 @@
 
 @panel-bg:                    #fff;
 @panel-body-padding:          15px;
+@panel-heading-padding:       10px 15px;
+@panel-footer-padding:        @panel-heading-padding;
 @panel-border-radius:         @border-radius-base;
 
 //** Border color for elements within panels
@@ -802,6 +834,8 @@
 //
 //##
 
+//** Horizontal offset for forms and lists.
+@component-offset-horizontal: 180px;
 //** Text muted color
 @text-muted:                  @gray-light;
 //** Abbreviations and acronyms border color
@@ -816,14 +850,7 @@
 @blockquote-border-color:     @gray-lighter;
 //** Page header border color
 @page-header-border-color:    @gray-lighter;
-
-
-//== Miscellaneous
-//
-//##
-
+//** Width of horizontal description list titles
+@dl-horizontal-offset:        @component-offset-horizontal;
 //** Horizontal line color.
 @hr-border:                   @gray-lighter;
-
-//** Horizontal offset for forms and lists.
-@component-offset-horizontal: 180px;

@@ -37,14 +37,19 @@ angular.module('ui.bootstrap.tabs', [])
 
   ctrl.removeTab = function removeTab(tab) {
     var index = tabs.indexOf(tab);
-    //Select a new tab if the tab to be removed is selected
-    if (tab.active && tabs.length > 1) {
+    //Select a new tab if the tab to be removed is selected and not destroyed
+    if (tab.active && tabs.length > 1 && !destroyed) {
       //If this is the last tab, select the previous tab. else, the next tab.
       var newActiveIndex = index == tabs.length - 1 ? index - 1 : index + 1;
       ctrl.select(tabs[newActiveIndex]);
     }
     tabs.splice(index, 1);
   };
+
+  var destroyed;
+  $scope.$on('$destroy', function() {
+    destroyed = true;
+  });
 }])
 
 /**

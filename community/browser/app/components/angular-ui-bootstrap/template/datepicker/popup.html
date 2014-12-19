@@ -1,7 +1,7 @@
 <ul class="dropdown-menu" ng-style="{display: (isOpen && 'block') || 'none', top: position.top+'px', left: position.left+'px'}" ng-keydown="keydown($event)">
 	<li ng-transclude></li>
 	<li ng-if="showButtonBar" style="padding:10px 9px 2px">
-		<span class="btn-group">
+		<span class="btn-group pull-left">
 			<button type="button" class="btn btn-sm btn-info" ng-click="select('today')">{{ getText('current') }}</button>
 			<button type="button" class="btn btn-sm btn-danger" ng-click="select(null)">{{ getText('clear') }}</button>
 		</span>

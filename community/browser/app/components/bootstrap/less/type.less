@@ -62,7 +62,7 @@ p {
 .lead {
   margin-bottom: @line-height-computed;
   font-size: floor((@font-size-base * 1.15));
-  font-weight: 200;
+  font-weight: 300;
   line-height: 1.4;
 
   @media (min-width: @screen-sm-min) {
@@ -74,18 +74,29 @@ p {
 // Emphasis & misc
 // -------------------------
 
-// Ex: 14px base font * 85% = about 12px
+// Ex: (12px small font / 14px base font) * 100% = about 85%
 small,
-.small  { font-size: 85%; }
+.small {
+  font-size: floor((100% * @font-size-small / @font-size-base));
+}
 
-// Undo browser default styling
-cite    { font-style: normal; }
+mark,
+.mark {
+  background-color: @state-warning-bg;
+  padding: .2em;
+}
 
 // Alignment
 .text-left           { text-align: left; }
 .text-right          { text-align: right; }
 .text-center         { text-align: center; }
 .text-justify        { text-align: justify; }
+.text-nowrap         { white-space: nowrap; }
+
+// Transformation
+.text-lowercase      { text-transform: lowercase; }
+.text-uppercase      { text-transform: uppercase; }
+.text-capitalize     { text-transform: capitalize; }
 
 // Contextual colors
 .text-muted {
@@ -141,7 +152,7 @@ cite    { font-style: normal; }
 
 
 // Lists
-// --------------------------------------------------
+// -------------------------
 
 // Unordered and Ordered lists
 ul,
@@ -195,24 +206,28 @@ dd {
 // Defaults to being stacked without any of the below styles applied, until the
 // grid breakpoint is reached (default of ~768px).
 
-@media (min-width: @grid-float-breakpoint) {
-  .dl-horizontal {
+.dl-horizontal {
+  dd {
+    &:extend(.clearfix all); // Clear the floated `dt` if an empty `dd` is present
+  }
+
+  @media (min-width: @grid-float-breakpoint) {
     dt {
       float: left;
-      width: (@component-offset-horizontal - 20);
+      width: (@dl-horizontal-offset - 20);
       clear: left;
       text-align: right;
       .text-overflow();
     }
     dd {
-      margin-left: @component-offset-horizontal;
-      &:extend(.clearfix all); // Clear the floated `dt` if an empty `dd` is present
+      margin-left: @dl-horizontal-offset;
     }
   }
 }
 
-// MISC
-// ----
+
+// Misc
+// -------------------------
 
 // Abbreviations and acronyms
 abbr[title],
@@ -277,12 +292,6 @@ blockquote.pull-right {
       content: '\00A0 \2014'; // nbsp, em dash
     }
   }
-}
-
-// Quotes
-blockquote:before,
-blockquote:after {
-  content: "";
 }
 
 // Addresses

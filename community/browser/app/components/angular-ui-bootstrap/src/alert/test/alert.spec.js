@@ -50,6 +50,16 @@ describe('alert', function () {
     expect(alerts.eq(2)).toHaveClass('alert-warning');
   });
 
+  it('should respect alert type binding', function () {
+    var alerts = createAlerts();
+    expect(alerts.eq(0)).toHaveClass('alert-success');
+
+    scope.alerts[0].type = 'error';
+    scope.$digest();
+
+    expect(alerts.eq(0)).toHaveClass('alert-error');
+  });
+
   it('should show the alert content', function() {
     var alerts = createAlerts();
 

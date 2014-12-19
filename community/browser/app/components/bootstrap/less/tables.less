@@ -4,8 +4,13 @@
 
 
 table {
-  max-width: 100%;
   background-color: @table-bg;
+}
+caption {
+  padding-top: @table-cell-padding;
+  padding-bottom: @table-cell-padding;
+  color: @text-muted;
+  text-align: left;
 }
 th {
   text-align: left;
@@ -16,6 +21,7 @@ th {
 
 .table {
   width: 100%;
+  max-width: 100%;
   margin-bottom: @line-height-computed;
   // Cells
   > thead,
@@ -106,10 +112,7 @@ th {
 
 .table-striped {
   > tbody > tr:nth-child(odd) {
-    > td,
-    > th {
-      background-color: @table-bg-accent;
-    }
+    background-color: @table-bg-accent;
   }
 }
 
@@ -120,10 +123,7 @@ th {
 
 .table-hover {
   > tbody > tr:hover {
-    > td,
-    > th {
-      background-color: @table-bg-hover;
-    }
+    background-color: @table-bg-hover;
   }
 }
 
@@ -168,15 +168,16 @@ table {
 // by enabling horizontal scrolling. Only applies <768px. Everything above that
 // will display normally.
 
-@media (max-width: @screen-xs-max) {
-  .table-responsive {
+.table-responsive {
+  overflow-x: auto;
+  min-height: 0.01%; // Workaround for IE9 bug (see https://github.com/twbs/bootstrap/issues/14837)
+
+  @media screen and (max-width: @screen-xs-max) {
     width: 100%;
     margin-bottom: (@line-height-computed * 0.75);
     overflow-y: hidden;
-    overflow-x: scroll;
     -ms-overflow-style: -ms-autohiding-scrollbar;
     border: 1px solid @table-border-color;
-    -webkit-overflow-scrolling: touch;
 
     // Tighten up spacing
     > .table {

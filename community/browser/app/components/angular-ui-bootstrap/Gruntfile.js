@@ -1,3 +1,4 @@
+/* jshint node: true */
 var markdown = require('node-markdown').Markdown;
 
 module.exports = function(grunt) {
@@ -11,12 +12,13 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-karma');
   grunt.loadNpmTasks('grunt-conventional-changelog');
   grunt.loadNpmTasks('grunt-ngdocs');
+  grunt.loadNpmTasks('grunt-ddescribe-iit');
 
   // Project configuration.
   grunt.util.linefeed = '\n';
 
   grunt.initConfig({
-    ngversion: '1.2.10',
+    ngversion: '1.2.16',
     bsversion: '3.1.1',
     modules: [],//to be filled in by build task
     pkg: grunt.file.readJSON('package.json'),
@@ -138,6 +140,7 @@ module.exports = function(grunt) {
       },
       travis: {
         singleRun: true,
+        reporters: ['dots'],
         browsers: ['Firefox']
       },
       coverage: {
@@ -189,12 +192,17 @@ module.exports = function(grunt) {
         src: ['src/**/*.js', 'src/**/*.ngdoc'],
         title: 'API Documentation'
       }
+    },
+    'ddescribe-iit': {
+      files: [
+        'src/**/*.spec.js'
+      ]
     }
   });
 
   //register before and after test tasks so we've don't have to change cli
   //options on the goole's CI server
-  grunt.registerTask('before-test', ['enforce', 'jshint', 'html2js']);
+  grunt.registerTask('before-test', ['enforce', 'ddescribe-iit', 'jshint', 'html2js']);
   grunt.registerTask('after-test', ['build', 'copy']);
 
   //Rename our watch task to 'delta', then make actual 'watch'
@@ -314,6 +322,13 @@ module.exports = function(grunt) {
       })
     );
 
+    var moduleFileMapping = _.clone(modules, true);
+    moduleFileMapping.forEach(function (module) {
+      delete module.docs;
+    });
+
+    grunt.config('moduleFileMapping', moduleFileMapping);
+
     var srcFiles = _.pluck(modules, 'srcFiles');
     var tpljsFiles = _.pluck(modules, 'tpljsFiles');
     //Set the concat task to concatenate the given src modules
@@ -323,7 +338,7 @@ module.exports = function(grunt) {
     grunt.config('concat.dist_tpls.src', grunt.config('concat.dist_tpls.src')
                  .concat(srcFiles).concat(tpljsFiles));
 
-    grunt.task.run(['concat', 'uglify']);
+    grunt.task.run(['concat', 'uglify', 'makeModuleMappingFile', 'makeRawFilesJs']);
   });
 
   grunt.registerTask('test', 'Run tests on singleRun karma server', function () {
@@ -341,6 +356,25 @@ module.exports = function(grunt) {
       }
       grunt.task.run(this.args.length ? 'karma:jenkins' : 'karma:continuous');
     }
+  });
+
+  grunt.registerTask('makeModuleMappingFile', function () {
+    var _ = grunt.util._;
+    var moduleMappingJs = 'dist/assets/module-mapping.json';
+    var moduleMappings = grunt.config('moduleFileMapping');
+    var moduleMappingsMap = _.object(_.pluck(moduleMappings, 'name'), moduleMappings);
+    var jsContent = JSON.stringify(moduleMappingsMap);
+    grunt.file.write(moduleMappingJs, jsContent);
+    grunt.log.writeln('File ' + moduleMappingJs.cyan + ' created.');
+  });
+
+  grunt.registerTask('makeRawFilesJs', function () {
+    var _ = grunt.util._;
+    var jsFilename = 'dist/assets/raw-files.json';
+    var genRawFilesJs = require('./misc/raw-files-generator');
+
+    genRawFilesJs(grunt, jsFilename, _.flatten(grunt.config('concat.dist_tpls.src')),
+                  grunt.config('meta.banner'));
   });
 
   function setVersion(type, suffix) {

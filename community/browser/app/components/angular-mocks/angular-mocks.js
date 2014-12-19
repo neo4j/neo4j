@@ -1,5 +1,5 @@
 /**
- * @license AngularJS v1.3.0
+ * @license AngularJS v1.3.7
  * (c) 2010-2014 Google, Inc. http://angularjs.org
  * License: MIT
  */
@@ -74,7 +74,7 @@ angular.mock.$Browser = function() {
   self.defer = function(fn, delay) {
     delay = delay || 0;
     self.deferredFns.push({time:(self.defer.now + delay), fn:fn, id: self.deferredNextId});
-    self.deferredFns.sort(function(a,b){ return a.time - b.time;});
+    self.deferredFns.sort(function(a, b) { return a.time - b.time;});
     return self.deferredNextId++;
   };
 
@@ -117,7 +117,7 @@ angular.mock.$Browser = function() {
       self.defer.now += delay;
     } else {
       if (self.deferredFns.length) {
-        self.defer.now = self.deferredFns[self.deferredFns.length-1].time;
+        self.defer.now = self.deferredFns[self.deferredFns.length - 1].time;
       } else {
         throw new Error('No deferred tasks to be flushed');
       }
@@ -142,7 +142,7 @@ angular.mock.$Browser.prototype = {
   * run all fns in pollFns
   */
   poll: function poll() {
-    angular.forEach(this.pollFns, function(pollFn){
+    angular.forEach(this.pollFns, function(pollFn) {
       pollFn();
     });
   },
@@ -258,7 +258,7 @@ angular.mock.$ExceptionHandlerProvider = function() {
    *            {@link ngMock.$log#reset reset()}
    */
   this.mode = function(mode) {
-    switch(mode) {
+    switch (mode) {
       case 'rethrow':
         handler = function(e) {
           throw e;
@@ -316,7 +316,7 @@ angular.mock.$LogProvider = function() {
     }
   };
 
-  this.$get = function () {
+  this.$get = function() {
     var $log = {
       log: function() { $log.log.logs.push(concat([], arguments, 0)); },
       warn: function() { $log.warn.logs.push(concat([], arguments, 0)); },
@@ -336,7 +336,7 @@ angular.mock.$LogProvider = function() {
      * @description
      * Reset all of the logging arrays to empty.
      */
-    $log.reset = function () {
+    $log.reset = function() {
       /**
        * @ngdoc property
        * @name $log#log.logs
@@ -421,14 +421,14 @@ angular.mock.$LogProvider = function() {
       var errors = [];
       angular.forEach(['error', 'warn', 'info', 'log', 'debug'], function(logLevel) {
         angular.forEach($log[logLevel].logs, function(log) {
-          angular.forEach(log, function (logItem) {
+          angular.forEach(log, function(logItem) {
             errors.push('MOCK $log (' + logLevel + '): ' + String(logItem) + '\n' +
                         (logItem.stack || ''));
           });
         });
       });
       if (errors.length) {
-        errors.unshift("Expected $log to be empty! Either a message was logged unexpectedly, or "+
+        errors.unshift("Expected $log to be empty! Either a message was logged unexpectedly, or " +
           "an expected log message was not checked and removed:");
         errors.push('');
         throw new Error(errors.join('\n---------\n'));
@@ -461,17 +461,17 @@ angular.mock.$LogProvider = function() {
  * @returns {promise} A promise which will be notified on each iteration.
  */
 angular.mock.$IntervalProvider = function() {
-  this.$get = ['$rootScope', '$q',
-       function($rootScope,   $q) {
+  this.$get = ['$browser', '$rootScope', '$q', '$$q',
+       function($browser,   $rootScope,   $q,   $$q) {
     var repeatFns = [],
         nextRepeatId = 0,
         now = 0;
 
     var $interval = function(fn, delay, count, invokeApply) {
-      var deferred = $q.defer(),
-          promise = deferred.promise,
-          iteration = 0,
-          skipApply = (angular.isDefined(invokeApply) && !invokeApply);
+      var iteration = 0,
+          skipApply = (angular.isDefined(invokeApply) && !invokeApply),
+          deferred = (skipApply ? $$q : $q).defer(),
+          promise = deferred.promise;
 
       count = (angular.isDefined(count)) ? count : 0;
       promise.then(null, null, fn);
@@ -494,7 +494,11 @@ angular.mock.$IntervalProvider = function() {
           }
         }
 
-        if (!skipApply) $rootScope.$apply();
+        if (skipApply) {
+          $browser.defer.flush();
+        } else {
+          $rootScope.$apply();
+        }
       }
 
       repeatFns.push({
@@ -504,7 +508,7 @@ angular.mock.$IntervalProvider = function() {
         id: nextRepeatId,
         deferred: deferred
       });
-      repeatFns.sort(function(a,b){ return a.nextTime - b.nextTime;});
+      repeatFns.sort(function(a, b) { return a.nextTime - b.nextTime;});
 
       nextRepeatId++;
       return promise;
@@ -520,7 +524,7 @@ angular.mock.$IntervalProvider = function() {
      * @returns {boolean} Returns `true` if the task was successfully cancelled.
      */
     $interval.cancel = function(promise) {
-      if(!promise) return false;
+      if (!promise) return false;
       var fnIndex;
 
       angular.forEach(repeatFns, function(fn, index) {
@@ -553,7 +557,7 @@ angular.mock.$IntervalProvider = function() {
         var task = repeatFns[0];
         task.fn();
         task.nextTime += task.delay;
-        repeatFns.sort(function(a,b){ return a.nextTime - b.nextTime;});
+        repeatFns.sort(function(a, b) { return a.nextTime - b.nextTime;});
       }
       return millis;
     };
@@ -581,10 +585,10 @@ function jsonStringToDate(string) {
       tzMin = int(match[9] + match[11]);
     }
     date.setUTCFullYear(int(match[1]), int(match[2]) - 1, int(match[3]));
-    date.setUTCHours(int(match[4]||0) - tzHour,
-                     int(match[5]||0) - tzMin,
-                     int(match[6]||0),
-                     int(match[7]||0));
+    date.setUTCHours(int(match[4] || 0) - tzHour,
+                     int(match[5] || 0) - tzMin,
+                     int(match[6] || 0),
+                     int(match[7] || 0));
     return date;
   }
   return string;
@@ -601,7 +605,7 @@ function padNumber(num, digits, trim) {
     num = -num;
   }
   num = '' + num;
-  while(num.length < digits) num = '0' + num;
+  while (num.length < digits) num = '0' + num;
   if (trim)
     num = num.substr(num.length - digits);
   return neg + num;
@@ -645,7 +649,7 @@ function padNumber(num, digits, trim) {
  * ```
  *
  */
-angular.mock.TzDate = function (offset, timestamp) {
+angular.mock.TzDate = function(offset, timestamp) {
   var self = new Date(0);
   if (angular.isString(timestamp)) {
     var tsStr = timestamp;
@@ -663,7 +667,7 @@ angular.mock.TzDate = function (offset, timestamp) {
   }
 
   var localOffset = new Date(timestamp).getTimezoneOffset();
-  self.offsetDiff = localOffset*60*1000 - offset*1000*60*60;
+  self.offsetDiff = localOffset * 60 * 1000 - offset * 1000 * 60 * 60;
   self.date = new Date(timestamp + self.offsetDiff);
 
   self.getTime = function() {
@@ -788,20 +792,20 @@ angular.mock.animate = angular.module('ngAnimateMock', ['ng'])
     $provide.decorator('$animate', ['$delegate', '$$asyncCallback', '$timeout', '$browser',
                             function($delegate,   $$asyncCallback,   $timeout,   $browser) {
       var animate = {
-        queue : [],
-        cancel : $delegate.cancel,
-        enabled : $delegate.enabled,
-        triggerCallbackEvents : function() {
+        queue: [],
+        cancel: $delegate.cancel,
+        enabled: $delegate.enabled,
+        triggerCallbackEvents: function() {
           $$asyncCallback.flush();
         },
-        triggerCallbackPromise : function() {
+        triggerCallbackPromise: function() {
           $timeout.flush(0);
         },
-        triggerCallbacks : function() {
+        triggerCallbacks: function() {
           this.triggerCallbackEvents();
           this.triggerCallbackPromise();
         },
-        triggerReflow : function() {
+        triggerReflow: function() {
           angular.forEach(reflowQueue, function(fn) {
             fn();
           });
@@ -813,10 +817,10 @@ angular.mock.animate = angular.module('ngAnimateMock', ['ng'])
         ['animate','enter','leave','move','addClass','removeClass','setClass'], function(method) {
         animate[method] = function() {
           animate.queue.push({
-            event : method,
-            element : arguments[0],
-            options : arguments[arguments.length-1],
-            args : arguments
+            event: method,
+            element: arguments[0],
+            options: arguments[arguments.length - 1],
+            args: arguments
           });
           return $delegate[method].apply($delegate, arguments);
         };
@@ -883,13 +887,13 @@ angular.mock.dump = function(object) {
   function serializeScope(scope, offset) {
     offset = offset ||  '  ';
     var log = [offset + 'Scope(' + scope.$id + '): {'];
-    for ( var key in scope ) {
+    for (var key in scope) {
       if (Object.prototype.hasOwnProperty.call(scope, key) && !key.match(/^(\$|this)/)) {
         log.push('  ' + key + ': ' + angular.toJson(scope[key]));
       }
     }
     var child = scope.$$childHead;
-    while(child) {
+    while (child) {
       log.push(serializeScope(child, offset + '  '));
       child = child.$$nextSibling;
     }
@@ -1115,7 +1119,7 @@ angular.mock.dump = function(object) {
    ```
  */
 angular.mock.$HttpBackendProvider = function() {
-  this.$get = ['$rootScope', createHttpBackendMock];
+  this.$get = ['$rootScope', '$timeout', createHttpBackendMock];
 };
 
 /**
@@ -1132,7 +1136,7 @@ angular.mock.$HttpBackendProvider = function() {
  * @param {Object=} $browser Auto-flushing enabled if specified
  * @return {Object} Instance of $httpBackend mock
  */
-function createHttpBackendMock($rootScope, $delegate, $browser) {
+function createHttpBackendMock($rootScope, $timeout, $delegate, $browser) {
   var definitions = [],
       expectations = [],
       responses = [],
@@ -1145,7 +1149,7 @@ function createHttpBackendMock($rootScope, $delegate, $browser) {
     return function() {
       return angular.isNumber(status)
           ? [status, data, headers, statusText]
-          : [200, status, data];
+          : [200, status, data, headers];
     };
   }
 
@@ -1162,7 +1166,9 @@ function createHttpBackendMock($rootScope, $delegate, $browser) {
     }
 
     function wrapResponse(wrapped) {
-      if (!$browser && timeout && timeout.then) timeout.then(handleTimeout);
+      if (!$browser && timeout) {
+        timeout.then ? timeout.then(handleTimeout) : $timeout(handleTimeout, timeout);
+      }
 
       return handleResponse;
 
@@ -1386,7 +1392,7 @@ function createHttpBackendMock($rootScope, $delegate, $browser) {
   $httpBackend.expect = function(method, url, data, headers) {
     var expectation = new MockHttpExpectation(method, url, data, headers),
         chain = {
-          respond: function (status, data, headers, statusText) {
+          respond: function(status, data, headers, statusText) {
             expectation.response = createResponse(status, data, headers, statusText);
             return chain;
           }
@@ -1636,7 +1642,9 @@ function MockHttpExpectation(method, url, data, headers) {
     if (angular.isUndefined(data)) return true;
     if (data && angular.isFunction(data.test)) return data.test(d);
     if (data && angular.isFunction(data)) return data(d);
-    if (data && !angular.isString(data)) return angular.equals(data, angular.fromJson(d));
+    if (data && !angular.isString(data)) {
+      return angular.equals(angular.fromJson(angular.toJson(data)), angular.fromJson(d));
+    }
     return data == d;
   };
 
@@ -1709,7 +1717,7 @@ function MockXhr() {
  * that adds a "flush" and "verifyNoPendingTasks" methods.
  */
 
-angular.mock.$TimeoutDecorator = ['$delegate', '$browser', function ($delegate, $browser) {
+angular.mock.$TimeoutDecorator = ['$delegate', '$browser', function($delegate, $browser) {
 
   /**
    * @ngdoc method
@@ -1763,12 +1771,12 @@ angular.mock.$RAFDecorator = ['$delegate', function($delegate) {
   rafFn.supported = $delegate.supported;
 
   rafFn.flush = function() {
-    if(queue.length === 0) {
+    if (queue.length === 0) {
       throw new Error('No rAF callbacks present');
     }
 
     var length = queue.length;
-    for(var i=0;i<length;i++) {
+    for (var i = 0; i < length; i++) {
       queue[i]();
     }
 
@@ -1828,6 +1836,7 @@ angular.module('ngMock', ['ng']).provider({
   $provide.decorator('$timeout', angular.mock.$TimeoutDecorator);
   $provide.decorator('$$rAF', angular.mock.$RAFDecorator);
   $provide.decorator('$$asyncCallback', angular.mock.$AsyncCallbackDecorator);
+  $provide.decorator('$rootScope', angular.mock.$RootScopeDecorator);
 }]);
 
 /**
@@ -2033,10 +2042,96 @@ angular.module('ngMockE2E', ['ng']).config(['$provide', function($provide) {
  */
 angular.mock.e2e = {};
 angular.mock.e2e.$httpBackendDecorator =
-  ['$rootScope', '$delegate', '$browser', createHttpBackendMock];
+  ['$rootScope', '$timeout', '$delegate', '$browser', createHttpBackendMock];
 
 
-if(window.jasmine || window.mocha) {
+/**
+ * @ngdoc type
+ * @name $rootScope.Scope
+ * @module ngMock
+ * @description
+ * {@link ng.$rootScope.Scope Scope} type decorated with helper methods useful for testing. These
+ * methods are automatically available on any {@link ng.$rootScope.Scope Scope} instance when
+ * `ngMock` module is loaded.
+ *
+ * In addition to all the regular `Scope` methods, the following helper methods are available:
+ */
+angular.mock.$RootScopeDecorator = ['$delegate', function($delegate) {
+
+  var $rootScopePrototype = Object.getPrototypeOf($delegate);
+
+  $rootScopePrototype.$countChildScopes = countChildScopes;
+  $rootScopePrototype.$countWatchers = countWatchers;
+
+  return $delegate;
+
+  // ------------------------------------------------------------------------------------------ //
+
+  /**
+   * @ngdoc method
+   * @name $rootScope.Scope#$countChildScopes
+   * @module ngMock
+   * @description
+   * Counts all the direct and indirect child scopes of the current scope.
+   *
+   * The current scope is excluded from the count. The count includes all isolate child scopes.
+   *
+   * @returns {number} Total number of child scopes.
+   */
+  function countChildScopes() {
+    // jshint validthis: true
+    var count = 0; // exclude the current scope
+    var pendingChildHeads = [this.$$childHead];
+    var currentScope;
+
+    while (pendingChildHeads.length) {
+      currentScope = pendingChildHeads.shift();
+
+      while (currentScope) {
+        count += 1;
+        pendingChildHeads.push(currentScope.$$childHead);
+        currentScope = currentScope.$$nextSibling;
+      }
+    }
+
+    return count;
+  }
+
+
+  /**
+   * @ngdoc method
+   * @name $rootScope.Scope#$countWatchers
+   * @module ngMock
+   * @description
+   * Counts all the watchers of direct and indirect child scopes of the current scope.
+   *
+   * The watchers of the current scope are included in the count and so are all the watchers of
+   * isolate child scopes.
+   *
+   * @returns {number} Total number of watchers.
+   */
+  function countWatchers() {
+    // jshint validthis: true
+    var count = this.$$watchers ? this.$$watchers.length : 0; // include the current scope
+    var pendingChildHeads = [this.$$childHead];
+    var currentScope;
+
+    while (pendingChildHeads.length) {
+      currentScope = pendingChildHeads.shift();
+
+      while (currentScope) {
+        count += currentScope.$$watchers ? currentScope.$$watchers.length : 0;
+        pendingChildHeads.push(currentScope.$$childHead);
+        currentScope = currentScope.$$nextSibling;
+      }
+    }
+
+    return count;
+  }
+}];
+
+
+if (window.jasmine || window.mocha) {
 
   var currentSpec = null,
       isSpecRunning = function() {
@@ -2244,7 +2339,7 @@ if(window.jasmine || window.mocha) {
         injector = currentSpec.$injector = angular.injector(modules, strictDi);
         currentSpec.$injectorStrict = strictDi;
       }
-      for(var i = 0, ii = blockFns.length; i < ii; i++) {
+      for (var i = 0, ii = blockFns.length; i < ii; i++) {
         if (currentSpec.$injectorStrict) {
           // If the injector is strict / strictDi, and the spec wants to inject using automatic
           // annotation, then annotate the function here.

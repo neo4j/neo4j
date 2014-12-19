@@ -1,4 +1,4 @@
-function AccordionDemoCtrl($scope) {
+angular.module('ui.bootstrap.demo').controller('AccordionDemoCtrl', function ($scope) {
   $scope.oneAtATime = true;
 
   $scope.groups = [
@@ -23,4 +23,4 @@ function AccordionDemoCtrl($scope) {
     isFirstOpen: true,
     isFirstDisabled: false
   };
-}
+});

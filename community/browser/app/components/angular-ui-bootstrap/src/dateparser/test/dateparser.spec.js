@@ -93,4 +93,14 @@ describe('date parser', function () {
       expect(dateParser.parse('November 31, 2013', 'MMMM d, yyyy')).toBeUndefined();
     });
   });
+
+  it('should not parse non-string inputs', function() {
+    expect(dateParser.parse(123456, 'dd.MM.yyyy')).toBe(123456);
+    var date = new Date();
+    expect(dateParser.parse(date, 'dd.MM.yyyy')).toBe(date);
+  });
+
+  it('should not parse if no format is specified', function() {
+    expect(dateParser.parse('21.08.1951', '')).toBe('21.08.1951');
+  });
 });
