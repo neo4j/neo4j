@@ -1,9 +1,9 @@
 {
   "name": "jquery.easing",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "jQuery Easing plugin",
   "homepage": "http://gsgd.co.uk/sandbox/jquery/easing/",
-  "main": "js/jquery.easing.min.js",
+  "main": "js/jquery.easing.js",
   "keywords": [
     "jquery",
     "jquery plugin",

@@ -51,3 +51,7 @@ The typeahead directives provide several attributes:
 * `typeahead-wait-ms` <i class="glyphicon glyphicon-eye-open"></i>
    _(Defaults: 0)_ :
    Minimal wait time after last character typed before typeahead kicks-in
+
+* `typeahead-focus-first`
+   _(Defaults: true)_ :
+   Should the first match automatically be focused as you type?

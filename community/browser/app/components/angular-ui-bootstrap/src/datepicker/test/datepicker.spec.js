@@ -1356,7 +1356,7 @@ describe('datepicker directive', function () {
         var wrapElement = $compile('<div><input ng-model="date" datepicker-popup="dd.MM.yyyy"><div>')($rootScope);
         $rootScope.$digest();
         assignElements(wrapElement);
- 
+
         changeInputValueTo(inputEl, '11.08.2013');
         expect($rootScope.date.getFullYear()).toEqual(2013);
         expect($rootScope.date.getMonth()).toEqual(7);
@@ -1543,6 +1543,10 @@ describe('datepicker directive', function () {
         $rootScope.date = new Date();
       });
 
+      afterEach(function () {
+        $document.find('body').find('.dropdown-menu').remove();
+      });
+
       it('should append to the body', function() {
         var $body = $document.find('body'),
             bodyLength = $body.children().length,
@@ -1591,6 +1595,25 @@ describe('datepicker directive', function () {
         for (var i = 0; i < 5; i++) {
           expect(tr.eq(i).find('td').eq(0)).toBeHidden();
         }
+      });
+    });
+
+    describe('`datepicker-mode`', function () {
+      beforeEach(inject(function() {
+        $rootScope.date = new Date('August 11, 2013');
+        $rootScope.mode = 'month';
+        var wrapElement = $compile('<div><input ng-model="date" datepicker-popup datepicker-mode="mode"></div>')($rootScope);
+        $rootScope.$digest();
+        assignElements(wrapElement);
+      }));
+
+      it('shows the correct title', function() {
+        expect(getTitle()).toBe('2013');
+      });
+
+      it('updates binding', function() {
+        clickTitleButton();
+        expect($rootScope.mode).toBe('year');
       });
     });
   });

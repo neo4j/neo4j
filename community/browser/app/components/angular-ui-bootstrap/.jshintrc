@@ -8,7 +8,23 @@
   "eqnull": true,
   "quotmark": "single",
   "trailing": true,
+  "undef": true,
+  "browser": true,
+  "jquery": true,
   "globals": {
-    "angular": true
+    "angular": false,
+
+    // For Jasmine
+    "after"      : false,
+    "afterEach"  : false,
+    "before"     : false,
+    "beforeEach" : false,
+    "describe"   : false,
+    "expect"     : false,
+    "jasmine"    : false,
+    "module"     : false,
+    "spyOn"      : false,
+    "inject"     : false,
+    "it"         : false
   }
 }

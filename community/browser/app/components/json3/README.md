@@ -2,10 +2,14 @@
 
 ![JSON 3 Logo](http://bestiejs.github.io/json3/page/logo.png)
 
-**JSON 3** is a modern JSON implementation compatible with a variety of JavaScript platforms, including Internet Explorer 6, Opera 7, Safari 2, and Netscape 6. The current version is **3.2.5**.
+[![Build Status](https://secure.travis-ci.org/bestiejs/json3.png)](http://travis-ci.org/bestiejs/json3)
 
-- [Development Version](http://bestiejs.github.io/json3/lib/json3.js) *(38.8 KB; uncompressed with comments)*
-- [Production Version](http://bestiejs.github.io/json3/lib/json3.min.js) *(3.2 KB; compressed and `gzip`-ped)*
+**JSON 3** is a modern JSON implementation compatible with a variety of JavaScript platforms, including Internet Explorer 6, Opera 7, Safari 2, and Netscape 6. The current version is **3.3.0**.
+
+- [Development Version](http://cdnjs.cloudflare.com/ajax/libs/json3/3.3.0/json3.js) *(43 KB; uncompressed with comments)*
+- [Production Version](http://cdnjs.cloudflare.com/ajax/libs/json3/3.3.0/json3.min.js) *(3.5 KB; compressed and `gzip`-ped)*
+
+Special thanks to [cdnjs](http://cdnjs.com/libraries/json3/) and [jsDelivr](http://www.jsdelivr.com/#!json3) for hosting CDN copies of JSON 3.
 
 [JSON](http://json.org/) is a language-independent data interchange format based on a loose subset of the JavaScript grammar. Originally popularized by [Douglas Crockford](http://www.crockford.com/), the format was standardized in the [fifth edition](http://es5.github.com/) of the ECMAScript specification. The 5.1 edition, ratified in June 2011, incorporates several modifications to the grammar pertaining to the serialization of dates.
 
@@ -42,7 +46,7 @@ Portions of the date serialization code are adapted from the [`date-shim`](https
 
 ## Web Browsers
 
-    <script src="http://bestiejs.github.io/json3/lib/json3.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/json3/3.3.0/json3.min.js"></script>
     <script>
       JSON.stringify({"Hello": 123});
       // => '{"Hello":123}'
@@ -54,6 +58,31 @@ Portions of the date serialization code are adapted from the [`date-shim`](https
       });
       // => [["Odd", "Even", "Odd"], "Odd", "Even", "Odd", "Even"]
     </script>
+
+**When used in a web browser**, JSON 3 exposes an additional `JSON3` object containing the `noConflict()` and `runInContext()` functions, as well as aliases to the `stringify()` and `parse()` functions.
+
+### `noConflict` and `runInContext`
+
+* `JSON3.noConflict()` restores the original value of the global `JSON` object and returns a reference to the `JSON3` object.
+* `JSON3.runInContext([context, exports])` initializes JSON 3 using the given `context` object (e.g., `window`, `global`, etc.), or the global object if omitted. If an `exports` object is specified, the `stringify()`, `parse()`, and `runInContext()` functions will be attached to it instead of a new object.
+
+### Asynchronous Module Loaders
+
+JSON 3 is defined as an [anonymous module](https://github.com/amdjs/amdjs-api/wiki/AMD#define-function-) for compatibility with [RequireJS](http://requirejs.org/), [`curl.js`](https://github.com/cujojs/curl), and other asynchronous module loaders.
+
+    <script src="//cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.js"></script>
+    <script>
+      require({
+        "paths": {
+          "json3": "./path/to/json3"
+        }
+      }, ["json3"], function (JSON) {
+        JSON.parse("[1, 2, 3]");
+        // => [1, 2, 3]
+      });
+    </script>
+
+To avoid issues with third-party scripts, **JSON 3 is exported to the global scope even when used with a module loader**. If this behavior is undesired, `JSON3.noConflict()` can be used to restore the global `JSON` object to its original value.
 
 ## CommonJS Environments
 
@@ -115,7 +144,6 @@ Check out a working copy of the JSON 3 source code with [Git](http://git-scm.com
 
     $ git clone git://github.com/bestiejs/json3.git
     $ cd json3
-    $ git submodule update --init
 
 If you'd like to contribute a feature or bug fix, you can [fork](http://help.github.com/fork-a-repo/) JSON 3, commit your changes, and [send a pull request](http://help.github.com/send-pull-requests/). Please make sure to update the unit tests in the `test` directory as well.
 

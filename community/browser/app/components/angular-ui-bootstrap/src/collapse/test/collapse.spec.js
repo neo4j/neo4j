@@ -1,6 +1,7 @@
 describe('collapse directive', function () {
 
   var scope, $compile, $timeout, $transition;
+  var element;
 
   beforeEach(module('ui.bootstrap.collapse'));
   beforeEach(inject(function(_$rootScope_, _$compile_, _$timeout_, _$transition_) {
@@ -9,8 +10,6 @@ describe('collapse directive', function () {
     $timeout = _$timeout_;
     $transition = _$transition_;
   }));
-
-  var element;
 
   beforeEach(function() {
     element = $compile('<div collapse="isCollapsed">Some Content</div>')(scope);
@@ -73,6 +72,9 @@ describe('collapse directive', function () {
   });
 
   describe('dynamic content', function() {
+
+    var element;
+
     beforeEach(function() {
       element = angular.element('<div collapse="isCollapsed"><p>Initial content</p><div ng-show="exp">Additional content</div></div>');
       $compile(element)(scope);
