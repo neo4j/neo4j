@@ -37,7 +37,6 @@ You will find some of the operators used in execution plans in the following sec
 
 :leveloffset: 1
 
-include::ql/query-plan/apply.asciidoc[]
 include::ql/query-plan/anti-semi-apply.asciidoc[]
 include::ql/query-plan/all-nodes-scan.asciidoc[]
 include::ql/query-plan/cartesian-product.asciidoc[]

@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.executionplan.builders.prepare.Ke
 import org.neo4j.cypher.internal.compiler.v2_2.pipes._
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.compiler.v2_2.{SyntaxException, Legacy, Monitors, PreparedQuery}
+import org.neo4j.cypher.internal.compiler.v2_2.{SyntaxException, Rule, Monitors, PreparedQuery}
 
 trait ExecutionPlanInProgressRewriter {
   def rewrite(in: ExecutionPlanInProgress)(implicit context: PipeMonitor): ExecutionPlanInProgress
@@ -37,7 +37,7 @@ trait ExecutionPlanInProgressRewriter {
 class LegacyPipeBuilder(monitors: Monitors, eagernessRewriter: Pipe => Pipe = addEagernessIfNecessary)
   extends PatternGraphBuilder with PipeBuilder with GraphQueryBuilder {
 
-  def PlannerName = Legacy
+  def PlannerName = Rule
 
   private implicit val pipeMonitor: PipeMonitor = monitors.newMonitor[PipeMonitor]()
 

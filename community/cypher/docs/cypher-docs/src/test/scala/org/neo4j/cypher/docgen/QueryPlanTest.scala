@@ -332,7 +332,7 @@ class QueryPlanTest extends DocumentingTestBase {
     )
   }
 
-  @Ignore("Need better data to be able to coax thi ") def nodeHashJoin() {
+  @Ignore def nodeHashJoin() {
     profileQuery(
       title = "Node Hash Join",
       text =
@@ -365,7 +365,8 @@ class QueryPlanTest extends DocumentingTestBase {
     )
   }
 
-  @Test def apply() {
+  //24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
+  @Ignore def apply() {
     profileQuery(
       title = "Apply",
       text =

@@ -92,10 +92,15 @@ public abstract class GraphDatabaseSettings
 
     // Cypher settings
     // TODO: These should live with cypher
-    @Description( "Set this to specify a parser other than the default one." )
+    @Description( "Set this to specify the default parser." )
     public static final Setting<String> cypher_parser_version = setting(
             "cypher_parser_version",
-            options( "1.9", "2.0", "2.1", "2.2", "2.2-cost", "2.2-rule"), NO_DEFAULT );
+            options( "1.9", "2.0", "2.1", "2.2"), NO_DEFAULT );
+
+    @Description( "Set this to specify the default planner." )
+    public static final Setting<String> query_planner_version = setting(
+            "query.planner.version",
+            options( "COST", "RULE"), NO_DEFAULT );
 
     @Description( "The number of Cypher query execution plans that are cached." )
     public static Setting<Integer> query_cache_size = setting( "query_cache_size", INTEGER, "100", min( 0 ) );
@@ -312,7 +317,7 @@ public abstract class GraphDatabaseSettings
     @Description("An identifier that uniquely identifies this graph database instance within this JVM. " +
             "Defaults to an auto-generated number depending on how many instance are started in this JVM.")
     @Internal
-    public static final Setting<String> forced_kernel_id = setting("forced_kernel_id", STRING, NO_DEFAULT, illegalValueMessage( "has to be a valid kernel identifier", matches( "[a-zA-Z0-9]*" ) ));
+    public static final Setting<String> forced_kernel_id = setting("forced_kernel_id", STRING, NO_DEFAULT, illegalValueMessage("has to be a valid kernel identifier", matches("[a-zA-Z0-9]*")));
 
     @Internal
     public static final Setting<Boolean> execution_guard_enabled = setting("execution_guard_enabled", BOOLEAN, FALSE );

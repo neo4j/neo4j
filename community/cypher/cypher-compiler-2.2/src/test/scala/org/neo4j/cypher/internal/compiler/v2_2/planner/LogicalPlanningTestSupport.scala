@@ -144,7 +144,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   }
 
   def newPlanner(metricsFactory: MetricsFactory): Planner =
-    new Planner(monitors, metricsFactory, monitors.newMonitor[PlanningMonitor](), Clock.SYSTEM_CLOCK)
+    Planner(monitors, metricsFactory, monitors.newMonitor[PlanningMonitor](), Clock.SYSTEM_CLOCK, acceptQuery = (_) => true)
 
   def produceLogicalPlan(queryText: String)(implicit planner: Planner, planContext: PlanContext): LogicalPlan = {
     val parsedStatement = parser.parse(queryText)

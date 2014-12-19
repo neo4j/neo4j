@@ -45,13 +45,13 @@ import org.scalatest.mock.MockitoSugar
 
 import scala.collection.Seq
 
-class LegacyPipeBuilderTest
+class RulePipeBuilderTest
   extends CypherFunSuite
   with GraphDatabaseTestSupport
   with Timed
   with MockitoSugar {
   val ast = mock[Statement]
-  val planner = new Planner(mock[Monitors], SimpleMetricsFactory, mock[PlanningMonitor], Clock.SYSTEM_CLOCK)
+  val planner = Planner(mock[Monitors], SimpleMetricsFactory, mock[PlanningMonitor], Clock.SYSTEM_CLOCK, acceptQuery = (_) => true)
 
   class FakePreparedQuery(q: AbstractQuery)
     extends PreparedQuery(mock[Statement], "q", Map.empty)(SemanticTable(), Scope(Map.empty, Seq.empty)) {

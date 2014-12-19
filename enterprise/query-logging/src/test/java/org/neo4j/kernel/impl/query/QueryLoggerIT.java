@@ -19,42 +19,27 @@
  */
 package org.neo4j.kernel.impl.query;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.Reader;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
 import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
-import org.mockito.InOrder;
-
-import org.neo4j.function.Factory;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.FakeClock;
 import org.neo4j.helpers.Settings;
-import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.impl.query.QueryLoggerKernelExtension.QueryLogger;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 
 public class QueryLoggerIT
 {

@@ -24,5 +24,8 @@ sealed trait CypherOption
 final case class VersionOption(version: String) extends CypherOption
 case object ProfileOption extends CypherOption
 case object ExplainOption extends CypherOption
+case object CostPlannerOption extends CypherOption
+case object RulePlannerOption extends CypherOption
+case object SmartPlannerOption extends CypherOption
 
 

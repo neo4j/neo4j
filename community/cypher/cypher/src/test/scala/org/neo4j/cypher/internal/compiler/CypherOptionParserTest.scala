@@ -45,12 +45,19 @@ class CypherOptionParserTest extends CypherFunSuite {
   }
 
   test("should parse multiple options") {
-    parse("CYPHER 2.2-cost PROFILE PATTERN") should equal(CypherQueryWithOptions("PATTERN", Seq(VersionOption("2.2-cost"), ProfileOption)))
+    parse("CYPHER 2.2 PLANNER COST PROFILE PATTERN") should equal(CypherQueryWithOptions("PATTERN", Seq(VersionOption("2.2"), CostPlannerOption, ProfileOption)))
     parse("EXPLAIN CYPHER 2.1 YALL") should equal(CypherQueryWithOptions("YALL", Seq(ExplainOption, VersionOption("2.1"))))
   }
 
   test("should require whitespace between option and query") {
     parse("explainmatch") should equal(CypherQueryWithOptions("explainmatch"))
     parse("explain match") should equal(CypherQueryWithOptions("match", Seq(ExplainOption)))
+  }
+
+  test("should parse version and planner/compiler") {
+    parse("CYPHER 2.2 PLANNER COST RETURN") should equal(CypherQueryWithOptions("RETURN", Seq(VersionOption("2.2"), CostPlannerOption)))
+    parse("PLANNER COST RETURN") should equal(CypherQueryWithOptions("RETURN",Seq(CostPlannerOption)))
+    parse("CYPHER 2.2 PLANNER RULE RETURN") should equal(CypherQueryWithOptions("RETURN", Seq(VersionOption("2.2"), RulePlannerOption)))
+    parse("PLANNER RULE RETURN") should equal(CypherQueryWithOptions("RETURN", Seq(RulePlannerOption)))
   }
 }

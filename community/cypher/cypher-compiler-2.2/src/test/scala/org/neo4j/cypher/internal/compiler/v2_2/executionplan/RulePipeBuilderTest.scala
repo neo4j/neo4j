@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_2.{Scope, Monitors, PreparedQuery}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
-class LegacyPipeBuilderTest extends CypherFunSuite {
+class RulePipeBuilderTest extends CypherFunSuite {
   val planContext: PlanContext = mock[PlanContext]
   val parser = new CypherParser(mock[ParserMonitor[Statement]])
   val planBuilder = new LegacyPipeBuilder(mock[Monitors])

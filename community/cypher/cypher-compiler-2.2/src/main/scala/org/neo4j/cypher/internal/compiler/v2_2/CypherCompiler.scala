@@ -60,10 +60,9 @@ trait AstCacheMonitor extends CypherCacheMonitor[PreparedQuery, CacheAccessor[Pr
 
 object CypherCompilerFactory {
   val monitorTag = "cypher2.2"
-
-  def ronjaCompiler(graph: GraphDatabaseService, queryCacheSize: Int, statsDivergenceThreshold: Double,
-                    queryPlanTTL: Long, clock: Clock, kernelMonitors: KernelMonitors,
-                    logger: StringLogger): CypherCompiler = {
+  def conservativeCompiler(graph: GraphDatabaseService, queryCacheSize: Int, statsDivergenceThreshold: Double,
+                        queryPlanTTL: Long, clock: Clock, kernelMonitors: KernelMonitors,
+                        logger: StringLogger, acceptor: (UnionQuery => Boolean) = conservativeQueryAcceptor): CypherCompiler = {
     val monitors = new Monitors(kernelMonitors)
     val parser = new CypherParser(monitors.newMonitor[ParserMonitor[Statement]](monitorTag))
     val checker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
@@ -71,7 +70,7 @@ object CypherCompilerFactory {
     val planBuilderMonitor = monitors.newMonitor[NewLogicalPlanSuccessRateMonitor](monitorTag)
     val planningMonitor = monitors.newMonitor[PlanningMonitor](monitorTag)
     val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
-    val planner = new Planner(monitors, metricsFactory, planningMonitor, clock)
+    val planner = new Planner(monitors, metricsFactory, planningMonitor, clock, acceptQuery = acceptor)
     val pipeBuilder = new LegacyVsNewPipeBuilder(new LegacyPipeBuilder(monitors), planner, planBuilderMonitor)
     val executionMonitor = monitors.newMonitor[QueryExecutionMonitor](monitorTag)
     val execPlanBuilder = new ExecutionPlanBuilder(graph, statsDivergenceThreshold, queryPlanTTL, clock, pipeBuilder)
@@ -82,14 +81,18 @@ object CypherCompilerFactory {
 
     new CypherCompiler(parser, checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheMonitor, monitors)
   }
+
+  def costBasedCompiler(graph: GraphDatabaseService, queryCacheSize: Int, statsDivergenceThreshold: Double,
+                    queryPlanTTL: Long, clock: Clock, kernelMonitors: KernelMonitors,
+                    logger: StringLogger): CypherCompiler = conservativeCompiler(graph, queryCacheSize,
+    statsDivergenceThreshold, queryPlanTTL, clock, kernelMonitors, logger, _ => true)
+
   private def logStalePlanRemovalMonitor(logger: StringLogger) = new AstCacheMonitor {
     override def cacheDiscard(key: PreparedQuery) {
       logger.info(s"Discarded stale query from the query cache: ${key.queryText}")
     }
   }
-
-
-  def legacyCompiler(graph: GraphDatabaseService, queryCacheSize: Int, statsDivergenceThreshold: Double,
+  def ruleBasedCompiler(graph: GraphDatabaseService, queryCacheSize: Int, statsDivergenceThreshold: Double,
                      queryPlanTTL: Long, clock: Clock, kernelMonitors: KernelMonitors): CypherCompiler = {
     val monitors = new Monitors(kernelMonitors)
     val parser = new CypherParser(monitors.newMonitor[ParserMonitor[ast.Statement]](monitorTag))
