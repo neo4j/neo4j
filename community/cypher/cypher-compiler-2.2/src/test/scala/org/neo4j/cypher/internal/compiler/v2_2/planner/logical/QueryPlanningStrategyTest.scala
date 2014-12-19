@@ -46,6 +46,7 @@ class QueryPlanningStrategyTest extends CypherFunSuite with LogicalPlanningTestS
 
     // then
     val solver = new QueryGraphSolver {
+      override def emptyPlanTable: PlanTable = ???
       override def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): LogicalPlan = {
         val table = context.semanticTable
         table.isNode(Identifier("  UNNAMED50")(InputPosition(49, 1, 50))) should be(true)

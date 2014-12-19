@@ -28,6 +28,8 @@ class GreedyQueryGraphSolver(planCombiner: CandidateGenerator[PlanTable],
                              config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default)
   extends TentativeQueryGraphSolver {
 
+  def emptyPlanTable: PlanTable = GreedyPlanTable.empty
+
   def tryPlan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None) = {
   import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.CandidateGenerator._
 
@@ -38,7 +40,7 @@ class GreedyQueryGraphSolver(planCombiner: CandidateGenerator[PlanTable],
       val leafPlanCandidateLists = config.leafPlanners.candidates(queryGraph)
       val leafPlanCandidateListsWithSelections = leafPlanCandidateLists.map(_.map(select(_, queryGraph)))
       val bestLeafPlans: Iterable[LogicalPlan] = leafPlanCandidateListsWithSelections.flatMap(pickBest(_))
-      val startTable: PlanTable = leafPlan.foldLeft(PlanTable.empty)(_ + _)
+      val startTable: PlanTable = leafPlan.foldLeft(emptyPlanTable)(_ + _)
       bestLeafPlans.foldLeft(startTable)(_ + _)
     }
 

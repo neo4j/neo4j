@@ -31,7 +31,7 @@ case class solveOptionalMatches(solvers: Seq[OptionalSolver]) {
   def apply(planTable: PlanTable, qg: QueryGraph)(implicit context: LogicalPlanningContext): PlanTable = {
 
     val p = if (planTable.isEmpty)
-      PlanTable(planSingleRow())
+      context.strategy.emptyPlanTable + planSingleRow()
     else
       planTable
 

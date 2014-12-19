@@ -70,7 +70,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     def internalPlan(query: PlannerQuery)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan =
      planSingleQuery(query)
   }
-  var queryGraphSolver = new CompositeQueryGraphSolver(
+  var queryGraphSolver: QueryGraphSolver = new CompositeQueryGraphSolver(
     new GreedyQueryGraphSolver(expandsOrJoins),
     new GreedyQueryGraphSolver(expandsOnly)
   )
@@ -296,6 +296,9 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   def fakeLogicalPlanFor(id: String*): FakePlan = FakePlan(id.map(IdName(_)).toSet)(PlannerQuery.empty)
 
   def planFor(queryString: String): SemanticPlan = new given().planFor(queryString)
+
+  def planTableWith(plans: LogicalPlan*)(implicit ctx: LogicalPlanningContext) =
+    plans.foldLeft(ctx.strategy.emptyPlanTable)(_ + _)
 
   class given extends StubbedLogicalPlanningConfiguration(realConfig)
 

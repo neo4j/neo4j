@@ -25,14 +25,15 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{LogicalPla
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.pickBestPlan
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryGraph, Selections}
 
-import scala.collection.mutable
-
 
 case class ExhaustiveQueryGraphSolver(leafPlanTableGenerator: PlanTableGenerator,
                                       planProducers: Seq[PlanProducer],
                                       bestPlanFinder: CandidateSelector,
                                       config: PlanningStrategyConfiguration)
   extends TentativeQueryGraphSolver {
+
+
+  def emptyPlanTable: PlanTable = ExhaustivePlanTable.empty
 
   def tryPlan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): Option[LogicalPlan] = {
 
@@ -43,7 +44,7 @@ case class ExhaustiveQueryGraphSolver(leafPlanTableGenerator: PlanTableGenerator
           subQG =>
             val plans = planProducers.flatMap(_(subQG, cache)).map(config.applySelections(_, subQG))
             val bestPlan = bestPlanFinder(plans)
-            bestPlan.foreach(p => cache(subQG) = p)
+            bestPlan.foreach(p => cache + p)
         }
     }
 
@@ -52,11 +53,7 @@ case class ExhaustiveQueryGraphSolver(leafPlanTableGenerator: PlanTableGenerator
 
   private def initiateCacheWithLeafPlans(queryGraph: QueryGraph, leafPlan: Option[LogicalPlan])
                                         (implicit context: LogicalPlanningContext) =
-    leafPlanTableGenerator.apply(queryGraph, leafPlan)
-      .plans
-      .foldLeft(mutable.Map.empty[QueryGraph, LogicalPlan]) {
-      case (cache, p) => cache += p.solved.lastQueryGraph -> p
-    }
+    leafPlanTableGenerator.apply(queryGraph, leafPlan).plans.foldLeft(context.strategy.emptyPlanTable)(_ + _)
   }
 
 object ExhaustiveQueryGraphSolver {
@@ -67,7 +64,7 @@ object ExhaustiveQueryGraphSolver {
              config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default) =
     new ExhaustiveQueryGraphSolver(leafPlanTableGenerator, planProducers, bestPlanFinder, config)
 
-  type PlanProducer = ((QueryGraph, collection.Map[QueryGraph, LogicalPlan]) => Seq[LogicalPlan])
+  type PlanProducer = ((QueryGraph, PlanTable) => Seq[LogicalPlan])
 
   implicit class RichQueryGraph(inner: QueryGraph) {
 

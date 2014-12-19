@@ -43,11 +43,9 @@ class JoinOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("match a-[r1]->b-[r2]->c") {
     // GIVEN
     val qg = QueryGraph(patternNodes = Set(A, B, C), patternRelationships = Set(R1, R2))
-    val qgR1 = QueryGraph(patternNodes = Set(A, B), patternRelationships = Set(R1))
-    val qgR2 = QueryGraph(patternNodes = Set(B, C), patternRelationships = Set(R2))
-    val lpR1 = newMockedLogicalPlan("a", "r1", "b")
-    val lpR2 = newMockedLogicalPlan("b", "r2", "c")
-    val cache = Map(qgR1 -> lpR1, qgR2 -> lpR2)
+    val lpR1 = newMockedLogicalPlanWithPatterns(Set("a", "b"), Seq(R1))
+    val lpR2 = newMockedLogicalPlanWithPatterns(Set("b", "c"), Seq(R2))
+    val cache = ExhaustivePlanTable(lpR1, lpR2)
 
     // WHEN
     val solutions = joinOptions(qg, cache)
@@ -63,20 +61,13 @@ class JoinOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
     // GIVEN
     val qg = QueryGraph(patternNodes = Set(A, B, C, X), patternRelationships = Set(R5, R6, R7))
 
-    val qgR5 = QueryGraph(patternNodes = Set(A, X), patternRelationships = Set(R5))
-    val qgR6 = QueryGraph(patternNodes = Set(B, X), patternRelationships = Set(R6))
-    val qgR7 = QueryGraph(patternNodes = Set(C, X), patternRelationships = Set(R7))
-    val qgR5R6 = QueryGraph(patternNodes = Set(A, B, X), patternRelationships = Set(R5, R6))
-    val qgR5R7 = QueryGraph(patternNodes = Set(A, C, X), patternRelationships = Set(R5, R7))
-    val qgR6R7 = QueryGraph(patternNodes = Set(B, C, X), patternRelationships = Set(R6, R7))
-
-    val lpR5 = newMockedLogicalPlan("a", "r5", "x")
-    val lpR6 = newMockedLogicalPlan("b", "r6", "x")
-    val lpR7 = newMockedLogicalPlan("c", "r7", "x")
-    val lpR5R6 = newMockedLogicalPlan("a", "r5", "b", "r6", "x")
-    val lpR5R7 = newMockedLogicalPlan("a", "r5", "c", "r7", "x")
-    val lpR6R7 = newMockedLogicalPlan("b", "r6", "c", "r7", "x")
-    val cache = Map(qgR5 -> lpR5, qgR6 -> lpR6, qgR7 -> lpR7, qgR5R6 -> lpR5R6, qgR5R7 -> lpR5R7, qgR6R7 -> lpR6R7)
+    val lpR5 = newMockedLogicalPlanWithPatterns(Set("a", "x"), Seq(R5))
+    val lpR6 = newMockedLogicalPlanWithPatterns(Set("b", "x"), Seq(R6))
+    val lpR7 = newMockedLogicalPlanWithPatterns(Set("c", "x"), Seq(R7))
+    val lpR5R6 = newMockedLogicalPlanWithPatterns(Set("a", "b", "x"), Seq(R5,R6))
+    val lpR5R7 = newMockedLogicalPlanWithPatterns(Set("a", "c", "x"), Seq(R5,R7))
+    val lpR6R7 = newMockedLogicalPlanWithPatterns(Set("b", "c", "x"), Seq(R6,R7))
+    val cache = ExhaustivePlanTable(lpR5, lpR6, lpR7, lpR5R6, lpR5R7, lpR6R7)
 
     // WHEN
     val solutions = joinOptions(qg, cache)

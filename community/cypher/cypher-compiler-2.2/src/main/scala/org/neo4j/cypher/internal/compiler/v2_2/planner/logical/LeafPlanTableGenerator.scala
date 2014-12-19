@@ -30,7 +30,7 @@ case class LeafPlanTableGenerator(config: PlanningStrategyConfiguration) extends
     val leafPlanCandidateLists = config.leafPlanners.candidates(queryGraph)
     val leafPlanCandidateListsWithSelections = leafPlanCandidateLists.map(_.map(select(_, queryGraph)))
     val bestLeafPlans: Iterable[LogicalPlan] = leafPlanCandidateListsWithSelections.flatMap(pickBest(_))
-    val startTable: PlanTable = leafPlan.foldLeft(PlanTable.empty)(_ + _)
+    val startTable: PlanTable = leafPlan.foldLeft(context.strategy.emptyPlanTable)(_ + _)
     bestLeafPlans.foldLeft(startTable)(_ + _)
   }
 }

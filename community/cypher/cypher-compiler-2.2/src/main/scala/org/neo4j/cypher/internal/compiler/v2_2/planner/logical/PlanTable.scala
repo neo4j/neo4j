@@ -20,40 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_2.InternalException
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 
-case class PlanTable(m: Map[Set[IdName], LogicalPlan] = Map.empty) {
-  def size = m.size
+import scala.collection.{immutable, mutable, Map}
 
-  def isEmpty = m.isEmpty
-  def nonEmpty = !isEmpty
-
-  def -(ids: Set[IdName]) = copy(m = m - ids)
-
-  def +(newPlan: LogicalPlan): PlanTable = {
-    val newSolved = newPlan.solved
-    val newPlanCoveredByOldPlan = m.values.exists { p =>
-      val solved = p.solved
-      newSolved.graph.isCoveredBy(solved.graph) &&
-      newSolved.isCoveredByHints(solved)
-    }
-
-    if (newPlanCoveredByOldPlan) {
-      this
-    } else {
-      val oldPlansNotCoveredByNewPlan = m.filter {
-        case (_, existingPlan) =>
-          val solved = existingPlan.solved
-          !(newSolved.graph.covers(solved.graph) &&
-            solved.isCoveredByHints(newSolved))
-      }
-      PlanTable(oldPlansNotCoveredByNewPlan + (newPlan.availableSymbols -> newPlan))
-    }
-  }
-
-  def plans: Seq[LogicalPlan] = m.values.toSeq
-
+trait PlanTable extends ((QueryGraph) => LogicalPlan) {
   def uniquePlan: LogicalPlan = {
     val allPlans = plans.toList
 
@@ -62,10 +35,52 @@ case class PlanTable(m: Map[Set[IdName], LogicalPlan] = Map.empty) {
 
     allPlans.headOption.getOrElse(planSingleRow())
   }
+
+  def size: Int = m.size
+  def isEmpty: Boolean = m.isEmpty
+  def plans: Seq[LogicalPlan] = m.values.toSeq
+  def get(queryGraph: QueryGraph): Option[LogicalPlan] = m.get(queryGraph)
+  def apply(queryGraph: QueryGraph): LogicalPlan = m(queryGraph)
+  override def toString() = m.toString()
+
+  def +(plan: LogicalPlan): PlanTable
+  def m: Map[QueryGraph, LogicalPlan]
 }
 
-object PlanTable {
-  val empty = PlanTable()
+object GreedyPlanTable {
+  def empty: PlanTable = new GreedyPlanTable()
+  def apply(plans: LogicalPlan*): PlanTable = plans.foldLeft(empty)(_ + _)
 
-  def apply(plans: LogicalPlan*): PlanTable = PlanTable(plans.map(p => p.availableSymbols -> p).toMap)
+  private case class GreedyPlanTable(m: immutable.Map[QueryGraph, LogicalPlan] = immutable.Map.empty) extends PlanTable {
+    override def +(newPlan: LogicalPlan): PlanTable = {
+      val newSolved = newPlan.solved
+      val newPlanCoveredByOldPlan = m.values.exists { p =>
+        val solved = p.solved
+        newSolved.graph.isCoveredBy(solved.graph) &&
+          newSolved.isCoveredByHints(solved)
+      }
+
+      if (newPlanCoveredByOldPlan) {
+        this
+      } else {
+        val oldPlansNotCoveredByNewPlan: immutable.Map[QueryGraph, LogicalPlan] = m.filter {
+          case (_, existingPlan) =>
+            val solved = existingPlan.solved
+            !(newSolved.graph.covers(solved.graph) &&
+              solved.isCoveredByHints(newSolved))
+        }
+        new GreedyPlanTable(oldPlansNotCoveredByNewPlan + (newPlan.solved.lastQueryGraph -> newPlan))
+      }
+    }
+  }
 }
+
+object ExhaustivePlanTable {
+  def empty: PlanTable = new ExhaustivePlanTable()
+  def apply(plans: LogicalPlan*): PlanTable = plans.foldLeft(empty)(_ + _)
+
+  private case class ExhaustivePlanTable(m: mutable.Map[QueryGraph, LogicalPlan] = mutable.Map.empty) extends PlanTable {
+    override def +(newPlan: LogicalPlan): PlanTable = { m += (newPlan.solved.lastQueryGraph -> newPlan) ; this }
+  }
+}
+

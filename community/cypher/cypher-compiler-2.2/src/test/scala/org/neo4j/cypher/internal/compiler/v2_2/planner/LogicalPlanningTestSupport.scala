@@ -109,10 +109,6 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
                                       cardinality: Cardinality = Cardinality(1)): LogicalPlanningContext =
     LogicalPlanningContext(planContext, metrics, semanticTable, strategy, QueryGraphCardinalityInput(Map.empty, cardinality))
 
-  implicit class RichLogicalPlan(plan: LogicalPlan) {
-    def asTableEntry = plan.availableSymbols -> plan
-  }
-
   def newMockedStatistics = mock[GraphStatistics]
   def hardcodedStatistics = HardcodedGraphStatistics
 
@@ -122,10 +118,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     context
   }
 
-  def newMockedLogicalPlanWithProjections(ids: String*)(implicit context: LogicalPlanningContext) = {
-    val projections =
-      RegularQueryProjection(projections = ids.map((id) => id -> ident(id)).toMap)
-
+  def newMockedLogicalPlanWithProjections(ids: String*): LogicalPlan = {
+    val projections = RegularQueryProjection(projections = ids.map((id) => id -> ident(id)).toMap)
     FakePlan(ids.map(IdName(_)).toSet)(PlannerQuery(
         horizon = projections,
         graph = QueryGraph.empty.addPatternNodes(ids.map(IdName(_)).toSeq: _*)
@@ -144,8 +138,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   def newMockedLogicalPlanWithSolved(ids: Set[IdName], solved: PlannerQuery): LogicalPlan =
     FakePlan(ids)(solved)
 
-  def newMockedLogicalPlanWithPatterns(ids: Set[IdName], patterns: Seq[PatternRelationship] = Seq.empty)
-                                      (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def newMockedLogicalPlanWithPatterns(ids: Set[IdName], patterns: Seq[PatternRelationship] = Seq.empty): LogicalPlan = {
     val qg = QueryGraph.empty.addPatternNodes(ids.toSeq: _*).addPatternRels(patterns)
     FakePlan(ids)(PlannerQuery(qg))
   }
@@ -173,6 +166,9 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     val labelNameObj: LabelName = LabelName(labelName)_
     HasLabels(Identifier(name)_, Seq(labelNameObj))_
   }
+
+  def planTableWith(plans: LogicalPlan*)(implicit ctx: LogicalPlanningContext) =
+    plans.foldLeft(ctx.strategy.emptyPlanTable)(_ + _)
 
   implicit def idName(name: String): IdName = IdName(name)
 }

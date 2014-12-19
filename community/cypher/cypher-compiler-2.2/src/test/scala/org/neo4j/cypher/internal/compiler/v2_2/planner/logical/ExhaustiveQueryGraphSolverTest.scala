@@ -32,16 +32,15 @@ import scala.collection.{Map, immutable}
 class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("should plan for a single node pattern") {
-    val solver = ExhaustiveQueryGraphSolver.withDefaults(
-      generatePlanTable(AllNodesScan("a", Set.empty)(PlannerQuery(graph = QueryGraph(patternNodes = Set("a"))))),
-      Seq(undefinedPlanProducer))
-
     new given {
+      queryGraphSolver = ExhaustiveQueryGraphSolver.withDefaults(
+        generatePlanTable(AllNodesScan("a", Set.empty)(PlannerQuery(graph = QueryGraph(patternNodes = Set("a"))))),
+        Seq(undefinedPlanProducer))
       qg = QueryGraph(patternNodes = Set("a"))
       withLogicalPlanningContext { (ctx) =>
         implicit val x = ctx
 
-        solver.tryPlan(qg).get should equal(
+        queryGraphSolver.plan(qg) should equal(
           AllNodesScan("a", Set.empty)(null)
         )
       }
@@ -49,14 +48,13 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
   }
 
   test("should plan for a single relationship pattern") {
-    val solver = ExhaustiveQueryGraphSolver.withDefaults(generatePlanTable(
-      AllNodesScan("a", Set.empty)(PlannerQuery(graph = QueryGraph(patternNodes = Set("a")))),
-      NodeByLabelScan("b", LazyLabel("B"), Set.empty)(PlannerQuery(graph = QueryGraph(patternNodes = Set("b"), selections =
-        Selections.from(
-        HasLabels(ident("b"), Seq(LabelName("B")(pos)))(pos)))))
-    ), Seq(expandOptions))
-
     new given {
+      queryGraphSolver = ExhaustiveQueryGraphSolver.withDefaults(generatePlanTable(
+        AllNodesScan("a", Set.empty)(PlannerQuery(graph = QueryGraph(patternNodes = Set("a")))),
+        NodeByLabelScan("b", LazyLabel("B"), Set.empty)(PlannerQuery.empty.withGraph(
+          QueryGraph(patternNodes = Set("b"),
+            selections = Selections.from(HasLabels(ident("b"), Seq(LabelName("B")(pos)))(pos)))))
+      ), Seq(expandOptions))
       qg = QueryGraph(
         patternNodes = Set("a", "b"),
         patternRelationships = Set(PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)),
@@ -70,7 +68,7 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
       withLogicalPlanningContext { (ctx) =>
         implicit val x = ctx
 
-        solver.tryPlan(qg).get should equal(
+        queryGraphSolver.plan(qg) should equal(
           Expand(NodeByLabelScan("b", LazyLabel("B"), Set.empty)(null), "b", Direction.INCOMING, Seq.empty, "a", "r")(null)
         )
       }
@@ -85,10 +83,10 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
         Selections.from(
         HasLabels(ident("b"), Seq(LabelName("B")(pos)))(pos)))))
     )
-    val solver = ExhaustiveQueryGraphSolver.withDefaults(leafPlanTableGenerator = planTableGenerator, planProducers = Seq(expandOptions))
     val labelBPredicate = HasLabels(ident("b"), Seq(LabelName("B")(pos)))(pos)
 
     new given {
+      queryGraphSolver = ExhaustiveQueryGraphSolver.withDefaults(leafPlanTableGenerator = planTableGenerator, planProducers = Seq(expandOptions))
       qg = QueryGraph(
         patternNodes = Set("a", "b"),
         patternRelationships = Set(PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)),
@@ -105,7 +103,7 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
       withLogicalPlanningContext { (ctx) =>
         implicit val x = ctx
 
-        solver.tryPlan(qg).get should equal(
+        queryGraphSolver.plan(qg) should equal(
           Selection(Seq(labelBPredicate),
             Expand(
               NodeByLabelScan("a", LazyLabel("A"), Set.empty)(null), "a", Direction.OUTGOING, Seq.empty, "b", "r")(null)
@@ -123,10 +121,9 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
         HasLabels(ident("b"), Seq(LabelName("B")(pos)))(pos))))),
       AllNodesScan("c", Set.empty)(PlannerQuery(graph = QueryGraph(patternNodes = Set("c"))))
     )
-    val solver = ExhaustiveQueryGraphSolver.withDefaults(leafPlanTableGenerator = planTableGenerator, planProducers =
-      Seq(expandOptions, joinOptions))
-
     new given {
+      queryGraphSolver = ExhaustiveQueryGraphSolver.withDefaults(leafPlanTableGenerator = planTableGenerator, planProducers =
+        Seq(expandOptions, joinOptions))
       qg = QueryGraph(
         patternNodes = Set("a", "b", "c"),
         patternRelationships = Set(
@@ -146,7 +143,7 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
       withLogicalPlanningContext { (ctx) =>
         implicit val x = ctx
 
-        solver.tryPlan(qg).get should equal(
+        queryGraphSolver.plan(qg) should equal(
           NodeHashJoin(Set("c"),
             Expand(
               NodeByLabelScan("a", LazyLabel("A"), Set.empty)(null), "a", Direction.OUTGOING, Seq.empty, "c", "r1")(null),
@@ -158,17 +155,16 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
   }
 
   test("should plan a simple argument row when everything is covered") {
-    val solver = ExhaustiveQueryGraphSolver.withDefaults(
-      generatePlanTable(
-        Argument(Set("a"))(PlannerQuery(graph = QueryGraph(patternNodes = Set("a"), argumentIds = Set("a"))))()),
-      Seq(undefinedPlanProducer))
-
     new given {
+      queryGraphSolver = ExhaustiveQueryGraphSolver.withDefaults(
+        generatePlanTable(
+          Argument(Set("a"))(PlannerQuery(graph = QueryGraph(patternNodes = Set("a"), argumentIds = Set("a"))))()),
+        Seq(undefinedPlanProducer))
       qg = QueryGraph(patternNodes = Set("a"), argumentIds = Set("a"))
       withLogicalPlanningContext { (ctx) =>
         implicit val x = ctx
 
-        solver.tryPlan(qg).get should equal(
+        queryGraphSolver.plan(qg) should equal(
           Argument(Set("a"))(null)()
         )
       }
@@ -176,14 +172,13 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
   }
 
   test("should plan a relationship pattern based on an argument row since part of the node pattern is already solved") {
-    val solver = ExhaustiveQueryGraphSolver.withDefaults(
-      generatePlanTable(
-        Argument(Set("a"))(PlannerQuery(graph = QueryGraph(patternNodes = Set("a"), argumentIds = Set("a"))))(),
-        AllNodesScan("b", Set.empty)(PlannerQuery(graph = QueryGraph(patternNodes = Set("b"), argumentIds = Set("a"))))
-      ),
-      Seq(expandOptions))
-
     new given {
+      queryGraphSolver = ExhaustiveQueryGraphSolver.withDefaults(
+        generatePlanTable(
+          Argument(Set("a"))(PlannerQuery(graph = QueryGraph(patternNodes = Set("a"), argumentIds = Set("a"))))(),
+          AllNodesScan("b", Set.empty)(PlannerQuery(graph = QueryGraph(patternNodes = Set("b"), argumentIds = Set("a"))))
+        ),
+        Seq(expandOptions))
       qg = QueryGraph(patternNodes = Set("a", "b"),
         patternRelationships = Set(PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)),
         argumentIds = Set("a"))
@@ -196,7 +191,7 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
       withLogicalPlanningContext { (ctx) =>
         implicit val x = ctx
 
-        solver.tryPlan(qg).get should equal(
+        queryGraphSolver.plan(qg) should equal(
           Expand(Argument(Set("a"))(null)(), "a", Direction.OUTGOING, Seq.empty, "b", "r", ExpandAll)(null)
         )
       }
@@ -204,13 +199,13 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
   }
 
   private val undefinedPlanProducer: PlanProducer = new PlanProducer {
-    def apply(qg: QueryGraph, cache: Map[QueryGraph, LogicalPlan]): Seq[LogicalPlan] = ???
+    def apply(qg: QueryGraph, cache: PlanTable): Seq[LogicalPlan] = ???
   }
 
   private def generatePlanTable(plans: LogicalPlan*): PlanTableGenerator = {
     new PlanTableGenerator {
       def apply(qg: QueryGraph, plan: Option[LogicalPlan])(implicit context: LogicalPlanningContext): PlanTable =
-        PlanTable(plans: _*)
+        ExhaustivePlanTable(plans: _*)
     }
   }
 }

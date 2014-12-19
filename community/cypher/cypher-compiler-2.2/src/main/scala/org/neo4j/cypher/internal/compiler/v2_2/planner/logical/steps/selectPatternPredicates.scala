@@ -127,7 +127,7 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer[QueryGraph])
     val plan = simpleSelection(input, queryGraph)
 
     def findBestPlanForPatternPredicates(plan: LogicalPlan): LogicalPlan = {
-      val secretPlanTable = PlanTable(Map(plan.availableSymbols -> plan))
+      val secretPlanTable = context.strategy.emptyPlanTable + plan
       val result = candidatesProducer(secretPlanTable, queryGraph)
       pickBestPlan(result).getOrElse(plan)
     }
