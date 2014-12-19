@@ -198,6 +198,34 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
     }
   }
 
+  test("should produce no plans for expand and join when the considered sub-query are not solved") {
+    new given {
+      queryGraphSolver = ExhaustiveQueryGraphSolver.withDefaults(
+        generatePlanTable(
+          AllNodesScan("corp", Set.empty)(PlannerQuery(graph = QueryGraph(patternNodes = Set("corp")))),
+          AllNodesScan("a1", Set.empty)(PlannerQuery(graph = QueryGraph(patternNodes = Set("a1")))),
+          AllNodesScan("a2", Set.empty)(PlannerQuery(graph = QueryGraph(patternNodes = Set("a2")))),
+          AllNodesScan("c", Set.empty)(PlannerQuery(graph = QueryGraph(patternNodes = Set("c")))),
+          AllNodesScan("v", Set.empty)(PlannerQuery(graph = QueryGraph(patternNodes = Set("v"))))
+        ),
+        Seq(expandOptions, joinOptions))
+      qg = QueryGraph(patternNodes = Set("corp", "a1", "a2", "c", "v"),
+        patternRelationships = Set(
+          PatternRelationship("r1", ("corp", "a1"), Direction.INCOMING, Seq.empty, SimplePatternLength),
+          PatternRelationship("r2", ("a1", "c"), Direction.OUTGOING, Seq.empty, SimplePatternLength),
+          PatternRelationship("r3", ("c", "v"), Direction.OUTGOING, Seq.empty, SimplePatternLength),
+          PatternRelationship("r4", ("corp", "a2"), Direction.INCOMING, Seq.empty, SimplePatternLength),
+          PatternRelationship("r5", ("a2", "c"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+        ))
+
+      withLogicalPlanningContext { (ctx) =>
+        implicit val x = ctx
+
+        queryGraphSolver.plan(qg) // should not throw
+      }
+    }
+  }
+
   private val undefinedPlanProducer: PlanProducer = new PlanProducer {
     def apply(qg: QueryGraph, cache: PlanTable): Seq[LogicalPlan] = ???
   }

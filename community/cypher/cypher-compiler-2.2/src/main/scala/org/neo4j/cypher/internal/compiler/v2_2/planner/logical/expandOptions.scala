@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlan
 case object expandOptions extends PlanProducer with CollectionSupport {
 
   def apply(qg: QueryGraph, cache: PlanTable): Seq[LogicalPlan] = {
-    qg.combinations(qg.size - 1).map {
+    qg.combinations(qg.size - 1).flatMap {
       subQG =>
         val missingRel = (qg.patternRelationships -- subQG.patternRelationships).head
         val startsFromSubQG = subQG.patternNodes.contains(missingRel.nodes._1)
@@ -46,10 +46,9 @@ case object expandOptions extends PlanProducer with CollectionSupport {
   }
 
   private def createLogicalPlan(cache: PlanTable, subQG: QueryGraph,
-                                to: IdName, from: IdName, r: PatternRelationship, dir: Direction): Expand = {
+                                to: IdName, from: IdName, r: PatternRelationship, dir: Direction): Option[Expand] = {
     val overlapping = subQG.patternNodes.contains(to)
     val mode = if (overlapping) ExpandInto else ExpandAll
-
-    planSimpleExpand(cache(subQG), from, dir, to, r, mode)
+    cache.get(subQG).map(planSimpleExpand(_, from, dir, to, r, mode))
   }
 }
