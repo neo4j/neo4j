@@ -287,6 +287,37 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
     }
   }
 
+  test("should plan for optional single relationship pattern") {
+    new given {
+      queryGraphSolver = ExhaustiveQueryGraphSolver.withDefaults()
+      qg = QueryGraph(// MATCH a OPTIONAL MATCH a-[r]->b
+        patternNodes = Set("a"),
+        optionalMatches = Seq(QueryGraph(
+          patternNodes = Set("a", "b"),
+          argumentIds = Set("a"),
+          patternRelationships = Set(PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength))
+        ))
+      )
+
+      labelCardinality = immutable.Map(
+        "B" -> Cardinality(10)
+      )
+
+      withLogicalPlanningContext { (ctx) =>
+        implicit val x = ctx
+
+        queryGraphSolver.plan(qg) should equal(
+          Apply(
+            AllNodesScan("a", Set.empty)(null),
+            Optional(
+              Expand(Argument(Set("a"))(null)(), "a", Direction.OUTGOING, Seq.empty, "b", "r")(null)
+            )(null)
+          )(null)
+        )
+      }
+    }
+  }
+
   private val undefinedPlanProducer: PlanProducer = new PlanProducer {
     def apply(qg: QueryGraph, cache: PlanTable): Seq[LogicalPlan] = ???
   }

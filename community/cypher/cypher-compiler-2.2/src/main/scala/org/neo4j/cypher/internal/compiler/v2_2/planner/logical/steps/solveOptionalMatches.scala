@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{logical, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.solveOptionalMatches.OptionalSolver
@@ -67,7 +67,7 @@ case class solveOptionalMatches(solvers: Seq[OptionalSolver]) {
     optionalQG.argumentIds.subsetOf(outerPlan.availableSymbols)
 }
 
-object solveOptionalMatches extends LogicalPlanningFunction2[PlanTable, QueryGraph, PlanTable] {
+object solveOptionalMatches extends logical.LogicalPlanningFunction2[PlanTable, QueryGraph, PlanTable] {
 
   type OptionalSolver = LogicalPlanningFunction2[QueryGraph, LogicalPlan, Option[LogicalPlan]]
 

@@ -23,24 +23,28 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.Hint
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.ExhaustiveQueryGraphSolver._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{LogicalPlan, _}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.pickBestPlan
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.{applyOptional, outerHashJoin, pickBestPlan}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryGraph, Selections}
 
+import scala.annotation.tailrec
 import scala.collection.mutable
 
 case class ExhaustiveQueryGraphSolver(leafPlanTableGenerator: PlanTableGenerator,
                                       planProducers: Seq[PlanProducer],
                                       bestPlanFinder: CandidateSelector,
                                       config: PlanningStrategyConfiguration)
-  extends TentativeQueryGraphSolver {
+  extends QueryGraphSolver {
+
+  private val stuff = Seq(
+    applyOptional,
+    outerHashJoin
+  )
 
   def emptyPlanTable: PlanTable = ExhaustivePlanTable.empty
 
-  def tryPlan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): Option[LogicalPlan] = {
-    val components = queryGraph.connectedComponents
-    val disconnectedPlans = components.flatMap { qg =>
-      val cache = initiateCacheWithLeafPlans(qg, leafPlan)
-
+  def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): LogicalPlan = {
+    val cache = initiateCacheWithLeafPlans(queryGraph, leafPlan)
+    val plans = queryGraph.connectedComponents.map { qg =>
       (1 to qg.size) foreach { x =>
         qg.combinations(x).foreach {
           subQG =>
@@ -50,17 +54,46 @@ case class ExhaustiveQueryGraphSolver(leafPlanTableGenerator: PlanTableGenerator
         }
       }
 
-      cache.get(qg)
+      cache(qg)
     }
 
-    disconnectedPlans.reduceRightOption[LogicalPlan] { case (plan, acc) =>
-      config.applySelections(planCartesianProduct(plan, acc), queryGraph)
+
+    val resultPlan = plans.reduceRightOption[LogicalPlan] { case (plan, acc) =>
+      val result = config.applySelections(planCartesianProduct(plan, acc), queryGraph)
+      cache + result
+      result
+    }
+
+    val plan = resultPlan.getOrElse(planSingleRow())
+    val optionalQGs: Seq[QueryGraph] = findQGsToSolve(plan, cache, queryGraph.optionalMatches)
+    optionalQGs.foldLeft(plan) {
+      case (lhs: LogicalPlan, optionalQg: QueryGraph) =>
+        val plans = stuff.flatMap(_.apply(optionalQg, lhs))
+        assert(plans.map(_.solved).distinct.size == 1) // All plans are solving the same query
+        pickBestPlan(plans).get
     }
   }
 
   private def initiateCacheWithLeafPlans(queryGraph: QueryGraph, leafPlan: Option[LogicalPlan])
                                         (implicit context: LogicalPlanningContext) =
     leafPlanTableGenerator.apply(queryGraph, leafPlan).plans.foldLeft(context.strategy.emptyPlanTable)(_ + _)
+
+  private def findQGsToSolve(plan: LogicalPlan, table: PlanTable, graphs: Seq[QueryGraph]): Seq[QueryGraph] = {
+    @tailrec
+    def inner(in: Seq[QueryGraph], out: Seq[QueryGraph]): Seq[QueryGraph] = in match {
+      case hd :: tl if isSolved(table, hd)  => inner(tl, out)
+      case hd :: tl if applicable(plan, hd) => inner(tl, out :+ hd)
+      case _                                => out
+    }
+
+    inner(graphs, Seq.empty)
+  }
+
+  private def isSolved(table: PlanTable, optionalQG: QueryGraph) =
+    table.plans.exists(_.solved.lastQueryGraph.optionalMatches.contains(optionalQG))
+
+  private def applicable(outerPlan: LogicalPlan, optionalQG: QueryGraph) =
+    optionalQG.argumentIds.subsetOf(outerPlan.availableSymbols)
 }
 
 object ExhaustiveQueryGraphSolver {
