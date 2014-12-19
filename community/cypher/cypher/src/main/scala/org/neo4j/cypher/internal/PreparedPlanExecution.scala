@@ -17,15 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.executionplan
+package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.ExecutionMode
-import org.neo4j.cypher.internal.compiler.v2_2.PlannerName
-import org.neo4j.cypher.internal.compiler.v2_2.spi.{GraphStatistics, QueryContext}
+import org.neo4j.kernel.GraphDatabaseAPI
 
-abstract class ExecutionPlan {
-  def run(queryContext: QueryContext, planType: ExecutionMode, params: Map[String, Any]): InternalExecutionResult
-  def isPeriodicCommit: Boolean
-  def plannerUsed: PlannerName
-  def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean
+case class PreparedPlanExecution(plan: ExecutionPlan, executionMode: ExecutionMode, extractedParams: Map[String, Any]) {
+  def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
+    plan.run(graph, txInfo, executionMode, params ++ extractedParams)
+
+  def profile(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
+    plan.run(graph, txInfo, ProfileMode, params ++ extractedParams)
 }

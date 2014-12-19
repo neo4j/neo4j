@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.Normal
+import org.neo4j.cypher.internal.NormalMode
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.StatementConverters
@@ -108,7 +108,7 @@ class LegacyPipeBuilderTest extends CypherFunSuite {
 
   private def buildExecutionPipe(q: String): Pipe = {
     val statement = parser.parse(q)
-    val parsedQ = PreparedQuery(statement, q, Map.empty, Normal)(mock[SemanticTable], mock[Scope])
+    val parsedQ = PreparedQuery(statement, q, Map.empty)(mock[SemanticTable], mock[Scope])
     planBuilder.producePlan(parsedQ, planContext).pipe
   }
 }

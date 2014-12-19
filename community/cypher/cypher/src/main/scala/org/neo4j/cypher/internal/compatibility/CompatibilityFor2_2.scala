@@ -112,8 +112,8 @@ trait CompatibilityFor2_2 {
 
   protected val compiler: v2_2.CypherCompiler
 
-  def produceParsedQuery(statementAsText: String, planType: PlanType) = new ParsedQuery {
-    val preparedQueryForV_2_2 = Try(compiler.prepareQuery(statementAsText, planType))
+  def produceParsedQuery(statementAsText: String) = new ParsedQuery {
+    val preparedQueryForV_2_2 = Try(compiler.prepareQuery(statementAsText))
 
     def isPeriodicCommit = preparedQueryForV_2_2.map(_.isPeriodicCommit).getOrElse(false)
 
@@ -131,27 +131,21 @@ trait CompatibilityFor2_2 {
       new ExceptionTranslatingQueryContext(ctx)
     }
 
-    def profile(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
+    def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, executionMode: ExecutionMode, params: Map[String, Any]): ExtendedExecutionResult =
       exceptionHandlerFor2_2.runSafely {
-        ExecutionResultWrapperFor2_2(inner.profile(queryContext(graph, txInfo), params), translate(inner.plannerUsed))
-      }
-
-    def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
-      exceptionHandlerFor2_2.runSafely {
-        ExecutionResultWrapperFor2_2(inner.execute(queryContext(graph, txInfo), params), translate(inner.plannerUsed))
+        ExecutionResultWrapperFor2_2(inner.run(queryContext(graph, txInfo), executionMode, params), translate(inner.plannerUsed))
       }
 
     def isPeriodicCommit = inner.isPeriodicCommit
 
     private def translate(in: PlannerName): CypherVersion = in match {
       case Legacy => CypherVersion.v2_2_rule
-      case Ronja => CypherVersion.v2_2_cost
+      case Ronja  => CypherVersion.v2_2_cost
     }
 
     def isStale(lastTxId: () => Long, statement: Statement) =
       inner.isStale(lastTxId, new TransactionBoundGraphStatistics(statement))
   }
-
 }
 
 case class ExecutionResultWrapperFor2_2(inner: InternalExecutionResult, version: CypherVersion) extends ExtendedExecutionResult {

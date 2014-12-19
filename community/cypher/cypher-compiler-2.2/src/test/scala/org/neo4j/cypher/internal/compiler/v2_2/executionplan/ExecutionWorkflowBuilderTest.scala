@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.Pipe
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v2_2.{Ronja, EagerResultIterator, ExplainExecutionResult, PipeExecutionResult}
-import org.neo4j.cypher.internal.{Explained, Normal}
+import org.neo4j.cypher.internal.{ExplainMode, NormalMode}
 import org.neo4j.graphdb.GraphDatabaseService
 
 class ExecutionWorkflowBuilderTest extends CypherFunSuite {
@@ -37,14 +37,14 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     when(pipe.createResults(any())).thenReturn(Iterator.empty)
     val graph = mock[GraphDatabaseService]
     val context = mock[QueryContext]
-    val builderFactory = DefaultExecutionResultBuilderFactory(PipeInfo(pipe, updating = true, None, None, PlannerName), List.empty, Normal)
+    val builderFactory = DefaultExecutionResultBuilderFactory(PipeInfo(pipe, updating = true, None, None, PlannerName), List.empty)
 
     // WHEN
     val builder = builderFactory.create()
     builder.setQueryContext(context)
 
     // THEN
-    val result = builder.build(graph, "42", Map.empty)
+    val result = builder.build(graph, "42", NormalMode, Map.empty)
     result shouldBe a [PipeExecutionResult]
     result.asInstanceOf[PipeExecutionResult].result shouldBe a[EagerResultIterator]
   }
@@ -55,14 +55,14 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     when(pipe.createResults(any())).thenReturn(Iterator.empty)
     val graph = mock[GraphDatabaseService]
     val context = mock[QueryContext]
-    val builderFactory = DefaultExecutionResultBuilderFactory(PipeInfo(pipe, updating = false, None, None, PlannerName), List.empty, Normal)
+    val builderFactory = DefaultExecutionResultBuilderFactory(PipeInfo(pipe, updating = false, None, None, PlannerName), List.empty)
 
     // WHEN
     val builder = builderFactory.create()
     builder.setQueryContext(context)
 
     // THEN
-    val result = builder.build(graph, "42", Map.empty)
+    val result = builder.build(graph, "42", NormalMode, Map.empty)
     result shouldBe a [PipeExecutionResult]
     result.asInstanceOf[PipeExecutionResult].result should not be an[EagerResultIterator]
   }
@@ -73,14 +73,14 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     when(pipe.createResults(any())).thenReturn(Iterator.empty)
     val graph = mock[GraphDatabaseService]
     val context = mock[QueryContext]
-    val builderFactory = DefaultExecutionResultBuilderFactory(PipeInfo(pipe, updating = false, None, None, PlannerName), List.empty, Explained)
+    val builderFactory = DefaultExecutionResultBuilderFactory(PipeInfo(pipe, updating = false, None, None, PlannerName), List.empty)
 
     // WHEN
     val builder = builderFactory.create()
     builder.setQueryContext(context)
 
     // THEN
-    val result = builder.build(graph, "42", Map.empty)
+    val result = builder.build(graph, "42", ExplainMode, Map.empty)
     result shouldBe a [ExplainExecutionResult]
   }
 }

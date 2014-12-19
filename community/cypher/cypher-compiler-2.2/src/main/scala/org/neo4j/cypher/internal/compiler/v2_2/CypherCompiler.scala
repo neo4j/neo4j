@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.parser.{CypherParser, ParserMonit
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
-import org.neo4j.cypher.internal.{LRUCache, PlanType}
+import org.neo4j.cypher.internal.{LRUCache, ExecutionMode}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.impl.util.StringLogger
@@ -112,10 +112,10 @@ case class CypherCompiler(parser: CypherParser,
                           cacheMonitor: CypherCacheFlushingMonitor[CacheAccessor[PreparedQuery, ExecutionPlan]],
                           monitors: Monitors) {
 
-  def planQuery(queryText: String, context: PlanContext, planType: PlanType): (ExecutionPlan, Map[String, Any]) =
-    planPreparedQuery(prepareQuery(queryText, planType), context)
+  def planQuery(queryText: String, context: PlanContext): (ExecutionPlan, Map[String, Any]) =
+    planPreparedQuery(prepareQuery(queryText), context)
 
-  def prepareQuery(queryText: String, planType: PlanType): PreparedQuery = {
+  def prepareQuery(queryText: String): PreparedQuery = {
     val parsedStatement = parser.parse(queryText)
 
     val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses, normalizeWithClauses))
@@ -125,7 +125,7 @@ case class CypherCompiler(parser: CypherParser,
     val postRewriteSemanticState = semanticChecker.check(queryText, rewrittenStatement)
 
     val table = SemanticTable(types = postRewriteSemanticState.typeTable)
-    PreparedQuery(rewrittenStatement, queryText, extractedParams, planType)(table, postRewriteSemanticState.scopeTree)
+    PreparedQuery(rewrittenStatement, queryText, extractedParams)(table, postRewriteSemanticState.scopeTree)
   }
 
   def planPreparedQuery(parsedQuery: PreparedQuery, context: PlanContext): (ExecutionPlan, Map[String, Any]) = {

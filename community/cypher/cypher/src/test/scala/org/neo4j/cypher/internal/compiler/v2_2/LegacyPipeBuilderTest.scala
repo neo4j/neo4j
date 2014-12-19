@@ -24,7 +24,7 @@ import java.util.concurrent._
 import org.junit.Assert._
 import org.mockito.Mockito._
 import org.neo4j.cypher.GraphDatabaseTestSupport
-import org.neo4j.cypher.internal.Normal
+import org.neo4j.cypher.internal.NormalMode
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Identifier, Literal}
@@ -54,7 +54,8 @@ class LegacyPipeBuilderTest
   val planner = new Planner(mock[Monitors], SimpleMetricsFactory, mock[PlanningMonitor], Clock.SYSTEM_CLOCK)
 
   class FakePreparedQuery(q: AbstractQuery)
-    extends PreparedQuery(mock[Statement], "q", Map.empty, Normal)(SemanticTable(), Scope(Map.empty, Seq.empty)) {
+    extends PreparedQuery(mock[Statement], "q", Map.empty)(SemanticTable(), Scope(Map.empty, Seq.empty)) {
+
     override def abstractQuery: AbstractQuery = q
 
     override def isPeriodicCommit: Boolean = q.isInstanceOf[PeriodicCommitQuery]

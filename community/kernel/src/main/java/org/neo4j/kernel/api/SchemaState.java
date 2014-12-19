@@ -24,4 +24,6 @@ import org.neo4j.helpers.Function;
 interface SchemaState
 {
     <K, V> V schemaStateGetOrCreate( K key, Function<K, V> creator );
+
+    void schemaStateFlush();
 }

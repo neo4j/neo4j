@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2
 
 import org.neo4j.cypher.GraphDatabaseTestSupport
-import org.neo4j.cypher.internal.Normal
+import org.neo4j.cypher.internal.NormalMode
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.ExecutionPlan
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -66,7 +66,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     val compiler = createCompiler()
     compiler.monitors.addMonitorListener(counter)
 
-    graph.inTx { compiler.planQuery("return 42", planContext, Normal) }
+    graph.inTx { compiler.planQuery("return 42", planContext) }
 
     counter.counts should equal(CacheCounts(hits = 0, misses = 1, flushes = 1))
   }
@@ -76,8 +76,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     val counter = new CacheCounter()
     compiler.monitors.addMonitorListener(counter)
 
-    graph.inTx { compiler.planQuery("return 42", planContext, Normal) }
-    graph.inTx { compiler.planQuery("return 42", planContext, Normal) }
+    graph.inTx { compiler.planQuery("return 42", planContext) }
+    graph.inTx { compiler.planQuery("return 42", planContext) }
 
     counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1))
   }
@@ -87,9 +87,9 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     val counter = new CacheCounter()
     compiler.monitors.addMonitorListener(counter)
 
-    graph.inTx { compiler.planQuery("return 42", planContext, Normal) }
+    graph.inTx { compiler.planQuery("return 42", planContext) }
     graph.createConstraint("Person", "id")
-    graph.inTx { compiler.planQuery("return 42", planContext, Normal) }
+    graph.inTx { compiler.planQuery("return 42", planContext) }
 
     counter.counts should equal(CacheCounts(hits = 0, misses = 2, flushes = 2))
   }
@@ -104,11 +104,11 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
     createLabeledNode("Dog")
     (0 until 50).foreach { _ => createLabeledNode("Person") }
-    graph.inTx { compiler.planQuery(query, planContext, Normal) }
+    graph.inTx { compiler.planQuery(query, planContext) }
 
     // when
     (0 until 1000).foreach { _ => createLabeledNode("Dog") }
-    graph.inTx { compiler.planQuery(query, planContext, Normal) }
+    graph.inTx { compiler.planQuery(query, planContext) }
 
     // then
     counter.counts should equal(CacheCounts(hits = 1, misses = 2, flushes = 1, evicted = 1))
@@ -125,11 +125,11 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
     createLabeledNode("Dog")
     (0 until 50).foreach { _ => createLabeledNode("Person") }
-    graph.inTx { compiler.planQuery(query, planContext, Normal) }
+    graph.inTx { compiler.planQuery(query, planContext) }
 
     // when
     (0 until 1000).foreach { _ => createLabeledNode("Dog") }
-    graph.inTx { compiler.planQuery(query, planContext, Normal) }
+    graph.inTx { compiler.planQuery(query, planContext) }
 
     // then
     logger.assertAtLeastOnce(LogCall.info(s"Discarded stale query from the query cache: $query"))

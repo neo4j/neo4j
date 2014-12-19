@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.Query
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{GraphStatistics, PlanContext, QueriedGraphStatistics}
 import org.neo4j.cypher.internal.spi.v2_2.{TransactionBoundPlanContext, TransactionBoundQueryContext}
-import org.neo4j.cypher.internal.{LRUCache, Profiled}
+import org.neo4j.cypher.internal.{LRUCache, ProfileMode}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.neo4j.helpers.Clock
@@ -100,13 +100,13 @@ class ProfileRonjaPlanningTest extends ExecutionEngineFunSuite with QueryStatist
     val (plan, parameters) = db.withTx {
       tx =>
         val planContext = new TransactionBoundPlanContext(db.statement, db) with RealStatistics
-        compiler.planQuery(query, planContext, Profiled)
+        compiler.planQuery(query, planContext)
     }
 
     db.withTx {
       tx =>
         val queryContext = new TransactionBoundQueryContext(db, tx, true, db.statement)
-        val result = plan.execute(queryContext, parameters)
+        val result = plan.run(queryContext, ProfileMode, parameters)
         (result.toList, result)
     }
   }

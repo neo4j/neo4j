@@ -33,29 +33,33 @@ case class CompatibilityFor2_0(graph: GraphDatabaseService, queryCacheSize: Int)
   private val queryCache = new LRUCache[Object, Object](queryCacheSize)
   private val compiler   = new CypherCompiler(graph, (q, f) => queryCache.getOrElseUpdate(q, f))
 
-  def parseQuery(statementAsText: String, profiled: Boolean) = new ParsedQuery {
+  def parseQuery(statementAsText: String) = new ParsedQuery {
     override def plan(statement: Statement): (ExecutionPlan, Map[String, Any]) = {
       val planImpl = compiler.prepare(statementAsText, new PlanContext_v2_0(statement, graph))
-      (new ExecutionPlanWrapper(planImpl, profiled), Map.empty)
+      (new ExecutionPlanWrapper(planImpl), Map.empty)
     }
 
     def isPeriodicCommit = false
   }
 
-  class ExecutionPlanWrapper(inner: ExecutionPlan_v2_0, profiled: Boolean) extends ExecutionPlan {
+  class ExecutionPlanWrapper(inner: ExecutionPlan_v2_0) extends ExecutionPlan {
 
     private def queryContext(graph: GraphDatabaseAPI, txInfo: TransactionInfo) = {
       val ctx = new QueryContext_v2_0(graph, txInfo.tx, txInfo.statement)
       new ExceptionTranslatingQueryContext_v2_0(ctx)
     }
 
-    def profile(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
-      LegacyExecutionResultWrapper(inner.profile(queryContext(graph, txInfo), params), planDescriptionRequested = true, CypherVersion.v2_0)
+    def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, executionMode: ExecutionMode, params: Map[String, Any]) = executionMode match {
+      case NormalMode   => execute(graph, txInfo, params)
+      case ProfileMode => profile(graph, txInfo, params)
+      case _        => throw new UnsupportedOperationException(s"${CypherVersion.v2_0.name}: $executionMode is unsupported")
+    }
 
-    def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) = if (profiled)
-      profile(graph, txInfo, params)
-    else
+    private def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
       LegacyExecutionResultWrapper(inner.execute(queryContext(graph, txInfo), params), planDescriptionRequested = false, CypherVersion.v2_0)
+
+    private def profile(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
+      LegacyExecutionResultWrapper(inner.profile(queryContext(graph, txInfo), params), planDescriptionRequested = true, CypherVersion.v2_0)
 
     def isPeriodicCommit = false
 

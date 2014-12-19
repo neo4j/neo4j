@@ -22,25 +22,24 @@ package org.neo4j.kernel.impl.api;
 import org.junit.Test;
 import org.mockito.InOrder;
 
-import java.util.Collections;
-import java.util.Iterator;
-
+import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
-import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
-import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
-import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
+import org.neo4j.kernel.impl.api.operations.*;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 
+import java.util.Collections;
+import java.util.Iterator;
+
 import static org.junit.Assert.assertSame;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
+
+import static org.neo4j.helpers.Functions.*;
+import static org.neo4j.kernel.impl.locking.ResourceTypes.schemaResource;
 
 public class LockingStatementOperationsTest
 {
@@ -52,6 +51,7 @@ public class LockingStatementOperationsTest
     private final Locks.Client locks = mock( Locks.Client.class );
     private final InOrder order;
     private final KernelStatement state = new KernelStatement( null, null, null, null, locks, null );
+    private final SchemaStateOperations schemaStateOps;
 
     public LockingStatementOperationsTest()
     {
@@ -59,15 +59,18 @@ public class LockingStatementOperationsTest
         entityWriteOps = mock( EntityWriteOperations.class );
         schemaReadOps = mock( SchemaReadOperations.class );
         schemaWriteOps = mock( SchemaWriteOperations.class );
-        order = inOrder( locks, entityWriteOps, schemaReadOps, schemaWriteOps );
-        lockingOps = new LockingStatementOperations( entityReadOps, entityWriteOps, schemaReadOps, schemaWriteOps, null );
+        schemaStateOps = mock( SchemaStateOperations.class );
+        order = inOrder( locks, entityWriteOps, schemaReadOps, schemaWriteOps, schemaStateOps );
+        lockingOps = new LockingStatementOperations(
+            entityReadOps, entityWriteOps, schemaReadOps, schemaWriteOps, schemaStateOps
+        );
     }
 
     @Test
     public void shouldAcquireEntityWriteLockCreatingRelationship() throws Exception
     {
         // when
-        lockingOps.relationshipCreate( state, 1, 2, 3);
+        lockingOps.relationshipCreate( state, 1, 2, 3 );
 
         // then
         order.verify( locks ).acquireExclusive( ResourceTypes.NODE, 2 );
@@ -93,7 +96,7 @@ public class LockingStatementOperationsTest
         lockingOps.nodeAddLabel( state, 123, 456 );
 
         // then
-        order.verify( locks ).acquireShared( ResourceTypes.SCHEMA, ResourceTypes.schemaResource() );
+        order.verify( locks ).acquireShared( ResourceTypes.SCHEMA, schemaResource() );
         order.verify( entityWriteOps ).nodeAddLabel( state, 123, 456 );
     }
 
@@ -121,7 +124,7 @@ public class LockingStatementOperationsTest
         lockingOps.nodeSetProperty( state, 123, property );
 
         // then
-        order.verify( locks ).acquireShared( ResourceTypes.SCHEMA, ResourceTypes.schemaResource() );
+        order.verify( locks ).acquireShared( ResourceTypes.SCHEMA, schemaResource() );
         order.verify( entityWriteOps ).nodeSetProperty( state, 123, property );
     }
 
@@ -148,7 +151,7 @@ public class LockingStatementOperationsTest
 
         // then
         assertSame( rule, result );
-        order.verify( locks ).acquireExclusive( ResourceTypes.SCHEMA, ResourceTypes.schemaResource() );
+        order.verify( locks ).acquireExclusive( ResourceTypes.SCHEMA, schemaResource() );
         order.verify( schemaWriteOps ).indexCreate( state, 123, 456 );
     }
 
@@ -162,7 +165,7 @@ public class LockingStatementOperationsTest
         lockingOps.indexDrop( state, rule );
 
         // then
-        order.verify( locks ).acquireExclusive( ResourceTypes.SCHEMA, ResourceTypes.schemaResource() );
+        order.verify( locks ).acquireExclusive( ResourceTypes.SCHEMA, schemaResource() );
         order.verify( schemaWriteOps ).indexDrop( state, rule );
     }
 
@@ -178,7 +181,7 @@ public class LockingStatementOperationsTest
 
         // then
         assertSame( rules, result );
-        order.verify( locks ).acquireShared( ResourceTypes.SCHEMA, ResourceTypes.schemaResource() );
+        order.verify( locks ).acquireShared( ResourceTypes.SCHEMA, schemaResource() );
         order.verify( schemaReadOps ).indexesGetAll( state );
     }
 
@@ -194,7 +197,7 @@ public class LockingStatementOperationsTest
 
         // then
         assertSame( constraint, result );
-        order.verify( locks ).acquireExclusive( ResourceTypes.SCHEMA, ResourceTypes.schemaResource() );
+        order.verify( locks ).acquireExclusive( ResourceTypes.SCHEMA, schemaResource() );
         order.verify( schemaWriteOps ).uniquenessConstraintCreate( state, 123, 456 );
     }
 
@@ -208,7 +211,7 @@ public class LockingStatementOperationsTest
         lockingOps.constraintDrop( state, constraint );
 
         // then
-        order.verify( locks ).acquireExclusive( ResourceTypes.SCHEMA, ResourceTypes.schemaResource() );
+        order.verify( locks ).acquireExclusive( ResourceTypes.SCHEMA, schemaResource() );
         order.verify( schemaWriteOps ).constraintDrop( state, constraint );
     }
 
@@ -224,7 +227,7 @@ public class LockingStatementOperationsTest
 
         // then
         assertSame( constraints, result );
-        order.verify( locks ).acquireShared( ResourceTypes.SCHEMA, ResourceTypes.schemaResource() );
+        order.verify( locks ).acquireShared( ResourceTypes.SCHEMA, schemaResource() );
         order.verify( schemaReadOps ).constraintsGetForLabelAndPropertyKey( state, 123, 456 );
     }
 
@@ -240,7 +243,7 @@ public class LockingStatementOperationsTest
 
         // then
         assertSame( constraints, result );
-        order.verify( locks ).acquireShared( ResourceTypes.SCHEMA, ResourceTypes.schemaResource() );
+        order.verify( locks ).acquireShared( ResourceTypes.SCHEMA, schemaResource() );
         order.verify( schemaReadOps ).constraintsGetForLabel( state, 123 );
     }
 
@@ -256,7 +259,43 @@ public class LockingStatementOperationsTest
 
         // then
         assertSame( constraints, result );
-        order.verify( locks ).acquireShared( ResourceTypes.SCHEMA, ResourceTypes.schemaResource() );
+        order.verify( locks ).acquireShared( ResourceTypes.SCHEMA, schemaResource() );
         order.verify( schemaReadOps ).constraintsGetAll( state );
+    }
+
+    @Test
+    public void shouldAcquireSchemaReadLockBeforeUpdatingSchemaState() throws Exception
+    {
+        // given
+        Function<Object, Object> creator = constant( null );
+
+        // when
+        lockingOps.schemaStateGetOrCreate( state, null, creator );
+
+        // then
+        order.verify( locks ).acquireShared( ResourceTypes.SCHEMA, schemaResource() );
+        order.verify( schemaStateOps ).schemaStateGetOrCreate( state, null, creator );
+    }
+
+    @Test
+    public void shouldAcquireSchemaReadLockBeforeCheckingSchemaState() throws Exception
+    {
+        // when
+        lockingOps.schemaStateContains( state, null );
+
+        // then
+        order.verify( locks ).acquireShared( ResourceTypes.SCHEMA, schemaResource() );
+        order.verify( schemaStateOps ).schemaStateContains( state, null );
+    }
+
+    @Test
+    public void shouldAcquireSchemaReadLockBeforeFlushingSchemaState() throws Exception
+    {
+        // when
+        lockingOps.schemaStateFlush( state );
+
+        // then
+        order.verify( locks ).acquireShared( ResourceTypes.SCHEMA, schemaResource() );
+        order.verify( schemaStateOps ).schemaStateFlush( state );
     }
 }
