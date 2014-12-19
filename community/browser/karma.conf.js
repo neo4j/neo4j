@@ -45,7 +45,7 @@ module.exports = function(config) {
       'app/components/angular/angular.js',
       'app/components/angular-ui-bootstrap/src/modal/modal.js',
       'app/components/angular-ui-bootstrap/src/transition/transition.js',
-      'app/components/angular-local-storage/angular-local-storage.js',
+      'app/components/angular-local-storage/dist/angular-local-storage.js',
       'app/components/angular-mocks/angular-mocks.js',
       'app/components/codemirror/lib/codemirror.js',
       'app/components/angular-ui-codemirror/ui-codemirror.js',
