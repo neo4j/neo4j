@@ -23,7 +23,7 @@ import org.neo4j.collection.primitive.PrimitiveLongCollection;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 
-public class AbstractLongHopScotchCollection<VALUE> extends AbstractHopScotchCollection<VALUE>
+public abstract class AbstractLongHopScotchCollection<VALUE> extends AbstractHopScotchCollection<VALUE>
         implements PrimitiveLongCollection
 {
     public AbstractLongHopScotchCollection( Table<VALUE> table )

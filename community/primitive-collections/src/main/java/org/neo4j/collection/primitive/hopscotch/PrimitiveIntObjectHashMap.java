@@ -86,4 +86,68 @@ public class PrimitiveIntObjectHashMap<VALUE> extends AbstractIntHopScotchCollec
             }
         }
     }
+
+    @SuppressWarnings( "EqualsWhichDoesntCheckParameterClass" ) // yes it does
+    @Override
+    public boolean equals( Object other )
+    {
+        if ( typeAndSizeEqual( other ) )
+        {
+            PrimitiveIntObjectHashMap<?> that = (PrimitiveIntObjectHashMap<?>) other;
+            IntObjEquality<VALUE> equality = new IntObjEquality<VALUE>( that );
+            visitEntries( equality );
+            return equality.isEqual();
+        }
+        return false;
+    }
+
+    private static class IntObjEquality<T> implements PrimitiveIntObjectVisitor<T,RuntimeException>
+    {
+        private PrimitiveIntObjectHashMap other;
+        private boolean equal = true;
+
+        public IntObjEquality( PrimitiveIntObjectHashMap that )
+        {
+            this.other = that;
+        }
+
+        @Override
+        public boolean visited( int key, T value )
+        {
+            Object otherValue = other.get( key );
+            equal = otherValue == value || (otherValue != null && otherValue.equals( value ) );
+            return !equal;
+        }
+
+        public boolean isEqual()
+        {
+            return equal;
+        }
+    }
+
+    @Override
+    public int hashCode()
+    {
+        HashCodeComputer<VALUE> hash = new HashCodeComputer<VALUE>();
+        visitEntries( hash );
+        return hash.hashCode();
+    }
+
+    private static class HashCodeComputer<T> implements PrimitiveIntObjectVisitor<T,RuntimeException>
+    {
+        private int hash = 1337;
+
+        @Override
+        public boolean visited( int key, T value ) throws RuntimeException
+        {
+            hash += DEFAULT_HASHING.hash( key + value.hashCode() );
+            return false;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return hash;
+        }
+    }
 }

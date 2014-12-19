@@ -19,7 +19,16 @@
  */
 package org.neo4j.collection.primitive;
 
-public interface PrimitiveIntLongVisitor
+public interface PrimitiveIntLongVisitor<E extends Exception>
 {
-    void visited( int key, long value );
+    /**
+     * Visit the given entry.
+     *
+     * @param key The key of the entry.
+     * @param value The value of the entry.
+     * @return 'true' to signal that the iteration should be stopped, 'false' to signal that the iteration should
+     * continue if there are more entries to look at.
+     * @throws E any thrown exception of type 'E' will bubble up through the 'visit' method.
+     */
+    boolean visited( int key, long value ) throws E;
 }

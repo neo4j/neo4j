@@ -19,18 +19,17 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
-import java.util.ArrayList;
-import java.util.Collection;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import java.util.ArrayList;
+import java.util.Collection;
 
 import org.neo4j.collection.primitive.Primitive;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
-
 import static org.neo4j.collection.primitive.Primitive.VALUE_MARKER;
 
 @RunWith( Parameterized.class )
@@ -194,21 +193,23 @@ public class BasicTableTest
     public void shouldSetAndGetSmallKey() throws Exception
     {
         // GIVEN
-        Table table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY );
-        long nullKey = table.nullKey();
-        assertEquals( nullKey, table.key( 0 ) );
+        try ( Table table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
+        {
+            long nullKey = table.nullKey();
+            assertEquals( nullKey, table.key( 0 ) );
 
-        // WHEN
-        long key = 12345;
-        int index = 2;
-        table.put( index, key, factory.sampleValue() );
+            // WHEN
+            long key = 12345;
+            int index = 2;
+            table.put( index, key, factory.sampleValue() );
 
-        // THEN
-        assertEquals( key, table.key( index ) );
+            // THEN
+            assertEquals( key, table.key( index ) );
 
-        // WHEN/THEN
-        table.remove( index );
-        assertEquals( nullKey, table.key( index ) );
+            // WHEN/THEN
+            table.remove( index );
+            assertEquals( nullKey, table.key( index ) );
+        }
     }
 
     @Test
@@ -216,17 +217,19 @@ public class BasicTableTest
     {
         // GIVEN
         assumeTrue( factory.supportsLongs() );
-        Table table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY );
-        long nullKey = table.nullKey();
-        assertEquals( nullKey, table.key( 0 ) );
+        try ( Table table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
+        {
+            long nullKey = table.nullKey();
+            assertEquals( nullKey, table.key( 0 ) );
 
-        // WHEN
-        long key = 0x24FCFF2FFL;
-        int index = 2;
-        table.put( index, key, factory.sampleValue() );
+            // WHEN
+            long key = 0x24FCFF2FFL;
+            int index = 2;
+            table.put( index, key, factory.sampleValue() );
 
-        // THEN
-        assertEquals( key, table.key( index ) );
+            // THEN
+            assertEquals( key, table.key( index ) );
+        }
     }
 
     @Test
@@ -234,51 +237,57 @@ public class BasicTableTest
     {
         // GIVEN
         assumeTrue( factory.supportsLongs() );
-        Table table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY );
-        long nullKey = table.nullKey();
-        long key = 0x24F1FF3FEL;
-        int index = 5;
-        table.put( index, key, factory.sampleValue() );
-        assertEquals( key, table.key( index ) );
+        try ( Table table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
+        {
+            long nullKey = table.nullKey();
+            long key = 0x24F1FF3FEL;
+            int index = 5;
+            table.put( index, key, factory.sampleValue() );
+            assertEquals( key, table.key( index ) );
 
-        // WHEN
-        table.remove( index );
+            // WHEN
+            table.remove( index );
 
-        // THEN
-        assertEquals( nullKey, table.key( index ) );
+            // THEN
+            assertEquals( nullKey, table.key( index ) );
+        }
     }
 
     @Test
     public void shouldSetHopBits() throws Exception
     {
         // GIVEN
-        Table<?> table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY );
-        int index = 10;
-        long hopBits = table.hopBits( index );
-        assertEquals( 0L, hopBits );
+        try ( Table<?> table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
+        {
+            int index = 10;
+            long hopBits = table.hopBits( index );
+            assertEquals( 0L, hopBits );
 
-        // WHEN
-        table.putHopBit( index, 2 );
-        table.putHopBit( index, 11 );
+            // WHEN
+            table.putHopBit( index, 2 );
+            table.putHopBit( index, 11 );
 
-        // THEN
-        assertEquals( (1L << 2) | (1L << 11), table.hopBits( index ) );
+            // THEN
+            assertEquals( (1L << 2) | (1L << 11), table.hopBits( index ) );
+        }
     }
 
     @Test
     public void shouldMoveHopBit() throws Exception
     {
         // GIVEN
-        Table<?> table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY );
-        int index = 10;
-        table.putHopBit( index, 2 );
-        table.putHopBit( index, 11 );
+        try ( Table<?> table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
+        {
+            int index = 10;
+            table.putHopBit( index, 2 );
+            table.putHopBit( index, 11 );
 
-        // WHEN
-        table.moveHopBit( index, 2, 15 ); // will end up at 17
+            // WHEN
+            table.moveHopBit( index, 2, 15 ); // will end up at 17
 
-        // THEN
-        assertEquals( (1L << 11) | (1L << 17), table.hopBits( index ) );
+            // THEN
+            assertEquals( (1L << 11) | (1L << 17), table.hopBits( index ) );
+        }
     }
 
     private interface TableFactory

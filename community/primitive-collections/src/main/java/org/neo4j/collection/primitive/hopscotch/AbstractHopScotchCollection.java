@@ -68,6 +68,26 @@ public abstract class AbstractHopScotchCollection<VALUE> implements PrimitiveCol
 
     @Override
     public void close()
-    {   // Do nothing by default
+    {
+        table.close();
+    }
+
+    @Override
+    public abstract boolean equals( Object other );
+
+    @Override
+    public abstract int hashCode();
+
+    protected final boolean typeAndSizeEqual( Object other )
+    {
+        if ( this.getClass() == other.getClass() )
+        {
+            AbstractHopScotchCollection that = (AbstractHopScotchCollection) other;
+            if ( this.size() == that.size() )
+            {
+                return true;
+            }
+        }
+        return false;
     }
 }

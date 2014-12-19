@@ -24,7 +24,7 @@ import org.neo4j.collection.primitive.PrimitiveIntCollections.PrimitiveIntBaseIt
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntVisitor;
 
-public class AbstractIntHopScotchCollection<VALUE> extends AbstractHopScotchCollection<VALUE>
+public abstract class AbstractIntHopScotchCollection<VALUE> extends AbstractHopScotchCollection<VALUE>
         implements PrimitiveIntCollection
 {
     public AbstractIntHopScotchCollection( Table<VALUE> table )

@@ -101,4 +101,67 @@ public class PrimitiveLongIntHashMap extends AbstractLongHopScotchCollection<int
             }
         }
     }
+
+    @SuppressWarnings( "EqualsWhichDoesntCheckParameterClass" ) // yes it does
+    @Override
+    public boolean equals( Object other )
+    {
+        if ( typeAndSizeEqual( other ) )
+        {
+            PrimitiveLongIntHashMap that = (PrimitiveLongIntHashMap) other;
+            LongIntEquality equality = new LongIntEquality( that );
+            visitEntries( equality );
+            return equality.isEqual();
+        }
+        return false;
+    }
+
+    private static class LongIntEquality implements PrimitiveLongIntVisitor<RuntimeException>
+    {
+        private PrimitiveLongIntHashMap other;
+        private boolean equal = true;
+
+        public LongIntEquality( PrimitiveLongIntHashMap that )
+        {
+            this.other = that;
+        }
+
+        @Override
+        public boolean visited( long key, int value )
+        {
+            equal = other.get( key ) == value;
+            return !equal;
+        }
+
+        public boolean isEqual()
+        {
+            return equal;
+        }
+    }
+
+    @Override
+    public int hashCode()
+    {
+        HashCodeComputer hash = new HashCodeComputer();
+        visitEntries( hash );
+        return hash.hashCode();
+    }
+
+    private static class HashCodeComputer implements PrimitiveLongIntVisitor<RuntimeException>
+    {
+        private int hash = 1337;
+
+        @Override
+        public boolean visited( long key, int value ) throws RuntimeException
+        {
+            hash += DEFAULT_HASHING.hash( key + DEFAULT_HASHING.hash( value ) );
+            return false;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return hash;
+        }
+    }
 }
