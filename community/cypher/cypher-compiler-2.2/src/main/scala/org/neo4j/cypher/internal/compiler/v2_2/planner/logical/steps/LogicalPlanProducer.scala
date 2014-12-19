@@ -58,8 +58,7 @@ object LogicalPlanProducer extends CollectionSupport {
       solved = left.solved.updateTailOrSelf(_.withTail(right.solved)))
 
   def planCartesianProduct(left: LogicalPlan, right: LogicalPlan) = {
-    CartesianProduct(left, right)(
-      left.solved ++ right.solved)
+    CartesianProduct(left, right)(left.solved ++ right.solved)
   }
 
   def planDirectedRelationshipByIdSeek(idName: IdName,
@@ -71,7 +70,7 @@ object LogicalPlanProducer extends CollectionSupport {
                                        solvedPredicates: Seq[Expression] = Seq.empty) =
     DirectedRelationshipByIdSeek(idName, relIds, startNode, endNode, argumentIds)(
       PlannerQuery(graph = QueryGraph.empty
-        .addPatternRel(pattern)
+        .addPatternRelationship(pattern)
         .addPredicates(solvedPredicates: _*)
         .addArgumentIds(argumentIds.toSeq)
       )
@@ -86,7 +85,7 @@ object LogicalPlanProducer extends CollectionSupport {
                                          solvedPredicates: Seq[Expression] = Seq.empty) =
     UndirectedRelationshipByIdSeek(idName, relIds, leftNode, rightNode, argumentIds)(
       PlannerQuery(graph = QueryGraph.empty
-        .addPatternRel(pattern)
+        .addPatternRelationship(pattern)
         .addPredicates(solvedPredicates: _*)
         .addArgumentIds(argumentIds.toSeq)
       )
@@ -100,7 +99,7 @@ object LogicalPlanProducer extends CollectionSupport {
                        mode: ExpansionMode) =
     Expand(left, from, dir, pattern.types, to, pattern.name, mode)(
       left.solved.updateGraph(_
-        .addPatternRel(pattern)
+        .addPatternRelationship(pattern)
       ))
 
   def planVarExpand(left: LogicalPlan,
@@ -114,7 +113,7 @@ object LogicalPlanProducer extends CollectionSupport {
     case l: VarPatternLength =>
       VarExpand(left, from, dir, pattern.dir, pattern.types, to, pattern.name, l, mode, predicates)(
         left.solved.updateGraph(_
-          .addPatternRel(pattern)
+          .addPatternRelationship(pattern)
           .addPredicates(allPredicates: _*)
         ))
 
@@ -347,7 +346,7 @@ object LogicalPlanProducer extends CollectionSupport {
     )
 
   def planEndpointProjection(inner: LogicalPlan, start: IdName, startInScope: Boolean, end: IdName, endInScope: Boolean, patternRel: PatternRelationship) = {
-    val solved = inner.solved.updateGraph(_.addPatternRel(patternRel))
+    val solved = inner.solved.updateGraph(_.addPatternRelationship(patternRel))
     val relTypes = patternRel.types.asNonEmptyOption
     val directed = patternRel.dir != Direction.BOTH
     ProjectEndpoints(inner, patternRel.name,

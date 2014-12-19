@@ -22,9 +22,11 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Hint
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.ExhaustiveQueryGraphSolver._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{LogicalPlan, _}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.pickBestPlan
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryGraph, Selections}
 
+import scala.collection.mutable
 
 case class ExhaustiveQueryGraphSolver(leafPlanTableGenerator: PlanTableGenerator,
                                       planProducers: Seq[PlanProducer],
@@ -32,29 +34,34 @@ case class ExhaustiveQueryGraphSolver(leafPlanTableGenerator: PlanTableGenerator
                                       config: PlanningStrategyConfiguration)
   extends TentativeQueryGraphSolver {
 
-
   def emptyPlanTable: PlanTable = ExhaustivePlanTable.empty
 
   def tryPlan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): Option[LogicalPlan] = {
+    val components = queryGraph.connectedComponents
+    val disconnectedPlans = components.flatMap { qg =>
+      val cache = initiateCacheWithLeafPlans(qg, leafPlan)
 
-    val cache = initiateCacheWithLeafPlans(queryGraph, leafPlan)
-
-    (1 to queryGraph.size) foreach { x =>
-      queryGraph.combinations(x).foreach {
+      (1 to qg.size) foreach { x =>
+        qg.combinations(x).foreach {
           subQG =>
             val plans = planProducers.flatMap(_(subQG, cache)).map(config.applySelections(_, subQG))
             val bestPlan = bestPlanFinder(plans)
             bestPlan.foreach(p => cache + p)
         }
+      }
+
+      cache.get(qg)
     }
 
-    cache.get(queryGraph)
+    disconnectedPlans.reduceRightOption[LogicalPlan] { case (plan, acc) =>
+      config.applySelections(planCartesianProduct(plan, acc), queryGraph)
+    }
   }
 
   private def initiateCacheWithLeafPlans(queryGraph: QueryGraph, leafPlan: Option[LogicalPlan])
                                         (implicit context: LogicalPlanningContext) =
     leafPlanTableGenerator.apply(queryGraph, leafPlan).plans.foldLeft(context.strategy.emptyPlanTable)(_ + _)
-  }
+}
 
 object ExhaustiveQueryGraphSolver {
 
@@ -67,6 +74,30 @@ object ExhaustiveQueryGraphSolver {
   type PlanProducer = ((QueryGraph, PlanTable) => Seq[LogicalPlan])
 
   implicit class RichQueryGraph(inner: QueryGraph) {
+    /**
+     * Returns the connected patterns of this query graph where each connected pattern is represented by a QG.
+     * Does not include optional matches, shortest paths or predicates that have dependencies across multiple of the
+     * connected query graphs.
+     */
+    def connectedComponents: Seq[QueryGraph] = {
+      val visited = mutable.Set.empty[IdName]
+      inner.patternNodes.toSeq.collect {
+        case patternNode if !visited(patternNode) =>
+          val qg = connectedComponentFor(patternNode, visited)
+          val coveredIds = qg.coveredIds
+          val predicates = inner.selections.predicates.filter(_.dependencies.subsetOf(coveredIds))
+          val arguments = inner.argumentIds.filter(coveredIds)
+          val hints = inner.hints.filter(h => coveredIds.contains(IdName(h.identifier.name)))
+          val shortestPaths = inner.shortestPathPatterns.filter {
+            p => coveredIds.contains(p.rel.nodes._1) && coveredIds.contains(p.rel.nodes._2)
+          }
+          qg.
+            withSelections(Selections(predicates)).
+            withArgumentIds(arguments).
+            addHints(hints).
+            addShortestPaths(shortestPaths.toSeq: _*)
+      }
+    }
 
     def --(other: QueryGraph): QueryGraph = {
       val remainingRels: Set[PatternRelationship] = inner.patternRelationships -- other.patternRelationships
@@ -85,6 +116,30 @@ object ExhaustiveQueryGraphSolver {
       inner.
         patternRelationships.toSeq.combinations(size).
         map(r => createSubQueryWithRels(r.toSet, inner.argumentIds, inner.hints)).toSeq
+    }
+
+    private def connectedComponentFor(startNode: IdName, visited: mutable.Set[IdName]): QueryGraph = {
+      val queue = mutable.Queue(startNode)
+      var qg = QueryGraph.empty
+      while (queue.nonEmpty) {
+        val node = queue.dequeue()
+        qg = if (visited(node)) {
+          qg
+        } else {
+          visited += node
+
+          val patternRelationships = inner.patternRelationships.filter { rel =>
+            rel.coveredIds.contains(node) && !qg.patternRelationships.contains(rel)
+          }
+
+          queue.enqueue(patternRelationships.toSeq.map(_.otherSide(node)): _*)
+
+          qg
+            .addPatternNodes(node)
+            .addPatternRelationships(patternRelationships.toSeq)
+        }
+      }
+      qg
     }
 
     private def createSubQueryWithRels(rels: Set[PatternRelationship], argumentIds: Set[IdName], hints: Set[Hint]) = {

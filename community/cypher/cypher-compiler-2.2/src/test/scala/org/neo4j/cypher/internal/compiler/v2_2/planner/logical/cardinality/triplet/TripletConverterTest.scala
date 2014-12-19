@@ -44,7 +44,7 @@ class TripletConverterTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val qg = QueryGraph
       .empty
       .addPatternNodes("a", "b")
-      .addPatternRel(patRel)
+      .addPatternRelationship(patRel)
       .addSelections(Selections(Set(Predicate(Set("a"), HasLabels(ident("a"), Seq(LabelName("Animal")_))_))))
 
     val input = QueryGraphCardinalityInput(Map(IdName("a") -> Set(LabelName("Person")_)), Cardinality.SINGLE)

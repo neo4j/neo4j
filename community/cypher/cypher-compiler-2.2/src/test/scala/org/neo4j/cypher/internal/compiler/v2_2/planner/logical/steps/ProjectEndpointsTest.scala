@@ -42,7 +42,7 @@ class ProjectEndpointsTest
     val planTable = planTableWith(inputPlan)
 
     val patternRel = PatternRelationship(rName, (aName, bName), Direction.OUTGOING, Seq.empty, SimplePatternLength)
-    val qg = QueryGraph.empty.addPatternRel(patternRel)
+    val qg = QueryGraph.empty.addPatternRelationship(patternRel)
 
     projectEndpoints(planTable, qg) should equal(Seq(
       planEndpointProjection(inputPlan, aName, startInScope = false, bName, endInScope = false, patternRel)
@@ -55,7 +55,7 @@ class ProjectEndpointsTest
     val planTable = planTableWith(inputPlan)
 
     val patternRel = PatternRelationship(rName, (aName, bName), Direction.OUTGOING, Seq(RelTypeName("X")_), SimplePatternLength)
-    val qg = QueryGraph.empty.addPatternRel(patternRel)
+    val qg = QueryGraph.empty.addPatternRelationship(patternRel)
 
     projectEndpoints(planTable, qg) should equal(Seq(
       planEndpointProjection(inputPlan, aName, startInScope = false, bName, endInScope = false, patternRel)
@@ -68,7 +68,7 @@ class ProjectEndpointsTest
     val planTable = planTableWith(inputPlan)
 
     val patternRel = PatternRelationship(rName, (aName, bName), Direction.INCOMING, Seq.empty, SimplePatternLength)
-    val qg = QueryGraph.empty.addPatternRel(patternRel)
+    val qg = QueryGraph.empty.addPatternRelationship(patternRel)
 
     projectEndpoints(planTable, qg) should equal(Seq(
       planEndpointProjection(inputPlan, bName, startInScope = false, aName, endInScope = false, patternRel)
@@ -81,7 +81,7 @@ class ProjectEndpointsTest
     val planTable = planTableWith(inputPlan)
 
     val patternRel = PatternRelationship(rName, (aName, bName), Direction.OUTGOING, Seq.empty, SimplePatternLength)
-    val qg = QueryGraph.empty.addPatternRel(patternRel)
+    val qg = QueryGraph.empty.addPatternRelationship(patternRel)
 
     projectEndpoints(planTable, qg) should equal(Seq(
       planEndpointProjection(inputPlan, aName, startInScope = true, bName, endInScope = false, patternRel)
@@ -94,7 +94,7 @@ class ProjectEndpointsTest
     val planTable = planTableWith(inputPlan)
 
     val patternRel = PatternRelationship(rName, (aName, bName), Direction.OUTGOING, Seq.empty, SimplePatternLength)
-    val qg = QueryGraph.empty.addPatternRel(patternRel)
+    val qg = QueryGraph.empty.addPatternRelationship(patternRel)
 
     projectEndpoints(planTable, qg) should equal(Seq(
       planEndpointProjection(inputPlan, aName, startInScope = false, bName, endInScope = true, patternRel)
@@ -107,7 +107,7 @@ class ProjectEndpointsTest
     val planTable = planTableWith(inputPlan)
 
     val patternRel = PatternRelationship(rName, (aName, bName), Direction.OUTGOING, Seq.empty, SimplePatternLength)
-    val qg = QueryGraph.empty.addPatternRel(patternRel)
+    val qg = QueryGraph.empty.addPatternRelationship(patternRel)
 
     projectEndpoints(planTable, qg) should equal(Seq(
       planEndpointProjection(inputPlan, aName, startInScope = true, bName, endInScope = true, patternRel)

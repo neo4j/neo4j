@@ -608,7 +608,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         .empty
         .addArgumentIds(Seq("a"))
         .addPatternNodes("a", "b")
-        .addPatternRel(patternRel)
+        .addPatternRelationship(patternRel)
     )
   }
 
@@ -631,7 +631,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         .empty
         .addArgumentIds(Seq("a"))
         .addPatternNodes("a", "b")
-        .addPatternRel(patternRel)
+        .addPatternRelationship(patternRel)
     )
   }
 

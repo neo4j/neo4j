@@ -30,7 +30,7 @@ class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
 
-  private def createQuery(rels: PatternRelationship*) = QueryGraph.empty.addPatternRels(rels)
+  private def createQuery(rels: PatternRelationship*) = QueryGraph.empty.addPatternRelationships(rels)
 
   val aNode = IdName("a")
   val bNode = IdName("b")

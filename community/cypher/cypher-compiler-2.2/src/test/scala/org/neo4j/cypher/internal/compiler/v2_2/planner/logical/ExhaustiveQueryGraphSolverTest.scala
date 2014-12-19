@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{HasLabels, LabelName}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{Equals, HasLabels, LabelName}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.ExhaustiveQueryGraphSolver.PlanProducer
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
@@ -222,6 +222,67 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
         implicit val x = ctx
 
         queryGraphSolver.plan(qg) // should not throw
+      }
+    }
+  }
+
+  test("should plan cartesian product between 3 pattern nodes") {
+    new given {
+      queryGraphSolver = ExhaustiveQueryGraphSolver.withDefaults(
+        generatePlanTable(
+          AllNodesScan("a", Set.empty)(PlannerQuery(graph = QueryGraph(patternNodes = Set("a")))),
+          AllNodesScan("b", Set.empty)(PlannerQuery(graph = QueryGraph(patternNodes = Set("b")))),
+          AllNodesScan("c", Set.empty)(PlannerQuery(graph = QueryGraph(patternNodes = Set("c"))))
+        ),
+        Seq(expandOptions,joinOptions))
+      qg = QueryGraph(
+        patternNodes = Set("a", "b", "c"),
+        selections = Selections.from(Equals(ident("b"), ident("c"))(pos)))
+
+      withLogicalPlanningContext { (ctx) =>
+        implicit val x = ctx
+
+        queryGraphSolver.plan(qg) should equal(
+          CartesianProduct(
+            AllNodesScan("a", Set.empty)(null),
+            Selection(qg.selections.flatPredicates,
+              CartesianProduct(
+                AllNodesScan("b", Set.empty)(null),
+                AllNodesScan("c", Set.empty)(null)
+              )(null)
+            )(null)
+          )(null)
+        )
+      }
+    }
+  }
+
+  test("should plan cartesian product between 1 pattern nodes and 1 pattern relationship") {
+    new given {
+      queryGraphSolver = ExhaustiveQueryGraphSolver.withDefaults(
+        generatePlanTable(
+          AllNodesScan("a", Set.empty)(PlannerQuery(graph = QueryGraph(patternNodes = Set("a")))),
+          AllNodesScan("b", Set.empty)(PlannerQuery(graph = QueryGraph(patternNodes = Set("b")))),
+          AllNodesScan("c", Set.empty)(PlannerQuery(graph = QueryGraph(patternNodes = Set("c"))))
+        ),
+        Seq(expandOptions,joinOptions))
+      qg = QueryGraph(
+        patternNodes = Set("a", "b", "c"),
+        selections = Selections.from(Equals(ident("b"), ident("c"))(pos)),
+        patternRelationships = Set(PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength))
+      )
+
+      withLogicalPlanningContext { (ctx) =>
+        implicit val x = ctx
+
+        queryGraphSolver.plan(qg) should equal(
+          Selection(qg.selections.flatPredicates,
+            CartesianProduct(
+                Expand(AllNodesScan("a", Set.empty)(null), "a", Direction.OUTGOING, Seq.empty, "b", "r", ExpandAll)(null),
+              AllNodesScan("c", Set.empty)(null)
+            )(null)
+          )(null)
+        )
       }
     }
   }
