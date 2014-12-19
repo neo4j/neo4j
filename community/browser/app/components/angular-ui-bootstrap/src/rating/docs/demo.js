@@ -1,4 +1,4 @@
-var RatingDemoCtrl = function ($scope) {
+angular.module('ui.bootstrap.demo').controller('RatingDemoCtrl', function ($scope) {
   $scope.rate = 7;
   $scope.max = 10;
   $scope.isReadonly = false;
@@ -15,4 +15,4 @@ var RatingDemoCtrl = function ($scope) {
     {stateOn: 'glyphicon-heart'},
     {stateOff: 'glyphicon-off'}
   ];
-};
+});

@@ -1,5 +1,4 @@
-var ProgressDemoCtrl = function ($scope) {
-
+angular.module('ui.bootstrap.demo').controller('ProgressDemoCtrl', function ($scope) {
   $scope.max = 200;
 
   $scope.random = function() {
@@ -36,4 +35,4 @@ var ProgressDemoCtrl = function ($scope) {
     }
   };
   $scope.randomStacked();
-};
+});

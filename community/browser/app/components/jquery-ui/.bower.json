@@ -16,6 +16,6 @@
     "commit": "396781474d936959061271505f506b78398fe6a2"
   },
   "_source": "git://github.com/components/jqueryui.git",
-  "_target": "1.11.2",
+  "_target": "~1.11.2",
   "_originalSource": "jquery-ui"
 }
