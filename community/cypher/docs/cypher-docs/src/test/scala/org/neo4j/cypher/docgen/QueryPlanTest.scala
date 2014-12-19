@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.docgen
 
-import org.hamcrest.CoreMatchers._
+import org.junit.Test
 import org.junit.Assert._
-import org.junit.{Ignore, Test}
+import org.hamcrest.CoreMatchers._
+import org.scalatest.Ignore
 
 class QueryPlanTest extends DocumentingTestBase {
   override val setupQueries = List(
@@ -364,7 +365,7 @@ class QueryPlanTest extends DocumentingTestBase {
     )
   }
 
-  @Ignore("24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)") def apply() {
+  @Test def apply() {
     profileQuery(
       title = "Apply",
       text =

@@ -113,6 +113,7 @@ object ClauseConverters {
       val patternContent = clause.pattern.destructed
 
       val selections = clause.where.asSelections
+      val subQueries = selections.getContainedPatternExpressions
 
       if (clause.optional) {
         acc.

@@ -19,10 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.graphdb.Direction
+import LogicalPlanProducer._
 
 class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("should build plans for simple WITH that adds a constant to the rows") {
@@ -102,9 +105,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       "Projection(Selection(List(Equals(Identifier(a),Identifier(a$$$_))),Apply(Limit(Expand(AllNodesScan(IdName(b),Set()),IdName(b),INCOMING,List(),IdName(a),IdName(r),ExpandAll),UnsignedDecimalIntegerLiteral(1)),ProjectEndpoints(Argument(Set(IdName(a), IdName(r))),IdName(r),IdName(a$$$_),IdName(b2),false,SimplePatternLength))),Map(r -> Identifier(r)))")
   }
 
-  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
-  ignore("should build plans that project and verify endpoints of re-matched directed var length relationship " +
-    "arguments") {
+  test("should build plans that project and verify endpoints of re-matched directed var length relationship arguments") {
     val plan = planFor("MATCH (a)-[r*]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r*]->(b2) RETURN r").plan
 
     plan.toString should equal(

@@ -1440,8 +1440,7 @@ return b
     actual shouldNot be(empty)
   }
 
-  // 2014-12-03 Davide Legacy compiler never filter the relationships on a varlength expand
-  ignore("MATCH ()-[r1]->()-[r2]->() WITH [r1, r2] AS rs LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second") {
+  test("MATCH (a)-[r1]->()-[r2]->(b) WITH [r1, r2] AS rs LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second") {
     val node1 = createNode()
     val node2 = createNode()
     val node3 = createNode()
