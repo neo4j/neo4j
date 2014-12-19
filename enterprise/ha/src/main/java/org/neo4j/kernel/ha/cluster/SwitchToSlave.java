@@ -422,7 +422,7 @@ public class SwitchToSlave
         // Unpause the update puller, because we know that we are a slave that just started communication with master.
         UpdatePuller updatePuller = resolver.resolveDependency( UpdatePuller.class );
         updatePuller.unpause();
-        updatePuller.await( UpdatePuller.NEXT_TICKET );
+        updatePuller.await( UpdatePuller.NEXT_TICKET, true );
 
         console.log( "Now caught up with master" );
         monitor.catchupCompleted();

@@ -224,18 +224,61 @@ public class UpdatePuller implements Runnable, Lifecycle
         boolean evaluate( int currentTicket, int targetTicket );
     }
 
-    public void await( Condition condition ) throws InterruptedException
+    /**
+     * Gets the update puller going, if it's not already going, and waits for the supplied condition to be
+     * fulfilled as part of the update pulling happening.
+     *
+     * @param condition {@link Condition} to wait for.
+     * @param strictlyAssertActive if {@code true} then observing an inactive update puller, whether
+     * {@link #shutdown() halted} or {@link #pause() paused}, will throw an {@link IllegalStateException},
+     * otherwise if {@code false} just stop waiting and return {@code false}.
+     * @return whether or not the condition was met. If {@code strictlyAssertActive} either
+     * {@code true} will be returned or exception thrown, if puller became inactive.
+     * If {@code !strictlyAssertActive} and puller became inactive then {@code false} is returned.
+     * @throws InterruptedException if we were interrupted while awaiting the condition.
+     * @throws IllegalStateException if {@code strictlyAssertActive} and the update puller
+     * became inactive while awaiting the condition.
+     */
+    public boolean await( Condition condition, boolean strictlyAssertActive ) throws InterruptedException
     {
+        if ( !checkActive( strictlyAssertActive ) )
+        {
+            return false;
+        }
+
         int ticket = poke();
         while ( !condition.evaluate( currentTicket.get(), ticket ) )
         {
-            if ( !isActive() )
+            if ( !checkActive( strictlyAssertActive ) )
             {
-                throw new IllegalStateException( this + " has been halted:" + this );
+                return false;
             }
 
             Thread.sleep( 1 );
         }
+        return true;
+    }
+
+    /**
+     * @return {@code true} if active, {@code false} if inactive and {@code !strictlyAssertActive}
+     * @throws IllegalStateException if inactive and {@code strictlyAssertActive}.
+     */
+    private boolean checkActive( boolean strictlyAssertActive )
+    {
+        if ( !isActive() )
+        {
+            // The update puller is observed as being inactive
+
+            // The caller strictly requires the update puller to be active so should throw exception
+            if ( strictlyAssertActive )
+            {
+                throw new IllegalStateException( this + " is not active " + this );
+            }
+
+            // The caller is OK with ignoring an inactive update puller, so just return
+            return false;
+        }
+        return true;
     }
 
     private int poke()
