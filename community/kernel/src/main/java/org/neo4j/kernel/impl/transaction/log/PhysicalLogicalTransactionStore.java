@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
+import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.TransactionMetadata;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
@@ -48,17 +49,19 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
     private final TransactionIdStore transactionIdStore;
     private final boolean batchedWrites;
     private final IdOrderingQueue legacyIndexTransactionOrdering;
+    private final KernelHealth kernelHealth;
 
     public PhysicalLogicalTransactionStore( LogFile logFile, LogRotation logRotation,
             TransactionMetadataCache transactionMetadataCache,
             TransactionIdStore transactionIdStore, IdOrderingQueue legacyIndexTransactionOrdering,
-            boolean batchedWrites )
+            KernelHealth kernelHealth, boolean batchedWrites )
     {
         this.logFile = logFile;
         this.logRotation = logRotation;
         this.transactionMetadataCache = transactionMetadataCache;
         this.transactionIdStore = transactionIdStore;
         this.legacyIndexTransactionOrdering = legacyIndexTransactionOrdering;
+        this.kernelHealth = kernelHealth;
         this.batchedWrites = batchedWrites;
     }
 
@@ -67,9 +70,9 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
     {
         this.appender = batchedWrites ?
                 new BatchingPhysicalTransactionAppender( logFile, logRotation, transactionMetadataCache, transactionIdStore,
-                        legacyIndexTransactionOrdering, ATOMIC_LONG, DEFAULT_WAIT_STRATEGY ) :
+                        legacyIndexTransactionOrdering, ATOMIC_LONG, DEFAULT_WAIT_STRATEGY, kernelHealth ) :
                 new PhysicalTransactionAppender( logFile, logRotation,
-                        transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering );
+                        transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering, kernelHealth );
     }
 
     @Override

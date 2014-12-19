@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.function.Factory;
+import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.util.Counter;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 
@@ -81,9 +82,11 @@ public class BatchingPhysicalTransactionAppender extends AbstractPhysicalTransac
             TransactionMetadataCache transactionMetadataCache, final TransactionIdStore transactionIdStore,
             IdOrderingQueue legacyIndexTransactionOrdering,
             Factory<Counter> counting,
-            ParkStrategy idleBackoffStrategy )
+            ParkStrategy idleBackoffStrategy,
+            KernelHealth kernelHealth )
     {
-        super( logFile, logRotation, transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering );
+        super( logFile, logRotation, transactionMetadataCache, transactionIdStore,
+                legacyIndexTransactionOrdering, kernelHealth );
         appenderTicket = counting.newInstance();
         forceTicket = counting.newInstance();
         forceThread = new BatchingForceThread( new BatchingForceThread.Operation()
@@ -103,7 +106,7 @@ public class BatchingPhysicalTransactionAppender extends AbstractPhysicalTransac
                 force();
 
                 // Mark that we've forced at least the ticket we saw when waking up previously.
-                // It's on the pessimistic, but better safe than sorry.
+                // It's on the pessimistic side, but better safe than sorry.
                 forceTicket.set( currentAppenderTicket );
 
                 ThreadLink linkedOut = threadLinkHead.getAndSet( ThreadLink.END );
@@ -113,8 +116,7 @@ public class BatchingPhysicalTransactionAppender extends AbstractPhysicalTransac
                     LockSupport.unpark( linkedOut.thread );
 
                     while ( linkedOut.next == null )
-                    {
-                        ; // spin, waiting for appender thread to finish updating the chain
+                    {   // spin, waiting for appender thread to finish updating the chain
                     }
 
                     linkedOut = linkedOut.next;

@@ -27,6 +27,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.function.Factory;
+import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.util.Counter;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.OtherThreadExecutor;
@@ -50,8 +51,9 @@ public class BatchingPhysicalTransactionAppenderTest
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         LimitedCounterFactory counters = new LimitedCounterFactory( highestValueBeforeWrappingAround, 0 );
         ControlledParkStrategy forceThreadControl = new ControlledParkStrategy();
-        BatchingPhysicalTransactionAppender appender = new BatchingPhysicalTransactionAppender( logFile, mock(LogRotation.class), cache,
-                transactionIdStore, BYPASS, counters, forceThreadControl );
+        BatchingPhysicalTransactionAppender appender = new BatchingPhysicalTransactionAppender( logFile,
+                mock( LogRotation.class ), cache, transactionIdStore, BYPASS, counters, forceThreadControl,
+                mock( KernelHealth.class ) );
         Counter appendCounter = counters.createdCounters.get( 0 );
         OtherThreadExecutor<Void> t2 = cleanup.add( new OtherThreadExecutor<Void>( "T2", null ) );
 
@@ -72,7 +74,7 @@ public class BatchingPhysicalTransactionAppenderTest
                 highestValueBeforeWrappingAround, highestValueBeforeWrappingAround );
         ControlledParkStrategy forceThreadControl = new ControlledParkStrategy();
         BatchingPhysicalTransactionAppender appender = new BatchingPhysicalTransactionAppender( logFile, mock(LogRotation.class), cache,
-                transactionIdStore, BYPASS, counters, forceThreadControl );
+                transactionIdStore, BYPASS, counters, forceThreadControl, mock( KernelHealth.class ) );
         Counter appendCounter = counters.createdCounters.get( 0 );
         OtherThreadExecutor<Void> t2 = cleanup.add( new OtherThreadExecutor<Void>( "T2", null ) );
 
