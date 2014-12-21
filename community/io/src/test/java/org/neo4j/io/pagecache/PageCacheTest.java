@@ -530,7 +530,7 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
         int numberOfRecordsToGenerate = recordsPerFilePage; // one page worth
         generateFileWithRecords( file, numberOfRecordsToGenerate, recordSize );
 
-        PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
 
         try ( PagedFile pagedFile = pageCache.map( file, filePageSize );
               PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
@@ -1420,9 +1420,9 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
                             {
                                 do
                                 {
-                                    for ( int i = 0; i < offsets.length; i++ )
+                                    for ( int offset : offsets )
                                     {
-                                        cursor.setOffset( offsets[i] );
+                                        cursor.setOffset( offset );
                                         cursor.putByte( value );
                                     }
                                 } while ( cursor.shouldRetry() );
@@ -1679,9 +1679,8 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
             cursor.putLong( 1 + a );
             cursor.putInt( 1 + b );
             cursor.putShort( (short) (1 + c) );
-            for ( int i = 0; i < data.length; i++ )
+            for ( byte d : data )
             {
-                byte d = data[i];
                 d++;
                 cursor.putByte( d );
             }
