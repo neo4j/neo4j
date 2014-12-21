@@ -19,7 +19,9 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
-final class MemoryReleaser
+import java.util.concurrent.atomic.AtomicInteger;
+
+final class MemoryReleaser extends AtomicInteger
 {
     private final long[] rawPointers;
 
@@ -41,8 +43,9 @@ final class MemoryReleaser
         super.finalize();
     }
 
-    public void registerPointer( int cachePageId, long pointer )
+    public void registerPointer( long pointer )
     {
-        rawPointers[cachePageId] = pointer;
+        int index = getAndIncrement();
+        rawPointers[index] = pointer;
     }
 }
