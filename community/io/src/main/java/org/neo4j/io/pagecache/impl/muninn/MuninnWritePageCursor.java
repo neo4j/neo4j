@@ -44,10 +44,7 @@ final class MuninnWritePageCursor extends MuninnPageCursor
     @Override
     public boolean next() throws IOException
     {
-        if ( pagedFile.getRefCount() == 0 ) // TODO racing with flush from close, must do this after pin
-        {
-            throw new IllegalStateException( "File has been unmapped" );
-        }
+        assertPagedFileStillMapped();
         if ( nextPageId > lastPageId )
         {
             if ( (pf_flags & PagedFile.PF_NO_GROW) != 0 )
@@ -162,6 +159,12 @@ final class MuninnWritePageCursor extends MuninnPageCursor
     protected void pinCursorToPage( MuninnPage page, long filePageId, PageSwapper swapper )
     {
         reset( page );
+        // Check if we've been racing with unmapping. We want to do this before
+        // we make any changes to the contents of the page, because once all
+        // files have been unmapped, the page cache can be closed. And when
+        // that happens, dirty contents in memory will no longer have a chance
+        // to get flushed.
+        assertPagedFileStillMapped();
         page.incrementUsage();
         page.markAsDirty();
     }

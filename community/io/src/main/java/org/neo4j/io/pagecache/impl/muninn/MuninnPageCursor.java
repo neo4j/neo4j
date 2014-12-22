@@ -108,7 +108,7 @@ abstract class MuninnPageCursor implements PageCursor
      * This method will release that write lock on the translation table as part
      * of the page faulting!
      */
-    void pageFault(
+    protected void pageFault(
             long filePageId,
             PrimitiveLongObjectMap<MuninnPage> translationTable,
             StampedLock translationTableLock,
@@ -143,6 +143,11 @@ abstract class MuninnPageCursor implements PageCursor
 
         try
         {
+            // Check if we're racing with unmapping. We have the page lock
+            // here, so the unmapping would have already happened. We do this
+            // check before page.fault(), because that would otherwise reopen
+            // the file channel.
+            assertPagedFileStillMapped();
             page.initBuffer();
             page.fault( swapper, filePageId, faultEvent );
         }
@@ -155,6 +160,14 @@ abstract class MuninnPageCursor implements PageCursor
         convertPageFaultLock( page, stamp );
         pinCursorToPage( page, filePageId, swapper );
         faultEvent.done();
+    }
+
+    protected void assertPagedFileStillMapped()
+    {
+        if ( pagedFile.getRefCount() == 0 )
+        {
+            throw new IllegalStateException( "File has been unmapped" );
+        }
     }
 
     protected abstract void unpinCurrentPage();

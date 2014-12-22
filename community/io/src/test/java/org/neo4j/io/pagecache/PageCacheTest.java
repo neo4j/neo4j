@@ -39,11 +39,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -64,6 +66,7 @@ import static java.lang.Long.toHexString;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.nullValue;
@@ -2484,6 +2487,115 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
         catch ( IllegalStateException e )
         {
             // Yay!
+        }
+    }
+
+    @RepeatRule.Repeat( times = 100 )
+    @Test( timeout = 10000 )
+    public void writeLockingCursorMustThrowWhenLockingPageRacesWithUnmapping() throws Exception
+    {
+        // Even if we block in pin, waiting to grab a lock on a page that is
+        // already locked, and the PagedFile is concurrently closed, then we
+        // want to have an exception thrown, such that we race and get a
+        // page that is writable after the PagedFile has been closed.
+        // This is important because closing a PagedFile implies flushing, thus
+        // ensuring that all changes make it to storage.
+        // Conversely, we don't have to go to the same lengths for read locked
+        // pages, because those are never changed. Not by us, anyway.
+
+        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
+
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+
+        final PagedFile pf = pageCache.map( file, filePageSize );
+        final CountDownLatch hasLockkLatch = new CountDownLatch( 1 );
+        final CountDownLatch unlockLatch = new CountDownLatch( 1 );
+        final CountDownLatch secondThreadGotLockLatch = new CountDownLatch( 1 );
+
+        executor.submit( new Callable<Object>()
+        {
+            @Override
+            public Object call() throws Exception
+            {
+                try ( PageCursor cursor = pf.io( 0, PF_EXCLUSIVE_LOCK ) )
+                {
+                    cursor.next();
+                    hasLockkLatch.countDown();
+                    unlockLatch.await();
+                }
+                return null;
+            }
+        } );
+
+        hasLockkLatch.await(); // An exclusive lock is now held on page 0.
+
+        Future<Object> takeLockFuture = executor.submit( new Callable<Object>()
+        {
+            @Override
+            public Object call() throws Exception
+            {
+                try ( PageCursor cursor = pf.io( 0, PF_EXCLUSIVE_LOCK ) )
+                {
+                    cursor.next();
+                    secondThreadGotLockLatch.await();
+                }
+                return null;
+            }
+        } );
+
+        Future<Object> closeFuture = executor.submit( new Callable<Object>()
+        {
+            @Override
+            public Object call() throws Exception
+            {
+                pf.close();
+                return null;
+            }
+        } );
+
+        try
+        {
+            closeFuture.get( 10, TimeUnit.MILLISECONDS );
+            fail( "Expected a TimeoutException here" );
+        }
+        catch ( TimeoutException e )
+        {
+            // As expected, the close cannot not complete while an exclusive
+            // lock is held
+        }
+
+        // Now, both the close action and a grab for an exclusive page lock is
+        // waiting for our first thread.
+        // When we release that lock, we should see that either close completes
+        // and our second thread, the one blocked on the write lock, gets an
+        // exception, or we should see that the second thread gets the lock,
+        // and then close has to wait for that thread as well.
+
+        unlockLatch.countDown(); // The race is on.
+
+        try
+        {
+            closeFuture.get( 200, TimeUnit.MILLISECONDS );
+            // The closeFuture got it first, so the takeLockFuture should throw.
+            try
+            {
+                secondThreadGotLockLatch.countDown(); // only to prevent incorrect programs from deadlocking
+                takeLockFuture.get();
+                fail( "Expected takeLockFuture.get() to throw an ExecutionException" );
+            }
+            catch ( ExecutionException e )
+            {
+                Throwable cause = e.getCause();
+                assertThat( cause, instanceOf( IllegalStateException.class ) );
+                assertThat( cause.getMessage(), is( "File has been unmapped" ) );
+            }
+        }
+        catch ( TimeoutException e )
+        {
+            // The takeLockFuture got it first, so the closeFuture should
+            // complete when we release the latch.
+            secondThreadGotLockLatch.countDown();
+            closeFuture.get( 200, TimeUnit.MILLISECONDS );
         }
     }
 
