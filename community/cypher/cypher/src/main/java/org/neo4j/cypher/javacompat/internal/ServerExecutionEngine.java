@@ -23,10 +23,12 @@ import java.util.Map;
 
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
+import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
+import org.neo4j.kernel.impl.query.QuerySession;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
@@ -44,19 +46,19 @@ public class ServerExecutionEngine extends ExecutionEngine implements QueryExecu
         super( database, logger );
     }
 
-    @Override
-    protected org.neo4j.cypher.ExecutionEngine createInnerEngine( GraphDatabaseService database, StringLogger logger )
+    protected
+    org.neo4j.cypher.ExecutionEngine createInnerEngine( GraphDatabaseService database, StringLogger logger )
     {
-        serverExecutionEngine = new org.neo4j.cypher.internal.ServerExecutionEngine( database, logger );
-        return serverExecutionEngine;
+        return serverExecutionEngine = new org.neo4j.cypher.internal.ServerExecutionEngine( database, logger );
     }
 
     @Override
-    public Result executeQuery( String query, Map<String, Object> parameters ) throws QueryExecutionKernelException
+    public Result executeQuery( String query, Map<String, Object> parameters, QuerySession querySession ) throws
+            QueryExecutionKernelException
     {
         try
         {
-            return execute( query, parameters );
+            return new ExecutionResult( serverExecutionEngine.execute( query, parameters, querySession ) );
         }
         catch ( CypherException e )
         {
@@ -71,11 +73,11 @@ public class ServerExecutionEngine extends ExecutionEngine implements QueryExecu
     }
 
     @Override
-    public Result profileQuery( String query, Map<String, Object> parameters ) throws QueryExecutionKernelException
+    public Result profileQuery( String query, Map<String, Object> parameters, QuerySession session ) throws QueryExecutionKernelException
     {
         try
         {
-            return profile( query, parameters );
+            return new ExecutionResult( serverExecutionEngine.profile( query, parameters, session ) );
         }
         catch ( CypherException e )
         {

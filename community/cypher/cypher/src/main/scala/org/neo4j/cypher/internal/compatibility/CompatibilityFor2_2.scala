@@ -22,25 +22,32 @@ package org.neo4j.cypher.internal.compatibility
 import java.io.PrintWriter
 import java.util
 
-import org.neo4j.cypher._
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.v2_2
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{InternalExecutionResult, ExecutionPlan => ExecutionPlan_v2_2}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows, Version}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.MapToPublicExceptions
-import org.neo4j.cypher.internal.compiler.v2_2.{CypherCompilerFactory, Legacy, PlannerName, Ronja, CypherException => CypherException_v2_2}
+import org.neo4j.cypher.internal.compiler.v2_2.{CypherException => CypherException_v2_2, _}
 import org.neo4j.cypher.internal.spi.v2_2.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.ProfilerStatistics
-import org.neo4j.graphdb.{QueryExecutionType, GraphDatabaseService, ResourceIterator}
+import org.neo4j.cypher.{ArithmeticException, CypherTypeException, EntityNotFoundException, FailedIndexException, IncomparableValuesException, IndexHintException, InternalException, InvalidArgumentException, InvalidSemanticsException, LoadCsvStatusWrapCypherException, LoadExternalResourceException, MergeConstraintConflictException, NodeStillHasRelationshipsException, ParameterNotFoundException, ParameterWrongTypeException, PatternException, PeriodicCommitInOpenTransactionException, ProfilerStatisticsNotReadyException, SyntaxException, UniquePathNotUniqueException, UnknownLabelException, _}
+import org.neo4j.graphdb.{GraphDatabaseService, QueryExecutionType, ResourceIterator}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.{KernelAPI, Statement}
+import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}
 import org.neo4j.kernel.impl.util.StringLogger
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 
 import scala.collection.JavaConverters._
 import scala.util.Try
+
+object helpers {
+  implicit def monitorFailure(t: Throwable)(implicit monitor: QueryExecutionMonitor, session: QuerySession) = {
+    monitor.endFailure(session, t)
+  }
+}
 
 object exceptionHandlerFor2_2 extends MapToPublicExceptions[CypherException] {
   def syntaxException(message: String, query: String, offset: Option[Int]) = new SyntaxException(message, query, offset)
@@ -92,11 +99,16 @@ object exceptionHandlerFor2_2 extends MapToPublicExceptions[CypherException] {
 
   def periodicCommitInOpenTransactionException() = throw new PeriodicCommitInOpenTransactionException
 
-  def runSafely[T](body: => T): T = {
+  def runSafely[T](body: => T)(implicit f: Throwable => Unit = (_) => ()) = {
     try {
       body
     } catch {
-      case e: CypherException_v2_2 => throw e.mapToPublic(exceptionHandlerFor2_2)
+      case e: CypherException_v2_2 =>
+        f(e)
+        throw e.mapToPublic(exceptionHandlerFor2_2)
+      case e: Throwable =>
+        f(e)
+        throw e
     }
   }
 
@@ -104,6 +116,7 @@ object exceptionHandlerFor2_2 extends MapToPublicExceptions[CypherException] {
 }
 
 trait CompatibilityFor2_2 {
+  import org.neo4j.cypher.internal.compatibility.helpers._
 
   val graph: GraphDatabaseService
   val queryCacheSize: Int
@@ -111,6 +124,7 @@ trait CompatibilityFor2_2 {
   val kernelAPI: KernelAPI
 
   protected val compiler: v2_2.CypherCompiler
+  implicit val executionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
   def produceParsedQuery(statementAsText: String) = new ParsedQuery {
     val preparedQueryForV_2_2 = Try(compiler.prepareQuery(statementAsText))
@@ -131,10 +145,13 @@ trait CompatibilityFor2_2 {
       new ExceptionTranslatingQueryContext(ctx)
     }
 
-    def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, executionMode: ExecutionMode, params: Map[String, Any]): ExtendedExecutionResult =
+    def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, executionMode: ExecutionMode, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult = {
+      implicit val s = session
       exceptionHandlerFor2_2.runSafely {
         ExecutionResultWrapperFor2_2(inner.run(queryContext(graph, txInfo), executionMode, params), translate(inner.plannerUsed))
+
       }
+    }
 
     def isPeriodicCommit = inner.isPeriodicCommit
 
@@ -148,15 +165,36 @@ trait CompatibilityFor2_2 {
   }
 }
 
-case class ExecutionResultWrapperFor2_2(inner: InternalExecutionResult, version: CypherVersion) extends ExtendedExecutionResult {
+case class ExecutionResultWrapperFor2_2(inner: InternalExecutionResult, version: CypherVersion)(implicit monitor: QueryExecutionMonitor, session: QuerySession) extends ExtendedExecutionResult {
+
+  import helpers._
+
   def planDescriptionRequested = exceptionHandlerFor2_2.runSafely {inner.planDescriptionRequested}
+
+  private def endQueryExecution() = {
+    monitor.endSuccess(session) // this method is expected to be idempotent
+  }
 
   def javaIterator: ResourceIterator[util.Map[String, Any]] = {
     val innerJavaIterator = inner.javaIterator
+    exceptionHandlerFor2_2.runSafely {
+      if ( !innerJavaIterator.hasNext ) {
+        endQueryExecution()
+      }
+    }
     new ResourceIterator[util.Map[String, Any]] {
-      def close() = exceptionHandlerFor2_2.runSafely{innerJavaIterator.close}
-      def next() = exceptionHandlerFor2_2.runSafely{innerJavaIterator.next}
-      def hasNext() = exceptionHandlerFor2_2.runSafely{innerJavaIterator.hasNext}
+      def close() = exceptionHandlerFor2_2.runSafely {
+        endQueryExecution()
+        innerJavaIterator.close
+      }
+      def next() = exceptionHandlerFor2_2.runSafely {innerJavaIterator.next}
+      def hasNext() = exceptionHandlerFor2_2.runSafely{
+        val next = innerJavaIterator.hasNext
+        if (!next) {
+          endQueryExecution()
+        }
+        next
+      }
       def remove() =  exceptionHandlerFor2_2.runSafely{innerJavaIterator.remove}
     }
   }

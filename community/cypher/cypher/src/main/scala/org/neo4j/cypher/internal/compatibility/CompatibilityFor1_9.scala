@@ -27,10 +27,13 @@ import org.neo4j.cypher.internal.spi.v1_9.{GDSBackedQueryContext => QueryContext
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.Statement
+import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}
+import org.neo4j.kernel.monitoring.Monitors
 
-case class CompatibilityFor1_9(graph: GraphDatabaseService, queryCacheSize: Int) {
+case class CompatibilityFor1_9(graph: GraphDatabaseService, queryCacheSize: Int,  kernelMonitors: Monitors) {
   private val queryCache1_9 = new LRUCache[String, Object](queryCacheSize)
   private val compiler1_9   = new CypherCompiler1_9(graph, (q, f) => queryCache1_9.getOrElseUpdate(q, f))
+  implicit val executionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
   def parseQuery(statementAsText: String) = new ParsedQuery {
     def plan(statement: Statement): (ExecutionPlan, Map[String, Any]) = {
@@ -46,17 +49,21 @@ case class CompatibilityFor1_9(graph: GraphDatabaseService, queryCacheSize: Int)
     private def queryContext(graph: GraphDatabaseAPI) =
       new QueryContext_v1_9(graph)
 
-    def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, exeuctionMode: ExecutionMode, params: Map[String, Any]) = exeuctionMode match {
-      case NormalMode   => execute(graph, txInfo, params)
-      case ProfileMode => profile(graph, txInfo, params)
-      case _        => throw new UnsupportedOperationException(s"${CypherVersion.v1_9.name}: $exeuctionMode is unsupported")
+    def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, exeuctionMode: ExecutionMode, params: Map[String, Any], session: QuerySession) = exeuctionMode match {
+      case NormalMode   => execute(graph, txInfo, params, session)
+      case ProfileMode  => profile(graph, txInfo, params, session)
+      case _            => throw new UnsupportedOperationException(s"${CypherVersion.v1_9.name}: $exeuctionMode is unsupported")
     }
 
-    private def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
+    private def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any], session: QuerySession) = {
+      implicit val qs = session
       LegacyExecutionResultWrapper(inner.execute(queryContext(graph), txInfo.tx, params), planDescriptionRequested = false, CypherVersion.v1_9)
+    }
 
-    private def profile(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
+    private def profile(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any], session: QuerySession) = {
+      implicit val qs = session
       LegacyExecutionResultWrapper(inner.profile(queryContext(graph), txInfo.tx, params), planDescriptionRequested = true, CypherVersion.v1_9)
+    }
 
     def isPeriodicCommit = false
 

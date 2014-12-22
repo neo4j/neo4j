@@ -24,11 +24,50 @@ import java.io.PrintWriter
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.AmendedRootPlanDescription
 import org.neo4j.graphdb.QueryExecutionType.{QueryType, profiled, query}
+import org.neo4j.graphdb.ResourceIterator
+import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}
 
-case class LegacyExecutionResultWrapper(inner: ExecutionResult, planDescriptionRequested: Boolean, version: CypherVersion) extends ExtendedExecutionResult {
+case class LegacyExecutionResultWrapper(inner: ExecutionResult, planDescriptionRequested: Boolean, version: CypherVersion)
+                                       (implicit monitor: QueryExecutionMonitor, session: QuerySession) extends ExtendedExecutionResult {
   def columns = inner.columns
 
-  def javaIterator = inner.javaIterator
+  protected val jIterator = inner.javaIterator
+
+  private def endQueryExecution() = {
+    monitor.endSuccess(session) // this method is expected to be idempotent
+  }
+
+  if (!jIterator.hasNext) {
+    endQueryExecution()
+  }
+
+  def javaIterator = new ResourceIterator[java.util.Map[String, Any]] {
+
+    override def close() = {
+      endQueryExecution()
+      jIterator.close()
+    }
+
+    override def next() = {
+      try {
+        jIterator.next()
+      } catch {
+        case e: Throwable =>
+          monitor.endFailure(session, e)
+          throw e
+      }
+    }
+
+    override def remove(): Unit = jIterator.remove()
+
+    override def hasNext: Boolean = {
+      val next = jIterator.hasNext
+      if (!next) {
+        endQueryExecution()
+      }
+      next
+    }
+  }
 
   def columnAs[T](column: String) = inner.columnAs[T](column)
 

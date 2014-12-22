@@ -30,6 +30,8 @@ import org.neo4j.server.rest.transactional.error.InvalidConcurrentTransactionAcc
 import org.neo4j.server.rest.web.TransactionUriScheme;
 import org.neo4j.test.DoubleLatch;
 
+import javax.servlet.http.HttpServletRequest;
+
 import static javax.xml.bind.DatatypeConverter.parseLong;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
@@ -68,7 +70,8 @@ public class ConcurrentTransactionAccessTest
             public void run()
             {
                 // start and block until finish
-                transactionHandle.execute( statements, mock( ExecutionResultSerializer.class ) );
+                transactionHandle.execute( statements, mock( ExecutionResultSerializer.class ), mock(
+                        HttpServletRequest.class ) );
             }
         } ).start();
 

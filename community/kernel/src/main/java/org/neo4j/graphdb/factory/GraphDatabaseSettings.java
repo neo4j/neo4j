@@ -107,6 +107,8 @@ public abstract class GraphDatabaseSettings
                   + "value to `false` will cause Neo4j to fail `LOAD CSV` clauses that load data from the file system." )
     public static Setting<Boolean> allow_file_urls = setting( "allow_file_urls", BOOLEAN, TRUE );
 
+
+
     // Store files
     @Description("The directory where the database files are located.")
     public static final Setting<File> store_dir = setting("store_dir", PATH, NO_DEFAULT );
@@ -329,6 +331,16 @@ public abstract class GraphDatabaseSettings
 
     @Description("Whether or not transactions are appended to the log in batches")
     public static final Setting<Boolean> batched_writes = setting( "batched_writes", BOOLEAN, Boolean.TRUE.toString() );
+
+    @Description( "Log executed queries that takes longer than the configured threshold." )
+    public static final Setting<Boolean> log_queries = setting("dbms.querylog.enabled", BOOLEAN, FALSE );
+
+    @Description( "The file where queries will be recorded." )
+    public static final Setting<File> log_queries_filename = setting("dbms.querylog.filename", PATH, "queries.log", basePath(store_dir) );
+
+    @Description("If the execution of query takes more time than this threshold, the query is logged - " +
+            "provided query logging is enabled. Defaults to 0 seconds, that is all queries are logged.")
+    public static final Setting<Long> log_queries_threshold = setting("dbms.querylog.threshold", DURATION, "0s");
 
     private static String[] availableCaches()
     {

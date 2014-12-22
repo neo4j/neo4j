@@ -56,4 +56,17 @@ public abstract class QueryEngineProvider extends Service
     {
         return NoQueryEngine.INSTANCE;
     }
+
+    public static QuerySession embeddedSession()
+    {
+        final Thread thread = Thread.currentThread();
+        return new QuerySession()
+        {
+            @Override
+            public String toString()
+            {
+                return String.format( "EmbeddedSession{thread=%s}", thread.getName() );
+            }
+        };
+    }
 }

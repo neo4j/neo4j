@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.StringUtils;
 
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle;
@@ -225,7 +226,7 @@ enum BlockType
             try
             {
                 state.latestResult = new Result( fileQuery, state.engine.profileQuery(
-                        fileQuery, Collections.<String, Object>emptyMap() ) );
+                        fileQuery, Collections.<String, Object>emptyMap(), QueryEngineProvider.embeddedSession() ) );
             }
             catch ( QueryExecutionKernelException e )
             {

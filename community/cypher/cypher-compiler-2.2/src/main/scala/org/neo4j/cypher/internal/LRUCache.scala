@@ -55,7 +55,9 @@ class LRUCache[K, V](cacheSize: Int) extends ((K, => V) => V) {
 
   def put(key: K, value: V) = inner.put(key, value)
 
-  def remove(key: K) = inner.remove(key)
+  def +=(kv: (K, V)) = put(kv._1, kv._2)
+
+  def remove(key: K): Option[V] = Option(inner.remove(key))
 
   def containsKey(key: K) = inner.containsKey(key)
 

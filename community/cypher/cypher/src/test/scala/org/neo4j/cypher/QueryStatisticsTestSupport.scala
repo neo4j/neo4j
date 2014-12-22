@@ -21,6 +21,7 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.compatibility.ExecutionResultWrapperFor2_2
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
+import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession, QueryEngineProvider}
 import org.scalatest.Assertions
 
 trait QueryStatisticsTestSupport {
@@ -32,6 +33,14 @@ trait QueryStatisticsTestSupport {
     }
 
     def apply(actual: InternalExecutionResult) {
+      implicit val monitor = new QueryExecutionMonitor {
+        override def startQueryExecution(session: QuerySession, query: String){}
+
+        override def endSuccess(session: QuerySession){}
+
+        override def endFailure(session: QuerySession, throwable: Throwable){}
+      }
+      implicit val session = QueryEngineProvider.embeddedSession
       val r = new ExecutionResultWrapperFor2_2(actual, CypherVersion.v2_2)
       apply(r.queryStatistics())
     }
