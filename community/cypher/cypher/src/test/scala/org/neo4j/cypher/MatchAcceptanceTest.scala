@@ -1347,7 +1347,7 @@ return b
     // when
     val result = executeWithNewPlanner("optional match (a) with a match (a)-->(b) return b")
 
-    // should give us a number in the middle, not all or nothing
+    // then
     result.toList should be(empty)
   }
 
@@ -1360,7 +1360,7 @@ return b
     // when
     val result = executeWithNewPlanner("optional match (a:Person) with a match (a)-->(b) return b").columnAs[Node]("b")
 
-    // should give us a number in the middle, not all or nothing
+    // then
     result.toList should be(empty)
   }
 
@@ -1370,8 +1370,18 @@ return b
     // when
     val result = executeWithNewPlanner("optional match (a) with a optional match (a)-->(b) return b")
 
-    // should give us a number in the middle, not all or nothing
+    // then
     result.toList should equal (List(Map("b"->null)))
+  }
+
+  test("optional match returns null") {
+    // given empty db
+
+    // when
+    val result = executeWithNewPlanner("optional match (a) return a")
+
+    // then
+    result.toList should equal (List(Map("a" -> null)))
   }
 
   test("match p = (a) return p") {

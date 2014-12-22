@@ -65,30 +65,31 @@ class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStra
     verifyBestPlan(finalPlan, query)
   }
 
-  private def planWithTail(pred: LogicalPlan, remaining: Option[PlannerQuery])(implicit context: LogicalPlanningContext): LogicalPlan = remaining match {
-    case Some(query) =>
-      val lhs = pred
-      val lhsContext = context.recurse(lhs)
-      val rhs = planPart(query, Some(planQueryArgumentRow(query.graph)))(lhsContext)
-      val applyPlan = planTailApply(lhs, rhs)
+  private def planWithTail(pred: LogicalPlan, remaining: Option[PlannerQuery])(implicit context: LogicalPlanningContext): LogicalPlan =
+    remaining match {
+      case Some(query) =>
+        val lhs = pred
+        val lhsContext = context.recurse(lhs)
+        val rhs = planPart(query, Some(planQueryArgumentRow(query.graph)))(lhsContext)
+        val applyPlan = planTailApply(lhs, rhs)
 
-      val applyContext = lhsContext.recurse(applyPlan)
-      val projectedPlan = planEventHorizon(query, applyPlan)(applyContext)
+        val applyContext = lhsContext.recurse(applyPlan)
+        val projectedPlan = planEventHorizon(query, applyPlan)(applyContext)
 
-      val projectedContext = applyContext.recurse(projectedPlan)
-      val expressionRewriter = expressionRewriterFactory(projectedContext)
-      val completePlan = projectedPlan.endoRewrite(expressionRewriter)
+        val projectedContext = applyContext.recurse(projectedPlan)
+        val expressionRewriter = expressionRewriterFactory(projectedContext)
+        val completePlan = projectedPlan.endoRewrite(expressionRewriter)
 
-      // planning nested expressions doesn't change outer cardinality
-      planWithTail(completePlan, query.tail)(projectedContext)
+        // planning nested expressions doesn't change outer cardinality
+        planWithTail(completePlan, query.tail)(projectedContext)
 
-    case None =>
-      pred
-  }
+      case None =>
+        pred
+    }
 
-  private def planPart(query: PlannerQuery, leafPlan: Option[LogicalPlan])(implicit context: LogicalPlanningContext): LogicalPlan = {
+  private def planPart(query: PlannerQuery, leafPlan: Option[LogicalPlan])(implicit context: LogicalPlanningContext): LogicalPlan =
     context.strategy.plan(query.graph)(context, leafPlan)
-  }
+
 
   private def planEventHorizon(query: PlannerQuery, plan: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan = {
     val selectedPlan = config.applySelections(plan, query.graph)

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2014 "Neo Technology,"
+ * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -89,7 +89,7 @@ class QueryGraphConnectedComponentsTest extends CypherFunSuite with AstConstruct
 
     graph.connectedComponents should equal(Seq(
       QueryGraph(patternNodes = Set(A, B), patternRelationships = Set(R1), argumentIds = Set(A)),
-      QueryGraph(patternNodes = Set(C, X), patternRelationships = Set(R3))
+      QueryGraph(patternNodes = Set(C, X), patternRelationships = Set(R3), argumentIds = Set(A))
     ))
   }
 
@@ -101,8 +101,8 @@ class QueryGraphConnectedComponentsTest extends CypherFunSuite with AstConstruct
     )
 
     graph.connectedComponents should equal(Seq(
-      QueryGraph(patternNodes = Set(A, B), patternRelationships = Set(R1), argumentIds = Set(A)),
-      QueryGraph(patternNodes = Set(C, X), patternRelationships = Set(R3), argumentIds = Set(C))
+      QueryGraph(patternNodes = Set(A, B), patternRelationships = Set(R1), argumentIds = Set(A, C)),
+      QueryGraph(patternNodes = Set(C, X), patternRelationships = Set(R3), argumentIds = Set(A, C))
     ))
   }
 

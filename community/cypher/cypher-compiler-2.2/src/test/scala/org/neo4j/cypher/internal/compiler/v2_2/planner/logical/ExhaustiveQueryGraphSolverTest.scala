@@ -24,12 +24,15 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.{Equals, HasLabels, LabelName
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.ExhaustiveQueryGraphSolver.PlanProducer
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.applyOptional
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport2, PlannerQuery, QueryGraph, Selections}
 import org.neo4j.graphdb.Direction
 
 import scala.collection.{Map, immutable}
 
 class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+
+  private val A = IdName("a")
 
   test("should plan for a single node pattern") {
     new given {
@@ -311,6 +314,118 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
             AllNodesScan("a", Set.empty)(null),
             Optional(
               Expand(Argument(Set("a"))(null)(), "a", Direction.OUTGOING, Seq.empty, "b", "r")(null)
+            )(null)
+          )(null)
+        )
+      }
+    }
+  }
+
+  test("should solve empty graph with SingleRow") {
+    new given {
+      queryGraphSolver = ExhaustiveQueryGraphSolver.withDefaults()
+      qg = QueryGraph.empty
+
+      withLogicalPlanningContext { (ctx) =>
+        implicit val x = ctx
+
+        queryGraphSolver.plan(qg) should equal(
+          SingleRow()
+        )
+      }
+    }
+  }
+
+  test("should solve plan an empty QG with arguments") {
+    new given {
+      queryGraphSolver = ExhaustiveQueryGraphSolver.withDefaults()
+      qg = QueryGraph(argumentIds = Set(A), patternNodes = Set(A))
+
+      withLogicalPlanningContext { (ctx) =>
+        implicit val x = ctx
+
+        queryGraphSolver.plan(qg) should equal(
+          Argument(Set(A))(PlannerQuery(graph = qg))()
+        )
+      }
+    }
+  }
+
+  test("should solve self looping pattern") {
+    new given {
+      queryGraphSolver = ExhaustiveQueryGraphSolver.withDefaults()
+      qg = QueryGraph(
+        patternNodes = Set(A),
+        patternRelationships = Set(PatternRelationship("r", ("a", "a"), Direction.OUTGOING, Seq.empty, SimplePatternLength))
+      )
+
+      withLogicalPlanningContext { (ctx) =>
+        implicit val x = ctx
+
+        queryGraphSolver.plan(qg) should equal(
+          Expand(AllNodesScan(A, Set.empty)(null), A, Direction.OUTGOING, Seq.empty, A, IdName("r"), ExpandInto)(null)
+        )
+      }
+    }
+  }
+
+  test("should plan for optional single relationship pattern between two known nodes") {
+    new given {
+      queryGraphSolver = ExhaustiveQueryGraphSolver.withDefaults(optionalSolvers = Seq(applyOptional))
+      qg = QueryGraph(// MATCH a, b OPTIONAL MATCH a-[r]->b
+        patternNodes = Set("a", "b"),
+        optionalMatches = Seq(QueryGraph(
+          patternNodes = Set("a", "b"),
+          argumentIds = Set("a", "b"),
+          patternRelationships = Set(PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength))
+        ))
+      )
+
+      withLogicalPlanningContext { (ctx) =>
+        implicit val x = ctx
+
+        queryGraphSolver.plan(qg) should equal(
+          Apply(
+            CartesianProduct(
+              AllNodesScan(IdName("a"), Set.empty)(null),
+              AllNodesScan(IdName("b"), Set.empty)(null)
+            )(null),
+            Optional(
+              Expand(
+                Argument(Set("a", "b"))(null)(),
+                "a", Direction.OUTGOING, Seq.empty, "b", "r", ExpandInto
+              )(null)
+            )(null)
+          )(null)
+        )
+      }
+    }
+  }
+
+  test("should handle query starting with an optional match") {
+    new given {
+      queryGraphSolver = ExhaustiveQueryGraphSolver.withDefaults(optionalSolvers = Seq(applyOptional))
+      qg = QueryGraph( // OPTIONAL MATCH a-->b RETURN b a
+        patternNodes = Set.empty,
+        argumentIds = Set.empty,
+        optionalMatches = Seq(QueryGraph(
+          patternNodes = Set("a","b"),
+          argumentIds = Set.empty,
+          patternRelationships = Set(PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)))
+        )
+      )
+
+      withLogicalPlanningContext { (ctx) =>
+        implicit val x = ctx
+
+        queryGraphSolver.plan(qg) should equal(
+          Apply(
+            SingleRow(),
+            Optional(
+              Expand(
+                AllNodesScan("a",Set.empty)(null),
+                "a", Direction.OUTGOING, Seq.empty, "b", "r", ExpandAll
+              )(null)
             )(null)
           )(null)
         )
