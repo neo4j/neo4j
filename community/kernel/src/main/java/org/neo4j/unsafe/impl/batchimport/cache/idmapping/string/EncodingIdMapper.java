@@ -36,6 +36,8 @@ import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 
+import static java.lang.Math.max;
+
 import static org.neo4j.unsafe.impl.batchimport.Utils.unsignedCompare;
 
 /**
@@ -77,7 +79,7 @@ public class EncodingIdMapper implements IdMapper
     public EncodingIdMapper( NumberArrayFactory cacheFactory, Encoder encoder, Radix radix,
             int chunkSize, int processorsForSorting )
     {
-        this.processorsForSorting = processorsForSorting;
+        this.processorsForSorting = max( processorsForSorting, 1 );
         this.dataCache = newLongArray( cacheFactory, chunkSize );
         this.trackerCache = newIntArray( cacheFactory, chunkSize );
         this.encoder = encoder;
