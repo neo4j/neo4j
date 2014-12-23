@@ -63,6 +63,12 @@ public class PrimitiveIntHashSet extends AbstractIntHopScotchCollection<Object> 
     }
 
     @Override
+    public boolean accept( int value )
+    {
+        return HopScotchHashingAlgorithm.get( table, monitor, DEFAULT_HASHING, value ) == valueMarker;
+    }
+
+    @Override
     public boolean remove( int value )
     {
         return HopScotchHashingAlgorithm.remove( table, monitor, DEFAULT_HASHING, value ) == valueMarker;

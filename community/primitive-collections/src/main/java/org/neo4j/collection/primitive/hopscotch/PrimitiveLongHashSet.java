@@ -63,6 +63,12 @@ public class PrimitiveLongHashSet extends AbstractLongHopScotchCollection<Object
     }
 
     @Override
+    public boolean accept( long value )
+    {
+        return HopScotchHashingAlgorithm.get( table, monitor, DEFAULT_HASHING, value ) == valueMarker;
+    }
+
+    @Override
     public boolean remove( long value )
     {
         return HopScotchHashingAlgorithm.remove( table, monitor, DEFAULT_HASHING, value ) == valueMarker;

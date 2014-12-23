@@ -21,11 +21,13 @@ package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
+import org.neo4j.function.primitive.PrimitiveIntPredicate;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.unsafe.impl.batchimport.Utils.CompareType;
@@ -35,9 +37,11 @@ import org.neo4j.unsafe.impl.batchimport.cache.LongBitsManipulator;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
+import org.neo4j.unsafe.impl.batchimport.input.Group;
 
 import static java.lang.Math.max;
 
+import static org.neo4j.unsafe.impl.batchimport.Utils.safeCastLongToInt;
 import static org.neo4j.unsafe.impl.batchimport.Utils.unsignedCompare;
 
 /**
@@ -59,17 +63,26 @@ public class EncodingIdMapper implements IdMapper
     // See StringEncoder.
     private static LongBitsManipulator COLLISION_BIT = new LongBitsManipulator( 56, 1 );
     public static int CACHE_CHUNK_SIZE = 1_000_000; // 8MB a piece
-    private final IntArray trackerCache;
+
+    // Encoded values added in #put, in the order in which they are put. Indexes in the array are the actual node ids,
+    // values are the encoded versions of the input ids.
     private final LongArray dataCache;
+
+    // Ordering information about values in dataCache; the ordering of values in dataCache remains unchanged.
+    // in prepare() this array is populated and changed along with how dataCache items "move around" so that
+    // they end up sorted. Again, dataCache remains unchanged, only the ordering information is kept here.
+    // Each index in trackerCache points to a dataCache index, where the value in dataCache contains the
+    // encoded input id, used to match against the input id that is looked up during binary search.
+    private final IntArray trackerCache;
     private final Encoder encoder;
     private final Radix radix;
     private final int processorsForSorting;
     private final LongArray collisionCache;
-    private final IntArray collisionValuesIndex;
     private final List<Object> collisionValues = new ArrayList<>();
     private boolean readyForUse;
     private long[][] sortBuckets;
     private long size;
+    private final List<IdGroup> idGroups = new ArrayList<>();
 
     public EncodingIdMapper( NumberArrayFactory cacheFactory, Encoder encoder, Radix radix )
     {
@@ -85,7 +98,6 @@ public class EncodingIdMapper implements IdMapper
         this.encoder = encoder;
         this.radix = radix;
         this.collisionCache = newLongArray( cacheFactory, chunkSize );
-        this.collisionValuesIndex = newIntArray( cacheFactory, chunkSize );
     }
 
     private static IntArray newIntArray( NumberArrayFactory cacheFactory, int chunkSize )
@@ -99,19 +111,43 @@ public class EncodingIdMapper implements IdMapper
     }
 
     @Override
-    public long get( Object inputId )
+    public long get( Object inputId, PrimitiveIntPredicate inGroup )
     {
         assert readyForUse;
-        return binarySearch( inputId );
+        return binarySearch( inputId, inGroup );
     }
 
     @Override
-    public void put( Object inputId, long id )
+    public void put( Object inputId, long id, Group group )
     {
+        // Check if we're now venturing into a new group. If so then end the previous group.
+        int groupId = group.id();
+        boolean newGroup = groupId >= idGroups.size();
+        if ( newGroup )
+        {
+            assert groupId == idGroups.size();
+            endPreviousGroup();
+        }
+
+        // Encode and add the input id
         long code = encoder.encode( inputId );
         dataCache.set( id, code );
         radix.registerRadixOf( code );
         size++;
+
+        // Create the new group
+        if ( newGroup )
+        {
+            idGroups.add( new IdGroup( group, dataCache.highestSetIndex() ) );
+        }
+    }
+
+    private void endPreviousGroup()
+    {
+        if ( !idGroups.isEmpty() )
+        {
+            idGroups.get( idGroups.size() - 1 ).setHighDataIndex( dataCache.highestSetIndex() );
+        }
     }
 
     @Override
@@ -123,6 +159,7 @@ public class EncodingIdMapper implements IdMapper
     @Override
     public void prepare( ResourceIterable<Object> ids )
     {
+        endPreviousGroup();
         synchronized ( this )
         {
             // Synchronized since there's this concern that a couple of other threads are changing trackerCache
@@ -144,7 +181,7 @@ public class EncodingIdMapper implements IdMapper
         return radix.calculator().radixOf( value );
     }
 
-    private long binarySearch( Object inputId )
+    private long binarySearch( Object inputId, PrimitiveIntPredicate inGroup )
     {
         long low = 0;
         long highestSetTrackerIndex = trackerCache.highestSetIndex();
@@ -161,12 +198,12 @@ public class EncodingIdMapper implements IdMapper
             }
         }
 
-        long returnVal = binarySearch( x, inputId, false, low, high );
+        long returnVal = binarySearch( x, inputId, low, high, inGroup );
         if ( returnVal == -1 )
         {
             low = 0;
             high = trackerCache.size() - 1;
-            returnVal = binarySearch( x, inputId, false, low, high );
+            returnVal = binarySearch( x, inputId, low, high, inGroup );
         }
         return returnVal;
     }
@@ -220,32 +257,55 @@ public class EncodingIdMapper implements IdMapper
 
     private void buildCollisionInfo( Iterator<Object> ids )
     {
-        int collisionIndex = 0;
-        Set<Object> collidedIds = new HashSet<>();
+        // This is currently the only way of discovering duplicate input ids, checked per group.
+        PrimitiveIntObjectMap<Map<Object,Long>> collidedIds = Primitive.intObjectMap();
+
         for ( long i = 0; ids.hasNext(); i++ )
         {
             Object id = ids.next();
             long value = dataCache.get( i );
             if ( isCollision( value ) )
             {
-                if ( !collidedIds.add( id ) )
+                // Get hold of the group and duplicate detector for that group
+                IdGroup group = groupOf( i );
+                Map<Object,Long> idsForGroup = collidedIds.get( group.id() );
+                if ( idsForGroup == null )
                 {
-                    throw new IllegalStateException( "Duplicate input ids. '" +
-                            id + "' existed in input more than once" );
+                    collidedIds.put( group.id(), idsForGroup = new HashMap<>() );
                 }
 
+                // Check for duplicates in this group
+                Long existingI = idsForGroup.put( id, i );
+                if ( existingI != null )
+                {
+                    throw new IllegalStateException( "Id '" + id + "' is defined more than once in " +
+                            group + ", at least at " + group.translate( existingI.longValue() ) + " and " +
+                            group.translate( i ) );
+                }
+
+                // Store this collision input id for matching later in get()
                 long val = encoder.encode( id );
                 assert val == clearCollision( value );
-                int valueIndex = collisionValues.size();
+                int collisionIndex = collisionValues.size();
                 collisionValues.add( id );
                 collisionCache.set( collisionIndex, i );
-                collisionValuesIndex.set( collisionIndex, valueIndex );
-                collisionIndex++;
             }
         }
     }
 
-    private long binarySearch( long x, Object inputId, boolean trackerIndex, long low, long high )
+    private IdGroup groupOf( long dataIndex )
+    {
+        for ( IdGroup idGroup : idGroups )
+        {
+            if ( idGroup.covers( dataIndex ) )
+            {
+                return idGroup;
+            }
+        }
+        throw new IllegalArgumentException( "Strange, index " + dataIndex + " isn't included in a group" );
+    }
+
+    private long binarySearch( long x, Object inputId, long low, long high, PrimitiveIntPredicate inGroup )
     {
         while ( low <= high )
         {
@@ -258,23 +318,11 @@ public class EncodingIdMapper implements IdMapper
             long midValue = dataCache.get( index );
             if ( unsignedCompare( clearCollision( midValue ), x, CompareType.EQ ) )
             {
-                if ( trackerIndex )
-                {
-                    //get the lowest tracking index
-                    if ( isCollision( midValue ) )
-                    {
-                        while ( midValue == dataCache.get( trackerCache.get( mid - 1 ) ) )
-                        {
-                            mid -= 1;
-                        }
-                    }
-                    return mid;
-                }
                 if ( isCollision( midValue ) )
                 {
-                    return findFromCollisions( mid, inputId );
+                    return findFromCollisions( mid, inputId, inGroup );
                 }
-                return index;
+                return inGroup.accept( groupOf( index ).id() ) ? index : -1;
             }
             else if ( unsignedCompare( clearCollision( midValue ), x, CompareType.LT ) )
             {
@@ -313,13 +361,8 @@ public class EncodingIdMapper implements IdMapper
         return -1;
     }
 
-    private int findFromCollisions( long index, Object inputId )
+    private long findFromCollisions( long index, Object inputId, PrimitiveIntPredicate inGroup )
     {
-        if ( collisionValues.isEmpty() )
-        {
-            return -1;
-        }
-
         long val = clearCollision( dataCache.get( trackerCache.get( index ) ) );
         assert val == encoder.encode( inputId );
 
@@ -335,22 +378,48 @@ public class EncodingIdMapper implements IdMapper
             index++;
         }
         long toIndex = index;
-        long[] collisionVals = new long[(int) (toIndex - fromIndex + 1)];
-        for ( index = fromIndex; index <= toIndex; index++ )
+
+        // Find, hopefully one, match given the inputId and group matcher. This is the first step
+        // where the DETECTOR is used.
+        long result = findFromCollisions( fromIndex, toIndex, inGroup, inputId, CollisionHandler.DETECTOR );
+        if ( result == CollisionHandler.COLLISION_MARK )
         {
-            collisionVals[(int) (index - fromIndex)] = findIndex( collisionCache, trackerCache.get( index ) );
+            // If multiple matches were found we go and do the same find once more but using a different
+            // handler. A handler that gathers information about the collision, information useful to the caller
+            // and, in extension, the user. This information gathering is done as a second step to avoid
+            // having to instantiate unnecessary state objects up-front if only a single match was found,
+            // which is by far the most common case.
+            CollisionHandler.Detective detective = new CollisionHandler.Detective( inputId );
+            findFromCollisions( fromIndex, toIndex, inGroup, inputId, detective );
+            throw detective.exception();
         }
 
-        for ( int i = 0; i < collisionVals.length; i++ )
+        return result;
+    }
+
+    private long findFromCollisions( long fromIndex, long toIndex, PrimitiveIntPredicate inGroup, Object inputId,
+            CollisionHandler resolver )
+    {
+        long found = -1;
+        for ( long index = fromIndex; index <= toIndex; index++ )
         {
-            int collisionIndex = collisionValuesIndex.get( collisionVals[i] );
-            Object value = collisionValues.get( collisionIndex );
-            if ( inputId.equals( value ) )
+            int dataIndex = trackerCache.get( index );
+            IdGroup group = groupOf( dataIndex );
+            if ( inGroup.accept( group.id() ) )
             {
-                return trackerCache.get( fromIndex + i );
+                // If we have more than Integer.MAX_VALUE collisions then I'd be darned.
+                int collisionIndex = safeCastLongToInt( findIndex( collisionCache, dataIndex ) );
+                Object value = collisionValues.get( collisionIndex );
+                if ( inputId.equals( value ) )
+                {
+                    long foundIndex = trackerCache.get( index );
+                    found = resolver.handle( found, foundIndex, group );
+                    // continue checking so that we can throw the exception above, so that the lookup
+                    // happens in a deterministic fashion.
+                }
             }
         }
-        return -1;
+        return found;
     }
 
     static boolean compareDataCache( LongArray dataCache, IntArray tracker, int a, int b, CompareType compareType )
@@ -374,6 +443,5 @@ public class EncodingIdMapper implements IdMapper
         dataCache.visitMemoryStats( visitor );
         trackerCache.visitMemoryStats( visitor );
         collisionCache.visitMemoryStats( visitor );
-        collisionValuesIndex.visitMemoryStats( visitor );
     }
 }

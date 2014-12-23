@@ -27,7 +27,6 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
@@ -43,20 +42,17 @@ import static org.neo4j.graphdb.Direction.INCOMING;
  */
 public class RelationshipEncoderStep extends ExecutorServiceStep<Pair<List<InputRelationship>,long[]>>
 {
-    private final IdMapper idMapper;
     private final BatchingTokenRepository<?> relationshipTypeRepository;
     private final RelationshipStore relationshipStore;
     private final NodeRelationshipLink nodeRelationshipLink;
 
     public RelationshipEncoderStep( StageControl control,
             Configuration config,
-            IdMapper idMapper,
             BatchingTokenRepository<?> relationshipTypeRepository,
             RelationshipStore relationshipStore,
             NodeRelationshipLink nodeRelationshipLink )
     {
         super( control, "RELATIONSHIP", config.workAheadSize(), config.movingAverageSize(), 1 );
-        this.idMapper = idMapper;
         this.relationshipTypeRepository = relationshipTypeRepository;
         this.relationshipStore = relationshipStore;
         this.nodeRelationshipLink = nodeRelationshipLink;

@@ -29,7 +29,10 @@ import java.util.Set;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.function.Factory;
+import org.neo4j.function.primitive.PrimitiveIntPredicate;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.Exceptions;
@@ -43,6 +46,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
+import org.neo4j.unsafe.impl.batchimport.input.Group;
 
 import static java.lang.System.currentTimeMillis;
 
@@ -55,6 +59,8 @@ import static org.mockito.Mockito.when;
 
 import static org.neo4j.graphdb.Resource.EMPTY;
 import static org.neo4j.helpers.collection.IteratorUtil.resourceIterator;
+import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper.ANY_GROUP;
+import static org.neo4j.unsafe.impl.batchimport.input.Group.GLOBAL;
 
 public class EncodingIdMapperTest
 {
@@ -92,7 +98,7 @@ public class EncodingIdMapperTest
         long index = 0;
         for ( Object id : ids )
         {
-            idMapper.put( id, index++ );
+            idMapper.put( id, index++, GLOBAL );
         }
         idMapper.prepare( ids );
         MemoryStatsVisitor memoryStats = new GatheringMemoryStatsVisitor();
@@ -102,7 +108,7 @@ public class EncodingIdMapperTest
         for ( Object id : ids )
         {
             // the UUIDs here will be generated in the same sequence as above because we reset the random
-            if ( idMapper.get( id ) == -1 )
+            if ( idMapper.get( id, ANY_GROUP ) == -1 )
             {
                 fail( "Couldn't find " + id + " even though I added it just previously" );
             }
@@ -117,7 +123,7 @@ public class EncodingIdMapperTest
         idMapper.prepare( null );
 
         // WHEN
-        long id = idMapper.get( "123" );
+        long id = idMapper.get( "123", ANY_GROUP );
 
         // THEN
         assertEquals( -1L, id );
@@ -130,13 +136,13 @@ public class EncodingIdMapperTest
         IdMapper mapper = IdMappers.strings( NumberArrayFactory.AUTO );
 
         // WHEN
-        mapper.put( "123", 0 );
-        mapper.put( "456", 1 );
+        mapper.put( "123", 0, GLOBAL );
+        mapper.put( "456", 1, GLOBAL );
         mapper.prepare( null );
 
         // THEN
-        assertEquals( 1L, mapper.get( "456" ) );
-        assertEquals( 0L, mapper.get( "123" ) );
+        assertEquals( 1L, mapper.get( "456", ANY_GROUP ) );
+        assertEquals( 0L, mapper.get( "123", ANY_GROUP ) );
     }
 
     @Repeat( times = 10 )
@@ -156,7 +162,7 @@ public class EncodingIdMapperTest
             int id = 0;
             for ( Object value : values )
             {
-                mapper.put( value, id++ );
+                mapper.put( value, id++, GLOBAL );
             }
         }
 
@@ -168,7 +174,8 @@ public class EncodingIdMapperTest
             int id = 0;
             for ( Object value : values )
             {
-                assertEquals( "Expected " + value + " to map to " + id + ", seed:" + seed, id++, mapper.get( value ) );
+                assertEquals( "Expected " + value + " to map to " + id + ", seed:" + seed, id++,
+                        mapper.get( value, ANY_GROUP ) );
             }
         }
         catch ( Throwable e )
@@ -188,7 +195,7 @@ public class EncodingIdMapperTest
         {
             for ( int i = 0; iterator.hasNext(); i++ )
             {
-                mapper.put( iterator.next(), i );
+                mapper.put( iterator.next(), i, GLOBAL );
             }
         }
 
@@ -202,6 +209,7 @@ public class EncodingIdMapperTest
         {
             // THEN
             assertTrue( e.getMessage().contains( "10" ) );
+            e.printStackTrace();
         }
     }
 
@@ -218,7 +226,7 @@ public class EncodingIdMapperTest
         {
             for ( int i = 0; iterator.hasNext(); i++ )
             {
-                mapper.put( iterator.next(), i );
+                mapper.put( iterator.next(), i, GLOBAL );
             }
         }
 
@@ -226,8 +234,114 @@ public class EncodingIdMapperTest
         mapper.prepare( ids );
 
         // THEN
-        assertEquals( 0L, mapper.get( "10" ) );
-        assertEquals( 1L, mapper.get( "9" ) );
+        assertEquals( 0L, mapper.get( "10", ANY_GROUP ) );
+        assertEquals( 1L, mapper.get( "9", ANY_GROUP ) );
+    }
+
+    @Test
+    public void shouldBeAbleToHaveDuplicateInputIdButInDifferentGroups() throws Exception
+    {
+        // GIVEN
+        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new StringEncoder(), new Radix.String() );
+        ResourceIterable<Object> ids =
+                IteratorUtil.<Object>resourceIterable( Arrays.<Object>asList( "10", "9", "10" ) );
+        try ( ResourceIterator<Object> iterator = ids.iterator() )
+        {
+            int group = 0, id = 0;
+            // group 0
+            Group group0 = group( group++, "zero" );
+            mapper.put( iterator.next(), id++, group0 );
+            mapper.put( iterator.next(), id++, group0 );
+            // group 1
+            Group group1 = group( group, "one" );
+            mapper.put( iterator.next(), id++, group1 );
+        }
+        mapper.prepare( ids );
+
+        // WHEN/THEN
+        assertEquals( 0L, mapper.get( "10", groups( 0 ) ) );
+        assertEquals( 1L, mapper.get( "9", groups( 0 ) ) );
+        assertEquals( 2L, mapper.get( "10", groups( 1 ) ) );
+    }
+
+    @Test
+    public void shouldPreventCollisionGetFromManyGroups() throws Exception
+    {
+        // GIVEN
+        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new StringEncoder(), new Radix.String() );
+        ResourceIterable<Object> ids =
+                IteratorUtil.<Object>resourceIterable( Arrays.<Object>asList( "9", "10", "10" ) );
+        try ( ResourceIterator<Object> iterator = ids.iterator() )
+        {
+            int group = 0, id = 0;
+            // group 0
+            Group group0 = group( group++, "zero" );
+            mapper.put( iterator.next(), id++, group0 );
+            mapper.put( iterator.next(), id++, group0 );
+            // group 1
+            Group group1 = group( group, "one" );
+            mapper.put( iterator.next(), id++, group1 );
+        }
+        mapper.prepare( ids );
+
+        // WHEN/THEN
+        try
+        {
+            mapper.get( "10", ANY_GROUP );
+            fail( "Should fail" );
+        }
+        catch ( IllegalStateException e )
+        {
+            // Good
+        }
+    }
+
+    @Test
+    public void shouldOnlyFindInputIdsInSpecificGroup() throws Exception
+    {
+        // GIVEN
+        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new StringEncoder(), new Radix.String() );
+        ResourceIterable<Object> ids =
+                IteratorUtil.<Object>resourceIterable( Arrays.<Object>asList( "8", "9", "10" ) );
+        try ( ResourceIterator<Object> iterator = ids.iterator() )
+        {
+            int group = 0, id = 0;
+            mapper.put( iterator.next(), id++, group( group++, "first" ) );
+            mapper.put( iterator.next(), id++, group( group++, "second" ) );
+            mapper.put( iterator.next(), id++, group( group++, "third" ) );
+        }
+        mapper.prepare( ids );
+
+        // WHEN/THEN
+        assertEquals( 0L, mapper.get( "8", groups( 0 ) ) );
+        assertEquals( -1L, mapper.get( "8", groups( 1 ) ) );
+        assertEquals( -1L, mapper.get( "8", groups( 2 ) ) );
+        assertEquals( 0L, mapper.get( "8", groups( 0, 1, 2 ) ) );
+
+        assertEquals( -1L, mapper.get( "9", groups( 0 ) ) );
+        assertEquals( 1L, mapper.get( "9", groups( 1 ) ) );
+        assertEquals( -1L, mapper.get( "9", groups( 2 ) ) );
+        assertEquals( 1L, mapper.get( "9", groups( 0, 1, 2 ) ) );
+
+        assertEquals( -1L, mapper.get( "10", groups( 0 ) ) );
+        assertEquals( -1L, mapper.get( "10", groups( 1 ) ) );
+        assertEquals( 2L, mapper.get( "10", groups( 2 ) ) );
+        assertEquals( 2L, mapper.get( "10", groups( 0, 1, 2 ) ) );
+    }
+
+    private Group group( int id, final String name )
+    {
+        return new Group.Adapter( id, name );
+    }
+
+    private PrimitiveIntPredicate groups( int... groups )
+    {
+        PrimitiveIntSet set = Primitive.intSet( groups.length );
+        for ( int group : groups )
+        {
+            set.add( group );
+        }
+        return set;
     }
 
     private class ValueGenerator implements ResourceIterable<Object>

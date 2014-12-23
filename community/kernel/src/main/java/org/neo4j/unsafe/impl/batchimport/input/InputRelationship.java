@@ -21,8 +21,11 @@ package org.neo4j.unsafe.impl.batchimport.input;
 
 import java.util.Collection;
 
+import org.neo4j.function.primitive.PrimitiveIntPredicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.Pair;
+
+import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper.ANY_GROUP;
 
 /**
  * Represents a relationship from an input source, for example a .csv file.
@@ -34,13 +37,27 @@ public class InputRelationship extends InputEntity
     private final Object endNode;
     private String type;
     private final Integer typeId;
+    private final PrimitiveIntPredicate startNodeGroups;
+    private final PrimitiveIntPredicate endNodeGroups;
 
-    public InputRelationship( long id, Object[] properties, Long firstPropertyId, Object startNode, Object endNode,
+    public InputRelationship( long id,
+            Object[] properties, Long firstPropertyId, Object startNode, Object endNode,
+            String type, Integer typeId )
+    {
+        this( id, properties, firstPropertyId, ANY_GROUP, startNode, ANY_GROUP, endNode, type, typeId );
+    }
+
+    public InputRelationship( long id,
+            Object[] properties, Long firstPropertyId,
+            PrimitiveIntPredicate startNodeGroups, Object startNode,
+            PrimitiveIntPredicate endNodeGroups, Object endNode,
             String type, Integer typeId )
     {
         super( properties, firstPropertyId );
         this.id = id;
+        this.startNodeGroups = startNodeGroups;
         this.startNode = startNode;
+        this.endNodeGroups = endNodeGroups;
         this.endNode = endNode;
         this.type = type;
         this.typeId = typeId;
@@ -51,9 +68,19 @@ public class InputRelationship extends InputEntity
         return id;
     }
 
+    public PrimitiveIntPredicate startNodeGroups()
+    {
+        return startNodeGroups;
+    }
+
     public Object startNode()
     {
         return startNode;
+    }
+
+    public PrimitiveIntPredicate endNodeGroups()
+    {
+        return endNodeGroups;
     }
 
     public Object endNode()

@@ -17,17 +17,41 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.collection.primitive;
+package org.neo4j.unsafe.impl.batchimport.input;
 
-import org.neo4j.function.primitive.PrimitiveLongPredicate;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 
-public interface PrimitiveLongSet extends PrimitiveLongCollection, PrimitiveLongPredicate
+/**
+ * Group of {@link InputEntity inputs}. Used primarily in {@link IdMapper} for supporting multiple
+ * id groups within the same index.
+ */
+public interface Group
 {
-    boolean add( long value );
+    int id();
 
-    boolean addAll( PrimitiveLongIterator values );
+    public static class Adapter implements Group
+    {
+        private final int id;
+        private final String name;
 
-    boolean contains( long value );
+        public Adapter( int id, String name )
+        {
+            this.id = id;
+            this.name = name;
+        }
 
-    boolean remove( long value );
+        @Override
+        public int id()
+        {
+            return id;
+        }
+
+        @Override
+        public String toString()
+        {
+            return name;
+        }
+    }
+
+    public static final Group GLOBAL = new Adapter( 0, "global" );
 }
