@@ -46,7 +46,7 @@ public class BatchInserterImplTest
     public void testHonorsPassedInParams() throws Exception
     {
         int mappedMemoryTotalSize = createInserterAndGetMemoryMappingConfig( stringMap(
-                GraphDatabaseSettings.mapped_memory_total_size.name(), "16K",
+                GraphDatabaseSettings.pagecache_memory.name(), "16K",
                 GraphDatabaseSettings.mapped_memory_page_size.name(), "1K" ) );
         assertThat( "memory mapped config is active", mappedMemoryTotalSize, is( 16 * 1024 ) );
     }

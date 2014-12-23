@@ -90,7 +90,7 @@ public class RsdrMain
     {
         Config config = new Config( MapUtil.stringMap(
                 GraphDatabaseSettings.read_only.name(), "true",
-                GraphDatabaseSettings.mapped_memory_total_size.name(), "64M",
+                GraphDatabaseSettings.pagecache_memory.name(), "64M",
                 GraphDatabaseSettings.neo_store.name(), storepath.getAbsolutePath() + File.separator + NeoStore.DEFAULT_NAME ) );
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         Neo4jJobScheduler jobScheduler = new Neo4jJobScheduler();

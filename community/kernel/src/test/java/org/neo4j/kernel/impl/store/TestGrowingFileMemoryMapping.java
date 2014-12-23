@@ -19,17 +19,15 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.io.File;
-
 import org.junit.ClassRule;
 import org.junit.Test;
+
+import java.io.File;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.StoreVersionMismatchHandler;
 import org.neo4j.kernel.impl.store.CommonAbstractStore.Configuration;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -41,8 +39,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
-
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_total_size;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.Settings.osIsWindows;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -61,7 +58,7 @@ public class TestGrowingFileMemoryMapping
 
         File storeDir = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
         Config config = new Config( stringMap(
-                mapped_memory_total_size.name(), mmapSize( NUMBER_OF_RECORDS, NodeStore.RECORD_SIZE ),
+                pagecache_memory.name(), mmapSize( NUMBER_OF_RECORDS, NodeStore.RECORD_SIZE ),
                 Configuration.store_dir.name(), storeDir.getPath() ), NodeStore.Configuration.class );
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         Monitors monitors = new Monitors();

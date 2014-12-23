@@ -49,7 +49,7 @@ IMPORTANT: Note that the block sizes can only be configured at store creation ti
 [options="header",cols="<35m,<30,<35"]
 |========================================================
 | Parameter                 | Possible values   | Effect
-| mapped_memory_total_size  |
+| dbms.pagecache.memory     |
   The maximum amount of memory to use for the file buffer cache, either in bytes
   (or greater byte-like units, such as `100M` for 100 mega-bytes, or `4G` for 4 giga-bytes)
   or a percentage of the available amount of memory. |

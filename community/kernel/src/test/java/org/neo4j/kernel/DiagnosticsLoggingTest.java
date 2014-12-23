@@ -53,7 +53,7 @@ public class DiagnosticsLoggingTest
     {
         HashMap<String,String> settings = new HashMap<>();
         settings.put( GraphDatabaseSettings.dump_configuration.name(), "true" );
-        settings.put( GraphDatabaseSettings.mapped_memory_total_size.name(), "8M" );
+        settings.put( GraphDatabaseSettings.pagecache_memory.name(), "8M" );
         FakeDatabase db = new FakeDatabase( settings );
         FakeLogger logger = db.getLogger();
         String messages = logger.getMessages();

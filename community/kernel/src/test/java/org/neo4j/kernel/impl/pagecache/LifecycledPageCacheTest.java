@@ -34,7 +34,7 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_page_size;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_total_size;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class LifecycledPageCacheTest
@@ -49,7 +49,7 @@ public class LifecycledPageCacheTest
         Config config = new Config();
         config.applyChanges( stringMap(
                 mapped_memory_page_size.name(), "4096",
-                mapped_memory_total_size.name(), Integer.toString(4096 * 16) ) );
+                pagecache_memory.name(), Integer.toString( 4096 * 16 ) ) );
 
         // When
         LifeSupport life = new LifeSupport();

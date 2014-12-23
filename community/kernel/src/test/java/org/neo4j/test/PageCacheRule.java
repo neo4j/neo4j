@@ -57,7 +57,7 @@ public class PageCacheRule extends ExternalResource
     public PageCache getPageCache( FileSystemAbstraction fs )
     {
         Map<String,String> settings = new HashMap<>();
-        settings.put( GraphDatabaseSettings.mapped_memory_total_size.name(), "8M" );
+        settings.put( GraphDatabaseSettings.pagecache_memory.name(), "8M" );
         return getPageCache( fs, new Config( settings ) );
     }
 

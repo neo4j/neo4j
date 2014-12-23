@@ -62,7 +62,7 @@ public final class StandalonePageCacheFactory
         SingleFilePageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fileSystem );
 
         Config baseConfig = new Config( MapUtil.stringMap(
-                GraphDatabaseSettings.mapped_memory_total_size.name(), "8M" ) );
+                GraphDatabaseSettings.pagecache_memory.name(), "8M" ) );
         Config finalConfig = baseConfig.with( config.getParams() );
         LifecycledPageCache delegate = life.add(
                 new LifecycledPageCache( swapperFactory, scheduler, finalConfig, PageCacheMonitor.NULL ) );
