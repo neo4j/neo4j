@@ -185,4 +185,12 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
       ExpandPipe( AllNodesScanPipe("c")(), "c", "r2", "b", Direction.INCOMING, LazyTypes.empty)()
     )())
   }
+
+  test("cardinality should be rounded properly") {
+    val logicalPlan = OptionalExpand(
+      AllNodesScan("a", Set.empty)(solved), "a", Direction.INCOMING, Seq(), "a", "r", ExpandInto)_
+    val pipeInfo: PipeInfo = build(logicalPlan)
+
+    pipeInfo.pipe.asInstanceOf[RonjaPipe].estimatedCardinality.get should equal(105000)
+  }
 }
