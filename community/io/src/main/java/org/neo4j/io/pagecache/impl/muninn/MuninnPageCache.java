@@ -342,14 +342,14 @@ public class MuninnPageCache implements RunnablePageCache
             for ( int i = 0; i < pages.length; i++ )
             {
                 MuninnPage page = pages[i];
-                long stamp = page.writeLock();
+                long stamp = page.readLock();
                 try
                 {
                     page.flush( cacheFlush.flushEventOpportunity() );
                 }
                 finally
                 {
-                    page.unlockWrite( stamp );
+                    page.unlockRead( stamp );
                 }
             }
         }
