@@ -31,6 +31,7 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBase
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Lookup;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
@@ -38,6 +39,7 @@ import org.neo4j.helpers.Predicates;
 import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.EntityType;
+import org.neo4j.kernel.api.Specialization;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
@@ -440,6 +442,19 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
+    public Lookup.Transformation<Specialization<Lookup>> indexQueryTransformation( IndexDescriptor index )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public PrimitiveLongIterator nodesGetFromIndexQuery( KernelStatement state, IndexDescriptor descriptor,
+                                                         Specialization<Lookup> query )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexService.getIndexProxy( indexId( descriptor ) ).getPopulationFailure().asString();
@@ -599,6 +614,13 @@ public class DiskLayer implements StoreReadLayer
     {
         IndexReader reader = state.getIndexReader( index );
         return resourceIterator( reader.lookup( value ), reader );
+    }
+
+    public PrimitiveLongIterator nodesGetFromIndexQuery( KernelStatement state, long indexId, Specialization<Lookup> query )
+            throws IndexNotFoundKernelException
+    {
+        IndexReader reader = state.getIndexReader( indexId );
+        return resourceIterator( reader.query( query ), reader );
     }
 
     private Iterator<DefinedProperty> loadAllPropertiesOf( PrimitiveRecord primitiveRecord )

@@ -21,7 +21,9 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.Iterator;
 
+import org.neo4j.graphdb.Lookup;
 import org.neo4j.helpers.Function;
+import org.neo4j.kernel.api.Specialization;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -196,6 +198,14 @@ public class LockingStatementOperations implements
     {
         state.locks().acquireShared( ResourceTypes.SCHEMA, schemaResource() );
         return schemaReadDelegate.indexGetCommittedId( state, index, kind );
+    }
+
+    @Override
+    public Lookup.Transformation<Specialization<Lookup>> indexQueryTransformation(
+            KernelStatement state, IndexDescriptor index ) throws IndexNotFoundKernelException
+    {
+        state.locks().acquireShared( ResourceTypes.SCHEMA, schemaResource() );
+        return schemaReadDelegate.indexQueryTransformation( state, index );
     }
 
     @Override

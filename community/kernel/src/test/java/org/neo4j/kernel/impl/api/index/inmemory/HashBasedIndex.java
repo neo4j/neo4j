@@ -28,6 +28,8 @@ import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.graphdb.Lookup;
+import org.neo4j.kernel.api.Specialization;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
@@ -143,6 +145,12 @@ class HashBasedIndex extends InMemoryIndexImplementation
             snapshot.data().put( entry.getKey(), new HashSet<>( entry.getValue() ) );
         }
         return snapshot;
+    }
+
+    @Override
+    public PrimitiveLongIterator query( Specialization<Lookup> query )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override

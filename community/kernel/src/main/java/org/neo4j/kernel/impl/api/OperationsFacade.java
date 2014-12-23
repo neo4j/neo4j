@@ -27,11 +27,13 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Lookup;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
+import org.neo4j.kernel.api.Specialization;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -320,6 +322,14 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
                 relId, relType, direction, startNodeId, neighborNodeId );
     }
 
+    @Override
+    public PrimitiveLongIterator nodesGetFromIndexQuery( IndexDescriptor descriptor, Specialization<Lookup> query )
+            throws IndexNotFoundKernelException
+    {
+        statement.assertOpen();
+        return dataRead().nodesGetFromIndexQuery( statement, descriptor, query );
+    }
+
     // </DataRead>
 
     // <SchemaRead>
@@ -394,6 +404,14 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     {
         statement.assertOpen();
         return schemaRead().indexGetOwningUniquenessConstraintId( statement, index );
+    }
+
+    @Override
+    public Lookup.Transformation<Specialization<Lookup>> indexQueryTransformation( IndexDescriptor index )
+            throws IndexNotFoundKernelException
+    {
+        statement.assertOpen();
+        return schemaRead().indexQueryTransformation( statement, index );
     }
 
     @Override

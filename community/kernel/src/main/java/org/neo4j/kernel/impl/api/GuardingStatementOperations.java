@@ -25,6 +25,8 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Lookup;
+import org.neo4j.kernel.api.Specialization;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
@@ -337,5 +339,14 @@ public class GuardingStatementOperations implements
         guard.check();
         return entityReadDelegate.expand( statement, inputCursor, nodeId, types, expandDirection,
                 relId, relType, direction, startNodeId, neighborNodeId );
+    }
+
+    @Override
+    public PrimitiveLongIterator nodesGetFromIndexQuery( KernelStatement statement, IndexDescriptor descriptor,
+                                                         Specialization<Lookup> query )
+            throws IndexNotFoundKernelException
+    {
+        guard.check();
+        return entityReadDelegate.nodesGetFromIndexQuery( statement, descriptor, query );
     }
 }

@@ -21,6 +21,7 @@ package org.neo4j.kernel.api;
 
 import java.util.Iterator;
 
+import org.neo4j.graphdb.Lookup;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
@@ -81,4 +82,16 @@ interface SchemaRead
      * Get the owning constraint for a constraint index. Returns null if the index does not have an owning constraint.
      */
     Long indexGetOwningUniquenessConstraintId( IndexDescriptor index ) throws SchemaRuleNotFoundException;
+
+    /**
+     * Get a {@linkplain Lookup.Transformation transformation} that transforms {@link Lookup lookup objects} into a
+     * a form that is specialized for performing queries in the supplied index.
+     *
+     * The returned {@linkplain Specialization specialized object} should be safe for re-use across transaction
+     * boundaries, as long as the index has not been re-defined. This allows
+     * {@linkplain org.neo4j.kernel.impl.query.QueryExecutionEngine query execution engines} to cache the specialized
+     * forms as part of a planned query.
+     */
+    Lookup.Transformation<Specialization<Lookup>> indexQueryTransformation( IndexDescriptor index )
+            throws IndexNotFoundKernelException;
 }

@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.api.operations;
 
 import java.util.Iterator;
 
+import org.neo4j.graphdb.Lookup;
+import org.neo4j.kernel.api.Specialization;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -100,4 +102,8 @@ public interface SchemaReadOperations
      * - throws exception for indexes that aren't committed.
      */
     long indexGetCommittedId( KernelStatement state, IndexDescriptor index, SchemaStorage.IndexRuleKind constraint ) throws SchemaRuleNotFoundException;
+
+    /** @see org.neo4j.kernel.api.ReadOperations#indexQueryTransformation(IndexDescriptor) */
+    Lookup.Transformation<Specialization<Lookup>> indexQueryTransformation( KernelStatement state, IndexDescriptor index )
+            throws IndexNotFoundKernelException;
 }

@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import java.io.Closeable;
+import java.io.IOException;
+
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.search.BooleanClause;
@@ -27,12 +30,11 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 
-import java.io.Closeable;
-import java.io.IOException;
-
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.graphdb.Lookup;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.index.impl.lucene.Hits;
+import org.neo4j.kernel.api.Specialization;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
@@ -90,6 +92,20 @@ class LuceneIndexAccessorReader implements IndexReader
         try
         {
             Hits hits = new Hits( searcher, documentLogic.newQuery( value ), null );
+            return new HitsPrimitiveLongIterator( hits, documentLogic );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+    @Override
+    public PrimitiveLongIterator query( Specialization<Lookup> query )
+    {
+        try
+        {
+            Hits hits = new Hits( searcher, query.specializedFor( documentLogic ), null );
             return new HitsPrimitiveLongIterator( hits, documentLogic );
         }
         catch ( IOException e )

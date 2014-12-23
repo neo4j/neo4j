@@ -44,8 +44,10 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Lookup;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.kernel.api.Specialization;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
@@ -280,7 +282,7 @@ public class CacheLayer implements StoreReadLayer
             throws EntityNotFoundException
     {
         return persistenceCache.relationshipGetProperty( relationshipId, propertyKeyId,
-                relationshipPropertyLoader );
+                                                         relationshipPropertyLoader );
     }
 
     @Override
@@ -350,6 +352,14 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
+    public PrimitiveLongIterator nodesGetFromIndexQuery( KernelStatement state, IndexDescriptor descriptor,
+                                                         Specialization<Lookup> query )
+            throws IndexNotFoundKernelException
+    {
+        return diskLayer.nodesGetFromIndexQuery( state, schemaCache.indexId( descriptor ), query );
+    }
+
+    @Override
     public IndexDescriptor indexesGetForLabelAndPropertyKey( int labelId, int propertyKey )
     {
         return schemaCache.indexDescriptor( labelId, propertyKey );
@@ -366,6 +376,13 @@ public class CacheLayer implements StoreReadLayer
     public double indexUniqueValuesPercentage( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexingService.indexUniqueValuesPercentage( schemaCache.indexId( descriptor ) );
+    }
+
+    @Override
+    public Lookup.Transformation<Specialization<Lookup>> indexQueryTransformation( IndexDescriptor index )
+            throws IndexNotFoundKernelException
+    {
+        return indexingService.indexQueryTransformation( schemaCache.indexId( index ) );
     }
 
     @Override

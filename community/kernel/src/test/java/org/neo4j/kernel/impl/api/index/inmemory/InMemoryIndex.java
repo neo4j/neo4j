@@ -25,7 +25,9 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.graphdb.Lookup;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.kernel.api.Specialization;
 import org.neo4j.kernel.api.direct.BoundedIterable;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -36,6 +38,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.QuerySpecializer;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
@@ -216,6 +219,12 @@ class InMemoryIndex
         public ResourceIterator<File> snapshotFiles()
         {
             return emptyIterator();
+        }
+
+        @Override
+        public Lookup.Transformation<Specialization<Lookup>> queryTransformation()
+        {
+            return QuerySpecializer.DEFAULT;
         }
     }
 

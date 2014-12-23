@@ -32,11 +32,13 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.function.primitive.PrimitiveLongPredicate;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Lookup;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.LegacyIndex;
 import org.neo4j.kernel.api.LegacyIndexHits;
+import org.neo4j.kernel.api.Specialization;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -58,6 +60,7 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
+import org.neo4j.kernel.api.properties.PropertyPredicate;
 import org.neo4j.kernel.api.txstate.ReadableTxState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
@@ -1080,6 +1083,13 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
+    public Lookup.Transformation<Specialization<Lookup>> indexQueryTransformation(
+            KernelStatement state, IndexDescriptor index ) throws IndexNotFoundKernelException
+    {
+        return storeLayer.indexQueryTransformation( index );
+    }
+
+    @Override
     public String indexGetFailure( Statement state, IndexDescriptor descriptor )
             throws IndexNotFoundKernelException
     {
@@ -1230,6 +1240,21 @@ public class StateHandlingStatementOperations implements
         }
         return storeLayer.expand( inputCursor, nodeId, types, expandDirection,
                 relId, relType, direction, startNodeId, neighborNodeId );
+    }
+
+    @Override
+    public PrimitiveLongIterator nodesGetFromIndexQuery( KernelStatement statement, IndexDescriptor descriptor,
+                                                         Specialization<Lookup> query )
+            throws IndexNotFoundKernelException
+    {
+        PrimitiveLongIterator result = storeLayer.nodesGetFromIndexQuery( statement, descriptor, query );
+        if ( statement.hasTxStateWithChanges() )
+        {
+            PropertyPredicate predicate = query.genericForm().transform( PropertyPredicate.TRANSFORMATION );
+            throw new UnsupportedOperationException( "Query on transaction with state not implemented yet... " +
+                                                     "Should be done using the generic form: " + query.genericForm() );
+        }
+        return result;
     }
 
     @Override

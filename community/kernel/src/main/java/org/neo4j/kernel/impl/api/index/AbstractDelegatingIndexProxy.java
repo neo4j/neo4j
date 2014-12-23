@@ -23,7 +23,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Future;
 
+import org.neo4j.graphdb.Lookup;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.kernel.api.Specialization;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
@@ -133,5 +135,11 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     public IndexConfiguration config()
     {
         return getDelegate().config();
+    }
+
+    @Override
+    public Lookup.Transformation<Specialization<Lookup>> queryTransformation()
+    {
+        return getDelegate().queryTransformation();
     }
 }

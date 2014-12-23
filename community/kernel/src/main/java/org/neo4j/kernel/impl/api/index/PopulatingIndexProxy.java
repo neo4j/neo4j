@@ -24,8 +24,10 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.concurrent.Future;
 
+import org.neo4j.graphdb.Lookup;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.ThisShouldNotHappenError;
+import org.neo4j.kernel.api.Specialization;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
@@ -196,6 +198,12 @@ public class PopulatingIndexProxy implements IndexProxy
     public IndexConfiguration config()
     {
         return configuration;
+    }
+
+    @Override
+    public Lookup.Transformation<Specialization<Lookup>> queryTransformation()
+    {
+        throw new IllegalStateException( "Index is still populating: " + job );
     }
 
     @Override
