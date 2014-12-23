@@ -22,8 +22,6 @@ package org.neo4j.kernel.impl.store;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -33,7 +31,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.monitoring.Monitors;
 
 /**
  * An abstract representation of a store. A store is a file that contains
@@ -46,8 +43,6 @@ import org.neo4j.kernel.monitoring.Monitors;
  */
 public abstract class AbstractStore extends CommonAbstractStore
 {
-    private final Config conf;
-
     public AbstractStore(
             File fileName,
             Config conf,
@@ -56,12 +51,10 @@ public abstract class AbstractStore extends CommonAbstractStore
             PageCache pageCache,
             FileSystemAbstraction fileSystemAbstraction,
             StringLogger stringLogger,
-            StoreVersionMismatchHandler versionMismatchHandler,
-            Monitors monitors )
+            StoreVersionMismatchHandler versionMismatchHandler )
     {
         super( fileName, conf, idType, idGeneratorFactory, pageCache, fileSystemAbstraction, stringLogger,
-                versionMismatchHandler, monitors );
-        this.conf = conf;
+                versionMismatchHandler );
     }
 
     /**
@@ -105,11 +98,5 @@ public abstract class AbstractStore extends CommonAbstractStore
     protected boolean isInUse( byte inUseByte )
     {
         return (inUseByte & 0x1) == Record.IN_USE.intValue();
-    }
-
-    public static abstract class Configuration extends CommonAbstractStore.Configuration
-    {
-        public static final Setting<Boolean> rebuild_idgenerators_fast =
-                GraphDatabaseSettings.rebuild_idgenerators_fast;
     }
 }

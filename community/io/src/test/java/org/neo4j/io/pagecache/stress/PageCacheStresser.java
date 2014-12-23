@@ -19,9 +19,6 @@
  */
 package org.neo4j.io.pagecache.stress;
 
-import static java.nio.file.Paths.get;
-import static org.neo4j.io.pagecache.stress.StressTestRecord.SizeOfCounter;
-
 import java.io.File;
 import java.nio.file.Files;
 import java.util.LinkedList;
@@ -32,6 +29,9 @@ import java.util.concurrent.Future;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
+
+import static java.nio.file.Paths.get;
+import static org.neo4j.io.pagecache.stress.StressTestRecord.SizeOfCounter;
 
 public class PageCacheStresser
 {
@@ -64,7 +64,7 @@ public class PageCacheStresser
         countKeeperFactory.createVerifier().verifyCounts( pagedFile );
         checksumVerifier.verifyChecksums( pagedFile );
 
-        pageCache.unmap( file );
+        pagedFile.close();
     }
 
     private List<RecordStresser> prepare( Condition condition, CountKeeperFactory countKeeperFactory, PagedFile pagedFile, ChecksumVerifier checksumVerifier )

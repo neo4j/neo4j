@@ -98,7 +98,7 @@ final class MuninnPagedFile implements PagedFile
         if ( getRefCount() == 0 )
         {
             throw new IllegalStateException(
-                    "Cannot do IO on an unmapped PagedFile." );
+                    "File has been unmapped" );
         }
 
         int lockMask = PF_EXCLUSIVE_LOCK | PF_SHARED_LOCK;
@@ -135,7 +135,11 @@ final class MuninnPagedFile implements PagedFile
 
     public void close() throws IOException
     {
-        flush();
+        pageCache.unmap( this );
+    }
+
+    void closeSwapper() throws IOException
+    {
         swapper.close();
     }
 

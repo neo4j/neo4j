@@ -44,21 +44,18 @@ public class StandalonePageCacheFactoryTest
         File file = new File( "a" );
         fs.create( file );
 
-        try ( StandalonePageCache cache = StandalonePageCacheFactory.createPageCache( fs, "test" ) )
+        try ( StandalonePageCache cache = StandalonePageCacheFactory.createPageCache( fs, "test" );
+              PagedFile pf = cache.map( file, 4096 );
+              PageCursor cursor = pf.io( 0, PagedFile.PF_EXCLUSIVE_LOCK ) )
         {
             // The default size is currently 8MBs.
             // It should be possible to write more than that.
             // If the eviction thread has not been started, then this test will block forever.
-            PagedFile pf = cache.map( file, 4096 );
-            try ( PageCursor cursor = pf.io( 0, PagedFile.PF_EXCLUSIVE_LOCK ) )
+            for ( int i = 0; i < 10_000; i++ )
             {
-                for ( int i = 0; i < 10_000; i++ )
-                {
-                    assertTrue( cursor.next() );
-                    cursor.putInt( 42 );
-                }
+                assertTrue( cursor.next() );
+                cursor.putInt( 42 );
             }
-            cache.unmap( file );
         }
     }
 }

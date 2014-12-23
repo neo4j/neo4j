@@ -266,21 +266,19 @@ public class MuninnPageCache implements RunnablePageCache
         return pagedFile;
     }
 
-    @Override
-    public synchronized void unmap( File file ) throws IOException
+    synchronized void unmap( MuninnPagedFile file )
     {
-        FileMapping prev = null;
-        FileMapping current = mappedFiles;
-
-        // find an existing mapping
-        while ( current != null )
+        if ( file.decrementRefCount() )
         {
-            if ( current.file.equals( file ) )
+            // This was the last reference!
+            // Find and remove the existing mapping:
+            FileMapping prev = null;
+            FileMapping current = mappedFiles;
+
+            while ( current != null )
             {
-                MuninnPagedFile pagedFile = current.pagedFile;
-                if ( pagedFile.decrementRefCount() )
+                if ( current.pagedFile == file )
                 {
-                    // this was the last reference; boot it from the list
                     if ( prev == null )
                     {
                         mappedFiles = current.next;
@@ -289,14 +287,44 @@ public class MuninnPageCache implements RunnablePageCache
                     {
                         prev.next = current.next;
                     }
-                    monitor.unmappedFile( file );
-                    pagedFile.close();
+                    monitor.unmappedFile( current.file );
+                    flushAndCloseWithoutFail( file );
+                    break;
                 }
-                break;
+                prev = current;
+                current = current.next;
             }
-            prev = current;
-            current = current.next;
         }
+    }
+
+    private void flushAndCloseWithoutFail( MuninnPagedFile file )
+    {
+        boolean flushedAndClosed = false;
+        boolean printedFirstException = false;
+        do
+        {
+            try
+            {
+                file.flush();
+                file.closeSwapper();
+                flushedAndClosed = true;
+            }
+            catch ( IOException e )
+            {
+                if ( !printedFirstException )
+                {
+                    printedFirstException = true;
+                    try
+                    {
+                        e.printStackTrace();
+                    }
+                    catch ( Exception ignore )
+                    {
+                    }
+                }
+            }
+        }
+        while ( !flushedAndClosed );
     }
 
     @Override

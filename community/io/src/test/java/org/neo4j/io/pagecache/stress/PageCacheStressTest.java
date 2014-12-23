@@ -108,7 +108,7 @@ public class PageCacheStressTest
 
             pageCacheStresser.stress( pageCacheUnderTest, condition, countKeeperFactory );
 
-            pageCacheKeepingCount.unmap( file );
+            pagedFile.close();
         }
         finally
         {

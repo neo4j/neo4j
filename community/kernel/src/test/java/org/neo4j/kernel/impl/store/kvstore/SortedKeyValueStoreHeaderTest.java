@@ -78,18 +78,13 @@ public class SortedKeyValueStoreHeaderTest
                 with( RECORD_SIZE, ALL_STORES_VERSION, BASE_TX_ID, BASE_MINOR_VERSION ).update( 42, 24, 12 );
 
         // when
-        try
+        try ( PagedFile pagedFile = pageCache.map( file, pageCache.pageSize() ) )
         {
-            final PagedFile pagedFile = pageCache.map( file, pageCache.pageSize() );
             header.write( pagedFile );
             pagedFile.flush();
 
             // then
             assertEquals( header, SortedKeyValueStoreHeader.read( RECORD_SIZE, pagedFile ) );
-        }
-        finally
-        {
-            pageCache.unmap( file );
         }
     }
 
@@ -99,14 +94,13 @@ public class SortedKeyValueStoreHeaderTest
     public PageCacheRule pageCacheRule = new PageCacheRule();
 
     private File file = new File( "file" );
-    private EphemeralFileSystemAbstraction fs;
     private PageCache pageCache;
     private static final int RECORD_SIZE = 32;
 
     @Before
     public void setup()
     {
-        fs = fsRule.get();
+        EphemeralFileSystemAbstraction fs = fsRule.get();
         pageCache = pageCacheRule.getPageCache( fs );
     }
 }

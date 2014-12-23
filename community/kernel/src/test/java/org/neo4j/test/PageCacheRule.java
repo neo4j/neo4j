@@ -187,12 +187,6 @@ public class PageCacheRule extends ExternalResource
         }
 
         @Override
-        public void unmap( File file ) throws IOException
-        {
-            pageCache.unmap( file );
-        }
-
-        @Override
         public void flush() throws IOException
         {
             pageCache.flush();
@@ -262,6 +256,12 @@ public class PageCacheRule extends ExternalResource
         public long getLastPageId() throws IOException
         {
             return pagedFile.getLastPageId();
+        }
+
+        @Override
+        public void close() throws IOException
+        {
+            pagedFile.close();
         }
     }
 

@@ -90,7 +90,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
             Monitors monitors )
     {
         super( fileName, conf, idType, idGeneratorFactory, pageCache, fileSystemAbstraction, stringLogger,
-                versionMismatchHandler, monitors );
+                versionMismatchHandler );
     }
 
     /**
@@ -642,10 +642,5 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         }
 
         return readFullByteArrayFromHeavyRecords( records, propertyType );
-    }
-
-    public static abstract class Configuration
-            extends CommonAbstractStore.Configuration
-    {
     }
 }

@@ -157,7 +157,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
                      StoreVersionMismatchHandler versionMismatchHandler, Monitors monitors )
     {
         super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, pageCache, fileSystemAbstraction,
-                stringLogger, versionMismatchHandler, monitors );
+                stringLogger, versionMismatchHandler );
         this.relTypeStore = relTypeStore;
         this.labelTokenStore = labelTokenStore;
         this.propStore = propStore;

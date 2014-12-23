@@ -158,20 +158,20 @@ public class BatchingPageCache implements PageCache
         Writer writer = file.getName().contains( StoreFactory.COUNTS_STORE )
                 ? SYNCHRONOUS.create( channel, monitor )
                 : writerFactory.create( channel, monitor );
-        BatchingPagedFile pageFile = new BatchingPagedFile( channel, writer, pageSize );
+        BatchingPagedFile pageFile = new BatchingPagedFile( file, channel, writer, pageSize );
         pagedFiles.put( file, pageFile );
         return pageFile;
     }
 
-    @Override
-    public void unmap( File file ) throws IOException
+    void unmap( BatchingPagedFile pagedFile ) throws IOException
     {
+        File file = pagedFile.file;
         BatchingPagedFile pageFile = pagedFiles.remove( file );
         if ( pageFile == null )
         {
             throw new IllegalArgumentException( file.toString() );
         }
-        pageFile.close();
+        pageFile.closeFile();
     }
 
     @Override
@@ -208,11 +208,13 @@ public class BatchingPageCache implements PageCache
     class BatchingPagedFile implements PagedFile
     {
         private final BatchingPageCursor singleCursor;
+        private final File file;
         private final StoreChannel channel;
         private final int pageSize;
 
-        public BatchingPagedFile( StoreChannel channel, Writer writer, int pageSize ) throws IOException
+        public BatchingPagedFile( File file, StoreChannel channel, Writer writer, int pageSize ) throws IOException
         {
+            this.file = file;
             this.channel = channel;
             this.pageSize = pageSize;
             this.singleCursor = new BatchingPageCursor( channel, writer, pageSize );
@@ -234,7 +236,13 @@ public class BatchingPageCache implements PageCache
             return pageSize;
         }
 
+        @Override
         public void close() throws IOException
+        {
+            unmap( this );
+        }
+
+        public void closeFile() throws IOException
         {
             flush();
             channel.close();

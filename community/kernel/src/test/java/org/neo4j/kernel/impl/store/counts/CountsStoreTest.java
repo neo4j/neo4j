@@ -27,8 +27,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.UTF8;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.CountsVisitor;
@@ -45,7 +45,6 @@ import org.neo4j.test.PageCacheRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.store.StoreFactory.buildTypeDescriptorAndVersion;
 import static org.neo4j.kernel.impl.store.counts.CountsStore.RECORD_SIZE;
@@ -316,7 +315,7 @@ public class CountsStoreTest
 
         // then
            // ensure that whatever was opened is unmapped before returning
-        verify( myCache ).unmap( alpha );
+        fs.assertNoOpenFiles();
     }
 
     @Rule
@@ -326,7 +325,7 @@ public class CountsStoreTest
     private final File alpha = new File( "a" );
     private final File beta = new File( "b" );
     private final int lastCommittedTxId = 42;
-    private FileSystemAbstraction fs;
+    private EphemeralFileSystemAbstraction fs;
     private PageCache pageCache;
     private final SortedKeyValueStoreHeader header =
             with( RECORD_SIZE, ALL_STORES_VERSION, BASE_TX_ID, BASE_MINOR_VERSION );

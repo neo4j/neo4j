@@ -113,12 +113,6 @@ public class LifecycledPageCache extends LifecycleAdapter implements PageCache
     }
 
     @Override
-    public void unmap( File fileName ) throws IOException
-    {
-        pageCache.unmap( fileName );
-    }
-
-    @Override
     public PagedFile map( File file, int filePageSize ) throws IOException
     {
         return pageCache.map( file, filePageSize );

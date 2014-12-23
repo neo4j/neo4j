@@ -25,7 +25,7 @@ import java.io.IOException;
  * The representation of a file that has been mapped into the associated page
  * cache.
  */
-public interface PagedFile
+public interface PagedFile extends AutoCloseable
 {
     /**
      * Pin the pages with a shared lock.
@@ -157,4 +157,14 @@ public interface PagedFile
      * This will return -1 if the file is completely empty.
      */
     long getLastPageId() throws IOException;
+
+    /**
+     * Release a handle to a paged file.
+     *
+     * If this is the last handle to the file, it will be flushed and closed.
+     *
+     * @see AutoCloseable#close()
+     * @throws IOException instead of the Exception superclass as defined in AutoCloseable, if .
+     */
+    void close() throws IOException;
 }

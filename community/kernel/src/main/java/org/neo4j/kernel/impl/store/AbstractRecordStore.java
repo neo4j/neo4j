@@ -48,7 +48,7 @@ public abstract class AbstractRecordStore<R extends AbstractBaseRecord> extends 
             Monitors monitors )
     {
         super( fileName, conf, idType, idGeneratorFactory, pageCache, fileSystemAbstraction, stringLogger,
-                versionMismatchHandler, monitors );
+                versionMismatchHandler );
     }
 
     @Override
