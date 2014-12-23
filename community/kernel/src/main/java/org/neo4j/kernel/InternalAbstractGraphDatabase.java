@@ -107,13 +107,11 @@ import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.impl.core.NodeProxy;
-import org.neo4j.kernel.impl.core.NodeProxy.NodeLookup;
+import org.neo4j.kernel.impl.core.NodeProxy.NodeActions;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
 import org.neo4j.kernel.impl.core.RelationshipData;
-import org.neo4j.kernel.impl.core.RelationshipProxy;
-import org.neo4j.kernel.impl.core.RelationshipProxy.RelationshipLookups;
+import org.neo4j.kernel.impl.core.RelationshipProxy.RelationshipActions;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.StartupStatistics;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
@@ -544,7 +542,7 @@ public abstract class InternalAbstractGraphDatabase
 
         nodeManager = createNodeManager();
 
-        transactionEventHandlers = new TransactionEventHandlers( createNodeLookup(), createRelationshipLookups(),
+        transactionEventHandlers = new TransactionEventHandlers( createNodeActions(), createRelationshipActions(),
                 threadToTransactionBridge );
 
         indexStore = life.add( new IndexConfigStore( this.storeDir, fileSystem ) );
@@ -675,10 +673,10 @@ public abstract class InternalAbstractGraphDatabase
 
     private NodeManager createNodeManager()
     {
-        NodeLookup nodeLookup = createNodeLookup();
-        RelationshipLookups relationshipLookup = createRelationshipLookups();
+        NodeActions nodeActions = createNodeActions();
+        RelationshipActions relationshipLookup = createRelationshipActions();
         return new NodeManager(
-                nodeLookup,
+                nodeActions,
                 relationshipLookup,
                 threadToTransactionBridge );
     }
@@ -740,14 +738,32 @@ public abstract class InternalAbstractGraphDatabase
         return new DefaultCaches( msgLog, monitors );
     }
 
-    protected RelationshipProxy.RelationshipLookups createRelationshipLookups()
+    protected RelationshipActions createRelationshipActions()
     {
-        return new RelationshipProxy.RelationshipLookups()
+        return new RelationshipActions()
         {
             @Override
             public GraphDatabaseService getGraphDatabaseService()
             {
                 return InternalAbstractGraphDatabase.this;
+            }
+
+            @Override
+            public void failTransaction()
+            {
+                threadToTransactionBridge.getKernelTransactionBoundToThisThread( true ).failure();
+            }
+
+            @Override
+            public void assertInUnterminatedTransaction()
+            {
+                threadToTransactionBridge.assertInUnterminatedTransaction();
+            }
+
+            @Override
+            public Statement statement()
+            {
+                return threadToTransactionBridge.instance();
             }
 
             @Override
@@ -787,10 +803,16 @@ public abstract class InternalAbstractGraphDatabase
         };
     }
 
-    protected NodeProxy.NodeLookup createNodeLookup()
+    protected NodeActions createNodeActions()
     {
-        return new NodeProxy.NodeLookup()
+        return new NodeActions()
         {
+            @Override
+            public Statement statement()
+            {
+                return threadToTransactionBridge.instance();
+            }
+
             @Override
             public GraphDatabaseService getGraphDatabase()
             {
@@ -799,9 +821,21 @@ public abstract class InternalAbstractGraphDatabase
             }
 
             @Override
-            public NodeManager getNodeManager()
+            public void assertInUnterminatedTransaction()
             {
-                return nodeManager;
+                threadToTransactionBridge.assertInUnterminatedTransaction();
+            }
+
+            @Override
+            public void failTransaction()
+            {
+                threadToTransactionBridge.getKernelTransactionBoundToThisThread( true ).failure();
+            }
+
+            @Override
+            public Relationship newRelationshipProxy( long id )
+            {
+                return nodeManager.newRelationshipProxyById( id );
             }
         };
     }

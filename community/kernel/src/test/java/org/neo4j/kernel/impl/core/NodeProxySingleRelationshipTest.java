@@ -20,6 +20,8 @@
 package org.neo4j.kernel.impl.core;
 
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -33,6 +35,7 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 
 import static junit.framework.Assert.assertNotNull;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -99,23 +102,30 @@ public class NodeProxySingleRelationshipTest
 
     private NodeProxy mockNodeWithRels(long ... relIds) throws EntityNotFoundException
     {
-        ThreadToStatementContextBridge stmCtxBridge = mock( ThreadToStatementContextBridge.class );
-        NodeProxy.NodeLookup nodeLookup = mock( NodeProxy.NodeLookup.class );
+        NodeProxy.NodeActions nodeActions = mock( NodeProxy.NodeActions.class );
+        final RelationshipProxy.RelationshipActions relActions = mock( RelationshipProxy.RelationshipActions.class );
+        when( nodeActions.newRelationshipProxy( anyLong() ) ).thenAnswer( new Answer<RelationshipProxy>()
+        {
+            @Override
+            public RelationshipProxy answer( InvocationOnMock invocation ) throws Throwable
+            {
+                return new RelationshipProxy( relActions, (Long)invocation.getArguments()[0] );
+            }
+        } );
 
         GraphDatabaseService gds = mock( GraphDatabaseService.class );
 
         when(gds.getRelationshipById( REL_ID )).thenReturn( mock( Relationship.class ) );
         when(gds.getRelationshipById( REL_ID + 1)).thenReturn( mock(Relationship.class) );
-        when( nodeLookup.getGraphDatabase() ).thenReturn( gds );
+        when( nodeActions.getGraphDatabase() ).thenReturn( gds );
 
-        NodeProxy nodeImpl = new NodeProxy( 1, nodeLookup, mock( RelationshipProxy.RelationshipLookups.class),
-                stmCtxBridge );
+        NodeProxy nodeImpl = new NodeProxy( nodeActions, 1 );
 
         Statement stmt = mock( Statement.class );
         ReadOperations readOps = mock( ReadOperations.class );
 
         when(stmt.readOperations()).thenReturn( readOps );
-        when( stmCtxBridge.instance() ).thenReturn( stmt );
+        when( nodeActions.statement() ).thenReturn( stmt );
         when( readOps.relationshipTypeGetForName( loves.name() ) ).thenReturn( 2 );
 
         when(readOps.nodeGetRelationships( 1, Direction.OUTGOING, 2 )).thenReturn( iterator(relIds) );

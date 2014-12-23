@@ -43,8 +43,10 @@ import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 
 public class RelationshipProxy implements Relationship
 {
-    public interface RelationshipLookups
+    public interface RelationshipActions
     {
+        Statement statement();
+        
         Node newNodeProxy( long nodeId );
 
         RelationshipData getRelationshipData( long relationshipId );
@@ -52,18 +54,19 @@ public class RelationshipProxy implements Relationship
         RelationshipType getRelationshipTypeById( int type );
 
         GraphDatabaseService getGraphDatabaseService();
+
+        void failTransaction();
+
+        void assertInUnterminatedTransaction();
     }
 
+    private final RelationshipActions actions;
     private final long relId;
-    private final RelationshipLookups relationshipLookups;
-    private final ThreadToStatementContextBridge statementContextProvider;
 
-    public RelationshipProxy( long relId, RelationshipLookups relationshipLookups,
-                              ThreadToStatementContextBridge statementContextProvider )
+    public RelationshipProxy( RelationshipActions actions, long relId )
     {
         this.relId = relId;
-        this.relationshipLookups = relationshipLookups;
-        this.statementContextProvider = statementContextProvider;
+        this.actions = actions;
     }
 
     @Override
@@ -75,13 +78,13 @@ public class RelationshipProxy implements Relationship
     @Override
     public GraphDatabaseService getGraphDatabase()
     {
-        return relationshipLookups.getGraphDatabaseService();
+        return actions.getGraphDatabaseService();
     }
 
     @Override
     public void delete()
     {
-        try ( Statement statement = statementContextProvider.instance() )
+        try ( Statement statement = actions.statement() )
         {
             statement.dataWriteOperations().relationshipDelete( getId() );
         }
@@ -100,24 +103,24 @@ public class RelationshipProxy implements Relationship
     public Node[] getNodes()
     {
         assertInUnterminatedTransaction();
-        RelationshipData data = relationshipLookups.getRelationshipData( relId );
+        RelationshipData data = actions.getRelationshipData( relId );
         return new Node[]{
-                relationshipLookups.newNodeProxy( data.getStartNode() ),
-                relationshipLookups.newNodeProxy( data.getEndNode() )};
+                actions.newNodeProxy( data.getStartNode() ),
+                actions.newNodeProxy( data.getEndNode() )};
     }
 
     @Override
     public Node getOtherNode( Node node )
     {
         assertInUnterminatedTransaction();
-        RelationshipData data = relationshipLookups.getRelationshipData( relId );
+        RelationshipData data = actions.getRelationshipData( relId );
         if ( data.getStartNode() == node.getId() )
         {
-            return relationshipLookups.newNodeProxy( data.getEndNode() );
+            return actions.newNodeProxy( data.getEndNode() );
         }
         if ( data.getEndNode() == node.getId() )
         {
-            return relationshipLookups.newNodeProxy( data.getStartNode() );
+            return actions.newNodeProxy( data.getStartNode() );
         }
         throw new NotFoundException( "Node[" + node.getId()
                                      + "] not connected to this relationship[" + getId() + "]" );
@@ -127,28 +130,28 @@ public class RelationshipProxy implements Relationship
     public Node getStartNode()
     {
         assertInUnterminatedTransaction();
-        return relationshipLookups.newNodeProxy( relationshipLookups.getRelationshipData( relId ).getStartNode() );
+        return actions.newNodeProxy( actions.getRelationshipData( relId ).getStartNode() );
     }
 
     @Override
     public Node getEndNode()
     {
         assertInUnterminatedTransaction();
-        return relationshipLookups.newNodeProxy( relationshipLookups.getRelationshipData( relId ).getEndNode() );
+        return actions.newNodeProxy( actions.getRelationshipData( relId ).getEndNode() );
     }
 
     @Override
     public RelationshipType getType()
     {
         assertInUnterminatedTransaction();
-        int type = relationshipLookups.getRelationshipData( relId ).getType();
-        return relationshipLookups.getRelationshipTypeById( type );
+        int type = actions.getRelationshipData( relId ).getType();
+        return actions.getRelationshipTypeById( type );
     }
 
     @Override
     public Iterable<String> getPropertyKeys()
     {
-        try ( Statement statement = statementContextProvider.instance() )
+        try ( Statement statement = actions.statement() )
         {
             List<String> keys = new ArrayList<>();
             Iterator<DefinedProperty> properties = statement.readOperations().relationshipGetAllProperties( getId() );
@@ -177,7 +180,7 @@ public class RelationshipProxy implements Relationship
             throw new IllegalArgumentException( "(null) property key is not allowed" );
         }
 
-        try ( Statement statement = statementContextProvider.instance() )
+        try ( Statement statement = actions.statement() )
         {
             try
             {
@@ -204,7 +207,7 @@ public class RelationshipProxy implements Relationship
             throw new IllegalArgumentException( "(null) property key is not allowed" );
         }
 
-        try ( Statement statement = statementContextProvider.instance() )
+        try ( Statement statement = actions.statement() )
         {
             int propertyId = statement.readOperations().propertyKeyGetForName( key );
             return statement.readOperations().relationshipGetProperty( relId, propertyId ).value( defaultValue );
@@ -223,7 +226,7 @@ public class RelationshipProxy implements Relationship
             return false;
         }
 
-        try ( Statement statement = statementContextProvider.instance() )
+        try ( Statement statement = actions.statement() )
         {
             int propertyId = statement.readOperations().propertyKeyGetForName( key );
             return propertyId != KeyReadOperations.NO_SUCH_PROPERTY_KEY &&
@@ -238,7 +241,7 @@ public class RelationshipProxy implements Relationship
     @Override
     public void setProperty( String key, Object value )
     {
-        try ( Statement statement = statementContextProvider.instance() )
+        try ( Statement statement = actions.statement() )
         {
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
             statement.dataWriteOperations().relationshipSetProperty( relId, Property.property( propertyKeyId, value ) );
@@ -246,7 +249,7 @@ public class RelationshipProxy implements Relationship
         catch ( IllegalArgumentException e )
         {
             // Trying to set an illegal value is a critical error - fail this transaction
-            statementContextProvider.getKernelTransactionBoundToThisThread( true ).failure();
+            actions.failTransaction();
             throw e;
         }
         catch ( EntityNotFoundException e )
@@ -267,7 +270,7 @@ public class RelationshipProxy implements Relationship
     @Override
     public Object removeProperty( String key )
     {
-        try ( Statement statement = statementContextProvider.instance() )
+        try ( Statement statement = actions.statement() )
         {
             int propertyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
             return statement.dataWriteOperations().relationshipRemoveProperty( relId, propertyId ).value( null );
@@ -291,8 +294,8 @@ public class RelationshipProxy implements Relationship
     public boolean isType( RelationshipType type )
     {
         assertInUnterminatedTransaction();
-        int typeId = relationshipLookups.getRelationshipData( relId ).getType();
-        return relationshipLookups.getRelationshipTypeById( typeId ).name().equals( type.name() );
+        int typeId = actions.getRelationshipData( relId ).getType();
+        return actions.getRelationshipTypeById( typeId ).name().equals( type.name() );
     }
 
     public int compareTo( Object rel )
@@ -334,6 +337,6 @@ public class RelationshipProxy implements Relationship
 
     private void assertInUnterminatedTransaction()
     {
-        statementContextProvider.assertInUnterminatedTransaction();
+        actions.assertInUnterminatedTransaction();
     }
 }

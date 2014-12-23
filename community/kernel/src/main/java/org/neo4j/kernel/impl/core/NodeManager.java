@@ -32,18 +32,18 @@ import static java.lang.System.currentTimeMillis;
 public class NodeManager extends LifecycleAdapter implements EntityFactory
 {
     private final ThreadToStatementContextBridge threadToTransactionBridge;
-    private final NodeProxy.NodeLookup nodeLookup;
-    private final RelationshipProxy.RelationshipLookups relationshipLookups;
+    private final NodeProxy.NodeActions nodeActions;
+    private final RelationshipProxy.RelationshipActions relationshipActions;
 
     private final List<PropertyTracker<Node>> nodePropertyTrackers;
     private final List<PropertyTracker<Relationship>> relationshipPropertyTrackers;
     private long epoch;
 
-    public NodeManager( NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relationshipLookups,
+    public NodeManager( NodeProxy.NodeActions nodeActions, RelationshipProxy.RelationshipActions relationshipActions,
                         ThreadToStatementContextBridge threadToTransactionBridge )
     {
-        this.nodeLookup = nodeLookup;
-        this.relationshipLookups = relationshipLookups;
+        this.nodeActions = nodeActions;
+        this.relationshipActions = relationshipActions;
         this.threadToTransactionBridge = threadToTransactionBridge;
         // Trackers may be added and removed at runtime, e.g. via the REST interface in server,
         // so we use the thread-safe CopyOnWriteArrayList.
@@ -66,13 +66,13 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
     @Override
     public NodeProxy newNodeProxyById( long id )
     {
-        return new NodeProxy( id, nodeLookup, relationshipLookups, threadToTransactionBridge );
+        return new NodeProxy( nodeActions, id );
     }
 
     @Override
     public RelationshipProxy newRelationshipProxyById( long id )
     {
-        return new RelationshipProxy( id, relationshipLookups, threadToTransactionBridge );
+        return new RelationshipProxy( relationshipActions, id );
     }
 
     @Override

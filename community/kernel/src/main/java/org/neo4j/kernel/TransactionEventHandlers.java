@@ -52,15 +52,15 @@ public class TransactionEventHandlers
 {
     protected final Collection<TransactionEventHandler> transactionEventHandlers = new CopyOnWriteArraySet<>();
 
-    private final NodeProxy.NodeLookup nodeLookup;
-    private final RelationshipProxy.RelationshipLookups relationshipLookups;
+    private final NodeProxy.NodeActions nodeActions;
+    private final RelationshipProxy.RelationshipActions relationshipActions;
     private final ThreadToStatementContextBridge bridge;
 
-    public TransactionEventHandlers( NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups
-            relationshipLookups, ThreadToStatementContextBridge bridge )
+    public TransactionEventHandlers( NodeProxy.NodeActions nodeActions, RelationshipProxy.RelationshipActions
+            relationshipActions, ThreadToStatementContextBridge bridge )
     {
-        this.nodeLookup = nodeLookup;
-        this.relationshipLookups = relationshipLookups;
+        this.nodeActions = nodeActions;
+        this.relationshipActions = relationshipActions;
         this.bridge = bridge;
     }
 
@@ -125,7 +125,7 @@ public class TransactionEventHandlers
         }
 
         TransactionData txData = state == null ? EMPTY_DATA :
-                new TxStateTransactionDataSnapshot( state, nodeLookup, relationshipLookups, bridge, storeReadLayer );
+                new TxStateTransactionDataSnapshot( state, nodeActions, storeReadLayer );
 
         TransactionHandlerState handlerStates = new TransactionHandlerState( txData );
         for ( TransactionEventHandler<?> handler : this.transactionEventHandlers )

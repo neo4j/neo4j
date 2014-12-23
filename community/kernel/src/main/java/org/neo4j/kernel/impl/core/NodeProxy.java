@@ -73,25 +73,26 @@ import static org.neo4j.kernel.impl.core.TokenHolder.NO_ID;
 
 public class NodeProxy implements Node
 {
-    public interface NodeLookup
+    public interface NodeActions
     {
+        Statement statement();
+        
         GraphDatabaseService getGraphDatabase();
 
-        NodeManager getNodeManager();
+        void assertInUnterminatedTransaction();
+
+        void failTransaction();
+
+        Relationship newRelationshipProxy( long id );
     }
 
-    private final NodeLookup nodeLookup;
-    private final RelationshipProxy.RelationshipLookups relLookup;
-    private final ThreadToStatementContextBridge statementContextProvider;
+    private final NodeActions actions;
     private final long nodeId;
 
-    public NodeProxy( long nodeId, NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relLookup,
-                      ThreadToStatementContextBridge statementContextProvider )
+    public NodeProxy( NodeActions actions, long nodeId )
     {
         this.nodeId = nodeId;
-        this.nodeLookup = nodeLookup;
-        this.relLookup = relLookup;
-        this.statementContextProvider = statementContextProvider;
+        this.actions = actions;
     }
 
     @Override
@@ -103,13 +104,13 @@ public class NodeProxy implements Node
     @Override
     public GraphDatabaseService getGraphDatabase()
     {
-        return nodeLookup.getGraphDatabase();
+        return actions.getGraphDatabase();
     }
 
     @Override
     public void delete()
     {
-        try ( Statement statement = statementContextProvider.instance() )
+        try ( Statement statement = actions.statement() )
         {
             statement.dataWriteOperations().nodeDelete( getId() );
         }
@@ -133,7 +134,7 @@ public class NodeProxy implements Node
     @Override
     public ResourceIterable<Relationship> getRelationships( Direction dir )
     {
-        Statement statement = statementContextProvider.instance();
+        Statement statement = actions.statement();
         try
         {
             return map2rels( statement, statement.readOperations().nodeGetRelationships( nodeId, dir ) );
@@ -160,7 +161,7 @@ public class NodeProxy implements Node
     @Override
     public ResourceIterable<Relationship> getRelationships( Direction direction, RelationshipType... types )
     {
-        Statement statement = statementContextProvider.instance();
+        Statement statement = actions.statement();
         try
         {
             return map2rels( statement, statement.readOperations().nodeGetRelationships( nodeId, direction,
@@ -235,13 +236,13 @@ public class NodeProxy implements Node
 
     private void assertInUnterminatedTransaction()
     {
-        statementContextProvider.assertInUnterminatedTransaction();
+        actions.assertInUnterminatedTransaction();
     }
 
     @Override
     public void setProperty( String key, Object value )
     {
-        try ( Statement statement = statementContextProvider.instance() )
+        try ( Statement statement = actions.statement() )
         {
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
             try
@@ -256,7 +257,7 @@ public class NodeProxy implements Node
             catch ( IllegalArgumentException e )
             {
                 // Trying to set an illegal value is a critical error - fail this transaction
-                statementContextProvider.getKernelTransactionBoundToThisThread( true ).failure();
+                actions.failTransaction();
                 throw e;
             }
         }
@@ -277,7 +278,7 @@ public class NodeProxy implements Node
     @Override
     public Object removeProperty( String key ) throws NotFoundException
     {
-        try ( Statement statement = statementContextProvider.instance() )
+        try ( Statement statement = actions.statement() )
         {
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
             return statement.dataWriteOperations().nodeRemoveProperty( nodeId, propertyKeyId ).value( null );
@@ -304,7 +305,7 @@ public class NodeProxy implements Node
             throw new IllegalArgumentException( "(null) property key is not allowed" );
         }
 
-        try ( Statement statement = statementContextProvider.instance() )
+        try ( Statement statement = actions.statement() )
         {
             int propertyKeyId = statement.readOperations().propertyKeyGetForName( key );
             return statement.readOperations().nodeGetProperty( nodeId, propertyKeyId ).value( defaultValue );
@@ -318,7 +319,7 @@ public class NodeProxy implements Node
     @Override
     public Iterable<String> getPropertyKeys()
     {
-        try ( Statement statement = statementContextProvider.instance() )
+        try ( Statement statement = actions.statement() )
         {
             List<String> keys = new ArrayList<>();
             Iterator<DefinedProperty> properties = statement.readOperations().nodeGetAllProperties( getId() );
@@ -347,7 +348,7 @@ public class NodeProxy implements Node
             throw new IllegalArgumentException( "(null) property key is not allowed" );
         }
 
-        try ( Statement statement = statementContextProvider.instance() )
+        try ( Statement statement = actions.statement() )
         {
             try
             {
@@ -374,7 +375,7 @@ public class NodeProxy implements Node
             return false;
         }
 
-        try ( Statement statement = statementContextProvider.instance() )
+        try ( Statement statement = actions.statement() )
         {
             int propertyKeyId = statement.readOperations().propertyKeyGetForName( key );
             return statement.readOperations().nodeGetProperty( nodeId, propertyKeyId ).isDefined();
@@ -434,10 +435,10 @@ public class NodeProxy implements Node
         //{
         //    throw new IllegalArgumentException( "Nodes do not belong to same graph database." );
         //}
-        try ( Statement statement = statementContextProvider.instance() )
+        try ( Statement statement = actions.statement() )
         {
             int relationshipTypeId = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( type.name() );
-            return nodeLookup.getNodeManager().newRelationshipProxyById(
+            return actions.newRelationshipProxy(
                     statement.dataWriteOperations()
                              .relationshipCreate( relationshipTypeId, nodeId, otherNode.getId() ) );
         }
@@ -494,7 +495,7 @@ public class NodeProxy implements Node
     @Override
     public void addLabel( Label label )
     {
-        try ( Statement statement = statementContextProvider.instance() )
+        try ( Statement statement = actions.statement() )
         {
             try
             {
@@ -528,7 +529,7 @@ public class NodeProxy implements Node
     @Override
     public void removeLabel( Label label )
     {
-        try ( Statement statement = statementContextProvider.instance() )
+        try ( Statement statement = actions.statement() )
         {
             int labelId = statement.readOperations().labelGetForName( label.name() );
             if ( labelId != KeyReadOperations.NO_SUCH_LABEL )
@@ -549,7 +550,7 @@ public class NodeProxy implements Node
     @Override
     public boolean hasLabel( Label label )
     {
-        try ( Statement statement = statementContextProvider.instance() )
+        try ( Statement statement = actions.statement() )
         {
             int labelId = statement.readOperations().labelGetForName( label.name() );
             return statement.readOperations().nodeHasLabel( getId(), labelId );
@@ -563,7 +564,7 @@ public class NodeProxy implements Node
     @Override
     public Iterable<Label> getLabels()
     {
-        try ( Statement statement = statementContextProvider.instance() )
+        try ( Statement statement = actions.statement() )
         {
             PrimitiveIntIterator labels = statement.readOperations().nodeGetLabels( getId() );
             List<Label> keys = new ArrayList<>();
@@ -587,7 +588,7 @@ public class NodeProxy implements Node
     @Override
     public int getDegree()
     {
-        try ( Statement statement = statementContextProvider.instance() )
+        try ( Statement statement = actions.statement() )
         {
             return statement.readOperations().nodeGetDegree( nodeId, Direction.BOTH );
         }
@@ -600,7 +601,7 @@ public class NodeProxy implements Node
     @Override
     public int getDegree( RelationshipType type )
     {
-        try ( Statement statement = statementContextProvider.instance() )
+        try ( Statement statement = actions.statement() )
         {
             ReadOperations ops = statement.readOperations();
             int typeId = ops.relationshipTypeGetForName( type.name() );
@@ -619,7 +620,7 @@ public class NodeProxy implements Node
     @Override
     public int getDegree( Direction direction )
     {
-        try ( Statement statement = statementContextProvider.instance() )
+        try ( Statement statement = actions.statement() )
         {
             ReadOperations ops = statement.readOperations();
             return ops.nodeGetDegree( nodeId, direction );
@@ -633,7 +634,7 @@ public class NodeProxy implements Node
     @Override
     public int getDegree( RelationshipType type, Direction direction )
     {
-        try ( Statement statement = statementContextProvider.instance() )
+        try ( Statement statement = actions.statement() )
         {
             ReadOperations ops = statement.readOperations();
             int typeId = ops.relationshipTypeGetForName( type.name() );
@@ -652,7 +653,7 @@ public class NodeProxy implements Node
     @Override
     public Iterable<RelationshipType> getRelationshipTypes()
     {
-        try ( Statement statement = statementContextProvider.instance() )
+        try ( Statement statement = actions.statement() )
         {
             ReadOperations ops = statement.readOperations();
             return map2relTypes( statement, ops.nodeGetRelationshipTypes( nodeId ) );
@@ -693,7 +694,7 @@ public class NodeProxy implements Node
                     @Override
                     public Relationship apply( long id )
                     {
-                        return new RelationshipProxy( id, relLookup, statementContextProvider );
+                        return actions.newRelationshipProxy( id );
                     }
                 }, input ) ) );
     }
