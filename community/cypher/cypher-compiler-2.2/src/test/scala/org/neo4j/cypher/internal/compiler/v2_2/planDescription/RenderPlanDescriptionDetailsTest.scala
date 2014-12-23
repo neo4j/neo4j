@@ -20,8 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planDescription
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Identifier
-import org.neo4j.cypher.internal.compiler.v2_2.commands.{Equals, GreaterThanOrEqual, Not}
+import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{LengthFunction, Identifier}
+import org.neo4j.cypher.internal.compiler.v2_2.commands.values.{TokenType, KeyToken}
+import org.neo4j.cypher.internal.compiler.v2_2.commands.values.TokenType._
+import org.neo4j.cypher.internal.compiler.v2_2.commands._
 import org.neo4j.cypher.internal.compiler.v2_2.pipes._
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.graphdb.Direction
@@ -193,13 +195,63 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
       LegacyExpression(Not(Equals(Identifier("  UNNAMED123"), Identifier("  UNNAMED321")))))
 
     val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n", "  UNNAMED123", "  UNNAMED2", "  UNNAMED24"))
-    val p = renderDetails(plan)
     renderDetails(plan) should equal(
       """+----------+---------------+------+--------+-------------+-----------------------------+
         || Operator | EstimatedRows | Rows | DbHits | Identifiers |                       Other |
         |+----------+---------------+------+--------+-------------+-----------------------------+
         ||     NAME |             1 |   42 |     33 |           n | NOT(anon[123] == anon[321]) |
         |+----------+---------------+------+--------+-------------+-----------------------------+
+        |""".stripMargin)
+  }
+
+  test("show hasLabels nicely without token id") {
+
+    val arguments = Seq(
+      Rows(42),
+      DbHits(33),
+      LegacyExpression(HasLabel(Identifier("x"), KeyToken.Resolved("Artist", 5, TokenType.Label))))
+
+    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n", "  UNNAMED123", "  UNNAMED2", "  UNNAMED24"))
+    renderDetails(plan) should equal(
+      """+----------+---------------+------+--------+-------------+--------------------+
+        || Operator | EstimatedRows | Rows | DbHits | Identifiers |              Other |
+        |+----------+---------------+------+--------+-------------+--------------------+
+        ||     NAME |             1 |   42 |     33 |           n | hasLabel(x:Artist) |
+        |+----------+---------------+------+--------+-------------+--------------------+
+        |""".stripMargin)
+  }
+
+  test("format length properly") {
+
+    val arguments = Seq(
+      Rows(42),
+      DbHits(33),
+      LegacyExpression(LengthFunction(Identifier("n"))))
+
+    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n", "  UNNAMED123", "  UNNAMED2", "  UNNAMED24"))
+    renderDetails(plan) should equal(
+      """+----------+---------------+------+--------+-------------+-----------+
+        || Operator | EstimatedRows | Rows | DbHits | Identifiers |     Other |
+        |+----------+---------------+------+--------+-------------+-----------+
+        ||     NAME |             1 |   42 |     33 |           n | length(n) |
+        |+----------+---------------+------+--------+-------------+-----------+
+        |""".stripMargin)
+  }
+
+  test("don't leak deduped names") {
+
+    val arguments = Seq(
+      Rows(42),
+      DbHits(33),
+      LegacyExpression(Identifier("  id@23")))
+
+    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n", "  UNNAMED123", "  UNNAMED2", "  UNNAMED24"))
+    renderDetails(plan) should equal(
+      """+----------+---------------+------+--------+-------------+-------+
+        || Operator | EstimatedRows | Rows | DbHits | Identifiers | Other |
+        |+----------+---------------+------+--------+-------------+-------+
+        ||     NAME |             1 |   42 |     33 |           n |    id |
+        |+----------+---------------+------+--------+-------------+-------+
         |""".stripMargin)
   }
 }

@@ -46,7 +46,8 @@ object renderDetails extends (InternalPlanDescription => String) {
               !x.isInstanceOf[DbHits] &&
               !x.isInstanceOf[EstimatedRows] &&
               !x.isInstanceOf[Version] => PlanDescriptionArgumentSerializer.serialize(x)
-        }.mkString("; ").replaceAll(UNNAMED_PATTERN, ""))
+        }.mkString("; ")
+          .replaceAll(UNNAMED_PATTERN, ""))
 
         Seq("Operator" -> name, "EstimatedRows" -> estimatedRows, "Rows" -> rows,
           "DbHits" -> dbHits, "Identifiers" -> ids, "Other" -> other)

@@ -42,4 +42,6 @@ case class LengthFunction(inner: Expression)
   def calculateType(symbols: SymbolTable): CypherType = CTInteger
 
   def symbolTableDependencies = inner.symbolTableDependencies
+
+  override def toString = s"length($inner)"
 }
