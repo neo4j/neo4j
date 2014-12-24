@@ -25,9 +25,9 @@ import com.sun.jersey.core.util.Base64;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.server.rest.dbms.AuthenticateHeaders.extractToken;
+import static org.neo4j.server.rest.dbms.AuthorizationHeaders.extractToken;
 
-public class AuthenticateHeadersTest
+public class AuthorizationHeadersTest
 {
     @Test
     public void shouldParseHappyPath() throws Exception
