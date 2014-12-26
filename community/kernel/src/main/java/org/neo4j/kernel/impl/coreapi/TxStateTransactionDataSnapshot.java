@@ -246,7 +246,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             @Override
             public Relationship apply( Long id )
             {
-                return nodeActions.newRelationshipProxy( id );
+                return nodeActions.lazyRelationshipProxy( id );
             }
         }, added);
     }
@@ -355,7 +355,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         @Override
         public Relationship entity()
         {
-            return nodeActions.newRelationshipProxy( relId );
+            return nodeActions.lazyRelationshipProxy( relId );
         }
 
         @Override

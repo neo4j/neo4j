@@ -39,17 +39,16 @@ import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 
-public class RelationshipProxy implements Relationship
+public class RelationshipProxy implements Relationship, RelationshipVisitor<RuntimeException>
 {
     public interface RelationshipActions
     {
         Statement statement();
         
         Node newNodeProxy( long nodeId );
-
-        RelationshipData getRelationshipData( long relationshipId );
 
         RelationshipType getRelationshipTypeById( int type );
 
@@ -61,18 +60,76 @@ public class RelationshipProxy implements Relationship
     }
 
     private final RelationshipActions actions;
-    private final long relId;
+    /** [unused,target][source,id] **/
+    private short hiBits;
+    private short type;
+    private int loId, loSource, loTarget;
 
-    public RelationshipProxy( RelationshipActions actions, long relId )
+    public RelationshipProxy( RelationshipActions actions, long id, long startNode, int type, long endNode )
     {
-        this.relId = relId;
         this.actions = actions;
+        visit( id, type, startNode, endNode );
+    }
+
+    public RelationshipProxy( RelationshipActions actions, long id )
+    {
+        this.actions = actions;
+        assert (0xFFFF_FFF0_0000_0000L & id) == 0;
+        this.hiBits = (short) (0xF000 | (id >> 32));
+        this.loId = (int) id;
+    }
+
+    @Override
+    public void visit( long id, int type, long startNode, long endNode ) throws RuntimeException
+    {
+        assert (0xFFFF_FFF0_0000_0000L & id) == 0 &&     // 36 bits
+               (0xFFFF_FFF0_0000_0000L & startNode) == 0 && // 36 bits
+               (0xFFFF_FFF0_0000_0000L & endNode) == 0 && // 36 bits
+               (0xFFFF_0000 & type) == 0;                // 16 bits
+        this.hiBits = (short) ((id >> 32) | ((startNode >> 28) & 0x00F0) | ((startNode >> 28) & 0x0F00));
+        this.type = (short) type;
+        this.loId = (int) id;
+        this.loSource = (int) startNode;
+        this.loTarget = (int) endNode;
+    }
+
+    private void initializeData()
+    {
+        if ( (hiBits & 0xF000) != 0 )
+        {
+            try ( Statement statement = actions.statement() )
+            {
+                statement.readOperations().relationshipVisit( getId(), this );
+            }
+            catch ( EntityNotFoundException e )
+            {
+                throw new NotFoundException( e );
+            }
+        }
     }
 
     @Override
     public long getId()
     {
-        return relId;
+        return hiBits == 0 ? loId : ((hiBits & 0x000FL) << 32 | loId);
+    }
+
+    private int typeId()
+    {
+        initializeData();
+        return type & 0xFFFF;
+    }
+
+    private long sourceId()
+    {
+        initializeData();
+        return hiBits == 0 ? loSource : ((hiBits & 0x00F0L) << 28 | loSource);
+    }
+
+    private long targetId()
+    {
+        initializeData();
+        return hiBits == 0 ? loTarget : ((hiBits & 0x0F00L) << 24 | loTarget);
     }
 
     @Override
@@ -95,7 +152,7 @@ public class RelationshipProxy implements Relationship
         catch ( EntityNotFoundException e )
         {
             throw new IllegalStateException( "Unable to delete relationship[" +
-                                             relId + "] since it is already deleted." );
+                                             getId() + "] since it is already deleted." );
         }
     }
 
@@ -103,24 +160,22 @@ public class RelationshipProxy implements Relationship
     public Node[] getNodes()
     {
         assertInUnterminatedTransaction();
-        RelationshipData data = actions.getRelationshipData( relId );
         return new Node[]{
-                actions.newNodeProxy( data.getStartNode() ),
-                actions.newNodeProxy( data.getEndNode() )};
+                actions.newNodeProxy( sourceId() ),
+                actions.newNodeProxy( targetId() )};
     }
 
     @Override
     public Node getOtherNode( Node node )
     {
         assertInUnterminatedTransaction();
-        RelationshipData data = actions.getRelationshipData( relId );
-        if ( data.getStartNode() == node.getId() )
+        if ( sourceId() == node.getId() )
         {
-            return actions.newNodeProxy( data.getEndNode() );
+            return actions.newNodeProxy( targetId() );
         }
-        if ( data.getEndNode() == node.getId() )
+        if ( targetId() == node.getId() )
         {
-            return actions.newNodeProxy( data.getStartNode() );
+            return actions.newNodeProxy( sourceId() );
         }
         throw new NotFoundException( "Node[" + node.getId()
                                      + "] not connected to this relationship[" + getId() + "]" );
@@ -130,22 +185,21 @@ public class RelationshipProxy implements Relationship
     public Node getStartNode()
     {
         assertInUnterminatedTransaction();
-        return actions.newNodeProxy( actions.getRelationshipData( relId ).getStartNode() );
+        return actions.newNodeProxy( sourceId() );
     }
 
     @Override
     public Node getEndNode()
     {
         assertInUnterminatedTransaction();
-        return actions.newNodeProxy( actions.getRelationshipData( relId ).getEndNode() );
+        return actions.newNodeProxy( targetId() );
     }
 
     @Override
     public RelationshipType getType()
     {
         assertInUnterminatedTransaction();
-        int type = actions.getRelationshipData( relId ).getType();
-        return actions.getRelationshipTypeById( type );
+        return actions.getRelationshipTypeById( typeId() );
     }
 
     @Override
@@ -189,7 +243,7 @@ public class RelationshipProxy implements Relationship
                 {
                     throw new NotFoundException( String.format( "No such property, '%s'.", key ) );
                 }
-                return statement.readOperations().relationshipGetProperty( relId, propertyId ).value();
+                return statement.readOperations().relationshipGetProperty( getId(), propertyId ).value();
             }
             catch ( EntityNotFoundException | PropertyNotFoundException e )
             {
@@ -210,7 +264,7 @@ public class RelationshipProxy implements Relationship
         try ( Statement statement = actions.statement() )
         {
             int propertyId = statement.readOperations().propertyKeyGetForName( key );
-            return statement.readOperations().relationshipGetProperty( relId, propertyId ).value( defaultValue );
+            return statement.readOperations().relationshipGetProperty( getId(), propertyId ).value( defaultValue );
         }
         catch ( EntityNotFoundException e )
         {
@@ -230,7 +284,7 @@ public class RelationshipProxy implements Relationship
         {
             int propertyId = statement.readOperations().propertyKeyGetForName( key );
             return propertyId != KeyReadOperations.NO_SUCH_PROPERTY_KEY &&
-                   statement.readOperations().relationshipGetProperty( relId, propertyId ).isDefined();
+                   statement.readOperations().relationshipGetProperty( getId(), propertyId ).isDefined();
         }
         catch ( EntityNotFoundException e )
         {
@@ -244,7 +298,7 @@ public class RelationshipProxy implements Relationship
         try ( Statement statement = actions.statement() )
         {
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
-            statement.dataWriteOperations().relationshipSetProperty( relId, Property.property( propertyKeyId, value ) );
+            statement.dataWriteOperations().relationshipSetProperty( getId(), Property.property( propertyKeyId, value ) );
         }
         catch ( IllegalArgumentException e )
         {
@@ -273,7 +327,7 @@ public class RelationshipProxy implements Relationship
         try ( Statement statement = actions.statement() )
         {
             int propertyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
-            return statement.dataWriteOperations().relationshipRemoveProperty( relId, propertyId ).value( null );
+            return statement.dataWriteOperations().relationshipRemoveProperty( getId(), propertyId ).value( null );
         }
         catch ( EntityNotFoundException e )
         {
@@ -294,8 +348,7 @@ public class RelationshipProxy implements Relationship
     public boolean isType( RelationshipType type )
     {
         assertInUnterminatedTransaction();
-        int typeId = actions.getRelationshipData( relId ).getType();
-        return actions.getRelationshipTypeById( typeId ).name().equals( type.name() );
+        return actions.getRelationshipTypeById( typeId() ).name().equals( type.name() );
     }
 
     public int compareTo( Object rel )
@@ -326,7 +379,7 @@ public class RelationshipProxy implements Relationship
     @Override
     public int hashCode()
     {
-        return (int) ((relId >>> 32) ^ relId);
+        return (int) ((getId() >>> 32) ^ getId());
     }
 
     @Override

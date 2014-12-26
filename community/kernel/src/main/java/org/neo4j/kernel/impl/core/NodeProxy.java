@@ -83,7 +83,11 @@ public class NodeProxy implements Node
 
         void failTransaction();
 
+        Relationship lazyRelationshipProxy( long id );
+
         Relationship newRelationshipProxy( long id );
+
+        Relationship newRelationshipProxy( long id, long startNodeId, int typeId, long endNodeId );
     }
 
     private final NodeActions actions;
@@ -431,16 +435,16 @@ public class NodeProxy implements Node
             throw new IllegalArgumentException( "Other node is null." );
         }
         // TODO: This is the checks we would like to do, but we have tests that expect to mix nodes...
-        //if ( !(otherNode instanceof NodeProxy) || (((NodeProxy) otherNode).nodeLookup != nodeLookup) )
+        //if ( !(otherNode instanceof NodeProxy) || (((NodeProxy) otherNode).actions != actions) )
         //{
         //    throw new IllegalArgumentException( "Nodes do not belong to same graph database." );
         //}
         try ( Statement statement = actions.statement() )
         {
             int relationshipTypeId = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( type.name() );
-            return actions.newRelationshipProxy(
-                    statement.dataWriteOperations()
-                             .relationshipCreate( relationshipTypeId, nodeId, otherNode.getId() ) );
+            long relationshipId = statement.dataWriteOperations()
+                                           .relationshipCreate( relationshipTypeId, nodeId, otherNode.getId() );
+            return actions.newRelationshipProxy( relationshipId, nodeId, relationshipTypeId, otherNode.getId()  );
         }
         catch ( IllegalTokenNameException | RelationshipTypeIdNotFoundKernelException e )
         {

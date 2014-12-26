@@ -23,8 +23,11 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.PropertyTracker;
+import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static java.lang.System.currentTimeMillis;
@@ -69,10 +72,32 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
         return new NodeProxy( nodeActions, id );
     }
 
+    /** Returns a "lazy" proxy, where additional fields are initialized on access. */
     @Override
     public RelationshipProxy newRelationshipProxyById( long id )
     {
         return new RelationshipProxy( relationshipActions, id );
+    }
+
+    /** Returns a fully initialized proxy. */
+    public RelationshipProxy newRelationshipProxy( long id )
+    {
+        try ( Statement statement = threadToTransactionBridge.instance() )
+        {
+            RelationshipProxy proxy = new RelationshipProxy( relationshipActions, id );
+            statement.readOperations().relationshipVisit( id, proxy );
+            return proxy;
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new NotFoundException( e );
+        }
+    }
+
+    /** Returns a fully initialized proxy. */
+    public RelationshipProxy newRelationshipProxy( long id, long startNodeId, int typeId, long endNodeId )
+    {
+        return new RelationshipProxy( relationshipActions, id, startNodeId, typeId, endNodeId );
     }
 
     @Override

@@ -110,7 +110,6 @@ import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.NodeProxy.NodeActions;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
-import org.neo4j.kernel.impl.core.RelationshipData;
 import org.neo4j.kernel.impl.core.RelationshipProxy.RelationshipActions;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.StartupStatistics;
@@ -131,6 +130,8 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
 import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
+import org.neo4j.kernel.impl.query.QueryEngineProvider;
+import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -168,11 +169,10 @@ import org.neo4j.kernel.logging.DefaultLogging;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.RollingLogMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.kernel.impl.query.QueryEngineProvider;
-import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.String.format;
+
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.helpers.Settings.STRING;
 import static org.neo4j.helpers.Settings.setting;
@@ -774,21 +774,6 @@ public abstract class InternalAbstractGraphDatabase
             }
 
             @Override
-            public RelationshipData getRelationshipData( long relationshipId )
-            {
-                try ( Statement statement = threadToTransactionBridge.instance() )
-                {
-                    RelationshipData data = new RelationshipData();
-                    statement.readOperations().relationshipVisit( relationshipId, data );
-                    return data;
-                }
-                catch ( EntityNotFoundException e )
-                {
-                    throw new NotFoundException( e );
-                }
-            }
-
-            @Override
             public RelationshipType getRelationshipTypeById( int type )
             {
                 try
@@ -833,9 +818,21 @@ public abstract class InternalAbstractGraphDatabase
             }
 
             @Override
-            public Relationship newRelationshipProxy( long id )
+            public Relationship lazyRelationshipProxy( long id )
             {
                 return nodeManager.newRelationshipProxyById( id );
+            }
+
+            @Override
+            public Relationship newRelationshipProxy( long id )
+            {
+                return nodeManager.newRelationshipProxy( id );
+            }
+
+            @Override
+            public Relationship newRelationshipProxy( long id, long startNodeId, int typeId, long endNodeId )
+            {
+                return nodeManager.newRelationshipProxy( id, startNodeId, typeId, endNodeId );
             }
         };
     }
@@ -1101,7 +1098,7 @@ public abstract class InternalAbstractGraphDatabase
                 throw new NotFoundException( format( "Relationship %d not found", id ) );
             }
 
-            return nodeManager.newRelationshipProxyById( id );
+            return nodeManager.newRelationshipProxy( id );
         }
     }
 

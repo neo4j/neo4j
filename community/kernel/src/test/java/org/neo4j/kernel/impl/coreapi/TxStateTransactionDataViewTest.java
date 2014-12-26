@@ -283,7 +283,7 @@ public class TxStateTransactionDataViewTest
     {
         NodeProxy.NodeActions nodeActions = mock( NodeProxy.NodeActions.class );
         final RelationshipProxy.RelationshipActions relActions = mock( RelationshipProxy.RelationshipActions.class );
-        when( nodeActions.newRelationshipProxy( anyLong() ) ).thenAnswer( new Answer<RelationshipProxy>()
+        when( nodeActions.lazyRelationshipProxy( anyLong() ) ).thenAnswer( new Answer<RelationshipProxy>()
         {
             @Override
             public RelationshipProxy answer( InvocationOnMock invocation ) throws Throwable
