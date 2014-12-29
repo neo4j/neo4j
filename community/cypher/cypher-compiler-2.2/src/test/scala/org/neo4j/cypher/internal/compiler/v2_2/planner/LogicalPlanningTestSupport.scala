@@ -66,7 +66,10 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   def newMockedPipeExecutionPlanBuilderContext: PipeExecutionBuilderContext = {
     val context = mock[PipeExecutionBuilderContext]
     val cardinality = new Metrics.CardinalityModel {
-      def apply(v1: LogicalPlan, ignored: QueryGraphCardinalityInput) = Cardinality(1)
+      def apply(v1: LogicalPlan, ignored: QueryGraphCardinalityInput) = v1 match {
+        case _:SingleRow => Cardinality(1)
+        case _ => Cardinality(104999.99999)
+      }
     }
     when(context.cardinality).thenReturn(cardinality)
     val semanticTable = new SemanticTable(resolvedRelTypeNames = mutable.Map("existing1" -> RelTypeId(1), "existing2" -> RelTypeId(2), "existing3" -> RelTypeId(3)))

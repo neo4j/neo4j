@@ -24,12 +24,14 @@ import org.neo4j.graphdb.Direction
 
 
 object PlanDescriptionArgumentSerializer {
+  private val SEPARATOR = ", "
+  private val UNNAMED_PATTERN = """  (UNNAMED|FRESHID|AGGREGATION)(\d+)""".r
+  private val DEDUP_PATTERN =   """  (.+)@\d+""".r
   def serialize(arg: Argument): String = {
-    val SEPARATOR = ", "
-    val UNNAMED_PATTERN = """  (UNNAMED|FRESHID|AGGREGATION)(\d+)""".r
+
     arg match {
       case ColumnsLeft(columns) => s"keep columns ${columns.mkString(SEPARATOR)}"
-      case LegacyExpression(expr) => UNNAMED_PATTERN.replaceAllIn(expr.toString, m => s"anon[${m group 2}]")
+      case LegacyExpression(expr) => removeGeneratedNames(expr.toString)
       case UpdateActionName(action) => action
       case LegacyIndex(index) => index
       case Index(label, property) => s":$label($property)"
@@ -51,5 +53,10 @@ object PlanDescriptionArgumentSerializer {
       // Do not add a fallthrough here - we rely on exhaustive checking to ensure
       // that we don't forget to add new types of arguments here
     }
+  }
+
+  private def removeGeneratedNames(s: String) = {
+    val named = UNNAMED_PATTERN.replaceAllIn(s, m => s"anon[${m group 2}]")
+    DEDUP_PATTERN.replaceAllIn(named, _.group(1))
   }
 }

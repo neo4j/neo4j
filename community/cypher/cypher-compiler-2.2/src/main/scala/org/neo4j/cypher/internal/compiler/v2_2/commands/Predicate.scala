@@ -329,7 +329,7 @@ case class HasLabel(entity: Expression, label: KeyToken) extends Predicate {
       }
   }
 
-  override def toString = s"hasLabel($entity:$label)"
+  override def toString = s"hasLabel($entity:${label.name})"
 
   def rewrite(f: (Expression) => Expression) = f(HasLabel(entity.rewrite(f), label.typedRewrite[KeyToken](f)))
 

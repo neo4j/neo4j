@@ -223,7 +223,7 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
       }
 
       val cardinality = context.cardinality(plan, input)
-      result.withEstimatedCardinality(cardinality.amount.toLong)
+      result.withEstimatedCardinality(math.round(cardinality.amount))
     }
 
     object buildPipeExpressions extends Rewriter {
