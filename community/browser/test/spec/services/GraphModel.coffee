@@ -16,11 +16,12 @@ describe 'Service: GraphModel', () ->
       "properties": {}
     }
 
-  createRelationship = (id, start, end) ->
+  createRelationship = (id, start, end, type) ->
     {
       "id": id
       "startNode": start
       "endNode": end
+      "type": type
     }
 
   describe 'initializing a graph', ->
@@ -76,3 +77,26 @@ describe 'Service: GraphModel', () ->
       graph.addNode(createNode(2))
       expect(-> graph.addRelationship(createRelationship(0, 1, 2)))
         .toThrow("Malformed graph: must add nodes before relationships that connect them")
+
+  describe 'singleNode model', ->
+    it 'change graphModel state to singleNode', ->
+      graph = new GraphModel( { nodes: [], relationships: [] })
+      expect(graph.isSingleMode).toBe false
+      graph.switchSingleMode true
+      expect(graph.isSingleMode).toBe true
+
+    it 'should save target node relation when in singleNode model', ->
+      graph = new GraphModel( { nodes: [], relationships: [] })
+      graph.switchSingleMode true
+      graph.addNode(createNode(1))
+      graph.addNode(createNode(3))
+      graph.addNode(createNode(2))
+      graph.addRelationship(createRelationship(0, 1, 3, 'like'))
+      graph.addRelationship(createRelationship(0, 1, 3, 'not like'))
+      graph.addRelationship(createRelationship(0, 1, 2, 'not like'))
+      relationships = graph.relationships()
+      expect(relationships.length).toBe 0
+      types = graph.types()
+      expect(types.length).toBe 2
+      relationshipstype = graph.relationshiptypeMap
+      expect(relationshipstype['not like'].length).toBe 2
