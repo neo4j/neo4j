@@ -34,7 +34,7 @@ import scala.collection.Map
 class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
   def createCompiler(queryCacheSize: Int = 128, statsDivergenceThreshold: Double = 0.5, queryPlanTTL: Long = 1000,
                      clock: Clock = Clock.SYSTEM_CLOCK, logger: StringLogger = DEV_NULL) =
-    CypherCompilerFactory.ronjaCompiler(
+    CypherCompilerFactory.conservativeCompiler(
       graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, kernelMonitors, logger)
 
   case class CacheCounts(hits: Int = 0, misses: Int = 0, flushes: Int = 0, evicted: Int = 0) {

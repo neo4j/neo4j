@@ -19,7 +19,36 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
-sealed trait PlannerName
+/**
+ * This class defines the query planners used by cyphers.
+ **/
+sealed abstract class PlannerName(val name: String)
 
-case object Legacy extends PlannerName
-case object Ronja extends PlannerName
+/**
+ * Rule based query planner, default in all versions below 2.2
+ */
+case object Rule extends PlannerName("RULE")
+
+/**
+ * Cost based query planner uses statistics from the running database to find optimal
+ * query execution plans.
+ */
+case object Cost extends PlannerName("COST")
+
+
+/**
+ * Hybrid planner that uses the Cost based planner for most of its operations but falls back to
+ * Rule based planner for classes of queries where the cost based planner might end up with suboptimal plans.
+ */
+case object Conservative extends PlannerName("CONSERVATIVE")
+
+object PlannerName {
+  val default = Conservative
+  def apply(name: String): PlannerName = name.toUpperCase match {
+    case "RULE" => Rule
+    case "COST" => Cost
+    case "CONSERVATIVE" => Conservative
+    //Note that conservative planner is not exposed to end users.
+    case n => throw new IllegalArgumentException(s"$n is not a a valid planner, valid options are COST and RULE")
+  }
+}

@@ -103,8 +103,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
-  ignore("should build plans that project and verify endpoints of re-matched directed var length relationship " +
-    "arguments") {
+  ignore("should build plans that project and verify endpoints of re-matched directed var length relationship arguments") {
     val plan = planFor("MATCH (a)-[r*]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r*]->(b2) RETURN r").plan
 
     plan.toString should equal(

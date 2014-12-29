@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compatibility._
+import org.neo4j.cypher.internal.compiler.v2_2.{Rule, Cost, Conservative, PlannerName}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.helpers.Clock
@@ -36,7 +37,7 @@ object CypherCompiler {
   val STATISTICS_DIVERGENCE_THRESHOLD = 0.5
 }
 
-case class PreParsedQuery(statement: String, version: CypherVersion, executionMode: ExecutionMode) {
+case class PreParsedQuery(statement: String, version: CypherVersion, executionMode: ExecutionMode, planner: PlannerName) {
   val statementWithVersion = s"CYPHER ${version.name} $statement"
 }
 
@@ -44,7 +45,8 @@ case class PreParsedQuery(statement: String, version: CypherVersion, executionMo
 class CypherCompiler(graph: GraphDatabaseService,
                      kernelAPI: KernelAPI,
                      kernelMonitors: KernelMonitors,
-                     defaultVersion: CypherVersion = CypherVersion.vDefault,
+                     defaultVersion: CypherVersion,
+                     defaultPlanner: PlannerName,
                      optionParser: CypherOptionParser,
                      logger: StringLogger) {
   import CypherCompiler._
@@ -60,6 +62,9 @@ class CypherCompiler(graph: GraphDatabaseService,
   private val compatibilityFor2_2Cost =
     CompatibilityFor2_2Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK,
       kernelMonitors, kernelAPI, logger)
+  private val compatibilityFor2_2 =
+    CompatibilityFor2_2Conservative(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK,
+      kernelMonitors, kernelAPI, logger)
 
   @throws(classOf[SyntaxException])
   def preParseQuery(queryText: String): PreParsedQuery = {
@@ -72,15 +77,17 @@ class CypherCompiler(graph: GraphDatabaseService,
   def parseQuery(preParsedQuery: PreParsedQuery): ParsedQuery = {
     val exeuctionMode = preParsedQuery.executionMode
     val version = preParsedQuery.version
+    val planner = preParsedQuery.planner
     val statementAsText = preParsedQuery.statement
 
-    version match {
-      case CypherVersion.`v2_2_cost` => compatibilityFor2_2Cost.produceParsedQuery(statementAsText)
-      case CypherVersion.`v2_2_rule` => compatibilityFor2_2Rule.produceParsedQuery(statementAsText)
-      case CypherVersion.v2_2 => compatibilityFor2_2Cost.produceParsedQuery(statementAsText)
-      case CypherVersion.v2_1 => compatibilityFor2_1.parseQuery(statementAsText)
-      case CypherVersion.v2_0 => compatibilityFor2_0.parseQuery(statementAsText)
-      case CypherVersion.v1_9 => compatibilityFor1_9.parseQuery(statementAsText)
+    (version, planner) match {
+      case (CypherVersion.v2_2, Conservative) => compatibilityFor2_2.produceParsedQuery(statementAsText)
+      case (CypherVersion.v2_2, Cost) => compatibilityFor2_2Cost.produceParsedQuery(statementAsText)
+      case (CypherVersion.v2_2, Rule) => compatibilityFor2_2Rule.produceParsedQuery(statementAsText)
+      case (CypherVersion.v2_2, _)    => compatibilityFor2_2.produceParsedQuery(statementAsText)
+      case (CypherVersion.v2_1, _)    => compatibilityFor2_1.parseQuery(statementAsText)
+      case (CypherVersion.v2_0, _)    => compatibilityFor2_0.parseQuery(statementAsText)
+      case (CypherVersion.v1_9, _)    => compatibilityFor1_9.parseQuery(statementAsText)
     }
   }
 
@@ -98,15 +105,13 @@ class CypherCompiler(graph: GraphDatabaseService,
     }
 
     val executionMode: ExecutionMode = calculateExecutionMode(queryWithOption.options)
-
+    val planner = calculatePlanner(queryWithOption.options, cypherVersion)
     if (executionMode == ExplainMode &&
-      cypherVersion != CypherVersion.v2_2 &&
-      cypherVersion != CypherVersion.v2_2_cost &&
-      cypherVersion != CypherVersion.v2_2_rule) {
+      cypherVersion != CypherVersion.v2_2) {
       throw new InvalidArgumentException("EXPLAIN not supported in versions older than Neo4j v2.2")
     }
 
-    PreParsedQuery(queryWithOption.statement, cypherVersion, executionMode)
+    PreParsedQuery(queryWithOption.statement, cypherVersion, executionMode, planner)
   }
 
   private def calculateExecutionMode(options: Seq[CypherOption]) = {
@@ -116,6 +121,22 @@ class CypherCompiler(graph: GraphDatabaseService,
     }
 
     executionModes.reduceOption(_ combineWith _).getOrElse(NormalMode)
+  }
+
+  private def calculatePlanner(options: Seq[CypherOption], version: CypherVersion) = {
+    val planner = options.collect {
+      case CostPlannerOption => Cost
+      case RulePlannerOption => Rule
+    }.distinct
+    if (version != CypherVersion.v2_2 && !planner.isEmpty) {
+      throw new InvalidArgumentException("PLANNER not supported in versions older than Neo4j v2.2")
+    }
+
+    if (planner.size > 1) {
+      throw new InvalidSemanticsException("Can't use multiple planners")
+    }
+
+    if (planner.isEmpty) defaultPlanner else planner.head
   }
 
   private def getQueryCacheSize : Int =

@@ -235,8 +235,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
   // TODO: Add a test for a relpatterns where the number of matching nodes is zero
 
 
-  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
-  ignore("varlength two steps out") {
+  test("varlength two steps out") {
 
 // The result includes all (:A)-[:T1]->(:B)
 // and all (:A)-[:T1]->()-[:T1]->(:B)

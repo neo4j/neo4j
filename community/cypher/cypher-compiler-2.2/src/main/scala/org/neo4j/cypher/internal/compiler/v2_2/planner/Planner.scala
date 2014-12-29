@@ -41,6 +41,7 @@ case class Planner(monitors: Monitors,
                    tokenResolver: SimpleTokenResolver = new SimpleTokenResolver(),
                    maybeExecutionPlanBuilder: Option[PipeExecutionPlanBuilder] = None,
                    strategy: PlanningStrategy = new QueryPlanningStrategy,
+                   acceptQuery: UnionQuery => Boolean = (_) => true,
                    queryGraphSolver: QueryGraphSolver = new CompositeQueryGraphSolver(
                      new GreedyQueryGraphSolver(expandsOrJoins),
                      new GreedyQueryGraphSolver(expandsOnly)
@@ -67,6 +68,10 @@ case class Planner(monitors: Monitors,
   def produceLogicalPlan(ast: Query, semanticTable: SemanticTable)(planContext: PlanContext): (LogicalPlan, PipeExecutionBuilderContext) = {
     tokenResolver.resolve(ast)(semanticTable, planContext)
     val unionQuery = ast.asUnionQuery
+
+    //If we cannot handle the query, throw CantHandleQueryException and let the compiler delegate
+    // this query to another planner.
+    if (!acceptQuery(unionQuery)) throw new CantHandleQueryException(s"The conservative check failed this query: $unionQuery")
 
     val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
     val context = LogicalPlanningContext(planContext, metrics, semanticTable, queryGraphSolver, QueryGraphCardinalityInput.empty)

@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import scala.collection.mutable.{Map => MutableMap}
 import scala.util.Random
 
-class LegacySortPipeTest extends CypherFunSuite {
+class RuleSortPipeTest extends CypherFunSuite {
 
   private implicit val monitor = mock[PipeMonitor]
 

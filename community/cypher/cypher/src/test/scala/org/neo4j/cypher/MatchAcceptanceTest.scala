@@ -536,7 +536,7 @@ return x""")
     relate(c, x1, "REL", "CX1")
     relate(c, x2, "REL", "CX2")
 
-    val result = executeWithNewPlanner( """
+    val result = execute( """
 MATCH (a {name:'A'}), (b {name:'B'}), (c {name:'C'})
 match a-[rA]->x, b-[rB]->x, c-[rC]->x
 return x""")
@@ -575,7 +575,7 @@ return x""")
     relate(c, g)
     relate(c, j)
 
-    val result = executeWithNewPlanner( """
+    val result = execute( """
 MATCH (a {name:'a'}), (b {name:'b'}), (c {name:'c'})
 match a-->x, b-->x, c-->x
 return x""")
@@ -794,6 +794,7 @@ RETURN a.name""")
     result.toSet should equal (Set(Map("a" -> b, "b" -> a), Map("b" -> b, "a" -> a)))
   }
 
+  //TODO cyclic patterns has been disabled in ronja
   test("should solve selfreferencing pattern") {
     val a = createNode()
     val b = createNode()
@@ -802,11 +803,12 @@ RETURN a.name""")
     relate(a, b)
     relate(b, c)
 
-    val result = executeWithNewPlanner("match a-->b, b-->b return b")
+    val result = execute("match a-->b, b-->b return b")
 
     result shouldBe 'isEmpty
   }
 
+  //TODO cyclic patterns has been disabled in ronja
   test("should solve self referencing pattern2") {
     val a = createNode()
     val b = createNode()
@@ -814,7 +816,7 @@ RETURN a.name""")
     val r = relate(a, a)
     relate(a, b)
 
-    val result = executeWithNewPlanner("match a-[r]->a return r")
+    val result = execute("match a-[r]->a return r")
     result.toList should equal (List(Map("r" -> r)))
   }
 
@@ -1176,6 +1178,7 @@ return b
     ))
   }
 
+  //TODO cyclic patterns has been disabled in ronja
   test("should handle cyclic patterns") {
     // given
     val a = createNode("a")
@@ -1186,7 +1189,7 @@ return b
     relate(b, c, "B")
 
     // when
-    val result = executeWithNewPlanner("match (a)-[r1:A]->(x)-[r2:B]->(a) return a.name")
+    val result = execute("match (a)-[r1:A]->(x)-[r2:B]->(a) return a.name")
 
     // then does not throw exceptions
     assert(result.toList === List(
@@ -1194,6 +1197,7 @@ return b
     ))
   }
 
+  //TODO cyclic patterns has been disabled in ronja
   test("should handle cyclic patterns (broken up into two paths)") {
     // given
     val a = createNode("a")
@@ -1204,7 +1208,7 @@ return b
     relate(b, c, "B")
 
     // when
-    val result = executeWithNewPlanner("match (a)-[:A]->(b), (b)-[:B]->(a) return a.name")
+    val result = execute("match (a)-[:A]->(b), (b)-[:B]->(a) return a.name")
 
     // then does not throw exceptions
     assert(result.toList === List(
@@ -1440,8 +1444,8 @@ return b
     actual shouldNot be(empty)
   }
 
-  // 2014-12-03 Davide Legacy compiler never filter the relationships on a varlength expand
-  ignore("MATCH ()-[r1]->()-[r2]->() WITH [r1, r2] AS rs LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second") {
+  //TODO this doesn't work in rule planner
+  ignore("MATCH (a)-[r1]->()-[r2]->(b) WITH [r1, r2] AS rs LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second") {
     val node1 = createNode()
     val node2 = createNode()
     val node3 = createNode()

@@ -41,6 +41,7 @@ object PlanDescriptionArgumentSerializer {
       case Rows(value) => value.toString
       case EstimatedRows(value) => value.toString
       case Version(version) => version
+      case Planner(planner) => planner
       case ExpandExpression(from, rel, typeNames, to, dir: Direction, varLength) =>
         val left = if (dir == Direction.INCOMING) "<-[" else "-["
         val right = if (dir == Direction.OUTGOING) "]->" else "]-"

@@ -264,6 +264,6 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
         None
     }
 
-    PipeInfo(topLevelPipe, updating, None, fingerprint, Ronja)
+    PipeInfo(topLevelPipe, updating, None, fingerprint, Cost)
   }
 }

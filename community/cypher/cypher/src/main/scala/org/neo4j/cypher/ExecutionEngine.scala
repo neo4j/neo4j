@@ -21,18 +21,18 @@ package org.neo4j.cypher
 
 import java.util.{Map => JavaMap}
 
-import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.parser.ParserMonitor
 import org.neo4j.cypher.internal.compiler.v2_2.prettifier.Prettifier
+import org.neo4j.cypher.internal.compiler.v2_2.{Cost, CypherCacheMonitor, MonitoringCacheAccessor, PlannerName}
 import org.neo4j.cypher.internal.{CypherCompiler, _}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession, QueryEngineProvider}
+import org.neo4j.kernel.impl.query.{QueryEngineProvider, QueryExecutionMonitor, QuerySession}
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
 import org.neo4j.kernel.impl.util.StringLogger
-import org.neo4j.kernel.{monitoring, GraphDatabaseAPI, InternalAbstractGraphDatabase, api}
+import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase, api, monitoring}
 
 import scala.collection.JavaConverters._
 
@@ -199,11 +199,18 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   def prettify(query: String): String = Prettifier(query)
 
   private def createCompiler(logger: StringLogger): CypherCompiler = {
-    val version = optGraphSetting[String](
-      graph, GraphDatabaseSettings.cypher_parser_version, CypherVersion.vDefault.name
-    )
+    val version = CypherVersion(optGraphSetting[String](
+      graph, GraphDatabaseSettings.cypher_parser_version, CypherVersion.vDefault.name))
+    val planner = PlannerName(optGraphSetting[String](
+      graph, GraphDatabaseSettings.query_planner_version, PlannerName.default.name))
+    if (version != CypherVersion.v2_2 && planner == Cost) {
+      logger.error(s"Cannot combine configurations: ${GraphDatabaseSettings.cypher_parser_version.name}=${version.name} " +
+        s"with ${GraphDatabaseSettings.query_planner_version.name} = ${planner.name}")
+      throw new IllegalStateException(s"Cannot combine configurations: ${GraphDatabaseSettings.cypher_parser_version.name}=${version.name} " +
+        s"with ${GraphDatabaseSettings.query_planner_version.name} = ${planner.name}")
+    }
     val optionParser = CypherOptionParser(kernelMonitors.newMonitor(classOf[ParserMonitor[CypherQueryWithOptions]]))
-    new CypherCompiler(graph, kernel, kernelMonitors, CypherVersion(version), optionParser, logger)
+    new CypherCompiler(graph, kernel, kernelMonitors, version, planner, optionParser, logger)
   }
 
   private def getPlanCacheSize: Int =
