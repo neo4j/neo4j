@@ -25,9 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.primitive.FunctionFromPrimitiveInt;
-import org.neo4j.function.primitive.FunctionFromPrimitiveLong;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -44,7 +42,6 @@ import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.helpers.ThisShouldNotHappenError;
-import org.neo4j.helpers.collection.ResourceClosingIterator;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
@@ -63,10 +60,9 @@ import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
 
 import static java.lang.String.format;
+
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.map;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.Iterables.asResourceIterable;
 import static org.neo4j.helpers.collection.IteratorUtil.asList;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.core.TokenHolder.NO_ID;
@@ -136,18 +132,34 @@ public class NodeProxy implements Node
     }
 
     @Override
-    public ResourceIterable<Relationship> getRelationships( Direction dir )
+    public ResourceIterable<Relationship> getRelationships( final Direction dir )
     {
-        Statement statement = actions.statement();
-        try
+        assertInUnterminatedTransaction();
+        return new ResourceIterable<Relationship>()
         {
-            return map2rels( statement, statement.readOperations().nodeGetRelationships( nodeId, dir ) );
-        }
-        catch ( EntityNotFoundException e )
-        {
-            statement.close();
-            throw new NotFoundException( format( "Node %d not found", nodeId ), e );
-        }
+            @Override
+            public ResourceIterator<Relationship> iterator()
+            {
+                Statement statement = actions.statement();
+                try
+                {
+                    RelationshipConversion result = new RelationshipConversion( actions );
+                    result.cursor = statement.readOperations().nodeGetRelationships( nodeId, dir, result );
+                    result.statement = statement;
+                    return result;
+                }
+                catch ( EntityNotFoundException e )
+                {
+                    statement.close();
+                    throw new NotFoundException( format( "Node %d not found", nodeId ), e );
+                }
+                catch ( Throwable e )
+                {
+                    statement.close();
+                    throw e;
+                }
+            }
+        };
     }
 
     @Override
@@ -163,19 +175,39 @@ public class NodeProxy implements Node
     }
 
     @Override
-    public ResourceIterable<Relationship> getRelationships( Direction direction, RelationshipType... types )
+    public ResourceIterable<Relationship> getRelationships( final Direction direction, RelationshipType... types )
     {
-        Statement statement = actions.statement();
-        try
+        final int[] typeIds;
+        try ( Statement statement = actions.statement() )
         {
-            return map2rels( statement, statement.readOperations().nodeGetRelationships( nodeId, direction,
-                    relTypeIds( types, statement ) ) );
+            typeIds = relTypeIds( types, statement );
         }
-        catch ( EntityNotFoundException e )
+        return new ResourceIterable<Relationship>()
         {
-            statement.close();
-            throw new NotFoundException( format( "Node %d not found", nodeId ), e );
-        }
+            @Override
+            public ResourceIterator<Relationship> iterator()
+            {
+                Statement statement = actions.statement();
+                try
+                {
+                    RelationshipConversion result = new RelationshipConversion( actions );
+                    result.cursor = statement.readOperations().nodeGetRelationships(
+                            nodeId, direction, typeIds, result );
+                    result.statement = statement;
+                    return result;
+                }
+                catch ( EntityNotFoundException e )
+                {
+                    statement.close();
+                    throw new NotFoundException( format( "Node %d not found", nodeId ), e );
+                }
+                catch ( Throwable e )
+                {
+                    statement.close();
+                    throw e;
+                }
+            }
+        };
     }
 
     @Override
@@ -687,20 +719,6 @@ public class NodeProxy implements Node
             ids = Arrays.copyOf( ids, outIndex );
         }
         return ids;
-    }
-
-    private ResourceIterable<Relationship> map2rels( Statement statement, PrimitiveLongIterator input )
-    {
-        return asResourceIterable(
-                ResourceClosingIterator.newResourceIterator( statement, map( new FunctionFromPrimitiveLong
-                        <Relationship>()
-                {
-                    @Override
-                    public Relationship apply( long id )
-                    {
-                        return actions.newRelationshipProxy( id );
-                    }
-                }, input ) ) );
     }
 
     private Iterable<RelationshipType> map2relTypes( final Statement statement, PrimitiveIntIterator input )

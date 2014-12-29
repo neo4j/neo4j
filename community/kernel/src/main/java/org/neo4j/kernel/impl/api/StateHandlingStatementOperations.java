@@ -706,7 +706,7 @@ public class StateHandlingStatementOperations implements
         if ( existingProperty.isDefined() )
         {
             legacyPropertyTrackers.nodeRemoveStoreProperty( nodeId, (DefinedProperty) existingProperty );
-            state.txState().nodeDoRemoveProperty( nodeId, (DefinedProperty)existingProperty );
+            state.txState().nodeDoRemoveProperty( nodeId, (DefinedProperty) existingProperty );
             indexesUpdateProperty( state, nodeId, propertyKeyId, (DefinedProperty) existingProperty, null );
         }
         return existingProperty;
@@ -948,6 +948,14 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
+    public Cursor nodeGetRelationships( KernelStatement state, long nodeId, Direction direction, int[] types,
+                                        RelationshipVisitor<? extends RuntimeException> visitor )
+            throws EntityNotFoundException
+    {
+        return new RelationshipCursor( state, nodeGetRelationships( state, nodeId, direction, types ), visitor );
+    }
+
+    @Override
     public PrimitiveLongIterator nodeGetRelationships( KernelStatement state, long nodeId, Direction direction ) throws EntityNotFoundException
     {
         if ( state.hasTxStateWithChanges() )
@@ -965,6 +973,58 @@ public class StateHandlingStatementOperations implements
             return txState.augmentRelationships( nodeId, direction, stored );
         }
         return storeLayer.nodeListRelationships( nodeId, direction );
+    }
+
+    @Override
+    public Cursor nodeGetRelationships( KernelStatement state, long nodeId, Direction direction,
+                                        RelationshipVisitor<? extends RuntimeException> visitor )
+            throws EntityNotFoundException
+    {
+        return new RelationshipCursor( state, nodeGetRelationships( state, nodeId, direction ), visitor );
+    }
+
+    private class RelationshipCursor implements Cursor
+    {
+        private final PrimitiveLongIterator relationships;
+        private final KernelStatement state;
+        private final RelationshipVisitor<? extends RuntimeException> visitor;
+
+        public RelationshipCursor( KernelStatement state, PrimitiveLongIterator relationships,
+                                   RelationshipVisitor<? extends RuntimeException> visitor )
+        {
+            this.relationships = relationships;
+            this.state = state;
+            this.visitor = visitor;
+        }
+
+        @Override
+        public boolean next()
+        {
+            while ( relationships.hasNext() )
+            {
+                try
+                {
+                    relationshipVisit( state, relationships.next(), visitor );
+                }
+                catch ( EntityNotFoundException e )
+                {
+                    continue;
+                }
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public void reset()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void close()
+        {
+        }
     }
 
     @Override
@@ -1229,7 +1289,7 @@ public class StateHandlingStatementOperations implements
                     inputCursor, nodeId, types, expandDirection, relId, relType, direction, startNodeId, neighborNodeId );
         }
         return storeLayer.expand( inputCursor, nodeId, types, expandDirection,
-                relId, relType, direction, startNodeId, neighborNodeId );
+                                  relId, relType, direction, startNodeId, neighborNodeId );
     }
 
     @Override
