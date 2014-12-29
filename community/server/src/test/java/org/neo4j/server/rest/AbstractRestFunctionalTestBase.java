@@ -146,15 +146,20 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     {
         return server().getDatabase().getGraph();
     }
-    
+
     protected String getDataUri()
     {
-        return "http://localhost:7474/db/data/";
+        return getDatabaseUri() + "data/";
     }
 
     protected String getDatabaseUri()
     {
-        return "http://localhost:7474/db/";
+        return getBaseUri() + "db/";
+    }
+
+    protected String getBaseUri()
+    {
+        return "http://localhost:7474/";
     }
 
     protected String getNodeUri( Node node )

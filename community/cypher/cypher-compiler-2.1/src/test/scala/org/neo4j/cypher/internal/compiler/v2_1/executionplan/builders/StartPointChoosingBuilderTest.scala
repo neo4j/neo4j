@@ -143,7 +143,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
     val plan = assertAccepts(query)
 
     // Then
-    plan.query.start.toList should equal(Seq(Unsolved(SchemaIndex(identifier, label, property, AnyIndex, None))))
+    plan.query.start.toList should equal(Seq(Unsolved(SchemaIndex(identifier, label, property, UniqueIndex, None))))
   }
 
 
@@ -182,7 +182,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
     val plan = assertAccepts(query)
 
     // Then
-    plan.query.start.toList should equal(Seq(Unsolved(SchemaIndex(identifier, label, property, AnyIndex, None))))
+    plan.query.start.toList should equal(Seq(Unsolved(SchemaIndex(identifier, label, property, UniqueIndex, None))))
   }
 
   test("should_pick_an_index_if_only_one_possible_nullable_property_exists") {
@@ -239,7 +239,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
     val plan = assertAccepts(query)
 
     // Then
-    plan.query.start.toList should equal(Seq(Unsolved(SchemaIndex(identifier, label, property, AnyIndex, None))))
+    plan.query.start.toList should equal(Seq(Unsolved(SchemaIndex(identifier, label, property, UniqueIndex, None))))
   }
 
   test("should_pick_any_index_available") {
@@ -282,7 +282,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
     val result = assertAccepts(query).query
 
     // Then
-    result.start.find(_.token.isInstanceOf[SchemaIndex]) should equal(Some(Unsolved(SchemaIndex(identifier, label, otherProperty, AnyIndex, None))))
+    result.start.find(_.token.isInstanceOf[SchemaIndex]) should equal(Some(Unsolved(SchemaIndex(identifier, label, otherProperty, UniqueIndex, None))))
   }
 
   test("should_prefer_uniqueness_constraint_indexes_over_other_indexes_other_side") {
@@ -304,7 +304,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
     val result = assertAccepts(query).query
 
     // Then
-    result.start.find(_.token.isInstanceOf[SchemaIndex]) should equal(Some(Unsolved(SchemaIndex(identifier, label, property, AnyIndex, None))))
+    result.start.find(_.token.isInstanceOf[SchemaIndex]) should equal(Some(Unsolved(SchemaIndex(identifier, label, property, UniqueIndex, None))))
   }
 
   test("should_produce_label_start_points_when_no_property_predicate_is_used") {
