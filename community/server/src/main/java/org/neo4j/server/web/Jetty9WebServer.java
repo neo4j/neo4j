@@ -19,29 +19,6 @@
  */
 package org.neo4j.server.web;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.concurrent.BlockingQueue;
-
-import javax.servlet.DispatcherType;
-import javax.servlet.Filter;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import ch.qos.logback.access.jetty.RequestLogImpl;
 import ch.qos.logback.access.servlet.TeeFilter;
 import org.eclipse.jetty.server.Request;
@@ -59,10 +36,34 @@ import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.webapp.WebAppContext;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.concurrent.BlockingQueue;
+import javax.servlet.DispatcherType;
+import javax.servlet.Filter;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.database.InjectableProvider;
+import org.neo4j.server.logging.JettyLoggerAdapter;
 import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.security.KeyStoreInformation;
 import org.neo4j.server.security.SslSocketConnectorFactory;
@@ -125,11 +126,14 @@ public class Jetty9WebServer implements WebServer
     private final SslSocketConnectorFactory sslSocketFactory = new SslSocketConnectorFactory();
     private final HttpConnectorFactory connectorFactory = new HttpConnectorFactory();
     private File requestLoggingConfiguration;
+
+    private final Logging logging;
     private final ConsoleLogger console;
     private final StringLogger log;
 
     public Jetty9WebServer( Logging logging )
     {
+        this.logging = logging;
         this.console = logging.getConsoleLog( getClass() );
         this.log = logging.getMessagesLog( getClass() );
     }
@@ -144,6 +148,10 @@ public class Jetty9WebServer implements WebServer
     {
         if ( jetty == null )
         {
+            // TODO: This should be in init(), move this in 2.2+ where the server lifecycle has been improved somewhat
+            System.setProperty( "org.eclipse.jetty.util.log.class", JettyLoggerAdapter.class.getName() );
+            JettyLoggerAdapter.setGlobalLogging( logging );
+
             QueuedThreadPool pool = createQueuedThreadPool( jettyMaxThreads );
 
             jetty = new Server( pool );

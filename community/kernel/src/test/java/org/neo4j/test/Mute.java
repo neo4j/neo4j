@@ -19,6 +19,10 @@
  */
 package org.neo4j.test;
 
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -33,9 +37,10 @@ import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 import java.util.logging.StreamHandler;
 
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
+import org.neo4j.kernel.impl.util.Charsets;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 
 /**
  * Mutes outputs such as System.out, System.err and java.util.logging for example when running a test.
@@ -87,6 +92,13 @@ public final class Mute implements TestRule
             return new Voice()
             {
                 @Override
+                void assertSilence()
+                {
+                    String out = new String( buffer.toByteArray(), Charsets.UTF_8 );
+                    assertThat( "Expected this channel to be silent.'", out, equalTo("") );
+                }
+
+                @Override
                 void restore( boolean failure ) throws IOException
                 {
                     replace( old ).flush();
@@ -130,6 +142,13 @@ public final class Mute implements TestRule
                 return new Voice()
                 {
                     @Override
+                    void assertSilence()
+                    {
+                        // By, frustrating, design. JUL is all-global, we can't stop our dependencies from using it.
+                        // Ensuring this gets piped to the right place is done elsewhere.
+                    }
+
+                    @Override
                     void restore( boolean failure ) throws IOException
                     {
                         for ( Handler handler : handlers )
@@ -159,11 +178,12 @@ public final class Mute implements TestRule
         }
         finally
         {
-            releaseVoices( voices, failure );
+            releaseVoices( voices, failure, failure );
         }
     }
 
     private final Mutable[] mutables;
+    private volatile boolean assertSilence = false;
 
     private Mute( Mutable[] mutables )
     {
@@ -187,7 +207,7 @@ public final class Mute implements TestRule
                 }
                 finally
                 {
-                    releaseVoices( voices, failure );
+                    releaseVoices( voices, failure, assertSilence );
                 }
             }
         };
@@ -198,8 +218,17 @@ public final class Mute implements TestRule
         Voice mute();
     }
 
+    /** Assert that no mutables had output sent to them */
+    public Mute withSilenceAssertion()
+    {
+        assertSilence = true;
+        return this;
+    }
+
     private static abstract class Voice
     {
+        /** Assert that this voice did not have any output sent to it */
+        abstract void assertSilence();
         abstract void restore( boolean failure ) throws IOException;
     }
 
@@ -219,18 +248,18 @@ public final class Mute implements TestRule
         {
             if ( !ok )
             {
-                releaseVoices( voices, false );
+                releaseVoices( voices, false, false );
             }
         }
         return voices;
     }
 
-    void releaseVoices( Voice[] voices, boolean failure )
+    void releaseVoices( Voice[] voices, boolean failure, boolean assertSilence )
     {
         List<Throwable> failures = null;
         try
         {
-            failures = new ArrayList<Throwable>( voices.length );
+            failures = new ArrayList<>( voices.length );
         }
         catch ( Throwable oom )
         {
@@ -242,7 +271,16 @@ public final class Mute implements TestRule
             {
                 try
                 {
+                    if(assertSilence)
+                    {
+                        voice.assertSilence();
+                    }
+
                     voice.restore( failure );
+                }
+                catch( AssertionError e )
+                {
+                    throw e;
                 }
                 catch ( Throwable exception )
                 {
