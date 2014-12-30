@@ -20,7 +20,6 @@
 package org.neo4j.kernel.ha.cluster;
 
 import java.net.URI;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
@@ -54,9 +53,9 @@ import static org.neo4j.helpers.Uris.parameter;
 
 /**
  * Performs the internal switches from pending to slave/master, by listening for
- * ClusterMemberChangeEvents. When finished it will invoke {@link org.neo4j.cluster.member
- * .ClusterMemberAvailability#memberIsAvailable(String, URI)} to announce
- * to the cluster it's new status.
+ * {@link HighAvailabilityMemberChangeEvent}s. When finished it will invoke
+ * {@link ClusterMemberAvailability#memberIsAvailable(String, URI, StoreId)} to announce it's new status to the
+ * cluster.
  */
 public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListener, BindingListener, Lifecycle
 {
@@ -158,14 +157,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         }
         else
         {
-            try
-            {
-                stateChanged( event );
-            }
-            catch ( ExecutionException | InterruptedException e )
-            {
-                throw new RuntimeException( e );
-            }
+            stateChanged( event );
         }
     }
 
@@ -178,14 +170,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         }
         else
         {
-            try
-            {
-                stateChanged( event );
-            }
-            catch ( ExecutionException | InterruptedException e )
-            {
-                throw new RuntimeException( e );
-            }
+            stateChanged( event );
         }
     }
 
@@ -198,17 +183,10 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     @Override
     public void instanceStops( HighAvailabilityMemberChangeEvent event )
     {
-        try
-        {
-            stateChanged( event );
-        }
-        catch ( ExecutionException | InterruptedException e )
-        {
-            throw new RuntimeException( e );
-        }
+        stateChanged( event );
     }
 
-    private void stateChanged( HighAvailabilityMemberChangeEvent event ) throws ExecutionException, InterruptedException
+    private void stateChanged( HighAvailabilityMemberChangeEvent event )
     {
         availableMasterId = event.getServerHaUri();
         if ( event.getNewState() == event.getOldState() )
@@ -241,32 +219,14 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     clusterMemberAvailability.memberIsUnavailable( MASTER );
                 }
 
-                startModeSwitching( new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        haCommunicationLife.shutdown();
-                        haCommunicationLife = new LifeSupport();
-                    }
-                }, new CancellationHandle() );
-
-                try
-                {
-                    modeSwitcherFuture.get( 10, TimeUnit.SECONDS );
-                }
-                catch ( Exception e )
-                {
-                    // Ignore
-                }
-
+                switchToPending();
                 break;
             default:
                 // do nothing
         }
     }
 
-    private void switchToMaster() throws ExecutionException, InterruptedException
+    private void switchToMaster()
     {
         final CancellationHandle cancellationHandle = new CancellationHandle();
         startModeSwitching( new Runnable()
@@ -277,7 +237,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                 // We just got scheduled. Maybe we are already obsolete - test
                 if ( cancellationHandle.cancellationRequested() )
                 {
-                    msgLog.info( "Switch to master cancelled in the begining of switching to master." );
+                    msgLog.info( "Switch to master cancelled in the beginning of switching to master." );
                     return;
                 }
 
@@ -304,7 +264,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         }, cancellationHandle );
     }
 
-    private void switchToSlave() throws ExecutionException, InterruptedException
+    private void switchToSlave()
     {
         // Do this with a scheduler, so that if it fails, it can retry later with an exponential backoff with max
         // wait time.
@@ -396,8 +356,30 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         }, cancellationHandle );
     }
 
+    private void switchToPending()
+    {
+        msgLog.logMessage( "I am " + getServerId( me ) + ", moving to pending" );
+
+        startModeSwitching( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                haCommunicationLife.shutdown();
+                haCommunicationLife = new LifeSupport();
+            }
+        }, new CancellationHandle() );
+
+        try
+        {
+            modeSwitcherFuture.get( 10, TimeUnit.SECONDS );
+        }
+        catch ( Exception ignored )
+        {
+        }
+    }
+
     private synchronized void startModeSwitching( Runnable switcher, CancellationHandle cancellationHandle )
-            throws ExecutionException, InterruptedException
     {
         if ( modeSwitcherFuture != null )
         {

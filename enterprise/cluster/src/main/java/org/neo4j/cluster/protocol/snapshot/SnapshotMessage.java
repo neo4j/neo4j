@@ -49,29 +49,21 @@ public enum SnapshotMessage
         private long lastDeliveredInstanceId = -1;
         transient SnapshotProvider provider;
 
-        private transient ObjectInputStreamFactory objectInputStreamFactory;
         private transient ObjectOutputStreamFactory objectOutputStreamFactory;
 
         transient byte[] buf;
 
         public SnapshotState( long lastDeliveredInstanceId, SnapshotProvider provider,
-                              ObjectInputStreamFactory objectInputStreamFactory,
-                              ObjectOutputStreamFactory objectOutputStreamFactory )
+                ObjectOutputStreamFactory objectOutputStreamFactory )
         {
             this.lastDeliveredInstanceId = lastDeliveredInstanceId;
             this.provider = provider;
-
-            if ( objectInputStreamFactory == null )
-            {
-                throw new RuntimeException( "objectInputStreamFactory was null" );
-            }
 
             if ( objectOutputStreamFactory == null )
             {
                 throw new RuntimeException( "objectOutputStreamFactory was null" );
             }
 
-            this.objectInputStreamFactory = objectInputStreamFactory;
             this.objectOutputStreamFactory = objectOutputStreamFactory;
         }
 
@@ -85,18 +77,13 @@ public enum SnapshotMessage
         {
             ByteArrayInputStream bin = new ByteArrayInputStream( buf );
 
-            ObjectInputStream oin = objectInputStreamFactory.create( bin );
-            try
+            try ( ObjectInputStream oin = objectInputStreamFactory.create( bin ) )
             {
                 provider.setState( oin );
             }
             catch ( Throwable e )
             {
                 e.printStackTrace();
-            }
-            finally
-            {
-                oin.close();
             }
         }
 

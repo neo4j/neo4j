@@ -112,7 +112,7 @@ public enum ClusterMessage
         @Override
         public String toString()
         {
-            return joiningId + ":" + joiningUri;
+            return "ConfigurationRequestState{" + "joiningId=" + joiningId + ", joiningUri=" + joiningUri + "}";
         }
     }
 
@@ -442,6 +442,13 @@ public enum ClusterMessage
                 context.unelected( getRoleLost(), getLoser(), elector, version );
             }
         }
+
+        @Override
+        public String toString()
+        {
+            return "VersionedConfigurationStateChange" +
+                   "{elector=" + elector + ", version=" + version + "} " + super.toString();
+        }
     }
 
     public static class ConfigurationTimeoutState
@@ -484,6 +491,12 @@ public enum ClusterMessage
         public int hashCode()
         {
             return remainingPings;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "ConfigurationTimeoutState{remainingPings=" + remainingPings + "}";
         }
     }
 

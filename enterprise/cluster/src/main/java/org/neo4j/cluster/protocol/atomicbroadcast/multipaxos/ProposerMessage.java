@@ -144,6 +144,12 @@ public enum ProposerMessage
         {
             return (int) (ballot ^ (ballot >>> 32));
         }
+
+        @Override
+        public String toString()
+        {
+            return "RejectPrepare{" + "ballot=" + ballot + "}";
+        }
     }
 
     public static class RejectAcceptState
