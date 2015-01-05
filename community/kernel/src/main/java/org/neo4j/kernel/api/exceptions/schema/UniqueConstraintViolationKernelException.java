@@ -47,4 +47,19 @@ public class UniqueConstraintViolationKernelException extends ConstraintViolatio
                 tokenNameLookup.propertyKeyGetName( propertyKeyId ),
                 value );
     }
+
+    public int labelId()
+    {
+        return labelId;
+    }
+
+    public int propertyKeyId()
+    {
+        return propertyKeyId;
+    }
+
+    public Object propertyValue()
+    {
+        return value;
+    }
 }
