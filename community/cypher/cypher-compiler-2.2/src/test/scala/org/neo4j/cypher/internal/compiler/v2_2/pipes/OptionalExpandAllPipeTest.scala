@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_2.commands.{Predicate, Not, True}
 
-class OptionalExpandPipeTest extends CypherFunSuite {
+class OptionalExpandAllPipeTest extends CypherFunSuite {
 
   implicit val monitor = mock[PipeMonitor]
   val startNode = newMockedNode(1)
@@ -49,7 +49,7 @@ class OptionalExpandPipeTest extends CypherFunSuite {
       row("a" -> startNode))
 
     // when
-    val result = OptionalExpandPipe(left, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
+    val result = OptionalExpandAllPipe(left, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
 
     // then
     val (single :: Nil) = result
@@ -63,14 +63,14 @@ class OptionalExpandPipeTest extends CypherFunSuite {
       row("a" -> startNode))
 
     // when
-    val result = OptionalExpandPipe(left, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
+    val result = OptionalExpandAllPipe(left, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
 
     // then
     val (single :: Nil) = result
     single.m should equal(Map("a" -> startNode, "r" -> null, "b" -> null))
   }
 
-  test("should support optional expand from a node with with relationships that do not match the predicates") {
+  test("should support optional expand from a node with relationships that do not match the predicates") {
     // given
     mockRelationships(relationship1)
     val left = newMockedPipe("a",
@@ -78,7 +78,7 @@ class OptionalExpandPipeTest extends CypherFunSuite {
 
     val falsePredicate: Predicate = Not(True())
     // when
-    val result = OptionalExpandPipe(left, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty, falsePredicate)().createResults(queryState).toList
+    val result = OptionalExpandAllPipe(left, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty, falsePredicate)().createResults(queryState).toList
 
     // then
     val (single :: Nil) = result
@@ -92,7 +92,7 @@ class OptionalExpandPipeTest extends CypherFunSuite {
       row("a" -> startNode))
 
     // when
-    val result = OptionalExpandPipe(left, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
+    val result = OptionalExpandAllPipe(left, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
 
     // then
     val (first :: second :: Nil) = result
@@ -107,7 +107,7 @@ class OptionalExpandPipeTest extends CypherFunSuite {
       row("a" -> startNode))
 
     // when
-    val result = OptionalExpandPipe(left, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
+    val result = OptionalExpandAllPipe(left, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
 
     // then
     val (first :: second :: Nil) = result
@@ -121,7 +121,7 @@ class OptionalExpandPipeTest extends CypherFunSuite {
     val left = newMockedPipe("a")
 
     // when
-    val result = OptionalExpandPipe(left, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
+    val result = OptionalExpandAllPipe(left, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
 
     // then
     result shouldBe 'empty
