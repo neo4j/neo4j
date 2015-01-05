@@ -19,13 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static java.lang.Math.max;
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1.writeLogHeader;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.CLEAN;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG1;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG2;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -34,7 +27,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
-
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
@@ -71,6 +63,13 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static java.lang.Math.max;
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1.writeLogHeader;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.CLEAN;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG1;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG2;
 
 /**
  * <CODE>XaLogicalLog</CODE> is a transaction and logical log combined. In
@@ -1164,11 +1163,14 @@ public class XaLogicalLog implements LogLoader
      */
     public synchronized long rotate() throws IOException
     {
-        xaTf.flushAll();
         File newLogFile = logFiles.getLog2FileName();
         File currentLogFile = logFiles.getLog1FileName();
         char newActiveLog = LOG2;
-        long currentVersion = xaTf.getCurrentVersion();
+        final long currentVersion = xaTf.getCurrentVersion();
+
+        rotationMessage( currentVersion, "Log rotation initiated. Starting store flush..." );
+        xaTf.flushAll();
+        rotationMessage( currentVersion, "Finished store flush. Preparing new log file..." );
 
         File oldCopy = getFileName( currentVersion );
         if ( currentLog == CLEAN || currentLog == LOG2 )
@@ -1184,10 +1186,11 @@ public class XaLogicalLog implements LogLoader
         assertFileDoesntExist( newLogFile, "New log file" );
         assertFileDoesntExist( oldCopy, "Copy log file" );
         long endPosition = writeBuffer.getFileChannelPosition();
-        msgLog.logMessage( "Rotating [" + currentLogFile + "] @ version=" +
-                currentVersion + " to " + newLogFile + " from position " +
-                endPosition, true );
+        rotationMessage( currentVersion,
+                "Forcing current log (at position " + endPosition + "). New log file will be " + newLogFile );
         writeBuffer.force();
+        rotationMessage( currentVersion, "Log force completed. Writing headers to new log file..." );
+
         StoreChannel newLog = fileSystem.open( newLogFile, "rw" );
         long lastTx = xaTf.getLastCommittedTx();
         writeLogHeader( sharedBuffer, currentVersion + 1, lastTx );
@@ -1203,38 +1206,50 @@ public class XaLogicalLog implements LogLoader
         {
             long firstEntryPosition = getFirstStartEntry( endPosition );
             fileChannel.position( firstEntryPosition );
-            msgLog.logMessage( "Rotate log first start entry @ pos=" +
-                    firstEntryPosition + " out of " + xidIdentMap );
+            rotationMessage( currentVersion,
+                    "Rotate log first start entry @ pos=" + firstEntryPosition + " out of " + xidIdentMap );
         }
 
+        rotationMessage( currentVersion,
+                "Log header written. Starting migration of on-going transactions..." );
         LogBuffer newLogBuffer = instantiateCorrectWriteBuffer( newLog );
-        partialTransactionCopier.copy(/*from = */fileChannel, /* to= */newLogBuffer, /* targetLogVersion= */logVersion+1);
-
+        partialTransactionCopier.copy(
+                /*from = */fileChannel, /* to= */newLogBuffer, /* targetLogVersion= */logVersion+1);
         newLogBuffer.force();
         newLog.position( newLogBuffer.getFileChannelPosition() );
-        msgLog.logMessage( "Rotate: old log scanned, newLog @ pos=" +
-                newLog.position(), true );
         newLog.force( false );
+        rotationMessage( currentVersion,
+                "Old log scanned, on-going transactions copied and forced. New log position=" + newLog.position() +
+                ". Changing log version and setting new log as active..." );
+
         releaseCurrentLogFile();
         setActiveLog( newActiveLog );
-
         renameLogFileToRightVersion( currentLogFile, endPosition );
         xaTf.getAndSetNewVersion();
-
         this.logVersion = xaTf.getCurrentVersion();
         if ( xaTf.getCurrentVersion() != (currentVersion + 1) )
         {
             throw new IOException( "Version change failed, expected " + (currentVersion + 1) + ", but was " +
                     xaTf.getCurrentVersion() );
         }
+
+        rotationMessage( currentVersion, "New log set as active. Pruning archived log files..." );
         pruneStrategy.prune( this );
+        rotationMessage( currentVersion, "Archived log files pruned. Completing rotation..." );
+
         fileChannel = newLog;
         positionCache.putHeader( logVersion, lastTx );
         instantiateCorrectWriteBuffer();
-        msgLog.logMessage( "Log rotated, newLog @ pos=" +
-                writeBuffer.getFileChannelPosition() + ", version " + logVersion +
-                " and last tx " + previousLogLastCommittedTx, true );
+        rotationMessage( currentVersion,
+                "Log rotated completed. New log position=" + writeBuffer.getFileChannelPosition() +
+                ", version=" + logVersion + " and lastTx=" + previousLogLastCommittedTx + "." );
         return lastTx;
+    }
+
+    private void rotationMessage( long currentVersion, String message )
+    {
+        String line = "Log Rotation [" + currentVersion + "]: " + message;
+        msgLog.logMessage( line, true );
     }
 
     private void assertFileDoesntExist( File file, String description ) throws IOException
