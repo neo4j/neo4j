@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{Collection, SignedDecimalIntegerLiteral, SignedIntegerLiteral}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Identifier
-import org.neo4j.cypher.internal.compiler.v2_2.commands.{Equals, expressions => legacy}
+import org.neo4j.cypher.internal.compiler.v2_2.commands.{expressions => legacy, True, Equals}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.{EntityByIdExprs => PipeEntityByIdExprs, _}
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
@@ -147,7 +147,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
     val logicalPlan = Expand(AllNodesScan("a", Set.empty)(solved), "a", Direction.INCOMING, Seq(), "b", "r1")_
     val pipeInfo = build(logicalPlan)
 
-    pipeInfo.pipe should equal(ExpandPipe( AllNodesScanPipe("a")(), "a", "r1", "b", Direction.INCOMING, LazyTypes.empty)())
+    pipeInfo.pipe should equal(ExpandAllPipe( AllNodesScanPipe("a")(), "a", "r1", "b", Direction.INCOMING, LazyTypes.empty)())
   }
 
   test("simple expand into existing identifier MATCH a-[r]->a ") {
@@ -155,9 +155,9 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
       AllNodesScan("a", Set.empty)(solved), "a", Direction.INCOMING, Seq(), "a", "r", ExpandInto)_
     val pipeInfo = build(logicalPlan)
 
-    val inner: Pipe = ExpandPipe( AllNodesScanPipe("a")(), "a", "r", "a$$$", Direction.INCOMING, LazyTypes.empty)()
+    val inner: Pipe = ExpandIntoPipe( AllNodesScanPipe("a")(), "a", "r", "a", Direction.INCOMING, LazyTypes.empty)()
 
-    pipeInfo.pipe should equal(FilterPipe(inner, Equals(Identifier("a"), Identifier("a$$$")))())
+    pipeInfo.pipe should equal(inner)
   }
 
   test("optional expand into existing identifier MATCH a OPTIONAL MATCH a-[r]->a ") {
@@ -165,9 +165,8 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
       AllNodesScan("a", Set.empty)(solved), "a", Direction.INCOMING, Seq(), "a", "r", ExpandInto)_
     val pipeInfo = build(logicalPlan)
 
-    val predicate = Equals(Identifier("a"), Identifier("a$$$"))
     pipeInfo.pipe should equal(
-      OptionalExpandPipe(AllNodesScanPipe("a")(), "a", "r", "a$$$", Direction.INCOMING, LazyTypes.empty, predicate)())
+      OptionalExpandIntoPipe(AllNodesScanPipe("a")(), "a", "r", "a", Direction.INCOMING, LazyTypes.empty, True())())
   }
 
   test("simple hash join") {
@@ -181,8 +180,8 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
 
     pipeInfo.pipe should equal(NodeHashJoinPipe(
       Set("b"),
-      ExpandPipe( AllNodesScanPipe("a")(), "a", "r1", "b", Direction.INCOMING, LazyTypes.empty)(),
-      ExpandPipe( AllNodesScanPipe("c")(), "c", "r2", "b", Direction.INCOMING, LazyTypes.empty)()
+      ExpandAllPipe( AllNodesScanPipe("a")(), "a", "r1", "b", Direction.INCOMING, LazyTypes.empty)(),
+      ExpandAllPipe( AllNodesScanPipe("c")(), "c", "r2", "b", Direction.INCOMING, LazyTypes.empty)()
     )())
   }
 

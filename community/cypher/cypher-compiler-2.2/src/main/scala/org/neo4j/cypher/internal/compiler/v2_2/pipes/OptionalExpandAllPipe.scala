@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.commands.Predicate
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.graphdb.{Direction, Node}
 
-case class OptionalExpandPipe(source: Pipe, from: String, relName: String, to: String, dir: Direction, types: LazyTypes, predicate: Predicate)
-                             (val estimatedCardinality: Option[Long] = None)(implicit pipeMonitor: PipeMonitor)
+case class OptionalExpandAllPipe(source: Pipe, fromName: String, relName: String, toName: String, dir: Direction, types: LazyTypes, predicate: Predicate)
+                                (val estimatedCardinality: Option[Long] = None)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
@@ -39,36 +39,36 @@ case class OptionalExpandPipe(source: Pipe, from: String, relName: String, to: S
         fromNode match {
           case n: Node =>
             val relationships = state.query.getRelationshipsForIds(n, dir, types.types(state.query))
-            val contextWithRelationships = relationships.map {
-              case r => row.newWith2(relName, r, to, r.getOtherNode(n))
+            val matchIterator = relationships.map {
+              case r => row.newWith2(relName, r, toName, r.getOtherNode(n))
             }.filter(ctx => predicate.isTrue(ctx))
 
-            if (contextWithRelationships.hasNext) {
-              contextWithRelationships
-            } else {
+            if (matchIterator.isEmpty) {
               Iterator(withNulls(row))
+            } else {
+              matchIterator
             }
 
           case value if value == null =>
             Iterator(withNulls(row))
 
           case value =>
-            throw new InternalException(s"Expected to find a node at $from but found $value instead")
+            throw new InternalException(s"Expected to find a node at $fromName but found $value instead")
         }
     }
   }
 
   private def withNulls(row: ExecutionContext) =
-    row.newWith2(relName, null, to, null)
+    row.newWith2(relName, null, toName, null)
 
   def getFromNode(row: ExecutionContext): Any =
-    row.getOrElse(from, throw new InternalException(s"Expected to find a node at $from but found nothing"))
+    row.getOrElse(fromName, throw new InternalException(s"Expected to find a node at $fromName but found nothing"))
 
   def planDescription =
     source.planDescription.
-      andThen(this, "OptionalExpand", identifiers, ExpandExpression(from, relName, types.names, to, dir))
+      andThen(this, "OptionalExpand(All)", identifiers, ExpandExpression(fromName, relName, types.names, toName, dir))
 
-  def symbols = source.symbols.add(to, CTNode).add(relName, CTRelationship)
+  def symbols = source.symbols.add(toName, CTNode).add(relName, CTRelationship)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources

@@ -25,13 +25,13 @@ import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.cypher.internal.compiler.v2_2.{ExecutionContext, InternalException}
 import org.neo4j.graphdb.{Direction, Node, Relationship}
 
-case class ExpandPipe(source: Pipe,
-                      from: String,
-                      relName: String,
-                      to: String,
-                      dir: Direction,
-                      types: LazyTypes)(val estimatedCardinality: Option[Long] = None)
-                     (implicit pipeMonitor: PipeMonitor)
+case class ExpandAllPipe(source: Pipe,
+                         fromName: String,
+                         relName: String,
+                         toName: String,
+                         dir: Direction,
+                         types: LazyTypes)(val estimatedCardinality: Option[Long] = None)
+                        (implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
@@ -42,12 +42,12 @@ case class ExpandPipe(source: Pipe,
             val relationships: Iterator[Relationship] = state.query.getRelationshipsForIds(n, dir, types.types(state.query))
             relationships.map {
               case r =>
-                row.newWith2(relName, r, to, r.getOtherNode(n))
+                row.newWith2(relName, r, toName, r.getOtherNode(n))
             }
 
           case null => None
 
-          case value => throw new InternalException(s"Expected to find a node at $from but found $value instead")
+          case value => throw new InternalException(s"Expected to find a node at $fromName but found $value instead")
         }
     }
   }
@@ -55,13 +55,13 @@ case class ExpandPipe(source: Pipe,
   def typeNames = types.names
 
   def getFromNode(row: ExecutionContext): Any =
-    row.getOrElse(from, throw new InternalException(s"Expected to find a node at $from but found nothing"))
+    row.getOrElse(fromName, throw new InternalException(s"Expected to find a node at $fromName but found nothing"))
 
   def planDescription = {
-    source.planDescription.andThen(this, "Expand", identifiers, ExpandExpression(from, relName, typeNames, to, dir))
+    source.planDescription.andThen(this, "Expand(All)", identifiers, ExpandExpression(fromName, relName, typeNames, toName, dir))
   }
 
-  val symbols = source.symbols.add(to, CTNode).add(relName, CTRelationship)
+  val symbols = source.symbols.add(toName, CTNode).add(relName, CTRelationship)
 
   override def localEffects = Effects.READS_ENTITIES
 
