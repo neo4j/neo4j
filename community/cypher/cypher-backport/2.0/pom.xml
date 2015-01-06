@@ -3,17 +3,17 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <parent>
         <groupId>org.neo4j</groupId>
-        <artifactId>cypher-parent</artifactId>
+        <artifactId>cypher-backport</artifactId>
         <version>2.2-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>neo4j-cypher-commons-2.11-2.0</artifactId>
-    <packaging>jar</packaging>
+    <artifactId>cypher-backport-2.0</artifactId>
+    <packaging>pom</packaging>
     <version>2.2-SNAPSHOT</version>
-    <name>Neo4j - Cypher Commons</name>
-    <description>Common code shared between all Neo4j Cypher modules</description>
+    <name>Neo4j - Cypher Backport 2.0</name>
+    <description>Cypher Versions from the 2.0-maint branch</description>
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
     <properties>
@@ -44,32 +44,9 @@
         </license>
     </licenses>
 
-  <dependencies>
-
-    <!-- shared versions are defined in the parent pom -->
-
-    <!-- neo4j -->
-
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-kernel</artifactId>
-      <version>2.0.4</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-kernel</artifactId>
-      <version>2.0.4</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-
-    <!-- other -->
-
-    <dependency>
-      <groupId>com.googlecode.concurrentlinkedhashmap</groupId>
-      <artifactId>concurrentlinkedhashmap-lru</artifactId>
-    </dependency>
-
-  </dependencies>
-
+    <modules>
+      <module>cypher-commons-backport-2.0</module>
+      <module>cypher-compiler-backport-1.9</module>
+      <module>cypher-compiler-backport-2.0</module>
+    </modules>
 </project>

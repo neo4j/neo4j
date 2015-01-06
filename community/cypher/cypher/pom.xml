@@ -109,8 +109,8 @@
     <!-- neo4j-cypher -->
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-compiler-1.9</artifactId>
-      <version>2.0.4</version>
+      <artifactId>neo4j-cypher-compiler-backport-1.9</artifactId>
+      <version>${project.version}</version>
       <exclusions>
         <exclusion>
           <groupId>org.neo4j</groupId>
@@ -140,8 +140,8 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-compiler-2.0</artifactId>
-      <version>2.0.4</version>
+      <artifactId>neo4j-cypher-compiler-backport-2.0</artifactId>
+      <version>${project.version}</version>
       <exclusions>
         <exclusion>
           <groupId>org.neo4j</groupId>
@@ -179,8 +179,8 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-compiler-2.1</artifactId>
-      <version>2.1.6</version>
+      <artifactId>neo4j-cypher-compiler-backport-2.1</artifactId>
+      <version>${project.version}</version>
       <exclusions>
         <exclusion>
           <groupId>org.neo4j</groupId>
