@@ -19,6 +19,9 @@
  */
 package org.neo4j.cypher.javacompat;
 
+import org.neo4j.cypher.ExtendedPlanDescription;
+import org.neo4j.cypher.ProfilerStatisticsNotReadyException;
+import org.neo4j.graphdb.ExecutionPlanDescription;
 import scala.collection.JavaConversions;
 
 import java.util.ArrayList;
@@ -27,10 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
-
-import org.neo4j.cypher.ExtendedPlanDescription;
-import org.neo4j.cypher.ProfilerStatisticsNotReadyException;
-import org.neo4j.graphdb.ExecutionPlanDescription;
 
 import static org.neo4j.helpers.Exceptions.withCause;
 
@@ -69,7 +68,7 @@ class Description implements ExecutionPlanDescription
     @Override
     public Map<String, Object> getArguments()
     {
-        return JavaConversions.asJavaMap( description.arguments() );
+        return JavaConversions.mapAsJavaMap( description.arguments() );
     }
 
     @Override
@@ -77,7 +76,7 @@ class Description implements ExecutionPlanDescription
     {
         if ( description instanceof ExtendedPlanDescription )
         {
-            return JavaConversions.asJavaSet( ((ExtendedPlanDescription) description).identifiers() );
+            return JavaConversions.setAsJavaSet( ((ExtendedPlanDescription) description).identifiers() );
         }
         return Collections.emptySet();
     }

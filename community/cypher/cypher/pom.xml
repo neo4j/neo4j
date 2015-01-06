@@ -166,7 +166,7 @@
         </exclusion>
         <exclusion>
           <groupId>org.parboiled</groupId>
-          <artifactId>parboiled-scala_2.10</artifactId>
+          <artifactId>parboiled-scala_2.11</artifactId>
         </exclusion>
         <exclusion>
           <groupId>net.sf.opencsv</groupId>
@@ -205,7 +205,7 @@
         </exclusion>
         <exclusion>
           <groupId>org.parboiled</groupId>
-          <artifactId>parboiled-scala_2.10</artifactId>
+          <artifactId>parboiled-scala_2.11</artifactId>
         </exclusion>
         <exclusion>
           <groupId>net.sf.opencsv</groupId>
@@ -244,7 +244,7 @@
         </exclusion>
         <exclusion>
           <groupId>org.parboiled</groupId>
-          <artifactId>parboiled-scala_2.10</artifactId>
+          <artifactId>parboiled-scala_2.11</artifactId>
         </exclusion>
         <exclusion>
           <groupId>net.sf.opencsv</groupId>
@@ -275,7 +275,7 @@
     </dependency>
     <dependency>
       <groupId>org.parboiled</groupId>
-      <artifactId>parboiled-scala_2.10</artifactId>
+      <artifactId>parboiled-scala_2.11</artifactId>
     </dependency>
     <dependency>
       <groupId>net.sf.opencsv</groupId>
@@ -291,12 +291,16 @@
 
     <dependency>
       <groupId>com.novus</groupId>
-      <artifactId>salat-core_2.10</artifactId>
+      <artifactId>salat-core_2.11</artifactId>
       <version>1.9.8</version>
       <exclusions>
           <exclusion>
               <groupId>org.scala-lang</groupId>
               <artifactId>scala-library</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.scalatest</groupId>
+            <artifactId>scalatest_2.10</artifactId>
           </exclusion>
       </exclusions>
       <scope>test</scope>
