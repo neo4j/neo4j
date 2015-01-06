@@ -1,4 +1,4 @@
-[[query-plans]]
+[[query-performance]]
 = Query Performance =
 
 Cypher works very hard to execute queries as fast as possible.
@@ -16,7 +16,26 @@ This allows Cypher to re-use your queries instead of having to parse and build n
 
 Read <<execution-plans>> for more.
 
+== Planners ==
+
+The subsystem that is responsible for turning a query into an execution plan is in Neo4j called "the planner".
+Two different strategies are included in Neo4j:
+
+- Rule
+This planner has rules that are used to produce execution plans.
+The planner considers available indexes, but does not use statistical information to guide the query compilation.
+
+- Cost
+This planner uses the statistics service in Neo4j to assign cost to alternative plans and picks the cheapest one.
+In theory this should lead to superior execution plans.
+The cost planner is still under heavy development, and is still not capable of taking on all queries.
+
+By default, Neo4j 2.2 will use the cost planner for some queries, but not all.
+You can force it to use a specific planner by using the `query.planner.version` configuration setting, or by pre-pending your query with `PLANNER COST` or `PLANNER RULE`.
+Neo4j might still not use the planner you selected - not all queries are solvable by the cost planner at this point.
+
+You can see which planner was used by looking at the execution plan.
+
 [NOTE]
 When Cypher is building execution plans, it looks at the schema to see if it can find useful indexes.
 These index decisions are only valid until the schema changes, so adding or removing indexes leads to the execution plan cache being flushed.
-
