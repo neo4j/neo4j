@@ -279,24 +279,6 @@ public class ComponentVersion extends Version
       <build>
         <plugins>
           <plugin>
-            <groupId>org.neo4j.build.plugins</groupId>
-            <artifactId>license-maven-plugin</artifactId>
-            <!-- inserting licenses is better than checking for them -->
-            <executions>
-              <execution>
-                <id>check-licenses</id>
-                <phase>none</phase>
-              </execution>
-              <execution>
-                <id>insert-licenses</id>
-                <phase>initialize</phase>
-                <goals>
-                  <goal>format</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>findbugs-maven-plugin</artifactId>
             <configuration>

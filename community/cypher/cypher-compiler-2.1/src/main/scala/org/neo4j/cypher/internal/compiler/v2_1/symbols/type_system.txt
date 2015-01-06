@@ -1,0 +1,31 @@
+Cypher tries to be type safe within a query. That means that it tries to stop
+you from building nonsensical queries, e.g. a pattern where an identifier is
+used first as a pattern path and then a pattern node. MATCH n = n-->()
+
+To do this, it has a hierarchy of types, with Any as the root of it all.
+
+         /-----------/------Any----\---------\--------\------------\
+        /           /               \         \        \            \
+       /         Number             Map        \        \            \
+      /        /       \          /     \       \        \            \
+ CTString  CTInteger CTFloat   CTNode  CTRel  CTPath   CTBoolean  CTCollection<T>
+
+All expressions have a type. Some expressions type depend on other expressions types -
+e.g. LAST(x) will have type T, given that x has type Collection<T>.
+
+An expression can also have an expectation about inner expressions type, LENGTH(X)
+expects that X is an Collection<T>. These expectations are met by any subtype of the
+expected type - e.g. if the expectation is a Number, Float and Integer are fine, but
+not a String.
+
+An expression has dependencies on what identifiers exists in the symbol table,
+and their types. An example is always in place:
+
++`LENGTH(FILTER(n in nodes(p) WHERE n.prop = 'foo'))`+
+
+In this expression, LENGTH has an expectation on FILTER, and FILTER has one on NODES,
+and so one. But the dependency on identifiers on the symbol table is just one - it has
+to have an identifier named 'p', and it's type is expected to be a Collection<Path>.
+
+Collections can also be coerced into booleans - non-empty collections are true, and empty
+are false.
