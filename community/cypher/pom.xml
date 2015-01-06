@@ -54,7 +54,7 @@
       <plugin>
         <groupId>net.alchim31.maven</groupId>
         <artifactId>scala-maven-plugin</artifactId>
-        <version>3.1.6</version>
+        <version>3.2.0</version>
         <executions>
           <execution>
             <id>scala-compile</id>
@@ -174,7 +174,7 @@
         <plugin>
           <groupId>org.scalastyle</groupId>
           <artifactId>scalastyle-maven-plugin</artifactId>
-          <version>0.4.0</version>
+          <version>0.6.0</version>
           <configuration>
             <verbose>false</verbose>
             <failOnViolation>true</failOnViolation>

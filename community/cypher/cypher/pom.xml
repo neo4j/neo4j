@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>cypher-parent</artifactId>
@@ -16,7 +17,7 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
-	  <url>https://github.com/neo4j/neo4j/tree/master/community/cypher</url>
+    <url>https://github.com/neo4j/neo4j/tree/master/community/cypher</url>
   </scm>
 
   <licenses>
@@ -50,11 +51,13 @@
         <artifactId>scalastyle-maven-plugin</artifactId>
       </plugin>
       <plugin>
-	<groupId>org.apache.maven.plugins</groupId>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-	<configuration>
-	  <argLine>-XX:PermSize=128m -XX:MaxPermSize=128m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=target/test-data</argLine>
-	</configuration>
+        <configuration>
+          <argLine>-XX:PermSize=128m -XX:MaxPermSize=128m -XX:+HeapDumpOnOutOfMemoryError
+            -XX:HeapDumpPath=target/test-data
+          </argLine>
+        </configuration>
       </plugin>
     </plugins>
   </build>
@@ -166,7 +169,7 @@
         </exclusion>
         <exclusion>
           <groupId>org.parboiled</groupId>
-          <artifactId>parboiled-scala_2.11</artifactId>
+          <artifactId>parboiled-scala_2.10</artifactId>
         </exclusion>
         <exclusion>
           <groupId>net.sf.opencsv</groupId>
@@ -205,7 +208,7 @@
         </exclusion>
         <exclusion>
           <groupId>org.parboiled</groupId>
-          <artifactId>parboiled-scala_2.11</artifactId>
+          <artifactId>parboiled-scala_2.10</artifactId>
         </exclusion>
         <exclusion>
           <groupId>net.sf.opencsv</groupId>
@@ -238,7 +241,7 @@
           <groupId>org.scala-lang</groupId>
           <artifactId>scala-library</artifactId>
         </exclusion>
-	<exclusion>
+        <exclusion>
           <artifactId>scala-reflect</artifactId>
           <groupId>org.scala-lang</groupId>
         </exclusion>
@@ -250,10 +253,10 @@
           <groupId>net.sf.opencsv</groupId>
           <artifactId>opencsv</artifactId>
         </exclusion>
-	<exclusion>
+        <exclusion>
           <groupId>com.googlecode.concurrentlinkedhashmap</groupId>
           <artifactId>concurrentlinkedhashmap-lru</artifactId>
-	</exclusion>
+        </exclusion>
       </exclusions>
     </dependency>
 
@@ -294,14 +297,14 @@
       <artifactId>salat-core_2.11</artifactId>
       <version>1.9.8</version>
       <exclusions>
-          <exclusion>
-              <groupId>org.scala-lang</groupId>
-              <artifactId>scala-library</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.scalatest</groupId>
-            <artifactId>scalatest_2.10</artifactId>
-          </exclusion>
+        <exclusion>
+          <groupId>org.scala-lang</groupId>
+          <artifactId>scala-library</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.scalatest</groupId>
+          <artifactId>scalatest_2.10</artifactId>
+        </exclusion>
       </exclusions>
       <scope>test</scope>
     </dependency>
