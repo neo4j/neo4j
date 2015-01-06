@@ -87,9 +87,9 @@
 
     <dependency>
         <groupId>org.neo4j</groupId>
-        <artifactId>neo4j-cypher-commons</artifactId>
+      <artifactId> neo4j-cypher-commons-2.11-2.0</artifactId>
         <scope>provided</scope>
-        <version>2.0.4</version>
+        <version>${project.version}</version>
     </dependency>
 
   </dependencies>
