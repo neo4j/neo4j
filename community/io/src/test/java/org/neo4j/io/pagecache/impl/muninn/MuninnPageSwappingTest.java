@@ -19,13 +19,59 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
+import java.io.IOException;
+
 import org.neo4j.function.Factory;
 import org.neo4j.io.pagecache.Page;
+import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PageSwappingTest;
+import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
 
 public class MuninnPageSwappingTest extends PageSwappingTest
 {
+    private static final PageSwapper NULL_SWAPPER = new PageSwapper()
+    {
+        @Override
+        public int read( long filePageId, Page page ) throws IOException
+        {
+            return 0;
+        }
+
+        @Override
+        public int write( long filePageId, Page page ) throws IOException
+        {
+            return 0;
+        }
+
+        @Override
+        public void evicted( long pageId, Page page )
+        {
+        }
+
+        @Override
+        public String fileName()
+        {
+            return null;
+        }
+
+        @Override
+        public void close() throws IOException
+        {
+        }
+
+        @Override
+        public void force() throws IOException
+        {
+        }
+
+        @Override
+        public long getLastPageId() throws IOException
+        {
+            return 0;
+        }
+    };
+
     public MuninnPageSwappingTest( Factory<PageSwapperFactory> fixture )
     {
         super( fixture );
@@ -39,7 +85,12 @@ public class MuninnPageSwappingTest extends PageSwappingTest
         long stamp = page.writeLock();
         try
         {
-            page.initBuffer();
+            // We have to do this to initialise the native memory pointer
+            page.fault( NULL_SWAPPER, 0, PageCacheMonitor.NULL_PAGE_FAULT_EVENT );
+        }
+        catch ( IOException e )
+        {
+            throw new AssertionError( e );
         }
         finally
         {

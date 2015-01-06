@@ -19,6 +19,17 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
+/**
+ * This class has a finalizer. It's purpose is to free all the native memory
+ * pointers when we are done using them. This is implemented by having every
+ * page have a reference to this memory releaser, and register their pointers
+ * with it. When the pool shuts down, it drops all of its references to the
+ * pages, and when the PageCursor is done with a page, it too drops the
+ * reference. This way, when the cache is closed and all the cursors are
+ * closed, nothing will be left to keep the pages alive, and so this memory
+ * releaser will transitively also become garbage. Then the finalizer method
+ * will run, and free all the native memory.
+ */
 final class MemoryReleaser
 {
     private final long[] rawPointers;
@@ -43,6 +54,10 @@ final class MemoryReleaser
 
     public void registerPointer( int cachePageId, long pointer )
     {
+        // Note: this method is accessed concurrently by many threads as they
+        // fault on the cache pages for their first time. Luckily, the JMM
+        // forbids word-tearing, so access to adjacent elements of an array
+        // need no special synchronisation.
         rawPointers[cachePageId] = pointer;
     }
 }

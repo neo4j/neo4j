@@ -47,6 +47,7 @@ final class MuninnPage extends StampedLock implements Page
     // finalizable until all our pages are finalizable or collected.
     private final MemoryReleaser memoryReleaser;
 
+    // The pointer to our block of native memory.
     private long pointer;
 
     // Optimistically incremented; occasionally truncated to a max of 4.
@@ -401,15 +402,9 @@ final class MuninnPage extends StampedLock implements Page
             PageFaultEvent faultEvent ) throws IOException
     {
         assert isWriteLocked(): "Cannot fault page without write-lock";
-        if ( this.swapper != null || this.filePageId != PageCursor.UNBOUND_PAGE_ID )
-        {
-            String msg = String.format(
-                    "Cannot fault page {filePageId = %s, swapper = %s} into " +
-                            "cache page %s. Already bound to {filePageId = " +
-                            "%s, swapper = %s}.",
-                    filePageId, swapper, cachePageId, this.filePageId, this.swapper );
-            throw new IllegalStateException( msg );
-        }
+        // We won't leak the page if this assertion fails, because bound pages
+        // by their nature subject to eviction. See bellow.
+        assertNotAlreadyBound( swapper, filePageId );
 
         // Note: It is important that we assign the filePageId before we swap
         // the page in. If the swapping fails, the page will be considered
@@ -419,10 +414,38 @@ final class MuninnPage extends StampedLock implements Page
         // the file page, so any subsequent thread that finds the page in their
         // translation table will re-do the page fault.
         this.filePageId = filePageId; // Page now considered isLoaded()
+        initPointer();
         int bytesRead = swapper.read( filePageId, this );
         faultEvent.addBytesRead( bytesRead );
         faultEvent.setCachePageId( cachePageId );
         this.swapper = swapper; // Page now considered isBoundTo( swapper, filePageId )
+    }
+
+    private void assertNotAlreadyBound( PageSwapper swapper, long filePageId )
+    {
+        if ( this.swapper != null || this.filePageId != PageCursor.UNBOUND_PAGE_ID )
+        {
+            String msg = String.format(
+                    "Cannot fault page {filePageId = %s, swapper = %s} into " +
+                            "cache page %s. Already bound to {filePageId = " +
+                            "%s, swapper = %s}.",
+                    filePageId, swapper, cachePageId, this.filePageId, this.swapper );
+            throw new IllegalStateException( msg );
+        }
+    }
+
+    /**
+     * NOTE: This method MUST be called while holding the page write lock.
+     * Also be aware that malloc may throw an OutOfMemoryError, so be
+     * careful with the error handling.
+     */
+    private void initPointer()
+    {
+        if ( pointer == 0 )
+        {
+            pointer = UnsafeUtil.malloc( cachePageSize );
+            memoryReleaser.registerPointer( cachePageId, pointer );
+        }
     }
 
     /**
@@ -459,19 +482,6 @@ final class MuninnPage extends StampedLock implements Page
     public boolean isBoundTo( PageSwapper swapper, long filePageId )
     {
         return this.swapper == swapper && this.filePageId == filePageId;
-    }
-
-    /**
-     * NOTE: This method MUST be called while holding the page write lock.
-     */
-    public void initBuffer()
-    {
-        assert isWriteLocked(): "Cannot initBuffer without write-lock";
-        if ( pointer == 0 )
-        {
-            pointer = UnsafeUtil.malloc( cachePageSize );
-            memoryReleaser.registerPointer( cachePageId, pointer );
-        }
     }
 
     public PageSwapper getSwapper()

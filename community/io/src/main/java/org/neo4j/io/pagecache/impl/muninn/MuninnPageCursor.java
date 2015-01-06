@@ -148,7 +148,6 @@ abstract class MuninnPageCursor implements PageCursor
             // check before page.fault(), because that would otherwise reopen
             // the file channel.
             assertPagedFileStillMapped();
-            page.initBuffer();
             page.fault( swapper, filePageId, faultEvent );
         }
         catch ( Throwable throwable )
