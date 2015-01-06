@@ -196,8 +196,8 @@ public class ClusterManager
     private final File root;
     private final Map<String, String> commonConfig;
     private final Map<Integer, Map<String, String>> instanceConfig;
-    private final Map<String, ManagedCluster> clusterMap = new HashMap<String, ManagedCluster>();
-    private final Provider clustersProvider;
+    final Map<String, ManagedCluster> clusterMap = new HashMap<String, ManagedCluster>();
+    final Provider clustersProvider;
 
     public ClusterManager( Provider clustersProvider, File root, Map<String, String> commonConfig,
                            Map<Integer, Map<String, String>> instanceConfig )
@@ -431,7 +431,21 @@ public class ClusterManager
             return new StartNetworkAgainKit( db, stoppedServices );
         }
 
-        private void startMember( InstanceId serverId ) throws URISyntaxException
+        void startMember( InstanceId serverId ) throws URISyntaxException
+        {
+            Clusters.Member member = spec.getMembers().get( serverId.toIntegerIndex() - 1 );
+            File parent = new File( root, name );
+            if ( member.isFullHaMember() )
+            {
+                startMember( serverId, new File( parent, "server" + serverId ).getAbsolutePath() );
+            }
+            else
+            {
+                startMember( serverId, new File( parent, "arbiter" + serverId ).getAbsolutePath() );
+            }
+        }
+
+        void startMember( InstanceId serverId, String path ) throws URISyntaxException
         {
             Clusters.Member member = spec.getMembers().get( serverId.toIntegerIndex() - 1 );
             StringBuilder initialHosts = new StringBuilder( spec.getMembers().get( 0 ).getHost() );
@@ -446,8 +460,7 @@ public class ClusterManager
                 int clusterPort = clusterUri.getPort();
                 int haPort = clusterUri.getPort() + 3000;
                 GraphDatabaseBuilder graphDatabaseBuilder = new HighlyAvailableGraphDatabaseFactory()
-                        .newHighlyAvailableDatabaseBuilder( new File( parent,
-                                "server" + serverId ).getAbsolutePath() ).
+                        .newHighlyAvailableDatabaseBuilder( path ).
                                 setConfig( ClusterSettings.cluster_name, name ).
                                 setConfig( ClusterSettings.initial_hosts, initialHosts.toString() ).
                                 setConfig( ClusterSettings.server_id, serverId + "" ).
@@ -483,7 +496,7 @@ public class ClusterManager
                         ClusterSettings.initial_hosts.name(), initialHosts.toString(),
                         ClusterSettings.server_id.name(), serverId + "",
                         ClusterSettings.cluster_server.name(), "0.0.0.0:"+clusterUri.getPort(),
-                        GraphDatabaseSettings.store_dir.name(), new File( parent, "arbiter" + serverId ).getAbsolutePath() );
+                        GraphDatabaseSettings.store_dir.name(), path );
                 Config config1 = new Config( config );
                 Logging clientLogging =life.add( new LogbackService( config1, new LoggerContext()  ) );
                 ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();

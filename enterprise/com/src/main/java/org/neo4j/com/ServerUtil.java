@@ -495,7 +495,24 @@ public class ServerUtil
                 if ( visitedDataSources.add( tx.first() ) )
                 {
                     dataSource.setLastCommittedTxId( tx.second() - 1 );
+                    maintainLastCommittedTxIdInLog( dataSource );
                 }
+            }
+
+            private void maintainLastCommittedTxIdInLog( XaDataSource dataSource )
+            {
+                long version = dataSource.getCurrentLogVersion();
+                try
+                {
+                    dataSource.rotateLogicalLog();
+                }
+                catch ( IOException e )
+                {
+                    throw new RuntimeException(
+                            "Fails to update last committed tx id in logical log for XA data source "
+                                    + dataSource.getName(), e );
+                }
+                dataSource.deleteLogicalLog( version );
             }
 
             @Override
