@@ -22,12 +22,16 @@ package org.neo4j.kernel.impl.transaction.log;
 public class ControlledParkStrategy implements ParkStrategy
 {
     private volatile boolean idle;
+    private volatile boolean released;
 
     @Override
     public void park( Thread thread )
     {
-        idle = true;
-        await( false );
+        if ( !released )
+        {
+            idle = true;
+            await( false );
+        }
     }
 
     @Override
@@ -39,6 +43,12 @@ public class ControlledParkStrategy implements ParkStrategy
     public void awaitIdle()
     {
         await( true );
+    }
+
+    public void releaseIndefinitely()
+    {
+        released = true;
+        idle = false;
     }
 
     private void await( boolean idle )

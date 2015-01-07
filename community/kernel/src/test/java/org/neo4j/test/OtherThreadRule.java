@@ -33,17 +33,29 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class OtherThreadRule<STATE> implements TestRule
 {
+    private final String name;
     private final long timeout;
     private final TimeUnit unit;
     private volatile OtherThreadExecutor<STATE> executor;
 
     public OtherThreadRule()
     {
-        this( 10, SECONDS );
+        this( null );
+    }
+
+    public OtherThreadRule( String name )
+    {
+        this( name, 10, SECONDS );
     }
 
     public OtherThreadRule( long timeout, TimeUnit unit )
     {
+        this( null, timeout, unit );
+    }
+
+    public OtherThreadRule( String name, long timeout, TimeUnit unit )
+    {
+        this.name = name;
         this.timeout = timeout;
         this.unit = unit;
     }
@@ -98,7 +110,7 @@ public class OtherThreadRule<STATE> implements TestRule
             }
         };
     }
-    
+
     public OtherThreadExecutor<STATE> get()
     {
         return executor;
@@ -130,7 +142,10 @@ public class OtherThreadRule<STATE> implements TestRule
             @Override
             public void evaluate() throws Throwable
             {
-                executor = new OtherThreadExecutor<>( description.getDisplayName(), timeout, unit, initialState() );
+                String threadName = name != null
+                        ? name + "-" + description.getDisplayName()
+                        : description.getDisplayName();
+                executor = new OtherThreadExecutor<>( threadName, timeout, unit, initialState() );
                 try
                 {
                     base.evaluate();

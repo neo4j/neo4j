@@ -174,15 +174,15 @@ public class BatchingPhysicalTransactionAppender extends AbstractPhysicalTransac
     public void force() throws IOException
     {
         // Empty buffer into channel. We want to synchronize with appenders somehow so that they
-        // don't append while we're doing that. The natural way is to synchronize on logFile,
-        // which all other code around transaction appending does.
-        synchronized ( logFile )
+        // don't append while we're doing that. The way rotation is coordinated we can't synchronize
+        // on logFile because it would cause deadlocks. Synchronizing on channel assumes that appenders
+        // also synchronize on channel.
+        synchronized ( channel )
         {
             channel.emptyBufferIntoChannelAndClearIt();
         }
 
-        // Now force the channel
-        forceChannel();
+        channel.force();
     }
 
     @Override

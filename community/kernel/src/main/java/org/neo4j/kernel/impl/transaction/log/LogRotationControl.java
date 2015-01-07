@@ -24,20 +24,19 @@ import java.util.concurrent.locks.LockSupport;
 import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.store.NeoStore;
 
 public class LogRotationControl
 {
-    private final NeoStore neoStore;
+    private final TransactionIdStore transactionIdStore;
     private final IndexingService indexingService;
     private final LabelScanStore labelScanStore;
     private final Iterable<IndexImplementation> indexProviders;
 
-    public LogRotationControl( NeoStore neoStore, IndexingService indexingService,
+    public LogRotationControl( TransactionIdStore transactionIdStore, IndexingService indexingService,
             LabelScanStore labelScanStore,
             Iterable<IndexImplementation> indexProviders )
     {
-        this.neoStore = neoStore;
+        this.transactionIdStore = transactionIdStore;
         this.indexingService = indexingService;
         this.labelScanStore = labelScanStore;
         this.indexProviders = indexProviders;
@@ -45,7 +44,7 @@ public class LogRotationControl
 
     public void awaitAllTransactionsClosed()
     {
-        while ( !neoStore.closedTransactionIdIsOnParWithCommittedTransactionId() )
+        while ( !transactionIdStore.closedTransactionIdIsOnParWithCommittedTransactionId() )
         {
             LockSupport.parkNanos( 1_000_000 ); // 1 ms
         }
@@ -59,6 +58,6 @@ public class LogRotationControl
         {
             index.force();
         }
-        neoStore.flush();
+        transactionIdStore.flush();
     }
 }

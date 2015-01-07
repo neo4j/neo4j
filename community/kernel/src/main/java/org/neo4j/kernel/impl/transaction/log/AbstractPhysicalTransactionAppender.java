@@ -81,7 +81,10 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
         // log rotation, which will wait for all transactions closed or fail on kernel panic.
         try
         {
-            transactionLogWriter.append( transaction, transactionId );
+            synchronized ( channel )
+            {
+                transactionLogWriter.append( transaction, transactionId );
+            }
             long transactionChecksum = checksum( transaction.additionalHeader(), transaction.getMasterId(),
                     transaction.getAuthorId() );
             transactionMetadataCache.cacheTransactionMetadata( transactionId, logPosition, transaction.getMasterId(),
