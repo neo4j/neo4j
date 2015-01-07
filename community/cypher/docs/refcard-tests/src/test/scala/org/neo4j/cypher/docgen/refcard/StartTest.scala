@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionRe
 class StartTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT LINK A", "A LINK B", "B LINK C", "C LINK ROOT")
   val title = "START"
-  val css = "col carddeprecation c2-1 c3-2 c4-3 c5-4 c6-5"
+  val css = "col carddeprecation c2-1 c3-2 c4-4 c5-4 c6-6"
   override def indexProps: List[String] = List("value", "name", "key")
 
   override def assert(name: String, result: InternalExecutionResult) {
@@ -75,34 +75,6 @@ class StartTest extends RefcardTest with QueryStatisticsTestSupport {
     "C" -> Map("value" -> 30))
 
   def text = """
-###assertion=all-nodes
-//
-
-MATCH n
-
-RETURN n###
-
-Start from all nodes.
-
-### assertion=multiple-nodes-by-id parameters=multiple
-//
-
-MATCH n WHERE id(n) IN {ids}
-
-RETURN n###
-
-Start from one or more nodes specified by id.
-
-### assertion=multiple-start-nodes-by-id parameters=ids
-//
-
-MATCH n, m
-WHERE id(n) = {id1} AND id(m) = {id2}
-
-RETURN n,m###
-
-Multiple starting points.
-
 ### assertion=index-match parameters=index-match
 //
 
@@ -110,8 +82,9 @@ START n=node:nodeIndexName(key={value})
 
 RETURN n###
 
-Query the index with an exact query.
+Query the index named `nodeIndexName` with an exact query.
 Use `node_auto_index` for the automatic index.
+Note that other uses of `START` have been removed as of Cypher 2.2.
 """
 }
 

@@ -174,7 +174,6 @@ See the performance tips.
 
 ###assertion=create parameters=aname
 MATCH n WHERE id(n) = %A%
-
 CREATE UNIQUE
 
 (n)-[:KNOWS]->(m {property: {value}})

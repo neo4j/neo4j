@@ -11,9 +11,9 @@ Key principles and capabilities of Cypher are as follows:
 * Cypher manages indexes and constraints.
 
 ++++
-<div class="paragraph"><p>You can try Cypher snippets live in the Neo4j Console at 
+<div class="paragraph"><p>You can try Cypher snippets live in the Neo4j Console at
 <a href="http://console.neo4j.org" target="_blank">console.neo4j.org</a>
-or read the full Cypher documentation in the 
+or read the full Cypher documentation in the
 <a href="../" target="_blank">Neo4j Manual</a>.
 For live graph models using Cypher check out <a href="http://gist.neo4j.org" target="_blank">GraphGist</a>.</p></div>
 ++++
@@ -24,7 +24,7 @@ Cypher also supports maps and collections.
 
 == Syntax ==
 
-.Read Query Structure 
+.Read Query Structure
 ["refcard", cardcss="read c2-2 c3-2 c4-2 c5-2"]
 ----
 [MATCH WHERE]
@@ -45,7 +45,7 @@ include::{sources}/with.asciidoc[]
 
 include::{sources}/union.asciidoc[]
 
-.Write-Only Query Structure 
+.Write-Only Query Structure
 ["refcard", cardcss="write c2-2 c4-4 c5-5 c6-3"]
 ----
 (CREATE [UNIQUE] | MERGE)*
@@ -53,7 +53,7 @@ include::{sources}/union.asciidoc[]
 [RETURN [ORDER BY] [SKIP] [LIMIT]]
 ----
 
-.Read-Write Query Structure 
+.Read-Write Query Structure
 ["refcard", cardcss="write c2-2 c4-4 c5-5 c6-3"]
 ----
 [MATCH WHERE]
@@ -106,10 +106,10 @@ include::{sources}/import.asciidoc[]
 [options="header", cols="a"]
 |===
 | NULL
-| 
+|
 * +NULL+ is used to represent missing/undefined values.
 * +NULL+ is not equal to +NULL+.
-  Not knowing two values does not imply that they are the same value. 
+  Not knowing two values does not imply that they are the same value.
   So the expression `NULL = NULL` yields +NULL+ and not +TRUE+.
   To check if an expressoin is +NULL+, use +IS NULL+.
 * Arithmetic expressions, comparisons and function calls (except +coalesce+) will return +NULL+ if any argument is +NULL+.
@@ -149,53 +149,27 @@ include::{sources}/aggregation.asciidoc[]
 
 include::{sources}/case.asciidoc[]
 
-++++
-<div class="col carddeprecation c2-2 c3-3 c4-4 c5-3 c6-6"><div class="blk">
-++++
-
-[options="header", cols="a"]
-|===
-|Upgrading
-|
-With Neo4j 2.0 several Cypher features in version 1.9 have been deprecated or removed.
-
-* +START+ is optional.
-* +MERGE+ will take +CREATE UNIQUE+'s role for the unique creation of patterns.
-  Note that they are not the same, though.
-* Optional relationships are handled by +OPTIONAL MATCH+, not question marks.
-* Non-existing properties return +NULL+, +n.prop?+ and +n.prop!+ have been removed.
-* The separator for collection functions changed from +:+ to +\|+.
-* Paths are no longer collections, use +nodes(path)+ or +rels(path)+.
-* Parentheses around nodes in patterns are no longer optional.
-* +CREATE a=\{property:’value’\}+ has been removed.
-* Use +REMOVE+ to remove properties.
-* Parameters for index-keys and nodes in patterns are no longer allowed.
-* To still use the older syntax, prepend your Cypher statement with `CYPHER 1.9`.
-|===
-
-++++
-</div></div>
-++++
-
 include::{sources}/start.asciidoc[]
 
 include::{sources}/create-unique.asciidoc[]
 
 
 ++++
-<div class="col cardperformance c3-1 c5-1 c6-6"><div class="blk">
+<div class="col cardperformance c2-2 c3-3 c5-3 c6-6"><div class="blk">
 ++++
 
 [options="header", cols="a"]
 |===
 |Performance
-| 
+|
 * Use parameters instead of literals when possible.
   This allows Cypher to re-use your queries instead of having to parse and build new execution plans.
 * Always set an upper limit for your variable length patterns.
   It's easy to have a query go wild and touch all nodes in a graph by mistake.
 * Return only the data you need.
   Avoid returning whole nodes and relationships -- instead, pick the data you need and return only that.
+* Use `PROFILE` / `EXPLAIN` to analyze the performance of your queries.
+  See link:../query-tuning.html[Query Tuning] for more information.
 |===
 
 ++++
