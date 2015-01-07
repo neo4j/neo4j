@@ -107,21 +107,16 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
         try
         {
             Object value = property.value();
-            IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, property.propertyKeyId() );
+            int propertyKeyId = property.propertyKeyId();
+            IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
             assertIndexOnline( state, indexDescriptor );
             state.locks().acquireExclusive( INDEX_ENTRY,
-                    indexEntryResourceId( labelId, property.propertyKeyId(), property.valueAsString() ) );
+                    indexEntryResourceId( labelId, propertyKeyId, property.valueAsString() ) );
 
-            PrimitiveLongIterator existingNodes = entityReadOperations.nodesGetFromIndexLookup(
-                    state, indexDescriptor, value );
-            while ( existingNodes.hasNext() )
+            long existing = entityReadOperations.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value );
+            if ( existing != NO_SUCH_NODE && existing != modifiedNode )
             {
-                long existingNode = existingNodes.next();
-                if ( existingNode != modifiedNode )
-                {
-                    throw new UniqueConstraintViolationKernelException( labelId, property.propertyKeyId(), value,
-                            existingNode );
-                }
+                throw new UniqueConstraintViolationKernelException( labelId, propertyKeyId, value, existing );
             }
         }
         catch ( IndexNotFoundKernelException | IndexBrokenKernelException e )
