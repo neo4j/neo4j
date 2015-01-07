@@ -1,7 +1,9 @@
-[[query-plans]]
+[[query-performance]]
 = Query Performance =
 
-Cypher works very hard to execute queries as fast as possible.
+== Optimizing your Cypher queries ==
+
+Neo4j works very hard to execute queries as fast as possible.
 
 However, when optimizing for maximum query execution performance, it may be helpful to rephrase queries using knowledge about the domain and the application.
 
@@ -16,7 +18,26 @@ This allows Cypher to re-use your queries instead of having to parse and build n
 
 Read <<execution-plans>> for more.
 
-[NOTE]
-When Cypher is building execution plans, it looks at the schema to see if it can find useful indexes.
-These index decisions are only valid until the schema changes, so adding or removing indexes leads to the execution plan cache being flushed.
+== How are queries executed? ==
 
+Each query is turned into an execution plan by something called the _execution planner_.
+The execution plan tells Neo4j which operations to perform when executing the query.
+Two different execution planning strategies are included in Neo4j:
+
+Rule::
+This planner has rules that are used to produce execution plans.
+The planner considers available indexes, but does not use statistical information to guide the query compilation.
+
+Cost::
+This planner uses the statistics service in Neo4j to assign cost to alternative plans and picks the cheapest one.
+While this should lead to superior execution plans in most cases, it is still under development.
+
+By default, Neo4j 2.2 will use the cost planner for some queries, but not all.
+You can force it to use a specific planner by using the `query.planner.version` configuration setting (see <<config_query.planner.version>>), or by prepending your query with `PLANNER COST` or `PLANNER RULE`.
+Neo4j might still not use the planner you selected -- not all queries are solvable by the cost planner at this point.
+
+You can see which planner was used by looking at the execution plan.
+
+[NOTE]
+When Cypher is building execution plans, it looks at the schema to see if it can find indexes it can use.
+These index decisions are only valid until the schema changes, so adding or removing indexes leads to the execution plan cache being flushed.
