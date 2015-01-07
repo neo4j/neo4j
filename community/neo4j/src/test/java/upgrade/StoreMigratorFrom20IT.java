@@ -19,13 +19,13 @@
  */
 package upgrade;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -53,14 +53,12 @@ import org.neo4j.test.ha.ClusterManager;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.store.NeoStore.versionLongToString;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.find20FormatStoreDirectory;
 import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UPGRADE;
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
-
 import static upgrade.StoreMigratorTestUtil.buildClusterWithMasterDirIn;
 
 public class StoreMigratorFrom20IT
@@ -91,7 +89,7 @@ public class StoreMigratorFrom20IT
             database.shutdown();
         }
 
-        try ( NeoStore neoStore = storeFactory.newNeoStore( true, false ) )
+        try ( NeoStore neoStore = storeFactory.newNeoStore( true ) )
         {
             verifyNeoStore( neoStore );
         }

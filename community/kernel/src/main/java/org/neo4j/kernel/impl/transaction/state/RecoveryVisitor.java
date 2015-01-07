@@ -19,10 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import java.io.Closeable;
 import java.io.IOException;
 
-import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.helpers.collection.CloseableVisitor;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.locking.LockGroup;
@@ -30,7 +29,7 @@ import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 
-public class RecoveryVisitor implements Visitor<CommittedTransactionRepresentation,IOException>, Closeable
+public class RecoveryVisitor implements CloseableVisitor<CommittedTransactionRepresentation,IOException>
 {
     public interface Monitor
     {

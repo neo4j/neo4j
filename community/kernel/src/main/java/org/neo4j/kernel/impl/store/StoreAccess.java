@@ -115,7 +115,7 @@ public class StoreAccess
     private StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, String path, Config config, Monitors monitors )
     {
         this( new StoreFactory( config, new DefaultIdGeneratorFactory(), pageCache,
-                fileSystem, StringLogger.DEV_NULL, monitors ).newNeoStore( false, false ) );
+                fileSystem, StringLogger.DEV_NULL, monitors ).newNeoStore( false ) );
         this.closeable = true;
     }
 

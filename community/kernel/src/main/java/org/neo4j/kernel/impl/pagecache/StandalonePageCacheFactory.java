@@ -46,8 +46,7 @@ public final class StandalonePageCacheFactory
         // Not constructable.
     }
 
-    public static StandalonePageCache createPageCache(
-            FileSystemAbstraction fileSystem, String pageCacheName )
+    public static StandalonePageCache createPageCache( FileSystemAbstraction fileSystem, String pageCacheName )
     {
         return createPageCache( fileSystem, new Config(), pageCacheName );
     }

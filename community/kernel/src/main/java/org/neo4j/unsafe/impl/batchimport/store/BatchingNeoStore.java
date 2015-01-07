@@ -127,7 +127,7 @@ public class BatchingNeoStore implements AutoCloseable
     {
         StoreFactory storeFactory = new StoreFactory( neo4jConfig, new BatchingIdGeneratorFactory(),
                 pageCache, fileSystem, logger, monitors );
-        return storeFactory.newNeoStore( true, false );
+        return storeFactory.newNeoStore( true );
     }
 
     public NodeStore getNodeStore()

@@ -83,7 +83,7 @@ public class IdGeneratorRebuildFailureEmulationTest
         NeoStore neostore = null;
         try
         {
-            neostore = factory.newNeoStore( false, false );
+            neostore = factory.newNeoStore( false );
             // emulate a failure during rebuild:
             emulateFailureOnRebuildOf( neostore );
         }

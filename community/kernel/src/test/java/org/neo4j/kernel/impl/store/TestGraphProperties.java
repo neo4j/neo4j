@@ -193,7 +193,7 @@ public class TestGraphProperties
                 fs.get(),
                 StringLogger.DEV_NULL,
                 monitors );
-        NeoStore neoStore = storeFactory.newNeoStore( false, false );
+        NeoStore neoStore = storeFactory.newNeoStore( false );
         long prop = neoStore.getGraphNextProp();
         assertTrue( prop != 0 );
         neoStore.close();

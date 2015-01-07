@@ -352,17 +352,4 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
     {
         return new File( base.getParentFile(), base.getName() + version );
     }
-
-    private IOException safelyCloseTheStore( CountsStore store )
-    {
-        try
-        {
-            store.close();
-            return null;
-        }
-        catch ( IOException ex )
-        {
-            return ex;
-        }
-    }
 }
