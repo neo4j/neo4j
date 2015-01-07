@@ -83,11 +83,16 @@
       <version>2.0.4</version>
     </dependency>
 
+    <dependency> <groupId>org.scala-lang.modules</groupId>
+      <artifactId>scala-parser-combinators_2.11</artifactId>
+      <version>1.0.1</version>
+    </dependency>
+
     <!-- neo4j-cypher -->
 
     <dependency>
         <groupId>org.neo4j</groupId>
-      <artifactId> neo4j-cypher-commons-2.11-2.0</artifactId>
+      <artifactId> neo4j-cypher-commons-backport-2.0</artifactId>
         <scope>provided</scope>
         <version>${project.version}</version>
     </dependency>

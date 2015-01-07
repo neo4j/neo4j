@@ -101,13 +101,13 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-commons-2.11-2.1</artifactId>
+      <artifactId>neo4j-cypher-commons-backport-2.1</artifactId>
       <scope>provided</scope>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-commons-2.11-2.1</artifactId>
+      <artifactId>neo4j-cypher-commons-backport-2.1</artifactId>
       <scope>provided</scope>
       <type>test-jar</type>
       <version>${project.version}</version>

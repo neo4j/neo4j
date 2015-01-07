@@ -12,7 +12,7 @@
   <artifactId>neo4j-cypher-commons-backport-2.1</artifactId>
   <packaging>jar</packaging>
   <version>2.2-SNAPSHOT</version>
-  <name>Neo4j - Cypher Commons</name>
+  <name>Neo4j - Cypher Commons Backport 2.1</name>
   <description>Common code shared between all Neo4j Cypher modules</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
@@ -69,6 +69,11 @@
       <artifactId>neo4j-kernel</artifactId>
       <version>2.1.6</version>
       <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-reflect</artifactId>
       <scope>test</scope>
     </dependency>
 

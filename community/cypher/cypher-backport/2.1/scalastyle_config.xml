@@ -1,0 +1,16 @@
+<scalastyle commentFilter="enabled">
+  <name>Configuration</name>
+  <check class="org.scalastyle.file.FileTabChecker" enabled="true" level="error"/>
+  <check class="org.scalastyle.scalariform.EmptyClassChecker" enabled="true" level="error"/>
+  <check class="org.scalastyle.file.WhitespaceEndOfLineChecker" enabled="true" level="error"/>
+  <check class="org.scalastyle.scalariform.TokenChecker" enabled="false" level="error">
+    <parameters>
+      <parameter name="regex"><![CDATA[println]]></parameter>
+    </parameters>
+  </check>
+  <check class="org.scalastyle.scalariform.IllegalImportsChecker" enabled="true" level="error">
+    <parameters>
+      <parameter name="illegalImports">scala.Some,scala.Int,scala.Long,scala.Double,org.junit.Test</parameter>
+    </parameters>
+  </check>
+</scalastyle>

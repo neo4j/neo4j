@@ -39,4 +39,5 @@ BSD - Scala License
 
 BSD License
   Scala Compiler
+  scala-parser-combinators
 

@@ -32,3 +32,6 @@ Apache Software License, Version 2.0
 BSD - Scala License
   Scala Library
 
+BSD License
+  scala-parser-combinators
+
