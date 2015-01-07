@@ -79,12 +79,11 @@ public class LabelRecoveryTest
         database = new TestGraphDatabaseFactory().setFileSystem( snapshot ).newImpermanentDatabase();
 
         // THEN
-        try ( Transaction tx = database.beginTx() )
+        try ( Transaction ignored = database.beginTx() )
         {
             node = database.getNodeById( node.getId() );
             for ( Label label : labels )
             {
-                System.out.println(label.name());
                 assertTrue( node.hasLabel( label ) );
             }
         }
