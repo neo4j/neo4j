@@ -22,12 +22,11 @@ package org.neo4j.cypher.internal.compiler.v2_2.planDescription
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.graphdb.Direction
 
-
 object PlanDescriptionArgumentSerializer {
   private val SEPARATOR = ", "
   private val UNNAMED_PATTERN = """  (UNNAMED|FRESHID|AGGREGATION)(\d+)""".r
   private val DEDUP_PATTERN =   """  (.+)@\d+""".r
-  def serialize(arg: Argument): String = {
+  def serialize(arg: Argument): AnyRef = {
 
     arg match {
       case ColumnsLeft(columns) => s"keep columns ${columns.mkString(SEPARATOR)}"
@@ -38,10 +37,10 @@ object PlanDescriptionArgumentSerializer {
       case LabelName(label) => s":$label"
       case KeyNames(keys) => keys.mkString(SEPARATOR)
       case KeyExpressions(expressions) => expressions.mkString(SEPARATOR)
-      case DbHits(value) => value.toString
+      case DbHits(value) => Long.box(value)
       case _: EntityByIdRhs => arg.toString
-      case Rows(value) => value.toString
-      case EstimatedRows(value) => value.toString
+      case Rows(value) => Long.box(value)
+      case EstimatedRows(value) => Long.box(value)
       case Version(version) => version
       case Planner(planner) => planner
       case ExpandExpression(from, rel, typeNames, to, dir: Direction, varLength) =>
