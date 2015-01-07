@@ -24,6 +24,7 @@ import static org.neo4j.cluster.com.message.Message.FROM;
 import static org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE;
 
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatState;
+import org.neo4j.helpers.Strings;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 
@@ -35,7 +36,7 @@ public class StateTransitionLogger
 {
     private final Logging logging;
 
-    /** Throttle so don't flood occurences of the same message over and over */
+    /** Throttle so don't flood occurrences of the same message over and over */
     private String lastLogMessage = "";
 
     public StateTransitionLogger( Logging logging )
@@ -56,30 +57,29 @@ public class StateTransitionLogger
             }
 
             // The bulk of the message
-            StringBuilder line = new StringBuilder( transition.getOldState().getClass().getSuperclass().getSimpleName
-                    () +
-                    ": " + transition );
+            String state = transition.getOldState().getClass().getSuperclass().getSimpleName();
+            StringBuilder line = new StringBuilder( state ).append( ": " ).append( transition );
 
             // Who was this message from?
             if ( transition.getMessage().hasHeader( FROM ) )
             {
-                line.append( " from:" + transition.getMessage().getHeader( FROM ) );
+                line.append( " from:" ).append( transition.getMessage().getHeader( FROM ) );
             }
 
             if ( transition.getMessage().hasHeader( INSTANCE ) )
             {
-                line.append( " instance:" + transition.getMessage().getHeader( INSTANCE ) );
+                line.append( " instance:" ).append( transition.getMessage().getHeader( INSTANCE ) );
             }
 
             if ( transition.getMessage().hasHeader( CONVERSATION_ID ) )
             {
-                line.append( " conversation-id:" + transition.getMessage().getHeader( CONVERSATION_ID ) );
+                line.append( " conversation-id:" ).append( transition.getMessage().getHeader( CONVERSATION_ID ) );
             }
 
             Object payload = transition.getMessage().getPayload();
             if ( payload != null )
             {
-                line.append( " payload:" + payload );
+                line.append( " payload:" ).append( Strings.prettyPrint( payload ) );
             }
 
             // Throttle
