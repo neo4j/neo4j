@@ -67,6 +67,14 @@ class CypherParserTest extends CypherFunSuite {
         returns(ReturnItem(Literal("a\tp\'a\"b"), "\'a\\tp\\\'a\\\"b\'")))
   }
 
+  test("should return string literal containing UTF-16 escape sequence") {
+    expectQuery(
+      "start s = node(1) return \"a\\uE12345\" AS x",
+      Query.
+        start(NodeById("s", 1)).
+        returns(ReturnItem(Literal("a" + "\uE123" + "45"), "x")))
+  }
+
   test("allTheNodes") {
     expectQuery(
       "start s = NODE(*) return s",
