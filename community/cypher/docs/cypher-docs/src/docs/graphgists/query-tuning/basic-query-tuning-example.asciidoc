@@ -1,0 +1,122 @@
+= Basic query tuning example
+
+We'll start with a basic example to help you get the hang of profiling queries.
+The following examples will use a movies data set.
+
+Let's start by importing the data:
+
+//file:movies.csv
+//file:actors.csv
+//file:directors.csv
+
+//setup
+[source,cypher]
+----
+LOAD CSV WITH HEADERS FROM "movies.csv" AS line
+MERGE (m:Movie {title:line.title})
+ON CREATE SET m.released = toInt(line.released), m.tagline = line.tagline
+----
+
+//setup
+[source,cypher]
+----
+LOAD CSV WITH HEADERS FROM 'actors.csv' AS line
+MATCH (m:Movie {title:line.title})
+MERGE (p:Person {name:line.name})
+ON CREATE SET p.born = toInt(line.born)
+MERGE (p)-[:ACTED_IN {roles:split(line.roles,";")}]->(m)
+----
+
+//setup
+[source,cypher]
+----
+LOAD CSV WITH HEADERS FROM 'directors.csv' AS line
+MATCH (m:Movie {title:line.title})
+MERGE (p:Person {name:line.name})
+ON CREATE SET p.born = toInt(line.born)
+MERGE (p)-[:DIRECTED]->(m)
+----
+
+Let's say we want to write a query to find Tom Hanks.
+The naive way of doing this would be to write the following:
+
+[source,cypher]
+----
+MATCH (p {name:"Tom Hanks"})
+RETURN p
+----
+
+This query will find the Tom Hanks node but as the number of nodes in the database increase it will become slower and slower.
+We can profile the query to find out why that is.
+
+You can learn more about the options for profiling queries in <<how-do-i-profile-a-query>> but in this case we're going to prefix our query with `PROFILE`:
+
+[source,cypher]
+----
+PROFILE MATCH (p {name:"Tom Hanks"})
+RETURN p
+----
+
+//profile
+
+The first thing to keep in mind when reading execution plans is that you need to read from the bottom up.
+
+In that vein, starting from the last row, the first thing we notice is that the value in the `Rows` column seems high given there is only one node with the name property `Tom Hanks` in the database.
+If we look across to the `Operator` column we'll see that <<query-plan-all-nodes-scan, AllNodesScan>> has been used which means that the query planner scanned through all the nodes in the database.
+
+Moving up to the previous row we see the <<query-plan-filter, Filter>> operator which will check the `name` property on each of the nodes passed through by `AllNodesScan`.
+
+This seems like an inefficient way of finding `Tom Hanks` given that we are looking at many nodes that aren't even people and therefore aren't what we're looking for.
+
+The solution to this problem is that whenever we're looking for a node we should specify a label to help the query planner narrow down the search space.
+For this query we'd need to add a `Person` label.
+
+[source,cypher]
+----
+MATCH (p:Person {name:"Tom Hanks"})
+RETURN p
+----
+
+This query will be faster than the first one but as the number of people in our database increase we again notice that the query slows down.
+
+Again we can profile the query to work out why:
+
+[source,cypher]
+----
+PROFILE MATCH (p:Person {name:"Tom Hanks"})
+RETURN p
+----
+
+//profile
+
+This time the `Rows` value on the last row has reduced so we're not scanning some nodes that we were before which is a good start.
+The <<query-plan-node-by-label-scan, NodeByLabelScan>> operator indicates that we achieved this by first doing a linear scan of all the `Person` nodes in the database.
+
+Once we've done that we again scan through all those nodes using the `Filter` operator, comparing the name property of each one.
+
+This might be acceptable in some cases but if we're going to be looking up people by name frequently then we'll see better performance if we create an index on the `name` property for the `Person` label:
+
+[source,cypher]
+----
+CREATE INDEX ON :Person(name)
+----
+
+Now if we run the query again it will run more quickly:
+
+[source,cypher]
+----
+MATCH (p:Person {name:"Tom Hanks"})
+RETURN p
+----
+
+Let's profile the query to see why that is:
+
+[source,cypher]
+----
+PROFILE MATCH (p:Person {name:"Tom Hanks"})
+RETURN p
+----
+
+//profile
+
+Our execution plan is down to a single row and uses the <<query-plan-node-index-seek, Node Index Seek>> operator which does a schema index lookup (see <<query-schema-index>>) to find the appropriate node.
