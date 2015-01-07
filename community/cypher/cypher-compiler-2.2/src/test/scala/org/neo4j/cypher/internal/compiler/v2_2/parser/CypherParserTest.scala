@@ -335,13 +335,16 @@ class CypherParserTest extends CypherFunSuite {
 
   test("shouldHandleNegativeLiteralsAsExpected") {
     expectQuery(
-      "start a = NODE(1) where -35 = a.age AND a.age > -1.2 return a",
+      "start a = NODE(1) where -35 = a.age AND (a.age > -1.2 AND a.weight=-50) return a",
       Query.
         start(NodeById("a", 1)).
         where(And(
-        Equals(Literal(-35), Property(Identifier("a"), PropertyKey("age"))),
-        GreaterThan(Property(Identifier("a"), PropertyKey("age")), Literal(-1.2)))
-      ).
+          Equals(Literal(-35), Property(Identifier("a"), PropertyKey("age"))),
+          And(
+            GreaterThan(Property(Identifier("a"), PropertyKey("age")), Literal(-1.2)),
+            Equals(Property(Identifier("a"), PropertyKey("weight")), Literal(-50))
+          )
+        )).
         returns(ReturnItem(Identifier("a"), "a")))
   }
 
@@ -2969,9 +2972,10 @@ class CypherParserTest extends CypherFunSuite {
 
   test("test unary plus minus") {
     expectQuery(
-      "MATCH n RETURN -n.prop, +n.foo, 1 + -n.bar",
+      "MATCH n WHERE n.prop=+2 RETURN -n.prop, +n.foo, 1 + -n.bar",
       Query.
         matches(SingleNode("n")).
+        where(Equals(Property(Identifier("n"), PropertyKey("prop")), Literal(2))).
         returns(ReturnItem(Subtract(Literal(0), Property(Identifier("n"), PropertyKey("prop"))), "-n.prop"),
         ReturnItem(Property(Identifier("n"), PropertyKey("foo")), "+n.foo"),
         ReturnItem(Add(Literal(1), Subtract(Literal(0), Property(Identifier("n"), PropertyKey("bar")))), "1 + -n.bar"))
