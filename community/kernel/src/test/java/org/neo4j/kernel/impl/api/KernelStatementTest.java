@@ -89,7 +89,7 @@ public class KernelStatementTest
         KernelStatement statement =
                 new KernelStatement(
                         mock( KernelTransactionImplementation.class ),
-                        mock( IndexReaderFactory.class ), scanStore, null, null, null, null );
+                        mock( IndexReaderFactory.class ), scanStore, null, null, null );
 
         statement.acquire();
 
