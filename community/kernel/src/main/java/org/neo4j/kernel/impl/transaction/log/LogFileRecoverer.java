@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import java.io.Closeable;
 import java.io.IOException;
 
+import org.neo4j.helpers.collection.CloseableVisitor;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -32,10 +32,10 @@ import static org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel.DEFAULT_
 public class LogFileRecoverer implements Visitor<LogVersionedStoreChannel,IOException>
 {
     private final LogEntryReader<ReadableVersionableLogChannel> logEntryReader;
-    private final Visitor<CommittedTransactionRepresentation,IOException> visitor;
+    private final CloseableVisitor<CommittedTransactionRepresentation,IOException> visitor;
 
     public LogFileRecoverer( LogEntryReader<ReadableVersionableLogChannel> logEntryReader,
-                             Visitor<CommittedTransactionRepresentation,IOException> visitor )
+                             CloseableVisitor<CommittedTransactionRepresentation,IOException> visitor )
     {
         this.logEntryReader = logEntryReader;
         this.visitor = visitor;
@@ -47,8 +47,8 @@ public class LogFileRecoverer implements Visitor<LogVersionedStoreChannel,IOExce
         ReadableVersionableLogChannel recoveredDataChannel =
                 new ReadAheadLogChannel( channel, NO_MORE_CHANNELS, DEFAULT_READ_AHEAD_SIZE );
 
-        try (PhysicalTransactionCursor<ReadableVersionableLogChannel> physicalTransactionCursor =
-                new PhysicalTransactionCursor<>( recoveredDataChannel, logEntryReader ))
+        try ( PhysicalTransactionCursor<ReadableVersionableLogChannel> physicalTransactionCursor =
+                new PhysicalTransactionCursor<>( recoveredDataChannel, logEntryReader ) )
         {
             long lastKnownGoodPosition = channel.position();
             while ( physicalTransactionCursor.next() && !visitor.visit( physicalTransactionCursor.get() ) )
@@ -61,11 +61,7 @@ public class LogFileRecoverer implements Visitor<LogVersionedStoreChannel,IOExce
             if (channel.position() > lastKnownGoodPosition)
                 channel.truncate( lastKnownGoodPosition );
         }
-
-        if ( visitor instanceof Closeable )
-        {
-            ((Closeable) visitor).close();
-        }
+        visitor.close();
         return true;
     }
 }
