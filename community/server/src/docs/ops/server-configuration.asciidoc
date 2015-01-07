@@ -10,7 +10,7 @@ Server Configuration
 * HTTP logging configuration is found in _conf/neo4j-http-logging.xml_
 ***********
 
-== Important server configurations parameters ==
+== Important server configuration parameters ==
 
 The main configuration file for the server can be found at _conf/neo4j-server.properties_.
 This file contains several important settings, and although the defaults are sensible
@@ -38,7 +38,6 @@ org.neo4j.server.webserver.address=0.0.0.0
 ----
 
 For securing the Neo4j Server, see also <<operations-security>>
-
 
 Set the location of the round-robin database directory which gathers metrics on the running server instance:
 [source,properties]
@@ -140,8 +139,11 @@ As well as logging events happening within the Neo4j server, it is possible to l
 Configuring HTTP logging requires operators to enable and configure the logger and where it will log; and then to optionally configure the log format.
 
 [IMPORTANT]
-By default the HTTP logger uses http://en.wikipedia.org/wiki/Common_Log_Format[Common Log Format] meaning that most Web server tooling can automatically consume such logs.
-In general users should only enable HTTP logging, select an output directory, and if necessary alter the rollover and retention policies.
+====
+By default the HTTP logger uses +http://en.wikipedia.org/wiki/Common_Log_Format[Common Log Format]+
+meaning that most Web server tooling can automtically consume such logs. In general users should only enable HTTP logging,
+select an output directory, and if necessary alter the rollover and retention policies.
+====
 
 To enable HTTP logging, edit the _conf/neo4j-server.properties_ file to resemble the following:
 
@@ -158,6 +160,22 @@ The defaults provided with Neo4j server uses an hourly log rotation and Common L
 
 If logging is set up to use log files then the server will check that the log file directory exists and is writable.
 If this check fails, then the server will not start and will report the failure to another available channel like standard out.
+
+[TIP]
+====
+Neo4j server now has *experimental* support for logging full request and response bodies. It is enabled by setting
+the following property in _neo4j-server.properties_:
+
+ org.neo4j.server.http.unsafe.content_log.enabled=true
+
+The following logging pattern must also be specified in _neo4j-http-logging.xml_:
+
+ <pattern>%fullRequest\n\n%fullResponse</pattern>
+
+This functionality fully duplicates HTTP requests and responses, logging them out to disk. As such it is
+*strongly advised* to not run this in a production setting because of the potential to constrain performance.
+However it can prove useful in testing and pre-production environments.
+====
 
 == Using X-Forwarded-Proto and X-Forwarded-Host to parameterize the base URI for REST responses ==
 
