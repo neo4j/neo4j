@@ -33,16 +33,12 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.CountsAccessor;
-import org.neo4j.kernel.impl.pagecache.StandalonePageCache;
-import org.neo4j.kernel.impl.store.NeoStore.Position;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
@@ -138,17 +134,12 @@ public class StoreFactory
                 GraphDatabaseSettings.store_dir.name(), storeDir.getAbsolutePath() ) );
     }
 
-    private File storeFileName( String toAppend )
+    public File storeFileName( String toAppend )
     {
         return new File( neoStoreFileName.getPath() + toAppend );
     }
 
-    public NeoStore newNeoStore( boolean allowCreateEmpty, boolean allowRebuild )
-    {
-        return newNeoStore( allowCreateEmpty, allowRebuild, -1 /* unknown */ );
-    }
-
-    private NeoStore newNeoStore( boolean allowCreateEmpty, boolean allowRebuild, long txId )
+    public NeoStore newNeoStore( boolean allowCreateEmpty )
     {
         boolean storeExists = storeExists();
 
@@ -157,15 +148,10 @@ public class StoreFactory
             return createNeoStore();
         }
 
-        if ( txId == -1)
+        CountsTracker countsTracker = null;
+        if ( storeExists && countsStoreExists() )
         {
-            txId = NeoStore.getRecord( fileSystemAbstraction, neoStoreFileName, Position.LAST_TRANSACTION_ID );
-        }
-
-        if ( storeExists && allowRebuild && !countsStoreExists() )
-        {
-            stringLogger.warn( "Missing counts store, rebuilding it." );
-            rebuildCountsStore( txId );
+            countsTracker = newCountsStore();
         }
 
         // The store exists already, start it
@@ -178,7 +164,7 @@ public class StoreFactory
                 newNodeStore(),
                 newSchemaStore(),
                 newRelationshipGroupStore(),
-                newCountsStore(),
+                countsTracker,
                 versionMismatchHandler, monitors );
     }
 
@@ -190,33 +176,6 @@ public class StoreFactory
     private boolean countsStoreExists()
     {
         return CountsTracker.countsStoreExists( fileSystemAbstraction, storeFileName( COUNTS_STORE ) );
-    }
-
-    private void rebuildCountsStore( long txId )
-    {
-        try( StandalonePageCache pageCache = createPageCache( fileSystemAbstraction, "build-counts" ) )
-        {
-            final File storeFileBase = storeFileName( COUNTS_STORE );
-            final String storeVersion = buildTypeDescriptorAndVersion( CountsTracker.STORE_DESCRIPTOR );
-            CountsTracker.createEmptyCountsStore( pageCache, storeFileBase, storeVersion );
-
-            try ( NodeStore nodeStore = newNodeStore();
-                  RelationshipStore relationshipStore = newRelationshipStore();
-                  CountsTracker tracker =
-                          new CountsTracker( stringLogger, fileSystemAbstraction, pageCache, storeFileBase ) )
-            {
-                CountsComputer.computeCounts( nodeStore, relationshipStore )
-                              .accept( new CountsAccessor.Initializer( tracker ) );
-                try
-                {
-                    tracker.rotate( txId );
-                }
-                catch ( IOException e )
-                {
-                    throw new UnderlyingStorageException( "Unable to recreate CountsStore", e );
-                }
-            }
-        }
     }
 
     public RelationshipGroupStore newRelationshipGroupStore()
@@ -375,7 +334,7 @@ public class StoreFactory
                 fileSystemAbstraction, stringLogger, dynamicLabelStore, versionMismatchHandler, monitors );
     }
 
-    private CountsTracker newCountsStore()
+    public CountsTracker newCountsStore()
     {
         return new CountsTracker( stringLogger, fileSystemAbstraction, pageCache, storeFileName( COUNTS_STORE ) );
     }
@@ -410,7 +369,7 @@ public class StoreFactory
         createRelationshipGroupStore( config.get( Configuration.dense_node_threshold ) );
         createCountsStore();
 
-        NeoStore neoStore = newNeoStore( false, false, BASE_TX_ID );
+        NeoStore neoStore = newNeoStore( false );
         /*
          * created time | random long | backup version | tx id | store version | next prop | latest constraint tx |
          * upgrade time | upgrade id

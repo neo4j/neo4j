@@ -91,7 +91,7 @@ public class ConsistencyCheckService
         StringLogger report = StringLogger.lazyLogger( reportFile );
 
 
-        try ( NeoStore neoStore = factory.newNeoStore( false, false ); )
+        try ( NeoStore neoStore = factory.newNeoStore( false ) )
         {
             neoStore.makeStoreOk();
             StoreAccess store = new StoreAccess( neoStore );

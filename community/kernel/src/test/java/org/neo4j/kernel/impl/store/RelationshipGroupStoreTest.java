@@ -142,18 +142,18 @@ public class RelationshipGroupStoreTest
     {
         int expectedThreshold = customThreshold != null ? customThreshold : defaultThreshold;
         StoreFactory factory = factory( customThreshold );
-        NeoStore neoStore = factory.newNeoStore( true, false );
+        NeoStore neoStore = factory.newNeoStore( true );
         assertEquals( expectedThreshold, neoStore.getDenseNodeThreshold() );
         neoStore.close();
 
         // Next time we open it it should be the same
-        neoStore = factory.newNeoStore( false, false );
+        neoStore = factory.newNeoStore( false );
         assertEquals( expectedThreshold, neoStore.getDenseNodeThreshold() );
         neoStore.close();
 
         // Even if we open with a different config setting it should just ignore it
         factory = factory( 999999 );
-        neoStore = factory.newNeoStore( false, false );
+        neoStore = factory.newNeoStore( false );
         assertEquals( expectedThreshold, neoStore.getDenseNodeThreshold() );
         neoStore.close();
     }
@@ -320,7 +320,7 @@ public class RelationshipGroupStoreTest
         pageCache = pageCacheRule.withInconsistentReads( pageCache, nextReadIsInconsistent );
         StoreFactory factory = factory( null, pageCache );
 
-        try ( NeoStore neoStore = factory.newNeoStore( true, false ) )
+        try ( NeoStore neoStore = factory.newNeoStore( true ) )
         {
             RelationshipGroupStore relationshipGroupStore = neoStore.getRelationshipGroupStore();
             RelationshipGroupRecord record = new RelationshipGroupRecord( 1, 2, 3, 4, 5, 6, true );

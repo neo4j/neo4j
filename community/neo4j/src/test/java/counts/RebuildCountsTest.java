@@ -25,11 +25,14 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
@@ -37,6 +40,7 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.kernel.impl.transaction.log.LogRotation;
 import org.neo4j.kernel.impl.util.TestLogger;
 import org.neo4j.kernel.impl.util.TestLogging;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -54,19 +58,44 @@ public class RebuildCountsTest
     // Indexing counts are recovered/rebuild in IndexingService.start() and are not tested here
 
     @Test
-    public void shouldRebuildMissingCountsStoreOnStart()
+    public void shouldRebuildMissingCountsStoreOnStart() throws IOException
     {
         // given
         createAliensAndHumans();
 
         // when
-        deleteCountsAndRestart();
+        FileSystemAbstraction fs = shutdown();
+        deleteCounts( fs );
+        restart( fs );
 
         // then
         CountsTracker tracker = counts();
-        assertEquals( 32, tracker.nodeCount( -1, newDoubleLongRegister() ).readSecond() );
-        assertEquals( 16, tracker.nodeCount( labelId( ALIEN ), newDoubleLongRegister() ).readSecond() );
-        assertEquals( 16, tracker.nodeCount( labelId( HUMAN ), newDoubleLongRegister() ).readSecond() );
+        assertEquals( ALIENS + HUMANS, tracker.nodeCount( -1, newDoubleLongRegister() ).readSecond() );
+        assertEquals( ALIENS, tracker.nodeCount( labelId( ALIEN ), newDoubleLongRegister() ).readSecond() );
+        assertEquals( HUMANS, tracker.nodeCount( labelId( HUMAN ), newDoubleLongRegister() ).readSecond() );
+
+        // and also
+        logger().assertAtLeastOnce( warn( "Missing counts store, rebuilding it." ) );
+    }
+
+    @Test
+    public void shouldRebuildMissingCountsStoreAfterRecovery() throws IOException
+    {
+        // given
+        createAliensAndHumans();
+
+        // when
+        rotateLog();
+        deleteHumans();
+        FileSystemAbstraction fs = crash();
+        deleteCounts( fs );
+        restart( fs );
+
+        // then
+        CountsTracker tracker = counts();
+        assertEquals( ALIENS, tracker.nodeCount( -1, newDoubleLongRegister() ).readSecond() );
+        assertEquals( ALIENS, tracker.nodeCount( labelId( ALIEN ), newDoubleLongRegister() ).readSecond() );
+        assertEquals( 0, tracker.nodeCount( labelId( HUMAN ), newDoubleLongRegister() ).readSecond() );
 
         // and also
         logger().assertAtLeastOnce( warn( "Missing counts store, rebuilding it." ) );
@@ -76,9 +105,28 @@ public class RebuildCountsTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            for ( int i = 0; i < 32; i++ )
+            for ( int i = 0; i < ALIENS; i++ )
             {
-                db.createNode( i % 2 == 0 ? ALIEN : HUMAN );
+                db.createNode( ALIEN );
+            }
+            for ( int i = 0; i < HUMANS; i++ )
+            {
+                db.createNode( HUMAN );
+            }
+            tx.success();
+        }
+    }
+
+    private void deleteHumans()
+    {
+        try( Transaction tx = db.beginTx() )
+        {
+            try ( ResourceIterator<Node> humans = db.findNodes( HUMAN ) )
+            {
+                while ( humans.hasNext() )
+                {
+                    humans.next().delete();
+                }
             }
             tx.success();
         }
@@ -99,21 +147,41 @@ public class RebuildCountsTest
         return ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( NeoStore.class ).getCounts();
     }
 
-    private void deleteCountsAndRestart()
+    private void deleteCounts( FileSystemAbstraction snapshot )
     {
-        db.shutdown();
-        EphemeralFileSystemAbstraction snapshot = fsRule.get().snapshot();
-
         final File storeFileBase = new File( storeDir, NeoStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE );
         File alpha = new File( storeFileBase + CountsTracker.ALPHA );
         File beta = new File( storeFileBase + CountsTracker.BETA );
         assertTrue( snapshot.deleteFile( alpha ) );
         assertTrue( snapshot.deleteFile( beta ) );
-        setupDb( snapshot );
+
     }
 
-    private void setupDb( EphemeralFileSystemAbstraction fs )
+    private FileSystemAbstraction shutdown()
     {
+        doCleanShutdown();
+        return fsRule.get().snapshot();
+    }
+
+    @SuppressWarnings( "deprecated" )
+    private void rotateLog() throws IOException
+    {
+        ((GraphDatabaseAPI) db).getDependencyResolver()
+                               .resolveDependency( LogRotation.class ).rotateLogFile();
+    }
+
+    private FileSystemAbstraction crash()
+    {
+        return fsRule.get().snapshot();
+    }
+
+    private void restart( FileSystemAbstraction fs ) throws IOException
+    {
+        if ( db != null )
+        {
+            db.shutdown();
+        }
+
         fs.mkdirs( storeDir );
         TestGraphDatabaseFactory dbFactory = new TestGraphDatabaseFactory();
         db = dbFactory.setLogging( logging )
@@ -124,11 +192,25 @@ public class RebuildCountsTest
                       .newGraphDatabase();
     }
 
+    private void doCleanShutdown()
+    {
+        try
+        {
+            db.shutdown();
+        }
+        finally
+        {
+            db = null;
+        }
+    }
+
     private TestLogger logger()
     {
         return logging.getMessagesLog( StoreFactory.class );
     }
 
+    private static final int ALIENS = 16;
+    private static final int HUMANS = 16;
     private static final Label ALIEN = label( "Alien" );
     private static final Label HUMAN = label( "Human" );
 
@@ -141,21 +223,14 @@ public class RebuildCountsTest
     private final File storeDir = new File( "store" ).getAbsoluteFile();
 
     @Before
-    public void before()
+    public void before() throws IOException
     {
-        setupDb( fsRule.get() );
+        restart( fsRule.get() );
     }
 
     @After
     public void after()
     {
-        try
-        {
-            db.shutdown();
-        }
-        finally
-        {
-            db = null;
-        }
+        doCleanShutdown();
     }
 }
