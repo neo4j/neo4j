@@ -16,7 +16,7 @@ Other processes may thus not use more than what is available after the configure
 Make sure that your system is configured such that it will never need to swap.
 If memory belonging to the Neo4j process gets swapped out, it can lead to considerable performance degradation.
 
-The amount of memory available to the page cache can be configured in two ways; both using the `mapped_memory_total_size` setting.
+The amount of memory available to the page cache can be configured in two ways; both using the `dbms.pagecache.memory` setting.
 You can either directly specify the number of bytes available to the page cache, e.g. `150M` og `4G`, or you can specify a percentage of the available memory, which is what the default setting of `50%` means.
 In either case, the amount of memory reserved for the page cache is capped at the amount of free memory as measured when the database starts.
 
@@ -36,7 +36,7 @@ The important thing is that the page cache has enough memory to work with, that 
 
 [source]
 ----
-mapped_memory_total_size=4G
+dbms.pagecache.memory=4G
 ----
 
 The configuration above will more or less fit the entire graph in memory.

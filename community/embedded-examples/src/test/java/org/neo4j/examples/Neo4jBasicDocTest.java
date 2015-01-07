@@ -67,7 +67,7 @@ public class Neo4jBasicDocTest
         // START SNIPPET: startDbWithConfig
         GraphDatabaseService db = new TestGraphDatabaseFactory()
             .newImpermanentDatabaseBuilder()
-            .setConfig( GraphDatabaseSettings.mapped_memory_total_size, "512M" )
+            .setConfig( GraphDatabaseSettings.pagecache_memory, "512M" )
             .setConfig( GraphDatabaseSettings.string_block_size, "60" )
             .setConfig( GraphDatabaseSettings.array_block_size, "300" )
             .newGraphDatabase();

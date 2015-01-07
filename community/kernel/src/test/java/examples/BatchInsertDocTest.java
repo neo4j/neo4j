@@ -19,16 +19,16 @@
  */
 package examples;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Writer;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicLabel;
@@ -38,10 +38,10 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
@@ -93,7 +93,7 @@ public class BatchInsertDocTest
     {
         // START SNIPPET: configuredInsert
         Map<String, String> config = new HashMap<>();
-        config.put( "mapped_memory_total_size", "90M" );
+        config.put( "dbms.pagecache.memory", "90M" );
         BatchInserter inserter = BatchInserters.inserter(
                 new File("target/batchinserter-example-config").getAbsolutePath(), fileSystem, config );
         // Insert data here ... and then shut down:
@@ -106,7 +106,7 @@ public class BatchInsertDocTest
     {
         try ( Writer fw = fileSystem.openAsWriter( new File( "target/batchinsert-config" ).getAbsoluteFile(), "utf-8", false ) )
         {
-            fw.append( "mapped_memory_total_size=3G" );
+            fw.append( "dbms.pagecache.memory=3G" );
         }
 
         // START SNIPPET: configFileInsert

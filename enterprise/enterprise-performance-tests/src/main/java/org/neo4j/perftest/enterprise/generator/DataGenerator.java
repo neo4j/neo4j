@@ -76,8 +76,8 @@ public class DataGenerator
     static final Setting<List<PropertySpec>> relationship_properties = listSetting(
             adaptSetting( Setting.stringSetting( "relationship_properties" ), PropertySpec.PARSER ),
             Collections.<PropertySpec>emptyList() );
-    private static final Setting<String> mapped_memory_total_size =
-            stringSetting( "mapped_memory_total_size", "2G" );
+    private static final Setting<String> pagecache_memory =
+            stringSetting( "dbms.pagecache.memory", "2G" );
 
     public static final Random RANDOM = new Random();
     private final boolean reportProgress;
@@ -232,8 +232,8 @@ public class DataGenerator
     {
         Map<String, String> config = new HashMap<>();
         config.put( "dump_configuration", "true" );
-        config.put( GraphDatabaseSettings.mapped_memory_total_size.name(),
-                configuration.get( mapped_memory_total_size ) );
+        config.put( GraphDatabaseSettings.pagecache_memory.name(),
+                configuration.get( pagecache_memory ) );
         return config;
     }
 
