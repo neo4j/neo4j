@@ -92,11 +92,11 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
     protected final File file = new File( "a" );
 
     protected int recordSize = 9;
-    protected int recordCount = 1060;
     protected int maxPages = 20;
-    protected int pageCachePageSize = 20;
-    protected int filePageSize = 18;
-    protected int recordsPerFilePage = filePageSize / recordSize;
+    protected int pageCachePageSize = 32;
+    protected int recordsPerFilePage = pageCachePageSize / recordSize;
+    protected int recordCount = 25 * maxPages * recordsPerFilePage;
+    protected int filePageSize = recordsPerFilePage * recordSize;
     protected ByteBuffer bufA = ByteBuffer.allocate( recordSize );
 
     protected EphemeralFileSystemAbstraction fs;
@@ -199,6 +199,7 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
             generateRecordForId( recordId, expectedPageContents.slice() );
             do
             {
+                cursor.setOffset( recordSize * i );
                 cursor.getBytes( record );
             } while ( cursor.shouldRetry() );
             actualPageContents.position( recordSize * i );
@@ -311,6 +312,12 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
     {
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
         assertThat( pageCache.pageSize(), is( pageCachePageSize ) );
+    }
+
+    @Test( expected = IllegalArgumentException.class )
+    public void cachePageSizeMustBePowerOfTwo() throws IOException
+    {
+        getPageCache( fs, maxPages, 31, PageCacheMonitor.NULL );
     }
 
     @Test( timeout = 1000 )

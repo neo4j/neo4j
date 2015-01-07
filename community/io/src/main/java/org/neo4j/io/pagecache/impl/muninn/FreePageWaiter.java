@@ -39,12 +39,12 @@ final class FreePageWaiter
     // A special poison-pill value that is used to tell FreePageWaiters that they should
     // stop waiting and that there is no free page for them, because the page cache is
     // shutting down.
-    private static final MuninnPage interruptSignal = new MuninnPage( 0, -1, null );
+    private static final MuninnPage interruptSignal = new MuninnPage( 0, null );
 
     // Like the interruptSignal above, this is used to tell the FreePageWaiters that they
     // should stop waiting, but this time the reason is that the eviction thread has
     // encountered an exception, which must be bubbled out.
-    private static final MuninnPage exceptionSignal = new MuninnPage( 0, -2, null );
+    private static final MuninnPage exceptionSignal = new MuninnPage( 0, null );
 
     FreePageWaiter next;
 
