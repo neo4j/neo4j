@@ -46,9 +46,9 @@ public class DumpCountsStore
         final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         final File storeFile = new File( args[0] );
 
-        try ( final StandalonePageCache pageCache = createPageCache( fs, "counts-store-dump" ) )
+        try ( StandalonePageCache pageCache = createPageCache( fs, "counts-store-dump" );
+              CountsStore counts = CountsStore.open( fs, pageCache, storeFile ) )
         {
-            CountsStore counts = CountsStore.open( fs, pageCache, storeFile );
             System.out.println( "Counts Store: " + counts.file() );
             System.out.println( "\ttxId: " + counts.lastTxId() );
             System.out.println( "\tminor version: " + counts.minorVersion() );
