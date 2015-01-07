@@ -254,4 +254,24 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
         |+----------+---------------+------+--------+-------------+-------+
         |""".stripMargin)
   }
+
+  test("don't render planner in Other") {
+
+    val arguments = Seq(
+      Rows(42),
+      DbHits(33),
+      Planner("COST"),
+      LegacyExpression(Identifier("  id@23")))
+
+    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n", "  UNNAMED123", "  UNNAMED2", "  UNNAMED24"))
+    renderDetails(plan) should equal(
+      """+----------+---------------+------+--------+-------------+-------+
+        || Operator | EstimatedRows | Rows | DbHits | Identifiers | Other |
+        |+----------+---------------+------+--------+-------------+-------+
+        ||     NAME |             1 |   42 |     33 |           n |    id |
+        |+----------+---------------+------+--------+-------------+-------+
+        |""".stripMargin)
+  }
+
+
 }
