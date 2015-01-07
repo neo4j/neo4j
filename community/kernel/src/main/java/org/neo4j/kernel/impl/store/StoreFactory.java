@@ -39,7 +39,6 @@ import org.neo4j.kernel.impl.store.NeoStore.Position;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -195,22 +194,19 @@ public class StoreFactory
 
     private void rebuildCountsStore( long txId )
     {
-        final LifeSupport life = new LifeSupport();
-        life.start();
-        try
+        try( StandalonePageCache pageCache = createPageCache( fileSystemAbstraction, "build-counts" ) )
         {
-            final StandalonePageCache pageCache = createPageCache( fileSystemAbstraction, new Config(), "build-counts" );
             final File storeFileBase = storeFileName( COUNTS_STORE );
-            CountsTracker.createEmptyCountsStore( pageCache, storeFileBase,
-                    buildTypeDescriptorAndVersion( CountsTracker.STORE_DESCRIPTOR ) );
+            final String storeVersion = buildTypeDescriptorAndVersion( CountsTracker.STORE_DESCRIPTOR );
+            CountsTracker.createEmptyCountsStore( pageCache, storeFileBase, storeVersion );
 
             try ( NodeStore nodeStore = newNodeStore();
                   RelationshipStore relationshipStore = newRelationshipStore();
-                  CountsTracker tracker = new CountsTracker(
-                          stringLogger, fileSystemAbstraction, pageCache, storeFileBase ) )
+                  CountsTracker tracker =
+                          new CountsTracker( stringLogger, fileSystemAbstraction, pageCache, storeFileBase ) )
             {
-                CountsComputer.computeCounts( nodeStore, relationshipStore ).
-                        accept( new CountsAccessor.Initializer( tracker ) );
+                CountsComputer.computeCounts( nodeStore, relationshipStore )
+                              .accept( new CountsAccessor.Initializer( tracker ) );
                 try
                 {
                     tracker.rotate( txId );
@@ -220,10 +216,6 @@ public class StoreFactory
                     throw new UnderlyingStorageException( "Unable to recreate CountsStore", e );
                 }
             }
-        }
-        finally
-        {
-            life.shutdown();
         }
     }
 
