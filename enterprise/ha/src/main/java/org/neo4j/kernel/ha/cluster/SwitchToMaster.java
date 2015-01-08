@@ -45,8 +45,8 @@ import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
@@ -55,7 +55,7 @@ import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
 public class SwitchToMaster
 {
     private final Logging logging;
-    private final StringLogger msgLog;
+    private final ConsoleLogger console;
     private final GraphDatabaseAPI graphDb;
     private final HaIdGeneratorFactory idGeneratorFactory;
     private final Config config;
@@ -67,13 +67,13 @@ public class SwitchToMaster
     private final ByteCounterMonitor masterByteCounterMonitor;
     private final RequestMonitor masterRequestMonitor;
 
-    public SwitchToMaster( Logging logging, StringLogger msgLog, GraphDatabaseAPI graphDb,
+    public SwitchToMaster( Logging logging, ConsoleLogger console, GraphDatabaseAPI graphDb,
             HaIdGeneratorFactory idGeneratorFactory, Config config, Provider<SlaveFactory> slaveFactorySupplier,
             DelegateInvocationHandler<Master> masterDelegateHandler, ClusterMemberAvailability clusterMemberAvailability,
             DataSourceManager dataSourceManager, ByteCounterMonitor masterByteCounterMonitor, RequestMonitor masterRequestMonitor, MasterImpl.Monitor masterImplMonitor)
     {
         this.logging = logging;
-        this.msgLog = msgLog;
+        this.console = console;
         this.graphDb = graphDb;
         this.idGeneratorFactory = idGeneratorFactory;
         this.config = config;
@@ -95,7 +95,7 @@ public class SwitchToMaster
      */
     public URI switchToMaster( LifeSupport haCommunicationLife, URI me )
     {
-        msgLog.logMessage( "I am " + config.get( ClusterSettings.server_id ) + ", moving to master" );
+        console.log( "I am " + myId() + ", moving to master" );
 
         /*
          * Synchronizing on the xaDataSourceManager makes sense if you also look at HaKernelPanicHandler. In
@@ -130,8 +130,7 @@ public class SwitchToMaster
 
             URI masterHaURI = getMasterUri( me, masterServer );
             clusterMemberAvailability.memberIsAvailable( MASTER, masterHaURI, neoStoreXaDataSource.getStoreId() );
-            msgLog.logMessage( "I am " + config.get( ClusterSettings.server_id ) +
-                    ", successfully moved to master" );
+            console.log( "I am " + myId() + ", successfully moved to master" );
 
             slaveFactorySupplier.instance().setStoreId( neoStoreXaDataSource.getStoreId() );
 
@@ -146,9 +145,8 @@ public class SwitchToMaster
                             ServerUtil.getHostString( masterServer.getSocketAddress() );
 
         int port = masterServer.getSocketAddress().getPort();
-        InstanceId serverId = config.get( ClusterSettings.server_id );
 
-        return URI.create( "ha://" + hostname + ":" + port + "?serverId=" + serverId );
+        return URI.create( "ha://" + hostname + ":" + port + "?serverId=" + myId() );
     }
 
     private Server.Configuration serverConfig()
@@ -180,5 +178,10 @@ public class SwitchToMaster
             }
         };
         return serverConfig;
+    }
+
+    private InstanceId myId()
+    {
+        return config.get( ClusterSettings.server_id );
     }
 }

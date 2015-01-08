@@ -1151,6 +1151,24 @@ public class TestApps extends AbstractShellTest
     }
 
     @Test
+    public void shouldAllowPlannerAsStartForACypherQuery() throws Exception
+    {
+        executeCommand( "PLANNER COST MATCH (n) RETURN n;");
+    }
+
+    @Test
+    public void shouldAllowCombiningPlannerAndProfile() throws Exception
+    {
+        executeCommand( "PLANNER RULE PROFILE MATCH (n) RETURN n;", "Planner RULE");
+    }
+
+    @Test
+    public void shouldAllowCombiningProfileAndPlanner() throws Exception
+    {
+        executeCommand( "PROFILE PLANNER RULE MATCH (n) RETURN n;", "Planner RULE");
+    }
+
+    @Test
     public void canListAllConfiguration() throws Exception
     {
         executeCommand( "dbinfo -g Configuration", "\"ephemeral\": \"true\"" );

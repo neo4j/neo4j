@@ -77,4 +77,36 @@ public class KernelStatementTest
 
         statement.readOperations().nodeExists( 0 );
     }
+
+    @Test
+    public void shouldCloseOpenedLabelScanReaderWhenForceClosed() throws Exception
+    {
+        // given
+        LabelScanStore scanStore = mock( LabelScanStore.class );
+        LabelScanReader scanReader = mock( LabelScanReader.class );
+
+        when( scanStore.newReader() ).thenReturn( scanReader );
+        KernelStatement statement =
+                new KernelStatement(
+                        mock( KernelTransactionImplementation.class ),
+                        mock( IndexReaderFactory.class ), scanStore, null, null, null );
+
+        statement.acquire();
+
+        // when
+        LabelScanReader actualReader = statement.getLabelScanReader();
+
+        // then
+        assertEquals( scanReader, actualReader );
+
+        // when
+        statement.forceClose();
+
+        // then
+        verify( scanStore ).newReader();
+        verifyNoMoreInteractions( scanStore );
+
+        verify( scanReader ).close();
+        verifyNoMoreInteractions( scanReader );
+    }
 }

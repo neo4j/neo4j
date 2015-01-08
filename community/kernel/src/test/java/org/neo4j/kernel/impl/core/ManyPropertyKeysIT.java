@@ -112,7 +112,7 @@ public class ManyPropertyKeysIT
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreFactory storeFactory = new StoreFactory( fs, storeDir, pageCache, StringLogger.DEV_NULL, new Monitors() );
-        NeoStore neoStore = storeFactory.newNeoStore( true, false );
+        NeoStore neoStore = storeFactory.newNeoStore( true );
         PropertyKeyTokenStore store = neoStore.getPropertyKeyTokenStore();
         for ( int i = 0; i < propertyKeyCount; i++ )
         {

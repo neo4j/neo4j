@@ -105,6 +105,7 @@ import org.neo4j.kernel.impl.transaction.state.NeoStoreInjectedTransactionValida
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.LogbackWeakDependency;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
@@ -465,8 +466,10 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     {
         idGeneratorFactory = new HaIdGeneratorFactory( masterDelegateInvocationHandler, logging,
                 requestContextFactory );
-        SwitchToSlave switchToSlaveInstance = new SwitchToSlave( logging.getConsoleLog(
-                HighAvailabilityModeSwitcher.class ), config, getDependencyResolver(),
+
+        ConsoleLogger consoleLog = logging.getConsoleLog( HighAvailabilityModeSwitcher.class );
+
+        SwitchToSlave switchToSlaveInstance = new SwitchToSlave( consoleLog, config, getDependencyResolver(),
                 (HaIdGeneratorFactory) idGeneratorFactory,
                 logging, masterDelegateInvocationHandler, clusterMemberAvailability, requestContextFactory,
                 kernelExtensions.listFactories(), responseUnpacker,
@@ -475,7 +478,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 monitors.newMonitor( SwitchToSlave.Monitor.class )
         );
 
-        SwitchToMaster switchToMasterInstance = new SwitchToMaster( logging, msgLog, this,
+        SwitchToMaster switchToMasterInstance = new SwitchToMaster( logging, consoleLog, this,
                 (HaIdGeneratorFactory) idGeneratorFactory, config, dependencies.provideDependency( SlaveFactory.class ),
                 masterDelegateInvocationHandler, clusterMemberAvailability, dataSourceManager,
                 monitors.newMonitor( ByteCounterMonitor.class, MasterServer.class ),

@@ -35,6 +35,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -49,9 +50,9 @@ import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
+import static org.neo4j.kernel.impl.store.counts.CountsTracker.STORE_DESCRIPTOR;
 import static org.neo4j.kernel.impl.util.CappedOperation.time;
 
 /**
@@ -283,7 +284,10 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     {
         try
         {
-            counts.rotate( getLastCommittedTransactionId() );
+            if ( counts != null )
+            {
+                counts.rotate( getLastCommittedTransactionId() );
+            }
             pageCache.flush();
         }
         catch ( IOException e )
@@ -368,9 +372,9 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     /**
      * Reads a record from a neostore file.
      *
-     * @param fileSystem {@link FileSystemAbstraction} the {@code neoStore} file lives in.
+     * @param fs {@link FileSystemAbstraction} the {@code neoStore} file lives in.
      * @param neoStore {@link File} pointing to the neostore.
-     * @param position record {@link Position}.
+     * @param recordPosition record {@link Position}.
      * @return the read record value specified by {@link Position}.
      */
     public static long getRecord( FileSystemAbstraction fs, File neoStore, Position recordPosition )
@@ -947,5 +951,30 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         propStore.visitStore( visitor );
         schemaStore.visitStore( visitor );
         visitor.visit( this );
+    }
+
+    public void rebuildCountStoreIfNeeded( File storeFileBase )
+    {
+        if ( counts != null )
+        {
+            return;
+        }
+
+        stringLogger.warn( "Missing counts store, rebuilding it." );
+        final String storeVersion = buildTypeDescriptorAndVersion( STORE_DESCRIPTOR );
+        CountsTracker.createEmptyCountsStore( pageCache, storeFileBase, storeVersion );
+        CountsTracker tracker = new CountsTracker( stringLogger, fileSystemAbstraction, pageCache, storeFileBase );
+        CountsComputer.computeCounts( nodeStore, relStore ).accept( new CountsAccessor.Initializer( tracker ) );
+        try
+        {
+            tracker.rotate( getLastCommittedTransactionId() );
+        }
+        catch ( IOException e )
+        {
+            tracker.close();
+            throw new UnderlyingStorageException( "Unable to recreate CountsStore", e );
+        }
+
+        counts = tracker;
     }
 }

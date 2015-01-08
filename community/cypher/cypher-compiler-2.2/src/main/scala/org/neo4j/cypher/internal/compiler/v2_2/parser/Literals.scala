@@ -47,7 +47,7 @@ trait Literals extends Parser
     rule("a rel type name") { SymbolicNameString ~~>> (ast.RelTypeName(_) ) }.memoMismatches
 
   def Operator: Rule1[ast.Identifier] = rule {
-    oneOrMore(OpChar) ~>>> (ast.Identifier(_: String)) ~ !OpChar
+    OpChar ~ zeroOrMore(OpCharTail) ~>>> (ast.Identifier(_: String)) ~ !OpCharTail
   }
 
   def MapLiteral: Rule1[ast.MapExpression] = rule {

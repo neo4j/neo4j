@@ -40,8 +40,9 @@ final class MuninnPage extends StampedLock implements Page
 {
     private static final long usageStampOffset = UnsafeUtil.getFieldOffset( MuninnPage.class, "usageStamp" );
 
-    private final int cachePageSize;
-    private final int cachePageId;
+    // The sign bit is used as a dirty flag for the page.
+    // The other 7 bits are used as an exponent for computing the cache page size (as a power of two).
+    private byte cachePageHeader;
 
     // We keep this reference to prevent the MemoryReleaser from becoming
     // finalizable until all our pages are finalizable or collected.
@@ -60,23 +61,48 @@ final class MuninnPage extends StampedLock implements Page
 
     private PageSwapper swapper;
     private long filePageId = PageCursor.UNBOUND_PAGE_ID;
-    private boolean dirty;
 
-    public MuninnPage( int cachePageSize, int cachePageId, MemoryReleaser memoryReleaser )
+    public MuninnPage( int cachePageSize, MemoryReleaser memoryReleaser )
     {
-        this.cachePageSize = cachePageSize;
-        this.cachePageId = cachePageId;
+        this.cachePageHeader = (byte) (31 - Integer.numberOfLeadingZeros( cachePageSize ));
         this.memoryReleaser = memoryReleaser;
+        getCachePageId(); // initialize our identity hashCode
     }
 
     private void checkBounds( int position )
     {
-        if ( position > cachePageSize )
+        if ( position > getCachePageSize() )
         {
             String msg = "Position " + position + " is greater than the upper " +
-                    "page size bound of " + cachePageSize;
+                    "page size bound of " + (getCachePageSize());
             throw new IndexOutOfBoundsException( msg );
         }
+    }
+
+    @Override
+    public int getCachePageId()
+    {
+        return System.identityHashCode( this );
+    }
+
+    private int getCachePageSize()
+    {
+        return 1 << (cachePageHeader & 0x7F);
+    }
+
+    private boolean isDirty()
+    {
+        return (cachePageHeader & ~0x7F) != 0;
+    }
+
+    public void markAsDirty()
+    {
+        cachePageHeader |= ~0x7F;
+    }
+
+    private void markAsClean()
+    {
+        cachePageHeader &= 0x7F;
     }
 
     public byte getByte( int offset )
@@ -285,7 +311,7 @@ final class MuninnPage extends StampedLock implements Page
         int readTotal = 0;
         try
         {
-            ByteBuffer bufferProxy = UnsafeUtil.newDirectByteBuffer( pointer, cachePageSize );
+            ByteBuffer bufferProxy = UnsafeUtil.newDirectByteBuffer( pointer, getCachePageSize() );
             bufferProxy.clear();
             bufferProxy.limit( length );
             int read;
@@ -325,7 +351,7 @@ final class MuninnPage extends StampedLock implements Page
         assert isReadLocked() || isWriteLocked() : "swapOut requires lock";
         try
         {
-            ByteBuffer bufferProxy = UnsafeUtil.newDirectByteBuffer( pointer, cachePageSize );
+            ByteBuffer bufferProxy = UnsafeUtil.newDirectByteBuffer( pointer, getCachePageSize() );
             bufferProxy.clear();
             bufferProxy.limit( length );
             channel.writeAll( bufferProxy, offset );
@@ -345,7 +371,7 @@ final class MuninnPage extends StampedLock implements Page
      */
     public void flush( FlushEventOpportunity flushOpportunity ) throws IOException
     {
-        if ( swapper != null && dirty )
+        if ( swapper != null && isDirty() )
         {
             // The page is bound and has stuff to flush
             doFlush( swapper, filePageId, flushOpportunity );
@@ -360,7 +386,7 @@ final class MuninnPage extends StampedLock implements Page
             long filePageId,
             FlushEventOpportunity flushOpportunity ) throws IOException
     {
-        if ( dirty && this.swapper == swapper && this.filePageId == filePageId )
+        if ( isDirty() && this.swapper == swapper && this.filePageId == filePageId )
         {
             // The page is bound to the given swapper and has stuff to flush
             doFlush( swapper, filePageId, flushOpportunity );
@@ -372,11 +398,11 @@ final class MuninnPage extends StampedLock implements Page
             long filePageId,
             FlushEventOpportunity flushOpportunity ) throws IOException
     {
-        FlushEvent event = flushOpportunity.beginFlush( filePageId, cachePageId, swapper );
+        FlushEvent event = flushOpportunity.beginFlush( filePageId, getCachePageId(), swapper );
         try
         {
             int bytesWritten = swapper.write( filePageId, this );
-            dirty = false;
+            markAsClean();
             event.addBytesWritten( bytesWritten );
             event.done();
         }
@@ -385,11 +411,6 @@ final class MuninnPage extends StampedLock implements Page
             event.done( e );
             throw e;
         }
-    }
-
-    public void markAsDirty()
-    {
-        dirty = true;
     }
 
     /**
@@ -407,7 +428,7 @@ final class MuninnPage extends StampedLock implements Page
                     "Cannot fault page {filePageId = %s, swapper = %s} into " +
                             "cache page %s. Already bound to {filePageId = " +
                             "%s, swapper = %s}.",
-                    filePageId, swapper, cachePageId, this.filePageId, this.swapper );
+                    filePageId, swapper, getCachePageId(), this.filePageId, this.swapper );
             throw new IllegalStateException( msg );
         }
 
@@ -421,7 +442,7 @@ final class MuninnPage extends StampedLock implements Page
         this.filePageId = filePageId; // Page now considered isLoaded()
         int bytesRead = swapper.read( filePageId, this );
         faultEvent.addBytesRead( bytesRead );
-        faultEvent.setCachePageId( cachePageId );
+        faultEvent.setCachePageId( getCachePageId() );
         this.swapper = swapper; // Page now considered isBoundTo( swapper, filePageId )
     }
 
@@ -432,11 +453,11 @@ final class MuninnPage extends StampedLock implements Page
     {
         assert isWriteLocked(): "Cannot evict page without write-lock";
         long filePageId = this.filePageId;
-        evictionEvent.setCachePageId( cachePageId );
+        evictionEvent.setCachePageId( getCachePageId() );
         evictionEvent.setFilePageId( filePageId );
 
         flush( evictionEvent.flushEventOpportunity() );
-        UnsafeUtil.setMemory( pointer, cachePageSize, (byte) 0 );
+        UnsafeUtil.setMemory( pointer, getCachePageSize(), (byte) 0 );
         this.filePageId = PageCursor.UNBOUND_PAGE_ID;
 
         PageSwapper swapper = this.swapper;
@@ -469,8 +490,8 @@ final class MuninnPage extends StampedLock implements Page
         assert isWriteLocked(): "Cannot initBuffer without write-lock";
         if ( pointer == 0 )
         {
-            pointer = UnsafeUtil.malloc( cachePageSize );
-            memoryReleaser.registerPointer( cachePageId, pointer );
+            pointer = UnsafeUtil.malloc( getCachePageSize() );
+            memoryReleaser.registerPointer( pointer );
         }
     }
 
@@ -485,16 +506,10 @@ final class MuninnPage extends StampedLock implements Page
     }
 
     @Override
-    public int getCachePageId()
-    {
-        return cachePageId;
-    }
-
-    @Override
     public String toString()
     {
         return String.format( "MuninnPage@%x[%s -> %x, filePageId = %s%s, swapper = %s]%s",
-                hashCode(), cachePageId, pointer, filePageId, (dirty? ", dirty" : ""),
+                hashCode(), getCachePageId(), pointer, filePageId, (isDirty()? ", dirty" : ""),
                 swapper, getLockStateString() );
     }
 }

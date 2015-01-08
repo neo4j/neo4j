@@ -169,6 +169,7 @@ public class MuninnPageCache implements RunnablePageCache
             PageCacheMonitor monitor )
     {
         verifyHacks();
+        verifyCachePageSizeIsPowerOfTwo( cachePageSize );
 
         this.swapperFactory = swapperFactory;
         this.cachePageSize = cachePageSize;
@@ -179,11 +180,11 @@ public class MuninnPageCache implements RunnablePageCache
 
         MemoryReleaser memoryReleaser = new MemoryReleaser( maxPages );
         Object pageList = null;
-        int cachePageId = maxPages;
-        while ( cachePageId --> 0 )
+        int pageIndex = maxPages;
+        while ( pageIndex --> 0 )
         {
-            MuninnPage page = new MuninnPage( cachePageSize, cachePageId, memoryReleaser );
-            pages[cachePageId] = page;
+            MuninnPage page = new MuninnPage( cachePageSize, memoryReleaser );
+            pages[pageIndex] = page;
 
             if ( pageList == null )
             {
@@ -207,12 +208,22 @@ public class MuninnPageCache implements RunnablePageCache
         UnsafeUtil.putObjectVolatile( this, freelistOffset, pageList );
     }
 
-    static void verifyHacks()
+    private static void verifyHacks()
     {
         // Make sure that we have access to theUnsafe.
         if ( !UnsafeUtil.hasUnsafe() )
         {
             throw new AssertionError( "MuninnPageCache requires access to sun.misc.Unsafe" );
+        }
+    }
+
+    private static void verifyCachePageSizeIsPowerOfTwo( int cachePageSize )
+    {
+        int exponent = 31 - Integer.numberOfLeadingZeros( cachePageSize );
+        if ( 1 << exponent != cachePageSize )
+        {
+            throw new IllegalArgumentException(
+                    "Cache page size must be a power of two, but was " + cachePageSize );
         }
     }
 
@@ -342,14 +353,14 @@ public class MuninnPageCache implements RunnablePageCache
             for ( int i = 0; i < pages.length; i++ )
             {
                 MuninnPage page = pages[i];
-                long stamp = page.writeLock();
+                long stamp = page.readLock();
                 try
                 {
                     page.flush( cacheFlush.flushEventOpportunity() );
                 }
                 finally
                 {
-                    page.unlockWrite( stamp );
+                    page.unlockRead( stamp );
                 }
             }
         }

@@ -38,9 +38,7 @@ class ConservativeQueryAcceptorTest extends CypherFunSuite with LogicalPlanningT
       patternNodes = Set("a", "b"),
       patternRelationships = Set.empty)
 
-    val query = UnionQuery(Seq(PlannerQuery(graph = qg)), false)
-
-    conservativeQueryAcceptor(query) should be(true)
+    shouldAccept(qg)
   }
 
   test("should accept simple non-cyclic non-varlength queries") {
@@ -51,9 +49,7 @@ class ConservativeQueryAcceptorTest extends CypherFunSuite with LogicalPlanningT
         Set(PatternRelationship("r", nodes = ("a", "b"),
           Direction.OUTGOING, Seq.empty, SimplePatternLength)))
 
-    val query = UnionQuery(Seq(PlannerQuery(graph = qg)), false)
-
-    conservativeQueryAcceptor(query) should be(true)
+    shouldAccept(qg)
   }
 
   test("should not accept varlength queries") {
@@ -64,9 +60,7 @@ class ConservativeQueryAcceptorTest extends CypherFunSuite with LogicalPlanningT
         Set(PatternRelationship("r", nodes = ("a", "b"),
           Direction.OUTGOING, Seq.empty, VarPatternLength(1, Some(5)))))
 
-    val query = UnionQuery(Seq(PlannerQuery(graph = qg)), false)
-
-    conservativeQueryAcceptor(query) should be(false)
+    shouldReject(qg)
   }
 
   test("should not accept varlength queries in tail") {
@@ -96,9 +90,7 @@ class ConservativeQueryAcceptorTest extends CypherFunSuite with LogicalPlanningT
         Set(PatternRelationship("r", nodes = ("a", "a"),
           Direction.OUTGOING, Seq.empty, SimplePatternLength)))
 
-    val query = UnionQuery(Seq(PlannerQuery(graph = qg1)), false)
-
-    conservativeQueryAcceptor(query) should be(false)
+    shouldReject(qg1)
   }
 
   test("should not accept queries with cycles in them") {
@@ -112,9 +104,7 @@ class ConservativeQueryAcceptorTest extends CypherFunSuite with LogicalPlanningT
           PatternRelationship("r4", nodes = ("c", "e"), Direction.OUTGOING, Seq.empty, SimplePatternLength),
           PatternRelationship("r5", nodes = ("d", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)))
 
-    val query = UnionQuery(Seq(PlannerQuery(graph = qg1)), false)
-
-    conservativeQueryAcceptor(query) should be(false)
+    shouldReject(qg1)
   }
 
   test("should not accept queries with disconnected graph with cycle") {
@@ -127,9 +117,7 @@ class ConservativeQueryAcceptorTest extends CypherFunSuite with LogicalPlanningT
           PatternRelationship("r3", nodes = ("d", "e"), Direction.OUTGOING, Seq.empty, SimplePatternLength),
           PatternRelationship("r4", nodes = ("e", "d"), Direction.OUTGOING, Seq.empty, SimplePatternLength)))
 
-    val query = UnionQuery(Seq(PlannerQuery(graph = qg1)), false)
-
-    conservativeQueryAcceptor(query) should be(false)
+    shouldReject(qg1)
   }
 
   test("should accept queries with disconnected graph without cycle") {
@@ -142,9 +130,7 @@ class ConservativeQueryAcceptorTest extends CypherFunSuite with LogicalPlanningT
           PatternRelationship("r3", nodes = ("d", "e"), Direction.OUTGOING, Seq.empty, SimplePatternLength),
           PatternRelationship("r4", nodes = ("e", "f"), Direction.OUTGOING, Seq.empty, SimplePatternLength)))
 
-    val query = UnionQuery(Seq(PlannerQuery(graph = qg1)), false)
-
-    conservativeQueryAcceptor(query) should be(true)
+    shouldAccept(qg1)
   }
 
   test("should not accept queries with overlap") {
@@ -155,8 +141,28 @@ class ConservativeQueryAcceptorTest extends CypherFunSuite with LogicalPlanningT
         Set(PatternRelationship("r1", nodes = ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength),
           PatternRelationship("r2", nodes = ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)))
 
-    val query = UnionQuery(Seq(PlannerQuery(graph = qg1)), false)
+    shouldReject(qg1)
+  }
 
+  test("should accept queries that have star patterns") {
+    // MATCH a-[:T1]->b , a-[:T2]->c
+    val qg1 = QueryGraph(
+      patternNodes = Set("a", "b", "c"),
+      patternRelationships =
+        Set(
+          PatternRelationship("r1", nodes = ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength),
+          PatternRelationship("r2", nodes = ("a", "c"), Direction.OUTGOING, Seq.empty, SimplePatternLength)))
+
+    shouldAccept(qg1)
+  }
+
+  private def shouldAccept(qg: QueryGraph) {
+    val query = UnionQuery(Seq(PlannerQuery(graph = qg)), false)
+    conservativeQueryAcceptor(query) should be(true)
+  }
+
+  private def shouldReject(qg: QueryGraph) {
+    val query = UnionQuery(Seq(PlannerQuery(graph = qg)), false)
     conservativeQueryAcceptor(query) should be(false)
   }
 }

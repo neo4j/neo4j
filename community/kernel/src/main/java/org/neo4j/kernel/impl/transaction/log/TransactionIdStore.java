@@ -29,7 +29,7 @@ package org.neo4j.kernel.impl.transaction.log;
  * <ol>
  *   <li>{@link #nextCommittingTransactionId()} is called and an id is returned to a committer.
  *   At this point that id isn't visible from any getter.</li>
- *   <li>{@link #transactionCommitted(long)} is called with this id after the fact that the transaction
+ *   <li>{@link #transactionCommitted(long, long)} is called with this id after the fact that the transaction
  *   has been committed, i.e. written forcefully to a log. After this call the id may be visible from
  *   {@link #getLastCommittedTransactionId()} if all ids before it have also been committed.</li>
  *   <li>{@link #transactionClosed(long)} is called with this id again, this time after all changes the
@@ -46,7 +46,7 @@ public interface TransactionIdStore
     /**
      * @return the next transaction id for a committing transaction. The transaction id is incremented
      * with each call. Ids returned from this method will not be visible from {@link #getLastCommittedTransactionId()}
-     * until handed to {@link #transactionCommitted(long)}.
+     * until handed to {@link #transactionCommitted(long, long)}.
      */
     long nextCommittingTransactionId();
 
@@ -60,7 +60,7 @@ public interface TransactionIdStore
     void transactionCommitted( long transactionId, long checksum );
 
     /**
-     * @return highest seen gap-free {@link #transactionCommitted(long) committed transaction id}.
+     * @return highest seen gap-free {@link #transactionCommitted(long, long) committed transaction id}.
      */
     long getLastCommittedTransactionId();
 

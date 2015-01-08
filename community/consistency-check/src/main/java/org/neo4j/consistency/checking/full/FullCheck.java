@@ -61,7 +61,7 @@ public class FullCheck
         this.checkLabelScanStore = tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_label_scan_store );
         this.checkIndexes = tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_indexes );
         this.order = tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_execution_order );
-        this.totalMappedMemory = tuningConfiguration.get( GraphDatabaseSettings.mapped_memory_total_size );
+        this.totalMappedMemory = tuningConfiguration.get( GraphDatabaseSettings.pagecache_memory );
         this.samplingConfig = new IndexSamplingConfig( tuningConfiguration );
         this.progressFactory = progressFactory;
     }

@@ -19,31 +19,23 @@
  */
 package org.neo4j.test.ha;
 
+import org.junit.rules.ExternalResource;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
+
+import java.io.File;
+import java.util.Map;
+
+import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
+import org.neo4j.test.TargetDirectory;
+
 import static org.neo4j.cluster.ClusterSettings.default_timeout;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
 import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Map;
-
-import org.junit.rules.ExternalResource;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
-import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
-import org.neo4j.kernel.impl.util.DumpLogicalLog;
-import org.neo4j.test.TargetDirectory;
-
 public class ClusterRule extends ExternalResource
 {
-
-    public static void main( String[] args ) throws IOException
-    {
-        DumpLogicalLog.main( new String[]{"/Users/chris/workspaces/neo4j/neo4j-2" +
-                ".2/enterprise/ha/target/test-data/org.neo4j.kernel.api" +
-                ".SchemaIndexHaIT/e9d355b22fea23deb9f278434cb5abaf/neo4j.ha/server3"} );
-    }
     private final Class<?> testClass;
 
     private ClusterManager clusterManager;

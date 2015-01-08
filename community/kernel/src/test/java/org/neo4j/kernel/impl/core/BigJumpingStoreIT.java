@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -41,8 +41,7 @@ import org.neo4j.kernel.InternalAbstractGraphDatabase;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_total_size;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.IteratorUtil.firstOrNull;
 import static org.neo4j.helpers.collection.IteratorUtil.lastOrNull;
@@ -91,8 +90,7 @@ public class BigJumpingStoreIT
 
     private Map<String, String> config()
     {
-        return stringMap(
-                mapped_memory_total_size.name(), "10M");
+        return stringMap( pagecache_memory.name(), "10M" );
     }
 
     @After

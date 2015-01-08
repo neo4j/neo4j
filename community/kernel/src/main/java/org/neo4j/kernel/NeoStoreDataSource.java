@@ -150,6 +150,7 @@ import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.helpers.collection.Iterables.toList;
+import static org.neo4j.kernel.impl.store.StoreFactory.COUNTS_STORE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.state.CacheLoaders.nodeLoader;
 import static org.neo4j.kernel.impl.transaction.state.CacheLoaders.relationshipLoader;
@@ -556,11 +557,11 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
         storeMigrationProcess.migrateIfNeeded( store.getParentFile(), indexProvider, pageCache );
     }
 
-    private NeoStoreModule buildNeoStore( StoreFactory storeFactory, final LabelTokenHolder
+    private NeoStoreModule buildNeoStore( final StoreFactory storeFactory, final LabelTokenHolder
             labelTokens, final RelationshipTypeTokenHolder relationshipTypeTokens,
             final PropertyKeyTokenHolder propertyKeyTokenHolder )
     {
-        final NeoStore neoStore = storeFactory.newNeoStore( false, true );
+        final NeoStore neoStore = storeFactory.newNeoStore( false );
 
         life.add( new LifecycleAdapter()
         {
@@ -578,6 +579,11 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
                 relationshipTypeTokens.addTokens(
                         neoStoreModule.neoStore().getRelationshipTypeTokenStore().getTokens( Integer.MAX_VALUE ) );
                 labelTokens.addTokens( neoStoreModule.neoStore().getLabelTokenStore().getTokens( Integer.MAX_VALUE ) );
+
+                if ( neoStore.getCounts() == null )
+                {
+                    neoStore.rebuildCountStoreIfNeeded( storeFactory.storeFileName( COUNTS_STORE ) );
+                }
             }
         } );
 
@@ -880,8 +886,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
                         indexingService, labelScanStore, neoStore, cacheAccess, lockService,
                         legacyIndexProviderLookup, indexConfigStore, IdOrderingQueue.BYPASS );
 
-        RecoveryVisitor recoveryVisitor = new RecoveryVisitor( neoStore, storeRecoverer,
-                recoveryVisitorMonitor );
+        RecoveryVisitor recoveryVisitor = new RecoveryVisitor( neoStore, storeRecoverer, recoveryVisitorMonitor );
 
         LogEntryReader<ReadableVersionableLogChannel> logEntryReader = new LogEntryReaderFactory().versionable();
         final Visitor<LogVersionedStoreChannel,IOException> logFileRecoverer =

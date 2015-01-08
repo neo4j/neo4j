@@ -59,9 +59,11 @@ RETURN n,m###
 Node patterns can contain labels and properties.
 
 ###assertion=related
-MATCH (n)-->(m)
-WHERE id(n) = %A% AND id(m) = %B%
+//
 
+MATCH (n)-->(m)
+
+WHERE id(n) = %A% AND id(m) = %B%
 RETURN n,m###
 
 Any pattern can be used in `MATCH`.
@@ -76,9 +78,11 @@ RETURN n,m###
 Patterns with node properties.
 
 ###assertion=related
-MATCH p = (n)-->(m)
-WHERE id(n) = %A% AND id(m) = %B%
+//
 
+MATCH p = (n)-->(m)
+
+WHERE id(n) = %A% AND id(m) = %B%
 RETURN p###
 
 Assign a path to `p`.

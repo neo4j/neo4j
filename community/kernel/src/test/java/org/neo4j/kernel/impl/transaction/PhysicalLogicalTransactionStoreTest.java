@@ -19,16 +19,17 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
+import org.neo4j.helpers.collection.CloseableVisitor;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
@@ -64,7 +65,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
-
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
 import static org.neo4j.test.TargetDirectory.testDirForTest;
@@ -139,7 +139,7 @@ public class PhysicalLogicalTransactionStoreTest
         final AtomicInteger recoveredTransactions = new AtomicInteger();
         final LogFileRecoverer recoverer = new LogFileRecoverer(
                 new LogEntryReaderFactory().versionable(),
-                new Visitor<CommittedTransactionRepresentation,IOException>()
+                new CloseableVisitor<CommittedTransactionRepresentation, IOException>()
                 {
                     @Override
                     public boolean visit( CommittedTransactionRepresentation committedTx ) throws IOException
@@ -153,6 +153,12 @@ public class PhysicalLogicalTransactionStoreTest
                         assertEquals( latestCommittedTxWhenStarted, transaction.getLatestCommittedTxWhenStarted() );
                         recoveredTransactions.incrementAndGet();
                         return false;
+                    }
+
+                    @Override
+                    public void close() throws IOException
+                    {
+                        // nothing to do
                     }
                 } );
         logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000, transactionIdStore, mock( LogVersionRepository.class ), monitor, positionCache ) );
@@ -233,7 +239,7 @@ public class PhysicalLogicalTransactionStoreTest
         final AtomicInteger recoveredTransactions = new AtomicInteger();
         final LogFileRecoverer recoverer = new LogFileRecoverer(
                 new LogEntryReaderFactory().versionable(),
-                new Visitor<CommittedTransactionRepresentation,IOException>()
+                new CloseableVisitor<CommittedTransactionRepresentation, IOException>()
                 {
                     @Override
                     public boolean visit( CommittedTransactionRepresentation committedTx ) throws IOException
@@ -247,6 +253,12 @@ public class PhysicalLogicalTransactionStoreTest
                         assertEquals( latestCommittedTxWhenStarted, transaction.getLatestCommittedTxWhenStarted() );
                         recoveredTransactions.incrementAndGet();
                         return false;
+                    }
+
+                    @Override
+                    public void close() throws IOException
+                    {
+                        // nothing to do
                     }
                 } );
         logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000,

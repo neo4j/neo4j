@@ -91,15 +91,15 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("DbHits should be properly formatted") {
-    given("match n return n").planDescripton.getArguments.get("DbHits") should equal("1")
+    given("match n return n").planDescripton.getArguments.get("DbHits") should equal(1)
   }
 
   test("Rows should be properly formatted") {
-    given("match n return n").planDescripton.getArguments.get("Rows") should equal("0")
+    given("match n return n").planDescripton.getArguments.get("Rows") should equal(0)
   }
 
   test("EstimatedRows should be properly formatted") {
-    given("match n return n").planDescripton.getArguments.get("EstimatedRows") should equal("0")
+    given("match n return n").planDescripton.getArguments.get("EstimatedRows") should equal(0)
   }
 
   def given(query: String) = TestQuery(query)

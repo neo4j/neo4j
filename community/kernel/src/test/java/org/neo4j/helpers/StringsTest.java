@@ -19,10 +19,13 @@
  */
 package org.neo4j.helpers;
 
+import org.junit.Test;
+
+import java.net.URI;
+
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.Strings.decamelize;
-
-import org.junit.Test;
+import static org.neo4j.helpers.Strings.prettyPrint;
 
 public class StringsTest
 {
@@ -33,8 +36,32 @@ public class StringsTest
         assertEquals( "foo", decamelize.apply( "Foo" ) );
         assertEquals( "foo_bar", decamelize.apply( "FooBar" ) );
         assertEquals( "f_b", decamelize.apply( "FB" ) );
-        assertEquals("_", decamelize.apply( "_" ) );
+        assertEquals( "_", decamelize.apply( "_" ) );
         // What is expected behaviour here?
 //        assertEquals( "f_b", decamelize.apply( "F_B" ) );
+    }
+
+    @Test
+    public void testPrettyPrint()
+    {
+        assertEquals( "null", prettyPrint( null ) );
+        assertEquals( "42", prettyPrint( 42 ) );
+        assertEquals( "42", prettyPrint( "42" ) );
+        assertEquals( "[1, 2, 3, 4]", prettyPrint( new int[]{1, 2, 3, 4} ) );
+        assertEquals( "[false, true, true, false]", prettyPrint( new boolean[]{false, true, true, false} ) );
+        assertEquals( "[a, b, z]", prettyPrint( new char[]{'a', 'b', 'z'} ) );
+        assertEquals( "[ab, cd, zx]", prettyPrint( new String[]{"ab", "cd", "zx"} ) );
+        assertEquals(
+                "[Cat, [http://neo4j.com, http://neo4j.org], Dog, [1, 2, 3], [[[Wolf]]]]",
+                prettyPrint( new Object[]{
+                        "Cat",
+                        new URI[]{URI.create( "http://neo4j.com" ), URI.create( "http://neo4j.org" )},
+                        "Dog",
+                        new int[]{1, 2, 3},
+                        new Object[]{new Object[]{new Object[]{"Wolf"}}}} ) );
+
+        Object[] recursiveArray = {10.12345, null, "String"};
+        recursiveArray[1] = recursiveArray;
+        assertEquals( "[10.12345, [...], String]", prettyPrint( recursiveArray ) );
     }
 }

@@ -45,6 +45,7 @@ object renderDetails extends (InternalPlanDescription => String) {
             if !x.isInstanceOf[Rows] &&
               !x.isInstanceOf[DbHits] &&
               !x.isInstanceOf[EstimatedRows] &&
+              !x.isInstanceOf[Planner] &&
               !x.isInstanceOf[Version] => PlanDescriptionArgumentSerializer.serialize(x)
         }.mkString("; ")
           .replaceAll(UNNAMED_PATTERN, ""))

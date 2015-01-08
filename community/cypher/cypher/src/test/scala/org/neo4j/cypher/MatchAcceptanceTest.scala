@@ -536,7 +536,7 @@ return x""")
     relate(c, x1, "REL", "CX1")
     relate(c, x2, "REL", "CX2")
 
-    val result = execute( """
+    val result = executeWithNewPlanner( """
 MATCH (a {name:'A'}), (b {name:'B'}), (c {name:'C'})
 match a-[rA]->x, b-[rB]->x, c-[rC]->x
 return x""")
@@ -575,7 +575,7 @@ return x""")
     relate(c, g)
     relate(c, j)
 
-    val result = execute( """
+    val result = executeWithNewPlanner( """
 MATCH (a {name:'a'}), (b {name:'b'}), (c {name:'c'})
 match a-->x, b-->x, c-->x
 return x""")

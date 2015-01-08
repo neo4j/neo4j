@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
-import java.util.HashMap;
-
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+import java.util.HashMap;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileUtils;
@@ -44,7 +44,6 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;
 
@@ -60,7 +59,7 @@ public class StoreVersionTest
                 fs.get(),
                 StringLogger.DEV_NULL,
                 monitors );
-        NeoStore neoStore = sf.newNeoStore( true, false );
+        NeoStore neoStore = sf.newNeoStore( true );
 
         CommonAbstractStore[] stores = {
                 neoStore.getNodeStore(),
@@ -118,7 +117,7 @@ public class StoreVersionTest
                 fs.get(),
                 StringLogger.DEV_NULL,
                 monitors );
-        NeoStore neoStore = sf.newNeoStore( true, false );
+        NeoStore neoStore = sf.newNeoStore( true );
 
         // The first checks the instance method, the other the public one
         assertEquals( CommonAbstractStore.ALL_STORES_VERSION,

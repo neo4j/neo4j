@@ -50,10 +50,10 @@ class WhereTest extends RefcardTest with QueryStatisticsTestSupport {
   def text = """
 ###assertion=returns-one parameters=aname
 MATCH (n)-->(m)
-WHERE id(n) = %A% AND id(m) = %B%
 
-AND n.property <> {value}
+WHERE  n.property <> {value}
 
+AND id(n) = %A% AND id(m) = %B%
 RETURN n,m###
 
 Use a predicate to filter.

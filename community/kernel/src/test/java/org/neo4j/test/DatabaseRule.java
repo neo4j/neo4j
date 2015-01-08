@@ -19,11 +19,11 @@
  */
 package org.neo4j.test;
 
+import org.junit.rules.ExternalResource;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
-
-import org.junit.rules.ExternalResource;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -178,7 +178,7 @@ public abstract class DatabaseRule extends ExternalResource
         // Override to configure the database
 
         // Adjusted defaults for testing
-        builder.setConfig( GraphDatabaseSettings.mapped_memory_total_size, "20M" );
+        builder.setConfig( GraphDatabaseSettings.pagecache_memory, "20M" );
     }
 
     public GraphDatabaseService getGraphDatabaseService()

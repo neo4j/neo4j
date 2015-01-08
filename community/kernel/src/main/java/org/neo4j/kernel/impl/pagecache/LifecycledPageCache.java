@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_page_size;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_total_size;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 
 public class LifecycledPageCache extends LifecycleAdapter implements PageCache
 {
@@ -72,7 +72,7 @@ public class LifecycledPageCache extends LifecycleAdapter implements PageCache
 
     private static int calculateMaxPages( Config config )
     {
-        long availableMemory = config.get( mapped_memory_total_size );
+        long availableMemory = config.get( pagecache_memory );
         long pageSize = config.get( mapped_memory_page_size );
         long pageCount = availableMemory / pageSize;
         return (int) Math.min( Integer.MAX_VALUE, pageCount );

@@ -28,9 +28,9 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
+import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
@@ -56,7 +56,6 @@ import static org.neo4j.perftest.enterprise.util.DirectlyCorrelatedParameter.par
 import static org.neo4j.perftest.enterprise.util.DirectlyCorrelatedParameter.passOn;
 import static org.neo4j.perftest.enterprise.util.Setting.booleanSetting;
 import static org.neo4j.perftest.enterprise.util.Setting.enumSetting;
-import static org.neo4j.perftest.enterprise.util.Setting.integerSetting;
 import static org.neo4j.perftest.enterprise.util.Setting.stringSetting;
 
 public class ConsistencyPerformanceCheck
@@ -67,15 +66,9 @@ public class ConsistencyPerformanceCheck
     static final Setting<TaskExecutionOrder> execution_order =
             enumSetting( "execution_order", TaskExecutionOrder.SINGLE_THREADED );
     static final Setting<Boolean> wait_before_check = booleanSetting( "wait_before_check", false );
-    static final Setting<String> mapped_memory_total_size =
-            stringSetting( "mapped_memory_total_size", "2G" );
-    static final Setting<String> mapped_memory_page_size = stringSetting( "mapped_memory_page_size", "4k" );
-    static final Setting<Boolean> log_mapped_memory_stats =
-            booleanSetting( "log_mapped_memory_stats", true );
-    static final Setting<String> log_mapped_memory_stats_filename =
-            stringSetting( "log_mapped_memory_stats_filename", "mapped_memory_stats.log" );
-    static final Setting<Long> log_mapped_memory_stats_interval =
-            integerSetting( "log_mapped_memory_stats_interval", 1000000 );
+    static final Setting<String> pagecache_memory =
+            stringSetting( "dbms.pagecache.memory", "2G" );
+    static final Setting<String> mapped_memory_page_size = stringSetting( "dbms.pagecache.pagesize", "4k" );
     private static LifecycledPageCache pageCache;
     private static Neo4jJobScheduler jobScheduler;
     private static FileSystemAbstraction fileSystem;
@@ -163,7 +156,7 @@ public class ConsistencyPerformanceCheck
                 logger,
                 monitors );
 
-        NeoStore neoStore = factory.newNeoStore( true, false );
+        NeoStore neoStore = factory.newNeoStore( true );
 
         SchemaIndexProvider indexes = new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, tuningConfiguration );
         return new DirectStoreAccess( new StoreAccess( neoStore ),
@@ -174,14 +167,10 @@ public class ConsistencyPerformanceCheck
     {
         Map<String, String> passedOnConfiguration = passOn( configuration,
                 param( GraphDatabaseSettings.store_dir, DataGenerator.store_dir ),
-                param( GraphDatabaseSettings.mapped_memory_total_size, mapped_memory_total_size ),
+                param( GraphDatabaseSettings.pagecache_memory, pagecache_memory ),
                 param( GraphDatabaseSettings.mapped_memory_page_size, mapped_memory_page_size ),
-                param( ConsistencyCheckSettings.consistency_check_execution_order, execution_order ),
-                param( GraphDatabaseSettings.log_mapped_memory_stats, log_mapped_memory_stats ),
-                param( GraphDatabaseSettings.log_mapped_memory_stats_filename, log_mapped_memory_stats_filename ),
-                param( GraphDatabaseSettings.log_mapped_memory_stats_interval, log_mapped_memory_stats_interval ) );
+                param( ConsistencyCheckSettings.consistency_check_execution_order, execution_order ) );
 
         return new Config( passedOnConfiguration, GraphDatabaseSettings.class );
     }
-
 }

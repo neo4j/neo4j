@@ -25,32 +25,35 @@ import org.parboiled.Context
 trait Strings extends Base {
 
   protected def StringCharacters(c: Char): Rule1[String] = {
-    push(new StringBuilder) ~ zeroOrMore(EscapedChar | NormalChar(c)) ~~> (_.toString())
+    push(new java.lang.StringBuilder) ~ zeroOrMore(EscapedChar | NormalChar(c)) ~~> (_.toString())
   }
 
   protected def NormalChar(c: Char) = {
-    !(ch('\\') | ch(c)) ~ ANY ~:% withContext(appendToStringBuffer(_)(_))
+    !(ch('\\') | ch(c)) ~ ANY ~:% withContext(appendToStringBuilder(_)(_))
   }
 
   protected def EscapedChar = {
     "\\" ~ (
-      ch('\\') ~:% withContext(appendToStringBuffer(_)(_))
-        | ch('\'') ~:% withContext(appendToStringBuffer(_)(_))
-        | ch('"') ~:% withContext(appendToStringBuffer(_)(_))
-        | ch('b') ~ appendToStringBuffer('\b')
-        | ch('f') ~ appendToStringBuffer('\f')
-        | ch('n') ~ appendToStringBuffer('\n')
-        | ch('r') ~ appendToStringBuffer('\r')
-        | ch('t') ~ appendToStringBuffer('\t')
-        | Unicode ~~% withContext((code, ctx) => appendToStringBuffer(code.asInstanceOf[Char])(ctx))
-      )
+        ch('\\') ~:% withContext(appendToStringBuilder(_)(_))
+      | ch('\'') ~:% withContext(appendToStringBuilder(_)(_))
+      | ch('"') ~:% withContext(appendToStringBuilder(_)(_))
+      | ch('b') ~ appendToStringBuilder('\b')
+      | ch('f') ~ appendToStringBuilder('\f')
+      | ch('n') ~ appendToStringBuilder('\n')
+      | ch('r') ~ appendToStringBuilder('\r')
+      | ch('t') ~ appendToStringBuilder('\t')
+      | Unicode ~~% withContext((code, ctx) => appendCodePointToStringBuilder(code)(ctx))
+    )
   }
 
   protected def Unicode = rule { ch('u') ~ group(HexDigit ~ HexDigit ~ HexDigit ~ HexDigit) ~> (java.lang.Integer.parseInt(_, 16)) }
   private def HexDigit = rule { "0" - "9" | "a" - "f" | "A" - "F" }
 
-  protected def appendToStringBuffer(c: Any): Context[Any] => Unit = { ctx =>
-    ctx.getValueStack.peek.asInstanceOf[StringBuilder].append(c)
+  protected def appendToStringBuilder(c: Any): Context[Any] => Unit = ctx =>
+    ctx.getValueStack.peek.asInstanceOf[java.lang.StringBuilder].append(c)
     ()
-  }
+
+  protected def appendCodePointToStringBuilder(codePoint: java.lang.Integer): Context[Any] => Unit = ctx =>
+    ctx.getValueStack.peek.asInstanceOf[java.lang.StringBuilder].appendCodePoint(codePoint)
+    ()
 }

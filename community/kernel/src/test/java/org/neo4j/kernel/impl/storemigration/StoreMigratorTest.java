@@ -75,7 +75,7 @@ public class StoreMigratorTest
         // THEN starting the new store should be successful
         StoreFactory storeFactory = new StoreFactory( fs.get(), storeDirectory, pageCache,
                 logging.getMessagesLog( getClass() ), new Monitors() );
-        storeFactory.newNeoStore( false, false ).close();
+        storeFactory.newNeoStore( false ).close();
     }
 
     @Rule

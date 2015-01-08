@@ -41,7 +41,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   var nodes: List[Node] = null
 
   def databaseConfig(): Map[String,String] =
-    Map(GraphDatabaseSettings.mapped_memory_total_size.name -> "8M")
+    Map(GraphDatabaseSettings.pagecache_memory.name -> "8M")
 
   override protected def initTest() {
     super.initTest()

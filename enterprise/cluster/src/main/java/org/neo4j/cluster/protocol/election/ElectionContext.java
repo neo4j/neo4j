@@ -115,5 +115,11 @@ public interface ElectionContext
         {
             return version;
         }
+
+        @Override
+        public String toString()
+        {
+            return "VoteRequest{role='" + role + "', version=" + version + "}";
+        }
     }
 }

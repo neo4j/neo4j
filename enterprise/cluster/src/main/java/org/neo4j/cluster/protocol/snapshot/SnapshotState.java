@@ -156,7 +156,6 @@ public enum SnapshotState
                             outgoing.offer( Message.respond( SnapshotMessage.snapshot, message,
                                     new SnapshotMessage.SnapshotState( context.getLearnerContext()
                                             .getLastDeliveredInstanceId(), context.getSnapshotProvider(),
-                                            context.getClusterContext().getObjectInputStreamFactory(),
                                             context.getClusterContext().getObjectOutputStreamFactory()) ) );
                             break;
                         }

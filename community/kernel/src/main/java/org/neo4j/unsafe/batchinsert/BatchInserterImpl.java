@@ -255,7 +255,7 @@ public class BatchInserterImpl implements BatchInserter
         }
         msgLog.logMessage( Thread.currentThread() + " Starting BatchInserter(" + this + ")" );
         life.start();
-        neoStore = sf.newNeoStore( true, false );
+        neoStore = sf.newNeoStore( true );
         if ( !neoStore.isStoreOk() )
         {
             throw new IllegalStateException( storeDir + " store is not cleanly shutdown." );
@@ -292,7 +292,7 @@ public class BatchInserterImpl implements BatchInserter
     private Map<String, String> getDefaultParams()
     {
         Map<String, String> params = new HashMap<>();
-        params.put( GraphDatabaseSettings.mapped_memory_total_size.name(), "1%" );
+        params.put( GraphDatabaseSettings.pagecache_memory.name(), "1%" );
         return params;
     }
 
