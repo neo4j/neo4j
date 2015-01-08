@@ -32,9 +32,21 @@
     <url>https://github.com/neo4j/neo4j/tree/master/community/cypher</url>
   </scm>
 
+  <profiles>
+    <profile>
+      <id>include-cypher-backport</id>
+      <activation>
+        <property>
+          <name>!skipCypherBackport</name>
+        </property>
+      </activation>
+      <modules>
+        <module>cypher-backport</module>
+      </modules>
+    </profile>
+  </profiles>
+
   <modules>
-    <module>cypher-backport</module>
-    
     <module>cypher-compiler-2.2</module>
     <module>cypher</module>
     <module>docs/cypher-docs</module>
