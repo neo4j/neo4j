@@ -3,7 +3,13 @@
 Labels are a convenient way to group nodes together.
 They are used to restrict queries, define constraints and create indexes.
 
-The following will give an example of how to use labels.
+== Using Contraints
+
+You can also specify unique constraints that guarantee uniqueness of a certain property on nodes with a specific label.
+
+These constraints are also used by the +MERGE+ clause to make certain that a node only exists once.
+
+The following will give an example of how to use labels and add contraints and indexes to them.
 Let's start out adding a constraint -- in this case we decided that all +Movie+ node ++title++s should be unique.
 
 [source,cypher]
@@ -11,14 +17,23 @@ Let's start out adding a constraint -- in this case we decided that all +Movie+ 
 CREATE CONSTRAINT ON (movie:Movie) ASSERT movie.title IS UNIQUE
 ----
 
-////
+[source,querytest]
+----
 Constraints added: 1
-////
+----
 
 // console
 
 Note that adding the unique constraint will add an index on that property, so we won't do that separately.
-If we drop the constraint, we will have to add an index instead, as needed.
+If we drop a constraint, and still want an index on the same property, we have to create such an index.
+
+Constraints can be added after a label is already in use, but that requires that the existing data complies with the constraints.
+
+== Lookup indexes
+
+For a graph query to run fast, you don't need indexes, you only need them to find your starting points.
+The main reason for using indexes in a graph database is to find the starting points in the graph as fast as possible.
+After the initial lookups you rely on in-graph structures and the first class citizenship of relationships in the graph database to achieve high performance.
 
 In this case we want an index to speed up finding actors by name in the database:
 
@@ -27,12 +42,12 @@ In this case we want an index to speed up finding actors by name in the database
 CREATE INDEX ON :Actor(name)
 ----
 
-////
+[source,querytest]
+----
 Indexes added: 1
-////
+----
 
 Indexes can be added at any time.
-Constraints can be added after a label is already in use, but that requires that the existing data complies with the constraints.
 Note that it will take some time for an index to come online when there's existing data.
 
 Now, let's add some data.
@@ -44,12 +59,13 @@ CREATE (actor:Actor {name:"Tom Hanks"}),
   (actor)-[:ACTED_IN]->(movie);
 ----
 
-////
+[source,querytest]
+----
 Nodes created: 2
 Relationships created: 1
 Properties set: 2
 Labels added: 2
-////
+----
 
 Normally you don't specify indexes when querying for data.
 They will be used automatically.
@@ -61,10 +77,13 @@ MATCH (actor:Actor {name: "Tom Hanks"})
 RETURN actor;
 ----
 
-////
+[source,querytest]
+----
 Tom Hanks
 1 row
-////
+----
+
+== Labels
 
 Now let's say we want to add another label for a node.
 Here's how to do that:
@@ -75,9 +94,10 @@ MATCH (actor:Actor {name: "Tom Hanks"})
 SET actor :American;
 ----
 
-////
+[source,querytest]
+----
 Labels added: 1
-////
+----
 
 To remove a label from nodes, this is what to do:
 
@@ -87,9 +107,12 @@ MATCH (actor:Actor {name: "Tom Hanks"})
 REMOVE actor:American;
 ----
 
-////
+[source,querytest]
+----
 Labels removed: 1
-////
+----
+
+== Related Content
 
 For more information on labels and related topics, see:
 

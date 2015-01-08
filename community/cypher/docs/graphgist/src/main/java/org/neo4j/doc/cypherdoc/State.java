@@ -20,34 +20,38 @@
 package org.neo4j.doc.cypherdoc;
 
 import java.io.File;
+import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import org.neo4j.cypher.javacompat.internal.DocsExecutionEngine;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 
 class State
 {
-    final QueryExecutionEngine engine;
+    final DocsExecutionEngine engine;
     final GraphDatabaseService database;
+    final Connection sqlDatabase;
     final File parentDirectory;
     final String url;
     final List<String> knownFiles = new ArrayList<>();
+    final Map<String, Object> parameters = new HashMap<>();
 
     Result latestResult;
+    Result testedResult;
+    Result latestSqlResult;
+    Result testedSqlResult;
 
-    State( QueryExecutionEngine engine, GraphDatabaseService database, File parentDirectory, String url )
+    State( DocsExecutionEngine engine, GraphDatabaseService database, Connection sqlConnection,
+            File parentDirectory,
+            String url )
     {
         this.engine = engine;
         this.database = database;
+        this.sqlDatabase = sqlConnection;
         this.parentDirectory = parentDirectory;
         this.url = url.endsWith( "/" ) ? url : url + "/";
-    }
-
-    State( GraphDatabaseService database, File parentDirectory, String url )
-    {
-        this( ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency( QueryExecutionEngine.class ),
-              database, parentDirectory, url );
     }
 }

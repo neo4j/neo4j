@@ -25,11 +25,12 @@ CREATE (carrieanne)-[:ACTS_IN {role : 'Trinity'}]->(matrix2)
 CREATE (carrieanne)-[:ACTS_IN {role : 'Trinity'}]->(matrix3)
 ----
 
-////
+[source,querytest]
+----
 Nodes created: 6
 Relationships created: 9
 Properties set: 18
-////
+----
 
 This gives us the following graph to play with:
 
@@ -45,9 +46,10 @@ MATCH (n)
 RETURN "Hello Graph with " + count(*) + " Nodes!" AS welcome;
 ----
 
-////
+[source,querytest]
+----
 Hello Graph with 6 Nodes!
-////
+----
 
 Return a single node, by name:
 
@@ -57,11 +59,12 @@ MATCH (movie:Movie {title: 'The Matrix'})
 RETURN movie;
 ----
 
-////
+[source,querytest]
+----
 The Matrix
 1999-03-31
 1 row
-////
+----
 
 Return the title and date of the matrix node:
 
@@ -83,9 +86,10 @@ MATCH (actor:Actor)
 RETURN actor;
 ----
 
-////
+[source,querytest]
+----
 3 rows
-////
+----
 
 Return just the name, and order them by name:
 
@@ -104,9 +108,10 @@ MATCH (actor:Actor)
 RETURN count(*);
 ----
 
-////
+[source,querytest]
+----
 3
-////
+----
 
 Get only the actors whose names end with ``s'':
 
@@ -117,9 +122,10 @@ WHERE actor.name =~ ".*s$"
 RETURN actor.name;
 ----
 
-////
+[source,querytest]
+----
 2 rows
-////
+----
 
 Here's some exploratory queries for unknown datasets.
 _Don't do this on live production databases!_
@@ -140,9 +146,10 @@ MATCH (n)-[r]->()
 RETURN type(r), count(*);
 ----
 
-////
+[source,querytest]
+----
 1 row
-////
+----
 
 //table
 
@@ -154,9 +161,10 @@ MATCH (n)-[r]->(m)
 RETURN n AS from, r AS `->`, m AS to;
 ----
 
-////
+[source,querytest]
+----
 9 rows
-////
+----
 
 //table
 

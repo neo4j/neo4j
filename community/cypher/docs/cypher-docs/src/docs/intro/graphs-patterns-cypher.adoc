@@ -1,0 +1,89 @@
+[[cypher-intro-patterns]]
+= Graphs, Patterns and Cypher
+
+== It's all about Patterns
+
+Graphs thrive on patterns, each graph is a connected structure which consists of many different patterns.
+
+Patterns capture semantic information by describing how things relate.
+They tell you if _I KNOW you_, _an Author WROTE a Book_, _a Person LIVES at a Place_ or _an Actor ACTED_IN a Movie_.
+
+This kind of simple pattern typically describes how two entities are related.
+Combined with other patterns, this can represent complex domains and interesting use-cases.
+
+Small pattern structures are also easy for the human brain to handle.
+We are well versed in detecting patterns not only in our daily lives but also in data, when the data is presented visually.
+
+Cypher is all about patterns.
+They are used to describe graph structures you want to create or information you want to find.
+
+== Cypher Concepts
+
+Cypher is a textual, declarative query language, much like SQL for relational databases, but for graphs.
+It doesn't instruct the database to run certain operations but instead describes the things you want to create or find.
+Neo4j then figures out the best way to do that.
+
+With Cypher, you use symbolic textual patterns to describe graph patterns (circles for nodes and arrows for relationships) that you would usually draw on a whiteboard.
+
+It uses ASCII-art to visualize the typical circles for nodes with parentheses surrounding a piece of information.
+
+To describe a node for a  `Movie` entity with a `title` and a ++released++-year we would use a textual pattern like this:
+
+[source,cypher]
+----
+(matrix:Movie {title:"The Matrix", released:1997})
+----
+
+The `Movie` label tags the otherwise untyped node as a movie and is prefixed by a colon to become a symbol: `:Movie`.
+The `matrix` identifier is just a name that we use to refer to this node within the statement.
+It is optional and only relevant in the scope of the same statement; it's not persisted.
+
+The freely chosen properties of that node, `title` and `released` are represented as a map (you might want to call it a dictionary or JSON-like structure).
+They are listed as keys/value pairs within curly braces.
+
+To ``draw'' the relationships of your pattern, you would just use the appropriate symbols, which, in the simplest case is a `--`.
+The direction of a relationship can be denoted by using an arrowhead: `-->` or `<--`.
+If you have more information about that relationship, like a relationship type or properties on it, you can include them inside square brackets.
+
+For the movies domain, this could be an _ACTED_IN_ relationship. 
+So the following could be a basic fact or pattern in this domain:
+
+[source,cypher]
+----
+(keanu:Person:Actor {name:"Keanu Reeves"}) -[role:ACTED_IN {roles : ["Neo"]}]-> (matrix:Movie {title:"The Matrix"})
+----
+
+Like with node labels, the relationship-type `ACTED_IN` is added as a symbol, prefixed with a colon: `:ACTED_IN`.
+As with nodes you can use identifiers, in this case `role`, to refer to the relationship later in the statement.
+You use the same notation for relationship properties as for node properties.
+In this case we went with an array property for the `roles`.
+
+[NOTE]
+.Pattern Nodes vs. Database Nodes
+====
+Note the difference between pattern nodes and database nodes.
+A pattern node is used to _describe_ a node that can exist zero, one or any number of times in the database.
+
+The same goes for relationships.
+====
+
+You can also assign the whole pattern to an identifier which then allows you to access each of the matched paths in the graph.
+This way you can for instance inspect them or use them in other expressions.
+
+[source,cypher]
+----
+path = (:Person)-[:ACTED_IN]->(:Movie)
+----
+
+This path variable would contain two nodes and the connecting relationship for each such pattern found or created.
+There are a number of functions to access details of a path, including `nodes(path)`, `rels(path)` (same as `relationships(path)`), and `length(path)`.
+
+== Clauses
+
+Cypher statements consist of individual _clauses_ which are their building blocks.
+There are clauses that can create and match patterns in the graph but also filter, project, sort or paginate results or connect/compose partial statements.
+We will use Cypher clauses to compose more complex statements that express what we want to know or create. 
+Neo4j then figures out how to achieve that in an efficient manner.
+
+// maybe add an overview of the clauses here? /AN
+
