@@ -152,6 +152,7 @@ the relevant Commercial Agreement.
           <groupId>org.neo4j</groupId>
           <artifactId>neo4j-community</artifactId>
           <version>${project.version}</version>
+          <type>pom</type>
         </dependency>
         <dependency>
           <groupId>org.neo4j</groupId>

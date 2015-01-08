@@ -13,7 +13,7 @@
   <version>2.2-SNAPSHOT</version>
 
   <name>Neo4j - Community</name>
-  <packaging>jar</packaging>
+  <packaging>pom</packaging>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
   <description>A meta package containing the most used Neo4j Community libraries. Intended use: as a Maven dependency.</description>
 
