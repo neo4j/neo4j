@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, PatternRelationship}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 
 import scala.collection.mutable
 
@@ -40,24 +40,15 @@ object conservativeQueryAcceptor extends (UnionQuery => Boolean) {
   private def containsVarLength(qg: QueryGraph): Boolean = qg.patternRelationships.exists(!_.length.isSimple)
 
   private def containsCycles(qg: QueryGraph): Boolean = {
-    val visitedNodes = mutable.HashSet[IdName]()
-    val visitedRels = mutable.HashSet[PatternRelationship]()
+    val visited = mutable.HashSet[IdName]()
 
-    val startPoints = qg.patternRelationships.map(r => (r.left, r))
-    val stack = mutable.Stack[(IdName, PatternRelationship)]()
-    stack.pushAll(startPoints)
-    while (!stack.isEmpty) {
-      val (node, rel) = stack.pop()
-      if (visitedNodes(node)) return true
-      visitedNodes += node
-      visitedRels += rel
-      val nextNode = rel.otherSide(node)
+    for (rel <- qg.patternRelationships) {
+      if (rel.left == rel.right) return true
+      val otherSide = if (visited(rel.left)) rel.right else rel.left
+      if (visited(otherSide)) return true
 
-      //avoid self loops
-      if (nextNode == node) return true
-
-      val nextRels = qg.findRelationshipsEndingOn(nextNode).filterNot(visitedRels)
-      stack.pushAll(nextRels.map((nextNode, _)))
+      visited += rel.left
+      visited += rel.right
     }
 
     false
