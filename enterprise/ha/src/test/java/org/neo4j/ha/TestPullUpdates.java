@@ -49,8 +49,6 @@ import org.neo4j.shell.ShellClient;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellLobby;
 import org.neo4j.shell.ShellSettings;
-import org.neo4j.test.RepeatRule;
-import org.neo4j.test.RepeatRule.Repeat;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 

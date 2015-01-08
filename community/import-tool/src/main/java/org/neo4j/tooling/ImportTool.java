@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.Map.Entry;
 
 import org.neo4j.function.Function;
+import org.neo4j.function.Function2;
 import org.neo4j.function.Functions;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Args.Option;
@@ -71,15 +72,6 @@ import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultF
  */
 public class ImportTool
 {
-    private static final Function<String,IdType> TO_ID_TYPE = new Function<String,IdType>()
-    {
-        @Override
-        public IdType apply( String from )
-        {
-            return IdType.valueOf( from.toUpperCase() );
-        }
-    };
-
     enum Options
     {
         STORE_DIR( "into", "<store-dir>", "Database directory to import into. " + "Must not contain existing database." ),
@@ -142,9 +134,14 @@ public class ImportTool
             return key;
         }
 
+        String argument()
+        {
+            return "--" + key();
+        }
+
         void printUsage( PrintStream out )
         {
-            out.println( "--" + key + " " + usage );
+            out.println( argument() + " " + usage );
             for ( String line : Args.splitLongLine( description.replace( "`", "" ), 80 ) )
             {
                 out.println( "\t" + line );
@@ -155,7 +152,7 @@ public class ImportTool
         {
             String filteredDescription = description.replace( availableProcessorsHint(), "" );
             String usageString = (usage.length() > 0) ? " " + usage : "";
-            return "*--" + key + usageString + "*::\n" + filteredDescription + "\n\n";
+            return "*" + argument() + usageString + "*::\n" + filteredDescription + "\n\n";
         }
 
         private static String availableProcessorsHint()
@@ -167,7 +164,7 @@ public class ImportTool
     /**
      * Delimiter used between files in an input group.
      */
-    static final String MULTI_FILE_DELIMITER = " ";
+    static final String MULTI_FILE_DELIMITER = ",";
 
     public static void main( String[] incomingArguments )
     {
@@ -180,33 +177,20 @@ public class ImportTool
 
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         File storeDir;
-        // The input groups
         Collection<Option<File[]>> nodesFiles, relationshipsFiles;
         boolean enableStacktrace;
         Number processors = null;
         Input input = null;
         try
         {
-            storeDir =
-                    args.interpretOption( Options.STORE_DIR.key(), Converters.<File> mandatory(), Converters.toFile(),
-                            Validators.DIRECTORY_IS_WRITABLE, Validators.CONTAINS_NO_EXISTING_DATABASE );
-            nodesFiles =
-                    args.interpretOptionsWithMetadata( Options.NODE_DATA.key(), Converters.<File[]> mandatory(),
-                            Converters.toFiles( MULTI_FILE_DELIMITER ), Validators.FILES_EXISTS,
-                            Validators.<File> atLeast( 1 ) );
-            relationshipsFiles =
-                    args.interpretOptionsWithMetadata( Options.RELATIONSHIP_DATA.key(),
-                            Converters.<File[]> optional(), Converters.toFiles( MULTI_FILE_DELIMITER ),
-                            Validators.FILES_EXISTS, Validators.<File> atLeast( 1 ) );
+            storeDir = args.interpretOption( Options.STORE_DIR.key(), Converters.<File>mandatory(),
+                    Converters.toFile(), Validators.DIRECTORY_IS_WRITABLE, Validators.CONTAINS_NO_EXISTING_DATABASE );
+            nodesFiles = INPUT_FILES_EXTRACTOR.apply( args, Options.NODE_DATA.key() );
+            relationshipsFiles = INPUT_FILES_EXTRACTOR.apply( args, Options.RELATIONSHIP_DATA.key() );
             enableStacktrace = args.getBoolean( Options.STACKTRACE.key(), Boolean.FALSE, Boolean.TRUE );
             processors = args.getNumber( Options.PROCESSORS.key(), null );
-            input = new CsvInput(
-                    nodeData( nodesFiles ),
-                    defaultFormatNodeFileHeader(),
-                    relationshipData( relationshipsFiles ),
-                    defaultFormatRelationshipFileHeader(),
-                    args.interpretOption( Options.ID_TYPE.key(), withDefault( IdType.STRING ), TO_ID_TYPE ),
-                    csvConfiguration( args ) );
+            IdType idType = args.interpretOption( Options.ID_TYPE.key(), withDefault( IdType.STRING ), TO_ID_TYPE );
+            input = input( nodesFiles, relationshipsFiles, INPUT_FILES_EXTRACTOR, idType, csvConfiguration( args ) );
         }
         catch ( IllegalArgumentException e )
         {
@@ -252,6 +236,19 @@ public class ImportTool
                 }
             }
         }
+    }
+
+    private static Input input( Collection<Option<File[]>> nodesFiles, Collection<Option<File[]>> relationshipsFiles,
+            Function2<Args,String,Collection<Option<File[]>>> inputFilesExtractor,
+            IdType idType, Configuration configuration )
+    {
+        Iterable<DataFactory<InputNode>> nodeData = nodeData( nodesFiles );
+        Iterable<DataFactory<InputRelationship>> relationshipData = relationshipData( relationshipsFiles );
+
+        return new CsvInput(
+                nodeData, defaultFormatNodeFileHeader(),
+                relationshipData, defaultFormatRelationshipFileHeader(),
+                idType, configuration );
     }
 
     private static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration( final Number processors )
@@ -307,17 +304,17 @@ public class ImportTool
         };
     }
 
-    private static Iterable<DataFactory<InputNode>> nodeData( Collection<Option<File[]>> files )
+    private static Iterable<DataFactory<InputNode>> nodeData( Collection<Option<File[]>> nodesFiles )
     {
-        return new IterableWrapper<DataFactory<InputNode>,Option<File[]>>( files )
+        return new IterableWrapper<DataFactory<InputNode>,Option<File[]>>( nodesFiles )
         {
             @Override
-            protected DataFactory<InputNode> underlyingObjectToObject( Option<File[]> group )
+            protected DataFactory<InputNode> underlyingObjectToObject( Option<File[]> input )
             {
-                Function<InputNode,InputNode> decorator = group.metadata() != null
-                        ? additiveLabels( group.metadata().split( ":" ) )
+                Function<InputNode,InputNode> decorator = input.metadata() != null
+                        ? additiveLabels( input.metadata().split( ":" ) )
                         : Functions.<InputNode>identity();
-                return data( decorator, group.value() );
+                return data( decorator, input.value() );
             }
         };
     }
@@ -401,6 +398,15 @@ public class ImportTool
         };
     }
 
+    private static final Function<String,IdType> TO_ID_TYPE = new Function<String,IdType>()
+    {
+        @Override
+        public IdType apply( String from )
+        {
+            return IdType.valueOf( from.toUpperCase() );
+        }
+    };
+
     private static final Function<String,Character> DELIMITER_CONVERTER = new Function<String,Character>()
     {
         private final Function<String,Character> fallback = Converters.toCharacter();
@@ -413,6 +419,18 @@ public class ImportTool
                 return '\t';
             }
             return fallback.apply( value );
+        }
+    };
+
+    private static final Function2<Args,String,Collection<Option<File[]>>> INPUT_FILES_EXTRACTOR =
+            new Function2<Args,String,Collection<Option<File[]>>>()
+    {
+        @Override
+        public Collection<Option<File[]>> apply( Args args, String key )
+        {
+            return args.interpretOptionsWithMetadata( key, Converters.<File[]>optional(),
+                    Converters.toFiles( MULTI_FILE_DELIMITER ), Validators.FILES_EXISTS,
+                    Validators.<File>atLeast( 1 ) );
         }
     };
 }

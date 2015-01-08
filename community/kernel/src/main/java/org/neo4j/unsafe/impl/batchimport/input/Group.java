@@ -19,15 +19,18 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input;
 
+import org.neo4j.function.primitive.PrimitiveIntPredicate;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 
 /**
  * Group of {@link InputEntity inputs}. Used primarily in {@link IdMapper} for supporting multiple
  * id groups within the same index.
  */
-public interface Group
+public interface Group extends PrimitiveIntPredicate
 {
     int id();
+
+    String name();
 
     public static class Adapter implements Group
     {
@@ -47,11 +50,54 @@ public interface Group
         }
 
         @Override
+        public String name()
+        {
+            return name;
+        }
+
+        @Override
+        public boolean accept( int value )
+        {
+            return value == id;
+        }
+
+        @Override
         public String toString()
         {
             return name;
         }
+
+        @Override
+        public int hashCode()
+        {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + id;
+            return result;
+        }
+
+        @Override
+        public boolean equals( Object obj )
+        {
+            if ( this == obj )
+                return true;
+            if ( obj == null )
+                return false;
+            if ( getClass() != obj.getClass() )
+                return false;
+            Adapter other = (Adapter) obj;
+            if ( id != other.id )
+                return false;
+            return true;
+        }
     }
 
-    public static final Group GLOBAL = new Adapter( 0, "global" );
+    public static final Group GLOBAL = new Adapter( 0, "global" )
+    {
+        @Override
+        public boolean accept( int value )
+        {
+            return true;
+        }
+    };
 }
