@@ -92,10 +92,18 @@ class LoadCsvAcceptanceTest
         writer.println("1,'Aadvark',0")
         writer.println("2,'Babs'")
         writer.println("3,'Cash',1")
+        writer.println("4,'Dice',\"\"")
+        writer.println("5,'Emerald',")
     }).cypherEscape
 
     val result = execute(s"LOAD CSV WITH HEADERS FROM '${url}' AS line RETURN line.x")
-    assert(result.toList === List(Map("line.x" -> "0"), Map("line.x" -> null), Map("line.x" -> "1")))
+    assert(result.toList === List(
+      Map("line.x" -> "0"),
+      Map("line.x" -> null),
+      Map("line.x" -> "1"),
+      Map("line.x" -> ""),
+      Map("line.x" -> null))
+    )
   }
 
   test("should handle quotes") {
