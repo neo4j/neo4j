@@ -29,6 +29,8 @@ angular.module('neo4jApp.services')
         constructor: (cypher) ->
           @nodeMap = {}
           @relationshipMap = {}
+          @isSingleMode = false
+          @relationshiptypeMap = {}
 
           for node in cypher.nodes
             @addNode(node)
@@ -41,13 +43,22 @@ angular.module('neo4jApp.services')
         relationships: ->
           value for own key, value of @relationshipMap
 
+        types: ->
+          key for own key of @relationshiptypeMap
+
         addNode: (raw) ->
           @nodeMap[raw.id] ||= new Node(raw.id, raw.labels, raw.properties)
 
         addRelationship: (raw) ->
           source = @nodeMap[raw.startNode] or throw malformed()
           target = @nodeMap[raw.endNode] or throw malformed()
-          @relationshipMap[raw.id] = new Relationship(raw.id, source, target, raw.type, raw.properties)
+          if ! @isSingleMode
+            @relationshipMap[raw.id] = new Relationship(raw.id, source, target, raw.type, raw.properties)
+          else
+            if @relationshiptypeMap[raw.type]?  
+              @relationshiptypeMap[raw.type].push raw.endNode
+            else
+              @relationshiptypeMap[raw.type] = [raw.endNode]
 
         merge: (result) ->
           @addNode(n) for n in result.nodes
@@ -71,6 +82,9 @@ angular.module('neo4jApp.services')
                 accessor(node) + node.radius))
 
           bounds
+         
+        switchSingleMode: (singleMode) ->
+          @isSingleMode = singleMode
 
       malformed = ->
         new Error('Malformed graph: must add nodes before relationships that connect them')
