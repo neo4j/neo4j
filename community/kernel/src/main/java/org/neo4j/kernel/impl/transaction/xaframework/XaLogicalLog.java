@@ -148,6 +148,7 @@ public class XaLogicalLog implements LogLoader
     private final LogEntry.Done doneEntry = new LogEntry.Done(-1);
 
     private final KernelHealth kernelHealth;
+    private final LogRotationMonitor logRotationMonitor;
 
     public XaLogicalLog( File fileName, XaResourceManager xaRm, XaCommandReaderFactory commandReaderFactory,
                          XaCommandWriterFactory commandWriterFactory,
@@ -208,6 +209,7 @@ public class XaLogicalLog implements LogLoader
                     logWriterSPI, logEntryWriter ) ) );
 
         translatingEntryConsumer = new TranslatingEntryConsumer( transactionTranslator );
+        logRotationMonitor = monitors.newMonitor( LogRotationMonitor.class, "logicallog" );
     }
 
     synchronized void open() throws IOException
@@ -1167,6 +1169,8 @@ public class XaLogicalLog implements LogLoader
         File currentLogFile = logFiles.getLog1FileName();
         char newActiveLog = LOG2;
         final long currentVersion = xaTf.getCurrentVersion();
+
+        logRotationMonitor.rotatingLog( currentVersion );
 
         rotationMessage( currentVersion, "Log rotation initiated. Starting store flush..." );
         xaTf.flushAll();
