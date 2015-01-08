@@ -12,8 +12,8 @@
   <artifactId>neo4j-cypher-compiler-backport-2.1</artifactId>
   <packaging>jar</packaging>
   <version>2.2-SNAPSHOT</version>
-  <name>Neo4j - Cypher Compiler 2.1</name>
-  <description>Compiler for Cypher 2.1</description>
+  <name>Neo4j - Cypher Compiler Backport 2.1</name>
+  <description>Compiler for Cypher Backport 2.1</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
