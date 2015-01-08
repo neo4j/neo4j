@@ -133,7 +133,7 @@ Primitive [shape="record" label="Primitive |{boolean|byte|short|int|long|float|d
 |========================================================
 |Type | Description | Value range
 |boolean| | +true+/+false+
-|byte|8-bit integer | +-128+ to +127+, inclusive 
+|byte|8-bit integer | +-128+ to +127+, inclusive
 |short|16-bit integer | +-32768+ to +32767+, inclusive
 |int| 32-bit integer | +-2147483648+ to +2147483647+, inclusive
 |long| 64-bit integer | +-9223372036854775808+ to +9223372036854775807+, inclusive
@@ -248,15 +248,16 @@ Once you’ve specified which properties to index, Neo4j will make sure your ind
 Any operation that looks up nodes by the newly indexed properties will see a significant performance boost.
 
 Indexes in Neo4j are _eventually available_. That means that when you first create an index, the operation returns immediately.
-The index is *populating* in the background and so is not immediately available for querying.
-When the index has been fully populated it will eventually come *online*. That means that it is now ready to be used in
-queries.
+The index is _populating_ in the background and so is not immediately available for querying.
+When the index has been fully populated it will eventually come _online_. That means that it is now ready to be used in queries.
 
-If something should go wrong with the index, it can end up in a *failed* state. When it is failed, it will not be used
+If something should go wrong with the index, it can end up in a _failed_ state. When it is failed, it will not be used
 to speed up queries. To rebuild it, you can drop and recreate the index. Look at logs for clues about the failure.
 
 You can track the status of your index by asking for the index state through the API you are using.
 Note, however, that this is not yet possible through Cypher.
+
+NOTE: Each index can hold a maximum of _2 billion entries_.
 
 How to use indexes in the different APIs:
 
