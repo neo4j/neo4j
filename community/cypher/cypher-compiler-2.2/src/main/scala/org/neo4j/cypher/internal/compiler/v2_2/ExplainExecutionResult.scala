@@ -28,9 +28,11 @@ import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescr
 import org.neo4j.graphdb.QueryExecutionType.{QueryType, explained}
 import org.neo4j.graphdb.ResourceIterator
 
-case class ExplainExecutionResult(columns: List[String], executionPlanDescription: InternalPlanDescription, queryType: QueryType)
+case class ExplainExecutionResult(closer: TaskCloser, columns: List[String],
+                                  executionPlanDescription: InternalPlanDescription, queryType: QueryType)
   extends InternalExecutionResult {
-  def javaIterator: ResourceIterator[util.Map[String, Any]] = new EmptyResourceIterator
+
+  def javaIterator: ResourceIterator[util.Map[String, Any]] = new EmptyResourceIterator(close)
   def columnAs[T](column: String) = Iterator.empty
   def javaColumns: util.List[String] = Collections.emptyList()
 
@@ -46,21 +48,21 @@ case class ExplainExecutionResult(columns: List[String], executionPlanDescriptio
        |+--------------------------------------------+
        |""".stripMargin
 
-  def javaColumnAs[T](column: String): ResourceIterator[T] = new EmptyResourceIterator
+  def javaColumnAs[T](column: String): ResourceIterator[T] = new EmptyResourceIterator(close)
 
   def planDescriptionRequested = true
 
   def executionType = explained(queryType)
 
-  def close() {}
+  def close() { closer.close(success = true) }
 
   def next() = Iterator.empty.next()
 
   def hasNext = false
 }
 
-final class EmptyResourceIterator[T] extends ResourceIterator[T] {
-  def close() {}
+final class EmptyResourceIterator[T](onClose: () => Unit) extends ResourceIterator[T] {
+  def close() { onClose() }
 
   def next(): T= Iterator.empty.next()
 

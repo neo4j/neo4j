@@ -19,14 +19,16 @@
  */
 package org.neo4j.cypher.internal.helpers
 
-import org.neo4j.graphdb.{Transaction, DynamicLabel, Node}
-import org.neo4j.graphdb.DynamicLabel._
-import org.neo4j.kernel.GraphDatabaseAPI
-import collection.JavaConverters._
 import java.util.concurrent.TimeUnit
+
+import org.neo4j.graphdb.DynamicLabel._
+import org.neo4j.graphdb.{DynamicLabel, Node, Transaction}
+import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.kernel.impl.transaction.{TransactionCounters, TransactionMonitor}
+import org.neo4j.kernel.impl.transaction.TransactionCounters
+
+import scala.collection.JavaConverters._
 
 trait GraphIcing {
 
@@ -45,13 +47,13 @@ trait GraphIcing {
       indexDefs.map(_.getPropertyKeys.asScala.toList)
     }
 
-    def createConstraint(label:String, property: String) {
+    def createConstraint(label:String, property: String) = {
       inTx {
         graph.schema().constraintFor(DynamicLabel.label(label)).assertPropertyIsUnique(property).create()
       }
     }
 
-    def createIndex(label: String, property: String) {
+    def createIndex(label: String, property: String) = {
       val indexDef = inTx {
         graph.schema().indexFor(DynamicLabel.label(label)).on(property).create()
       }
@@ -59,6 +61,8 @@ trait GraphIcing {
       inTx {
         graph.schema().awaitIndexOnline(indexDef, 10, TimeUnit.SECONDS)
       }
+
+      indexDef
     }
 
     def statement: Statement = txBridge.instance()

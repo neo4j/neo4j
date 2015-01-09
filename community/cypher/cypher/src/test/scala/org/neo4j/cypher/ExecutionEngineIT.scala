@@ -20,7 +20,10 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.test.TestGraphDatabaseFactory
 
 class ExecutionEngineIT extends CypherFunSuite {
@@ -78,5 +81,82 @@ class ExecutionEngineIT extends CypherFunSuite {
 
       db.execute("PROFILE MATCH (a)-[:T*]-(a) RETURN a").getExecutionPlanDescription
     }
+  }
+
+  test("should not leak transaction when closing the result for a query") {
+    //given
+    val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
+    val engine = new ExecutionEngine(db)
+
+    // when
+    db.execute("return 1").close()
+    // then
+    txBridge(db).hasTransaction shouldBe false
+
+    // when
+    engine.execute("return 1").close()
+    // then
+    txBridge(db).hasTransaction shouldBe false
+
+    // when
+    engine.execute("return 1").javaIterator.close()
+    // then
+    txBridge(db).hasTransaction shouldBe false
+  }
+
+  test("should not leak transaction when closing the result for a profile query") {
+    //given
+    val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
+    val engine = new ExecutionEngine(db)
+
+    // when
+    db.execute("profile return 1").close()
+    // then
+    txBridge(db).hasTransaction shouldBe false
+
+    // when
+    engine.execute("profile return 1").close()
+    // then
+    txBridge(db).hasTransaction shouldBe false
+
+    // when
+    engine.execute("profile return 1").javaIterator.close()
+    // then
+    txBridge(db).hasTransaction shouldBe false
+
+    // when
+    engine.profile("return 1").close()
+    // then
+    txBridge(db).hasTransaction shouldBe false
+
+    // when
+    engine.profile("return 1").javaIterator.close()
+    // then
+    txBridge(db).hasTransaction shouldBe false
+  }
+
+  test("should not leak transaction when closing the result for an explain query") {
+    //given
+    val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
+    val engine = new ExecutionEngine(db)
+
+    // when
+    db.execute("explain return 1").close()
+    // then
+    txBridge(db).hasTransaction shouldBe false
+
+    // when
+    engine.execute("explain return 1").close()
+    // then
+    txBridge(db).hasTransaction shouldBe false
+
+    // when
+    engine.execute("explain return 1").javaIterator.close()
+    // then
+    txBridge(db).hasTransaction shouldBe false
+  }
+
+  private def txBridge(db: GraphDatabaseService) = {
+    db.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
   }
 }
