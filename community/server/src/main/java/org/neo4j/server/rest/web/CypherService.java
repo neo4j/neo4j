@@ -21,14 +21,13 @@ package org.neo4j.server.rest.web;
 
 import java.util.HashMap;
 import java.util.Map;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
-
-import org.apache.commons.lang.StringUtils;
 
 import org.neo4j.cypher.CypherException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -53,9 +52,9 @@ public class CypherService
     private static final String PROFILE_PARAM = "profile";
     private final GraphDatabaseService database;
 
-    private CypherExecutor cypherExecutor;
-    private OutputFormat output;
-    private InputFormat input;
+    private final CypherExecutor cypherExecutor;
+    private final OutputFormat output;
+    private final InputFormat input;
 
     public CypherService( @Context CypherExecutor cypherExecutor, @Context InputFormat input,
                           @Context OutputFormat output, @Context GraphDatabaseService database )

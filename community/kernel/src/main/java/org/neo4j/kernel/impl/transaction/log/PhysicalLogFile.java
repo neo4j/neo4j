@@ -127,7 +127,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     }
 
     @Override
-    public synchronized boolean rotationNeeded() throws IOException
+    public boolean rotationNeeded() throws IOException
     {
         /*
          * Whereas channel.size() should be fine, we're safer calling position() due to possibility
@@ -136,6 +136,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
         return (channel.position() >= rotateAtSize);
     }
 
+    @Override
     public synchronized void rotate() throws IOException
     {
         channel = rotate( channel );
