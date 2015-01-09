@@ -111,7 +111,8 @@ public class BufferedCharSeeker implements CharSeeker
                     {
                         if ( ch == untilOneOfChars[i] )
                         {   // We found a delimiter, set marker and return true
-                            mark.set( lineNumber, seekStartPos, bufferPos - endOffset - skippedChars, ch );
+                            mark.set( lineNumber, seekStartPos, bufferPos - endOffset - skippedChars, ch,
+                                    endOffset + skippedChars > 1 );
                             return true;
                         }
                     }
@@ -157,7 +158,8 @@ public class BufferedCharSeeker implements CharSeeker
 
         // We found the last value of the line or stream
         skippedChars += skipEolChars();
-        mark.set( lineNumber, seekStartPos, bufferPos - endOffset - skippedChars, END_OF_LINE_CHARACTER );
+        mark.set( lineNumber, seekStartPos, bufferPos - endOffset - skippedChars, END_OF_LINE_CHARACTER,
+                endOffset + skippedChars > 1 );
         lineNumber++;
         lineStartPos = bufferPos;
         return true;
@@ -185,7 +187,7 @@ public class BufferedCharSeeker implements CharSeeker
 
     private boolean eof( Mark mark )
     {
-        mark.set( lineNumber, -1, -1, Mark.END_OF_LINE_CHARACTER );
+        mark.set( lineNumber, -1, -1, Mark.END_OF_LINE_CHARACTER, false );
         return false;
     }
 
@@ -205,7 +207,7 @@ public class BufferedCharSeeker implements CharSeeker
     {
         long from = mark.startPosition();
         long to = mark.position();
-        return extractor.extract( buffer, (int)(from), (int)(to-from) );
+        return extractor.extract( buffer, (int)(from), (int)(to-from), mark.hasSkippedChars() );
     }
 
     private int skipEolChars() throws IOException

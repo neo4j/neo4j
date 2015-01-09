@@ -251,14 +251,19 @@ public class Extractors
         }
 
         @Override
-        public final boolean extract( char[] data, int offset, int length )
+        public final boolean extract( char[] data, int offset, int length, boolean skippedChars )
         {
-            if ( length == 0 )
+            if ( nullValue( length, skippedChars ) )
             {
                 clear();
                 return false;
             }
             return extract0( data, offset, length );
+        }
+
+        protected boolean nullValue( int length, boolean skippedChars )
+        {
+            return length == 0;
         }
 
         protected abstract void clear();
@@ -279,6 +284,12 @@ public class Extractors
         protected void clear()
         {
             value = null;
+        }
+
+        @Override
+        protected boolean nullValue( int length, boolean skippedChars )
+        {
+            return length == 0 && !skippedChars;
         }
 
         @Override
@@ -614,7 +625,7 @@ public class Extractors
         }
 
         @Override
-        public boolean extract( char[] data, int offset, int length )
+        public boolean extract( char[] data, int offset, int length, boolean skippedChars )
         {
             extract0( data, offset, length );
             return true;

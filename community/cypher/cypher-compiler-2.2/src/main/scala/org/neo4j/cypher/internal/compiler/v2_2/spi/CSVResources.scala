@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.spi
 import java.io._
 import java.net.{CookieHandler, CookieManager, CookiePolicy, URL}
 
-import org.neo4j.csv.reader.{Extractors, CharSeekers, Mark, Readables}
+import org.neo4j.csv.reader._
 import org.neo4j.cypher.internal.compiler.v2_2.{LoadExternalResourceException, TaskCloser}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.ExternalResource
 
@@ -42,7 +42,7 @@ class CSVResources(cleaner: TaskCloser) extends ExternalResource {
     val reader = Readables.wrap(new InputStreamReader(inputStream, "UTF-8"))
     val delimiter: Char = fieldTerminator.map(_.charAt(0)).getOrElse(CSVResources.DEFAULT_FIELD_TERMINATOR)
     val seeker = CharSeekers.charSeeker(reader, CSVResources.DEFAULT_BUFFER_SIZE, true, CSVResources.DEFAULT_QUOTE_CHAR)
-    val extractors = new Extractors(delimiter)
+    val extractor = new Extractors(delimiter).string()
     val delimiters = Array(delimiter.toInt)
     val mark = new Mark
 
@@ -54,8 +54,9 @@ class CSVResources(cleaner: TaskCloser) extends ExternalResource {
       private def readNextRow: Array[String] = {
         val buffer = new ArrayBuffer[String]
         breakable {
-          while (seeker.seek( mark, delimiters)) {
-            buffer += seeker.extract(mark, extractors.string()).value()
+          while (seeker.seek(mark, delimiters)) {
+            val success = seeker.tryExtract(mark, extractor)
+            buffer += (if (success) extractor.value() else null)
             if (mark.isEndOfLine) break
         }}
 
@@ -86,7 +87,7 @@ class CSVResources(cleaner: TaskCloser) extends ExternalResource {
       val con = url.openConnection()
       con.setConnectTimeout(connectionTimeout)
       con.setReadTimeout(readTimeout)
-      con.getInputStream()
+      con.getInputStream
     } catch {
       case e: IOException =>
         throw new LoadExternalResourceException(s"Couldn't load the external resource at: $url", e)
