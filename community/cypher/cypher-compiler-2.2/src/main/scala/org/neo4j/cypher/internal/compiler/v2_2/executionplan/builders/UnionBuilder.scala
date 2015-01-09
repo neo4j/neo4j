@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_2.Cost
+import org.neo4j.cypher.internal.compiler.v2_2.{PlannerName, Cost}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Expression, Identifier}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.{Query, Union}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.PipeInfo
@@ -32,7 +32,7 @@ trait GraphQueryBuilder {
 }
 
 class UnionBuilder(queryBuilder: GraphQueryBuilder) {
-  def buildUnionQuery(union: Union, context:PlanContext)(implicit pipeMonitor: PipeMonitor): PipeInfo = {
+  def buildUnionQuery(union: Union, context:PlanContext, plannerName: PlannerName)(implicit pipeMonitor: PipeMonitor): PipeInfo = {
     val combined = union.queries.map( q => queryBuilder.buildQuery(q, context))
 
     val pipes = combined.map(_.pipe)
@@ -46,6 +46,6 @@ class UnionBuilder(queryBuilder: GraphQueryBuilder) {
       unionPipe
     }
 
-    PipeInfo(pipe, updating, plannerUsed = Cost)
+    PipeInfo(pipe, updating, plannerUsed = plannerName)
   }
 }
