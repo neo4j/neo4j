@@ -50,6 +50,7 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
   val resolver = new KeyTokenResolver
 
   def build(plan: LogicalPlan)(implicit context: PipeExecutionBuilderContext, planContext: PlanContext): PipeInfo = {
+    implicit val table: SemanticTable = context.semanticTable
     val updating = false
 
     def buildPipe(plan: LogicalPlan, input: QueryGraphCardinalityInput): Pipe = {
@@ -97,31 +98,18 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
           CartesianProductPipe(buildPipe(left, input), buildPipe(right, input))()
 
         case Expand(left, IdName(fromName), dir, types: Seq[RelTypeName], IdName(toName), IdName(relName), ExpandAll) =>
-          implicit val table: SemanticTable = context.semanticTable
-          buildExpandPipe(types, buildPipe(left, input), fromName, relName, toName, dir)
+          ExpandAllPipe(buildPipe(left, input), fromName, relName, toName, dir, LazyTypes(types))()
+
+        case Expand(left, IdName(fromName), dir, types: Seq[RelTypeName], IdName(toName), IdName(relName), ExpandInto) =>
+          ExpandIntoPipe(buildPipe(left, input), fromName, relName, toName, dir, LazyTypes(types))()
 
         case OptionalExpand(left, IdName(fromName), dir, types, IdName(toName), IdName(relName), ExpandAll, predicates) =>
           val predicate = predicates.map(buildPredicate).reduceOption(_ ++ _).getOrElse(True())
-          implicit val table: SemanticTable = context.semanticTable
-          OptionalExpandPipe(buildPipe(left, input), fromName, relName, toName, dir, LazyTypes(types), predicate)()
-
-        case Expand(left, IdName(fromName), dir, types: Seq[RelTypeName], IdName(toName), IdName(relName), ExpandInto) =>
-          implicit val table: SemanticTable = context.semanticTable
-          val tmpName = toName + "$$$"
-          val expandPipe = buildExpandPipe(types, buildPipe(left, input), fromName, relName, tmpName, dir)
-          val id1: CommandExpression = commands.expressions.Identifier(toName)
-          val id2: CommandExpression = commands.expressions.Identifier(tmpName)
-          val pred: CommandPredicate = commands.Equals(id1, id2)
-          FilterPipe(expandPipe, pred)()
+          OptionalExpandAllPipe(buildPipe(left, input), fromName, relName, toName, dir, LazyTypes(types), predicate)()
 
         case OptionalExpand(left, IdName(fromName), dir, types, IdName(toName), IdName(relName), ExpandInto, predicates) =>
-          val tmpName = toName + "$$$"
-          val id1: CommandExpression = commands.expressions.Identifier(toName)
-          val id2: CommandExpression = commands.expressions.Identifier(tmpName)
-          val pred: CommandPredicate = commands.Equals(id1, id2)
-          val predicate = (predicates.map(buildPredicate) :+ pred).reduceOption(_ ++ _).getOrElse(True())
-          implicit val table: SemanticTable = context.semanticTable
-          OptionalExpandPipe(buildPipe(left, input), fromName, relName, tmpName, dir, LazyTypes(types), predicate)()
+          val predicate = predicates.map(buildPredicate).reduceOption(_ ++ _).getOrElse(True())
+          OptionalExpandIntoPipe(buildPipe(left, input), fromName, relName, toName, dir, LazyTypes(types), predicate)()
 
         case VarExpand(left, IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName), VarPatternLength(min, max), expansionMode, predicates) =>
           val (keys, exprs) = predicates.unzip
@@ -134,8 +122,6 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
               result
             }
           }
-
-          implicit val table: SemanticTable = context.semanticTable
 
           VarLengthExpandPipe(buildPipe(left, input), fromName, relName, toName, dir, projectedDir, LazyTypes(types), min, max, predicate)()
 
@@ -239,9 +225,14 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
       def apply(that: AnyRef): AnyRef = bottomUp(instance).apply(that)
     }
 
-    def buildExpandPipe(types: Seq[RelTypeName], left: Pipe, fromName: String, relName: String, toName: String, dir: Direction)
+    def buildExpandPipe(types: Seq[RelTypeName], left: Pipe, fromName: String, relName: String, toName: String, dir: Direction, mode: ExpansionMode)
                        (implicit table: SemanticTable, monitor: PipeMonitor) =
-        ExpandPipe(left, fromName, relName, toName, dir, LazyTypes(types))()
+      mode match {
+        case ExpandAll =>
+          ExpandAllPipe(left, fromName, relName, toName, dir, LazyTypes(types))()
+        case ExpandInto =>
+          ExpandIntoPipe(left, fromName, relName, toName, dir, LazyTypes(types))()
+      }
 
     def buildExpression(expr: ast.Expression): CommandExpression = {
       val rewrittenExpr = expr.endoRewrite(buildPipeExpressions)

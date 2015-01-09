@@ -116,14 +116,14 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
     val arguments = Seq(
       Rows(42),
       DbHits(33))
-    val expandPipe = ExpandPipe(pipe, "from", "rel", "to", Direction.INCOMING, LazyTypes.empty)(Some(1L))(mock[PipeMonitor])
+    val expandPipe = ExpandAllPipe(pipe, "from", "rel", "to", Direction.INCOMING, LazyTypes.empty)(Some(1L))(mock[PipeMonitor])
 
     renderDetails(expandPipe.planDescription) should equal(
-      """+----------+---------------+-------------+---------------------+
-        || Operator | EstimatedRows | Identifiers |               Other |
-        |+----------+---------------+-------------+---------------------+
-        ||   Expand |             1 |     rel, to | (from)<-[rel:]-(to) |
-        |+----------+---------------+-------------+---------------------+
+      """+-------------+---------------+-------------+---------------------+
+        ||    Operator | EstimatedRows | Identifiers |               Other |
+        |+-------------+---------------+-------------+---------------------+
+        || Expand(All) |             1 |     rel, to | (from)<-[rel:]-(to) |
+        |+-------------+---------------+-------------+---------------------+
         |""".stripMargin)
   }
 

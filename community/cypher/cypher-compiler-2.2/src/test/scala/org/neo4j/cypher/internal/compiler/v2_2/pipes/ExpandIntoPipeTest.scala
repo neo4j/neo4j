@@ -19,27 +19,28 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
-import org.mockito.Mockito._
-import org.mockito.Matchers._
 import org.mockito.Matchers
-import org.mockito.stubbing.Answer
-import org.neo4j.graphdb.{Node, Direction, Relationship}
+import org.mockito.Matchers._
+import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
-import org.neo4j.cypher.internal.compiler.v2_2.symbols._
+import org.mockito.stubbing.Answer
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v2_2.commands.{Not, Predicate, True}
+import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
+import org.neo4j.cypher.internal.compiler.v2_2.symbols._
+import org.neo4j.graphdb.{Direction, Node, Relationship}
 
-class ExpandPipeTest extends CypherFunSuite {
+class ExpandIntoPipeTest extends CypherFunSuite {
 
   implicit val monitor = mock[PipeMonitor]
   val startNode = newMockedNode(1)
   val endNode1 = newMockedNode(2)
   val endNode2 = newMockedNode(3)
+  val endNode3 = newMockedNode(4)
   val relationship1 = newMockedRelationship(1, startNode, endNode1)
   val relationship2 = newMockedRelationship(2, startNode, endNode2)
-  val selfRelationship = newMockedRelationship(3, startNode, startNode)
+  val relationship3 = newMockedRelationship(3, startNode, endNode3)
+  val selfRelationship = newMockedRelationship(4, startNode, startNode)
   val query = mock[QueryContext]
   val queryState = QueryStateHelper.emptyWith(query = query)
 
@@ -47,10 +48,10 @@ class ExpandPipeTest extends CypherFunSuite {
     // given
     mockRelationships(relationship1)
     val left = newMockedPipe("a",
-      row("a" -> startNode))
+      row("a" -> startNode, "b" -> endNode1))
 
     // when
-    val result = ExpandPipe(left, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty)().createResults(queryState).toList
+    val result = ExpandIntoPipe(left, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty)().createResults(queryState).toList
 
     // then
     val (single :: Nil) = result
@@ -66,7 +67,7 @@ class ExpandPipeTest extends CypherFunSuite {
       override def answer(invocationOnMock: InvocationOnMock): Iterator[Relationship] = Iterator(relationship1, relationship2)
     })
 
-    val pipe = ExpandPipe(newMockedPipe("a", row("a"-> startNode)), "a", "r", "b", Direction.OUTGOING, LazyTypes(Seq("FOO", "BAR")))()
+    val pipe = ExpandIntoPipe(newMockedPipe("a", row("a"-> startNode, "b" -> endNode1)), "a", "r", "b", Direction.OUTGOING, LazyTypes(Seq("FOO", "BAR")))()
 
     // when
     when(query.getOptRelTypeId("FOO")).thenReturn(None)
@@ -85,12 +86,14 @@ class ExpandPipeTest extends CypherFunSuite {
 
   test("should support expand between two nodes with multiple relationships") {
     // given
-    mockRelationships(relationship1, relationship2)
+    mockRelationships(relationship1, relationship2, relationship3)
     val left = newMockedPipe("a",
-      row("a" -> startNode))
+      row("a" -> startNode, "b" -> endNode1),
+      row("a" -> startNode, "b" -> endNode2)
+    )
 
     // when
-    val result = ExpandPipe(left, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty)().createResults(queryState).toList
+    val result = ExpandIntoPipe(left, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty)().createResults(queryState).toList
 
     // then
     val (first :: second :: Nil) = result
@@ -100,12 +103,14 @@ class ExpandPipeTest extends CypherFunSuite {
 
   test("should support expand between two nodes with multiple relationships and self loops") {
     // given
-    mockRelationships(relationship1, selfRelationship)
+    mockRelationships(relationship1, selfRelationship, relationship3)
     val left = newMockedPipe("a",
-      row("a" -> startNode))
+      row("a" -> startNode, "b" -> endNode1),
+      row("a" -> startNode, "b" -> startNode)
+    )
 
     // when
-    val result = ExpandPipe(left, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty)().createResults(queryState).toList
+    val result = ExpandIntoPipe(left, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty)().createResults(queryState).toList
 
     // then
     val (first :: second :: Nil) = result
@@ -116,10 +121,10 @@ class ExpandPipeTest extends CypherFunSuite {
   test("given empty input, should return empty output") {
     // given
     mockRelationships()
-    val left = newMockedPipe("a", row("a" -> null))
+    val left = newMockedPipe("a", row("a" -> null, "b" -> null))
 
     // when
-    val result = ExpandPipe(left, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty)().createResults(queryState).toList
+    val result = ExpandIntoPipe(left, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty)().createResults(queryState).toList
 
     // then
     result should be (empty)
@@ -129,10 +134,10 @@ class ExpandPipeTest extends CypherFunSuite {
     // given
     mockRelationships(relationship1)
     val left = newMockedPipe("a",
-      row("a" -> startNode))
+      row("a" -> startNode, "b" -> endNode1))
 
     // when
-    val result = ExpandPipe(left, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty)().createResults(queryState).toList
+    val result = ExpandIntoPipe(left, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty)().createResults(queryState).toList
 
     // then
     val (single :: Nil) = result
