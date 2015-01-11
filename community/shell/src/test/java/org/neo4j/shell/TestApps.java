@@ -1157,6 +1157,12 @@ public class TestApps extends AbstractShellTest
     }
 
     @Test
+    public void shouldBeAbleToForceCostPlannerInShell() throws Exception
+    {
+        executeCommand( "PROFILE PLANNER COST MATCH (n)-[:T*]-(n) RETURN n;", "Planner COST");
+    }
+
+    @Test
     public void shouldAllowCombiningPlannerAndProfile() throws Exception
     {
         executeCommand( "PLANNER RULE PROFILE MATCH (n) RETURN n;", "Planner RULE");

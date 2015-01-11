@@ -156,6 +156,22 @@ class ConservativeQueryAcceptorTest extends CypherFunSuite with LogicalPlanningT
     shouldAccept(qg1)
   }
 
+  test("should accept long paths") {
+    // MATCH a-[:T1]->b-[:T2]->c-[:T3]->d-[:T4]->e
+    val qg1 = QueryGraph(
+      patternNodes = Set("foo", "bar", "baz", "qux", "quux"),
+      patternRelationships =
+        Set(
+          PatternRelationship("r3", nodes = ("baz", "qux"), Direction.OUTGOING, Seq.empty, SimplePatternLength),
+          PatternRelationship("r4", nodes = ("qux", "quux"), Direction.OUTGOING, Seq.empty, SimplePatternLength),
+          PatternRelationship("r1", nodes = ("foo", "bar"), Direction.OUTGOING, Seq.empty, SimplePatternLength),
+          PatternRelationship("r2", nodes = ("bar", "baz"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+        )
+    )
+
+    shouldAccept(qg1)
+  }
+
   private def shouldAccept(qg: QueryGraph) {
     val query = UnionQuery(Seq(PlannerQuery(graph = qg)), false)
     conservativeQueryAcceptor(query) should be(true)

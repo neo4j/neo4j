@@ -96,6 +96,28 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
       .shouldHavePlannerName(Rule)
   }
 
+  test("troublesome query that should be run in cost") {
+    given(
+      """MATCH (person)-[:ACTED_IN]->(:Movie)<-[:ACTED_IN]-()-[:ACTED_IN]->(:Movie)<-[:ACTED_IN]-(coc)-[:DIRECTED]->()
+        |WHERE NOT ((coc)-[:ACTED_IN]->()<-[:ACTED_IN]-(person)) AND coc <> person
+        |RETURN coc, COUNT(*) AS times
+        |ORDER BY times DESC
+        |LIMIT 10""".stripMargin)
+      .withCypherVersion(CypherVersion.v2_2)
+      .shouldHaveCypherVersion(CypherVersion.v2_2)
+      .shouldHavePlannerName(Cost)
+  }
+
+  test("another troublesome query that should be run in cost") {
+    given(
+      """MATCH (s:Location {name:'DeliverySegment-257227'}), (e:Location {name:'DeliverySegment-476821'})
+        |MATCH (s)<-[:DELIVERY_ROUTE]-(db1) MATCH (db2)-[:DELIVERY_ROUTE]->(e)
+        |MATCH (db1)<-[:CONNECTED_TO]-()-[:CONNECTED_TO]-(db2) RETURN s""".stripMargin)
+      .withCypherVersion(CypherVersion.v2_2)
+      .shouldHaveCypherVersion(CypherVersion.v2_2)
+      .shouldHavePlannerName(Cost)
+  }
+
   test("children should be empty") {
     given("match n return n").planDescripton.getChildren.size() should equal(0)
   }
