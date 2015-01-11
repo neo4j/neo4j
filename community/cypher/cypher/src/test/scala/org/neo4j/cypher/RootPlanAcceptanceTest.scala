@@ -69,6 +69,21 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
       .shouldHavePlannerName(Rule)
   }
 
+  test("should be able to switch between RULE and COST") {
+    given("match n return n")
+      .withCypherVersion(CypherVersion.v2_2)
+      .withPlannerName(Rule)
+      .shouldHaveCypherVersion(CypherVersion.v2_2)
+      .shouldHavePlannerName(Rule)
+
+    given("match n return n")
+      .withCypherVersion(CypherVersion.v2_2)
+      .withPlannerName(Cost)
+      .shouldHaveCypherVersion(CypherVersion.v2_2)
+      .shouldHavePlannerName(Cost)
+
+  }
+
   test("should use cost if we really ask for it in 2.2") {
     given("match n return n")
       .withCypherVersion(CypherVersion.v2_2)

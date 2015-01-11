@@ -38,9 +38,8 @@ object CypherCompiler {
 }
 
 case class PreParsedQuery(statement: String, version: CypherVersion, executionMode: ExecutionMode, planner: PlannerName) {
-  val statementWithVersion = s"CYPHER ${version.name} $statement"
+  val statementWithVersionAndPlanner = s"CYPHER ${version.name} PLANNER ${planner.name} $statement"
 }
-
 
 class CypherCompiler(graph: GraphDatabaseService,
                      kernelAPI: KernelAPI,
@@ -75,7 +74,7 @@ class CypherCompiler(graph: GraphDatabaseService,
 
   @throws(classOf[SyntaxException])
   def parseQuery(preParsedQuery: PreParsedQuery): ParsedQuery = {
-    val exeuctionMode = preParsedQuery.executionMode
+    val executionMode = preParsedQuery.executionMode
     val version = preParsedQuery.version
     val planner = preParsedQuery.planner
     val statementAsText = preParsedQuery.statement
