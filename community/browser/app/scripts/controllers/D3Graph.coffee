@@ -32,8 +32,9 @@ angular.module('neo4jApp.controllers')
     'CircularLayout'
     'GraphExplorer'
     'GraphStyle'
-    'CypherGraphModel'
-    ($attrs, $element, $parse, $window, $rootScope, $scope, $interval, CircularLayout, GraphExplorer, GraphStyle, CypherGraphModel) ->
+    'CypherGraphModel',
+    'exportService'
+    ($attrs, $element, $parse, $window, $rootScope, $scope, $interval, CircularLayout, GraphExplorer, GraphStyle, CypherGraphModel, exportService) ->
       graphView = null
 
       measureSize = ->
@@ -67,6 +68,32 @@ angular.module('neo4jApp.controllers')
         selectItem(selectedItem)
 
       $rootScope.$on 'layout.changed', (-> graphView?.resize())
+
+      $scope.$on('export.svg', ->
+        svg = d3.select($element.clone().get(0))
+        while svg.node().attributes.length > 0
+          svg.attr(svg.node().attributes.item(0).name, null)
+
+        boundingBox = graphView.boundingBox()
+        svg.attr('width', boundingBox.width)
+        svg.attr('height', boundingBox.height)
+        svg.attr('viewBox', [boundingBox.x, boundingBox.y, boundingBox.width, boundingBox.height].join(' '))
+
+        stylesheet = d3.selectAll('link[rel="stylesheet"]')
+        .filter(-> d3.select(this).attr('href').indexOf('visualization') != -1)
+        .attr('href')
+
+        d3.text(stylesheet)
+        .mimeType('text/css')
+        .get((error, text) ->
+          svg.insert('style', '*').text(text)
+          svg.insert('desc', '*').text('Created using Neo4j (http://www.neo4j.com/)')
+          svg.insert('title', '*').text('Neo4j Graph Visualization')
+
+          exportService.download('graph.svg', 'image/svg+xml', new XMLSerializer().serializeToString(svg.node()))
+          svg.remove()
+        )
+      )
 
       @render = (initialGraph) ->
         graph = initialGraph

@@ -14,6 +14,9 @@ html(class="no-js", lang="en", ng-app="neo4jApp", ng-controller="MainCtrl")
     link(rel='stylesheet', href='components/codemirror/lib/codemirror.css')
     link(rel="stylesheet", href="styles/main.css")
     //endbuild
+    //build:css styles/visualization.css
+    link(rel="stylesheet", href="styles/visualization.css")
+    //endbuild
 
   body(ng-class="{'connection-error': offline, 'show-drawer': isDrawerShown, 'modal-shown': isPopupShown}", ng-controller="LayoutCtrl", keyup="globalKey($event)")
 

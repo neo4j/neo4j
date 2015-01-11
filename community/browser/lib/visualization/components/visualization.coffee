@@ -201,6 +201,19 @@ neo.viz = (el, measureSize, graph, layout, style) ->
       0, (layoutDimension - size.height) / 2, layoutDimension, size.height
     ].join(' '))
 
+  viz.boundingBox = ->
+    border = (node) -> parseFloat(style.forNode(node).get("border-width"))
+    minX = d3.min(graph.nodes(), (node) -> node.x - node.radius - border(node))
+    maxX = d3.max(graph.nodes(), (node) -> node.x + node.radius + border(node))
+    minY = d3.min(graph.nodes(), (node) -> node.y - node.radius - border(node))
+    maxY = d3.max(graph.nodes(), (node) -> node.y + node.radius + border(node))
+    {
+      x: minX
+      y: minY
+      width: maxX - minX
+      height: maxY - minY
+    }
+
   clickHandler = neo.utils.clickHandler()
   clickHandler.on 'click', onNodeClick
   clickHandler.on 'dblclick', onNodeDblClick
