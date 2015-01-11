@@ -11,6 +11,7 @@
       a.button.fa.fa-download.dropdown-toggle(ng-show='frame.exportable')
       ul.dropdown-menu
         li
+          a(exportable ng-click='exportSVG()', ng-show='isActive("graph")') Export SVG
           a(exportable ng-click='exportJSON(frame.response)') Export JSON
           a(exportable ng-click='exportCSV(frame.response.table)') Export CSV
     li

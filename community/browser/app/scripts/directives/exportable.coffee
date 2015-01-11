@@ -27,7 +27,7 @@ angular.module('neo.exportable', ['neo.csv'])
       download: (filename, mime, data) ->
         if !!navigator.userAgent.match(/Version\/[\d\.]+.*Safari/)
           # Safari doesn't support window.saveAs(); just open in a new window instead
-          $window.open( "data:#{mime};base64," + btoa( data ) )
+          $window.open("data:#{mime};base64," + btoa(unescape(encodeURIComponent(data))))
           return true
         blob = new Blob([data], {type: mime})
         $window.saveAs(blob, filename)
@@ -39,6 +39,10 @@ angular.module('neo.exportable', ['neo.csv'])
       'CSV',
       'exportService'
       ($scope, CSV, exportService) ->
+
+        $scope.exportSVG = ->
+          $scope.$emit('frame.export.svg')
+          true
 
         $scope.exportJSON = (data) ->
           return unless data
