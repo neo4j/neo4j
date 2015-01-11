@@ -37,8 +37,6 @@ trait ExecutionPlanInProgressRewriter {
 class LegacyPipeBuilder(monitors: Monitors, eagernessRewriter: Pipe => Pipe = addEagernessIfNecessary)
   extends PatternGraphBuilder with PipeBuilder with GraphQueryBuilder {
 
-  def PlannerName = Rule
-
   private implicit val pipeMonitor: PipeMonitor = monitors.newMonitor[PipeMonitor]()
 
   def producePlan(in: PreparedQuery, planContext: PlanContext): PipeInfo = {
@@ -67,15 +65,15 @@ class LegacyPipeBuilder(monitors: Monitors, eagernessRewriter: Pipe => Pipe = ad
   private val unionBuilder = new UnionBuilder(this)
 
   private def buildUnionQuery(union: Union, context: PlanContext)(implicit pipeMonitor: PipeMonitor): PipeInfo =
-    unionBuilder.buildUnionQuery(union, context)
+    unionBuilder.buildUnionQuery(union, context, Rule)
 
-  private def buildIndexQuery(op: IndexOperation): PipeInfo = PipeInfo(new IndexOperationPipe(op), updating = true, plannerUsed = PlannerName)
+  private def buildIndexQuery(op: IndexOperation): PipeInfo = PipeInfo(new IndexOperationPipe(op), updating = true, plannerUsed = Rule )
 
   private def buildConstraintQuery(op: UniqueConstraintOperation): PipeInfo = {
     val label = KeyToken.Unresolved(op.label, TokenType.Label)
     val propertyKey = KeyToken.Unresolved(op.propertyKey, TokenType.PropertyKey)
 
-    PipeInfo(new ConstraintOperationPipe(op, label, propertyKey), updating = true, plannerUsed = PlannerName)
+    PipeInfo(new ConstraintOperationPipe(op, label, propertyKey), updating = true, plannerUsed = Rule )
   }
 
   def buildQuery(inputQuery: Query, context: PlanContext)(implicit pipeMonitor:PipeMonitor): PipeInfo = {
@@ -99,7 +97,7 @@ class LegacyPipeBuilder(monitors: Monitors, eagernessRewriter: Pipe => Pipe = ad
 
     val pipe = eagernessRewriter(planInProgress.pipe)
 
-    PipeInfo(pipe, planInProgress.isUpdating, plannerUsed = PlannerName)
+    PipeInfo(pipe, planInProgress.isUpdating, plannerUsed = Rule )
   }
 
   private def produceAndThrowException(plan: ExecutionPlanInProgress) {

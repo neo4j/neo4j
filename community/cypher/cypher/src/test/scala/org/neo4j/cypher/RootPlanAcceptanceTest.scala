@@ -86,6 +86,16 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
     }
   }
 
+  test("should report RULE if we ask it for UNION queries") {
+    given(
+      """MATCH p=(n:Person {first_name: 'Shawna'})-[:FRIEND_OF]-(m:Person)
+        |RETURN p UNION MATCH p=(n:Person {first_name: 'Shawna'})-[:FRIEND_OF]-()-[:FRIEND_OF]-(m:Person) RETURN p""".stripMargin)
+      .withCypherVersion(CypherVersion.v2_2)
+      .withPlannerName(Rule)
+      .shouldHaveCypherVersion(CypherVersion.v2_2)
+      .shouldHavePlannerName(Rule)
+  }
+
   test("children should be empty") {
     given("match n return n").planDescripton.getChildren.size() should equal(0)
   }
