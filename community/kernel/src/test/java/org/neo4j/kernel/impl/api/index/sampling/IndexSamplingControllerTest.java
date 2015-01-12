@@ -33,7 +33,6 @@ import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.test.DoubleLatch;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -108,12 +107,26 @@ public class IndexSamplingControllerTest
         final AtomicInteger concurrentCount = new AtomicInteger( 0 );
         final DoubleLatch jobLatch = new DoubleLatch();
         final DoubleLatch testLatch = new DoubleLatch();
+        final ThreadLocal<Boolean> hasRun = new ThreadLocal<Boolean>() {
+            @Override
+            protected Boolean initialValue()
+            {
+                return false;
+            }
+        };
 
         IndexSamplingJobFactory jobFactory = new IndexSamplingJobFactory()
         {
             @Override
             public IndexSamplingJob create( IndexProxy indexProxy )
             {
+                // make sure we execute this once per thread
+                if ( hasRun.get() )
+                {
+                    return null;
+                }
+                hasRun.set( true );
+
                 if ( !concurrentCount.compareAndSet( 0, 1 ) )
                 {
                     throw new IllegalStateException( "count !== 0 on create" );
@@ -134,11 +147,11 @@ public class IndexSamplingControllerTest
         final IndexSamplingController controller = new IndexSamplingController(
                 samplingConfig, jobFactory, jobQueue, tracker, snapshotProvider, scheduler, FALSE
         );
-        when( tracker.canExecuteMoreSamplingJobs() ).thenReturn( true, true, false );
+        when( tracker.canExecuteMoreSamplingJobs() ).thenReturn( true );
         when( indexProxy.getState() ).thenReturn( ONLINE );
 
         // when running once
-        new Thread( runController( controller, BACKGROUND_REBUILD_UPDATED  ) ).start();
+        new Thread( runController( controller, BACKGROUND_REBUILD_UPDATED ) ).start();
 
         jobLatch.start();
         testLatch.awaitStart();
@@ -156,11 +169,7 @@ public class IndexSamplingControllerTest
 
         // and finally exactly one job has run to completion
         assertEquals( 0, concurrentCount.get() );
-        // it might happen that the thread which does not acquire the lock readd the index to the queue if it has
-        // been removed, so the total count in the end might be either 1 or 2, for this test it is important to
-        // not fail by having 2 threads calling IndexSamplingJobFactory.create()
-        int expected = totalCount.get();
-        assertTrue( "Expected 1 or 2, got " + expected, expected == 1 || expected == 2 );
+        assertEquals( 1, totalCount.get() );
     }
 
     @Test
@@ -352,7 +361,7 @@ public class IndexSamplingControllerTest
 
     private final IndexSamplingConfig samplingConfig = mock( IndexSamplingConfig.class );
     private final IndexSamplingJobFactory jobFactory = mock( IndexSamplingJobFactory.class );
-    private final IndexSamplingJobQueue jobQueue = new IndexSamplingJobQueue( TRUE() );
+    private final IndexSamplingJobQueue<IndexDescriptor> jobQueue = new IndexSamplingJobQueue<>( TRUE() );
     private final IndexSamplingJobTracker tracker = mock( IndexSamplingJobTracker.class );
     private final JobScheduler scheduler = mock( JobScheduler.class );
     private final IndexMapSnapshotProvider snapshotProvider = mock( IndexMapSnapshotProvider.class );
