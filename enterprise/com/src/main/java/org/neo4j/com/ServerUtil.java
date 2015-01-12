@@ -19,6 +19,9 @@
  */
 package org.neo4j.com;
 
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.first;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -54,9 +57,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.BackupMonitor;
-
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.first;
 
 public class ServerUtil
 {
@@ -492,6 +492,28 @@ public class ServerUtil
         {   // Do nothing
         }
     };
+
+    public static TxHandler txHandlerForFullCopy()
+    {
+        return new TxHandler()
+        {
+            private final Set<String> visitedDataSources = new HashSet<String>();
+
+            @Override
+            public void accept( Triplet<String, Long, TxExtractor> tx, XaDataSource dataSource )
+            {
+                if ( visitedDataSources.add( tx.first() ) )
+                {
+                    dataSource.setLastCommittedTxId( tx.second() - 1 );
+                }
+            }
+
+            @Override
+            public void done()
+            {   // Do nothing
+            }
+        };
+    }
 
     public static URI getUriForScheme( final String scheme, Iterable<URI> uris )
     {
