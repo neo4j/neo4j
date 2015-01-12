@@ -37,6 +37,8 @@ String literals can contain these escape sequences.
 |`\'`|Single quote
 |`\"`|Double quote
 |`\\`|Backslash
+|`\uxxxx`|Unicode UTF-16 code point (4 hex digits must follow the `\u`)
+|`\Uxxxxxxxx`|Unicode UTF-32 code point (8 hex digits must follow the `\U`)
 |===================
 
 include::../ql/syntax/index.asciidoc[]

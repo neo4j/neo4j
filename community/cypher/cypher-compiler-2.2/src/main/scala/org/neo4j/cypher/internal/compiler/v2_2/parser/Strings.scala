@@ -42,11 +42,13 @@ trait Strings extends Base {
       | ch('n') ~ appendToStringBuilder('\n')
       | ch('r') ~ appendToStringBuilder('\r')
       | ch('t') ~ appendToStringBuilder('\t')
-      | Unicode ~~% withContext((code, ctx) => appendCodePointToStringBuilder(code)(ctx))
+      | UTF16 ~~% withContext((code, ctx) => appendCodePointToStringBuilder(code)(ctx))
+      | UTF32 ~~% withContext((code, ctx) => appendCodePointToStringBuilder(code)(ctx))
     )
   }
 
-  protected def Unicode = rule { ch('u') ~ group(HexDigit ~ HexDigit ~ HexDigit ~ HexDigit) ~> (java.lang.Integer.parseInt(_, 16)) }
+  protected def UTF16 = rule { ch('u') ~ group(HexDigit ~ HexDigit ~ HexDigit ~ HexDigit) ~> (java.lang.Integer.parseInt(_, 16)) }
+  protected def UTF32 = rule { ch('U') ~ group(HexDigit ~ HexDigit ~ HexDigit ~ HexDigit ~ HexDigit ~ HexDigit ~ HexDigit ~ HexDigit) ~> (java.lang.Integer.parseInt(_, 16)) }
   private def HexDigit = rule { "0" - "9" | "a" - "f" | "A" - "F" }
 
   protected def appendToStringBuilder(c: Any): Context[Any] => Unit = ctx =>
