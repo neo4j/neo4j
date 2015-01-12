@@ -34,22 +34,21 @@ public class Mark
     private long startPosition;
     private long position;
     private int character;
-    private boolean skippedChars;
+    private boolean quoted;
 
     /**
      * @param startPosition
      * @param position
      * @param character use {@code -1} to denote that the matching character was an end-of-line or end-of-file
-     * @param skippedChars whether or not the original data had some characters that were skipped, f.ex
-     * quotation or escaped characters.
+     * @param quoted whether or not the original data was quoted.
      */
-    void set( int lineNumber, long startPosition, long position, int character, boolean skippedChars )
+    void set( int lineNumber, long startPosition, long position, int character, boolean quoted )
     {
         this.lineNumber = lineNumber;
         this.startPosition = startPosition;
         this.position = position;
         this.character = character;
-        this.skippedChars = skippedChars;
+        this.quoted = quoted;
     }
 
     public int character()
@@ -68,9 +67,9 @@ public class Mark
         return lineNumber;
     }
 
-    public boolean hasSkippedChars()
+    public boolean isQuoted()
     {
-        return skippedChars;
+        return quoted;
     }
 
     long position()
@@ -94,6 +93,6 @@ public class Mark
     @Override
     public String toString()
     {
-        return format( "Mark[line:%d, from:%d, to:%d, skipped:%b]", lineNumber, startPosition, position, skippedChars );
+        return format( "Mark[line:%d, from:%d, to:%d, qutoed:%b]", lineNumber, startPosition, position, quoted);
     }
 }

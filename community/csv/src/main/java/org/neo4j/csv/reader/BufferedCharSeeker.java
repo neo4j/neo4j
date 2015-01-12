@@ -90,6 +90,7 @@ public class BufferedCharSeeker implements CharSeeker
         int endOffset = 1;
         int skippedChars = 0;
         int quoteDepth = 0;
+        boolean isQuoted = false;
         while ( !eof )
         {
             ch = nextChar( skippedChars );
@@ -111,8 +112,7 @@ public class BufferedCharSeeker implements CharSeeker
                     {
                         if ( ch == untilOneOfChars[i] )
                         {   // We found a delimiter, set marker and return true
-                            mark.set( lineNumber, seekStartPos, bufferPos - endOffset - skippedChars, ch,
-                                    endOffset + skippedChars > 1 );
+                            mark.set( lineNumber, seekStartPos, bufferPos - endOffset - skippedChars, ch, isQuoted );
                             return true;
                         }
                     }
@@ -120,6 +120,7 @@ public class BufferedCharSeeker implements CharSeeker
             }
             else
             {   // In quoted mode, i.e. within quotes
+                isQuoted = true;
                 if ( ch == quoteChar )
                 {   // Found a quote within a quote, peek at next char
                     int nextCh = peekChar();
@@ -158,8 +159,7 @@ public class BufferedCharSeeker implements CharSeeker
 
         // We found the last value of the line or stream
         skippedChars += skipEolChars();
-        mark.set( lineNumber, seekStartPos, bufferPos - endOffset - skippedChars, END_OF_LINE_CHARACTER,
-                endOffset + skippedChars > 1 );
+        mark.set( lineNumber, seekStartPos, bufferPos - endOffset - skippedChars, END_OF_LINE_CHARACTER, isQuoted );
         lineNumber++;
         lineStartPos = bufferPos;
         return true;
@@ -207,7 +207,7 @@ public class BufferedCharSeeker implements CharSeeker
     {
         long from = mark.startPosition();
         long to = mark.position();
-        return extractor.extract( buffer, (int)(from), (int)(to-from), mark.hasSkippedChars() );
+        return extractor.extract( buffer, (int)(from), (int)(to-from), mark.isQuoted() );
     }
 
     private int skipEolChars() throws IOException
