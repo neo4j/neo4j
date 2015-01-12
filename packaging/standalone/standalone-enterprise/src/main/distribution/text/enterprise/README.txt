@@ -1,14 +1,14 @@
-${server.fullname} ${neo4j.version}
+${product.fullname} ${neo4j.version}
 =======================================
 
-Welcome to ${server.fullname} release ${neo4j.version}, a high-performance graph database.
-This is the enterprise distribution of ${server.fullname}, including everything you need to
+Welcome to ${product.fullname} release ${neo4j.version}, a high-performance graph database.
+This is the enterprise distribution of ${product.fullname}, including everything you need to
 start building applications that can model, persist and explore graph-like data.
 
 In the box
 ----------
 
-${server.fullname} runs as a server application, exposing a Web-based management
+${product.fullname} runs as a server application, exposing a Web-based management
 interface and RESTful endpoints for data access, along with logging, capabilities
 for participating in a database cluster and JMX remote monitoring.
 
@@ -26,7 +26,7 @@ Make it go
 
 For full instructions, see ${getting-started-server.url}
 
-To get started with ${server.fullname}, let's start the server and take a
+To get started with ${product.fullname}, let's start the server and take a
 look at the web interface ...
 
 1. Open a console and navigate to the install directory.
@@ -50,4 +50,3 @@ License(s)
 ----------
 Various licenses apply. Please refer to the LICENSE and NOTICE files for more
 detailed information.
-

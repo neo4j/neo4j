@@ -1,7 +1,5 @@
-${server.fullname} Binaries
+${product.fullname} Binaries
 =======================================
 
 This directory has scripts for running the applications
-distributed with ${server.fullname}.
-
-
+distributed with ${product.fullname}.
