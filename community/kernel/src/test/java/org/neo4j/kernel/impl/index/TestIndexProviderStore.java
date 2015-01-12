@@ -22,16 +22,30 @@ package org.neo4j.kernel.impl.index;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionStringToLong;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NotCurrentStoreVersionException;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
 import org.neo4j.kernel.impl.util.FileUtils;
 
@@ -138,5 +152,69 @@ public class TestIndexProviderStore
         
         store = new IndexProviderStore( file, fileSystem, 0, true );
         store.close();
+    }
+
+    @Test
+    public void shouldForceChannelAfterWritingMetadata() throws IOException
+    {
+        // Given
+        final StoreChannel[] channelUsedToCreateFile = {null};
+
+        FileSystemAbstraction fs = spy( fileSystem );
+        when( fs.open( file, "rw" ) ).then( new Answer<StoreChannel>()
+        {
+            @Override
+            public StoreChannel answer( InvocationOnMock _ ) throws Throwable
+            {
+                StoreChannel channel = fileSystem.open( file, "rw" );
+                if ( channelUsedToCreateFile[0] == null )
+                {
+                    StoreChannel channelSpy = spy( channel );
+                    channelUsedToCreateFile[0] = channelSpy;
+                    channel = channelSpy;
+                }
+                return channel;
+            }
+        } );
+
+        fs.deleteFile( file );
+
+        // When
+        new IndexProviderStore( file, fs, versionStringToLong( "3.5" ), false );
+
+        // Then
+        StoreChannel channel = channelUsedToCreateFile[0];
+        verify( channel ).write( any( ByteBuffer.class ), eq( 0L ) );
+        verify( channel ).force( true );
+        verify( channel ).close();
+        verifyNoMoreInteractions( channel );
+    }
+
+    @Test( expected = IllegalArgumentException.class )
+    public void shouldThrowWhenTryingToCreateFileThatAlreadyExists()
+    {
+        // Given
+        FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
+        when( fs.fileExists( file ) ).thenReturn( false ).thenReturn( true );
+        when( fs.getFileSize( file ) ).thenReturn( 42L );
+
+        // When
+        new IndexProviderStore( file, fs, versionStringToLong( "3.5" ), false );
+
+        // Then
+        // exception is thrown
+    }
+
+    @Test
+    public void shouldWriteNewFileWhenExistingFileHasZeroLength() throws IOException
+    {
+        // Given
+        file.createNewFile();
+
+        // When
+        new IndexProviderStore( file, fileSystem, versionStringToLong( "3.5" ), false );
+
+        // Then
+        assertTrue( fileSystem.getFileSize( file ) > 0 );
     }
 }
