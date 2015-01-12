@@ -22,6 +22,7 @@ package org.neo4j.kernel.ha.cluster;
 import java.io.IOException;
 import java.net.URI;
 
+import org.neo4j.backup.OnlineBackupKernelExtension;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
@@ -102,6 +103,7 @@ public class SwitchToSlave
             RequestContextFactory.class,
             TransactionCommittingResponseUnpacker.class,
             IndexConfigStore.class,
+            OnlineBackupKernelExtension.class,
     };
 
     public interface Monitor
