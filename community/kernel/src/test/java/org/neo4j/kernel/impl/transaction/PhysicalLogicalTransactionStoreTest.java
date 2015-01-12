@@ -24,6 +24,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -39,8 +40,8 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogFileRecoverer;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogRotation;
-import org.neo4j.kernel.impl.transaction.log.LogRotationControl;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -64,7 +65,9 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
 import static org.neo4j.test.TargetDirectory.testDirForTest;
@@ -87,7 +90,6 @@ public class PhysicalLogicalTransactionStoreTest
     {
         // GIVEN
         TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 0l, 0 );
-        LogRotationControl logRotationControl = mock( LogRotationControl.class );
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 1000 );
 
         LifeSupport life = new LifeSupport();
@@ -307,6 +309,36 @@ public class PhysicalLogicalTransactionStoreTest
         catch ( NoSuchTransactionException e )
         {   // THEN Good
         }
+    }
+
+    @Test
+    public void shouldThrowNoSuchTransactionExceptionIfLogFileIsMissing() throws Exception
+    {
+        // GIVEN
+        LogFile logFile = mock( LogFile.class );
+        TransactionIdStore txIdStore = mock( TransactionIdStore.class );
+        // a missing file
+        when( logFile.getReader( any( LogPosition.class) ) ).thenThrow( FileNotFoundException.class );
+        // Which is nevertheless in the metadata cache
+        TransactionMetadataCache cache = new TransactionMetadataCache( 10, 10 );
+        cache.cacheTransactionMetadata( 10, new LogPosition( 2, 130 ), 1, 1, 100 );
+        LogicalTransactionStore txStore =
+                new PhysicalLogicalTransactionStore( logFile, LogRotation.NO_ROTATION, cache, txIdStore, BYPASS,
+                        mock( KernelHealth.class ), false );
+
+        // WHEN
+          // we ask for that transaction and forward
+        try
+        {
+            txStore.getTransactions( 10 );
+            fail();
+        }
+        catch( NoSuchTransactionException e )
+        {
+            // THEN
+              // We don't get a FileNotFoundException but a NoSuchTransactionException instead
+        }
+
     }
 
     private void addATransactionAndRewind( LogFile logFile,
