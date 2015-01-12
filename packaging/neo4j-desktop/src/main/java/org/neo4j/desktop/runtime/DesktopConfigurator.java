@@ -25,11 +25,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.desktop.config.Installation;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.configuration.ServerSettings;
+
 import static org.neo4j.helpers.collection.MapUtil.load;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -68,7 +70,9 @@ public class DesktopConfigurator implements ConfigurationBuilder
     {
         try
         {
-            return load( getDatabaseConfigurationFile() );
+            Map<String,String> dbProperties = new HashMap<>( map );
+            dbProperties.putAll( load( getDatabaseConfigurationFile() ) );
+            return dbProperties;
         }
         catch ( IOException e )
         {
@@ -81,6 +85,7 @@ public class DesktopConfigurator implements ConfigurationBuilder
 
         map.put( Configurator.AUTHORIZATION_STORE_FILE_KEY, new File( directory, "./dbms/authorization" ).getAbsolutePath() );
         map.put( Configurator.DATABASE_LOCATION_PROPERTY_KEY, directory.getAbsolutePath() );
+        map.put( InternalAbstractGraphDatabase.Configuration.store_dir.name(), directory.getAbsolutePath() );
         map.put( Configurator.DB_TUNING_PROPERTY_FILE_KEY, neo4jProperties.getAbsolutePath() );
     }
 

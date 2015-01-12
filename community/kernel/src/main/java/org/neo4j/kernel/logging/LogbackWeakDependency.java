@@ -81,10 +81,12 @@ public final class LogbackWeakDependency
     {
         throw new AssertionError( "Not for instantiation!" );
     }
-    
+
     public static Logging tryLoadLogbackService( Config config, Function<Config, Object> loggerContextGetter,
             Function<Config, Logging> otherwiseDefaultTo, Monitors monitors )
     {
+        assert config.get( InternalAbstractGraphDatabase.Configuration.store_dir ) != null;
+        // the base folder where the messages.log will be stored should not be null
         try
         {
             if ( logbackIsOnClasspath() )
