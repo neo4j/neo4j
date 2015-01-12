@@ -41,6 +41,10 @@ angular.module('neo.exportable', ['neo.csv'])
             return alert('Exporting data is currently not supported in Safari. Please use another browser.')
           exportService.download(filename, mime, data)
 
+        $scope.exportSVG = ->
+          $scope.$emit('frame.export.svg')
+          true
+
         $scope.exportJSON = (data) ->
           return unless data
           saveAs(JSON.stringify(data), 'result.json')

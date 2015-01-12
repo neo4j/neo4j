@@ -30,5 +30,8 @@ class neo.graphView
     @viz.resize()
     @
 
+  boundingBox: ->
+    @viz.boundingBox()
+
   collectStats: ->
     @viz.collectStats()

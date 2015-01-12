@@ -76,4 +76,11 @@ angular.module('neo4jApp.controllers')
 
         joinedMessages = messages.join(', ')
         "#{joinedMessages.substring(0, 1).toUpperCase()}#{joinedMessages.substring(1)}."
+
+    # Listen for export events bubbling up the controller hierarchy
+    # and forward them down to the child controller that has access to
+    # the required SVG elements.
+    $scope.$on('frame.export.svg', ->
+      $scope.$broadcast('export.svg')
+    )
   ]

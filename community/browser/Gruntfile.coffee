@@ -58,7 +58,7 @@ module.exports = (grunt) ->
         tasks: ["coffee:test"]
 
       stylus:
-        files: 'app/styles/*.styl',
+        files: ["app/styles/*.styl", "<%= yeoman.lib %>/visualization/**/*.styl"]
         tasks: ["stylus"]
 
       livereload:
@@ -180,6 +180,7 @@ module.exports = (grunt) ->
       compile:
         files:
           '<%= yeoman.app %>/styles/main.css': ['<%= yeoman.app %>/styles/*.styl']
+          '<%= yeoman.app %>/styles/visualization.css': ['<%= yeoman.lib %>/visualization/styles/*.styl']
       options:
         paths: ["<%= yeoman.app %>/vendor/foundation", "<%= yeoman.app %>/images"]
 

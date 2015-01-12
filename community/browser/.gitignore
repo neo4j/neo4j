@@ -4,7 +4,7 @@ npm-debug.log
 .tmp
 .sass-cache
 # app/components
-app/styles/main.css
+app/styles/*.css
 app/index.html
 app/views/**/*.html
 app/content/**/*.html
