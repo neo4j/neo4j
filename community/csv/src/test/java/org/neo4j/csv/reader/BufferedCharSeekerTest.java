@@ -274,6 +274,20 @@ public class BufferedCharSeekerTest
         assertFalse( seeker.seek( mark, COMMA ) );
     }
 
+    @Test
+    public void shouldExtractNullForEmptyFieldWhenWeSkipEOLChars() throws Exception
+    {
+        // GIVEN
+        seeker = new BufferedCharSeeker( wrap( new StringReader( "\"\",\r\n" ) ), 100 );
+
+        // WHEN
+        assertNextValue( seeker, mark, COMMA, "" );
+        assertNextValueNotExtracted( seeker, mark, COMMA );
+
+        // THEN
+        assertFalse( seeker.seek( mark, COMMA ) );
+    }
+
     private void assertNextValue( CharSeeker seeker, Mark mark, int[] delimiter, String expectedValue )
             throws IOException
     {
