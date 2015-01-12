@@ -67,8 +67,6 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
      */
     private boolean append0( TransactionRepresentation transaction, long transactionId ) throws IOException
     {
-        LogPosition logPosition = channel.getCurrentPosition( positionMarker ).newPosition();
-
         // Reset command writer so that we, after we've written the transaction, can ask it whether or
         // not any legacy index command was written. If so then there's additional ordering to care about below.
         indexCommandDetector.reset();
@@ -81,8 +79,10 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
         // log rotation, which will wait for all transactions closed or fail on kernel panic.
         try
         {
+            LogPosition logPosition;
             synchronized ( channel )
             {
+                logPosition = channel.getCurrentPosition( positionMarker ).newPosition();
                 transactionLogWriter.append( transaction, transactionId );
             }
             long transactionChecksum = checksum( transaction.additionalHeader(), transaction.getMasterId(),
