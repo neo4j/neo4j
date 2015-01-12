@@ -17,40 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.cache;
+package org.neo4j.unsafe.impl.batchimport;
+
+import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 
 /**
- * Abstraction over primitive arrays.
- *
- * @see NumberArrayFactory
+ * {@link Stage} that has just a single {@link RelationshipStoreProcessorStep} where a custom {@link StoreProcessor}
+ * is passed in.
  */
-public interface NumberArray extends MemoryStatsVisitor.Home, AutoCloseable
+public class RelationshipStoreProcessorStage extends Stage
 {
-    /**
-     * @return length of the array, i.e. the capacity.
-     */
-    long length();
-
-    /**
-     * @return number of indexes occupied, i.e. setting the same index multiple times doesn't increment size.
-     */
-    long size();
-
-    void swap( long fromIndex, long toIndex, int numberOfEntries );
-
-    /**
-     * Sets all values to a default value.
-     */
-    void clear();
-
-    /**
-     * @return highest set index or -1 if no set.
-     */
-    long highestSetIndex();
-
-    /**
-     * Releases any resources that GC won't release automatically.
-     */
-    @Override
-    public void close();
+    public RelationshipStoreProcessorStage( String name, Configuration config,
+            RelationshipStore store, StoreProcessor<RelationshipRecord> processor )
+    {
+        super( name, config );
+        add( new RelationshipStoreProcessorStep( control(), name, config, store, processor ) );
+    }
 }

@@ -53,5 +53,11 @@ public interface AvailableMemoryCalculator
             Runtime runtime = Runtime.getRuntime();
             return runtime.maxMemory() - runtime.totalMemory();
         }
+
+        @Override
+        public String toString()
+        {
+            return "Java runtime memory calculator";
+        }
     };
 }

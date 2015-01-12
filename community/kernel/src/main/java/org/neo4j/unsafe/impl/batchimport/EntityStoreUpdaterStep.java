@@ -64,11 +64,11 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
     private final BatchingPropertyRecordAccess propertyRecords = new BatchingPropertyRecordAccess();
     private final ReusableIteratorCostume<PropertyBlock> blockIterator = new ReusableIteratorCostume<>();
 
-    EntityStoreUpdaterStep( StageControl control, String name, Configuration config,
+    EntityStoreUpdaterStep( StageControl control, Configuration config,
             AbstractRecordStore<RECORD> entityStore,
             PropertyStore propertyStore, IoMonitor monitor, WriterFactory writerFactory )
     {
-        super( control, name, 1, config.movingAverageSize(), 1 ); // work-ahead doesn't matter, we're the last one
+        super( control, "WRITER", 1, config.movingAverageSize(), 1 ); // work-ahead doesn't matter, we're the last one
         this.entityStore = entityStore;
         this.propertyStore = propertyStore;
         this.writerFactory = writerFactory;

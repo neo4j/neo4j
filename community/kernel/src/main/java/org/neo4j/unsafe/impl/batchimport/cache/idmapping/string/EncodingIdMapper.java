@@ -440,8 +440,8 @@ public class EncodingIdMapper implements IdMapper
     @Override
     public void visitMemoryStats( MemoryStatsVisitor visitor )
     {
-        dataCache.visitMemoryStats( visitor );
-        trackerCache.visitMemoryStats( visitor );
-        collisionCache.visitMemoryStats( visitor );
+        dataCache.visit( visitor );
+        trackerCache.visit( visitor );
+        collisionCache.visit( visitor );
     }
 }

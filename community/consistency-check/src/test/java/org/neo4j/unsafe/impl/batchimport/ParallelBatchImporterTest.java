@@ -61,6 +61,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
+import org.neo4j.unsafe.impl.batchimport.cache.AvailableMemoryCalculator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
@@ -112,31 +113,39 @@ public class ParallelBatchImporterTest
     private final InputIdGenerator inputIdGenerator;
     private final IdMapper idMapper;
     private final IdGenerator idGenerator;
+    private final AvailableMemoryCalculator memoryCalculator;
 
-    @Parameterized.Parameters(name = "{0},{1},{2}")
+    @Parameterized.Parameters(name = "{0},{1},{2},{4}")
     public static Collection<Object[]> data()
     {
         return Arrays.<Object[]>asList(
                 // synchronous I/O, actual node id input
-                new Object[]{SYNCHRONOUS, new LongInputIdGenerator(), actual(), fromInput()},
+                new Object[]{SYNCHRONOUS, new LongInputIdGenerator(), actual(), fromInput(),
+                        AvailableMemoryCalculator.RUNTIME},
                 // synchronous I/O, string id input
-                new Object[]{SYNCHRONOUS, new StringInputIdGenerator(), strings( AUTO ), startingFromTheBeginning()},
+                new Object[]{SYNCHRONOUS, new StringInputIdGenerator(), strings( AUTO ), startingFromTheBeginning(),
+                        AvailableMemoryCalculator.RUNTIME },
+                // synchronous I/O, string id input, low memory
+                new Object[]{SYNCHRONOUS, new StringInputIdGenerator(), strings( AUTO ), startingFromTheBeginning(),
+                        LOW_MEMORY },
 
                 // FIXME: we've seen this fail before with inconsistencies due to some kind of race in IoQueue
                 //        enabled here to try and trigger the error so that we can fix it.
                 // extra slow parallel I/O, actual node id input
                 new Object[]{new IoQueue( 4, 4, 30, synchronousSlowWriterFactory ),
-                        new LongInputIdGenerator(), actual(), fromInput()}
+                        new LongInputIdGenerator(), actual(), fromInput(), AvailableMemoryCalculator.RUNTIME}
         );
     }
 
     public ParallelBatchImporterTest( WriterFactory writerFactory, InputIdGenerator inputIdGenerator,
-            IdMapper idMapper, IdGenerator idGenerator )
+            IdMapper idMapper, IdGenerator idGenerator, AvailableMemoryCalculator memoryCalculator )
     {
         this.writerFactory = constant( writerFactory );
         this.inputIdGenerator = inputIdGenerator;
         this.idMapper = idMapper;
         this.idGenerator = idGenerator;
+        // Used only to control some aspects of parallelism
+        this.memoryCalculator = memoryCalculator;
     }
 
     @Test
@@ -145,7 +154,7 @@ public class ParallelBatchImporterTest
         // GIVEN
         final BatchImporter inserter = new ParallelBatchImporter( directory.absolutePath(),
                 new DefaultFileSystemAbstraction(), config, new DevNullLoggingService(),
-                invisible(), writerFactory, EMPTY );
+                invisible(), writerFactory, EMPTY, memoryCalculator );
 
         boolean successful = false;
         int relationshipCount = NODE_COUNT * 3;
@@ -434,4 +443,25 @@ public class ParallelBatchImporterTest
             }
         };
     }
+
+    private static final AvailableMemoryCalculator LOW_MEMORY = new AvailableMemoryCalculator()
+    {
+        @Override
+        public long availableOffHeapMemory()
+        {
+            return 0;
+        }
+
+        @Override
+        public long availableHeapMemory()
+        {
+            return 0;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "low memory";
+        }
+    };
 }

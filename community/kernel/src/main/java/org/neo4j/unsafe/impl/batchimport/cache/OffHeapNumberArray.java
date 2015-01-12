@@ -76,7 +76,7 @@ abstract class OffHeapNumberArray implements NumberArray
     }
 
     @Override
-    public void visitMemoryStats( MemoryStatsVisitor visitor )
+    public void visit( MemoryStatsVisitor visitor )
     {
         visitor.offHeapUsage( length * stride );
     }

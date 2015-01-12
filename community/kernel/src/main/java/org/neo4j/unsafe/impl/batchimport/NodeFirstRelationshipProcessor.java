@@ -19,13 +19,11 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink.GroupVisitor;
-import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 /**
  * Sets the {@link NodeRecord#setNextRel(long) relationship field} on all {@link NodeRecord nodes}.
@@ -35,24 +33,22 @@ import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
  * This step also creates {@link RelationshipGroupRecord group records} for the dense nodes as it encounters
  * dense nodes, where it gets all relationship group information from {@link NodeRelationshipLink}.
  */
-public class NodeFirstRelationshipStep extends NodeStoreProcessorStep implements GroupVisitor
+public class NodeFirstRelationshipProcessor implements StoreProcessor<NodeRecord>, GroupVisitor
 {
     private final RelationshipGroupStore relGroupStore;
     private final NodeRelationshipLink nodeRelationshipLink;
 
     private long nextGroupId = -1;
 
-    public NodeFirstRelationshipStep( StageControl control, Configuration config,
-                                      NodeStore nodeStore, RelationshipGroupStore relGroupStore,
-                                      NodeRelationshipLink nodeRelationshipLink )
+    public NodeFirstRelationshipProcessor( RelationshipGroupStore relGroupStore,
+            NodeRelationshipLink nodeRelationshipLink )
     {
-        super( control, "LINKER", config, nodeStore );
         this.relGroupStore = relGroupStore;
         this.nodeRelationshipLink = nodeRelationshipLink;
     }
 
     @Override
-    protected boolean process( NodeRecord node )
+    public boolean process( NodeRecord node )
     {
         long nodeId = node.getId();
         long firstRel = nodeRelationshipLink.getFirstRel( nodeId, this );
@@ -87,5 +83,10 @@ public class NodeFirstRelationshipStep extends NodeStoreProcessorStep implements
         }
         relGroupStore.updateRecord( groupRecord );
         return id;
+    }
+
+    @Override
+    public void done()
+    {   // Nothing to do here
     }
 }

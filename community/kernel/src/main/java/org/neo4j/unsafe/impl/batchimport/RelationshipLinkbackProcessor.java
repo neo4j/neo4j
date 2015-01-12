@@ -20,28 +20,24 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
-import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 /**
  * Links the {@code previous} fields in {@link RelationshipRecord relationship records}. This is done after
  * a forward pass where the {@code next} fields are linked.
  */
-public class RelationshipLinkbackStep extends RelationshipStoreProcessorStep
+public class RelationshipLinkbackProcessor implements StoreProcessor<RelationshipRecord>
 {
     private final NodeRelationshipLink nodeRelationshipLink;
 
-    public RelationshipLinkbackStep( StageControl control, Configuration config,
-            RelationshipStore relStore, NodeRelationshipLink nodeRelationshipLink )
+    public RelationshipLinkbackProcessor( NodeRelationshipLink nodeRelationshipLink )
     {
-        super( control, "LINKER", config, relStore );
         this.nodeRelationshipLink = nodeRelationshipLink;
     }
 
     @Override
-    protected boolean process( RelationshipRecord record )
+    public boolean process( RelationshipRecord record )
     {
         boolean isLoop = record.getFirstNode() == record.getSecondNode();
         if ( isLoop )
@@ -83,5 +79,10 @@ public class RelationshipLinkbackStep extends RelationshipStoreProcessorStep
             record.setSecondPrevRel( secondPrevRel );
         }
         return true;
+    }
+
+    @Override
+    public void done()
+    {   // Nothing to do here
     }
 }

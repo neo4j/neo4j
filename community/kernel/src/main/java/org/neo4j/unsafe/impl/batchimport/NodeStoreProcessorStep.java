@@ -27,14 +27,17 @@ import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 /**
  * Convenient step for processing all in use {@link NodeRecord records} in the {@link NodeStore node store}.
  */
-public abstract class NodeStoreProcessorStep extends LonelyProcessingStep
+public class NodeStoreProcessorStep extends LonelyProcessingStep
 {
-    protected final NodeStore nodeStore;
+    private final NodeStore nodeStore;
+    private final StoreProcessor<NodeRecord> processor;
 
-    protected NodeStoreProcessorStep( StageControl control, String name, Configuration config, NodeStore nodeStore )
+    protected NodeStoreProcessorStep( StageControl control, String name, Configuration config, NodeStore nodeStore,
+            StoreProcessor<NodeRecord> processor )
     {
         super( control, name, config.batchSize(), config.movingAverageSize() );
         this.nodeStore = nodeStore;
+        this.processor = processor;
     }
 
     @Override
@@ -45,19 +48,12 @@ public abstract class NodeStoreProcessorStep extends LonelyProcessingStep
         for ( long nodeId = highId; nodeId >= 0; nodeId-- )
         {
             NodeRecord node = nodeStore.loadRecord( nodeId, heavilyReusedRecord );
-            if ( node != null && process( node ) )
+            if ( node != null && processor.process( node ) )
             {
                 nodeStore.updateRecord( heavilyReusedRecord );
             }
             itemProcessed();
         }
-        nodeStore.flush();
+        processor.done();
     }
-
-    /**
-     * Processes a {@link NodeRecord node}.
-     *
-     * @return {@code true} if the node changed and should be updated in the store.
-     */
-    protected abstract boolean process( NodeRecord node );
 }
