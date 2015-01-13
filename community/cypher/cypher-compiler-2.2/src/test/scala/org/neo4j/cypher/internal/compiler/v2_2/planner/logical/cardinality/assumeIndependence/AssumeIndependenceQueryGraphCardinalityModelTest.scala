@@ -111,7 +111,6 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
 
       "MATCH (a:A)-[r:T1]-(b)"
         -> {
-        val STAR_T1_A = B_T1_A
         A_T1_STAR + STAR_T1_A
       },
 
