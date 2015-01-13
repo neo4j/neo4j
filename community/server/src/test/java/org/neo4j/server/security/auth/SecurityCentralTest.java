@@ -85,19 +85,4 @@ public class SecurityCentralTest
             assertThat(e.getMessage(), equalTo("Unable to set token, because the chosen token is already in use."));
         }
     }
-
-    @Test
-    public void shouldRegenerateTokenOnRequiredPasswordChange() throws Exception
-    {
-        // Given
-        SecurityCentral security = new SecurityCentral( new FakeClock(), new InMemoryUserRepository() );
-        security.newUser("neo4j", Privileges.ADMIN);
-
-        // When
-        security.setPassword( "neo4j", "secret" );
-
-        // Then
-        assertThat(security.userForName( "neo4j" ).passwordChangeRequired(), equalTo(false));
-        assertThat(security.userForName( "neo4j" ).token(), notNullValue());
-    }
 }

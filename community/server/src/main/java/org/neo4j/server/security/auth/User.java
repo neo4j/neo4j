@@ -29,9 +29,6 @@ public class User
       locks. Correctness depends on write-time assertions and this class remaining immutable. Please do not introduce
       mutable fields here.
      */
-
-    public static final String NO_TOKEN = null;
-
     /** User name */
     private final String name;
 
@@ -47,9 +44,9 @@ public class User
     /** Whether a password change is needed */
     private final boolean passwordChangeRequired;
 
-    public User( String name, Privileges privileges )
+    public User( String name, String token, Privileges privileges )
     {
-        this(name, null, privileges, Credentials.INACCESSIBLE, true );
+        this(name, token, privileges, Credentials.INACCESSIBLE, true );
     }
 
     public User(String name, String token, Privileges privileges, Credentials credentials, boolean passwordChangeRequired)
@@ -71,11 +68,6 @@ public class User
         return token;
     }
 
-    public boolean hasToken()
-    {
-        return token != NO_TOKEN; // Instance equality on purpose.
-    }
-
     public Privileges privileges()
     {
         return privileges;
@@ -87,11 +79,6 @@ public class User
     }
 
     public boolean passwordChangeRequired() { return passwordChangeRequired; }
-
-    public boolean tokenEquals( String token )
-    {
-        return (token == NO_TOKEN && this.token == NO_TOKEN) || (token != NO_TOKEN && token.equals( this.token ));
-    }
 
     /** Use this user as a base for a new user object */
     public Builder augment() { return new Builder(this); }
@@ -150,7 +137,7 @@ public class User
     {
         return "User{" +
                 "name='" + name + '\'' +
-                ", token="+ (hasToken() ? "'" + token + "'" : "NO_TOKEN" ) +
+                ", token='"+ token + '\'' +
                 ", privileges=" + privileges +
                 ", credentials=" + credentials +
                 ", passwordChangeRequired=" + passwordChangeRequired +
@@ -160,7 +147,7 @@ public class User
     public static class Builder
     {
         private String name;
-        private String token = NO_TOKEN;
+        private String token;
         private Privileges privileges = Privileges.NONE;
         private Credentials credentials = Credentials.INACCESSIBLE;
         private boolean pwdChangeRequired;

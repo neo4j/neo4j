@@ -23,6 +23,6 @@ public class UnauthenticatedUser extends User
 {
     UnauthenticatedUser()
     {
-        super( "Unauthenticated", Privileges.NONE );
+        super( "Unauthenticated", "unauthenticated", Privileges.NONE );
     }
 }

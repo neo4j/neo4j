@@ -74,7 +74,7 @@ public class UserSerialization
         }
         return new User.Builder()
                 .withName( parts[0] )
-                .withToken( parts[1].equals("") ? User.NO_TOKEN : parts[1])
+                .withToken( parts[1] )
                 .withCredentials( deserializeCredentials(parts[2]) )
                 .withRequiredPasswordChange( parts[3].equals( "password_change_required" ) )
                 .withPrivileges( Privileges.ADMIN ) // Only "real" privilege available right now

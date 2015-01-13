@@ -39,7 +39,7 @@ public class AuthenticationTest
         InMemoryUserRepository users = new InMemoryUserRepository();
         Authentication auth = new Authentication( new FakeClock(), users, 1 );
 
-        users.save( new User( "jake", Privileges.ADMIN ) );
+        users.save( new User( "jake", "abc123", Privileges.ADMIN ) );
 
         // When
         auth.setPassword( "jake", "hello, world!" );
@@ -87,7 +87,7 @@ public class AuthenticationTest
         // Given
         InMemoryUserRepository users = new InMemoryUserRepository();
         Authentication auth = new Authentication( new FakeClock(), users, 50 );
-        users.save( new User( "jake", Privileges.ADMIN ) );
+        users.save( new User( "jake", "abc123", Privileges.ADMIN ) );
         auth.setPassword( "jake", "helo" );
 
         // When & then

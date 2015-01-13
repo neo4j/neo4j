@@ -72,6 +72,7 @@ public class SecurityCentral extends LifecycleAdapter
             assertValidName( name );
             users.save( new User.Builder()
                     .withName( name )
+                    .withToken( newToken() )
                     .withPrivileges( privileges )
                     .build() );
             // All users, by default, have their name as their password, usable only in order to set the password in a
@@ -162,10 +163,6 @@ public class SecurityCentral extends LifecycleAdapter
 
     public synchronized void setPassword( String name, String password ) throws IOException
     {
-        if(userForName( name ).passwordChangeRequired())
-        {
-            regenerateToken( name );
-        }
         authentication.setPassword( name, password );
     }
 

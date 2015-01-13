@@ -97,7 +97,7 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
     public synchronized void save( User user ) throws IllegalTokenException, IOException, IllegalUsernameException
     {
         // Assert input is ok
-        if(user.token() != User.NO_TOKEN && !isValidToken( user.token() ))
+        if ( !isValidToken( user.token() ) )
         {
             throw new IllegalTokenException( "Invalid token provided, cannot store user." );
         }
@@ -116,8 +116,7 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
             {
                 existingUser = other;
                 newUsers.set( i, user );
-            }
-            else if ( user.token() != User.NO_TOKEN && other.tokenEquals( user.token() ) )
+            } else if ( other.token().equals( user.token() ) )
             {
                 throw new IllegalTokenException( "The specified token is already in use." );
             }
@@ -155,6 +154,10 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
     @Override
     public boolean isValidToken( String token )
     {
+        if (token == null)
+        {
+            throw new IllegalArgumentException( "token should not be null" );
+        }
         return token.matches( "^[a-fA-F0-9]+$" );
     }
 

@@ -50,14 +50,11 @@ public class InMemoryUserRepository implements UserRepository
     /** This is synchronized to ensure we can't have users with duplicate tokens. */
     public synchronized void save( User user ) throws IllegalTokenException
     {
-        if(user.hasToken())
+        for ( User other : users.values() )
         {
-            for ( User other : users.values() )
+            if ( other.token().equals( user.token() ) && !other.name().equals( user.name() ) )
             {
-                if ( other.tokenEquals( user.token() ) && !other.name().equals( user.name() ) )
-                {
-                    throw new IllegalTokenException( "Unable to set token, because the chosen token is already in use." );
-                }
+                throw new IllegalTokenException( "Unable to set token, because the chosen token is already in use." );
             }
         }
 
