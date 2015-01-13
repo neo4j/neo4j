@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.security.auth;
 
-import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.server.security.auth.exception.IllegalTokenException;
@@ -29,9 +28,23 @@ public class InMemoryUserRepository implements UserRepository
 {
     private final ConcurrentHashMap<String, User> users = new ConcurrentHashMap<>();
 
-    public User get( String name )
+    @Override
+    public User findByName( String name )
     {
         return users.get( name );
+    }
+
+    @Override
+    public User findByToken( String token )
+    {
+        for ( User user : users.values() )
+        {
+            if ( user.token().equals( token ) )
+            {
+                return user;
+            }
+        }
+        return null;
     }
 
     /** This is synchronized to ensure we can't have users with duplicate tokens. */
@@ -49,12 +62,6 @@ public class InMemoryUserRepository implements UserRepository
         }
 
         users.put( user.name(), user );
-    }
-
-    @Override
-    public Iterator<User> iterator()
-    {
-        return users.values().iterator();
     }
 
     @Override

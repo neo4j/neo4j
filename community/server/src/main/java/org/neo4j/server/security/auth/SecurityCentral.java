@@ -21,8 +21,6 @@ package org.neo4j.server.security.auth;
 
 import java.io.IOException;
 import java.security.SecureRandom;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.ThisShouldNotHappenError;
@@ -41,9 +39,6 @@ import org.neo4j.server.security.auth.exception.TooManyAuthenticationAttemptsExc
 public class SecurityCentral extends LifecycleAdapter
 {
     public static final User UNAUTHENTICATED = new UnauthenticatedUser();
-
-    // Cache to speed up token lookups
-    private final ConcurrentMap<String, User> usersByToken = new ConcurrentHashMap<>();
 
     private final Authentication authentication;
     private final UserRepository users;
@@ -100,19 +95,10 @@ public class SecurityCentral extends LifecycleAdapter
             return UNAUTHENTICATED;
         }
 
-        User user = usersByToken.get( token );
+        User user = users.findByToken( token );
         if( user != null)
         {
             return user;
-        }
-
-        for ( User candidate : users )
-        {
-            if( candidate.tokenEquals( token ) )
-            {
-                usersByToken.putIfAbsent( candidate.token(), candidate );
-                return candidate;
-            }
         }
 
         return UNAUTHENTICATED;
@@ -129,7 +115,7 @@ public class SecurityCentral extends LifecycleAdapter
             return UNAUTHENTICATED;
         }
 
-        User user = users.get( name );
+        User user = users.findByName( name );
         if( user != null)
         {
             return user;
@@ -159,10 +145,9 @@ public class SecurityCentral extends LifecycleAdapter
     public synchronized void setToken( String name, String token ) throws IllegalTokenException, IOException
     {
         assertValidToken( token );
-        User user = users.get( name );
+        User user = users.findByName( name );
         if(user != null)
         {
-            String oldToken = user.token();
             user = user.augment().withToken( token ).build();
             try
             {
@@ -171,12 +156,6 @@ public class SecurityCentral extends LifecycleAdapter
             catch ( IllegalUsernameException e )
             {
                 throw new ThisShouldNotHappenError( "Jake", "Username has already been accepted, we are modifying the token only." );
-            }
-            usersByToken.put( token, user );
-
-            if(oldToken != User.NO_TOKEN)
-            {
-                usersByToken.remove( oldToken );
             }
         }
     }

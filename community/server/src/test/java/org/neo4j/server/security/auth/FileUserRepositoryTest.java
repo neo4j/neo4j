@@ -27,6 +27,7 @@ import java.io.File;
 import org.neo4j.test.EphemeralFileSystemRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -36,7 +37,7 @@ public class FileUserRepositoryTest
     public @Rule EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
 
     @Test
-    public void shouldStoreAndRetriveUsers() throws Exception
+    public void shouldStoreAndRetriveUsersByName() throws Exception
     {
         // Given
         FileUserRepository users = new FileUserRepository( fsRule.get(), new File( "dbms/auth.db" ) );
@@ -44,10 +45,25 @@ public class FileUserRepositoryTest
         users.save( user );
 
         // When
-        User result = users.get( user.name() );
+        User result = users.findByName( user.name() );
 
         // Then
         assertThat(result, equalTo(user));
+    }
+
+    @Test
+    public void shouldStoreAndRetriveUsersByToken() throws Exception
+    {
+        // Given
+        FileUserRepository users = new FileUserRepository( fsRule.get(), new File( "dbms/auth.db" ) );
+        User user = new User( "jake", "af123", Privileges.ADMIN, Credentials.INACCESSIBLE, true );
+        users.save( user );
+
+        // When
+        User result = users.findByToken( user.token() );
+
+        // Then
+        assertThat( result, equalTo( user ) );
     }
 
     @Test
@@ -62,10 +78,29 @@ public class FileUserRepositoryTest
         users.start();
 
         // When
-        User result = users.get( user.name() );
+        User resultByName = users.findByName( user.name() );
+        User resultByToken = users.findByToken( user.token() );
 
         // Then
-        assertThat(result, equalTo(user));
+        assertThat( resultByName, equalTo( user ) );
+        assertThat( resultByToken, equalTo( user ) );
+    }
+
+    @Test
+    public void shouldNotFindUserByTokenAfterChangingToken() throws Throwable
+    {
+        // Given
+        FileUserRepository users = new FileUserRepository( fsRule.get(), new File( "dbms/auth.db" ) );
+        User user = new User( "jake", "af123", Privileges.ADMIN, Credentials.INACCESSIBLE, true );
+        users.save( user );
+
+        // When
+        User updatedUser = new User( "jake", "321fa", Privileges.ADMIN, Credentials.INACCESSIBLE, true );
+        users.save( updatedUser );
+
+        // Then
+        assertThat( users.findByToken( updatedUser.token() ), equalTo( updatedUser ) );
+        assertThat( users.findByToken( user.token() ), nullValue() );
     }
 
     @Test
@@ -105,6 +140,6 @@ public class FileUserRepositoryTest
         // Then
         assertFalse(fsRule.get().fileExists( tempFile ));
         assertTrue(fsRule.get().fileExists( dbFile ));
-        assertThat( users.get( user.name() ), equalTo(user));
+        assertThat( users.findByName( user.name() ), equalTo(user));
     }
 }

@@ -27,9 +27,11 @@ import org.neo4j.server.security.auth.exception.IllegalUsernameException;
 /**
  * A component that can store and retrieve users. Implementations must be thread safe.
  */
-public interface UserRepository extends Iterable<User>
+public interface UserRepository
 {
-    public User get( String name );
+    public User findByName( String name );
+
+    public User findByToken( String token );
 
     /** Saves a user, given that the users token is unique. */
     public void save( User user ) throws IllegalTokenException, IOException, IllegalUsernameException;

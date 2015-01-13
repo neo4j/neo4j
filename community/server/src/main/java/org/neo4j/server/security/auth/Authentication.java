@@ -92,7 +92,7 @@ public class Authentication
 
         protected boolean isCorrectPassword( String password )
         {
-            User user = users.get( name );
+            User user = users.findByName( name );
             if(user != null)
             {
                 String hash = hash( user.credentials().salt(), password, user.credentials().digestAlgorithm() );
@@ -145,7 +145,7 @@ public class Authentication
 
     public void setPassword( String name, String password ) throws IOException
     {
-        User user = users.get( name );
+        User user = users.findByName( name );
         if(user != null)
         {
             try
@@ -170,7 +170,7 @@ public class Authentication
     /** Mark the user with the specified name as requiring a password change. All API access will be blocked until the password is changed. */
     public void requirePasswordChange( String name ) throws IOException
     {
-        User user = users.get( name );
+        User user = users.findByName( name );
         if(user != null)
         {
             try
@@ -198,7 +198,7 @@ public class Authentication
         AuthenticationMetadata authMeta = authenticationData.get( name );
         if(authMeta == null)
         {
-            User user = users.get( name );
+            User user = users.findByName( name );
             if ( user != null )
             {
                 authMeta = new AuthenticationMetadata( name, maxFailedAttempts, failedAuthCooldownPeriod, clock );

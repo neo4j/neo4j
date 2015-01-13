@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -52,6 +51,9 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
     /** Quick lookup of users by name */
     private final Map<String, User> usersByName = new ConcurrentHashMap<>();
 
+    /** Quick lookup of users by token */
+    private final Map<String, User> usersByToken = new ConcurrentHashMap<>();
+
     /** Master list of users */
     private volatile List<User> users = new ArrayList<>();
 
@@ -65,9 +67,15 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
     }
 
     @Override
-    public User get( String name )
+    public User findByName( String name )
     {
         return usersByName.get( name );
+    }
+
+    @Override
+    public User findByToken( String name )
+    {
+        return usersByToken.get( name );
     }
 
     @Override
@@ -100,14 +108,14 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
 
         // Copy-on-write for the users list
         List<User> newUsers = new ArrayList<>(users);
-        boolean replacedExisting = false;
+        User existingUser = null;
         for ( int i = 0; i < newUsers.size(); i++ )
         {
             User other = newUsers.get( i );
             if( other.name().equals( user.name() ))
             {
+                existingUser = other;
                 newUsers.set( i, user );
-                replacedExisting = true;
             }
             else if ( user.token() != User.NO_TOKEN && other.tokenEquals( user.token() ) )
             {
@@ -115,7 +123,7 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
             }
         }
 
-        if(!replacedExisting)
+        if ( existingUser == null )
         {
             newUsers.add( user );
         }
@@ -125,6 +133,11 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
         commitToDisk();
 
         usersByName.put( user.name(), user );
+        if ( existingUser != null )
+        {
+            usersByToken.remove( existingUser.token() );
+        }
+        usersByToken.put( user.token(), user );
     }
 
     @Override
@@ -197,15 +210,8 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
             for ( User user : users )
             {
                 usersByName.put( user.name(), user );
+                usersByToken.put( user.token(), user );
             }
         }
     }
-
-    @Override
-    public Iterator<User> iterator()
-    {
-        return users.iterator();
-    }
-
-
 }
