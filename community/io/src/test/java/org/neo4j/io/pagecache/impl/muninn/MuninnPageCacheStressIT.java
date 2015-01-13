@@ -21,7 +21,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import org.junit.Test;
 
-import org.neo4j.io.pagecache.monitoring.DefaultPageCacheMonitor;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.stress.Condition;
 import org.neo4j.io.pagecache.stress.PageCacheStressTest;
 
@@ -39,7 +39,7 @@ public class MuninnPageCacheStressIT
     @Test
     public void shouldHandleTheStressOfOneMillionEvictions() throws Exception
     {
-        DefaultPageCacheMonitor monitor = new DefaultPageCacheMonitor();
+        DefaultPageCacheTracer monitor = new DefaultPageCacheTracer();
         Condition condition = numberOfEvictions( monitor, 1_000_000 );
 
         PageCacheStressTest runner = new PageCacheStressTest.Builder()

@@ -27,7 +27,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
-import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -64,7 +64,7 @@ public final class StandalonePageCacheFactory
                 GraphDatabaseSettings.pagecache_memory.name(), "8M" ) );
         Config finalConfig = baseConfig.with( config.getParams() );
         LifecycledPageCache delegate = life.add(
-                new LifecycledPageCache( swapperFactory, scheduler, finalConfig, PageCacheMonitor.NULL ) );
+                new LifecycledPageCache( swapperFactory, scheduler, finalConfig, PageCacheTracer.NULL ) );
         life.start();
 
         return new DelegatingStandalonePageCache( delegate, life, qualifiedPageCacheName );

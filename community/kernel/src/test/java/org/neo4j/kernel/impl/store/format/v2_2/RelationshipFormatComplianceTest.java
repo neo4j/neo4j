@@ -26,7 +26,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -64,7 +64,7 @@ public class RelationshipFormatComplianceTest
     @Before
     public void setup()
     {
-        pageCache = new MuninnPageCache( fsRule.get(), 1024, 1024, PageCacheMonitor.NULL );
+        pageCache = new MuninnPageCache( fsRule.get(), 1024, 1024, PageCacheTracer.NULL );
         storeFactory = new StoreFactory( StoreFactory.configForStoreDir( new Config(), storeDir ), new DefaultIdGeneratorFactory(), pageCache, fsRule.get(), StringLogger.DEV_NULL, new Monitors() );
     }
 
@@ -83,7 +83,7 @@ public class RelationshipFormatComplianceTest
         // When
         StandardStore<RelationshipRecord, RelationshipStoreFormat_v2_2.RelationshipRecordCursor> store = new
                 StandardStore<>( new RelationshipStoreFormat_v2_2(), new File( storeDir, DEFAULT_NAME + RELATIONSHIP_STORE_NAME ),
-                new TestStoreIdGenerator(), new MuninnPageCache( fsRule.get(), 1024, 1024, PageCacheMonitor.NULL ), fsRule.get(),
+                new TestStoreIdGenerator(), new MuninnPageCache( fsRule.get(), 1024, 1024, PageCacheTracer.NULL ), fsRule.get(),
                 StringLogger.DEV_NULL );
         store.init();
         store.start();
@@ -100,7 +100,7 @@ public class RelationshipFormatComplianceTest
 
         StandardStore<RelationshipRecord, RelationshipStoreFormat_v2_2.RelationshipRecordCursor> store = new
                 StandardStore<>( new RelationshipStoreFormat_v2_2(), new File( storeDir, DEFAULT_NAME + RELATIONSHIP_STORE_NAME ),
-                new TestStoreIdGenerator(), new MuninnPageCache( fsRule.get(), 1024, 1024, PageCacheMonitor.NULL ), fsRule.get(),
+                new TestStoreIdGenerator(), new MuninnPageCache( fsRule.get(), 1024, 1024, PageCacheTracer.NULL ), fsRule.get(),
                 StringLogger.DEV_NULL );
         store.init();
         store.start();

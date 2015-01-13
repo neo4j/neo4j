@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -38,7 +39,9 @@ import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContext;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContextSupplier;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.monitoring.tracing.Tracers;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
@@ -49,7 +52,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 
@@ -134,7 +136,8 @@ public class KernelTransactionsTest
         return new KernelTransactions( contextSupplier, mock( NeoStore.class ), locks,
                 mock( IntegrityValidator.class ), null, null, null, null, null, null, null,
                 TransactionHeaderInformationFactory.DEFAULT, null, null, commitProcess, null,
-                null, new TransactionHooks(), mock( TransactionMonitor.class ), life);
+                null, new TransactionHooks(), mock( TransactionMonitor.class ), life,
+                new Tracers( "null", StringLogger.DEV_NULL ) );
     }
 
     private static TransactionCommitProcess newRememberingCommitProcess( final TransactionRepresentation[] slot )
@@ -143,7 +146,8 @@ public class KernelTransactionsTest
     {
         TransactionCommitProcess commitProcess = mock( TransactionCommitProcess.class );
 
-        when( commitProcess.commit( any( TransactionRepresentation.class ), any( LockGroup.class ) ) )
+        when( commitProcess.commit(
+                any( TransactionRepresentation.class ), any( LockGroup.class ), any( CommitEvent.class ) ) )
                 .then( new Answer<Long>()
                 {
                     @Override

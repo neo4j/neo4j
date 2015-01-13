@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
+import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogRotationControl;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -138,7 +139,7 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
             TransactionCommitProcess txCommitProcess = dependencyResolver
                     .resolveDependency( NeoStoreDataSource.class )
                     .getDependencyResolver().resolveDependency( TransactionCommitProcess.class );
-            return txCommitProcess.commit( preparedTransaction, locks );
+            return txCommitProcess.commit( preparedTransaction, locks, CommitEvent.NULL );
         }
     }
 

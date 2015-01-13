@@ -19,9 +19,9 @@
  */
 package org.neo4j.com.storecopy;
 
-import java.io.IOException;
-
 import org.junit.Test;
+
+import java.io.IOException;
 
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
@@ -32,6 +32,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
@@ -41,7 +42,6 @@ import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
-import org.neo4j.test.DoubleLatch;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThat;
@@ -54,11 +54,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.com.storecopy.ResponseUnpacker.NO_OP_TX_HANDLER;
 
 public class TransactionCommittingResponseUnpackerTest
 {
+    private final LogAppendEvent logAppendEvent = LogAppendEvent.NULL;
+
     /*
      * Tests that shutting down the response unpacker while in the middle of committing a transaction will
      * allow that transaction stream to complete committing. It also verifies that any subsequent transactions
@@ -111,7 +112,7 @@ public class TransactionCommittingResponseUnpackerTest
         verify( txIdStore, times( 1 ) ).transactionClosed( committingTransactionId );
         verify( appender, times( 1 ) ).append( any( TransactionRepresentation.class ), anyLong() );
         verify( appender, times( 1 ) ).force();
-        verify( logRotation, times( 1 ) ).rotateLogIfNeeded();
+        verify( logRotation, times( 1 ) ).rotateLogIfNeeded( logAppendEvent );
 
         // Then
           // The txhandler has stopped the unpacker. It should not allow any more transactions to go through
@@ -138,7 +139,9 @@ public class TransactionCommittingResponseUnpackerTest
         when( dependencyResolver.resolveDependency( TransactionIdStore.class ) ).thenReturn( txIdStore );
 
         TransactionAppender appender = mock( TransactionAppender.class );
-        when( appender.append( any( TransactionRepresentation.class ) ) ).thenReturn( 2L, 3L, 4L, 5L, 6L );
+        when( appender.append(
+                any( TransactionRepresentation.class ), any( LogAppendEvent.class ) ) ).thenReturn(
+                2L, 3L, 4L, 5L, 6L );
           // Should indicate success applying the transaction
 
         LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
@@ -167,7 +170,7 @@ public class TransactionCommittingResponseUnpackerTest
         // and THEN
         verify( appender, times( txCount ) ).append( any( TransactionRepresentation.class ), anyLong() );
         verify( appender, times( 2 ) ).force();
-        verify( logRotation, times( 2 ) ).rotateLogIfNeeded();
+        verify( logRotation, times( 2 ) ).rotateLogIfNeeded( logAppendEvent );
     }
 
     @Test
@@ -336,22 +339,6 @@ public class TransactionCommittingResponseUnpackerTest
                     verifyNoMoreInteractions( appender );
                 }
             }
-        }
-    }
-
-    public class ControlledObligationFulfuller implements TransactionObligationFulfiller
-    {
-        private final DoubleLatch latch;
-
-        public ControlledObligationFulfuller( DoubleLatch latch )
-        {
-            this.latch = latch;
-        }
-
-        @Override
-        public void fulfill( long toTxId ) throws InterruptedException
-        {
-            latch.startAndAwaitFinish();
         }
     }
 }

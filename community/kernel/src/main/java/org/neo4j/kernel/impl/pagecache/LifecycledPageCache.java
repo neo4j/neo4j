@@ -24,7 +24,7 @@ import java.io.IOException;
 
 import org.neo4j.helpers.Settings;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.RunnablePageCache;
@@ -42,7 +42,7 @@ public class LifecycledPageCache extends LifecycleAdapter implements PageCache
     private final PageSwapperFactory swapperFactory;
     private final JobScheduler scheduler;
     private final Config config;
-    private final PageCacheMonitor monitor;
+    private final PageCacheTracer tracer;
 
     private RunnablePageCache pageCache;
     private boolean stopped;
@@ -52,12 +52,12 @@ public class LifecycledPageCache extends LifecycleAdapter implements PageCache
             PageSwapperFactory swapperFactory,
             JobScheduler scheduler,
             Config config,
-            PageCacheMonitor monitor )
+            PageCacheTracer tracer )
     {
         this.swapperFactory = swapperFactory;
         this.scheduler = scheduler;
         this.config = config;
-        this.monitor = monitor;
+        this.tracer = tracer;
         initialisePageCache();
     }
 
@@ -67,7 +67,7 @@ public class LifecycledPageCache extends LifecycleAdapter implements PageCache
                 swapperFactory,
                 calculateMaxPages( config ),
                 calculatePageSize( config ),
-                monitor );
+                tracer );
     }
 
     private static int calculateMaxPages( Config config )

@@ -26,15 +26,15 @@ import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.io.pagecache.monitoring.EvictionEvent;
-import org.neo4j.io.pagecache.monitoring.EvictionRunEvent;
-import org.neo4j.io.pagecache.monitoring.MajorFlushEvent;
-import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
+import org.neo4j.io.pagecache.tracing.EvictionEvent;
+import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
+import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.RunnablePageCache;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
-import org.neo4j.io.pagecache.monitoring.PageFaultEvent;
+import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 
 /**
  * The Muninn {@link org.neo4j.io.pagecache.PageCache page cache} implementation.
@@ -118,7 +118,7 @@ public class MuninnPageCache implements RunnablePageCache
     private final int cachePageSize;
     private final int keepFree;
     private final MuninnCursorPool cursorPool;
-    private final PageCacheMonitor monitor;
+    private final PageCacheTracer tracer;
     final MuninnPage[] pages;
 
     // The freelist takes a bit of explanation. It is a thread-safe linked-list
@@ -157,7 +157,7 @@ public class MuninnPageCache implements RunnablePageCache
             FileSystemAbstraction fs,
             int maxPages,
             int pageSize,
-            PageCacheMonitor monitor )
+            PageCacheTracer monitor )
     {
         this( new SingleFilePageSwapperFactory( fs ), maxPages, pageSize, monitor );
     }
@@ -166,7 +166,7 @@ public class MuninnPageCache implements RunnablePageCache
             PageSwapperFactory swapperFactory,
             int maxPages,
             int cachePageSize,
-            PageCacheMonitor monitor )
+            PageCacheTracer tracer )
     {
         verifyHacks();
         verifyCachePageSizeIsPowerOfTwo( cachePageSize );
@@ -175,7 +175,7 @@ public class MuninnPageCache implements RunnablePageCache
         this.cachePageSize = cachePageSize;
         this.keepFree = Math.min( pagesToKeepFree, maxPages / 2 );
         this.cursorPool = new MuninnCursorPool();
-        this.monitor = monitor;
+        this.tracer = tracer;
         this.pages = new MuninnPage[maxPages];
 
         MemoryReleaser memoryReleaser = new MemoryReleaser( maxPages );
@@ -268,12 +268,12 @@ public class MuninnPageCache implements RunnablePageCache
                 filePageSize,
                 swapperFactory,
                 cursorPool,
-                monitor );
+                tracer );
         pagedFile.incrementRefCount();
         current = new FileMapping( file, pagedFile );
         current.next = mappedFiles;
         mappedFiles = current;
-        monitor.mappedFile( file );
+        tracer.mappedFile( file );
         return pagedFile;
     }
 
@@ -298,7 +298,7 @@ public class MuninnPageCache implements RunnablePageCache
                     {
                         prev.next = current.next;
                     }
-                    monitor.unmappedFile( current.file );
+                    tracer.unmappedFile( current.file );
                     flushAndCloseWithoutFail( file );
                     break;
                 }
@@ -348,7 +348,7 @@ public class MuninnPageCache implements RunnablePageCache
 
     private void flushAllPages() throws IOException
     {
-        try ( MajorFlushEvent cacheFlush = monitor.beginCacheFlush() )
+        try ( MajorFlushEvent cacheFlush = tracer.beginCacheFlush() )
         {
             for ( int i = 0; i < pages.length; i++ )
             {
@@ -576,7 +576,7 @@ public class MuninnPageCache implements RunnablePageCache
         while ( !Thread.interrupted() )
         {
             int pageCountToEvict = parkUntilEvictionRequired( keepFree );
-            try ( EvictionRunEvent evictionRunEvent = monitor.beginPageEvictions( pageCountToEvict ) )
+            try ( EvictionRunEvent evictionRunEvent = tracer.beginPageEvictions( pageCountToEvict ) )
             {
                 clockArm = evictPages( pageCountToEvict, clockArm, evictionRunEvent );
             }

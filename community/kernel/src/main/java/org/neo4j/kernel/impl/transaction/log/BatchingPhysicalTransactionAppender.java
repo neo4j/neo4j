@@ -28,6 +28,9 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
+import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
+import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 
 /**
@@ -82,9 +85,10 @@ public class BatchingPhysicalTransactionAppender extends AbstractPhysicalTransac
 
     /**
      * Called by the appender that just appended a transaction to the log.
+     * @param logAppendEvent A trace event for the given log append operation.
      */
     @Override
-    protected void forceAfterAppend() throws IOException
+    protected void forceAfterAppend( LogAppendEvent logAppendEvent ) throws IOException
     {
         // There's a benign race here, where we add our link before we update our next pointer.
         // This is okay, however, because unparkAll() spins when it sees a null next pointer.
@@ -92,39 +96,45 @@ public class BatchingPhysicalTransactionAppender extends AbstractPhysicalTransac
         threadLink.next = threadLinkHead.getAndSet( threadLink );
         int waitTicks = 127;
 
-        do
+        try ( LogForceWaitEvent logForceWaitEvent = logAppendEvent.beginLogForceWait() )
         {
-            if ( forceLock.tryLock() )
+            do
             {
-                try
+                if ( forceLock.tryLock() )
                 {
-                    forceLog();
-                }
-                finally
-                {
-                    forceLock.unlock();
+                    try
+                    {
+                        forceLog( logAppendEvent );
+                    }
+                    finally
+                    {
+                        forceLock.unlock();
 
-                    // We've released the lock, so unpark anyone who might have decided park while we were working.
-                    // The most recently parked thread is the one most likely to still have warm caches, so that's
-                    // the one we would prefer to unpark. Luckily, the stack nature of the ThreadLinks makes it easy
-                    // to get to.
-                    ThreadLink nextWaiter = threadLinkHead.get();
-                    nextWaiter.unpark();
+                        // We've released the lock, so unpark anyone who might have decided park while we were working.
+                        // The most recently parked thread is the one most likely to still have warm caches, so that's
+                        // the one we would prefer to unpark. Luckily, the stack nature of the ThreadLinks makes it easy
+                        // to get to.
+                        ThreadLink nextWaiter = threadLinkHead.get();
+                        nextWaiter.unpark();
+                    }
+                }
+                else
+                {
+                    waitTicks = waitForLogForce( waitTicks );
                 }
             }
-            else
-            {
-                waitTicks = waitForLogForce( waitTicks );
-            }
+            while ( !threadLink.done );
         }
-        while ( !threadLink.done );
     }
 
-    private void forceLog() throws IOException
+    private void forceLog( LogAppendEvent logAppendEvent ) throws IOException
     {
         ThreadLink links = threadLinkHead.getAndSet( ThreadLink.END );
 
-        force();
+        try ( LogForceEvent logForceEvent = logAppendEvent.beginLogForce() )
+        {
+            force();
+        }
 
         unparkAll( links );
     }

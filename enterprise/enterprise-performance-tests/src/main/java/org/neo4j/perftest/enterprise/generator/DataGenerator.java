@@ -34,7 +34,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
-import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -128,7 +128,7 @@ public class DataGenerator
                 swapperFactory,
                 jobScheduler,
                 new Config(),
-                PageCacheMonitor.NULL );
+                PageCacheTracer.NULL );
         pageCache.start();
         StoreAccess stores = new StoreAccess( pageCache, storeDir );
         try

@@ -21,6 +21,8 @@ package org.neo4j.kernel;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
+import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvent;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.LogRotationControl;
@@ -51,7 +53,7 @@ public class LogRotationImpl
     }
 
     @Override
-    public boolean rotateLogIfNeeded() throws IOException
+    public boolean rotateLogIfNeeded( LogAppendEvent logAppendEvent ) throws IOException
     {
         if ( logFile.rotationNeeded() )
         {
@@ -64,7 +66,10 @@ public class LogRotationImpl
             {
                 if ( rotated = logFile.rotationNeeded() )
                 {
-                    doRotate();
+                    try ( LogRotateEvent rotateEvent = logAppendEvent.beginLogRotate() )
+                    {
+                        doRotate();
+                    }
                 }
             }
 

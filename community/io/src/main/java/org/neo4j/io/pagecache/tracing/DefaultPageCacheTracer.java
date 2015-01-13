@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.monitoring;
+package org.neo4j.io.pagecache.tracing;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,9 +30,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.io.pagecache.PageSwapper;
 
 /**
- * The default PageCacheMonitor implementation, that just increments counters.
+ * The default PageCacheTracer implementation, that just increments counters.
  */
-public class DefaultPageCacheMonitor implements PageCacheMonitor
+public class DefaultPageCacheTracer implements PageCacheTracer
 {
     private static final MethodHandle beginPinMH;
     private static final SwitchPoint beginPinSwitchPoint;
@@ -42,11 +42,11 @@ public class DefaultPageCacheMonitor implements PageCacheMonitor
         {
             // A hidden setting to have pin/unpin monitoring enabled from the start by default.
             boolean alwaysEnabled = Boolean.getBoolean(
-                    "org.neo4j.io.pagecache.monitoring.monitorPinUnpin" );
+                    "org.neo4j.io.pagecache.tracing.tracePinUnpin" );
 
             MethodType type = MethodType.methodType( PinEvent.class );
             MethodHandles.Lookup lookup = MethodHandles.lookup();
-            MethodHandle monitoredPinMH = lookup.findVirtual( DefaultPageCacheMonitor.class, "beginMonitoredPin", type );
+            MethodHandle monitoredPinMH = lookup.findVirtual( DefaultPageCacheTracer.class, "beginTracingPin", type );
             if ( alwaysEnabled )
             {
                 beginPinMH = monitoredPinMH;
@@ -54,7 +54,7 @@ public class DefaultPageCacheMonitor implements PageCacheMonitor
             }
             else
             {
-                MethodHandle nullPinMH = lookup.findVirtual( DefaultPageCacheMonitor.class, "beginNullPin", type );
+                MethodHandle nullPinMH = lookup.findVirtual( DefaultPageCacheTracer.class, "beginNullPin", type );
                 beginPinSwitchPoint = new SwitchPoint();
                 beginPinMH = beginPinSwitchPoint.guardWithTest( nullPinMH, monitoredPinMH );
             }
@@ -72,7 +72,7 @@ public class DefaultPageCacheMonitor implements PageCacheMonitor
      * This is a one-way operation; once monitoring of pinning and unpinning has been
      * enabled, it cannot be disabled again without restarting the JVM.
      */
-    public static void enablePinUnpinMonitoring()
+    public static void enablePinUnpinTracing()
     {
         if ( beginPinSwitchPoint != null && !beginPinSwitchPoint.hasBeenInvalidated() )
         {
@@ -273,14 +273,14 @@ public class DefaultPageCacheMonitor implements PageCacheMonitor
     @SuppressWarnings( "UnusedDeclaration" )
     private PinEvent beginNullPin()
     {
-        return NULL_PIN_EVENT;
+        return PinEvent.NULL;
     }
 
     /**
      * Invoked through beginPinMH.
      */
     @SuppressWarnings( "UnusedDeclaration" )
-    private PinEvent beginMonitoredPin()
+    private PinEvent beginTracingPin()
     {
         pins.getAndIncrement();
         return pinEvent;

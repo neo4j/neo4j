@@ -26,6 +26,7 @@ import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.locking.LockGroup;
+import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 
 /**
@@ -44,7 +45,7 @@ public class SlaveTransactionCommitProcess implements TransactionCommitProcess
     }
 
     @Override
-    public long commit( TransactionRepresentation representation, LockGroup locks ) throws TransactionFailureException
+    public long commit( TransactionRepresentation representation, LockGroup locks, CommitEvent commitEvent ) throws TransactionFailureException
     {
         try
         {

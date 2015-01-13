@@ -17,15 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.monitoring;
+package org.neo4j.kernel.impl.transaction.tracing;
 
 /**
- * Begin a mass-flushing of pages.
+ * Represents the process of applying transaction changes to the stores. Because we apply transactions in parallel,
+ * the individual stores and indexes are not further specified.
  */
-public interface MajorFlushEvent extends AutoCloseablePageCacheMonitorEvent
+public interface StoreApplyEvent extends AutoCloseable
 {
+    StoreApplyEvent NULL = new StoreApplyEvent()
+    {
+        @Override
+        public void close()
+        {
+        }
+    };
+
     /**
-     * Mass-flushing obviously imply flushing opportunities.
+     * Marks the completion of the store application.
      */
-    public FlushEventOpportunity flushEventOpportunity();
+    @Override
+    void close();
 }

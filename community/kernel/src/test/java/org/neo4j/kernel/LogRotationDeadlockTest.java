@@ -36,6 +36,8 @@ import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.locking.LockGroup;
+import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.BatchingPhysicalTransactionAppender;
@@ -95,10 +97,10 @@ public class LogRotationDeadlockTest
                 health )
         {
             @Override
-            protected void forceAfterAppend() throws IOException
+            protected void forceAfterAppend( LogAppendEvent logAppendEvent ) throws IOException
             {
                 inBetweenCommittedAndClosed.reached();
-                super.forceAfterAppend();
+                super.forceAfterAppend( logAppendEvent );
             }
         };
 
@@ -134,7 +136,7 @@ public class LogRotationDeadlockTest
             @Override
             public Void doWork( Void state ) throws Exception
             {
-                commitProcess.commit( arbitraryTransaction(), new LockGroup() );
+                commitProcess.commit( arbitraryTransaction(), new LockGroup(), CommitEvent.NULL );
                 return null;
             }
         };

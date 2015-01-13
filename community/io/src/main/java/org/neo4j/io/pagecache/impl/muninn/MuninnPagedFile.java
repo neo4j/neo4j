@@ -24,15 +24,15 @@ import java.io.IOException;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.io.pagecache.monitoring.MajorFlushEvent;
-import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
+import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.jsr166e.StampedLock;
-import org.neo4j.io.pagecache.monitoring.PageFaultEvent;
+import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 
 final class MuninnPagedFile implements PagedFile
 {
@@ -49,7 +49,7 @@ final class MuninnPagedFile implements PagedFile
     final MuninnPageCache pageCache;
     // This is the table where we translate file-page-ids to cache-page-ids:
     final int pageSize;
-    final PageCacheMonitor monitor;
+    final PageCacheTracer tracer;
 
     final PrimitiveLongObjectMap<MuninnPage>[] translationTables;
     final StampedLock[] translationTableLocks;
@@ -67,12 +67,12 @@ final class MuninnPagedFile implements PagedFile
             int pageSize,
             PageSwapperFactory swapperFactory,
             MuninnCursorPool cursorPool,
-            PageCacheMonitor monitor ) throws IOException
+            PageCacheTracer tracer ) throws IOException
     {
         this.pageCache = pageCache;
         this.pageSize = pageSize;
         this.cursorPool = cursorPool;
-        this.monitor = monitor;
+        this.tracer = tracer;
 
         // The translation table and its locks are striped to reduce lock
         // contention.
@@ -152,7 +152,7 @@ final class MuninnPagedFile implements PagedFile
     @Override
     public void flush() throws IOException
     {
-        try ( MajorFlushEvent flushEvent = monitor.beginFileFlush( swapper ) )
+        try ( MajorFlushEvent flushEvent = tracer.beginFileFlush( swapper ) )
         {
             PageFlusher flusher = new PageFlusher( swapper, flushEvent );
             for ( int i = 0; i < translationTableStripeLevel; i++ )
@@ -237,7 +237,7 @@ final class MuninnPagedFile implements PagedFile
     /**
      * Grab a free page for the purpose of page faulting. Possibly blocking if
      * none are immediately available.
-     * @param faultEvent
+     * @param faultEvent The trace event for the current page fault.
      */
     MuninnPage grabFreePage( PageFaultEvent faultEvent ) throws IOException
     {

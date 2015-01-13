@@ -30,7 +30,7 @@ import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
-import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
@@ -122,7 +122,7 @@ public class ConsistencyPerformanceCheck
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fileSystem );
         Monitors monitors = new Monitors();
         pageCache = new LifecycledPageCache(
-                swapperFactory, jobScheduler, tuningConfiguration, PageCacheMonitor.NULL );
+                swapperFactory, jobScheduler, tuningConfiguration, PageCacheTracer.NULL );
         jobScheduler.init();
         pageCache.start();
         DirectStoreAccess directStoreAccess = createScannableStores( configuration.get( DataGenerator.store_dir ),

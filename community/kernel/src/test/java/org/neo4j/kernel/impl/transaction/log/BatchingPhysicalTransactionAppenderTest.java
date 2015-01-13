@@ -33,6 +33,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 
 import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 
@@ -68,6 +69,7 @@ public class BatchingPhysicalTransactionAppenderTest
         executor = null;
     }
 
+    private final LogAppendEvent logAppendEvent = LogAppendEvent.NULL;
     private LogFile logFile;
     private LogRotation logRotation;
     private TransactionMetadataCache transactionMetadataCache;
@@ -131,7 +133,7 @@ public class BatchingPhysicalTransactionAppenderTest
             {
                 try
                 {
-                    appender.forceAfterAppend();
+                    appender.forceAfterAppend( logAppendEvent );
                 }
                 catch ( IOException e )
                 {
@@ -147,7 +149,7 @@ public class BatchingPhysicalTransactionAppenderTest
         BatchingPhysicalTransactionAppender appender = new BatchingPhysicalTransactionAppender( logFile, logRotation,
                 transactionMetadataCache, transactionIdStore, legacyindexTransactionOrdering, kernelHealth );
 
-        appender.forceAfterAppend();
+        appender.forceAfterAppend( logAppendEvent );
 
         assertThat( channelCommandQueue.take(), is( ChannelCommand.emptyBufferIntoChannelAndClearIt ) );
         assertThat( channelCommandQueue.take(), is( ChannelCommand.force ) );

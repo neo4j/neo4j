@@ -17,19 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.monitoring;
-
-import org.neo4j.io.pagecache.PageSwapper;
+package org.neo4j.kernel.impl.transaction.tracing;
 
 /**
- * Represents the opportunity to flush a page.
- *
- * The flushing might not happen, though, because only dirty pages are flushed.
+ * Represents the serialization and the writing of commands to the transaction log, for a particular transaction.
  */
-public interface FlushEventOpportunity
+public interface SerializeTransactionEvent extends AutoCloseable
 {
+    SerializeTransactionEvent NULL = new SerializeTransactionEvent()
+    {
+        @Override
+        public void close()
+        {
+        }
+    };
+
     /**
-     * Begin flushing the given page.
+     * Marks the end of the process of serializing the transaction commands.
      */
-    public FlushEvent beginFlush( long filePageId, int cachePageId, PageSwapper swapper );
+    @Override
+    public void close();
 }

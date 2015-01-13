@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.IOException;
 
 import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 
 public class PhysicalTransactionAppender extends AbstractPhysicalTransactionAppender
@@ -41,7 +42,7 @@ public class PhysicalTransactionAppender extends AbstractPhysicalTransactionAppe
     }
 
     @Override
-    protected void forceAfterAppend() throws IOException
+    protected void forceAfterAppend( LogAppendEvent logAppendEvent ) throws IOException
     {
         forceChannel();
     }

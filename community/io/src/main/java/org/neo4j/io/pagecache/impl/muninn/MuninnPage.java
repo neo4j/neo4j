@@ -27,10 +27,10 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.Page;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
-import org.neo4j.io.pagecache.monitoring.EvictionEvent;
-import org.neo4j.io.pagecache.monitoring.FlushEvent;
-import org.neo4j.io.pagecache.monitoring.FlushEventOpportunity;
-import org.neo4j.io.pagecache.monitoring.PageFaultEvent;
+import org.neo4j.io.pagecache.tracing.EvictionEvent;
+import org.neo4j.io.pagecache.tracing.FlushEvent;
+import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
+import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.jsr166e.StampedLock;
 
 import static org.neo4j.io.pagecache.impl.muninn.UnsafeUtil.allowUnalignedMemoryAccess;

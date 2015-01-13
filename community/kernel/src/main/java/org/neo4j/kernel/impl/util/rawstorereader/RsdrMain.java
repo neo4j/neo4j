@@ -34,7 +34,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
-import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -97,7 +97,7 @@ public class RsdrMain
         jobScheduler.init();
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( files );
         LifecycledPageCache pageCache = new LifecycledPageCache(
-                swapperFactory, jobScheduler, config, PageCacheMonitor.NULL );
+                swapperFactory, jobScheduler, config, PageCacheTracer.NULL );
         pageCache.start();
         StringLogger logger = StringLogger.DEV_NULL;
         StoreFactory factory = new StoreFactory(

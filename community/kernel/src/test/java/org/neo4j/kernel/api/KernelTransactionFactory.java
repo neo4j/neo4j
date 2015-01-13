@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.api.store.PersistenceCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
@@ -58,6 +59,9 @@ public class KernelTransactionFactory
                 mock( TransactionRepresentationCommitProcess.class ), mock( TransactionMonitor.class ),
                 mock( PersistenceCache.class ),
                 mock( StoreReadLayer.class ),
-                mock( LegacyIndexTransactionState.class ), mock(Pool.class), Clock.SYSTEM_CLOCK );
+                mock( LegacyIndexTransactionState.class ),
+                mock(Pool.class),
+                Clock.SYSTEM_CLOCK,
+                TransactionTracer.NULL );
     }
 }

@@ -25,7 +25,7 @@ import org.junit.Test;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
-import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -56,7 +56,7 @@ public class LifecycledPageCacheTest
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fsRule.get() );
         Neo4jJobScheduler scheduler = life.add( new Neo4jJobScheduler() );
         PageCache cache = life.add( new LifecycledPageCache(
-                swapperFactory, scheduler, config, PageCacheMonitor.NULL ) );
+                swapperFactory, scheduler, config, PageCacheTracer.NULL ) );
         life.start();
 
         // Then

@@ -21,13 +21,13 @@ package org.neo4j.io.pagecache.stress;
 
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.io.pagecache.monitoring.DefaultPageCacheMonitor;
+import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
 
 import static java.lang.System.currentTimeMillis;
 
 public class Conditions
 {
-    public static Condition numberOfEvictions( final DefaultPageCacheMonitor monitor,
+    public static Condition numberOfEvictions( final PageCacheMonitor monitor,
                                                final long desiredNumberOfEvictions )
     {
         return new Condition()

@@ -69,7 +69,7 @@ final class MuninnWritePageCursor extends MuninnPageCursor
         StampedLock translationTableLock = pagedFile.translationTableLocks[stripe];
         PrimitiveLongObjectMap<MuninnPage> translationTable = pagedFile.translationTables[stripe];
         PageSwapper swapper = pagedFile.swapper;
-        pinEvent = pagedFile.monitor.beginPin( true, filePageId, swapper );
+        pinEvent = pagedFile.tracer.beginPin( true, filePageId, swapper );
         MuninnPage page;
 
         long stamp = translationTableLock.tryOptimisticRead();

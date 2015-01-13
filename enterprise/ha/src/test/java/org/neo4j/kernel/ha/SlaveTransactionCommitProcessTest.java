@@ -19,20 +19,24 @@
  */
 package org.neo4j.kernel.ha;
 
+import org.junit.Test;
+
 import java.util.Collections;
 
-import org.junit.Test;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.locking.LockGroup;
+import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class SlaveTransactionCommitProcessTest
 {
@@ -54,7 +58,7 @@ public class SlaveTransactionCommitProcessTest
         tx.setHeader(new byte[]{}, 1, 1, 1, 1, 1, 1337);
 
         // When
-        process.commit(tx , new LockGroup() );
+        process.commit(tx , new LockGroup(), CommitEvent.NULL );
 
         // Then
         verify( reqFactory ).newRequestContext( 1337 );

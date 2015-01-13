@@ -17,14 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.monitoring;
+package org.neo4j.kernel.impl.transaction.tracing;
 
-public class DefaultPageCacheMonitorTest extends PageCacheMonitorTest
+/**
+ * This represents the actual force call for the transaction log file, and so is a measure of the {@code f(data)sync}
+ * system call latency that we experience. Force calls are batched, so a single one might cause multiple transactions
+ * to be considered forced.
+ */
+public interface LogForceEvent extends AutoCloseable
 {
-    @Override
-    protected DefaultPageCacheMonitor createMonitor()
+    LogForceEvent NULL = new LogForceEvent()
     {
-        DefaultPageCacheMonitor.enablePinUnpinMonitoring();
-        return new DefaultPageCacheMonitor();
-    }
+        @Override
+        public void close()
+        {
+        }
+    };
+
+    /**
+     * Marks the end of the force call on the transaction log file.
+     */
+    @Override
+    public void close();
 }

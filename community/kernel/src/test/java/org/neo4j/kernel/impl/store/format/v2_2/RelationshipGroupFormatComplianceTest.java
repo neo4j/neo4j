@@ -25,7 +25,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -58,7 +58,7 @@ public class RelationshipGroupFormatComplianceTest
     @Before
     public void setup()
     {
-        MuninnPageCache pageCache = new MuninnPageCache( fsRule.get(), 1024, 1024, PageCacheMonitor.NULL );
+        MuninnPageCache pageCache = new MuninnPageCache( fsRule.get(), 1024, 1024, PageCacheTracer.NULL );
         storeFactory = new StoreFactory( StoreFactory.configForStoreDir( new Config(), storeDir ), new DefaultIdGeneratorFactory(), pageCache, fsRule.get(), StringLogger.DEV_NULL, new Monitors() );
     }
 
@@ -109,7 +109,7 @@ public class RelationshipGroupFormatComplianceTest
     {
         return new StandardStore<>( new RelationshipGroupStoreFormat_v2_2(),
                 new File( storeDir, DEFAULT_NAME + RELATIONSHIP_GROUP_STORE_NAME ),
-                new TestStoreIdGenerator(), new MuninnPageCache( fsRule.get(), 1024, 1024, PageCacheMonitor.NULL ),
+                new TestStoreIdGenerator(), new MuninnPageCache( fsRule.get(), 1024, 1024, PageCacheTracer.NULL ),
                 fsRule.get(),
                 StringLogger.DEV_NULL );
     }

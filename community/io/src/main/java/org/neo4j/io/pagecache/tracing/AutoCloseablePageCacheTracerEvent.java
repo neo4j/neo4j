@@ -17,25 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.monitoring;
+package org.neo4j.io.pagecache.tracing;
 
 /**
- * Begin pinning a page.
+ * Some events are desirable to make AutoClosable, but monitoring is not
+ * allowed to introduce new failure modes. Thus, this interface overrides
+ * the AutoCloseable#close method to not throw any checked exceptions.
  */
-public interface PinEvent
+public interface AutoCloseablePageCacheTracerEvent extends AutoCloseable
 {
-    /**
-     * The id of the cache page that holds the file page we pinned.
-     */
-    public void setCachePageId( int cachePageId );
-
-    /**
-     * The page we want to pin is not in memory, so being a page fault to load it in.
-     */
-    public PageFaultEvent beginPageFault();
-
-    /**
-     * The pinning has completed and the page is now unpinned.
-     */
-    public void done();
+    @Override
+    public void close();
 }

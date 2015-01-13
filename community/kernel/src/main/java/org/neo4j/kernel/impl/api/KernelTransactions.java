@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContextSupplie
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.monitoring.tracing.Tracers;
 
 import static java.util.Collections.newSetFromMap;
 
@@ -84,6 +85,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
     private final TransactionHooks hooks;
     private final TransactionMonitor transactionMonitor;
     private final LifeSupport dataSourceLife;
+    private final Tracers tracers;
 
     // End Tx Dependencies
 
@@ -113,7 +115,8 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
                                IndexConfigStore indexConfigStore,
                                LegacyIndexApplier.ProviderLookup legacyIndexProviderLookup,
                                TransactionHooks hooks, TransactionMonitor transactionMonitor,
-                               LifeSupport dataSourceLife )
+                               LifeSupport dataSourceLife,
+                               Tracers tracers )
     {
         this.neoStoreTransactionContextSupplier = neoStoreTransactionContextSupplier;
         this.neoStore = neoStore;
@@ -135,6 +138,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
         this.hooks = hooks;
         this.transactionMonitor = transactionMonitor;
         this.dataSourceLife = dataSourceLife;
+        this.tracers = tracers;
     }
 
     /**
@@ -159,7 +163,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
                     labelScanStore, indexingService, updateableSchemaState, recordState, recordStateForCache, providerMap,
                     neoStore, locksClient, hooks, constraintIndexCreator, transactionHeaderInformationFactory,
                     transactionCommitProcess, transactionMonitor, persistenceCache, storeLayer,
-                    legacyIndexTransactionState, localTxPool, Clock.SYSTEM_CLOCK );
+                    legacyIndexTransactionState, localTxPool, Clock.SYSTEM_CLOCK, tracers.transactionTracer );
 
             allTransactions.add( tx );
 

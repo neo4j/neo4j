@@ -17,27 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.monitoring;
+package org.neo4j.kernel.monitoring.tracing;
 
-import java.io.IOException;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 
 /**
- * Begin flushing modifications from an in-memory page to the backing file.
+ * The default TracerFactory, when nothing else is otherwise configured.
  */
-public interface FlushEvent
+public class DefaultTracerFactory implements TracerFactory
 {
-    /**
-     * Add up a number of bytes that has been written to the file.
-     */
-    public void addBytesWritten( int bytes );
+    @Override
+    public String getImplementationName()
+    {
+        return "default";
+    }
 
-    /**
-     * The page flush has completed successfully.
-     */
-    public void done();
+    @Override
+    public PageCacheTracer createPageCacheTracer()
+    {
+        return new DefaultPageCacheTracer();
+    }
 
-    /**
-     * The page flush did not complete successfully, but threw the given exception.
-     */
-    public void done( IOException exception );
+    @Override
+    public TransactionTracer createTransactionTracer()
+    {
+        return TransactionTracer.NULL;
+    }
 }

@@ -38,6 +38,8 @@ import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -371,9 +373,12 @@ public class KernelTransactionImplementationTest
 
     private KernelTransactionImplementation newTransaction()
     {
-        return new KernelTransactionImplementation( null, null, null, null, null, recordState, recordStateAccessor,
-                null, neoStore, new NoOpClient(), hooks, null, headerInformationFactory, commitProcess, transactionMonitor,
-                null, null, legacyIndexState, mock(Pool.class), clock );
+        KernelTransactionImplementation transaction = new KernelTransactionImplementation(
+                null, null, null, null, null, recordState, recordStateAccessor, null, neoStore, new NoOpClient(),
+                hooks, null, headerInformationFactory, commitProcess, transactionMonitor, null, null,
+                legacyIndexState, mock( Pool.class ), clock, TransactionTracer.NULL );
+        transaction.initialize( 0 );
+        return transaction;
     }
 
     public class CapturingCommitProcess implements TransactionCommitProcess
@@ -382,7 +387,7 @@ public class KernelTransactionImplementationTest
         private TransactionRepresentation transaction;
 
         @Override
-        public long commit( TransactionRepresentation representation, LockGroup locks ) throws TransactionFailureException
+        public long commit( TransactionRepresentation representation, LockGroup locks, CommitEvent commitEvent ) throws TransactionFailureException
         {
             assert transaction == null : "Designed to only allow one transaction";
             transaction = representation;
