@@ -352,29 +352,38 @@ angular.module('neo4jApp')
         pattern = new RegExp("^[^#{cmdchar}]")
         input.match(pattern)
       templateUrl: 'views/frame-cypher.html'
-      exec: ['Cypher', 'CypherGraphModel', (Cypher, CypherGraphModel) ->
+      exec: ['Cypher', 'CypherGraphModel', 'CypherParser', (Cypher, CypherGraphModel, CypherParser) ->
         # Return the function that handles the input
         (input, q) ->
           current_transaction = Cypher.transaction()
+          commit_fn = () ->
+            current_transaction.commit(input).then(
+              (response) ->
+                if response.size > Settings.maxRows
+                  response.displayedSize = Settings.maxRows
+                q.resolve(
+                  table: response
+                  graph: extractGraphModel(response, CypherGraphModel)
+                )
+              ,
+              (r) ->
+                q.reject(r)
+            )
 
-          r = current_transaction.begin().then(
-            (begin_response) ->
-              current_transaction.commit(input).then(
-                (response) ->
-                  if response.size > Settings.maxRows
-                    response.displayedSize = Settings.maxRows
-                  q.resolve(
-                    table: response
-                    graph: extractGraphModel(response, CypherGraphModel)
-                  )
-                ,
-                (r) ->
-                  q.reject(r)
-              )
-            ,
-            (r) -> 
-              q.reject(r)
-          )
+          #Periodic commits cannot be sent to an open transaction.
+          if CypherParser.isPeriodicCommit input
+            commit_fn()
+          #All other queries should be sent through an open transaction
+          #so they can be canceled.
+          else
+            r = current_transaction.begin().then(
+              (begin_response) ->
+                commit_fn()
+              ,
+              (r) -> 
+                q.reject(r)
+            )
+            
           q.promise.transaction = current_transaction
           q.promise
       ]
