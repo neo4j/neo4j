@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.util.StringLogger;
+
 /**
  * Used to check if a log rotation is needed, and also to execute a log rotation.
  *
@@ -31,7 +33,9 @@ public interface LogRotation
 {
     public interface Monitor
     {
-        void rotatedLog();
+        void startedRotating( long currentVersion );
+
+        void finishedRotating( long currentVersion );
     }
 
     public static LogRotation NO_ROTATION = new LogRotation()
@@ -60,4 +64,12 @@ public interface LogRotation
      * @throws IOException
      */
     void rotateLogFile() throws IOException;
+
+    public class PrintFormat
+    {
+        public static String prefix( long currentVersion )
+        {
+            return "Log Rotation [" + currentVersion + "]: ";
+        }
+    }
 }

@@ -66,8 +66,15 @@ public class LoggingLogFileMonitor implements PhysicalLogFile.Monitor, RecoveryV
     }
 
     @Override
-    public void rotatedLog()
+    public void startedRotating( long currentVersion )
     {
+        logger.info( format( "Rotating log version:%d", currentVersion ) );
+    }
+
+    @Override
+    public void finishedRotating( long currentVersion )
+    {
+        logger.info( format( "Finished rotating log version:%d", currentVersion ) );
     }
 
     @Override

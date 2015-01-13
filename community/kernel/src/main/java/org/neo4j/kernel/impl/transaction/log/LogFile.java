@@ -56,4 +56,6 @@ public interface LogFile
     public void rotate() throws IOException;
 
     File currentLogFile();
+
+    long currentLogVersion();
 }

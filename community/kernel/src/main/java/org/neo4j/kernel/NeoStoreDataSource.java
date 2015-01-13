@@ -813,13 +813,13 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
         LogPruneStrategy logPruneStrategy = LogPruneStrategyFactory.fromConfigValue( fs, logFileInformation,
                 logFiles, neoStore, config.get( GraphDatabaseSettings.keep_logical_logs ) );
 
-        monitors.addMonitorListener( new LogPruning( logPruneStrategy ) );
+        monitors.addMonitorListener( new LogPruning( logPruneStrategy, logging ) );
 
         final LogRotationControl logRotationControl = new LogRotationControl( neoStore, indexingService, labelScanStore,
                 indexProviders );
 
         final LogRotation logRotation = new LogRotationImpl( monitors.newMonitor( LogRotation.Monitor.class ),
-                logFile, logRotationControl, kernelHealth );
+                logFile, logRotationControl, kernelHealth, logging );
 
         final LogicalTransactionStore logicalTransactionStore =
                 new PhysicalLogicalTransactionStore( logFile, logRotation,
