@@ -52,7 +52,9 @@ angular.module('neo4jApp.controllers')
 
       $scope.focusEditor = (ev) ->
         ev?.preventDefault()
-        _codeMirror?.focus()
+        $timeout(->
+          _codeMirror?.focus()
+        ,0)
 
       $scope.codemirrorLoaded = (_editor) ->
         _codeMirror = _editor
