@@ -34,7 +34,7 @@ public class SecurityCentralTest
     {
         // Given
         SecurityCentral security = new SecurityCentral( new FakeClock(), new InMemoryUserRepository() );
-        security.newUser("neo4j", Privileges.ADMIN);
+        security.newUser("neo4j", "neo4j", true, Privileges.ADMIN);
         security.regenerateToken( "neo4j" );
         String token = security.userForName( "neo4j" ).token();
 
@@ -50,18 +50,18 @@ public class SecurityCentralTest
     {
         // Given
         SecurityCentral security = new SecurityCentral( new FakeClock(), new InMemoryUserRepository() );
-        security.newUser("neo4j", Privileges.ADMIN);
+        security.newUser("neo4j", "neo4j", true, Privileges.ADMIN);
         String oldToken = security.userForName( "neo4j" ).token();
 
         // And given the user has been loaded by token before
         security.userForToken( oldToken );
 
         // When
-        String newToken = security.regenerateToken( "neo4j" );
+        User updatedUser = security.regenerateToken( "neo4j" );
 
         // Then
-        assertThat( security.userForName( "neo4j" ).token(),  equalTo(newToken) );
-        assertThat( security.userForToken( newToken ).name(), equalTo("neo4j"));
+        assertThat( security.userForName( "neo4j" ).token(), equalTo( updatedUser.token() ) );
+        assertThat( security.userForToken( updatedUser.token() ).name(), equalTo( "neo4j" ) );
         assertThat( security.userForToken( oldToken ).name(), equalTo(SecurityCentral.UNAUTHENTICATED.name()));
     }
 
@@ -70,8 +70,8 @@ public class SecurityCentralTest
     {
         // Given
         SecurityCentral security = new SecurityCentral( new FakeClock(), new InMemoryUserRepository() );
-        security.newUser("neo4j", Privileges.ADMIN);
-        security.newUser("other", Privileges.ADMIN);
+        security.newUser("neo4j", "neo4j", true, Privileges.ADMIN);
+        security.newUser("other", "other", true, Privileges.ADMIN);
         security.regenerateToken( "neo4j" );
         String neo4jUserToken = security.userForName( "neo4j" ).token();
 

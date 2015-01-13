@@ -143,18 +143,19 @@ public class Authentication
         return authMetadataFor( name ).authenticate( password );
     }
 
-    public void setPassword( String name, String password ) throws IOException
+    public User setPassword( String name, String password ) throws IOException
     {
         User user = users.findByName( name );
         if(user != null)
         {
             try
             {
-                String salt = randomSalt();
-                users.save( user.augment()
-                        .withCredentials( new Credentials( salt, DIGEST_ALGO, hash( salt, password, DIGEST_ALGO ) ) )
+                User updatedUser = user.augment()
+                        .withCredentials( createPasswordCredential( password ) )
                         .withRequiredPasswordChange( false )
-                        .build());
+                        .build();
+                users.save( updatedUser );
+                return updatedUser;
             }
             catch ( IllegalTokenException | IllegalUsernameException e )
             {
@@ -186,6 +187,12 @@ public class Authentication
         {
             throw new RuntimeException( "No such user: " + name );
         }
+    }
+
+    public Credentials createPasswordCredential( String password )
+    {
+        String salt = randomSalt();
+        return new Credentials( salt, DIGEST_ALGO, hash( salt, password, DIGEST_ALGO ) );
     }
 
     private AuthenticationMetadata authMetadataFor( String name )

@@ -38,6 +38,7 @@ import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.server.security.auth.SecurityCentral;
+import org.neo4j.server.security.auth.User;
 import org.neo4j.server.security.auth.exception.IllegalTokenException;
 import org.neo4j.server.security.auth.exception.TooManyAuthenticationAttemptsException;
 
@@ -78,15 +79,16 @@ public class UserService
 
             if( security.authenticate( user, password ))
             {
+                User updatedUser;
                 if( deserialized.containsKey( NEW_AUTHORIZATION_TOKEN ) )
                 {
-                    security.setToken( user, getString( deserialized, NEW_AUTHORIZATION_TOKEN ) );
+                    updatedUser = security.setToken( user, getString( deserialized, NEW_AUTHORIZATION_TOKEN ) );
                 }
                 else
                 {
-                    security.regenerateToken( user );
+                    updatedUser = security.regenerateToken( user );
                 }
-                return output.ok( new AuthorizationRepresentation( security.userForName( user ) ) );
+                return output.ok( new AuthorizationRepresentation( updatedUser ) );
             }
             else
             {
@@ -133,8 +135,8 @@ public class UserService
 
             if( security.authenticate( user, password ))
             {
-                security.setPassword( user, newPassword );
-                return output.ok( new AuthorizationRepresentation( security.userForName( user ) ) );
+                User updatedUser = security.setPassword( user, newPassword );
+                return output.ok( new AuthorizationRepresentation( updatedUser ) );
             }
             else
             {
