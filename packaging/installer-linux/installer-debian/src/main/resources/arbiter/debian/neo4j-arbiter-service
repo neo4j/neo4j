@@ -13,7 +13,7 @@
 
 # Author: Julian Simpson <julian.simpson@neotechnology.com>
 #
-# Copyright (c) 2002-2014 "Neo Technology,"
+# Copyright (c) 2002-2015 "Neo Technology,"
 
 # Network Engine for Objects in Lund AB [http://neotechnology.com]
 #
@@ -37,7 +37,7 @@ DESC="Neo4j Arbiter Service"
 NAME=neo4j-arbiter
 DAEMON=/var/lib/$NAME/bin/$NAME
 DAEMON_ARGS="start"
-PIDFILE=/var/run/$NAME.pid
+PIDFILE=/var/lib/${NAME}/data/neo4j-arbiter.pid
 SCRIPTNAME=/etc/init.d/arbiter-service
 
 # Exit if the package is not installed
@@ -63,8 +63,6 @@ do_start()
 	start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON -- \
 		$DAEMON_ARGS \
 		|| return 2
-	# Copy the Neo4j PID to the sytem's PID store
-	cp /var/lib/${NAME}/data/neo4j-arbiter.pid $PIDFILE
 }
 
 do_stop()
@@ -103,7 +101,7 @@ case "$1" in
 	esac
 	;;
   status)
-       status_of_proc "$DAEMON" "$NAME" && exit 0 || exit $?
+       status_of_proc -p $PIDFILE "$DAEMON" "$NAME" && exit 0 || exit $?
        ;;
   restart|force-reload)
 	log_daemon_msg "Restarting $DESC" "$NAME"
@@ -118,7 +116,7 @@ case "$1" in
 		esac
 		;;
 	  *)
-	  	# Failed to stop
+		# Failed to stop
 		log_end_msg 1
 		;;
 	esac
