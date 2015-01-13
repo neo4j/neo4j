@@ -25,6 +25,10 @@ angular.module('neo.exportable', ['neo.csv'])
     '$window'
     ($window) ->
       download: (filename, mime, data) ->
+        if !!navigator.userAgent.match(/Version\/[\d\.]+.*Safari/)
+          # Safari doesn't support window.saveAs(); just open in a new window instead
+          $window.open( "data:#{mime};base64," + btoa( data ) )
+          return true
         blob = new Blob([data], {type: mime})
         $window.saveAs(blob, filename)
   ])
@@ -36,14 +40,9 @@ angular.module('neo.exportable', ['neo.csv'])
       'exportService'
       ($scope, CSV, exportService) ->
 
-        saveAs = (data, filename, mime = "text/csv;charset=utf-8") ->
-          if !!navigator.userAgent.match(/Version\/[\d\.]+.*Safari/)
-            return alert('Exporting data is currently not supported in Safari. Please use another browser.')
-          exportService.download(filename, mime, data)
-
         $scope.exportJSON = (data) ->
           return unless data
-          saveAs(JSON.stringify(data), 'result.json')
+          exportService.download('result.json', 'application/json', JSON.stringify(data))
 
         $scope.exportCSV = (data) ->
           return unless data
@@ -52,13 +51,13 @@ angular.module('neo.exportable', ['neo.csv'])
           for row in data.rows()
             csv.append(row)
 
-          saveAs(csv.output(), 'export.csv')
+          exportService.download('export.csv', 'text/csv;charset=utf-8', csv.output())
 
         $scope.exportGraSS = (data) ->
-          saveAs(data, 'graphstyle.grass')
+          exportService.download('graphstyle.grass', 'text/plain', data)
 
         $scope.exportScript = (data) ->
-          saveAs(data, 'script.cypher')
+          exportService.download('script.cypher', 'text/plain', data)
 
     ]
   ])
