@@ -24,23 +24,28 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 
+import scala.collection.mutable.ArrayBuffer
+
 object join extends CandidateGenerator[PlanTable] {
   def apply(planTable: PlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
 
     def isApplicable(id: IdName): Boolean =  queryGraph.patternNodes(id) && !queryGraph.argumentIds(id)
 
-    val joinPlans: Seq[LogicalPlan] = (for {
-      left <- planTable.plans
-      right <- planTable.plans if left != right
-    } yield {
-      val shared = left.availableSymbols & right.availableSymbols
-      shared match {
-        case ids if ids.forall(isApplicable) && ids.nonEmpty  => Some(planNodeHashJoin(ids, left, right))
-        case _ => None
+    val plans = planTable.plans
+    val joinPlans = new ArrayBuffer[LogicalPlan]()
+    (1 until plans.size).foreach { i =>
+      val right = plans(i)
+      (0 until i).foreach { j =>
+        val left = plans(j)
+        val shared = left.availableSymbols & right.availableSymbols
+
+        if (shared.nonEmpty && shared.forall(isApplicable)) {
+          joinPlans += planNodeHashJoin(shared, left, right)
+          joinPlans += planNodeHashJoin(shared, right, left)
+        }
       }
-    }).flatten.toList
+    }
 
-    joinPlans
+    joinPlans.toSeq
   }
-
 }
