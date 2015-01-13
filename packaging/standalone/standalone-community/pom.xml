@@ -71,7 +71,7 @@ terms of the relevant Commercial Agreement.
         <artifactId>maven-assembly-plugin</artifactId>
         <configuration>
           <attach>false</attach>
-          <finalName>${server.shortname}-community-${project.version}</finalName>
+          <finalName>${product.shortname}-community-${project.version}</finalName>
           <appendAssemblyId>true</appendAssemblyId>
           <outputDirectory>${project.parent.build.directory}</outputDirectory>
         </configuration>
@@ -173,4 +173,3 @@ terms of the relevant Commercial Agreement.
   </dependencies>
 
 </project>
-

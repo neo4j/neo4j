@@ -1,7 +1,7 @@
-${server.fullname} Service Native Libraries
+${product.fullname} Service Native Libraries
 ===========================================
 
-Platform specific native libraries needed for running ${server.fullname}
+Platform specific native libraries needed for running ${product.fullname}
 as a service.
 
 References
