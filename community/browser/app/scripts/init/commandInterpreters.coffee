@@ -352,7 +352,7 @@ angular.module('neo4jApp')
         pattern = new RegExp("^[^#{cmdchar}]")
         input.match(pattern)
       templateUrl: 'views/frame-cypher.html'
-      exec: ['Cypher', 'CypherGraphModel', (Cypher, CypherGraphModel) ->
+      exec: ['Cypher', 'CypherGraphModel', 'CypherParser', (Cypher, CypherGraphModel, CypherParser) ->
         # Return the function that handles the input
         (input, q) ->
           current_transaction = Cypher.transaction()
@@ -371,7 +371,7 @@ angular.module('neo4jApp')
             )
 
           #Periodic commits cannot be sent to an open transaction.
-          if /^\s*USING\sPERIODIC\sCOMMIT/i.test(input)
+          if CypherParser.isPeriodicCommit input
             commit_fn()
           #All other queries should be sent through an open transaction
           #so they can be canceled.
