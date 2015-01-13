@@ -24,6 +24,8 @@ import java.io.IOException;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.LogRotationControl;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.Logging;
 
 /**
  * Default implementation of the LogRotation interface.
@@ -35,14 +37,17 @@ public class LogRotationImpl
     private final LogFile logFile;
     private final LogRotationControl logRotationControl;
     private final KernelHealth kernelHealth;
+    private final StringLogger msgLog;
 
     public LogRotationImpl( Monitor monitor, LogFile logFile,
-            LogRotationControl logRotationControl, KernelHealth kernelHealth )
+            LogRotationControl logRotationControl, KernelHealth kernelHealth, Logging logging )
     {
         this.monitor = monitor;
         this.logFile = logFile;
         this.logRotationControl = logRotationControl;
         this.kernelHealth = kernelHealth;
+
+        msgLog = logging.getMessagesLog( getClass() );
     }
 
     @Override
@@ -63,11 +68,6 @@ public class LogRotationImpl
                 }
             }
 
-            if ( rotated )
-            {
-                monitor.rotatedLog();
-            }
-
             return rotated;
         }
 
@@ -81,13 +81,14 @@ public class LogRotationImpl
         {
             doRotate();
         }
-
-        monitor.rotatedLog();
-
     }
 
     private void doRotate() throws IOException
     {
+        long currentVersion = logFile.currentLogVersion();
+
+        monitor.startedRotating( currentVersion );
+
         /*
          * Check kernel health before going into waiting for transactions to be closed, to avoid
          * getting into a scenario where we would await a condition that would potentially never happen.
@@ -98,7 +99,9 @@ public class LogRotationImpl
          * First we flush the store. If we fail now or during the flush, on recovery we'll discover
          * the current log file and replay it. Everything will be ok.
          */
+        msgLog.info( PrintFormat.prefix( currentVersion ) + " Awaiting all transactions closed..." );
         logRotationControl.awaitAllTransactionsClosed();
+        msgLog.info( PrintFormat.prefix( currentVersion ) + " Starting store flush..." );
         logRotationControl.forceEverything();
 
         /*
@@ -108,6 +111,9 @@ public class LogRotationImpl
          */
         kernelHealth.assertHealthy( IOException.class );
 
+        msgLog.info( PrintFormat.prefix( currentVersion ) + " Preparing new log file..." );
         logFile.rotate();
+
+        monitor.finishedRotating( currentVersion );
     }
 }

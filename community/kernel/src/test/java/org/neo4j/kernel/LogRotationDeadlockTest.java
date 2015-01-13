@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.Matchers;
 
 import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.helpers.collection.Iterables;
@@ -49,10 +50,13 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.util.Counter;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.OtherThreadRule;
 
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -71,6 +75,8 @@ public class LogRotationDeadlockTest
         TransactionIdStore txIdStore = new DeadSimpleTransactionIdStore();
         LogFile logFile = mock( LogFile.class );
         when( logFile.getWriter() ).thenReturn( new InMemoryLogChannel() );
+        Logging logging = mock( Logging.class );
+        when ( logging.getMessagesLog( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
         final Barrier.Control inBetweenCommittedAndClosed = new Barrier.Control();
         final ControlledParkStrategy controlledBatchedWritesParking = new ControlledParkStrategy();
         LogRotationControl rotationControl = new LogRotationControl( txIdStore, mock( IndexingService.class ),
@@ -86,7 +92,7 @@ public class LogRotationDeadlockTest
         };
         KernelHealth health = mock( KernelHealth.class );
         LogRotationImpl rotation = new LogRotationImpl( mock( LogRotation.Monitor.class ), logFile,
-                rotationControl, health );
+                rotationControl, health, logging );
 
         // controlled batching transaction appender that will halt a committer
         TransactionAppender appender = new BatchingPhysicalTransactionAppender( logFile, rotation,

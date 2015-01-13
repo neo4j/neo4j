@@ -255,4 +255,10 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     {
         return logFiles.getLogFileForVersion( logFiles.getHighestLogVersion() );
     }
+
+    @Override
+    public long currentLogVersion()
+    {
+        return logFiles.getHighestLogVersion();
+    }
 }
