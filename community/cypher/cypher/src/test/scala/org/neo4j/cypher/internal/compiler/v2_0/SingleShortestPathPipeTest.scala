@@ -29,7 +29,7 @@ import collection.mutable.Map
 
 class SingleShortestPathPipeTest extends GraphDatabaseJUnitSuite {
 
-  val path = ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.BOTH, Some(15), single = true, relIterator = None)
+  val path = ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.BOTH, false, Some(15), single = true, relIterator = None)
 
   def runThroughPipeAndGetPath(a: Node, b: Node, path: ShortestPath): Path = {
     val source = new FakePipe(List(Map("a" -> a, "b" -> b)), "a"->CTNode, "b"->CTNode)

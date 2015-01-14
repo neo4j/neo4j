@@ -46,6 +46,7 @@ class PathExpressionTest extends GraphDatabaseJUnitSuite {
       right = SingleNode("c"),
       relTypes = Seq(),
       dir = Direction.OUTGOING,
+      false,
       maxDepth = None,
       single = true,
       relIterator = None)

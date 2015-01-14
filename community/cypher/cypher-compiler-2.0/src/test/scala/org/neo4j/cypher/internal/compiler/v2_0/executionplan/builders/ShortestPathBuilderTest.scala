@@ -43,12 +43,12 @@ class ShortestPathBuilderTest extends BuilderTest {
   def should_accept_if_both_start_and_end_have_been_solved() {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("a", 0)), Solved(NodeById("b", 0))),
-      patterns = Seq(Unsolved(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.OUTGOING, None, single = true, None))))
+      patterns = Seq(Unsolved(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.OUTGOING, false, None, single = true, None))))
 
     val p = createPipe(nodes = Seq("a", "b"))
 
     val resultQ = assertAccepts(p, q).query
 
-    assert(resultQ.patterns == Seq(Solved(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.OUTGOING, None, single = true, None))))
+    assert(resultQ.patterns == Seq(Solved(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.OUTGOING, false, None, single = true, None))))
   }
 }

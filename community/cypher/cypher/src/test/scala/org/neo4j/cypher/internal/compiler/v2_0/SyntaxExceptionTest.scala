@@ -97,10 +97,10 @@ class SyntaxExceptionTest extends ExecutionEngineJUnitSuite {
     )
   }
 
-  @Test def shortestPathCanNotHaveMinimumDepth() {
+  @Test def shortestPathCanNotHaveMinimumDepthDifferentFromZeroOrOne() {
     test(
       "start a=node(0), b=node(1) match p=shortestPath(a-[*2..3]->b) return p",
-      "shortestPath(...) does not support a minimal length (line 1, column 36)"
+      "shortestPath(...) does not support a minimal length different from 0 or 1 (line 1, column 36)"
     )
   }
 

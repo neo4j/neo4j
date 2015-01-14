@@ -75,7 +75,7 @@ class StartPointChoosingBuilder extends PlanBuilder {
 
     def findStartItemFor(pattern: MatchPattern): Iterable[RatedStartItem] = {
       val shortestPathPoints: Set[IdentifierName] = plan.query.patterns.collect {
-        case Unsolved(ShortestPath(_, start, end, _, _, _, _, _)) => Seq(start.name, end.name)
+        case Unsolved(ShortestPath(_, start, end, _, _, _, _, _, _)) => Seq(start.name, end.name)
       }.flatten.toSet
 
       val startPoints: Set[RatedStartItem] =
