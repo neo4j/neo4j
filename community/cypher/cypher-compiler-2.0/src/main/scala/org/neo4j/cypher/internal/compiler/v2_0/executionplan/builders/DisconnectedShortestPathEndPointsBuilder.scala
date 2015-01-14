@@ -46,7 +46,7 @@ class DisconnectedShortestPathEndPointsBuilder extends PlanBuilder {
 
   private def unsolvedEndPoints(plan: ExecutionPlanInProgress): Set[String] = {
     val shortestPathEndPoints: Set[String] = plan.query.patterns.collect {
-      case Unsolved(ShortestPath(_, start, end, _, _, _, _, _)) => Seq(start.name, end.name)
+      case Unsolved(ShortestPath(_, start, end, _, _, _, _, _, _)) => Seq(start.name, end.name)
     }.flatten.toSet
 
     shortestPathEndPoints.filter {

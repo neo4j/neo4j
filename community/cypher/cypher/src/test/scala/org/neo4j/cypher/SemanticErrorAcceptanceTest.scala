@@ -148,14 +148,14 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineJUnitSuite {
     )
   }
 
-  @Test def shouldComplainIfShortestPathHasAMinimalLength() {
+  @Test def shouldComplainIfShortestPathHasAMinimalLengthOtherThanZeroOrOne() {
     test(
-      "start a=node(0), b=node(1) match p=shortestPath(a-[*1..2]->b) return p",
-      "shortestPath(...) does not support a minimal length (line 1, column 36)"
+      "start a=node(0), b=node(1) match p=shortestPath(a-[*2..3]->b) return p",
+      "shortestPath(...) does not support a minimal length different from 0 or 1 (line 1, column 36)"
     )
     test(
-      "start a=node(0), b=node(1) match p=allShortestPaths(a-[*1..2]->b) return p",
-      "allShortestPaths(...) does not support a minimal length (line 1, column 36)"
+      "start a=node(0), b=node(1) match p=allShortestPaths(a-[*2..3]->b) return p",
+      "allShortestPaths(...) does not support a minimal length different from 0 or 1 (line 1, column 36)"
     )
   }
 

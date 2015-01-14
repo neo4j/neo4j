@@ -440,7 +440,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
         Equals(Property(Identifier(otherIdentifier), propertyKey), expression2)),
 
       patterns = Seq(
-        ShortestPath("p", SingleNode(identifier), SingleNode(otherIdentifier), Nil, Direction.OUTGOING, None, single = true, None))
+        ShortestPath("p", SingleNode(identifier), SingleNode(otherIdentifier), Nil, Direction.OUTGOING, false, None, single = true, None))
     )
 
     when(context.getIndexRule(label, property)).thenReturn(None)

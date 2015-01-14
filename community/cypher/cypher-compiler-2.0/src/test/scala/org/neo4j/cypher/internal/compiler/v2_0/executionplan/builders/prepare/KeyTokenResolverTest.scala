@@ -99,11 +99,11 @@ class KeyTokenResolverTest extends BuilderTest with MockitoSugar {
   @Test
   def should_resolve_label_keytoken_on_shortest_path_length_pattern() {
     val q = Query.
-      matches(ShortestPath("p", SingleNode("a", Seq(unresolvedFoo)), SingleNode("b", Seq(unresolvedBar)), Seq.empty, Direction.OUTGOING, None, single = false, relIterator = None)).
+      matches(ShortestPath("p", SingleNode("a", Seq(unresolvedFoo)), SingleNode("b", Seq(unresolvedBar)), Seq.empty, Direction.OUTGOING, false, None, single = false, relIterator = None)).
       returns()
 
     val result = assertAccepts(q)
-    assert(result.query.patterns === Seq(Unsolved(ShortestPath("p", SingleNode("a", Seq(resolvedFoo)), SingleNode("b", Seq(resolvedBar)), Seq.empty, Direction.OUTGOING, None, single = false, relIterator = None))))
+    assert(result.query.patterns === Seq(Unsolved(ShortestPath("p", SingleNode("a", Seq(resolvedFoo)), SingleNode("b", Seq(resolvedBar)), Seq.empty, Direction.OUTGOING, false, None, single = false, relIterator = None))))
   }
 
   @Test

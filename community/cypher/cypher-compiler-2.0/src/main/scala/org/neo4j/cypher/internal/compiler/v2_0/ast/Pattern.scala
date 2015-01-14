@@ -91,7 +91,7 @@ case class ShortestPaths(element: PatternElement, single: Boolean)(val position:
     checkContext(ctx) then
     checkContainsSingle then
     checkKnownEnds then
-    checkNoMinimalLength then
+    checkMinimalLength then
     element.semanticCheck(ctx)
 
   private def checkContext(ctx: SemanticContext): SemanticCheck = ctx match {
@@ -122,16 +122,14 @@ case class ShortestPaths(element: PatternElement, single: Boolean)(val position:
       None
   }
 
-  private def checkNoMinimalLength: SemanticCheck = element match {
+  private def checkMinimalLength: SemanticCheck = element match {
     case RelationshipChain(_, rel, _) =>
       rel.length match {
-        case Some(Some(Range(Some(_), _))) =>
-          Some(SemanticError(s"$name(...) does not support a minimal length", position, element.position))
-        case _                             =>
-          None
+        case Some(Some(Range(Some(min), _))) if (min.value < 0 || min.value > 1) =>
+          Some(SemanticError(s"$name(...) does not support a minimal length different from 0 or 1", position, element.position))
+        case _ => None
       }
-    case _                            =>
-      None
+    case _ => None
   }
 }
 
