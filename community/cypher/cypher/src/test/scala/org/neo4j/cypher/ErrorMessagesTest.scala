@@ -384,20 +384,6 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
     )
   }
 
-  test("match (n) where id(n) = 1 is no longer supported") {
-    expectError(
-      "START n = node(1) RETURN n",
-      "Using 'START n = node(1)' is no longer supported.  Please instead use 'MATCH n WHERE id(n) = 1"
-    )
-  }
-
-  test("START n = node(1, 2) is no longer supported") {
-    expectError(
-      "START n = node(1, 2) RETURN n",
-      "Using 'START n = node(1, 2)' is no longer supported.  Please instead use 'MATCH n WHERE id(n) IN [1, 2]"
-    )
-  }
-
   test("should give nice error when trying to parse multiple statements") {
     expectError(
       "RETURN 42; RETURN 42",

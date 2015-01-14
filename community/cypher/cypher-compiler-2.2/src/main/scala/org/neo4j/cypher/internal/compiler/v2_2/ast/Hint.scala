@@ -80,12 +80,5 @@ case class RelationshipByIndexQuery(identifier: Identifier, index: Identifier, q
 
 // no longer supported non-hint legacy start items
 
-case class NodeByIds(identifier: Identifier, ids: Seq[UnsignedIntegerLiteral])(val position: InputPosition) extends NodeStartItem {
-  override def semanticCheck = {
-    val idListString = ids.map(_.stringVal).mkString(", ")
-    val predicateString = if (ids.size == 1) s"id($name) = $idListString" else s"id($name) IN [$idListString]"
-    val msg = s"Using 'START $name = node($idListString)' is no longer supported.  Please instead use 'MATCH $name WHERE $predicateString'"
-    SemanticCheckResult.error(_, SemanticError(msg, position, identifier.position +: ids.map(_.position): _*))
-  }
-}
+case class NodeByIds(identifier: Identifier, ids: Seq[UnsignedIntegerLiteral])(val position: InputPosition) extends NodeStartItem
 

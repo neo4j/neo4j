@@ -219,8 +219,8 @@ object ClauseConverters {
           val nonHints = items.collect { case Left(item) => item }
 
           if (nonHints.nonEmpty) {
-            val itemString = items.mkString(", ")
-            throw new InternalException(s"Unsupported start items encountered: $itemString")
+            //all other start queries is delegated to legacy planner
+            throw new CantHandleQueryException()
           }
 
           qg.addHints(hints)
