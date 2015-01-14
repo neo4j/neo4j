@@ -112,7 +112,6 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
     public long append( TransactionRepresentation transaction ) throws IOException
     {
         long transactionId = -1;
-        long ticket;
         boolean hasLegacyIndexChanges;
         int phase = 0;
         // We put log rotation check outside the private append method since it must happen before
@@ -127,10 +126,9 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
                 transactionId = transactionIdStore.nextCommittingTransactionId();
                 hasLegacyIndexChanges = append0( transaction, transactionId );
                 phase = 1;
-                ticket = getNextTicket();
             }
 
-            forceAfterAppend( ticket );
+            forceAfterAppend();
             coordinateMultipleThreadsApplyingLegacyIndexChanges( hasLegacyIndexChanges, transactionId );
             phase = 2;
             return transactionId;
@@ -174,12 +172,10 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
         forceChannel();
     }
 
-    protected abstract long getNextTicket();
-
     /**
      * Called as part of append.
      */
-    protected abstract void forceAfterAppend( long ticket ) throws IOException;
+    protected abstract void forceAfterAppend() throws IOException;
 
     protected final void forceChannel() throws IOException
     {

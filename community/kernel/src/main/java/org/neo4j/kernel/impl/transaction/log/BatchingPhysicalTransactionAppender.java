@@ -20,112 +20,56 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
+import java.util.concurrent.locks.ReentrantLock;
 
-import org.neo4j.function.Factory;
 import org.neo4j.kernel.KernelHealth;
-import org.neo4j.kernel.impl.util.Counter;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 
-import static org.neo4j.kernel.impl.util.NumberUtil.haveSameSign;
-
 /**
- * Forces transactions in batches, as opposed to per transaction. There's a
- * {@link BatchingForceThread background thread} that does the actual forcing, where the committers merely waits
- * for that background thread to complete its round and increment a ticket they're waiting for.
+ * Forces transactions in batches, as opposed to per transaction.
  */
 public class BatchingPhysicalTransactionAppender extends AbstractPhysicalTransactionAppender
 {
-    /**
-     * Default park duration is 10ms, the reason it's not lower is that a) unpark will have the forcer
-     * thread wake up and continue straight away, no matter what. Plus on Windows, and potentially other systems,
-     * there's an inconvenience where the operating system has a lowest granularity of 10ms, and
-     * chooses to solve short pauses like this by temporarily changing its system-wide lowest granularity,
-     * i.e. potentially affecting the rest of the operation system that this is run on.
-     */
-    public static final ParkStrategy DEFAULT_WAIT_STRATEGY = new ParkStrategy.Park( 10 /*ms*/ );
-
-    /**
-     * Incremented for every call to {@link #append(org.neo4j.kernel.impl.transaction.TransactionRepresentation)}
-     * and used by the appending thread to know when its transaction have been forced to disk.
-     */
-    private final Counter appenderTicket;
-
     static class ThreadLink
     {
+        final Thread thread;
         volatile ThreadLink next;
-        Thread thread;
+        volatile boolean done;
 
         public ThreadLink( Thread thread )
         {
-            this.next = null;
             this.thread = thread;
         }
 
+        public void unpark()
+        {
+            LockSupport.unpark( thread );
+        }
+
         static final ThreadLink END = new ThreadLink( null );
+        static {
+            END.next = END;
+        }
     }
 
     AtomicReference<ThreadLink> threadLinkHead = new AtomicReference<>( ThreadLink.END );
 
-    /**
-     * Set to the value of {@link #appenderTicket}, what that value was before starting a call to force the channel,
-     * every time the channel has been forced, where calls to force are issued by the
-     * {@link BatchingForceThread}. That thread keeps on going as long as {@link #appenderTicket} is ahead,
-     * pauses a while if fully caught up.
-     */
-    private final Counter forceTicket;
-    private boolean shutDown;
-    private final BatchingForceThread forceThread;
+    private final Lock forceLock;
 
-    public BatchingPhysicalTransactionAppender( final LogFile logFile, final LogRotation logRotation,
-            TransactionMetadataCache transactionMetadataCache, final TransactionIdStore transactionIdStore,
-            IdOrderingQueue legacyIndexTransactionOrdering,
-            Factory<Counter> counting,
-            ParkStrategy idleBackoffStrategy,
-            KernelHealth kernelHealth )
+    public BatchingPhysicalTransactionAppender( LogFile logFile, LogRotation logRotation,
+                                                TransactionMetadataCache transactionMetadataCache,
+                                                TransactionIdStore transactionIdStore,
+                                                IdOrderingQueue legacyIndexTransactionOrdering,
+                                                KernelHealth kernelHealth )
     {
         super( logFile, logRotation, transactionMetadataCache, transactionIdStore,
                 legacyIndexTransactionOrdering, kernelHealth );
-        appenderTicket = counting.newInstance();
-        forceTicket = counting.newInstance();
-        forceThread = new BatchingForceThread( new BatchingForceThread.Operation()
-        {
-            /**
-             * Called by the forcing thread that forces now and then.
-             */
-            @Override
-            public boolean perform() throws IOException
-            {
-                long currentAppenderTicket = appenderTicket.get();
-                if ( forceTicket.get() == currentAppenderTicket )
-                {
-                    return false;
-                }
-
-                force();
-
-                // Mark that we've forced at least the ticket we saw when waking up previously.
-                // It's on the pessimistic side, but better safe than sorry.
-                forceTicket.set( currentAppenderTicket );
-
-                ThreadLink linkedOut = threadLinkHead.getAndSet( ThreadLink.END );
-
-                while ( linkedOut != ThreadLink.END )
-                {
-                    LockSupport.unpark( linkedOut.thread );
-
-                    while ( linkedOut.next == null )
-                    {   // spin, waiting for appender thread to finish updating the chain
-                    }
-
-                    linkedOut = linkedOut.next;
-                }
-
-                return true;
-            }
-        }, idleBackoffStrategy );
-        forceThread.start();
+        forceLock = new ReentrantLock();
     }
 
     /**
@@ -137,37 +81,86 @@ public class BatchingPhysicalTransactionAppender extends AbstractPhysicalTransac
     }
 
     /**
-     * Called by the appender.
-     */
-    @Override
-    protected long getNextTicket()
-    {
-        return appenderTicket.incrementAndGet();
-    }
-
-    /**
      * Called by the appender that just appended a transaction to the log.
      */
     @Override
-    protected void forceAfterAppend( long ticket ) throws IOException
+    protected void forceAfterAppend() throws IOException
     {
+        // There's a benign race here, where we add our link before we update our next pointer.
+        // This is okay, however, because unparkAll() spins when it sees a null next pointer.
         ThreadLink threadLink = new ThreadLink( Thread.currentThread() );
         threadLink.next = threadLinkHead.getAndSet( threadLink );
+        int waitTicks = 127;
 
-        // Stay a while and listen... while:
-        while (  // the forcer hasn't yet caught up with me
-                 (ticket > forceTicket.get() ||
-                 // OR I've wrapped around Long.MAX_VALUE
-                 !haveSameSign( ticket, forceTicket.get() )) &&
-
-                 // AND this appender hasn't yet been shut down
-                 !shutDown &&
-                 // AND the forcer is of good health
-                 forceThread.checkHealth() )
+        do
         {
-            LockSupport.unpark( forceThread );
-            LockSupport.parkNanos( 100_000 ); // 0,1 ms
+            if ( forceLock.tryLock() )
+            {
+                try
+                {
+                    forceLog();
+                }
+                finally
+                {
+                    forceLock.unlock();
+
+                    // We've released the lock, so unpark anyone who might have decided park while we were working.
+                    // The most recently parked thread is the one most likely to still have warm caches, so that's
+                    // the one we would prefer to unpark. Luckily, the stack nature of the ThreadLinks makes it easy
+                    // to get to.
+                    ThreadLink nextWaiter = threadLinkHead.get();
+                    nextWaiter.unpark();
+                }
+            }
+            else
+            {
+                waitTicks = waitForLogForce( waitTicks );
+            }
         }
+        while ( !threadLink.done );
+    }
+
+    private void forceLog() throws IOException
+    {
+        ThreadLink links = threadLinkHead.getAndSet( ThreadLink.END );
+
+        force();
+
+        unparkAll( links );
+    }
+
+    private void unparkAll( ThreadLink links )
+    {
+        do
+        {
+            links.done = true;
+            links.unpark();
+            ThreadLink tmp;
+            do
+            {
+                // Spin on this because of the racy update when consing.
+                tmp = links.next;
+            }
+            while ( tmp == null );
+            links = tmp;
+        }
+        while ( links != ThreadLink.END );
+    }
+
+    private int waitForLogForce( int waitTicks )
+    {
+        waitTicks &= 127;
+
+        // We do this fancy spin to create CPU pipeline stalls in which other threads can run a few instructions.
+        // The hope is that those other threads might make enough progress to either finish our work, or allow us
+        // to continue.
+        if ( ThreadLocalRandom.current().nextBoolean() )
+        {
+            return waitTicks - 1;
+        }
+        long parkTime = TimeUnit.MILLISECONDS.toNanos( 100 );
+        LockSupport.parkNanos( this, parkTime );
+        return waitTicks;
     }
 
     @Override
@@ -183,21 +176,5 @@ public class BatchingPhysicalTransactionAppender extends AbstractPhysicalTransac
         }
 
         channel.force();
-    }
-
-    @Override
-    public void close()
-    {
-        forceThread.halt();
-        try
-        {
-            forceThread.join();
-        }
-        catch ( InterruptedException e )
-        {
-            throw new RuntimeException( e );
-        }
-        shutDown = true;
-        super.close();
     }
 }

@@ -19,141 +19,208 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Future;
-
-import org.junit.Rule;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.neo4j.function.Factory;
-import org.neo4j.kernel.KernelHealth;
-import org.neo4j.kernel.impl.util.Counter;
-import org.neo4j.test.CleanupRule;
-import org.neo4j.test.OtherThreadExecutor;
-import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
+import java.io.IOException;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Semaphore;
 
+import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
+import org.neo4j.kernel.impl.util.IdOrderingQueue;
+
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
+import static org.neo4j.test.ThreadTestUtils.awaitThreadState;
+import static org.neo4j.test.ThreadTestUtils.fork;
 
 public class BatchingPhysicalTransactionAppenderTest
 {
-    @Test
-    public void shouldWaitOnCorrectTicket() throws Exception
+    private static enum ChannelCommand
     {
-        // GIVEN
-        long highestValueBeforeWrappingAround = 3;
-        LogFile logFile = mock( LogFile.class );
-        when( logFile.getWriter() ).thenReturn( new InMemoryLogChannel() );
-        TransactionMetadataCache cache = new TransactionMetadataCache( 10, 10 );
-        TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
-        LimitedCounterFactory counters = new LimitedCounterFactory( highestValueBeforeWrappingAround, 0 );
-        ControlledParkStrategy forceThreadControl = new ControlledParkStrategy();
-        BatchingPhysicalTransactionAppender appender = new BatchingPhysicalTransactionAppender( logFile,
-                mock( LogRotation.class ), cache, transactionIdStore, BYPASS, counters, forceThreadControl,
-                mock( KernelHealth.class ) );
-        Counter appendCounter = counters.createdCounters.get( 0 );
-        OtherThreadExecutor<Void> t2 = cleanup.add( new OtherThreadExecutor<Void>( "T2", null ) );
-
-        // WHEN setting the counter to its highest value before wrapping around
-        assertForceAfterAppendAwaitsCorrectForceTicket( t2, appender, forceThreadControl, appendCounter );
+        emptyBufferIntoChannelAndClearIt,
+        force,
+        dummy
     }
 
-    @Test
-    public void shouldHandleTicketsWrappingAround() throws Exception
-    {
-        // GIVEN
-        long highestValueBeforeWrappingAround = 3;
-        LogFile logFile = mock( LogFile.class );
-        when( logFile.getWriter() ).thenReturn( new InMemoryLogChannel() );
-        TransactionMetadataCache cache = new TransactionMetadataCache( 10, 10 );
-        TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
-        LimitedCounterFactory counters = new LimitedCounterFactory(
-                highestValueBeforeWrappingAround, highestValueBeforeWrappingAround );
-        ControlledParkStrategy forceThreadControl = new ControlledParkStrategy();
-        BatchingPhysicalTransactionAppender appender = new BatchingPhysicalTransactionAppender( logFile, mock(LogRotation.class), cache,
-                transactionIdStore, BYPASS, counters, forceThreadControl, mock( KernelHealth.class ) );
-        Counter appendCounter = counters.createdCounters.get( 0 );
-        OtherThreadExecutor<Void> t2 = cleanup.add( new OtherThreadExecutor<Void>( "T2", null ) );
+    private static ExecutorService executor;
 
-        // and even WHEN wrapping around ticket the force must be awaited correctly
-        assertForceAfterAppendAwaitsCorrectForceTicket( t2, appender, forceThreadControl, appendCounter );
+    @BeforeClass
+    public static void setUpExecutor()
+    {
+        executor = Executors.newCachedThreadPool();
     }
 
-    private void assertForceAfterAppendAwaitsCorrectForceTicket( OtherThreadExecutor<Void> t2,
-            BatchingPhysicalTransactionAppender appender, ControlledParkStrategy forceThreadControl, Counter appendCounter ) throws Exception
+    @AfterClass
+    public static void tearDownExecutor()
     {
-        forceThreadControl.awaitIdle();
-        long ticket = appendCounter.incrementAndGet();
-        // THEN forcing as part of append (forceAfterAppend) should await that ticket
-        Future<Object> forceFuture = t2.executeDontWait( forceAfterAppend( appender, ticket ) );
-        forceThreadControl.unpark( Thread.currentThread() );
-        forceFuture.get();
+        executor.shutdown();
+        executor = null;
     }
 
-    public final @Rule CleanupRule cleanup = new CleanupRule();
+    private LogFile logFile;
+    private LogRotation logRotation;
+    private TransactionMetadataCache transactionMetadataCache;
+    private TransactionIdStore transactionIdStore;
+    private IdOrderingQueue legacyindexTransactionOrdering;
+    private KernelHealth kernelHealth;
+    private WritableLogChannel channel;
+    private BlockingQueue<ChannelCommand> channelCommandQueue;
+    private Semaphore forceSemaphore;
 
-    private WorkerCommand<Void, Object> forceAfterAppend( final BatchingPhysicalTransactionAppender appender,
-            final long ticket )
+    @Before
+    public void setUp()
     {
-        return new WorkerCommand<Void, Object>()
+        logFile = mock( LogFile.class );
+        logRotation = LogRotation.NO_ROTATION;
+        transactionMetadataCache = new TransactionMetadataCache( 10, 10 );
+        transactionIdStore = new DeadSimpleTransactionIdStore();
+        legacyindexTransactionOrdering = IdOrderingQueue.BYPASS;
+        kernelHealth = mock( KernelHealth.class );
+        channelCommandQueue = new LinkedBlockingQueue<>();
+        forceSemaphore = new Semaphore( 0 );
+        channel = new InMemoryLogChannel()
         {
             @Override
-            public Object doWork( Void state ) throws Exception
+            public void force() throws IOException
             {
-                appender.forceAfterAppend( ticket );
-                return null;
+                try
+                {
+                    forceSemaphore.release();
+                    channelCommandQueue.put( ChannelCommand.force );
+                }
+                catch ( InterruptedException e )
+                {
+                    throw new IOException( e );
+                }
+            }
+
+            @Override
+            public void emptyBufferIntoChannelAndClearIt()
+            {
+                try
+                {
+                    channelCommandQueue.put( ChannelCommand.emptyBufferIntoChannelAndClearIt );
+                }
+                catch ( InterruptedException e )
+                {
+                    throw new RuntimeException( e );
+                }
+            }
+        };
+
+        when( logFile.getWriter() ).thenReturn( channel );
+    }
+
+    private Runnable createForceAfterAppendRunnable( final BatchingPhysicalTransactionAppender appender )
+    {
+        return new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    appender.forceAfterAppend();
+                }
+                catch ( IOException e )
+                {
+                    throw new RuntimeException( e );
+                }
             }
         };
     }
 
-    private static class LimitedCounterFactory implements Factory<Counter>
+    @Test
+    public void shouldForceLogChannel() throws Exception
     {
-        private final List<Counter> createdCounters = new ArrayList<>();
-        private final long highestValue;
-        private final long initialValue;
+        BatchingPhysicalTransactionAppender appender = new BatchingPhysicalTransactionAppender( logFile, logRotation,
+                transactionMetadataCache, transactionIdStore, legacyindexTransactionOrdering, kernelHealth );
 
-        public LimitedCounterFactory( long highestValue, long initialValue )
+        appender.forceAfterAppend();
+
+        assertThat( channelCommandQueue.take(), is( ChannelCommand.emptyBufferIntoChannelAndClearIt ) );
+        assertThat( channelCommandQueue.take(), is( ChannelCommand.force ) );
+        assertTrue( channelCommandQueue.isEmpty() );
+    }
+
+    @Test
+    public void shouldWaitForOngoingForceToCompleteBeforeForcingAgain() throws Exception
+    {
+        channelCommandQueue = new LinkedBlockingQueue<>( 2 );
+        channelCommandQueue.put( ChannelCommand.dummy );
+
+        // The 'emptyBuffer...' command will be put into the queue, and then it'll block on 'force' because the queue
+        // will be at capacity.
+
+        final BatchingPhysicalTransactionAppender appender = new BatchingPhysicalTransactionAppender( logFile, logRotation,
+                transactionMetadataCache, transactionIdStore, legacyindexTransactionOrdering, kernelHealth );
+
+        Runnable runnable = createForceAfterAppendRunnable( appender );
+        Future<?> future = executor.submit( runnable );
+
+        forceSemaphore.acquire();
+
+        Thread otherThread = fork( runnable );
+        awaitThreadState( otherThread, 5000, Thread.State.TIMED_WAITING );
+
+        assertThat( channelCommandQueue.take(), is( ChannelCommand.dummy ) );
+        assertThat( channelCommandQueue.take(), is( ChannelCommand.emptyBufferIntoChannelAndClearIt ) );
+        assertThat( channelCommandQueue.take(), is( ChannelCommand.force ) );
+        assertThat( channelCommandQueue.take(), is( ChannelCommand.emptyBufferIntoChannelAndClearIt ) );
+        assertThat( channelCommandQueue.take(), is( ChannelCommand.force ) );
+        future.get();
+        otherThread.join();
+        assertTrue( channelCommandQueue.isEmpty() );
+    }
+
+    @Test
+    public void shouldBatchUpMultipleWaitingForceRequests() throws Exception
+    {
+        channelCommandQueue = new LinkedBlockingQueue<>( 2 );
+        channelCommandQueue.put( ChannelCommand.dummy );
+
+        // The 'emptyBuffer...' command will be put into the queue, and then it'll block on 'force' because the queue
+        // will be at capacity.
+
+        final BatchingPhysicalTransactionAppender appender = new BatchingPhysicalTransactionAppender( logFile, logRotation,
+                transactionMetadataCache, transactionIdStore, legacyindexTransactionOrdering, kernelHealth );
+
+        Runnable runnable = createForceAfterAppendRunnable( appender );
+        Future<?> future = executor.submit( runnable );
+
+        forceSemaphore.acquire();
+
+        Thread[] otherThreads = new Thread[10];
+        for ( int i = 0; i < otherThreads.length; i++ )
         {
-            this.highestValue = highestValue;
-            this.initialValue = initialValue;
+            otherThreads[i] = fork( runnable );
+        }
+        for ( Thread otherThread : otherThreads )
+        {
+            awaitThreadState( otherThread, 5000, Thread.State.TIMED_WAITING );
         }
 
-        @Override
-        public Counter newInstance()
+        assertThat( channelCommandQueue.take(), is( ChannelCommand.dummy ) );
+        assertThat( channelCommandQueue.take(), is( ChannelCommand.emptyBufferIntoChannelAndClearIt ) );
+        assertThat( channelCommandQueue.take(), is( ChannelCommand.force ) );
+        assertThat( channelCommandQueue.take(), is( ChannelCommand.emptyBufferIntoChannelAndClearIt ) );
+        assertThat( channelCommandQueue.take(), is( ChannelCommand.force ) );
+        future.get();
+        for ( Thread otherThread : otherThreads )
         {
-            Counter counter = new Counter()
-            {
-                private long value = initialValue;
-
-                @Override
-                public void set( long value )
-                {
-                    assert value <= highestValue && value >= (-highestValue-1);
-                    this.value = value;
-                }
-
-                @Override
-                public long incrementAndGet()
-                {
-                    value++;
-                    if ( value > highestValue )
-                    {
-                        value = -highestValue-1;
-                    }
-                    return value;
-                }
-
-                @Override
-                public long get()
-                {
-                    return value;
-                }
-            };
-            createdCounters.add( counter );
-            return counter;
+            otherThread.join();
         }
+        assertTrue( channelCommandQueue.isEmpty() );
     }
 }

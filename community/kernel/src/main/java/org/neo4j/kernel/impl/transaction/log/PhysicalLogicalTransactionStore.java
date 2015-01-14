@@ -33,12 +33,10 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-import static org.neo4j.kernel.impl.transaction.log.BatchingPhysicalTransactionAppender.DEFAULT_WAIT_STRATEGY;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_1P_COMMIT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_START;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.util.Counter.ATOMIC_LONG;
 
 public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements LogicalTransactionStore
 {
@@ -70,7 +68,7 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
     {
         this.appender = batchedWrites ?
                 new BatchingPhysicalTransactionAppender( logFile, logRotation, transactionMetadataCache, transactionIdStore,
-                        legacyIndexTransactionOrdering, ATOMIC_LONG, DEFAULT_WAIT_STRATEGY, kernelHealth ) :
+                        legacyIndexTransactionOrdering, kernelHealth ) :
                 new PhysicalTransactionAppender( logFile, logRotation,
                         transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering, kernelHealth );
     }
