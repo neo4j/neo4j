@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.parser
 
+import com.sun.tools.javac.resources.compiler
+import org.neo4j.cypher.CypherVersion.{v2_0, v2_1}
 import org.neo4j.cypher.internal.compiler.v2_1._
 import commands._
 import commands.expressions._
@@ -1186,7 +1188,7 @@ class CypherParserTest extends CypherFunSuite {
       """start a=node(0), b=node(1) match p = shortestPath( a-[*..6]->b ) return p""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
-        matches(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.OUTGOING, Some(6), single = true, None)).
+        matches(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.OUTGOING, false, Some(6), single = true, None)).
         returns(ReturnItem(Identifier("p"), "p"))
     )
   }
@@ -1196,7 +1198,7 @@ class CypherParserTest extends CypherFunSuite {
       """start a=node(0), b=node(1) match p = shortestPath( a-[r*..6]->b ) return p""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
-        matches(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.OUTGOING, Some(6), single = true, Some("r"))).
+        matches(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.OUTGOING, false, Some(6), single = true, Some("r"))).
         returns(ReturnItem(Identifier("p"), "p"))
     )
   }
@@ -1206,7 +1208,7 @@ class CypherParserTest extends CypherFunSuite {
       """start a=node(0), b=node(1) match p = shortestPath( a-[:KNOWS*..6]->b ) return p""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
-        matches(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq("KNOWS"), Direction.OUTGOING, Some(6), single = true, relIterator = None)).
+        matches(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq("KNOWS"), Direction.OUTGOING, false, Some(6), single = true, relIterator = None)).
         returns(ReturnItem(Identifier("p"), "p"))
     )
   }
@@ -1216,16 +1218,16 @@ class CypherParserTest extends CypherFunSuite {
       """start a=node(0), b=node(1) match p = allShortestPaths( a-[:KNOWS*..6]->b ) return p""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
-        matches(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq("KNOWS"), Direction.OUTGOING, Some(6), single = false, relIterator = None)).
+        matches(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq("KNOWS"), Direction.OUTGOING, false, Some(6), single = false, relIterator = None)).
         returns(ReturnItem(Identifier("p"), "p"))
     )
   }
 
   test("testShortestPathWithoutStart") {
     expectQuery(
-      """match p = shortestPath( a-[*..3]->b ) WHERE a.name = 'John' AND b.name = 'Sarah' return p""",
+      """match p = shortestPath( a-[*1..3]->b ) WHERE a.name = 'John' AND b.name = 'Sarah' return p""",
       Query.
-        matches(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.OUTGOING, Some(3), single = true, None)).
+        matches(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.OUTGOING, false, Some(3), single = true, None)).
         where(And(
         Equals(Property(Identifier("a"), PropertyKey("name")), Literal("John")),
         Equals(Property(Identifier("b"), PropertyKey("name")), Literal("Sarah"))))
@@ -1235,12 +1237,11 @@ class CypherParserTest extends CypherFunSuite {
 
   test("testShortestPathExpression") {
     expectQuery(
-      """start a=node(0), b=node(1) return shortestPath(a-[:KNOWS*..3]->b) AS path""",
+      """start a=node(0), b=node(1) return shortestPath(a-[:KNOWS*0..3]->b) AS path""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
         returns(ReturnItem(ShortestPathExpression(
-        ShortestPath("  UNNAMED34", SingleNode("a"), SingleNode("b"), Seq("KNOWS"), Direction.OUTGOING, Some(3), single = true, relIterator = None)),
-        "path")))
+        ShortestPath("  UNNAMED34", SingleNode("a"), SingleNode("b"), Seq("KNOWS"), Direction.OUTGOING, true, Some(3), single = true, relIterator = None)), "path")))
   }
 
   test("testForNull") {
@@ -2195,7 +2196,7 @@ class CypherParserTest extends CypherFunSuite {
          return *""",
       Query.
         start(NodeById("a", 1),NodeById("x", 2,3)).
-        matches(ShortestPath("p", SingleNode("a"), SingleNode("x"), Seq(), Direction.OUTGOING, None, single = true, relIterator = None)).
+        matches(ShortestPath("p", SingleNode("a"), SingleNode("x"), Seq(), Direction.OUTGOING, false, None, single = true, relIterator = None)).
         makeOptional().
         returns(AllIdentifiers())
     )

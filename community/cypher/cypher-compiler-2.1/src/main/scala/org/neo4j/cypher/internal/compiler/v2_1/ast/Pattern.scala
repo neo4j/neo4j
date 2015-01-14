@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.ast
 
+import com.sun.tools.javac.resources.compiler
 import org.neo4j.cypher.internal.compiler.v2_1._
 import symbols._
 import org.neo4j.graphdb.Direction
@@ -133,7 +134,7 @@ case class ShortestPaths(element: PatternElement, single: Boolean)(val position:
     checkContext(ctx) chain
     checkContainsSingle chain
     checkKnownEnds chain
-    checkNoMinimalLength chain
+    checkMinimalLength chain
     element.semanticCheck(ctx)
 
   private def checkContext(ctx: SemanticContext): SemanticCheck = ctx match {
@@ -164,16 +165,14 @@ case class ShortestPaths(element: PatternElement, single: Boolean)(val position:
       None
   }
 
-  private def checkNoMinimalLength: SemanticCheck = element match {
+  private def checkMinimalLength: SemanticCheck = element match {
     case RelationshipChain(_, rel, _) =>
       rel.length match {
-        case Some(Some(Range(Some(_), _))) =>
-          Some(SemanticError(s"$name(...) does not support a minimal length", position, element.position))
-        case _ =>
-          None
+        case Some(Some(Range(Some(min), _))) if (min.value < 0 || min.value > 1) =>
+          Some(SemanticError(s"$name(...) does not support a minimal length different from 0 or 1", position, element.position))
+        case _ => None
       }
-    case _ =>
-      None
+    case _ => None
   }
 }
 

@@ -34,7 +34,7 @@ class AllShortestPathsPipeTest extends GraphDatabaseFunSuite {
   def runThroughPipeAndGetPath(a: Node, b: Node) = {
     val source = new FakePipe(List(Map("a" -> a, "b" -> b)), "a" -> CTNode, "b" -> CTNode)
 
-    val pipe = new ShortestPathPipe(source, ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.BOTH,
+    val pipe = new ShortestPathPipe(source, ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.BOTH, false,
       Some(15), single = false, relIterator = None))
     graph.inTx(pipe.createResults(QueryStateHelper.empty).toList.map(m => m("p").asInstanceOf[Path]))
   }

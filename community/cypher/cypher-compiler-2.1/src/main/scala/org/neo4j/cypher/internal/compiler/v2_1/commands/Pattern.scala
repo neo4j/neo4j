@@ -50,7 +50,7 @@ object RelationshipPattern {
   def unapply(x: Any): Option[(RelationshipPattern, SingleNode, SingleNode)] = x match {
     case pattern@RelatedTo(left, right, _, _, _, _)                   => Some((pattern, left, right))
     case pattern@VarLengthRelatedTo(_, left, right, _, _, _, _, _, _) => Some((pattern, left, right))
-    case pattern@ShortestPath(_, left, right, _, _, _, _, _)          => Some((pattern, left, right))
+    case pattern@ShortestPath(_, left, right, _, _, _, _, _, _)          => Some((pattern, left, right))
     case _                                                            => None
   }
 }
@@ -200,6 +200,7 @@ case class ShortestPath(pathName: String,
                         right: SingleNode,
                         relTypes: Seq[String],
                         dir: Direction,
+                        allowZeroLength: Boolean,
                         maxDepth: Option[Int],
                         single: Boolean,
                         relIterator: Option[String])
@@ -225,7 +226,7 @@ case class ShortestPath(pathName: String,
   lazy val possibleStartPoints: Seq[(String, NodeType)] = left.possibleStartPoints ++ right.possibleStartPoints
 
   def rewrite(f: Expression => Expression) =
-    new ShortestPath(pathName, left.rewrite(f), right.rewrite(f), relTypes, dir, maxDepth, single, relIterator)
+    new ShortestPath(pathName, left.rewrite(f), right.rewrite(f), relTypes, dir, allowZeroLength, maxDepth, single, relIterator)
 
   def rels = Seq()
 

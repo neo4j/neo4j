@@ -96,7 +96,7 @@ class MatchBuilderTest extends BuilderTest {
   test("should_not_accept_patterns_with_only_shortest_path") {
     val inQ = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("a", 0)), Solved(NodeById("b", 0))),
-      patterns = Seq(Unsolved(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.OUTGOING, None, single = true, None))))
+      patterns = Seq(Unsolved(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.OUTGOING, false, None, single = true, None))))
 
     val inP = createPipe(nodes = Seq("l"))
 
@@ -106,7 +106,7 @@ class MatchBuilderTest extends BuilderTest {
   test("should_accept_non_optional_parts_of_the_query_first") {
     val inQ = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("a", 0)), Solved(NodeById("b", 0))),
-      patterns = Seq(Unsolved(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.OUTGOING, None, single = true, None))))
+      patterns = Seq(Unsolved(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.OUTGOING, false, None, single = true, None))))
 
     val inP = createPipe(nodes = Seq("l"))
 

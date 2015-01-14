@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_1.ast.convert
 
 import ExpressionConverters._
+import com.sun.tools.javac.resources.compiler
+import org.neo4j.cypher.CypherVersion.{v2_0, v2_1}
 import org.neo4j.cypher.internal.compiler.v2_1._
 import commands.{expressions => commandexpressions, values => commandvalues}
 import commands.expressions.{Expression => CommandExpression}
@@ -124,11 +126,12 @@ object PatternConverters {
       }
       val reltypes = rel.types.map(_.name)
       val relIteratorName = rel.identifier.map(_.name)
-      val maxDepth = rel.length match {
-        case Some(Some(ast.Range(None, Some(i)))) => Some(i.value.toInt)
-        case _                                => None
+      val (allowZeroLength, maxDepth) = rel.length match {
+        case Some(Some(ast.Range(lower, Some(i)))) => (lower.exists(_.value == 0L), Some(i.value.toInt))
+        case None                                 => (false, Some(1))//non-varlength case
+        case _                                    => (false, None)
       }
-      Seq(commands.ShortestPath(pathName, leftName, rightName, reltypes, rel.direction, maxDepth, part.single, relIteratorName))
+      Seq(commands.ShortestPath(pathName, leftName, rightName, reltypes, rel.direction, allowZeroLength, maxDepth, part.single, relIteratorName))
     }
 
     def asLegacyNamedPath(pathName: String) = None

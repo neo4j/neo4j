@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
+import com.sun.tools.javac.resources.compiler
+import org.neo4j.cypher.CypherVersion.{v2_0, v2_1}
 import org.neo4j.cypher.internal.compiler.v2_1.commands._
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PartiallySolvedQuery
 import org.neo4j.graphdb.Direction
@@ -40,12 +42,12 @@ class ShortestPathBuilderTest extends BuilderTest {
   test("should_accept_if_both_start_and_end_have_been_solved") {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("a", 0)), Solved(NodeById("b", 0))),
-      patterns = Seq(Unsolved(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.OUTGOING, None, single = true, None))))
+      patterns = Seq(Unsolved(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.OUTGOING, false, None, single = true, None))))
 
     val p = createPipe(nodes = Seq("a", "b"))
 
     val resultQ = assertAccepts(p, q).query
 
-    resultQ.patterns should equal(Seq(Solved(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.OUTGOING, None, single = true, None))))
+    resultQ.patterns should equal(Seq(Solved(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.OUTGOING, false, None, single = true, None))))
   }
 }

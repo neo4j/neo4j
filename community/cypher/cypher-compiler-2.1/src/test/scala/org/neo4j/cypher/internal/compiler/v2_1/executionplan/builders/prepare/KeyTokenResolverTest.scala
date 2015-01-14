@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders.prepare
 
+import com.sun.tools.javac.resources.compiler
 import org.mockito.Mockito._
+import org.neo4j.cypher.CypherVersion.{v2_0, v2_1}
 import org.neo4j.cypher.internal.compiler.v2_1.commands._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Identifier
 import org.neo4j.cypher.internal.compiler.v2_1.commands.values.KeyToken.Resolved
@@ -87,11 +89,11 @@ class KeyTokenResolverTest extends BuilderTest {
 
   test("should_resolve_label_keytoken_on_shortest_path_length_pattern") {
     val q = Query.
-      matches(ShortestPath("p", SingleNode("a", Seq(unresolvedFoo)), SingleNode("b", Seq(unresolvedBar)), Seq.empty, Direction.OUTGOING, None, single = false, relIterator = None)).
+      matches(ShortestPath("p", SingleNode("a", Seq(unresolvedFoo)), SingleNode("b", Seq(unresolvedBar)), Seq.empty, Direction.OUTGOING, false, None, single = false, relIterator = None)).
       returns()
 
     val result = assertAccepts(q)
-    result.query.patterns should equal(Seq(Unsolved(ShortestPath("p", SingleNode("a", Seq(resolvedFoo)), SingleNode("b", Seq(resolvedBar)), Seq.empty, Direction.OUTGOING, None, single = false, relIterator = None))))
+    result.query.patterns should equal(Seq(Unsolved(ShortestPath("p", SingleNode("a", Seq(resolvedFoo)), SingleNode("b", Seq(resolvedBar)), Seq.empty, Direction.OUTGOING, false, None, single = false, relIterator = None))))
   }
 
   test("should_resolve_label_keytoken_on_unique_link_pattern") {

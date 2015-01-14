@@ -42,6 +42,7 @@ class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSuppor
       right = SingleNode("c"),
       relTypes = Seq(),
       dir = Direction.OUTGOING,
+      false,
       maxDepth = None,
       single = true,
       relIterator = None)

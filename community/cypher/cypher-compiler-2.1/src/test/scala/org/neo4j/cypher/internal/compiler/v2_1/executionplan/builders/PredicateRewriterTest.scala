@@ -65,7 +65,7 @@ class PredicateRewriterTest extends BuilderTest {
 
   val predicateForLabelA = HasLabel(Identifier("a"), label)
   val predicateForLabelB = HasLabel(Identifier("b"), label)
-  val shortestPathNoLabels = ShortestPath("p", bareA, bareB, Seq.empty, Direction.OUTGOING, None, single = false, None)
+  val shortestPathNoLabels = ShortestPath("p", bareA, bareB, Seq.empty, Direction.OUTGOING, false, None, single = false, None)
 
   val prop = UnresolvedProperty("foo")
 

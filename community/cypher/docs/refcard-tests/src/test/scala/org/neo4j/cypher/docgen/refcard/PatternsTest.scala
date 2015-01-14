@@ -173,7 +173,7 @@ RETURN m###
 
 Match or set properties in `MATCH`, `CREATE`, `CREATE UNIQUE` or `MERGE` clauses.
 
-###assertion=related parameters=aname
+###assertion=empty
 MATCH p =
 
 shortestPath((n1:Person)-[*..6]-(n2:Person))
@@ -183,10 +183,10 @@ RETURN p###
 
 Find a single shortest path.
 
-###assertion=related parameters=aname
+###assertion=empty
 MATCH p =
 
-allShortestPaths((n1:Person)-->(n2:Person))
+allShortestPaths((n1:Person)-[*..6]->(n2:Person))
 
 WHERE n1.name = "Alice"
 RETURN p###
@@ -204,4 +204,4 @@ RETURN r###
 
 Matches relationships with the declared properties.
 
-*/ 
+*/
