@@ -233,6 +233,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     @Override
     public void stop() throws Throwable
     {
+        msgLog.logMessage( getClass().getSimpleName() + " communication server shutting down and unbinding from  " + socketAddress );
         // Close all open connections
         shuttingDown = true;
 
