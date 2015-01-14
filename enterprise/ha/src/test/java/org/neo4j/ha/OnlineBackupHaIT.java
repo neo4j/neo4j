@@ -21,6 +21,9 @@ package org.neo4j.ha;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
@@ -34,6 +37,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.helpers.Settings;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.test.ha.ClusterManager;
@@ -53,13 +57,13 @@ public class OnlineBackupHaIT
     private ClusterManager clusterManager;
     private ManagedCluster cluster;
 
-    private boolean doneBackup = false;
     private int nodeCount = 1;
 
-    private final CountDownLatch doneDataWriting = new CountDownLatch( 1 );
-    private final CountDownLatch startedDataWriting = new CountDownLatch( 10 );
+    private final ExecutorService executor = Executors.newFixedThreadPool( 2 );
+    private final CountDownLatch startedDataWriting = new CountDownLatch( INIT_NODE_COUNT );
 
-    private final static int BACKUP_PORT = 6363;
+    private static final int BACKUP_PORT = 6363;
+    private static final int INIT_NODE_COUNT = 10;
 
     @Before
     public void cleanUpFolder() throws IOException
@@ -77,11 +81,12 @@ public class OnlineBackupHaIT
             protected void config( GraphDatabaseBuilder builder, String clusterName, InstanceId serverId )
             {
                 builder.setConfig( OnlineBackupSettings.online_backup_server,
-                        (":" + (BACKUP_PORT - 1 + serverId.toIntegerIndex())) );
+                        (":" + ( BACKUP_PORT - 1 + serverId.toIntegerIndex() ) ) );
             }
         };
         clusterManager.start();
         cluster = clusterManager.getDefaultCluster();
+        cluster.await( allSeesAllAsAvailable() );
     }
 
     private void startClusterFromBackup() throws Throwable
@@ -91,6 +96,7 @@ public class OnlineBackupHaIT
                         Settings.TRUE ) );
         clusterManager.start();
         cluster = clusterManager.getDefaultCluster();
+        cluster.await( allSeesAllAsAvailable() );
     }
 
     private void stopCluster() throws Throwable
@@ -104,52 +110,34 @@ public class OnlineBackupHaIT
     {
         // Given
         startCluster();
-        performOnlineBackupAndDataWritingConcurrently();
-        doneDataWriting.await();
-        stopCluster();
+        try
+        {
+            performOnlineBackupAndDataWritingConcurrently();
+        }
+        finally
+        {
+            stopCluster();
+        }
 
         // When
         startClusterFromBackup();
 
         // Then
-        int nodeCountInBackupStore = getNodeCountInStore();
-        assertThat( nodeCount, greaterThanOrEqualTo( nodeCountInBackupStore ) );
-        assertThat( nodeCountInBackupStore, greaterThanOrEqualTo( 10 ) );
-        stopCluster();
+        try
+        {
+            int nodeCountInBackupStore = getNodeCountInStore();
+            assertThat( nodeCount, greaterThanOrEqualTo( nodeCountInBackupStore ) );
+            assertThat( nodeCountInBackupStore, greaterThanOrEqualTo( INIT_NODE_COUNT ) );
+        }
+        finally
+        {
+            stopCluster();
+        }
     }
 
-    private void performOnlineBackupAndDataWritingConcurrently()
+    private void performOnlineBackupAndDataWritingConcurrently() throws Exception
     {
-        new Thread( new Runnable()
-        {
-            private final GraphDatabaseService db = cluster.getMaster();
-            @Override
-            public void run()
-            {
-                while ( true )
-                {
-                    // keep on writing data until backup is done
-                    Transaction tx = db.beginTx();
-                    Node node = db.createNode();
-                    node.setProperty( "name", "node" + nodeCount );
-                    tx.success();
-                    tx.finish();
-
-                    nodeCount++;
-                    startedDataWriting.countDown();
-
-                    if ( doneBackup )
-                    {
-                        break;
-                    }
-                }
-                doneDataWriting.countDown();
-
-                System.out.println("***Done data writing***");
-            }
-        } ).start();
-
-        new Thread( new Runnable()
+        final Future<?> backupFuture = executor.submit( new Runnable()
         {
             @Override
             public void run()
@@ -161,32 +149,55 @@ public class OnlineBackupHaIT
                 }
                 catch ( InterruptedException e )
                 {
-                    e.printStackTrace();
+                    throw new RuntimeException( e );
                 }
 
                 // perform backup
                 OnlineBackup backup = OnlineBackup.from( "127.0.0.1", BACKUP_PORT );
                 backup.backup( BACKUP_PATH.getPath() );
-                doneBackup = true;
 
                 System.out.println( "***Done backup***" );
             }
-        } ).start();
+        } );
+
+        Future<?> writeFuture = executor.submit( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                GraphDatabaseService db = cluster.getMaster();
+
+                while ( !backupFuture.isDone() )
+                {
+                    // keep on writing data until backup is done
+                    Transaction tx = db.beginTx();
+                    Node node = db.createNode();
+                    node.setProperty( "name", "node" + nodeCount );
+                    tx.success();
+                    tx.finish();
+
+                    nodeCount++;
+                    startedDataWriting.countDown();
+                }
+
+                System.out.println("***Done data writing***");
+            }
+        } );
+
+        writeFuture.get();
     }
 
     private int getNodeCountInStore()
     {
-        cluster.await( allSeesAllAsAvailable() );
         HighlyAvailableGraphDatabase db = cluster.getMaster();
         Transaction tx = db.beginTx();
-        Iterable<Node> nodes = db.getAllNodes();
-        tx.success();
-        tx.finish();
-        int count = 0;
-        for ( Node node : nodes )
+        try
         {
-            count++;
+            return (int) Iterables.count( db.getAllNodes() );
         }
-        return count;
+        finally
+        {
+            tx.finish();
+        }
     }
 }

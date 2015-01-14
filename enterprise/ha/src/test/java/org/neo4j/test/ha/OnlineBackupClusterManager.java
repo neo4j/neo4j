@@ -78,10 +78,8 @@ public class OnlineBackupClusterManager extends ClusterManager
             }
             catch ( IOException e )
             {
-                System.out.println( "Failed to copy the instance with the backup db: failed to copy db from "
-                        + pathToBackupStore + " to " + to );
-                e.printStackTrace();
-                System.exit( 1 );
+                throw new RuntimeException( "Failed to copy the instance with the backup db: failed to copy db from "
+                        + pathToBackupStore + " to " + to, e );
             }
             // start the member with the copied store
             startMember( serverId, to );
