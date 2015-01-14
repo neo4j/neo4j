@@ -27,7 +27,7 @@ import org.neo4j.graphdb.{Direction, Node, Path}
 
 class SingleShortestPathPipeTest extends GraphDatabaseFunSuite {
   private implicit val monitor = mock[PipeMonitor]
-  private val path = ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.BOTH, Some(15), single = true, relIterator = None)
+  private val path = ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.BOTH, false, Some(15), single = true, relIterator = None)
 
   test("should return the shortest path between two nodes") {
     val a = createNode("a")

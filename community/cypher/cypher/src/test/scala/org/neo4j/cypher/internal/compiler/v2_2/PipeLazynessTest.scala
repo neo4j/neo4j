@@ -126,7 +126,7 @@ class PipeLazynessTest extends GraphDatabaseFunSuite with QueryStateTestSupport 
 
   private def shortestPathPipe = {
     val shortestPath = ShortestPath(pathName = "p", left = SingleNode("start"), right = SingleNode("end"), relTypes = Seq.empty,
-      dir = Direction.OUTGOING, maxDepth = None, single = true, relIterator = None)
+      dir = Direction.OUTGOING, allowZeroLength = true, maxDepth = None, single = true, relIterator = None)
     val n1 = mock[Node]
     when(n1.getRelationships).thenReturn(Iterable.empty[Relationship].asJava)
     val iter = new LazyIterator[Map[String, Any]](10, (_) => Map("start" -> n1, "end" -> n1))

@@ -68,9 +68,9 @@ case class ShortestPathExpression(ast: ShortestPath) extends Expression with Pat
   }
 
   val shortestPathStrategy = if (ast.single)
-    new SingleShortestPathStrategy(expander, ast.maxDepth.getOrElse(15))
+    new SingleShortestPathStrategy(expander, ast.allowZeroLength, ast.maxDepth.getOrElse(15))
   else
-    new AllShortestPathsStrategy(expander, ast.maxDepth.getOrElse(15))
+    new AllShortestPathsStrategy(expander, ast.allowZeroLength, ast.maxDepth.getOrElse(15))
 
   def calculateType(symbols: SymbolTable) =  shortestPathStrategy.typ
 
@@ -84,20 +84,26 @@ trait ShortestPathStrategy {
   def typ: CypherType
 }
 
-class SingleShortestPathStrategy(expander: Expander, depth: Int) extends ShortestPathStrategy {
+class SingleShortestPathStrategy(expander: Expander, allowZeroLength: Boolean, depth: Int) extends ShortestPathStrategy {
   private val finder = GraphAlgoFactory.shortestPath(expander, depth)
 
-  def findResult(start: Node, end: Node): Path = finder.findSinglePath(start, end)
+  def findResult(start: Node, end: Node): Path = {
+    val result = finder.findSinglePath(start, end)
+    if (!allowZeroLength && result != null && result.length() == 0)
+      null
+    else
+      result
+  }
 
   def typ = CTPath
 }
 
-class AllShortestPathsStrategy(expander: Expander, depth: Int) extends ShortestPathStrategy {
+class AllShortestPathsStrategy(expander: Expander, allowZeroLength: Boolean, depth: Int) extends ShortestPathStrategy {
   private val finder = GraphAlgoFactory.shortestPath(expander, depth)
 
   def findResult(start: Node, end: Node): Stream[Path] = {
     finder.findAllPaths(start, end).asScala.toStream
-  }
+  }.filter { p => allowZeroLength || p.length() > 0 }
 
   def typ = CTCollection(CTPath)
 }

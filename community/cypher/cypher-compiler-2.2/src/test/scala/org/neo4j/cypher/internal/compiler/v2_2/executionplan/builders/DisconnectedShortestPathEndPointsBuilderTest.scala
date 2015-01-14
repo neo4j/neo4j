@@ -33,7 +33,7 @@ class DisconnectedShortestPathEndPointsBuilderTest extends BuilderTest with Mock
   val identifier = "n"
   val otherIdentifier = "p"
   val shortestPath = ShortestPath("p",
-    SingleNode(identifier), SingleNode(otherIdentifier), Seq.empty, Direction.OUTGOING, None, single = true, None)
+    SingleNode(identifier), SingleNode(otherIdentifier), Seq.empty, Direction.OUTGOING, false, None, single = true, None)
 
   test("should_add_nodes_for_shortest_path") {
     // Given

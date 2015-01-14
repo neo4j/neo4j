@@ -103,14 +103,14 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     result should equal(List())
   }
 
-  test("rejects shortest path with minimal length") {
+  test("rejects shortest path with minimal length different from 0 or 1") {
     // a-b-c-d
     relate(nodeA, nodeB)
     relate(nodeB, nodeC)
     relate(nodeC, nodeD)
 
     evaluating {
-      execute("MATCH p = shortestPath((src:A)-[*0..1]->(dst:D)) RETURN nodes(p) AS nodes").toList
+      execute("MATCH p = shortestPath((src:A)-[*2..3]->(dst:D)) RETURN nodes(p) AS nodes").toList
     } should produce[SyntaxException]
   }
 
@@ -126,5 +126,49 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     val result = executeWithNewPlanner("MATCH p = allShortestPaths((src:A)-[*]->(dst:C)) RETURN nodes(p) AS nodes").columnAs[List[Node]]("nodes").toSet
     result should equal(Set(List(nodeA, nodeB, nodeC), List(nodeA, nodeD, nodeC)))
+  }
+
+  test("finds a single path for paths of length one") {
+    /*
+       a-b-c
+     */
+    relate(nodeA, nodeB)
+    relate(nodeB, nodeC)
+
+    val result = executeWithNewPlanner("match p = shortestpath((a:A)-[r*..1]->(n)) return nodes(p) as nodes").columnAs[List[Node]]("nodes").toSet
+    result should equal(Set(List(nodeA, nodeB)))
+  }
+
+  test("if asked for also return paths of length 0") {
+    /*
+       a-b-c
+     */
+    relate(nodeA, nodeB)
+    relate(nodeB, nodeC)
+
+    val result = executeWithNewPlanner("match p = shortestpath((a:A)-[r*0..1]->(n)) return nodes(p) as nodes").columnAs[List[Node]]("nodes").toSet
+    result should equal(Set(List(nodeA), List(nodeA, nodeB)))
+  }
+
+  test("we can ask explicitly for paths of minimal length 1") {
+    /*
+       a-b-c
+     */
+    relate(nodeA, nodeB)
+    relate(nodeB, nodeC)
+
+    val result = executeWithNewPlanner("match p = shortestpath((a:A)-[r*1..1]->(n)) return nodes(p) as nodes").columnAs[List[Node]]("nodes").toSet
+    result should equal(Set(List(nodeA, nodeB)))
+  }
+
+  test("finds a single path for non-variable length paths") {
+    /*
+       a-b-c
+     */
+    relate(nodeA, nodeB)
+    relate(nodeB, nodeC)
+
+    val result = executeWithNewPlanner("match p = shortestpath((a:A)-[r]->(n)) return nodes(p) as nodes").columnAs[List[Node]]("nodes").toSet
+    result should equal(Set(List(nodeA, nodeB)))
   }
 }

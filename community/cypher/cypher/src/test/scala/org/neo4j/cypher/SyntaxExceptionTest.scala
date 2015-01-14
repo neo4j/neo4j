@@ -92,10 +92,10 @@ class SyntaxExceptionTest extends ExecutionEngineFunSuite {
     )
   }
 
-  test("shortestPathCanNotHaveMinimumDepth") {
+  test("shortestPathCanNotHaveMinimumDepthDifferentFromZeroOrOne") {
     test(
       "match (a), (b) where id(a) = 0 and id(b) = 1 match p=shortestPath(a-[*2..3]->b) return p",
-      "shortestPath(...) does not support a minimal length (line 1, column 54)"
+      "shortestPath(...) does not support a minimal length different from 0 or 1 (line 1, column 54)"
     )
   }
 
