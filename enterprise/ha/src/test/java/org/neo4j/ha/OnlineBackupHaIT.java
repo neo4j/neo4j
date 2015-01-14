@@ -20,7 +20,9 @@
 package org.neo4j.ha;
 
 import java.io.IOException;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -160,13 +162,12 @@ public class OnlineBackupHaIT
             }
         } );
 
-        Future<?> writeFuture = executor.submit( new Runnable()
+        Future<?> writeFuture = executor.submit( new Callable<Void>()
         {
             @Override
-            public void run()
+            public Void call() throws InterruptedException, ExecutionException
             {
                 GraphDatabaseService db = cluster.getMaster();
-
                 while ( !backupFuture.isDone() )
                 {
                     // keep on writing data until backup is done
@@ -179,8 +180,10 @@ public class OnlineBackupHaIT
                     nodeCount++;
                     startedDataWriting.countDown();
                 }
+                backupFuture.get();
 
-                System.out.println("***Done data writing***");
+                System.out.println( "***Done data writing***" );
+                return null;
             }
         } );
 
