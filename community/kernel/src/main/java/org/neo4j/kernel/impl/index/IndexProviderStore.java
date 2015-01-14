@@ -57,7 +57,7 @@ public class IndexProviderStore
         try
         {
             // Create it if it doesn't exist
-            if ( !fileSystem.fileExists( file ) || fileSystem.getFileSize( file ) == 0 )
+            if ( !fileSystem.fileExists( file ) )
                 create( file, fileSystem, expectedVersion );
             
             // Read all the records in the file
@@ -143,7 +143,7 @@ public class IndexProviderStore
     
     private void create( File file, FileSystemAbstraction fileSystem, long indexVersion ) throws IOException
     {
-        if ( fileSystem.fileExists( file ) && fileSystem.getFileSize( file ) > 0 )
+        if ( fileSystem.fileExists( file ) )
             throw new IllegalArgumentException( file + " already exist" );
         
         StoreChannel fileChannel = null;
@@ -166,10 +166,9 @@ public class IndexProviderStore
         buf.clear();
         buf.putLong( time ).putLong( identifier ).putLong( version ).putLong( lastCommittedTxId ).putLong( indexVersion );
         buf.flip();
+        channel.position( 0 );
 
-        int written = channel.write( buf, 0 );
-        channel.force( true );
-
+        int written = channel.write( buf );
         int expectedLength = RECORD_COUNT*RECORD_SIZE;
         if ( written != expectedLength )
             throw new RuntimeException( "Expected to write " + expectedLength + " bytes, but wrote " + written );
