@@ -126,6 +126,20 @@ class ProjectFreshSortExpressionsTest extends CypherFunSuite with RewriteTest {
       """.stripMargin)
   }
 
+  test("handle RETURN * ORDERBY property") {
+    assertRewrite(
+      """MATCH n
+        |RETURN * ORDER BY n.prop
+      """.stripMargin,
+      """MATCH n
+        |WITH n AS n
+        |WITH n AS n, n.prop AS `  FRESHID28`
+        |WITH n AS n, `  FRESHID28` AS `  FRESHID28` ORDER BY `  FRESHID28`
+        |WITH n AS n
+        |RETURN n AS n
+      """.stripMargin)
+  }
+
   protected override def assertRewrite(originalQuery: String, expectedQuery: String) {
     val original = ast(originalQuery)
     val expected = ast(expectedQuery)

@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_2.{bottomUp, AggregatingFunction, Rewriter}
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.CountStar
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.AggregationNameGenerator
+import org.neo4j.cypher.internal.compiler.v2_2.{Rewriter, bottomUp}
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 
 /**
@@ -74,7 +73,7 @@ case object isolateAggregation extends Rewriter {
           }
 
           val withReturnItems: Seq[ReturnItem] = expressionsToGoToWith.map {
-            case id: Identifier => AliasedReturnItem(id, id)(id.position)
+            case id: Identifier => AliasedReturnItem(id.copyId, id.copyId)(id.position)
             case e              => AliasedReturnItem(e, Identifier(AggregationNameGenerator.name(e.position.offset))(e.position))(e.position)
           }
           val pos = c.position
@@ -90,7 +89,7 @@ case object isolateAggregation extends Rewriter {
 
             case e: Expression =>
               withReturnItems.collectFirst {
-                case AliasedReturnItem(expression, identifier) if e == expression => identifier
+                case AliasedReturnItem(expression, identifier) if e == expression => identifier.copyId
               }.getOrElse(e)
           }))
 

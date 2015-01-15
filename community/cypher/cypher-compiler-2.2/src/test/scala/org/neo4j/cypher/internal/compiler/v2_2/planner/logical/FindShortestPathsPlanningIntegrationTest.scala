@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{Identifier, NotEquals}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{Equals, Identifier, Not}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.LazyLabel
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{PlannerQuery, LogicalPlanningTestSupport2}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport2, PlannerQuery}
 import org.neo4j.graphdb.Direction
 
 class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -87,7 +87,7 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
       Projection(
         FindShortestPaths(
         Selection(
-          Seq(NotEquals(Identifier("r1") _, Identifier("r2") _) _),
+          Seq(Not(Equals(Identifier("r1")_, Identifier("r2")_)_)_),
           NodeHashJoin(
             Set(IdName("b")),
             Expand(

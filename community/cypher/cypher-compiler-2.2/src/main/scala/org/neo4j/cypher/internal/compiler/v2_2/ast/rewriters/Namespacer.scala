@@ -74,7 +74,7 @@ case class Namespacer(renamings: IdentifierRenamings) {
   })
 
   val tableRewriter = (semanticTable: SemanticTable) => {
-    val replacements = renamings.toSeq.collect { case (old, newIdentifier) => old.v -> newIdentifier }
+    val replacements = renamings.toSeq.collect { case (old, newIdentifier) => old.value -> newIdentifier }
     val newSemanticTable = semanticTable.replaceKeys(replacements: _*)
     newSemanticTable
   }

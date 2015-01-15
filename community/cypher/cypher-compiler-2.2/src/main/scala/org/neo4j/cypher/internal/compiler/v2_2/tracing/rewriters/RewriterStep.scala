@@ -25,10 +25,10 @@ object RewriterStep {
    type Named[T] = Product with T
 
    implicit def namedProductRewriter(p: Named[Rewriter]) = ApplyRewriter(p.productPrefix, p)
-   implicit def productRewriterCondition(p: Named[Any => Seq[String]]) = RewriterCondition(p.productPrefix, p)
+   implicit def productRewriterCondition(p: Condition) = RewriterCondition(p.name, p)
 
-   def enableCondition(p: Named[Any => Seq[String]]) = EnableRewriterCondition(p)
-   def disableCondition(p: Named[Any => Seq[String]]) = DisableRewriterCondition(p)
+   def enableCondition(p: Condition) = EnableRewriterCondition(p)
+   def disableCondition(p: Condition) = DisableRewriterCondition(p)
  }
 
 sealed trait RewriterStep
@@ -36,3 +36,7 @@ final case class ApplyRewriter(name: String, rewriter: Rewriter) extends Rewrite
 final case class EnableRewriterCondition(cond: RewriterCondition) extends RewriterStep
 final case class DisableRewriterCondition(cond: RewriterCondition) extends RewriterStep
 case object EmptyRewriterStep extends RewriterStep
+
+trait Condition extends (Any => Seq[String]) {
+   def name: String
+}

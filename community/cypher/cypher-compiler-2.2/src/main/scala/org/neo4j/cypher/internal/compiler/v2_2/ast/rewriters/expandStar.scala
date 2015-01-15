@@ -48,7 +48,7 @@ case class expandStar(state: SemanticState) extends Rewriter {
     val expandedItems = symbolNames.toSeq.sorted.map { id =>
       val idPos = scope.symbolTable(id).definition.position
       val expr = Identifier(id)(idPos)
-      val alias = Identifier(id)(idPos.copy(offset = idPos.offset + 1)) //TODO: THIS IS A HORRIBLE HACK
+      val alias = expr.copyId
       AliasedReturnItem(expr, alias)(clausePos)
     }
 

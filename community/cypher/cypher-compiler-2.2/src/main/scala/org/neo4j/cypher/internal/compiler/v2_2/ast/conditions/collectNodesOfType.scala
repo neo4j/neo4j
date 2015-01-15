@@ -20,14 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast.conditions
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast.ASTNode
-import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.Condition
 
 import scala.reflect.ClassTag
 
-case class containsNoNodesOfType[T <: ASTNode](implicit tag: ClassTag[T]) extends Condition {
-  def apply(that: Any): Seq[String] = collectNodesOfType[T].apply(that).map {
-    node => s"Expected none but found ${node.getClass.getSimpleName} at position ${node.position}"
+case class collectNodesOfType[T <: ASTNode](implicit tag: ClassTag[T]) extends (Any => Seq[T]) {
+  import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
+  def apply(that: Any): Seq[T] = that.fold(Seq.empty[T]) {
+    case node: ASTNode if node.getClass == tag.runtimeClass =>
+      (acc) => acc :+ node.asInstanceOf[T]
   }
-
-  override def name() = s"$productPrefix[${tag.runtimeClass.getSimpleName}]"
 }

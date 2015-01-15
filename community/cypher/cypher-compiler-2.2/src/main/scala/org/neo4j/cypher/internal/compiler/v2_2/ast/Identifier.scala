@@ -47,6 +47,10 @@ case class Identifier(name: String)(val position: InputPosition) extends Express
 
   def ensureDefined() =
     (_: SemanticState).ensureIdentifierDefined(this)
+
+  def copyId = copy()(position)
+
+  def bumpId = copy()(position.copy(offset = position.offset + 1)) // TODO: HACKISHHHH
 }
 
 object Identifier {

@@ -70,7 +70,7 @@ case object addUniquenessPredicates extends Rewriter {
     val predicates: Seq[Expression] = for {
       x <- uniqueRels
       y <- uniqueRels if x.name < y.name && !x.isAlwaysDifferentFrom(y)
-    } yield NotEquals(x.identifier, y.identifier)(pos)
+    } yield Not(Equals(x.identifier.copyId, y.identifier.copyId)(pos))(pos)
 
     predicates.reduceOption(And(_, _)(pos))
   }

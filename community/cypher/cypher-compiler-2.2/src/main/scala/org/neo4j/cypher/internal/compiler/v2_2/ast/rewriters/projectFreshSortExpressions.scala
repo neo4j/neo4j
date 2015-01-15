@@ -20,8 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.helpers.FreshIdNameGenerator
-import org.neo4j.cypher.internal.compiler.v2_2.{Rewriter, bottomUp, topDown}
+import org.neo4j.cypher.internal.compiler.v2_2.{Rewriter, bottomUp}
 
 /**
  * This rewriter ensures that WITH clauses containing a ORDER BY or WHERE are split, such that the ORDER BY or WHERE does not

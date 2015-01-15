@@ -25,6 +25,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.spi.MapToPublicExceptions
 abstract class CypherException(message: String, cause: Throwable) extends RuntimeException(message, cause) {
   def this() = this(null, null)
 
+  def this(message: String) = this(message, null)
+
   def this(cause: Throwable) = this(null, cause)
 
   def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]): T
@@ -62,15 +64,15 @@ class InvalidArgumentException(message: String, cause: Throwable = null) extends
   def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.invalidArgumentException(message, cause)
 }
 
-class PatternException(message: String) extends CypherException {
+class PatternException(message: String) extends CypherException(message) {
   def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.patternException(message)
 }
 
-class InternalException(message: String, inner: Exception = null) extends CypherException(inner) {
+class InternalException(message: String, inner: Exception = null) extends CypherException(message, inner) {
   def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.internalException(message)
 }
 
-class NodeStillHasRelationshipsException(val nodeId: Long, cause: Throwable) extends CypherException {
+class NodeStillHasRelationshipsException(val nodeId: Long, cause: Throwable) extends CypherException(cause) {
   def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.nodeStillHasRelationshipsException(nodeId, cause)
 }
 

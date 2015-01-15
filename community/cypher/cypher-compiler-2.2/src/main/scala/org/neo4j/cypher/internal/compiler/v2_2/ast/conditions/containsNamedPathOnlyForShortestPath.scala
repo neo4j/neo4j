@@ -19,15 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.ast.conditions
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.ASTNode
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{NamedPatternPart, ShortestPaths}
 import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.Condition
 
-import scala.reflect.ClassTag
+case object containsNamedPathOnlyForShortestPath extends Condition {
+  private val matcher = containsNoMatchingNodes({
+    case namedPart@NamedPatternPart(_, part) if !part.isInstanceOf[ShortestPaths] =>
+      namedPart.toString
+  })
 
-case class containsNoNodesOfType[T <: ASTNode](implicit tag: ClassTag[T]) extends Condition {
-  def apply(that: Any): Seq[String] = collectNodesOfType[T].apply(that).map {
-    node => s"Expected none but found ${node.getClass.getSimpleName} at position ${node.position}"
-  }
+  def apply(that: Any) = matcher(that)
 
-  override def name() = s"$productPrefix[${tag.runtimeClass.getSimpleName}]"
+  override def name: String = productPrefix
 }

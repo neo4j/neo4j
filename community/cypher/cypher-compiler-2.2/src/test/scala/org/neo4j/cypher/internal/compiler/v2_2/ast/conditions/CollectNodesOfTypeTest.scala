@@ -19,15 +19,24 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.ast.conditions
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.ASTNode
-import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.Condition
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_2.ast._
 
-import scala.reflect.ClassTag
+class CollectNodesOfTypeTest extends CypherFunSuite with AstConstructionTestSupport{
 
-case class containsNoNodesOfType[T <: ASTNode](implicit tag: ClassTag[T]) extends Condition {
-  def apply(that: Any): Seq[String] = collectNodesOfType[T].apply(that).map {
-    node => s"Expected none but found ${node.getClass.getSimpleName} at position ${node.position}"
-  }
+    private val collector: (Any => Seq[Identifier]) = collectNodesOfType[Identifier]()
 
-  override def name() = s"$productPrefix[${tag.runtimeClass.getSimpleName}]"
+    test("collect all identifiers") {
+      val idA = ident("a")
+      val idB = ident("b")
+      val ast: ASTNode = Match(optional = false, Pattern(Seq(EveryPath(NodePattern(Some(idA), Seq(), Some(idB), naked = true)_)))_, Seq(), None)_
+
+      collector(ast) should equal(Seq(idA, idB))
+    }
+
+    test("collect no identifiers") {
+      val ast: ASTNode = Match(optional = false, Pattern(Seq(EveryPath(NodePattern(None, Seq(), None, naked = true)_)))_, Seq(), None)_
+
+      collector(ast) shouldBe empty
+    }
 }

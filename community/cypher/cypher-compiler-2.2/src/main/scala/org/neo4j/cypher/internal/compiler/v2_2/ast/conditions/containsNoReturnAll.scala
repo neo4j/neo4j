@@ -20,10 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast.conditions
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast.ReturnItems
+import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.Condition
 
-case class containsNoReturnAll() extends (Any => Seq[String]) {
-  val matcher = containsNoMatchingNodes({
+case object containsNoReturnAll extends Condition {
+  private val matcher = containsNoMatchingNodes({
     case ri: ReturnItems if ri.includeExisting => "ReturnItems(includeExisting = true, ...)"
   })
   def apply(that: Any) = matcher(that)
+
+  override def name: String = productPrefix
 }
