@@ -406,6 +406,20 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineJUnitSuite {
     )
   }
 
+  @Test def shouldRejectPropertiesOnShortestPathRelationships() {
+    test(
+      "MATCH (a), (b), shortestPath( (a)-[r* {x: 1}]->(b) ) RETURN *",
+      "shortestPath(...) contains properties MapExpression(List((Identifier(x),SignedDecimalIntegerLiteral(1)))). This is currently not supported. (line 1, column 17)"
+    )
+  }
+
+  @Test def shouldRejectPropertiesOnAllShortestPathsRelationships() {
+    test(
+      "MATCH (a), (b), allShortestPaths( (a)-[r* {x: 1}]->(b) ) RETURN *",
+      "allShortestPaths(...) contains properties MapExpression(List((Identifier(x),SignedDecimalIntegerLiteral(1)))). This is currently not supported. (line 1, column 17)"
+    )
+  }
+
   def test(query: String, message: String) {
     try {
       val result = execute(query)
