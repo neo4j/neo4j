@@ -30,7 +30,8 @@ angular.module('neo4jApp.controllers')
       'AuthService'
       'Settings'
       'motdService'
-      ($scope, $window, Server, Frame, AuthService, Settings, motdService) ->
+      'UsageDataCollectionService'
+      ($scope, $window, Server, Frame, AuthService, Settings, motdService, UDC) ->
         refresh = ->
           $scope.labels = Server.labels()
           $scope.relationships = Server.relationships()
@@ -48,13 +49,14 @@ angular.module('neo4jApp.controllers')
               for r in response
                 for a in r.attributes
                   $scope.kernel[a.name] = a.value
-          ).error((r)-> $scope.kernel = {})
+              UDC.set('store_id',   $scope.kernel['StoreId'])
+            ).error((r)-> $scope.kernel = {})
 
         $scope.identity = angular.identity
 
         $scope.motd = motdService
         $scope.auth_service = AuthService
-        
+
         $scope.neo4j =
           license =
             type: "GPLv3"
@@ -71,9 +73,12 @@ angular.module('neo4jApp.controllers')
         $scope.goodBrowser = !/msie/.test(navigator.userAgent.toLowerCase())
 
         $scope.$watch 'offline', (serverIsOffline) ->
-          if not serverIsOffline
-            refresh()
-          else $scope.errorMessage = motdService.disconnected
+          if (serverIsOffline?)
+            if not serverIsOffline
+              refresh()
+              UDC.ping("connect")
+            else
+              $scope.errorMessage = motdService.disconnected
 
         $scope.$watch 'unauthorized', (isUnauthorized) ->
           refresh()
@@ -85,11 +90,11 @@ angular.module('neo4jApp.controllers')
 
         # Authorization
         AuthService.hasValidAuthorization().then(
-          -> 
+          ->
             Frame.create({input:"#{Settings.cmdchar}play welcome"})
             Frame.createOne({input:"#{Settings.cmdchar}server connect"})
           ,
-          (r) -> 
+          (r) ->
             if r.status is 404
               Frame.create({input:"#{Settings.cmdchar}play welcome"})
             else
@@ -109,8 +114,6 @@ angular.module('neo4jApp.controllers')
     'Editor'
     ($scope, Editor) ->
       # everything should be assembled
-      # Editor.setContent(":play intro") 
+      # Editor.setContent(":play intro")
       # Editor.execScript(":play intro")
   ])
-
-

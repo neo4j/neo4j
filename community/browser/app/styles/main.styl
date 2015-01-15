@@ -296,7 +296,7 @@ select
 #error
   position: fixed
   top: 0
-  height: 73px
+  height: banner-height
   left: nav-width
   right: 0
   background-color: color-error
@@ -307,6 +307,24 @@ select
   padding-left :24px
   font-size: 15px
   font-weight: bold
+
+#noticebar
+  position: fixed
+  top: 0
+  height: banner-height
+  left: nav-width
+  right: 0
+  background-color: #afe29a
+  z-index: 100;
+  color: #000
+  padding-left:24px
+  padding-top:12px
+  font-size: 15px
+  line-height: 24px
+  font-weight: normal
+  overflow:hidden
+  word-break: keep-all
+
 .connection-error
   #error
     display: block
@@ -432,6 +450,14 @@ select
   padding-left: 24px
   font-size: 15px
   font-weight: bold
-span.error 
+span.error
   font-size: 11px
   color: red
+
+.fa-good
+  background-color: yellow
+  border-radius: 6px
+
+.fa-neutral
+  background-color: pink
+  border-radius: 6px
