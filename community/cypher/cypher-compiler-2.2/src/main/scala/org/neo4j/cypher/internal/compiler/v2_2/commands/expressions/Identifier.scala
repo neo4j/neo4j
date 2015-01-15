@@ -26,6 +26,7 @@ import org.neo4j.graphdb.NotFoundException
 import org.neo4j.helpers.ThisShouldNotHappenError
 
 case class Identifier(entityName: String) extends Expression with Typed {
+
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any =
     ctx.getOrElse(entityName, throw new NotFoundException("Unknown identifier `%s`.".format(entityName)))
 

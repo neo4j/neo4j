@@ -182,7 +182,7 @@ public class FixturesTest
         catch(RuntimeException e)
         {
             assertThat(e.getMessage(), equalTo("Failed to install fixtures: Invalid input 't': expected <init> " +
-                    "(line 1, column 1)\n\"this is not a valid cypher statement\"\n ^"));
+                    "(line 1, column 1 (offset: 0))\n\"this is not a valid cypher statement\"\n ^"));
         }
     }
 }

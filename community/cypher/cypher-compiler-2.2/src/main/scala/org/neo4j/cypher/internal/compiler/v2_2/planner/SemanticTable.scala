@@ -24,12 +24,14 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import scala.collection.mutable
 
 object SemanticTable {
-  def apply(types: ASTAnnotationMap[Expression, ExpressionTypeInfo] = ASTAnnotationMap.empty) =
-    new SemanticTable(types)
+  def apply(types: ASTAnnotationMap[Expression, ExpressionTypeInfo] = ASTAnnotationMap.empty,
+            recordedScopes: ASTAnnotationMap[ASTNode, Scope] = ASTAnnotationMap.empty) =
+    new SemanticTable(types, recordedScopes)
 }
 
 class SemanticTable(
     val types: ASTAnnotationMap[Expression, ExpressionTypeInfo] = ASTAnnotationMap.empty,
+    val recordedScopes: ASTAnnotationMap[ASTNode, Scope] = ASTAnnotationMap.empty,
     val resolvedLabelIds: mutable.Map[String, LabelId] = new mutable.HashMap[String, LabelId],
     val resolvedPropertyKeyNames: mutable.Map[String, PropertyKeyId] = new mutable.HashMap[String, PropertyKeyId],
     val resolvedRelTypeNames: mutable.Map[String, RelTypeId] = new mutable.HashMap[String, RelTypeId]
@@ -46,15 +48,20 @@ class SemanticTable(
     copy(types = types.updated(expr, ExpressionTypeInfo(symbols.CTRelationship.invariant, None)))
 
   def replaceKeys(replacements: (Identifier, Identifier)*): SemanticTable =
-    copy(types = types.replaceKeys(replacements: _*))
+    copy(types = types.replaceKeys(replacements: _*), recordedScopes = recordedScopes.replaceKeys(replacements: _*))
+
+  def symbolDefinition(identifier: Identifier) =
+    recordedScopes(identifier).symbolTable(identifier.name).definition
 
   override def clone() = copy()
 
   def copy(
     types: ASTAnnotationMap[Expression, ExpressionTypeInfo] = types,
+    recordedScopes: ASTAnnotationMap[ASTNode, Scope] = recordedScopes,
     resolvedLabelIds: mutable.Map[String, LabelId] = resolvedLabelIds,
     resolvedPropertyKeyNames: mutable.Map[String, PropertyKeyId] = resolvedPropertyKeyNames,
     resolvedRelTypeNames: mutable.Map[String, RelTypeId] = resolvedRelTypeNames
   ) =
-    new SemanticTable(types, resolvedLabelIds.clone(), resolvedPropertyKeyNames.clone(), resolvedRelTypeNames.clone())
+    new SemanticTable(types, recordedScopes, resolvedLabelIds.clone(), resolvedPropertyKeyNames.clone(), resolvedRelTypeNames.clone())
 }
+

@@ -130,8 +130,8 @@ class SimpleTripletCardinalityEstimatorTest
     def asTriplets(q: String, nodeCardinalities: NodeCardinalities)(implicit input: QueryGraphCardinalityInput): Map[IdName, Cardinality] = {
       val testUnit: CardinalityTestHelper#TestUnit = cardinalityData.forQuery(TestUnit(s"MATCH $q"))
       val (stats, semanticTable) = testUnit.prepareTestContext
-      val qg = testUnit.createQueryGraph()
-      val converter = TripletConverter(qg, input, semanticTable)
+      val (qg, rewrittenTable) = testUnit.createQueryGraph(semanticTable)
+      val converter = TripletConverter(qg, input, rewrittenTable)
       val estimator = SimpleTripletCardinalityEstimator(N, nodeCardinalities, stats)
 
       qg.patternRelationships.collect {

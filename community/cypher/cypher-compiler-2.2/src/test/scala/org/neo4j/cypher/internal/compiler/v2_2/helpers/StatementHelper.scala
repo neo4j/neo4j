@@ -17,22 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.ast
+package org.neo4j.cypher.internal.compiler.v2_2.helpers
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.SemanticState
+import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
+import org.neo4j.cypher.internal.compiler.v2_2.{Scope, SemanticCheckResult, SemanticState}
+import org.scalatest.Assertions
 
-class ReturnItemsTest extends CypherFunSuite with AstConstructionTestSupport {
+object StatementHelper extends Assertions {
 
-  test("should forbid aliased projections collisions, e.g., projecting more than one value to the same id") {
-    val item1 = AliasedReturnItem(StringLiteral("a")_, ident("n"))_
-    val item2 = AliasedReturnItem(StringLiteral("b")_, ident("n"))_
+  implicit class RichStatement(ast: Statement) {
+    def semanticState: SemanticState = ast.semanticCheck(SemanticState.clean) match {
+      case SemanticCheckResult(state, errors) =>
+        if (errors.isEmpty) {
+          state
+        } else
+          fail(s"Failure during semantic checking of $ast with errors $errors")
+    }
 
-    val items = ReturnItems(includeExisting = false, Seq(item1, item2))_
-
-    val result = items.semanticCheck(SemanticState.clean)
-
-    result.errors should have size 1
-    result.errors.head.msg should startWith("Multiple result columns with the same name are not supported")
+    def scope: Scope = semanticState.scopeTree
   }
 }

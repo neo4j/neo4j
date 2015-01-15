@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlan
 object aggregation {
   def apply(plan: LogicalPlan, aggregation: AggregatingQueryProjection)(implicit context: LogicalPlanningContext): LogicalPlan = {
 
-    val aggregationProjections: Map[String, Expression] = aggregation.groupingKeys
+    val groupingExpressions: Map[String, Expression] = aggregation.groupingKeys
 
     val identifiersToKeep: Map[String, Expression] = aggregation.aggregationExpressions.flatMap {
       case (_, exp) => exp.dependencies
@@ -37,7 +37,7 @@ object aggregation {
     }.toMap
 
     //  TODO: we need to project here since the pipe does not do that, when moving to the new runtime the aggregation pipe MUST do the projection itself
-    val projectedPlan = projection(plan, aggregationProjections ++ identifiersToKeep, intermediate = true)
-    planAggregation(projectedPlan, aggregationProjections, aggregation.aggregationExpressions)
+    val projectedPlan = projection(plan, groupingExpressions ++ identifiersToKeep, intermediate = true)
+    planAggregation(projectedPlan, groupingExpressions, aggregation.aggregationExpressions)
   }
 }

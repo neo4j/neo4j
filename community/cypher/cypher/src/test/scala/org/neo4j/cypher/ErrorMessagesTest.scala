@@ -36,28 +36,28 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
   test("noReturnColumns") {
     expectError(
       "match (s) where id(s) = 0 return",
-      "Unexpected end of input: expected whitespace, DISTINCT, '*' or an expression (line 1, column 33)"
+      "Unexpected end of input: expected whitespace, DISTINCT, '*' or an expression (line 1, column 33 (offset: 32))"
     )
   }
 
   test("badNodeIdentifier") {
     expectError(
       "match (a) where id(a) = 0 MATCH a-[WORKED_ON]-, return a",
-      "Invalid input ',': expected whitespace, '>' or a node pattern (line 1, column 47)"
+      "Invalid input ',': expected whitespace, '>' or a node pattern (line 1, column 47 (offset: 46))"
     )
   }
 
   test("badStart") {
     expectError(
       "starta = node(0) return a",
-      "Invalid input 'a' (line 1, column 6)"
+      "Invalid input 'a' (line 1, column 6 (offset: 5))"
     )
   }
 
   test("functionDoesNotExist") {
     expectSyntaxError(
       "match (a) where id(a) = 0 return dontDoIt(a)",
-      "Unknown function 'dontDoIt' (line 1, column 34)",
+      "Unknown function 'dontDoIt' (line 1, column 34 (offset: 33))",
       33
     )
   }
@@ -65,7 +65,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
   test("noIndexName") {
     expectSyntaxError(
       "start a = node(name=\"sebastian\") match a-[:WORKED_ON]-b return b",
-      "Invalid input 'n': expected whitespace, an unsigned integer, a parameter or '*' (line 1, column 16)",
+      "Invalid input 'n': expected whitespace, an unsigned integer, a parameter or '*' (line 1, column 16 (offset: 15))",
       15
     )
   }
@@ -73,14 +73,14 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
   test("aggregateFunctionInWhere") {
     expectError(
       "match (a) where id(a) = 0 and count(a) > 10 RETURN a",
-      "Invalid use of aggregating function count(...) in this context (line 1, column 31)"
+      "Invalid use of aggregating function count(...) in this context (line 1, column 31 (offset: 30))"
     )
   }
 
   test("twoIndexQueriesInSameStart") {
     expectSyntaxError(
       "start a = node:node_auto_index(name=\"sebastian\",name=\"magnus\") return a",
-      "Invalid input ',': expected whitespace or ')' (line 1, column 48)",
+      "Invalid input ',': expected whitespace or ')' (line 1, column 48 (offset: 47))",
       47
     )
   }
@@ -88,7 +88,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
   test("badMatch2") {
     expectSyntaxError(
       "match (p) where id(p) = 2 match p-[:IS_A]>dude return dude.name",
-      "Invalid input '>': expected whitespace or '-' (line 1, column 42)",
+      "Invalid input '>': expected whitespace or '-' (line 1, column 42 (offset: 41))",
       41
     )
   }
@@ -96,7 +96,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
   test("badMatch3") {
     expectSyntaxError(
       "match (p) where id(p) = 2 match p-[:IS_A->dude return dude.name",
-      "Invalid input '-': expected an identifier character, whitespace, '|', a length specification, a property map or ']' (line 1, column 41)",
+      "Invalid input '-': expected an identifier character, whitespace, '|', a length specification, a property map or ']' (line 1, column 41 (offset: 40))",
       40
     )
   }
@@ -104,7 +104,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
   test("badMatch4") {
     expectSyntaxError(
       "match (p) where id(p) = 2 match p-[!]->dude return dude.name",
-      "Invalid input '!': expected whitespace, an identifier, '?', relationship types, a length specification, a property map or ']' (line 1, column 36)",
+      "Invalid input '!': expected whitespace, an identifier, '?', relationship types, a length specification, a property map or ']' (line 1, column 36 (offset: 35))",
       35
     )
   }
@@ -114,7 +114,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
       "match (p) where id(p) = 2 match p[:likes]->dude return dude.name",
       "Invalid input '[': expected an identifier character, whitespace, '=', node labels, a property map, " +
         "a relationship pattern, ',', USING, WHERE, LOAD CSV, START, MATCH, UNWIND, MERGE, CREATE, SET, DELETE, REMOVE, FOREACH, WITH, " +
-        "RETURN, UNION, ';' or end of input (line 1, column 34)",
+        "RETURN, UNION, ';' or end of input (line 1, column 34 (offset: 33))",
       33
     )
   }
@@ -122,7 +122,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
   test("invalidLabel") {
     expectSyntaxError(
       "match (p) where id(p) = 2 match (p:super-man) return p.name",
-      "Invalid input 'm': expected whitespace, [ or '-' (line 1, column 42)",
+      "Invalid input 'm': expected whitespace, [ or '-' (line 1, column 42 (offset: 41))",
       41
     )
   }
@@ -130,7 +130,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
   test("noEqualsSignInStart") {
     expectSyntaxError(
       "start r:relationship:rels() return r",
-      "Invalid input ':': expected an identifier character, whitespace or '=' (line 1, column 8)",
+      "Invalid input ':': expected an identifier character, whitespace or '=' (line 1, column 8 (offset: 7))",
       7
     )
   }
@@ -138,7 +138,8 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
   test("relTypeInsteadOfRelIdInStart") {
     expectSyntaxError(
       "start r = relationship(:WORKED_ON) return r",
-      "Invalid input ':': expected whitespace, an unsigned integer, a parameter or '*' (line 1, column 24)",
+      "Invalid input ':': expected whitespace, an unsigned integer, a parameter or '*' (line 1, column 24 (offset: " +
+        "23))",
       23
     )
   }
@@ -146,7 +147,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
   test("noNodeIdInStart") {
     expectSyntaxError(
       "start r = node() return r",
-      "Invalid input ')': expected whitespace, an unsigned integer, a parameter or '*' (line 1, column 16)",
+      "Invalid input ')': expected whitespace, an unsigned integer, a parameter or '*' (line 1, column 16 (offset: 15))",
       15
     )
   }
@@ -154,7 +155,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
   test("startExpressionWithoutIdentifier") {
     expectSyntaxError(
       "start a = node:node_auto_index(name=\"magnus\"),node:node_auto_index(name=\"sebastian) return b,c",
-      "Invalid input ':': expected an identifier character, whitespace or '=' (line 1, column 51)",
+      "Invalid input ':': expected an identifier character, whitespace or '=' (line 1, column 51 (offset: 50))",
       50
     )
   }
@@ -162,35 +163,35 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
   test("functions and stuff have to be renamed when sent through with") {
     expectError(
       "match (a) where id(a) = 0 with a, count(*) return a",
-      "Expression in WITH must be aliased (use AS) (line 1, column 35)"
+      "Expression in WITH must be aliased (use AS) (line 1, column 35 (offset: 34))"
     )
   }
 
   test("missing dependency correctly reported") {
     expectError(
       "match (a) where id(a) = 0 CREATE a-[:KNOWS]->(b {name:missing}) RETURN b",
-      "missing not defined (line 1, column 55)"
+      "missing not defined (line 1, column 55 (offset: 54))"
     )
   }
 
   test("missing create dependency correctly reported") {
     expectError(
       "match (a) where id(a) = 0 CREATE a-[:KNOWS]->(b {name:missing}) RETURN b",
-      "missing not defined (line 1, column 55)"
+      "missing not defined (line 1, column 55 (offset: 54))"
     )
   }
 
   test("missing set dependency correctly reported") {
     expectError(
       "match (a) where id(a) = 0 SET a.name = missing RETURN a",
-      "missing not defined (line 1, column 40)"
+      "missing not defined (line 1, column 40 (offset: 39))"
     )
   }
 
   test("create with identifier already existing") {
     expectError(
       "match (a) where id(a) = 0 CREATE (a {name:'foo'}) RETURN a",
-      "a already declared (line 1, column 35)"
+      "a already declared (line 1, column 35 (offset: 34))"
     )
   }
 
@@ -211,28 +212,28 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
   test("type of identifier is wrong") {
     expectError(
       "match (n) where id(n) = 0 with [n] as users MATCH users-->messages RETURN messages",
-      "Type mismatch: users already defined with conflicting type Collection<Node> (expected Node) (line 1, column 51)"
+      "Type mismatch: users already defined with conflicting type Collection<Node> (expected Node) (line 1, column 51 (offset: 50))"
     )
   }
 
   test("warn about exclamation mark") {
     expectError(
       "match (n) where id(n) = 0 and n.foo != 2 return n",
-      "Unknown operation '!=' (you probably meant to use '<>', which is the operator for inequality testing) (line 1, column 37)"
+      "Unknown operation '!=' (you probably meant to use '<>', which is the operator for inequality testing) (line 1, column 37 (offset: 36))"
     )
   }
 
   test("warn about type error") {
     expectError(
       "match (p) where id(p) = 0 MATCH p-[r*]->() WHERE r.foo = 'apa' RETURN r",
-      "Type mismatch: expected Map, Node or Relationship but was Collection<Relationship> (line 1, column 50)"
+      "Type mismatch: expected Map, Node or Relationship but was Collection<Relationship> (line 1, column 50 (offset: 49))"
     )
   }
 
   test("missing something to delete") {
     expectError(
       "match (p) where id(p) = 0 DELETE x",
-      "x not defined (line 1, column 34)"
+      "x not defined (line 1, column 34 (offset: 33))"
     )
   }
 
@@ -252,14 +253,14 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
          match (a) where id(a) = 0 RETURN a
          UNION ALL
          match (a) where id(a) = 0 RETURN a""",
-      "Invalid combination of UNION and UNION ALL (line 4, column 10)"
+      "Invalid combination of UNION and UNION ALL (line 4, column 10 (offset: 103))"
     )
   }
 
   test("can not use optional pattern as predicate") {
     expectError(
       "match (a) where id(a) = 1 RETURN a-[?]->()",
-      "Optional relationships cannot be specified in this context (line 1, column 35)"
+      "Optional relationships cannot be specified in this context (line 1, column 35 (offset: 34))"
     )
   }
 
@@ -353,20 +354,20 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
   }
 
   test("should forbid using same introduced relationship twice in one MATCH pattern") {
-    expectError("match (a)-[r]->(b)-[r]-(c) return r", "Cannot use the same relationship identifier 'r' for multiple patterns (line 1, column 21)")
+    expectError("match (a)-[r]->(b)-[r]-(c) return r", "Cannot use the same relationship identifier 'r' for multiple patterns (line 1, column 21 (offset: 20))")
   }
 
   test("should not allow binding a path name that is already bound") {
     expectError(
       "match p = a with p,a match p = a-->b return a",
-      "p already declared (line 1, column 28)\n\"match p = a with p,a match p = a-->b return a"
+      "p already declared (line 1, column 28 (offset: 27))"
     )
   }
 
   test("should forbid using duplicate ids in return/with") {
     expectError(
       "return 1, 1",
-      "Multiple result columns with the same name are not supported (line 1, column 8)"
+      "Multiple result columns with the same name are not supported (line 1, column 8 (offset: 7))"
     )
   }
 

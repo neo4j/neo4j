@@ -19,10 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{ASTNode, ASTAnnotationMap}
-import helpers.{TreeZipper, TreeElem}
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.ASTAnnotationMap
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.{TreeElem, TreeZipper}
+import org.neo4j.cypher.internal.compiler.v2_2.symbols._
+
 import scala.collection.immutable.HashMap
+
+// A symbol use represents the occurrence of a symbol at a position
+case class SymbolUse(name: String, position: InputPosition) {
+  override def toString = s"SymbolUse($nameWithPosition)"
+
+  def nameWithPosition = s"$name@${position.offset}"
+}
 
 // A symbol collects all uses of a position within the current scope and
 // up to the originally defining scope together with type information
@@ -33,7 +41,12 @@ import scala.collection.immutable.HashMap
 // s3.localSymbol(n) = Symbol(n, Seq(1, 2), type(n))
 // s4.localSymbol(n) = Symbol(n, Seq(1, 2, 3), type(n))
 //
-case class Symbol(name: String, positions: Set[InputPosition], types: TypeSpec)
+case class Symbol(name: String, positions: Set[InputPosition], types: TypeSpec) {
+  if (positions.isEmpty)
+    throw new InternalException(s"Cannot create empty symbol with name '$name'")
+
+  val definition = SymbolUse(name, positions.toSeq.min(InputPosition.byOffset))
+}
 
 case class ExpressionTypeInfo(specified: TypeSpec, expected: Option[TypeSpec] = None) {
   lazy val actualUnCoerced = expected.fold(specified)(specified intersect)
@@ -49,6 +62,12 @@ object Scope {
 }
 
 case class Scope(symbolTable: Map[String, Symbol], children: Seq[Scope]) extends TreeElem[Scope] {
+
+  symbolTable.collect {
+    case (k, v) if k != v.name =>
+      throw new InternalException(s"Malformed symbol table entry $k -> $v")
+  }
+
   override def updateChildren(newChildren: Seq[Scope]): Scope = copy(children = newChildren)
 
   def isEmpty: Boolean = symbolTable.isEmpty
@@ -64,6 +83,54 @@ case class Scope(symbolTable: Map[String, Symbol], children: Seq[Scope]) extends
 
   def updateIdentifier(identifier: String, types: TypeSpec, positions: Set[InputPosition]) =
     copy(symbolTable = symbolTable.updated(identifier, Symbol(identifier, positions, types)))
+
+  def allSymbolDefinitions: Map[String, Set[SymbolUse]] = {
+    val allScopes1 = allScopes
+    allScopes1.foldLeft(Map.empty[String, Set[SymbolUse]]) {
+      case (acc0, scope) =>
+        scope.symbolDefinitions.foldLeft(acc0) {
+          case (acc, symDef) if acc.contains(symDef.name) =>
+            acc.updated(symDef.name, acc(symDef.name) + symDef)
+          case (acc, symDef) =>
+            acc.updated(symDef.name, Set(symDef))
+        }
+    }
+  }
+
+  def symbolDefinitions: Set[SymbolUse] =
+    symbolTable.values.map(_.definition).toSet
+
+  def allIdentifierDefinitions: Map[SymbolUse, SymbolUse] =
+    allScopes.map(_.identifierDefinitions).reduce(_ ++ _)
+
+  def identifierDefinitions: Map[SymbolUse, SymbolUse] =
+    symbolTable.values.flatMap { symbol =>
+      val name = symbol.name
+      val definition = symbol.definition
+      symbol.positions.map { pos => SymbolUse(name, pos) -> definition }
+    }.toMap
+
+  def allScopes: Seq[Scope] =
+    Seq(this) ++ children.flatMap(_.allScopes)
+
+  override def toString: String = {
+    val builder = new StringBuilder()
+    dump("", builder)
+    builder.toString()
+  }
+
+  private def dump(indent: String, builder: StringBuilder): Unit = {
+    symbolTable.keys.toSeq.sorted.foreach { key =>
+      val symbol = symbolTable(key)
+      val symbolText = symbol.positions.map(_.offset).toSeq.sorted.mkString(" ")
+      builder.append(s"$indent$key: $symbolText\n")
+    }
+    children.foreach { child =>
+      builder.append(s"$indent{\n")
+      child.dump(s"\t$indent", builder)
+      builder.append(s"$indent}\n")
+    }
+  }
 }
 
 
@@ -92,9 +159,11 @@ object SemanticState {
       location.replace(scope.updateIdentifier(identifier, types, positions))
   }
 }
-import SemanticState.ScopeLocation
+import org.neo4j.cypher.internal.compiler.v2_2.SemanticState.ScopeLocation
 
-case class SemanticState(currentScope: ScopeLocation, typeTable: ASTAnnotationMap[ast.Expression, ExpressionTypeInfo], recordedScopes: ASTAnnotationMap[ast.ASTNode, Scope]) {
+case class SemanticState(currentScope: ScopeLocation,
+                         typeTable: ASTAnnotationMap[ast.Expression, ExpressionTypeInfo],
+                         recordedScopes: ASTAnnotationMap[ast.ASTNode, Scope]) {
   def scopeTree = currentScope.rootScope
 
   def newChildScope = copy(currentScope = currentScope.newChildScope)
@@ -166,7 +235,4 @@ case class SemanticState(currentScope: ScopeLocation, typeTable: ASTAnnotationMa
 
   def scope(astNode: ast.ASTNode): Option[Scope] =
     recordedScopes.get(astNode)
-
-  def scopeSymbolsTable: ASTAnnotationMap[ASTNode, Set[String]] =
-    recordedScopes.mapValues(_.symbolNames)
 }

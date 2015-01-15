@@ -27,10 +27,10 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.StatementCon
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{Expression, Identifier, NodeStartItem, RelTypeName}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{AggregationExpression, Expression => CommandExpression}
-import org.neo4j.cypher.internal.compiler.v2_2.commands.{Predicate => CommandPredicate, Equals, EntityProducerFactory, True}
+import org.neo4j.cypher.internal.compiler.v2_2.commands.{EntityProducerFactory, True, Predicate => CommandPredicate}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{PipeInfo, PlanFingerprint}
-import org.neo4j.cypher.internal.compiler.v2_2.pipes._
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.{LazyTypes, _}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityInput
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
@@ -38,9 +38,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.{CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.helpers.Eagerly
-import org.neo4j.graphdb.{Direction, Relationship}
+import org.neo4j.graphdb.Relationship
 import org.neo4j.helpers.Clock
-import org.neo4j.cypher.internal.compiler.v2_2.pipes.LazyTypes
 
 case class PipeExecutionBuilderContext(cardinality: Metrics.CardinalityModel, semanticTable: SemanticTable)
 
@@ -184,7 +183,7 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
         case Aggregation(source, groupingExpressions, aggregatingExpressions) =>
           EagerAggregationPipe(
             buildPipe(source, input),
-            Eagerly.immutableMapValues[String, ast.Expression, commands.expressions.Expression](groupingExpressions, x => x.asCommandExpression),
+            groupingExpressions.keySet,
             Eagerly.immutableMapValues[String, ast.Expression, AggregationExpression](aggregatingExpressions, x => x.asCommandExpression.asInstanceOf[AggregationExpression])
           )()
 
@@ -224,15 +223,6 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
 
       def apply(that: AnyRef): AnyRef = bottomUp(instance).apply(that)
     }
-
-    def buildExpandPipe(types: Seq[RelTypeName], left: Pipe, fromName: String, relName: String, toName: String, dir: Direction, mode: ExpansionMode)
-                       (implicit table: SemanticTable, monitor: PipeMonitor) =
-      mode match {
-        case ExpandAll =>
-          ExpandAllPipe(left, fromName, relName, toName, dir, LazyTypes(types))()
-        case ExpandInto =>
-          ExpandIntoPipe(left, fromName, relName, toName, dir, LazyTypes(types))()
-      }
 
     def buildExpression(expr: ast.Expression): CommandExpression = {
       val rewrittenExpr = expr.endoRewrite(buildPipeExpressions)

@@ -20,17 +20,19 @@
 package org.neo4j.cypher.internal.compiler.v2_2
 
 case class InputPosition(offset: Int, line: Int, column: Int) {
+
   override def hashCode = 41 * offset
+
   override def equals(that: Any): Boolean = that match {
     case that: InputPosition =>
       (that canEqual this) && offset == that.offset
     case _ =>
       false
   }
+
   def canEqual(that: Any): Boolean = that.isInstanceOf[InputPosition]
 
-  // override def toString = s"line $line, column $column (offset: $offset)"
-  override def toString = s"line $line, column $column"
+  override def toString = s"line $line, column $column (offset: $offset)"
 }
 
 object InputPosition {

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{AggregationExpression, Expression}
+import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.AggregationExpression
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects._
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.aggregation.AggregationFunction
@@ -32,19 +32,17 @@ import scala.collection.mutable.{Map => MutableMap}
 // Eager aggregation means that this pipe will eagerly load the whole resulting sub graphs before starting
 // to emit aggregated results.
 // Cypher is lazy until it can't - this pipe will eagerly load the full match
-case class EagerAggregationPipe(source: Pipe, keyExpressions: Map[String, Expression], aggregations: Map[String, AggregationExpression])
+case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggregations: Map[String, AggregationExpression])
                                (val estimatedCardinality: Option[Long] = None)
                                (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
   val symbols: SymbolTable = createSymbols()
 
   private def createSymbols() = {
-    val typeExtractor: ((String, Expression)) => (String, CypherType) = {
+    val keyIdentifiers = keyExpressions.map(id => id -> source.symbols.evaluateType(id, CTAny)).toMap
+    val aggrIdentifiers = aggregations.map {
       case (id, exp) => id -> exp.getType(source.symbols)
     }
-
-    val keyIdentifiers = keyExpressions.map(typeExtractor)
-    val aggrIdentifiers = aggregations.map(typeExtractor)
 
     SymbolTable(keyIdentifiers ++ aggrIdentifiers)
   }
@@ -52,7 +50,7 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Map[String, Expres
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
     // This is the temporary storage used while the aggregation is going on
     val result = MutableMap[NiceHasher, (ExecutionContext, Seq[AggregationFunction])]()
-    val keyNames: Seq[String] = keyExpressions.map(_._1).toSeq
+    val keyNames: Seq[String] = keyExpressions.toSeq
     val aggregationNames: Seq[String] = aggregations.map(_._1).toSeq
     val mapSize = keyNames.size + aggregationNames.size
 
@@ -65,15 +63,15 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Map[String, Expres
       //add aggregated values
       (aggregationNames zip aggregator.map(_.result)).foreach(newMap += _)
 
-      ctx.newFromMutableMap( newMap )
+      ctx.newFromMutableMap(newMap)
     }
 
-    def createEmptyResult(params:Map[String,Any]): Iterator[ExecutionContext] = {
+    def createEmptyResult(params: Map[String, Any]): Iterator[ExecutionContext] = {
       val newMap = MutableMaps.empty
       val aggregationNamesAndFunctions = aggregationNames zip aggregations.map(_._2.createAggregationFunction.result)
 
       aggregationNamesAndFunctions.toMap
-        .foreach { case (name, zeroValue) => newMap += name -> zeroValue  }
+        .foreach { case (name, zeroValue) => newMap += name -> zeroValue}
       Iterator.single(ExecutionContext(newMap))
     }
 
@@ -93,7 +91,7 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Map[String, Expres
     }
   }
 
-  def planDescription = source.planDescription.andThen(this, "EagerAggregation", identifiers, Arguments.KeyNames(keyExpressions.keys.toSeq))
+  def planDescription = source.planDescription.andThen(this, "EagerAggregation", identifiers, Arguments.KeyNames(keyExpressions.toSeq))
 
   override def effects = Effects.NONE
 
@@ -102,7 +100,7 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Map[String, Expres
     copy(source = source)(estimatedCardinality)
   }
 
-  override def localEffects = keyExpressions.effects
+  override def localEffects = aggregations.effects
 
   def withEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
 }

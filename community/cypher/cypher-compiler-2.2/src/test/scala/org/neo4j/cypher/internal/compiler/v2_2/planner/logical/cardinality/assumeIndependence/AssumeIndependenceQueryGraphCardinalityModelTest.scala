@@ -202,7 +202,6 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
       "MATCH (:A)-[r1:T1]->(:A)-[r2:T1]->(:B)-[r3:T1]->(:B)-[r4:T2]->(c:C)"
         -> A * A * B * B * C * A_T1_A_sel * A_T1_B_sel * B_T1_B_sel * B_T2_C_sel *
         Math.pow(DEFAULT_REL_UNIQUENESS_SELECTIVITY, 4)
-
     )
 
     forAll(queries) { (q: String, expected: Double) =>
