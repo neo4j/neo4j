@@ -24,11 +24,13 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import org.apache.commons.configuration.CompositeConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.MapConfiguration;
 
 import org.neo4j.desktop.config.Installation;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
@@ -70,14 +72,19 @@ public class DesktopConfigurator implements Configurator
     @Override
     public Map<String, String> getDatabaseTuningProperties()
     {
+        Map<String,String> databaseProperties = null;
         try
         {
-            return load( getDatabaseConfigurationFile() );
+            databaseProperties = new HashMap<>( load( getDatabaseConfigurationFile() ) );
         }
         catch ( IOException e )
         {
-            return stringMap();
+            databaseProperties = stringMap();
         }
+
+        String storeDir = getDatabaseDirectory();
+        databaseProperties.put( GraphDatabaseSettings.store_dir.name(), storeDir );
+        return databaseProperties;
     }
 
     @Override
