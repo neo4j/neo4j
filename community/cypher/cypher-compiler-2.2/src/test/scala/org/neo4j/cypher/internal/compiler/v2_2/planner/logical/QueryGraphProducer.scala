@@ -31,18 +31,21 @@ trait QueryGraphProducer extends MockitoSugar {
 
   import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.StatementConverters._
 
-  def producePlannerQueryForPattern(query: String): PlannerQuery = {
-    val q = query + " RETURN 1"
+  def producePlannerQueryForPattern(query: String): (PlannerQuery, SemanticTable) = {
+    val q = query + " RETURN 1 AS Result"
     val ast = parser.parse(q)
     val semanticChecker = new SemanticChecker(mock[SemanticCheckMonitor])
     val cleanedStatement: Statement = ast.endoRewrite(inSequence(normalizeReturnClauses, normalizeWithClauses))
     val semanticState = semanticChecker.check(query, cleanedStatement)
 
     val firstRewriteStep = astRewriter.rewrite(query, cleanedStatement, semanticState)._1
-    val (rewrittenAst: Statement, _) = Planner.rewriteStatement(firstRewriteStep, semanticState.scopeTree, SemanticTable(types = semanticState.typeTable))
-    rewrittenAst.asInstanceOf[Query].asUnionQuery.queries.head
+    val semanticTable = SemanticTable(types = semanticState.typeTable, recordedScopes = semanticState.recordedScopes)
+    val (rewrittenAst, rewrittenTable) = Planner.rewriteStatement(firstRewriteStep, semanticState.scopeTree, semanticTable)
+    (rewrittenAst.asInstanceOf[Query].asUnionQuery.queries.head, rewrittenTable)
   }
 
-  def produceQueryGraphForPattern(query: String): QueryGraph =
-    producePlannerQueryForPattern(query).lastQueryGraph
+  def produceQueryGraphForPattern(query: String): (QueryGraph, SemanticTable) = {
+    val (plannerQuery, table) = producePlannerQueryForPattern(query)
+    (plannerQuery.lastQueryGraph, table)
+  }
 }

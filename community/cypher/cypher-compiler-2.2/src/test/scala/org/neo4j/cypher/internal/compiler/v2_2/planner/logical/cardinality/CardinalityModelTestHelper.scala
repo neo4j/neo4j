@@ -40,8 +40,8 @@ trait CardinalityModelTestHelper extends CardinalityTestHelper {
 
       val (statistics, semanticTable) = testUnit.prepareTestContext
 
-      val queryGraph = testUnit.createQueryGraph()
-      val cardinalityModel: QueryGraphCardinalityModel = createCardinalityModel(statistics, semanticTable)
+      val (queryGraph, rewrittenSemanticTable) = testUnit.createQueryGraph(semanticTable)
+      val cardinalityModel: QueryGraphCardinalityModel = createCardinalityModel(statistics, rewrittenSemanticTable)
       val result = cardinalityModel(queryGraph, QueryGraphCardinalityInput(Map.empty, Cardinality(1)))
       result should equal(Cardinality(number))
     }
@@ -49,11 +49,11 @@ trait CardinalityModelTestHelper extends CardinalityTestHelper {
     def shouldHavePlannerQueryCardinality(f: QueryGraphCardinalityModel => Metrics.CardinalityModel)(number: Double) {
       import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.CardinalitySupport.Eq
 
-      implicit val (statistics, semanticTable) = testUnit.prepareTestContext
+      val (statistics, semanticTable) = testUnit.prepareTestContext
 
       val graphCardinalityModel = createCardinalityModel(statistics, semanticTable)
       val cardinalityModelUnderTest = f(graphCardinalityModel)
-      val plannerQuery: PlannerQuery = producePlannerQueryForPattern(testUnit.query)
+      val (plannerQuery, _) = producePlannerQueryForPattern(testUnit.query)
       val plan = newMockedLogicalPlanWithSolved(Set.empty, plannerQuery)
       cardinalityModelUnderTest(plan, QueryGraphCardinalityInput.empty) should equal(Cardinality(number))
     }

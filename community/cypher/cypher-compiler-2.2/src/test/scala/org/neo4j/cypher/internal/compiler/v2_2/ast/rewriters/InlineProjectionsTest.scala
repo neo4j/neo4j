@@ -374,14 +374,10 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
       """match n where id(n) IN [0,1,2,3]
         |with n.division AS `n.division`, max(n.age) AS `max(n.age)`
         |with `n.division` AS `n.division`, `max(n.age)` AS `max(n.age)`
-        |RETURN `n.division` AS `n.division`, `max(n.age)` AS `max(n.age)` order by `max(n.age)`
+        |with `n.division` AS `n.division`, `max(n.age)` AS `  FRESHID194` order by `  FRESHID194`
+        |RETURN `n.division` AS `n.division`, `  FRESHID194` AS `max(n.age)`
       """.stripMargin ))
   }
-
-  private def parseReturnedExpr(queryText: String) =
-    projectionInlinedAst(queryText) match {
-      case Query(_, SingleQuery(Seq(_, Return(_, ReturnItems(_, Seq(AliasedReturnItem(expr, Identifier("p")))), _, _, _)))) => expr
-    }
 
   private def projectionInlinedAst(queryText: String) = ast(queryText).endoRewrite(inlineProjections)
 

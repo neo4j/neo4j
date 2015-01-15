@@ -101,10 +101,6 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
           ShortestPathPattern(Some(IdName("p")), PatternRelationship("r", ("a", "c"), Direction.OUTGOING, Seq.empty, SimplePatternLength), single = true)(null))(PlannerQuery.empty),
         Map("p" -> Identifier("p") _))(PlannerQuery.empty)
 
-
-
-        println (result)
-
     result should equal(expected)
   }
 }

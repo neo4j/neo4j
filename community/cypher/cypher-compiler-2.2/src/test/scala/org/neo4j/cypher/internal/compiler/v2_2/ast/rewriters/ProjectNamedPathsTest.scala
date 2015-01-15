@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.AstRewritingTestSupport
 import org.neo4j.cypher.internal.compiler.v2_2.{SemanticState, inSequence}
-import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.graphdb.Direction
 
 class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport {
@@ -82,12 +82,96 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
   }
 
   test("MATCH p = (b)<-[r*]-(a) RETURN p AS p" ) {
-    val returns = parseReturnedExpr("MATCH p = (b)<-[r*]-(a) RETURN p")
+    val returns = parseReturnedExpr("MATCH p = (b)<-[r*]-(a) RETURN p AS p")
 
     val expected = PathExpression(
       NodePathStep(Identifier("b")_, MultiRelationshipPathStep(Identifier("r")_, Direction.INCOMING, NilPathStep))
     )_
 
     returns should equal(expected: PathExpression)
+  }
+
+  test("MATCH p = (a)-[r]->(b) RETURN p, 42 as order ORDER BY order") {
+    val rewritten = projectionInlinedAst("MATCH p = (a)-[r]->(b) RETURN p, 42 as order ORDER BY order")
+
+    val aId = Identifier("a")(pos)
+    val fresh30: Identifier = Identifier("  FRESHID30")(pos)
+    val fresh33: Identifier = Identifier("  FRESHID33")(pos)
+    val orderId: Identifier = Identifier("order")(pos)
+    val rId = Identifier("r")(pos)
+    val pId = Identifier("p")(pos)
+    val bId = Identifier("b")(pos)
+
+    val MATCH =
+      Match(optional = false,
+        Pattern(List(
+          EveryPath(
+            RelationshipChain(
+              NodePattern(Some(aId), List(), None, naked = false)(pos),
+              RelationshipPattern(Some(rId), optional = false, List(), None, None, Direction.OUTGOING)(pos), NodePattern(Some(bId), List(), None, naked = false)(pos)
+            )(pos))
+        ))(pos), List(), None)(pos)
+
+    val WITH =
+      With(distinct = false,
+        ReturnItems(includeExisting = false, Seq(
+          AliasedReturnItem(PathExpression(NodePathStep(aId, SingleRelationshipPathStep(rId, Direction.OUTGOING, NilPathStep)))(pos), fresh30)(pos),
+          AliasedReturnItem(SignedDecimalIntegerLiteral("42")(pos), fresh33)(pos)
+        ))(pos),
+        Some(OrderBy(List(AscSortItem(fresh33)(pos)))(pos)),
+        None, None, None
+      )(pos)
+
+
+    val RETURN =
+      Return(distinct = false,
+        ReturnItems(includeExisting = false, List(
+          AliasedReturnItem(fresh30, pId)(pos),
+          AliasedReturnItem(fresh33, orderId)(pos)
+        ))(pos),
+        None, None, None
+      )(pos)
+
+    val expected: Query = Query(None, SingleQuery(List(MATCH, WITH, RETURN))(pos))(pos)
+
+    rewritten should equal(expected)
+  }
+
+  test("MATCH p = (a)-[r]->(b) WHERE length(p) > 10 RETURN 1") {
+    val rewritten = projectionInlinedAst("MATCH p = (a)-[r]->(b) WHERE length(p) > 10 RETURN 1 as x")
+
+    val aId = Identifier("a")(pos)
+    val rId = Identifier("r")(pos)
+    val bId = Identifier("b")(pos)
+
+    val WHERE =
+      Where(
+        GreaterThan(
+          FunctionInvocation(FunctionName("length")(pos), PathExpression(NodePathStep(aId, SingleRelationshipPathStep(rId, Direction.OUTGOING, NilPathStep)))(pos))(pos),
+          SignedDecimalIntegerLiteral("10")(pos)
+        )(pos)
+      )(pos)
+
+    val MATCH =
+      Match(optional = false,
+        Pattern(List(
+          EveryPath(
+            RelationshipChain(
+              NodePattern(Some(aId), List(), None, naked = false)(pos),
+              RelationshipPattern(Some(rId), optional = false, List(), None, None, Direction.OUTGOING)(pos), NodePattern(Some(bId), List(), None, naked = false)(pos)
+            )(pos))
+        ))(pos), List(), Some(WHERE))(pos)
+
+    val RETURN =
+      Return(distinct = false,
+        ReturnItems(includeExisting = false, List(
+          AliasedReturnItem(SignedDecimalIntegerLiteral("1")(pos), Identifier("x")(pos))(pos)
+        ))(pos),
+        None, None, None
+      )(pos)
+
+    val expected: Query = Query(None, SingleQuery(List(MATCH, RETURN))(pos))(pos)
+
+    rewritten should equal(expected)
   }
 }

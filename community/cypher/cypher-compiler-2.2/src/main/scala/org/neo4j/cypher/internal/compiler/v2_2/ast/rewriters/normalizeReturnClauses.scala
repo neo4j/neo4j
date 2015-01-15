@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.FreshIdNameGenerator
-import org.neo4j.cypher.internal.compiler.v2_2.{Rewriter, bottomUp, topDown}
+import org.neo4j.cypher.internal.compiler.v2_2.{Rewriter, bottomUp}
 
 /**
  * This rewriter makes sure that all return items in a RETURN clauses are aliased, and moves
@@ -35,8 +35,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.{Rewriter, bottomUp, topDown}
  * This rewrite will change the query to:
  *
  * MATCH (n)
- * WITH n.foo AS foo, n.bar AS `  FRESHIDnn` ORDER BY foo
- * RETURN foo AS foo, `  FRESHIDnn` AS `n.bar`
+ * WITH n.foo AS `  FRESHIDxx`, n.bar AS `  FRESHIDnn` ORDER BY `  FRESHIDxx`
+ * RETURN `  FRESHIDxx` AS foo, `  FRESHIDnn` AS `n.bar`
  */
 case object normalizeReturnClauses extends Rewriter {
 
@@ -56,18 +56,31 @@ case object normalizeReturnClauses extends Rewriter {
       )
 
     case clause @ Return(distinct, ri, orderBy, skip, limit) =>
-      val (aliasProjection, finalProjection) = ri.items.map(i => {
-        val newPosition = i.expression.position.copy(offset = i.expression.position.offset + 1)
-        if (i.alias.isDefined) {
-          (i, AliasedReturnItem(i.alias.get, i.alias.get.copy()(newPosition))(i.position))
-        } else {
+      var rewrites = Map[Expression, Expression]()
+
+      val (aliasProjection, finalProjection) = ri.items.map {
+        i =>
+          val newPosition = i.expression.position.copy(offset = i.expression.position.offset + 1)
+
+          val returnColumn = i.alias match {
+            case Some(alias) => alias
+            case None        => Identifier(i.name)(newPosition)
+          }
+
           val newIdentifier = Identifier(FreshIdNameGenerator.name(i.expression.position))(i.position)
-          (AliasedReturnItem(i.expression, newIdentifier)(i.position), AliasedReturnItem(newIdentifier, Identifier(i.name)(newPosition))(i.position))
-        }
-      }).unzip
+
+          rewrites = rewrites + (returnColumn -> newIdentifier)
+          rewrites = rewrites + (i.expression -> newIdentifier)
+
+          (AliasedReturnItem(i.expression, newIdentifier)(i.position), AliasedReturnItem(newIdentifier, returnColumn)(i.position))
+      }.unzip
+
+      val newOrderBy = orderBy.endoRewrite(bottomUp(Rewriter.lift {
+        case exp: Expression if rewrites.contains(exp) => rewrites(exp)
+      }))
 
       Seq(
-        With(distinct = distinct, returnItems = ri.copy(items = aliasProjection)(ri.position), orderBy = orderBy, skip = skip, limit = limit, where = None)(clause.position),
+        With(distinct = distinct, returnItems = ri.copy(items = aliasProjection)(ri.position), orderBy = newOrderBy, skip = skip, limit = limit, where = None)(clause.position),
         Return(distinct = false, returnItems = ri.copy(items = finalProjection)(ri.position), orderBy = None, skip = None, limit = None)(clause.position)
       )
 

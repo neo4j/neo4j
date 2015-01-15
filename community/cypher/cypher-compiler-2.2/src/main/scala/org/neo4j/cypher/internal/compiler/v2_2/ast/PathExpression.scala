@@ -40,7 +40,7 @@ final case class MultiRelationshipPathStep(rel: Identifier, direction: Direction
   val dependencies = next.dependencies + rel
 }
 
-object NilPathStep extends PathStep {
+case object NilPathStep extends PathStep {
   def dependencies = Set.empty[Identifier]
 }
 

@@ -27,7 +27,9 @@ case object addUniquenessPredicates extends Rewriter {
 
   def apply(that: AnyRef): AnyRef = bottomUp(instance).apply(that)
 
-  case class UniqueRel(name: String, types: Set[RelTypeName]) {
+  case class UniqueRel(identifier: Identifier, types: Set[RelTypeName]) {
+    def name = identifier.name
+
     def isAlwaysDifferentFrom(other: UniqueRel) =
       types.nonEmpty && other.types.nonEmpty && (types intersect other.types).isEmpty
   }
@@ -39,10 +41,10 @@ case object addUniquenessPredicates extends Rewriter {
         case _: ShortestPaths =>
           (acc, _) => acc
 
-        case RelationshipChain(_, RelationshipPattern(r, _, types, None, _, _), _) =>
+        case RelationshipChain(_, RelationshipPattern(optR, _, types, None, _, _), _) =>
           (acc, children) => {
-            val relName: String = r.getOrElse(throw new InternalException("This rewriter cannot work with unnamed patterns")).name
-            val rel = UniqueRel(relName, types.toSet)
+            val r = optR.getOrElse(throw new InternalException("This rewriter cannot work with unnamed patterns"))
+            val rel = UniqueRel(r, types.toSet)
             children(acc :+ rel)
           }
       }
@@ -68,7 +70,7 @@ case object addUniquenessPredicates extends Rewriter {
     val predicates: Seq[Expression] = for {
       x <- uniqueRels
       y <- uniqueRels if x.name < y.name && !x.isAlwaysDifferentFrom(y)
-    } yield NotEquals(Identifier(x.name)(pos), Identifier(y.name)(pos))(pos)
+    } yield NotEquals(x.identifier, y.identifier)(pos)
 
     predicates.reduceOption(And(_, _)(pos))
   }

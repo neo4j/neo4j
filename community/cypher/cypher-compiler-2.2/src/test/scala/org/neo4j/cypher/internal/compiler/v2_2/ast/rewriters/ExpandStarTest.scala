@@ -73,6 +73,10 @@ class ExpandStarTest extends CypherFunSuite {
       "match n-[r]->c with c,n,r return n")
 
     assertRewrite(
+      "match n-[r]->c with *, r.pi as x return n",
+      "match n-[r]->c with c, n, r, r.pi as x return n")
+
+    assertRewrite(
       "create (n) with * return n",
       "create (n) with n return n")
 
