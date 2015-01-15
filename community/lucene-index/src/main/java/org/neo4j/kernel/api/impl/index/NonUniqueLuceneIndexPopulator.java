@@ -24,9 +24,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.PreparedIndexUpdates;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.util.FailureStorage;
 
@@ -38,10 +40,10 @@ class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
 
     NonUniqueLuceneIndexPopulator( int queueThreshold, LuceneDocumentStructure documentStructure,
                                    LuceneIndexWriterFactory indexWriterFactory,
-                                   IndexWriterStatus writerStatus, DirectoryFactory dirFactory, File dirFile,
+                                   DirectoryFactory dirFactory, File dirFile,
                                    FailureStorage failureStorage, long indexId )
     {
-        super( documentStructure, indexWriterFactory, writerStatus, dirFactory, dirFile, failureStorage, indexId );
+        super( documentStructure, indexWriterFactory, dirFactory, dirFile, failureStorage, indexId );
         this.queueThreshold = queueThreshold;
     }
 
@@ -63,24 +65,13 @@ class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
         return new IndexUpdater()
         {
             @Override
-            public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+            public PreparedIndexUpdates prepare( Iterable<NodePropertyUpdate> updatesToPrepare )
             {
-                updates.add( update );
+                return new NonUniqueIndexPreparedUpdates( updatesToPrepare );
             }
 
             @Override
-            public void close() throws IOException, IndexEntryConflictException
-            {
-                if ( updates.size() > queueThreshold )
-                {
-                    flush();
-                    updates.clear();
-                }
-
-            }
-
-            @Override
-            public void remove( Iterable<Long> nodeIds ) throws IOException
+            public void remove( Iterable<Long> nodeIds )
             {
                 throw new UnsupportedOperationException( "Should not remove() from populating index." );
             }
@@ -108,6 +99,33 @@ class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
             default:
                 throw new IllegalStateException( "Unknown update mode " + update.getUpdateMode() );
             }
+        }
+    }
+
+    private class NonUniqueIndexPreparedUpdates implements PreparedIndexUpdates
+    {
+        final Iterable<NodePropertyUpdate> updatesToPrepare;
+
+        NonUniqueIndexPreparedUpdates( Iterable<NodePropertyUpdate> updatesToPrepare )
+        {
+            this.updatesToPrepare = updatesToPrepare;
+        }
+
+        @Override
+        public void commit() throws IOException, IndexEntryConflictException
+        {
+            Iterables.addAll( updates, updatesToPrepare );
+
+            if ( updates.size() > queueThreshold )
+            {
+                flush();
+                updates.clear();
+            }
+        }
+
+        @Override
+        public void rollback()
+        {
         }
     }
 }

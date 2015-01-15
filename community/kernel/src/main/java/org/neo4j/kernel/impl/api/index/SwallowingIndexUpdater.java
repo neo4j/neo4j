@@ -19,30 +19,22 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.io.IOException;
-
-import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.PreparedIndexUpdates;
 
 public final class SwallowingIndexUpdater implements IndexUpdater
 {
-    public static final IndexUpdater INSTANCE = new org.neo4j.kernel.impl.api.index.SwallowingIndexUpdater();
+    public static final IndexUpdater INSTANCE = new SwallowingIndexUpdater();
 
-    public SwallowingIndexUpdater()
+    private SwallowingIndexUpdater()
     {
     }
 
     @Override
-    public void process( NodePropertyUpdate update )
+    public PreparedIndexUpdates prepare( Iterable<NodePropertyUpdate> updates )
     {
-        // intentionally swallow this update
-    }
-
-    @Override
-    public void close() throws IOException, IndexEntryConflictException
-    {
-        // nothing to close
+        return PreparedIndexUpdates.NO_UPDATES;
     }
 
     @Override

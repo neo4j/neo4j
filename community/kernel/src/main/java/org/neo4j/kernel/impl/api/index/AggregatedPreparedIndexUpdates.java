@@ -22,31 +22,47 @@ package org.neo4j.kernel.impl.api.index;
 import java.io.IOException;
 
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreparedIndexUpdates;
 
-public abstract class UniquePropertyIndexUpdater implements IndexUpdater
+class AggregatedPreparedIndexUpdates implements PreparedIndexUpdates
 {
-    @Override
-    public PreparedIndexUpdates prepare( final Iterable<NodePropertyUpdate> updates )
-            throws IOException, IndexEntryConflictException
-    {
-        return new PreparedIndexUpdates()
-        {
-            @Override
-            public void commit() throws IOException, IndexEntryConflictException
-            {
-                flushUpdates( updates );
-            }
+    private final PreparedIndexUpdates[] aggregates;
 
-            @Override
-            public void rollback()
-            {
-            }
-        };
+    AggregatedPreparedIndexUpdates( PreparedIndexUpdates[] aggregates )
+    {
+        this.aggregates = aggregates;
     }
 
-    protected abstract void flushUpdates( Iterable<NodePropertyUpdate> updates )
-            throws IOException, IndexEntryConflictException;
+    @Override
+    public void commit() throws IOException, IndexEntryConflictException
+    {
+        int lastCommittedIndex = -1;
+        try
+        {
+            for ( int i = 0; i < aggregates.length; i++ )
+            {
+                aggregates[i].commit();
+                lastCommittedIndex = i;
+            }
+        }
+        finally
+        {
+            if ( lastCommittedIndex != aggregates.length - 1 )
+            {
+                for ( int i = lastCommittedIndex + 1; i < aggregates.length; i++ )
+                {
+                    aggregates[i].rollback();
+                }
+            }
+        }
+    }
+
+    @Override
+    public void rollback()
+    {
+        for ( PreparedIndexUpdates aggregate : aggregates )
+        {
+            aggregate.rollback();
+        }
+    }
 }

@@ -19,15 +19,15 @@
  */
 package org.neo4j.unsafe.batchinsert;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -61,7 +61,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -89,6 +88,7 @@ public class TestLuceneBatchInsert
             index.add( id, map( "name", "Joe" + i, "other", "Schmoe" ) );
             ids.put( i, id );
         }
+        index.flush();
 
         for ( int i = 0; i < count; i++ )
         {
@@ -207,6 +207,7 @@ public class TestLuceneBatchInsert
         index.add( node1, map( "number", numeric( 45 ) ) );
         long node2 = inserter.createNode( null );
         index.add( node2, map( "number", numeric( 21 ) ) );
+        index.flush();
         assertContains( index.query( "number",
                 newIntRange( "number", 21, 50, true, true ) ), node1, node2 );
 
@@ -233,6 +234,7 @@ public class TestLuceneBatchInsert
         batchIndex.add( nodeId1, map( "number", new ValueContext[]{ numeric( 45 ), numeric( 98 ) } ) );
         long nodeId2 = inserter.createNode( null );
         batchIndex.add( nodeId2, map( "number", new ValueContext[]{ numeric( 47 ), numeric( 100 ) } ) );
+        batchIndex.flush();
 
         IndexHits<Long> batchIndexResult1 = batchIndex.query( "number", newIntRange( "number", 47, 98, true, true ) );
         assertThat( batchIndexResult1, contains(nodeId1, nodeId2));
@@ -344,8 +346,8 @@ public class TestLuceneBatchInsert
         props.put( "key", "value" );
         index.add( id, props );
         index.updateOrAdd( id, props );
-        assertEquals( 1, index.get( "key", "value" ).size() );
         index.flush();
+        assertEquals( 1, index.get( "key", "value" ).size() );
         props.put( "key", "value2" );
         index.updateOrAdd( id, props );
         index.flush();
@@ -414,6 +416,7 @@ public class TestLuceneBatchInsert
         BatchInserterIndex index = provider.nodeIndex( indexName, LuceneIndexImplementation.EXACT_CONFIG );
         String key = "name";
         index.add( 0, map( key, "Mattias" ) );
+        index.flush();
         provider.shutdown();
         shutdownInserter();
 
@@ -425,6 +428,7 @@ public class TestLuceneBatchInsert
         index.setCacheCapacity( key, 100000 );
         assertCacheIsEmpty( index, key );
         index.add( 1, map( key, "Persson" ) );
+        index.flush();
         assertCacheIsEmpty( index, key );
         assertEquals( 1, index.get( key, "Persson" ).getSingle().intValue() );
         provider.shutdown();

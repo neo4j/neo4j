@@ -173,10 +173,6 @@ public class IndexRecoveryIT
         verify( mockedIndexProvider, times( onlineAccessorInvocationCount ) )
                 .getOnlineAccessor( anyLong(), any( IndexConfiguration.class ) );
         assertEquals( expectedUpdates, writer.recoveredUpdates );
-        for ( NodePropertyUpdate update : writer.recoveredUpdates )
-        {
-            assertTrue( writer.recoveredNodes.contains( update.getNodeId() ) );
-        }
     }
 
     @Test
@@ -336,7 +332,7 @@ public class IndexRecoveryIT
             return new CollectingIndexUpdater()
             {
                 @Override
-                public void close() throws IOException, IndexEntryConflictException
+                public void flush() throws IOException, IndexEntryConflictException
                 {
                     switch (mode)
                     {

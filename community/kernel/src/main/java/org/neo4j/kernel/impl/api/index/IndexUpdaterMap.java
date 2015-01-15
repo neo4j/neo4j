@@ -19,19 +19,13 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.io.IOException;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.impl.nioneo.store.MultipleUnderlyingStorageExceptions;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 
 /**
@@ -43,7 +37,7 @@ import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
  * All updaters retrieved from this map must be either closed manually or handle duplicate calls to close
  * or must all be closed indirectly by calling close on this updater map.
  */
-public class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
+public class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater> // TODO: AutoCloseable???
 {
     private final IndexUpdateMode indexUpdateMode;
     private final IndexMap indexMap;
@@ -73,35 +67,6 @@ public class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
 
     @Override
     public void close() throws UnderlyingStorageException
-    {
-        Set<Pair<IndexDescriptor, UnderlyingStorageException>> exceptions = null;
-
-        for ( Map.Entry<IndexDescriptor, IndexUpdater> updaterEntry : updaterMap.entrySet() )
-        {
-            IndexUpdater updater = updaterEntry.getValue();
-            try
-            {
-                updater.close();
-            }
-            catch ( IOException | IndexEntryConflictException e )
-            {
-                if ( null == exceptions )
-                {
-                    exceptions = new HashSet<>();
-                }
-                exceptions.add( Pair.of( updaterEntry.getKey(), new UnderlyingStorageException( e ) ) );
-            }
-        }
-
-        clear();
-
-        if ( null != exceptions )
-        {
-            throw new MultipleUnderlyingStorageExceptions( exceptions );
-        }
-    }
-
-    public void clear()
     {
         updaterMap.clear();
     }

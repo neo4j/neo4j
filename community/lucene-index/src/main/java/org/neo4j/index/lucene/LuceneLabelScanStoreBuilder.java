@@ -73,7 +73,7 @@ public class LuceneLabelScanStoreBuilder
                     DirectoryFactory.PERSISTENT,
                     // <db>/schema/label/lucene
                     new File( new File( new File( storeDir, "schema" ), "label" ), "lucene" ),
-                    fileSystem, IndexWriterFactories.standard(),
+                    fileSystem, IndexWriterFactories.reserving(),
                     fullStoreLabelUpdateStream( neoStoreProvider ),
                     LuceneLabelScanStore.loggerMonitor( logger ) );
 

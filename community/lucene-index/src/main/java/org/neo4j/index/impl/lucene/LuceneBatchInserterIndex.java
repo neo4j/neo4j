@@ -19,8 +19,15 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import static org.neo4j.index.impl.lucene.LuceneDataSource.LUCENE_VERSION;
-import static org.neo4j.index.impl.lucene.LuceneDataSource.getDirectory;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SearcherManager;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.store.Directory;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,29 +38,23 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TopDocs;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.index.lucene.ValueContext;
+import org.neo4j.kernel.api.impl.index.IndexWriterFactories;
+import org.neo4j.kernel.api.impl.index.LuceneIndexWriter;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 import org.neo4j.unsafe.batchinsert.BatchInserterIndex;
+
+import static org.neo4j.index.impl.lucene.LuceneDataSource.getDirectory;
 
 class LuceneBatchInserterIndex implements BatchInserterIndex
 {
     private final IndexIdentifier identifier;
     private final IndexType type;
     
-    private IndexWriter writer;
-    private boolean writerModified;
-    private IndexSearcher searcher;
+    private LuceneIndexWriter writer;
+    private SearcherManager searcherManager;
     private final boolean createdNow;
     private Map<String, LruCache<String, Collection<Long>>> cache;
     private int updateCount;
@@ -67,6 +68,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
         this.identifier = identifier;
         this.type = IndexType.getIndexType( identifier, config );
         this.writer = instantiateWriter( storeDir );
+        this.searcherManager = instantiateSearcherManager( writer );
     }
     
     /**
@@ -194,18 +196,25 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
 
     private void removeFromCache( long entityId ) throws IOException, CorruptIndexException
     {
-        IndexSearcher searcher = searcher();
-        Query query = type.idTermQuery( entityId );
-        TopDocs docs = searcher.search( query, 1 );
-        if ( docs.totalHits > 0 )
+        IndexSearcher searcher = searcherManager.acquire();
+        try
         {
-            Document document = searcher.doc( docs.scoreDocs[0].doc );
-            for ( Fieldable field : document.getFields() )
+            Query query = type.idTermQuery( entityId );
+            TopDocs docs = searcher.search( query, 1 );
+            if ( docs.totalHits > 0 )
             {
-                String key = field.name();
-                Object value = field.stringValue();
-                removeFromCache( entityId, key, value );
+                Document document = searcher.doc( docs.scoreDocs[0].doc );
+                for ( Fieldable field : document.getFields() )
+                {
+                    String key = field.name();
+                    Object value = field.stringValue();
+                    removeFromCache( entityId, key, value );
+                }
             }
+        }
+        finally
+        {
+            searcherManager.release( searcher );
         }
     }
     
@@ -228,57 +237,48 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
         }
     }
 
-    private IndexWriter instantiateWriter( File directory )
+    private LuceneIndexWriter instantiateWriter( File directory )
     {
         try
         {
-            IndexWriterConfig writerConfig = new IndexWriterConfig( LUCENE_VERSION, type.analyzer );
+            IndexWriterConfig writerConfig = new IndexWriterConfig( LuceneDataSource.LUCENE_VERSION, type.analyzer );
             writerConfig.setRAMBufferSizeMB( determineGoodBufferSize( writerConfig.getRAMBufferSizeMB() ) );
-            IndexWriter writer = new IndexWriter( getDirectory( directory, identifier ), writerConfig );
-            return writer;
+            Directory luceneDir = getDirectory( directory, identifier );
+            return IndexWriterFactories.batchInsert( writerConfig ).create( luceneDir );
         }
         catch ( IOException e )
         {
             throw new RuntimeException( e );
         }
     }
-    
-    private double determineGoodBufferSize( double atLeast )
+
+    private static double determineGoodBufferSize( double atLeast )
     {
         double heapHint = Runtime.getRuntime().maxMemory()/(1024*1024*14);
         double result = Math.max( atLeast, heapHint );
         return Math.min( result, 700 );
     }
 
+    private static SearcherManager instantiateSearcherManager( LuceneIndexWriter writer )
+    {
+        try
+        {
+            return writer.createSearcherManager();
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
     private void closeSearcher()
     {
         try
         {
-            LuceneUtil.close( this.searcher );
-        }
-        finally
-        {
-            this.searcher = null;
-        }
-    }
-
-    private IndexSearcher searcher()
-    {
-        IndexSearcher result = this.searcher;
-        try
-        {
-            if ( result == null || writerModified )
+            if ( this.searcherManager != null )
             {
-                if ( result != null )
-                {
-                    result.getIndexReader().close();
-                    result.close();
-                }
-                IndexReader newReader = IndexReader.open( writer, true );
-                result = new IndexSearcher( newReader );
-                writerModified = false;
+                this.searcherManager.close();
             }
-            return result;
         }
         catch ( IOException e )
         {
@@ -286,19 +286,20 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
         }
         finally
         {
-            this.searcher = result;
+            this.searcherManager = null;
         }
     }
-    
+
     private void closeWriter()
     {
         try
         {
             if ( this.writer != null )
             {
-                this.writer.optimize( true );
+                this.writer.commit();
+                this.writer.optimize();
+                this.writer.close();
             }
-            LuceneUtil.close( this.writer );
         }
         catch ( IOException e )
         {
@@ -312,9 +313,11 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
 
     private IndexHits<Long> query( Query query, final String key, final Object value )
     {
+        IndexSearcher searcher = searcherManager.acquire();
+        IOException thrownException = null;
         try
         {
-            Hits hits = new Hits( searcher(), query, null );
+            Hits hits = new Hits( searcher, query, null );
             HitsIterator result = new HitsIterator( hits );
             if ( key == null || this.cache == null || !this.cache.containsKey( key ) )
             {
@@ -348,7 +351,23 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
         }
         catch ( IOException e )
         {
+            thrownException = e;
             throw new RuntimeException( e );
+        }
+        finally
+        {
+            try
+            {
+                searcherManager.release( searcher );
+            }
+            catch ( IOException e )
+            {
+                if ( thrownException != null )
+                {
+                    e.addSuppressed( thrownException );
+                }
+                throw new RuntimeException( e );
+            }
         }
     }
 
@@ -387,11 +406,18 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
         }
         return dir;
     }
-    
+
     @Override
     public void flush()
     {
-        writerModified = true;
+        try
+        {
+            searcherManager.maybeRefresh();
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
     
     @Override

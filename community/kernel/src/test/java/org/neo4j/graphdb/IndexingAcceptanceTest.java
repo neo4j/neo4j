@@ -25,12 +25,15 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
 import static org.neo4j.graphdb.Neo4jMatchers.createIndex;
 import static org.neo4j.graphdb.Neo4jMatchers.findNodesByLabelAndProperty;
@@ -399,6 +402,56 @@ public class IndexingAcceptanceTest
         }
     }
 
+    @Test
+    public void shouldAddIndexedPropertyToNodeWithDynamicLabels()
+    {
+        // Given
+        int indexesCount = 20;
+        String labelPrefix = "foo";
+        String propertyKeyPrefix = "bar";
+        String propertyValuePrefix = "baz";
+        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+
+        for ( int i = 0; i < indexesCount; i++ )
+        {
+            createIndex( db, label( labelPrefix + i ), propertyKeyPrefix + i );
+        }
+
+        // When
+        long nodeId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            nodeId = db.createNode().getId();
+            tx.success();
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.getNodeById( nodeId );
+            for ( int i = 0; i < indexesCount; i++ )
+            {
+                node.addLabel( label( labelPrefix + i ) );
+                node.setProperty( propertyKeyPrefix + i, propertyValuePrefix + i );
+            }
+            tx.success();
+        }
+
+        // Then
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( int i = 0; i < indexesCount; i++ )
+            {
+                Label label = label( labelPrefix + i );
+                String key = propertyKeyPrefix + i;
+                String value = propertyValuePrefix + i;
+
+                ResourceIterable<Node> nodes = db.findNodesByLabelAndProperty( label, key, value );
+                assertEquals( 1, Iterables.count( nodes ) );
+            }
+            tx.success();
+        }
+    }
+
     private void assertCanCreateAndFind( GraphDatabaseService db, Label label, String propertyKey, Object value )
     {
         Node created = createNode( db, map( propertyKey, value ), label );
@@ -417,9 +470,9 @@ public class IndexingAcceptanceTest
     public @Rule
     ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
 
-    private Label LABEL1 = DynamicLabel.label( "LABEL1" );
-    private Label LABEL2 = DynamicLabel.label( "LABEL2" );
-    private Label LABEL3 = DynamicLabel.label( "LABEL3" );
+    private Label LABEL1 = label( "LABEL1" );
+    private Label LABEL2 = label( "LABEL2" );
+    private Label LABEL3 = label( "LABEL3" );
 
     private Node createNode( GraphDatabaseService beansAPI, Map<String, Object> properties, Label... labels )
     {

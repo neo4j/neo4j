@@ -76,6 +76,7 @@ import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static java.util.Arrays.asList;
 
+import static java.util.Collections.singleton;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -469,7 +470,6 @@ public class FullCheckIntegrationTest
                     new IndexConfiguration( indexRule.isConstraintIndex() ) );
             IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE );
             updater.remove( indexedNodes );
-            updater.close();
             accessor.close();
         }
 
@@ -489,8 +489,7 @@ public class FullCheckIntegrationTest
             IndexAccessor accessor = fixture.directStoreAccess().indexes().getOnlineAccessor( indexRule.getId(),
                     new IndexConfiguration( false ) );
             IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE );
-            updater.process( NodePropertyUpdate.add( 42, 0, "value", new long[]{3} ) );
-            updater.close();
+            updater.prepare( singleton( NodePropertyUpdate.add( 42, 0, "value", new long[]{3} ) ) ).commit();
             accessor.close();
         }
 

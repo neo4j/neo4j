@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.PreparedIndexUpdates;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
@@ -289,12 +290,8 @@ public class LuceneSchemaIndexPopulatorTest
             PropertyAccessor accessor )
             throws IOException, IndexEntryConflictException
     {
-        try ( IndexUpdater updater = populator.newPopulatingUpdater( accessor ) )
-        {
-            for ( NodePropertyUpdate update :  updates )
-            {
-                updater.process( update );
-            }
-        }
+        IndexUpdater updater = populator.newPopulatingUpdater( accessor );
+        PreparedIndexUpdates preparedIndexUpdates = updater.prepare( updates );
+        preparedIndexUpdates.commit();
     }
 }

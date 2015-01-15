@@ -43,6 +43,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.PreparedIndexUpdates;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
@@ -56,13 +57,19 @@ import org.neo4j.kernel.logging.Logging;
 
 import static java.util.Arrays.asList;
 
+import static java.util.Collections.singleton;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.hasItems;
+import static org.hamcrest.Matchers.emptyIterable;
+import static org.hamcrest.Matchers.emptyIterableOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyCollection;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -81,6 +88,7 @@ import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.
 import static org.neo4j.kernel.impl.nioneo.store.IndexRule.indexRule;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
 import static org.neo4j.test.AwaitAnswer.afterAwaiting;
+import static org.neo4j.test.IterableMatcher.matchesIterable;
 
 public class IndexingServiceTest
 {
@@ -91,6 +99,7 @@ public class IndexingServiceTest
     private int propertyKeyId;
     private IndexPopulator populator;
     private SchemaIndexProvider indexProvider;
+    private PreparedIndexUpdates preparedIndexUpdates;
     private IndexUpdater updater;
     private IndexAccessor accessor;
     private IndexStoreView storeView;
@@ -101,6 +110,7 @@ public class IndexingServiceTest
         labelId = 7;
         propertyKeyId = 15;
         populator = mock( IndexPopulator.class );
+        preparedIndexUpdates = mock( PreparedIndexUpdates.class );
         updater = mock( IndexUpdater.class );
         indexProvider = mock( SchemaIndexProvider.class );
         accessor = mock( IndexAccessor.class );
@@ -112,6 +122,7 @@ public class IndexingServiceTest
     {
         // given
         when( accessor.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn(updater);
+        when( updater.prepare( anyCollection() ) ).thenReturn( preparedIndexUpdates );
 
         IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
 
@@ -124,19 +135,18 @@ public class IndexingServiceTest
 
         verify( populator, timeout( 1000 ) ).close( true );
 
-        try (IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE ))
-        {
-            updater.process( add( 10, "foo" ) );
-        }
+        IndexUpdater indexUpdater = proxy.newUpdater( IndexUpdateMode.ONLINE );
+        PreparedIndexUpdates updates = indexUpdater.prepare( singleton( add( 10, "foo" ) ) );
+        updates.commit();
 
         // then
         assertEquals( InternalIndexState.ONLINE, proxy.getState() );
-        InOrder order = inOrder( populator, accessor, updater);
+        InOrder order = inOrder( populator, accessor, updater, preparedIndexUpdates );
         order.verify( populator ).create();
         order.verify( populator ).close( true );
         order.verify( accessor ).newUpdater( IndexUpdateMode.ONLINE );
-        order.verify( updater ).process( add( 10, "foo" ) );
-        order.verify( updater ).close();
+        order.verify( updater ).prepare( singleton( add( 10, "foo" ) ) );
+        order.verify( preparedIndexUpdates ).commit();
     }
 
     @Test
@@ -161,6 +171,7 @@ public class IndexingServiceTest
     {
         // given
         when( populator.newPopulatingUpdater( storeView ) ).thenReturn( updater );
+        when( updater.prepare( anyCollection() ) ).thenReturn( preparedIndexUpdates );
 
         CountDownLatch latch = new CountDownLatch( 1 );
         doAnswer( afterAwaiting( latch ) ).when( populator ).add( anyLong(), any() );
@@ -177,10 +188,9 @@ public class IndexingServiceTest
         IndexProxy proxy = indexingService.getProxyForRule( 0 );
         assertEquals( InternalIndexState.POPULATING, proxy.getState() );
 
-        try (IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE ))
-        {
-            updater.process( add( 2, "value2" ) );
-        }
+        IndexUpdater indexUpdater = proxy.newUpdater( IndexUpdateMode.ONLINE );
+        PreparedIndexUpdates updates = indexUpdater.prepare( singleton( add( 2, "value2" ) ) );
+        updates.commit();
 
         latch.countDown();
 
@@ -188,22 +198,22 @@ public class IndexingServiceTest
 
         // then
         assertEquals( InternalIndexState.ONLINE, proxy.getState() );
-        InOrder order = inOrder( populator, accessor, updater);
+        InOrder order = inOrder( populator, accessor, updater, preparedIndexUpdates );
         order.verify( populator ).create();
         order.verify( populator ).add( 1, "value1" );
 
         // this is invoked from indexAllNodes(),
         // empty because the id we added (2) is bigger than the one we indexed (1)
         order.verify( populator ).newPopulatingUpdater( storeView );
-        order.verify( updater ).close();
+        order.verify( updater ).prepare( argThat( emptyIterableOf( NodePropertyUpdate.class ) ) );
         order.verify( populator ).verifyDeferredConstraints( storeView );
 
         order.verify( populator ).newPopulatingUpdater( storeView );
-        order.verify( updater ).process( add( 2, "value2" ) );
-        order.verify( updater ).close();
+        order.verify( updater ).prepare( argThat( matchesIterable( singleton( add( 2, "value2" ) ) ) ) );
+        order.verify( preparedIndexUpdates ).commit();
 
         order.verify( populator ).close( true );
-        verifyNoMoreInteractions(updater);
+        verifyNoMoreInteractions( updater );
         verifyNoMoreInteractions( populator );
         verifyZeroInteractions( accessor );
     }
@@ -212,7 +222,8 @@ public class IndexingServiceTest
     public void shouldStillReportInternalIndexStateAsPopulatingWhenConstraintIndexIsDonePopulating() throws Exception
     {
         // given
-        when( accessor.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn(updater);
+        when( accessor.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( updater );
+        when( updater.prepare( anyCollection() ) ).thenReturn( preparedIndexUpdates );
 
         IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
 
@@ -221,24 +232,23 @@ public class IndexingServiceTest
 
         // when
         indexingService.createIndex( IndexRule.constraintIndexRule( 0, labelId, propertyKeyId, PROVIDER_DESCRIPTOR,
-                                                                    null ) );
+                null ) );
         IndexProxy proxy = indexingService.getProxyForRule( 0 );
 
         verify( populator, timeout( 1000 ) ).close( true );
 
-        try (IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE ))
-        {
-            updater.process( add( 10, "foo" ) );
-        }
+        IndexUpdater indexUpdater = proxy.newUpdater( IndexUpdateMode.ONLINE );
+        PreparedIndexUpdates updates = indexUpdater.prepare( singleton( add( 10, "foo" ) ) );
+        updates.commit();
 
         // then
         assertEquals( InternalIndexState.POPULATING, proxy.getState() );
-        InOrder order = inOrder( populator, accessor, updater);
+        InOrder order = inOrder( populator, accessor, updater, preparedIndexUpdates );
         order.verify( populator ).create();
         order.verify( populator ).close( true );
         order.verify( accessor ).newUpdater( IndexUpdateMode.ONLINE );
-        order.verify(updater).process( add( 10, "foo") );
-        order.verify(updater).close();
+        order.verify( updater ).prepare( singleton( add( 10, "foo" ) ) );
+        order.verify( preparedIndexUpdates ).commit();
     }
 
     @Test

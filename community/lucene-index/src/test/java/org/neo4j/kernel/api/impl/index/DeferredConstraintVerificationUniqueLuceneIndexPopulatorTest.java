@@ -19,17 +19,27 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import java.io.File;
-import java.util.Collections;
-
+import org.apache.lucene.document.Document;
+import org.apache.lucene.store.Directory;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
+import org.neo4j.kernel.api.index.PreparedIndexUpdates;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.util.FailureStorage;
 import org.neo4j.test.CleanupRule;
@@ -38,14 +48,21 @@ import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.api.impl.index.AllNodesCollector.getAllNodes;
-import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
+import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.tracking;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
 import static org.neo4j.kernel.api.properties.Property.intProperty;
 import static org.neo4j.kernel.api.properties.Property.longProperty;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
@@ -77,12 +94,12 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
         // when
         IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor );
 
-        updater.process( NodePropertyUpdate.change( 1, PROPERTY_KEY_ID, "value1", new long[]{}, "value2", new long[]{} ) );
+        processUpdates( updater, change( 1, PROPERTY_KEY_ID, "value1", new long[]{}, "value2", new long[]{} ) );
 
         populator.close( true );
 
         // then
-        assertEquals( Collections.EMPTY_LIST, getAllNodes( directoryFactory, indexDirectory, "value1" ) );
+        assertEquals( Collections.<Long>emptyList(), getAllNodes( directoryFactory, indexDirectory, "value1" ) );
         assertEquals( asList( 1l ), getAllNodes( directoryFactory, indexDirectory, "value2" ) );
     }
 
@@ -94,8 +111,9 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
         // when
         IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor );
 
-        updater.process( NodePropertyUpdate.remove( 1, PROPERTY_KEY_ID, "value1", new long[]{} ) );
-        updater.process( NodePropertyUpdate.add( 1, PROPERTY_KEY_ID, "value1", new long[]{} ) );
+        processUpdates( updater,
+                remove( 1, PROPERTY_KEY_ID, "value1", new long[]{} ),
+                add( 1, PROPERTY_KEY_ID, "value1", new long[]{} ) );
 
         populator.close( true );
 
@@ -111,7 +129,7 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
         // when
         IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor );
 
-        updater.process( NodePropertyUpdate.remove( 1, PROPERTY_KEY_ID, "value1", new long[]{} ) );
+        processUpdates( updater, remove( 1, PROPERTY_KEY_ID, "value1", new long[]{} ) );
 
         populator.close( true );
 
@@ -128,8 +146,9 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
         // when
         IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor );
 
-        updater.process( NodePropertyUpdate.change( 1, PROPERTY_KEY_ID, "value1", new long[]{}, "value2", new long[]{} ) );
-        updater.process( NodePropertyUpdate.change( 2, PROPERTY_KEY_ID, "value2", new long[]{}, "value1", new long[]{} ) );
+        processUpdates( updater,
+                change( 1, PROPERTY_KEY_ID, "value1", new long[]{}, "value2", new long[]{} ),
+                change( 2, PROPERTY_KEY_ID, "value2", new long[]{}, "value1", new long[]{} ) );
 
         populator.close( true );
 
@@ -211,8 +230,7 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
         try
         {
             IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor );
-            updater.process( NodePropertyUpdate.add( 3, PROPERTY_KEY_ID, "value1", new long[]{} ) );
-            updater.close();
+            processUpdates( updater, add( 3, PROPERTY_KEY_ID, "value1", new long[]{} ) );
 
             fail( "should have thrown exception" );
         }
@@ -230,7 +248,7 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
     {
         String value = "value1";
         IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor );
-        updater.process( NodePropertyUpdate.add( 1, PROPERTY_KEY_ID, value, new long[]{} ) );
+        processUpdates( updater, add( 1, PROPERTY_KEY_ID, value, new long[]{} ) );
         populator.add( 2, value );
 
         when( propertyAccessor.getProperty( 1, PROPERTY_KEY_ID ) ).thenReturn(
@@ -261,9 +279,10 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
                 stringProperty( PROPERTY_KEY_ID, "value1" ) );
 
         IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor );
-        updater.process( NodePropertyUpdate.add( 1, PROPERTY_KEY_ID, "value1", new long[]{} ) );
-        updater.process( NodePropertyUpdate.change( 1, PROPERTY_KEY_ID, "value1", new long[]{}, "value1", new long[]{} ) );
-        updater.close();
+        processUpdates( updater,
+                add( 1, PROPERTY_KEY_ID, "value1", new long[]{} ),
+                change( 1, PROPERTY_KEY_ID, "value1", new long[]{}, "value1", new long[]{} ) );
+
         populator.add( 2, "value2" );
         populator.add( 3, "value3" );
 
@@ -304,20 +323,20 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
 
         for ( int nodeId = 0; nodeId < iterations; nodeId++ )
         {
-            updater.process( NodePropertyUpdate.add( nodeId, PROPERTY_KEY_ID, 1, labels ) );
+            processUpdates( updater, add( nodeId, PROPERTY_KEY_ID, 1, labels ) );
             when( propertyAccessor.getProperty( nodeId, PROPERTY_KEY_ID ) ).thenReturn(
                     intProperty( PROPERTY_KEY_ID, nodeId ) );
         }
 
         // ... and the actual conflicting property:
-        updater.process( NodePropertyUpdate.add( iterations, PROPERTY_KEY_ID, 1, labels ) );
+        PreparedIndexUpdates updates = updater.prepare( asList( add( iterations, PROPERTY_KEY_ID, 1, labels ) ) );
         when( propertyAccessor.getProperty( iterations, PROPERTY_KEY_ID ) ).thenReturn(
                 intProperty( PROPERTY_KEY_ID, 1 ) ); // This collision is real!!!
 
         // when
         try
         {
-            updater.close();
+            updates.commit();
             fail( "should have thrown exception" );
         }
         // then
@@ -371,14 +390,13 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
         
         // GIVEN an index updater that we close
         OtherThreadExecutor<Void> executor = cleanup.add( new OtherThreadExecutor<Void>( "Deferred", null ) );
-        executor.execute( new WorkerCommand<Void, Void>()
+        executor.execute( new WorkerCommand<Void,Void>()
         {
             @Override
             public Void doWork( Void state ) throws Exception
             {
-                try ( IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor ) )
-                {   // Just open it and let it be closed
-                }
+                IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor );
+                updater.prepare( asList( add( 1, 1, "foo", new long[]{1} ) ) ).commit();
                 return null;
             }
         } );
@@ -395,17 +413,65 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
         
         // WHEN doing more index updating after that
         // THEN it should be able to complete within a very reasonable time
-        executor.execute( new WorkerCommand<Void, Void>()
+        executor.execute( new WorkerCommand<Void,Void>()
         {
             @Override
             public Void doWork( Void state ) throws Exception
             {
-                try ( IndexUpdater secondUpdater = populator.newPopulatingUpdater( propertyAccessor ) )
-                {   // Just open it and let it be closed
-                }
+                IndexUpdater secondUpdater = populator.newPopulatingUpdater( propertyAccessor );
+                secondUpdater.prepare( asList( add( 2, 2, "bar", new long[]{2} ) ) ).commit();
                 return null;
             }
         }, 5, SECONDS );
+    }
+
+    @Test
+    public void preparedIndexUpdatesShouldDoActualModificationsOnCommit() throws Exception
+    {
+        // Given
+        long nodeToAddId = 1;
+        long nodeToRemoveId = 1;
+
+        final AtomicReference<LuceneIndexWriter> writer = new AtomicReference<>();
+        LuceneIndexWriterFactory writerFactory = mock( LuceneIndexWriterFactory.class );
+        when( writerFactory.create( any( Directory.class ) ) ).then( new Answer<LuceneIndexWriter>()
+        {
+            @Override
+            public LuceneIndexWriter answer( InvocationOnMock invocation ) throws Throwable
+            {
+                Directory dir = (Directory) invocation.getArguments()[0];
+                LuceneIndexWriter luceneIndexWriter = spy( tracking().create( dir ) );
+                writer.set( luceneIndexWriter );
+                return luceneIndexWriter;
+            }
+        } );
+
+        initPopulator( writerFactory );
+
+        IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor );
+
+        PreparedIndexUpdates updates = updater.prepare( asList(
+                add( nodeToAddId, PROPERTY_KEY_ID, "foo", new long[]{LABEL_ID} ),
+                remove( nodeToRemoveId, PROPERTY_KEY_ID, "bar", new long[]{LABEL_ID} ) ) );
+
+        reset( writer.get() );
+
+        // When
+        updates.commit();
+
+        // Then
+        verify( writer.get() ).updateDocument( eq( documentLogic.newQueryForChangeOrRemove( nodeToAddId ) ),
+                any( Document.class ) );
+        verify( writer.get() ).deleteDocuments( documentLogic.newQueryForChangeOrRemove( nodeToRemoveId ) );
+    }
+
+    private static void processUpdates( IndexUpdater updater, NodePropertyUpdate... updates )
+            throws IOException, IndexEntryConflictException
+    {
+        List<NodePropertyUpdate> listOfUpdates = new ArrayList<>();
+        Collections.addAll( listOfUpdates, updates );
+        PreparedIndexUpdates preparedUpdates = updater.prepare( listOfUpdates );
+        preparedUpdates.commit();
     }
 
     private static final int LABEL_ID = 1;
@@ -422,17 +488,26 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
     private DeferredConstraintVerificationUniqueLuceneIndexPopulator populator;
     public final @Rule CleanupRule cleanup = new CleanupRule();
 
+    private void initPopulator( LuceneIndexWriterFactory indexWriterFactory ) throws IOException
+    {
+        if ( populator != null )
+        {
+            populator.close( false );
+        }
+        populator = new DeferredConstraintVerificationUniqueLuceneIndexPopulator(
+                documentLogic, indexWriterFactory,
+                directoryFactory, indexDirectory,
+                failureStorage, indexId, descriptor );
+
+        populator.create();
+    }
+
     @Before
     public void setUp() throws Exception
     {
         indexDirectory = new File( "target/whatever" );
         documentLogic = new LuceneDocumentStructure();
-        propertyAccessor = mock( PropertyAccessor.class );
-        populator = new
-                DeferredConstraintVerificationUniqueLuceneIndexPopulator(
-                documentLogic, standard(),
-                new IndexWriterStatus(), directoryFactory, indexDirectory,
-                failureStorage, indexId, descriptor );
-        populator.create();
+        propertyAccessor = mock( PropertyAccessor.class, RETURNS_MOCKS );
+        initPopulator( tracking() );
     }
 }

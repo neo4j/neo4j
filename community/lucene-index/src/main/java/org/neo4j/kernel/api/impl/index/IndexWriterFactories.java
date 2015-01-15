@@ -19,31 +19,64 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import java.io.IOException;
-
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Version;
 
+import java.io.IOException;
+
 import org.neo4j.index.impl.lucene.LuceneDataSource;
 import org.neo4j.index.impl.lucene.MultipleBackupDeletionPolicy;
 
-public class IndexWriterFactories
+public final class IndexWriterFactories
 {
-    public static LuceneIndexWriterFactory standard()
+    private IndexWriterFactories()
+    {
+        throw new AssertionError( "Not for instantiation!" );
+    }
+
+    public static LuceneIndexWriterFactory reserving()
     {
         return new LuceneIndexWriterFactory()
         {
             @Override
-            public IndexWriter create( Directory directory ) throws IOException
+            public LuceneIndexWriter create( Directory directory ) throws IOException
             {
-                IndexWriterConfig writerConfig = new IndexWriterConfig( Version.LUCENE_36, LuceneDataSource.KEYWORD_ANALYZER );
-                writerConfig.setMaxBufferedDocs( 100000 ); // TODO figure out depending on environment?
-                writerConfig.setIndexDeletionPolicy( new MultipleBackupDeletionPolicy() );
-                writerConfig.setTermIndexInterval( 14 );
-                return new IndexWriter( directory, writerConfig );
+                return new ReservingLuceneIndexWriter( directory, standardConfig() );
             }
         };
+    }
+
+    public static LuceneIndexWriterFactory tracking()
+    {
+        return new LuceneIndexWriterFactory()
+        {
+            @Override
+            public LuceneIndexWriter create( Directory directory ) throws IOException
+            {
+                return new TrackingLuceneIndexWriter( directory, standardConfig() );
+            }
+        };
+    }
+
+    public static LuceneIndexWriterFactory batchInsert( final IndexWriterConfig config )
+    {
+        return new LuceneIndexWriterFactory()
+        {
+            @Override
+            public LuceneIndexWriter create( Directory directory ) throws IOException
+            {
+                return new TrackingLuceneIndexWriter( directory, config );
+            }
+        };
+    }
+
+    private static IndexWriterConfig standardConfig()
+    {
+        IndexWriterConfig writerConfig = new IndexWriterConfig( Version.LUCENE_36, LuceneDataSource.KEYWORD_ANALYZER );
+        writerConfig.setMaxBufferedDocs( 100000 ); // TODO figure out depending on environment?
+        writerConfig.setIndexDeletionPolicy( new MultipleBackupDeletionPolicy() );
+        writerConfig.setTermIndexInterval( 14 );
+        return writerConfig;
     }
 }

@@ -19,21 +19,37 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.PreparedIndexUpdates;
 
 public abstract class CollectingIndexUpdater implements IndexUpdater
 {
     protected final ArrayList<NodePropertyUpdate> updates = new ArrayList<>();
 
     @Override
-    public void process( NodePropertyUpdate update )
+    public PreparedIndexUpdates prepare( final Iterable<NodePropertyUpdate> updates )
     {
-        if ( null != update )
+        return new PreparedIndexUpdates()
         {
-            updates.add( update );
-        }
+            @Override
+            public void commit() throws IOException, IndexEntryConflictException
+            {
+                Iterables.addAll( CollectingIndexUpdater.this.updates, updates );
+                flush();
+            }
+
+            @Override
+            public void rollback()
+            {
+            }
+        };
     }
+
+    protected abstract void flush() throws IOException, IndexEntryConflictException;
 }

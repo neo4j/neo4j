@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -32,9 +27,13 @@ import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.TermQuery;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.StatementConstants;
@@ -44,6 +43,7 @@ import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
+import org.neo4j.kernel.api.index.PreparedIndexUpdates;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.util.FailureStorage;
 import org.neo4j.kernel.api.properties.Property;
@@ -57,12 +57,11 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
 
     DeferredConstraintVerificationUniqueLuceneIndexPopulator( LuceneDocumentStructure documentStructure,
                                                               LuceneIndexWriterFactory indexWriterFactory,
-                                                              IndexWriterStatus writerStatus,
                                                               DirectoryFactory dirFactory, File dirFile,
                                                               FailureStorage failureStorage, long indexId,
                                                               IndexDescriptor descriptor )
     {
-        super( documentStructure, indexWriterFactory, writerStatus, dirFactory, dirFile, failureStorage, indexId );
+        super( documentStructure, indexWriterFactory, dirFactory, dirFile, failureStorage, indexId );
         this.descriptor = descriptor;
     }
 
@@ -70,7 +69,7 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
     public void create() throws IOException
     {
         super.create();
-        searcherManager = new SearcherManager( writer, true, new SearcherFactory() );
+        searcherManager = writer.createSearcherManager();
     }
 
     @Override
@@ -136,58 +135,10 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
     {
         return new IndexUpdater()
         {
-            List<Object> updatedPropertyValues = new ArrayList<>();
-
             @Override
-            public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+            public PreparedIndexUpdates prepare( Iterable<NodePropertyUpdate> updates )
             {
-                long nodeId = update.getNodeId();
-                switch ( update.getUpdateMode() )
-                {
-                    case ADDED:
-                    case CHANGED:
-                        // We don't look at the "before" value, so adding and changing idempotently is done the same way.
-                        writer.updateDocument( documentStructure.newQueryForChangeOrRemove( nodeId ),
-                                documentStructure.newDocumentRepresentingProperty( nodeId,
-                                        update.getValueAfter() ) );
-                        updatedPropertyValues.add( update.getValueAfter() );
-                        break;
-                    case REMOVED:
-                        writer.deleteDocuments( documentStructure.newQueryForChangeOrRemove( nodeId ) );
-                        break;
-                    default:
-                        throw new IllegalStateException( "Unknown update mode " + update.getUpdateMode() );
-                }
-            }
-
-            @Override
-            public void close() throws IOException, IndexEntryConflictException
-            {
-                searcherManager.maybeRefresh();
-                IndexSearcher searcher = searcherManager.acquire();
-                try
-                {
-                    DuplicateCheckingCollector collector = duplicateCheckingCollector( accessor );
-                    for ( Object propertyValue : updatedPropertyValues )
-                    {
-                        collector.reset();
-                        Query query = documentStructure.newQuery( propertyValue );
-                        searcher.search( query, collector );
-                    }
-                }
-                catch ( IOException e )
-                {
-                    Throwable cause = e.getCause();
-                    if ( cause instanceof IndexEntryConflictException )
-                    {
-                        throw (IndexEntryConflictException) cause;
-                    }
-                    throw e;
-                }
-                finally
-                {
-                    searcherManager.release( searcher );
-                }
+                return new ConstraintPreparedUpdates( updates, accessor );
             }
 
             @Override
@@ -196,6 +147,84 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
                 throw new UnsupportedOperationException( "should not remove() from populating index" );
             }
         };
+    }
+
+    private class ConstraintPreparedUpdates implements PreparedIndexUpdates
+    {
+        final Iterable<NodePropertyUpdate> updates;
+        final PropertyAccessor accessor;
+        final List<Object> updatedPropertyValues;
+
+        ConstraintPreparedUpdates( Iterable<NodePropertyUpdate> updates, PropertyAccessor accessor )
+        {
+            this.updates = updates;
+            this.accessor = accessor;
+            this.updatedPropertyValues = new ArrayList<>();
+        }
+
+        @Override
+        public void commit() throws IOException, IndexEntryConflictException
+        {
+            writeUpdates();
+            verifyConstraints();
+        }
+
+        @Override
+        public void rollback()
+        {
+        }
+
+        void writeUpdates() throws IOException
+        {
+            for ( NodePropertyUpdate update : updates )
+            {
+                long nodeId = update.getNodeId();
+                switch ( update.getUpdateMode() )
+                {
+                case ADDED:
+                case CHANGED:
+                    // We don't look at the "before" value, so adding and changing idempotently is done the same way
+                    writer.updateDocument( documentStructure.newQueryForChangeOrRemove( nodeId ),
+                            documentStructure.newDocumentRepresentingProperty( nodeId, update.getValueAfter() ) );
+                    updatedPropertyValues.add( update.getValueAfter() );
+                    break;
+                case REMOVED:
+                    writer.deleteDocuments( documentStructure.newQueryForChangeOrRemove( nodeId ) );
+                    break;
+                default:
+                    throw new IllegalStateException( "Unknown update mode " + update.getUpdateMode() );
+                }
+            }
+        }
+
+        void verifyConstraints() throws IOException, IndexEntryConflictException
+        {
+            searcherManager.maybeRefresh();
+            IndexSearcher searcher = searcherManager.acquire();
+            try
+            {
+                DuplicateCheckingCollector collector = duplicateCheckingCollector( accessor );
+                for ( Object propertyValue : updatedPropertyValues )
+                {
+                    collector.reset();
+                    Query query = documentStructure.newQuery( propertyValue );
+                    searcher.search( query, collector );
+                }
+            }
+            catch ( IOException e )
+            {
+                Throwable cause = e.getCause();
+                if ( cause instanceof IndexEntryConflictException )
+                {
+                    throw (IndexEntryConflictException) cause;
+                }
+                throw e;
+            }
+            finally
+            {
+                searcherManager.release( searcher );
+            }
+        }
     }
 
     private static class DuplicateCheckingCollector extends Collector

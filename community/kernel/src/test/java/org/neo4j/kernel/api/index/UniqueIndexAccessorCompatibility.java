@@ -102,12 +102,8 @@ public class UniqueIndexAccessorCompatibility extends IndexProviderCompatibility
 
     private void updateAndCommit( List<NodePropertyUpdate> updates ) throws IOException, IndexEntryConflictException
     {
-        try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
-        {
-            for ( NodePropertyUpdate update : updates )
-            {
-                updater.process( update );
-            }
-        }
+        IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE );
+        PreparedIndexUpdates preparedUpdates = updater.prepare( updates );
+        preparedUpdates.commit();
     }
 }

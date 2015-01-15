@@ -222,7 +222,7 @@ public class IndexCRUDIT
             return new CollectingIndexUpdater()
             {
                 @Override
-                public void close() throws IOException, IndexEntryConflictException
+                public void flush()
                 {
                     if ( IndexUpdateMode.ONLINE == mode )
                     {
@@ -231,7 +231,7 @@ public class IndexCRUDIT
                 }
 
                 @Override
-                public void remove( Iterable<Long> nodeIds ) throws IOException
+                public void remove( Iterable<Long> nodeIds )
                 {
                     throw new UnsupportedOperationException( "not expected" );
                 }

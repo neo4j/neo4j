@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.PreparedIndexUpdates;
 
 /**
  * {@link IndexProxy} layer that enforces the dynamic contract of {@link IndexProxy} (cf. Test)
@@ -97,21 +98,22 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
             return new DelegatingIndexUpdater( super.newUpdater( mode ) )
             {
                 @Override
-                public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+                public PreparedIndexUpdates prepare( Iterable<NodePropertyUpdate> updates )
+                        throws IOException, IndexEntryConflictException
                 {
-                    delegate.process( update );
-                }
-
-                @Override
-                public void close() throws IOException, IndexEntryConflictException
-                {
+                    boolean superPrepared = false;
                     try
                     {
-                        delegate.close();
+                        PreparedIndexUpdates preparedUpdates = super.prepare( updates );
+                        superPrepared = true;
+                        return new ContractCheckingPreparedUpdates( preparedUpdates );
                     }
                     finally
                     {
-                        closeCall();
+                        if ( !superPrepared )
+                        {
+                            closeCall();
+                        }
                     }
                 }
             };
@@ -198,5 +200,41 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
     {
         // rollback once the call finished or failed
         openCalls.decrementAndGet();
+    }
+
+    private class ContractCheckingPreparedUpdates implements PreparedIndexUpdates
+    {
+        final PreparedIndexUpdates delegate;
+
+        ContractCheckingPreparedUpdates( PreparedIndexUpdates delegate )
+        {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void commit() throws IOException, IndexEntryConflictException
+        {
+            try
+            {
+                delegate.commit();
+            }
+            finally
+            {
+                closeCall();
+            }
+        }
+
+        @Override
+        public void rollback()
+        {
+            try
+            {
+                delegate.rollback();
+            }
+            finally
+            {
+                closeCall();
+            }
+        }
     }
 }

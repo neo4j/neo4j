@@ -21,12 +21,9 @@ package org.neo4j.kernel.api.index;
 
 import java.io.IOException;
 
-public interface IndexUpdater extends AutoCloseable
+public interface IndexUpdater
 {
-    void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException;
-
-    @Override
-    void close() throws IOException, IndexEntryConflictException;
+    PreparedIndexUpdates prepare( Iterable<NodePropertyUpdate> updates ) throws IOException, IndexEntryConflictException;
 
     void remove( Iterable<Long> nodeIds ) throws IOException;
 }

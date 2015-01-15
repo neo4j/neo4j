@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.io.IOException;
-
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.IOException;
 
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -32,7 +32,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class IndexUpdaterMapTest
@@ -109,25 +108,4 @@ public class IndexUpdaterMapTest
         assertNull( updater );
         assertTrue( "updater map must be empty", updaterMap.isEmpty() );
     }
-
-    @Test
-    public void shouldCloseAllUpdaters() throws Exception
-    {
-        // given
-        indexMap.putIndexProxy( 0, indexProxy1 );
-        indexMap.putIndexProxy( 1, indexProxy2 );
-
-        IndexUpdater updater1 = updaterMap.getUpdater( indexDescriptor1 );
-        IndexUpdater updater2 = updaterMap.getUpdater( indexDescriptor2 );
-
-        // hen
-        updaterMap.close();
-
-        // then
-        verify( updater1 ).close();
-        verify( updater2 ).close();
-
-        assertTrue( "updater map must be empty", updaterMap.isEmpty() );
-    }
-
 }

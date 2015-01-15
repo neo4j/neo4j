@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.index;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.kernel.api.index.PreparedIndexUpdates;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -31,10 +32,10 @@ import org.neo4j.kernel.impl.api.index.UniquePropertyIndexUpdater;
 class UniqueLuceneIndexAccessor extends LuceneIndexAccessor
 {
     public UniqueLuceneIndexAccessor( LuceneDocumentStructure documentStructure,
-                                      LuceneIndexWriterFactory indexWriterFactory, IndexWriterStatus writerStatus,
+                                      LuceneIndexWriterFactory indexWriterFactory,
                                       DirectoryFactory dirFactory, File dirFile ) throws IOException
     {
-        super( documentStructure, indexWriterFactory, writerStatus, dirFactory, dirFile );
+        super( documentStructure, indexWriterFactory, dirFactory, dirFile );
     }
 
     @Override
@@ -93,11 +94,8 @@ class UniqueLuceneIndexAccessor extends LuceneIndexAccessor
         protected void flushUpdates( Iterable<NodePropertyUpdate> updates )
                 throws IOException, IndexEntryConflictException
         {
-            for ( NodePropertyUpdate update : updates )
-            {
-                delegate.process( update );
-            }
-            delegate.close();
+            PreparedIndexUpdates indexChanges = delegate.prepare( updates );
+            indexChanges.commit();
         }
 
         @Override

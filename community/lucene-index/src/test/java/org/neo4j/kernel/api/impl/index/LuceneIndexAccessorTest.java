@@ -19,29 +19,45 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.store.Directory;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.InOrder;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.PreparedIndexUpdates;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
-import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
+import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.reserving;
 
 public class LuceneIndexAccessorTest
 {
-
     @Test
     public void indexReaderShouldHonorRepeatableReads() throws Exception
     {
@@ -120,10 +136,156 @@ public class LuceneIndexAccessorTest
         reader.close();
     }
 
+    @Test
+    public void updaterShouldReserveDocumentsForAdditions() throws Exception
+    {
+        // Given
+        LuceneIndexWriter writer = mock( LuceneIndexWriter.class );
+        IndexUpdater updater = newIndexUpdater( writer );
+
+        // When
+        updater.prepare( asList( add( 42, "42" ), add( 4242, "4242" ) ) );
+
+        // Then
+        verify( writer ).reserveDocumentInsertions( 2 );
+    }
+
+    @Test
+    public void updaterShouldReserveDocumentsForUpdates() throws Exception
+    {
+        // Given
+        LuceneIndexWriter writer = mock( LuceneIndexWriter.class );
+        IndexUpdater updater = newIndexUpdater( writer );
+
+        // When
+        updater.prepare( asList( change( 1, "1", "2" ), change( 2, "foo", "bar" ) ) );
+
+        // Then
+        verify( writer ).reserveDocumentInsertions( 2 );
+    }
+
+    @Test
+    public void updaterShouldNotReserveDocumentsForDeletions() throws Exception
+    {
+        // Given
+        LuceneIndexWriter writer = mock( LuceneIndexWriter.class );
+        IndexUpdater updater = newIndexUpdater( writer );
+
+        // When
+        updater.prepare( asList( remove( 1, "foo" ), remove( 2, "bar" ) ) );
+
+        // Then
+        verify( writer ).reserveDocumentInsertions( 0 );
+    }
+
+    @Test
+    public void updaterShouldReserveDocuments() throws Exception
+    {
+        // Given
+        LuceneIndexWriter writer = mock( LuceneIndexWriter.class );
+        IndexUpdater updater = newIndexUpdater( writer );
+
+        // When
+        updater.prepare( asList(
+                add( 1, "value 1" ),
+                add( 2, "value 2" ),
+                add( 3, "value 3" ) ) );
+
+        updater.prepare( asList(
+                change( 0, "before 0", "after 0" ),
+                add( 1, "value 1" ),
+                add( 2, "vale 2" ),
+                change( 3, "before 3", "after 3" ),
+                remove( 4, "value 4" ) ) );
+
+        updater.prepare( asList(
+                change( 0, "before 0", "after 0" ),
+                change( 1, "before 1", "after 1" ),
+                remove( 2, "value 2" ),
+                remove( 3, "value 3" ) ) );
+
+        // Then
+        InOrder order = inOrder( writer );
+        order.verify( writer ).createSearcherManager();
+        order.verify( writer ).reserveDocumentInsertions( 3 );
+        order.verify( writer ).reserveDocumentInsertions( 4 );
+        order.verify( writer ).reserveDocumentInsertions( 2 );
+        verifyNoMoreInteractions( writer );
+    }
+
+    @Test
+    public void reservationOfDocumentsShouldBeWithdrawnByCommit() throws Exception
+    {
+        // Given
+        LuceneIndexWriter writer = mock( LuceneIndexWriter.class );
+        IndexUpdater updater = newIndexUpdater( writer );
+
+        // When
+        PreparedIndexUpdates updates = updater.prepare( asList(
+                add( 1, "value 1" ),
+                add( 2, "value 2" ),
+                change( 3, "before 3", "after 3" ),
+                add( 3, "value 3" ),
+                remove( 4, "value 4" ),
+                remove( 5, "value 5" ) ) );
+
+        updates.commit();
+
+        // Then
+        InOrder order = inOrder( writer );
+        order.verify( writer ).createSearcherManager();
+        order.verify( writer ).reserveDocumentInsertions( 4 );
+        order.verify( writer, times( 2 ) ).addDocument( any( Document.class ) );
+        order.verify( writer ).updateDocument( any( Term.class ), any( Document.class ) );
+        order.verify( writer ).addDocument( any( Document.class ) );
+        order.verify( writer, times( 2 ) ).deleteDocuments( any( Term.class ) );
+        order.verify( writer ).removeReservationOfDocumentInsertions( 4 );
+        verifyNoMoreInteractions( writer );
+    }
+
+    @Test
+    public void reservationOfDocumentsShouldBeWithdrawnByRollback() throws Exception
+    {
+        // Given
+        LuceneIndexWriter writer = mock( LuceneIndexWriter.class );
+        IndexUpdater updater = newIndexUpdater( writer );
+
+        // When
+        PreparedIndexUpdates updates = updater.prepare( asList(
+                change( 0, "before 0", "after 0" ),
+                change( 1, "before 1", "after 1" ),
+                add( 2, "value 2" ),
+                remove( 3, "value 3" ),
+                add( 4, "value 4" ) ) );
+
+        updates.rollback();
+
+        // Then
+        InOrder order = inOrder( writer );
+        order.verify( writer ).createSearcherManager();
+        order.verify( writer ).reserveDocumentInsertions( 4 );
+        order.verify( writer ).removeReservationOfDocumentInsertions( 4 );
+        verifyNoMoreInteractions( writer );
+    }
+
+    @Test( expected = IllegalStateException.class )
+    public void commitOfAlreadyCommittedUpdatesShouldThrow() throws Exception
+    {
+        // Given
+        IndexUpdater updater = newIndexUpdater( mock( LuceneIndexWriter.class ) );
+        PreparedIndexUpdates updates = updater.prepare( asList( add( 1, "value 1" ) ) );
+        updates.commit();
+
+        // When
+        updates.commit();
+
+        // Then
+        // exception is thrown
+    }
+
     private final long nodeId = 1, nodeId2 = 2;
     private final Object value = "value", value2 = 40;
     private final LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
-    private final IndexWriterStatus writerLogic = new IndexWriterStatus();
     private final File dir = new File( "dir" );
     private LuceneIndexAccessor accessor;
     private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
@@ -132,7 +294,7 @@ public class LuceneIndexAccessorTest
     public void before() throws Exception
     {
         dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
-        accessor = new NonUniqueLuceneIndexAccessor( documentLogic, standard(), writerLogic, dirFactory, dir );
+        accessor = new NonUniqueLuceneIndexAccessor( documentLogic, reserving(), dirFactory, dir );
     }
 
     @After
@@ -159,12 +321,21 @@ public class LuceneIndexAccessorTest
     private void updateAndCommit( List<NodePropertyUpdate> nodePropertyUpdates )
             throws IOException, IndexEntryConflictException
     {
-        try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
-        {
-            for ( NodePropertyUpdate update : nodePropertyUpdates )
-            {
-                updater.process( update );
-            }
-        }
+        IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE );
+        PreparedIndexUpdates preparedUpdates = updater.prepare( nodePropertyUpdates );
+        preparedUpdates.commit();
+    }
+
+    private IndexUpdater newIndexUpdater( LuceneIndexWriter writer ) throws IOException
+    {
+        LuceneIndexWriterFactory indexWriterFactory = mock( LuceneIndexWriterFactory.class );
+        when( indexWriterFactory.create( any( Directory.class ) ) ).thenReturn( writer );
+
+        NonUniqueLuceneIndexAccessor indexAccessor =
+                spy( new NonUniqueLuceneIndexAccessor( documentLogic, indexWriterFactory, dirFactory, dir ) );
+
+        doNothing().when( indexAccessor ).refreshSearcherManager();
+
+        return indexAccessor.newUpdater( IndexUpdateMode.ONLINE );
     }
 }

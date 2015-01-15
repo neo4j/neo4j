@@ -41,6 +41,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.index.PreparedIndexUpdates;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -413,23 +414,22 @@ public class IndexPopulationJobTest
             return new IndexUpdater()
             {
                 @Override
-                public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+                public PreparedIndexUpdates prepare( Iterable<NodePropertyUpdate> updates )
                 {
-                    switch ( update.getUpdateMode() )
+                    for ( NodePropertyUpdate update : updates )
                     {
+                        switch ( update.getUpdateMode() )
+                        {
                         case ADDED:
                         case CHANGED:
                             added.add( Pair.of( update.getNodeId(), update.getValueAfter() ) );
                             break;
                         default:
                             throw new IllegalArgumentException( update.getUpdateMode().name() );
+                        }
                     }
-                }
 
-
-                @Override
-                public void close() throws IOException, IndexEntryConflictException
-                {
+                    return PreparedIndexUpdates.NO_UPDATES;
                 }
 
                 @Override
@@ -485,10 +485,12 @@ public class IndexPopulationJobTest
             return new IndexUpdater()
             {
                 @Override
-                public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+                public PreparedIndexUpdates prepare( Iterable<NodePropertyUpdate> updates )
                 {
-                    switch ( update.getUpdateMode() )
+                    for ( NodePropertyUpdate update : updates )
                     {
+                        switch ( update.getUpdateMode() )
+                        {
                         case ADDED:
                         case CHANGED:
                             added.put( update.getNodeId(), update.getValueAfter() );
@@ -498,12 +500,10 @@ public class IndexPopulationJobTest
                             break;
                         default:
                             throw new IllegalArgumentException( update.getUpdateMode().name() );
+                        }
                     }
-                }
 
-                @Override
-                public void close() throws IOException, IndexEntryConflictException
-                {
+                    return PreparedIndexUpdates.NO_UPDATES;
                 }
 
                 @Override
