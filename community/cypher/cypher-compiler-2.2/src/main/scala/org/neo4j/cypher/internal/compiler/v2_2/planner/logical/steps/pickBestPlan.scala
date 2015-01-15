@@ -19,44 +19,28 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_2
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{CandidateSelector, LogicalPlanningContext}
-import org.neo4j.helpers.Clock
-import org.neo4j.kernel.monitoring.Monitors
 
 object pickBestPlan extends CandidateSelector {
-  private final val VERBOSE = true
+  private final val VERBOSE = false
 
   def apply(plans: Seq[LogicalPlan])(implicit context: LogicalPlanningContext): Option[LogicalPlan] = {
-
     val costs = context.cost
     val comparePlans = (c: LogicalPlan) =>
       (-c.solved.numHints, costs(c, context.cardinalityInput), -c.availableSymbols.size)
 
     if (VERBOSE) {
-      import org.neo4j.cypher.internal.compiler.v2_2.planner.execution.PipeExecutionPlanBuilder
-      import org.neo4j.cypher.internal.compiler.v2_2.planner.execution.PipeExecutionBuilderContext
-      val pipeBuilderContext = new PipeExecutionBuilderContext(context.cardinality, context.semanticTable)
-      val pipeBuilder = new PipeExecutionPlanBuilder(Clock.SYSTEM_CLOCK, new v2_2.Monitors(new Monitors()))
-
-      def printPlan(plan: LogicalPlan): Unit = {
-        val pipe = pipeBuilder.build(plan)(pipeBuilderContext, context.planContext).pipe
-        println("* " + plan.toString + s"\n${costs(plan, context.cardinalityInput)}\n")
-        println(pipe.planDescription)
-      }
-
       val sortedPlans = plans.sortBy(comparePlans)
 
       if (sortedPlans.size > 1) {
         println("Get best of:")
         for (plan <- sortedPlans) {
-          printPlan(plan)
+          println("* " + plan.toString + s"\n${costs(plan, context.cardinalityInput)}\n")
         }
 
         println("Best is:")
         println(sortedPlans.head.toString)
-        println("--------\n")
       }
 
       sortedPlans.headOption
