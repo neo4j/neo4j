@@ -25,11 +25,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.desktop.config.Installation;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.configuration.ServerSettings;
+
 import static org.neo4j.helpers.collection.MapUtil.load;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -66,14 +68,19 @@ public class DesktopConfigurator implements ConfigurationBuilder
     @Override
     public Map<String, String> getDatabaseTuningProperties()
     {
+        Map<String,String> databaseProperties = null;
         try
         {
-            return load( getDatabaseConfigurationFile() );
+            databaseProperties = new HashMap<>( load( getDatabaseConfigurationFile() ) );
         }
         catch ( IOException e )
         {
-            return stringMap();
+            databaseProperties = stringMap();
         }
+
+        String storeDir = getDatabaseDirectory();
+        databaseProperties.put( GraphDatabaseSettings.store_dir.name(), storeDir );
+        return databaseProperties;
     }
 
     public void setDatabaseDirectory( File directory ) {

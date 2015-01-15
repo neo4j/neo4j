@@ -22,21 +22,20 @@ package org.neo4j.kernel.logging;
 import java.io.File;
 import java.net.URL;
 
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.joran.JoranConfigurator;
-import ch.qos.logback.core.joran.spi.JoranException;
-import org.slf4j.Logger;
-import org.slf4j.Marker;
-
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.RestartOnChange;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import org.slf4j.Logger;
+import org.slf4j.Marker;
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.joran.JoranConfigurator;
+import ch.qos.logback.core.joran.spi.JoranException;
 
 /**
  * Logging service that uses Logback as backend.
@@ -65,7 +64,7 @@ public class LogbackService
         MonitoredRollingPolicy.setMonitorsInstance(monitors);
 
         // We do the initialization in the constructor, because some services will use logging during creation phase, before init.
-        final File storeDir = config.get( InternalAbstractGraphDatabase.Configuration.store_dir );
+        final File storeDir = config.get( GraphDatabaseSettings.store_dir );
 
         if ( storeDir != null )
         {
@@ -86,7 +85,9 @@ public class LogbackService
                     configurator.setContext( loggerContext );
 
                     if (config.getParams().containsKey( "ha.server_id" ))
+                    {
                         loggerContext.putProperty( "host", config.getParams().get( "ha.server_id" ) );
+                    }
 
                     loggerContext.putProperty( "neo_store", storeDir.getPath() );
                     loggerContext.putProperty( "history", config.get(GraphDatabaseSettings.log_history_size ).toString() );
@@ -101,7 +102,9 @@ public class LogbackService
                         URL resource = getClass().getClassLoader().getResource( logbackConfigurationFilename );
 
                         if (resource == null)
+                        {
                             throw new IllegalStateException( String.format("Could not find %s configuration", logbackConfigurationFilename ));
+                        }
 
                         configurator.doConfigure( resource );
                     }
