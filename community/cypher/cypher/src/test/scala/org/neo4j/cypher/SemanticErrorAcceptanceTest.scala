@@ -417,6 +417,7 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
       "Type mismatch: accumulator is Integer but expression has type Float (line 1, column 39)"
     )
   }
+
   test("should return custom type when accessing a property of a non-map") {
     createNode("prop"->42)
 
@@ -426,12 +427,28 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     )
   }
 
-  def executeAndEnsureError(query: String, message: String) {
+  test("should reject properties on shortest path relationships") {
+    executeAndEnsureError(
+      "MATCH (a), (b), shortestPath( (a)-[r* {x: 1}]->(b) ) RETURN *",
+      "shortestPath(...) contains properties MapExpression(List((PropertyKeyName(x),SignedDecimalIntegerLiteral(1)))). This is currently not supported. (line 1, column 17)"
+    )
+  }
+
+  test("should reject properties on all shortest paths relationships") {
+    executeAndEnsureError(
+      "MATCH (a), (b), allShortestPaths( (a)-[r* {x: 1}]->(b) ) RETURN *",
+      "allShortestPaths(...) contains properties MapExpression(List((PropertyKeyName(x),SignedDecimalIntegerLiteral(1)))). This is currently not supported. (line 1, column 17)"
+    )
+  }
+
+  def executeAndEnsureError(query: String, expected: String) {
     try {
       execute(query).toList
-      fail(s"Did not get the expected syntax error, expected: $message")
+      fail(s"Did not get the expected syntax error, expected: $expected")
     } catch {
-      case x: CypherException => x.getMessage.lines.next().trim should equal(message)
+      case x: CypherException =>
+        val actual = x.getMessage.lines.next().trim
+        actual should equal(expected)
     }
   }
 }
