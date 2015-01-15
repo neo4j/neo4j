@@ -146,8 +146,10 @@ case class ShortestPaths(element: PatternElement, single: Boolean)(val position:
   }
 
   private def checkContainsSingle: SemanticCheck = element match {
-    case RelationshipChain(l: NodePattern, _, r: NodePattern) =>
-      None
+    case RelationshipChain(_: NodePattern, r, _: NodePattern) =>
+      r.properties.map { props =>
+        SemanticError(s"$name(...) contains properties $props. This is currently not supported.", position, element.position)
+      }
     case _                                                    =>
       SemanticError(s"$name(...) requires a pattern containing a single relationship", position, element.position)
   }
