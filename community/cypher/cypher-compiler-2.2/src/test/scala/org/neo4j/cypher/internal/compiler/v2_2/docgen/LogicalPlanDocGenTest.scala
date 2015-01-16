@@ -73,8 +73,8 @@ class LogicalPlanDocGenTest extends DocHandlerTestSuite[Any] {
     ))
   }
 
-  /* re-enable perty to make it pass */ ignore("Prints on toString") {
-    TestLeafPlan(12).toString should equal("TestLeafPlan[a](12)")
+  test("Prints on toString") {
+    TestLeafPlan(12).toString should equal("TestLeafPlan(12)")
   }
 
   case class TestLeafPlan(x: Int) extends LogicalLeafPlan {

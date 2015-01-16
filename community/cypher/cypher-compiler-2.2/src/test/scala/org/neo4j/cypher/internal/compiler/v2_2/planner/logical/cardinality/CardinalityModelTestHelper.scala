@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, CardinalitySupport, Metrics}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport, PlannerQuery, SemanticTable}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, Metrics}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 
 trait CardinalityModelTestHelper extends CardinalityTestHelper {
@@ -42,7 +42,7 @@ trait CardinalityModelTestHelper extends CardinalityTestHelper {
 
       val (queryGraph, rewrittenSemanticTable) = testUnit.createQueryGraph(semanticTable)
       val cardinalityModel: QueryGraphCardinalityModel = createCardinalityModel(statistics, rewrittenSemanticTable)
-      val result = cardinalityModel(queryGraph, QueryGraphCardinalityInput(Map.empty, Cardinality(1)))
+      val result = cardinalityModel(queryGraph, QueryGraphCardinalityInput(Map.empty, testUnit.inboundCardinality))
       result should equal(Cardinality(number))
     }
 
