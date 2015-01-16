@@ -151,6 +151,11 @@ public enum AtomicBroadcastState
                                             .atomicbroadcast.multipaxos.InstanceId.INSTANCE ) );
                                 }
                             }
+                            else
+                            {
+                                context.getLogger( AtomicBroadcastState.class )
+                                       .warn( "No quorum and therefor dropping broadcast msg: " + message.getPayload() );
+                            }
                             break;
                         }
 
