@@ -38,6 +38,9 @@ Your plugin should also:
 * contain the application logic.
 * make sure that the discovery point type in the +@PluginTarget+ and the +@Source+ parameter are of the same type.
 
+[TIP]
+Extensions are created by creating a subclass of this class. The subclass should have a public no-argument constructor.
+
 // link Node/Rel/Path javadocs here?
 
 An example of a plugin which augments the database (as opposed to nodes or relationships) follows:
