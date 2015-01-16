@@ -119,8 +119,8 @@ public class ClusterManager
     private final File root;
     private final Map<String,String> commonConfig;
     private final Map<Integer,Map<String,String>> instanceConfig;
-    final Map<String, ManagedCluster> clusterMap = new HashMap<>();
-    final Provider clustersProvider;
+    private final Map<String,ManagedCluster> clusterMap = new HashMap<>();
+    private final Provider clustersProvider;
     private final HighlyAvailableGraphDatabaseFactory dbFactory;
     private final StoreDirInitializer storeDirInitializer;
     LifeSupport life;
@@ -953,21 +953,7 @@ public class ClusterManager
             return new StartNetworkAgainKit( db, stoppedServices );
         }
 
-        void startMember( InstanceId serverId ) throws URISyntaxException, IOException
-        {
-            Clusters.Member member = spec.getMembers().get( serverId.toIntegerIndex() - 1 );
-            File parent = new File( root, name );
-            if ( member.isFullHaMember() )
-            {
-                startMember( serverId, new File( parent, "server" + serverId ).getAbsolutePath() );
-            }
-            else
-            {
-                startMember( serverId, new File( parent, "arbiter" + serverId ).getAbsolutePath() );
-            }
-        }
-
-        void startMember( InstanceId serverId, String path ) throws URISyntaxException, IOException
+        private void startMember( InstanceId serverId ) throws URISyntaxException, IOException
         {
             Clusters.Member member = spec.getMembers().get( serverId.toIntegerIndex() - 1 );
             StringBuilder initialHosts = new StringBuilder( spec.getMembers().get( 0 ).getHost() );
@@ -975,23 +961,34 @@ public class ClusterManager
             {
                 initialHosts.append( "," ).append( spec.getMembers().get( i ).getHost() );
             }
+            File parent = new File( root, name );
             URI clusterUri = new URI( "cluster://" + member.getHost() );
             if ( member.isFullHaMember() )
             {
                 int clusterPort = clusterUri.getPort();
                 int haPort = clusterUri.getPort() + 3000;
+                File storeDir = new File( parent, "server" + serverId );
                 if ( storeDirInitializer != null )
                 {
-                    storeDirInitializer.initializeStoreDir( serverId.toIntegerIndex(), new File( path ) );
+                    storeDirInitializer.initializeStoreDir( serverId.toIntegerIndex(), storeDir );
                 }
-                GraphDatabaseBuilder graphDatabaseBuilder = dbFactory.newHighlyAvailableDatabaseBuilder( path ).
-                        setConfig( ClusterSettings.cluster_name, name ).
-                        setConfig( ClusterSettings.initial_hosts, initialHosts.toString() ).
-                        setConfig( ClusterSettings.server_id, serverId + "" ).
-                        setConfig( ClusterSettings.cluster_server, "0.0.0.0:" + clusterPort ).
-                        setConfig( HaSettings.ha_server, ":" + haPort ).
-                        setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE ).
-                        setConfig( commonConfig );
+                GraphDatabaseBuilder graphDatabaseBuilder = dbFactory.newHighlyAvailableDatabaseBuilder(
+                        storeDir.getAbsolutePath() ).
+                                                                             setConfig( ClusterSettings.cluster_name,
+                                                                                     name ).
+                                                                             setConfig( ClusterSettings.initial_hosts,
+                                                                                     initialHosts.toString() ).
+                                                                             setConfig( ClusterSettings.server_id,
+                                                                                     serverId + "" ).
+                                                                             setConfig( ClusterSettings.cluster_server,
+                                                                                     "0.0.0.0:" + clusterPort ).
+                                                                             setConfig( HaSettings.ha_server,
+                                                                                     ":" + haPort ).
+                                                                             setConfig(
+                                                                                     OnlineBackupSettings
+                                                                                             .online_backup_enabled,
+                                                                                     Settings.FALSE ).
+                                                                             setConfig( commonConfig );
                 if ( instanceConfig.containsKey( serverId.toIntegerIndex() ) )
                 {
                     graphDatabaseBuilder.setConfig( instanceConfig.get( serverId.toIntegerIndex() ) );
@@ -1020,7 +1017,8 @@ public class ClusterManager
                         ClusterSettings.initial_hosts.name(), initialHosts.toString(),
                         ClusterSettings.server_id.name(), serverId + "",
                         ClusterSettings.cluster_server.name(), "0.0.0.0:" + clusterUri.getPort(),
-                        GraphDatabaseSettings.store_dir.name(), path );
+                        GraphDatabaseSettings.store_dir.name(),
+                        new File( parent, "arbiter" + serverId ).getAbsolutePath() );
                 Config config1 = new Config( config, InternalAbstractGraphDatabase.Configuration.class,
                         GraphDatabaseSettings.class );
 
