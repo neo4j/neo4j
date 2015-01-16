@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_2.mutation
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.commands.{AstNode, EffectfulAstNode}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_2.commands.{AstNode, EffectfulAstNode}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.Argument
@@ -37,6 +37,8 @@ trait Effectful {
 }
 
 trait UpdateAction extends TypeSafe with AstNode[UpdateAction] {
+  self =>
+
   def exec(context: ExecutionContext, state: QueryState): Iterator[ExecutionContext]
 
   def identifiers: Seq[(String, CypherType)]
@@ -48,17 +50,55 @@ trait UpdateAction extends TypeSafe with AstNode[UpdateAction] {
   def arguments: Seq[Argument] = Seq(UpdateActionName(shortName))
 
   def effects(symbols: SymbolTable): Effects = {
-    var completeEffects = localEffects(symbols)
-    visitChildren {
-      case (expr: Effectful)           => completeEffects = completeEffects | expr.localEffects
-      case (expr: EffectfulAstNode[_]) => completeEffects = completeEffects | expr.localEffects
-      case (expr: UpdateAction)        => completeEffects = completeEffects | expr.localEffects(updateSymbols(symbols))
+    val collector = new EffectsCollector(localEffects(symbols), self, symbols)
+    visitFirst {
+      case (expr: Effectful) => collector.register(expr).withEffects(expr.localEffects)
+      case (expr: EffectfulAstNode[_]) => collector.register(expr).withEffects(expr.localEffects)
+      case (expr: UpdateAction) =>
+        val oldSymbols = collector.symbols(expr)
+        collector
+          .registerWithSymbolTable(expr, expr.updateSymbols(oldSymbols))
+          .withEffects(expr.localEffects(oldSymbols))
+      case expr => collector.register(expr)
     }
-    completeEffects
+
+    collector.effects
   }
 
   // This is here to give FOREACH action a chance to introduce symbols
-  def updateSymbols(symbol: SymbolTable ): SymbolTable = symbol
+  def updateSymbols(symbol: SymbolTable): SymbolTable = symbol.add(identifiers.toMap)
 
   def localEffects(symbols: SymbolTable): Effects
+}
+
+class EffectsCollector(private var _effects: Effects, expr: AstNode[_], symbolTable: SymbolTable) {
+  self =>
+
+  private val tables = new java.util.IdentityHashMap[AstNode[_], SymbolTable]()
+  tables.put(expr, symbolTable)
+
+  def withEffects(extraEffects: Effects) = {
+    _effects = _effects | extraEffects
+    self
+  }
+
+  def effects = _effects
+
+  def register(expr: AstNode[_]): EffectsCollector = registerWithSymbolTable(expr, tables.get(expr))
+
+  def registerWithSymbolTable(expr: AstNode[_], symbols: SymbolTable): EffectsCollector = {
+    expr.children.foldLeft(symbols) {
+      case (acc, elem) => elem match {
+        case kid: UpdateAction =>
+          val updated = kid.updateSymbols(acc)
+          tables.put(kid, updated)
+          updated
+        case kid =>
+          tables.put(kid, acc)
+          acc
+      }
+    }
+    self
+  }
+  def symbols(expr: AstNode[_]) = tables.get(expr)
 }
