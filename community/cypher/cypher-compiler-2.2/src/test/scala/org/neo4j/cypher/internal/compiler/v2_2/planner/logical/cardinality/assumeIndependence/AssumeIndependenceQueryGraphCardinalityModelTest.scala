@@ -217,8 +217,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
       shouldHaveQueryGraphCardinality(0)
   }
 
-  // 2014-12-05: Davide - This test looks strange since inbound cardinality is never used in the test framework?
-  ignore("honours bound arguments") {
+  test("honours bound arguments") {
     givenPattern("MATCH (a:FOO)-[:TYPE]->(b:BAR)").
     withQueryGraphArgumentIds(IdName("a")).
     withInboundCardinality(13.0).

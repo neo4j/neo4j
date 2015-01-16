@@ -102,11 +102,10 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       "Projection(Selection(List(Equals(Identifier(a),Identifier(a$$$_))),Apply(Limit(Expand(AllNodesScan(IdName(b),Set()),IdName(b),INCOMING,List(),IdName(a),IdName(r),ExpandAll),UnsignedDecimalIntegerLiteral(1)),ProjectEndpoints(Argument(Set(IdName(a), IdName(r))),IdName(r),IdName(a$$$_),IdName(b2),false,SimplePatternLength))),Map(r -> Identifier(r)))")
   }
 
-  // 24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
-  ignore("should build plans that project and verify endpoints of re-matched directed var length relationship arguments") {
+  test("should build plans that project and verify endpoints of re-matched directed var length relationship arguments") {
     val plan = planFor("MATCH (a)-[r*]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r*]->(b2) RETURN r").plan
 
     plan.toString should equal(
-      "Projection(Selection(List(Equals(Identifier(a),Identifier(a$$$_))),Apply(Limit(Expand(AllNodesScan(IdName(b),Set()),IdName(b),INCOMING,OUTGOING,List(),IdName(a),IdName(r),VarPatternLength(1,None),Vector()),UnsignedDecimalIntegerLiteral(1)),ProjectEndpoints(Argument(Set(IdName(a), IdName(r))),IdName(r),IdName(a$$$_),IdName(b2),true,VarPatternLength(1,None)))),Map(r -> Identifier(r)))")
+      "Projection(Selection(List(Equals(Identifier(a),Identifier(a$$$_))),Apply(Limit(VarExpand(AllNodesScan(IdName(b),Set()),IdName(b),INCOMING,OUTGOING,List(),IdName(a),IdName(r),VarPatternLength(1,None),ExpandAll,Vector()),UnsignedDecimalIntegerLiteral(1)),ProjectEndpoints(Argument(Set(IdName(a), IdName(r))),IdName(r),IdName(a$$$_),IdName(b2),true,VarPatternLength(1,None)))),Map(r -> Identifier(r)))")
   }
 }
