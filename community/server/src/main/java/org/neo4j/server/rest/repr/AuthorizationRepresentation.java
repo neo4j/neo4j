@@ -48,7 +48,7 @@ public class AuthorizationRepresentation extends ObjectRepresentation
     @Override
     void extraData( MappingSerializer serializer )
     {
-        if( user.token() != User.NO_TOKEN) // Yes, this is supposed to be instance equality
+        if( !user.passwordChangeRequired() )
         {
             serializer.putString( "authorization_token", user.token() );
             serializer.putUri( "authorization_token_change", format( "/user/%s/authorization_token", user.name() ));

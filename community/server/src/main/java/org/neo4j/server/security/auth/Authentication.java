@@ -92,7 +92,7 @@ public class Authentication
 
         protected boolean isCorrectPassword( String password )
         {
-            User user = users.get( name );
+            User user = users.findByName( name );
             if(user != null)
             {
                 String hash = hash( user.credentials().salt(), password, user.credentials().digestAlgorithm() );
@@ -143,18 +143,19 @@ public class Authentication
         return authMetadataFor( name ).authenticate( password );
     }
 
-    public void setPassword( String name, String password ) throws IOException
+    public User setPassword( String name, String password ) throws IOException
     {
-        User user = users.get( name );
+        User user = users.findByName( name );
         if(user != null)
         {
             try
             {
-                String salt = randomSalt();
-                users.save( user.augment()
-                        .withCredentials( new Credentials( salt, DIGEST_ALGO, hash( salt, password, DIGEST_ALGO ) ) )
+                User updatedUser = user.augment()
+                        .withCredentials( createPasswordCredential( password ) )
                         .withRequiredPasswordChange( false )
-                        .build());
+                        .build();
+                users.save( updatedUser );
+                return updatedUser;
             }
             catch ( IllegalTokenException | IllegalUsernameException e )
             {
@@ -170,7 +171,7 @@ public class Authentication
     /** Mark the user with the specified name as requiring a password change. All API access will be blocked until the password is changed. */
     public void requirePasswordChange( String name ) throws IOException
     {
-        User user = users.get( name );
+        User user = users.findByName( name );
         if(user != null)
         {
             try
@@ -188,6 +189,12 @@ public class Authentication
         }
     }
 
+    public Credentials createPasswordCredential( String password )
+    {
+        String salt = randomSalt();
+        return new Credentials( salt, DIGEST_ALGO, hash( salt, password, DIGEST_ALGO ) );
+    }
+
     private AuthenticationMetadata authMetadataFor( String name )
     {
         if(name == null)
@@ -198,7 +205,7 @@ public class Authentication
         AuthenticationMetadata authMeta = authenticationData.get( name );
         if(authMeta == null)
         {
-            User user = users.get( name );
+            User user = users.findByName( name );
             if ( user != null )
             {
                 authMeta = new AuthenticationMetadata( name, maxFailedAttempts, failedAuthCooldownPeriod, clock );

@@ -21,8 +21,6 @@ package org.neo4j.server.security.auth;
 
 import java.io.IOException;
 import java.security.SecureRandom;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.ThisShouldNotHappenError;
@@ -42,9 +40,6 @@ public class SecurityCentral extends LifecycleAdapter
 {
     public static final User UNAUTHENTICATED = new UnauthenticatedUser();
 
-    // Cache to speed up token lookups
-    private final ConcurrentMap<String, User> usersByToken = new ConcurrentHashMap<>();
-
     private final Authentication authentication;
     private final UserRepository users;
     private final SecureRandom rand = new SecureRandom();
@@ -60,7 +55,7 @@ public class SecurityCentral extends LifecycleAdapter
     {
         if(users.numberOfUsers() == 0)
         {
-            newUser( "neo4j", Privileges.ADMIN );
+            newUser( "neo4j", "neo4j", true, Privileges.ADMIN );
         }
     }
 
@@ -70,19 +65,20 @@ public class SecurityCentral extends LifecycleAdapter
         return authentication.authenticate( user, password );
     }
 
-    public void newUser( String name, Privileges privileges ) throws IOException, IllegalUsernameException
+    public User newUser( String name, String initialPassword, boolean requirePasswordChange, Privileges privileges ) throws IOException, IllegalUsernameException
     {
         try
         {
             assertValidName( name );
-            users.save( new User.Builder()
+            User user = new User.Builder()
                     .withName( name )
+                    .withToken( newToken() )
+                    .withCredentials( authentication.createPasswordCredential( initialPassword ) )
+                    .withRequiredPasswordChange( requirePasswordChange )
                     .withPrivileges( privileges )
-                    .build() );
-            // All users, by default, have their name as their password, usable only in order to set the password in a
-            // subsequent request.
-            authentication.setPassword( name, name );
-            authentication.requirePasswordChange( name );
+                    .build();
+            users.save( user );
+            return user;
         } catch(IllegalTokenException e)
         {
             throw new ThisShouldNotHappenError( "Jake", "There is no token set at this point.", e );
@@ -100,19 +96,10 @@ public class SecurityCentral extends LifecycleAdapter
             return UNAUTHENTICATED;
         }
 
-        User user = usersByToken.get( token );
+        User user = users.findByToken( token );
         if( user != null)
         {
             return user;
-        }
-
-        for ( User candidate : users )
-        {
-            if( candidate.tokenEquals( token ) )
-            {
-                usersByToken.putIfAbsent( candidate.token(), candidate );
-                return candidate;
-            }
         }
 
         return UNAUTHENTICATED;
@@ -129,7 +116,7 @@ public class SecurityCentral extends LifecycleAdapter
             return UNAUTHENTICATED;
         }
 
-        User user = users.get( name );
+        User user = users.findByName( name );
         if( user != null)
         {
             return user;
@@ -138,13 +125,12 @@ public class SecurityCentral extends LifecycleAdapter
     }
 
     /** Set a new random token for a given user */
-    public String regenerateToken( String name ) throws IOException
+    public User regenerateToken( String name ) throws IOException
     {
         try
         {
             String token = newToken();
-            setToken( name, token );
-            return token;
+            return setToken( name, token );
         }
         catch ( IllegalTokenException e )
         {
@@ -156,38 +142,28 @@ public class SecurityCentral extends LifecycleAdapter
     }
 
     /** This is synchronized to avoid odd races if someone requests multiple concurrent token changes. */
-    public synchronized void setToken( String name, String token ) throws IllegalTokenException, IOException
+    public synchronized User setToken( String name, String token ) throws IllegalTokenException, IOException
     {
         assertValidToken( token );
-        User user = users.get( name );
-        if(user != null)
+        User user = users.findByName( name );
+        if ( user == null )
         {
-            String oldToken = user.token();
-            user = user.augment().withToken( token ).build();
-            try
-            {
-                users.save( user );
-            }
-            catch ( IllegalUsernameException e )
-            {
-                throw new ThisShouldNotHappenError( "Jake", "Username has already been accepted, we are modifying the token only." );
-            }
-            usersByToken.put( token, user );
-
-            if(oldToken != User.NO_TOKEN)
-            {
-                usersByToken.remove( oldToken );
-            }
+            return null;
+        }
+        User updatedUser = user.augment().withToken( token ).build();
+        try
+        {
+            users.save( updatedUser );
+            return updatedUser;
+        } catch ( IllegalUsernameException e )
+        {
+            throw new ThisShouldNotHappenError( "Jake", "Username has already been accepted, we are modifying the token only." );
         }
     }
 
-    public synchronized void setPassword( String name, String password ) throws IOException
+    public synchronized User setPassword( String name, String password ) throws IOException
     {
-        if(userForName( name ).passwordChangeRequired())
-        {
-            regenerateToken( name );
-        }
-        authentication.setPassword( name, password );
+        return authentication.setPassword( name, password );
     }
 
     private String newToken()
