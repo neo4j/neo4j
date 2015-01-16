@@ -38,34 +38,36 @@ class NormalizeReturnClausesTest extends CypherFunSuite with RewriteTest {
   test("introduce WITH clause for ORDER BY") {
     assertRewrite(
       """MATCH n
-        |RETURN n.foo AS foo, n.bar ORDER BY foo SKIP 2 LIMIT 5
-      """.stripMargin,
+        |RETURN n.foo AS foo, n.bar ORDER BY foo SKIP 2 LIMIT 5""".stripMargin,
       """MATCH n
-        |WITH n.foo AS foo, n.bar AS `  FRESHID31` ORDER BY foo SKIP 2 LIMIT 5
-        |RETURN foo AS foo, `  FRESHID31` AS `n.bar`
-      """.stripMargin)
+        |WITH n.foo AS `  FRESHID17`, n.bar AS `  FRESHID31` ORDER BY `  FRESHID17` SKIP 2 LIMIT 5
+        |RETURN `  FRESHID17` AS foo, `  FRESHID31` AS `n.bar`""".stripMargin)
   }
 
   test("introduce WITH clause for ORDER BY where returning all IDs") {
     assertRewrite(
       """MATCH n
-        |RETURN * ORDER BY n.foo SKIP 2 LIMIT 5
-      """.stripMargin,
+        |RETURN * ORDER BY n.foo SKIP 2 LIMIT 5""".stripMargin,
       """MATCH n
         |WITH * ORDER BY n.foo SKIP 2 LIMIT 5
-        |RETURN *
-      """.stripMargin)
+        |RETURN *""".stripMargin)
   }
 
   test("introduce WITH clause for ORDER BY where returning all IDs and additional columns") {
     assertRewrite(
       """MATCH n
-        |RETURN *, n.foo AS bar ORDER BY n.foo SKIP 2 LIMIT 5
-      """.stripMargin,
+        |RETURN *, n.foo AS bar ORDER BY n.foo SKIP 2 LIMIT 5""".stripMargin,
       """MATCH n
-        |WITH *, n.foo AS bar ORDER BY n.foo SKIP 2 LIMIT 5
-        |RETURN *, bar AS bar
-      """.stripMargin)
+        |WITH *, n.foo AS `  FRESHID20` ORDER BY `  FRESHID20` SKIP 2 LIMIT 5
+        |RETURN *, `  FRESHID20` AS bar""".stripMargin)
+  }
+
+  test("match n return n, count(*) as c order by c") {
+    assertRewrite(
+      "match n return n, count(*) as c order by c",
+      """match n
+        |with n as `  FRESHID15`, count(*) as `  FRESHID18` order by `  FRESHID18`
+        |return `  FRESHID15` as n, `  FRESHID18` as c""".stripMargin)
   }
 
   protected override def assertRewrite(originalQuery: String, expectedQuery: String) {

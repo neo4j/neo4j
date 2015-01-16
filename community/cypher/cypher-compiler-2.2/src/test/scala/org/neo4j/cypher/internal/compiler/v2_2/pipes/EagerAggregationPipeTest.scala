@@ -39,14 +39,14 @@ class EagerAggregationPipeTest extends CypherFunSuite {
     aggregationPipe.symbols.identifiers should equal(Map("name" -> CTNode, "count(*)" -> CTInteger))
   }
 
-  private def createReturnItemsFor(names: String*): Map[String, Identifier] = names.map(x => x -> Identifier(x)).toMap
+  private def createReturnItemsFor(names: String*): Set[String] = names.toSet
 
   test("shouldThrowSemanticException") {
     val source = new FakePipe(List(), createSymbolTableFor("extractReturnItems"))
 
-    val returnItems = createReturnItemsFor("name")
-    val grouping = Map("count(*)" -> Count(Identifier("none-existing-identifier")))
-    intercept[SyntaxException](new EagerAggregationPipe(source, returnItems, grouping)())
+    val groupings = createReturnItemsFor("name")
+    val aggregations = Map("count(*)" -> Count(Identifier("none-existing-identifier")))
+    intercept[SyntaxException](new EagerAggregationPipe(source, groupings, aggregations)())
   }
 
   test("shouldAggregateCountStar") {

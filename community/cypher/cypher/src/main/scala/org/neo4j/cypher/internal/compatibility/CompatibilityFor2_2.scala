@@ -116,7 +116,7 @@ object exceptionHandlerFor2_2 extends MapToPublicExceptions[CypherException] {
 }
 
 trait CompatibilityFor2_2 {
-  import helpers._
+  import org.neo4j.cypher.internal.compatibility.helpers._
 
   val graph: GraphDatabaseService
   val queryCacheSize: Int

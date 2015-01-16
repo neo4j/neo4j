@@ -17,22 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.ast
+package org.neo4j.cypher.internal.compiler.v2_2
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.SemanticState
+object Ref {
+  def apply[T <: AnyRef](v: T) = new Ref[T](v)
+}
 
-class ReturnItemsTest extends CypherFunSuite with AstConstructionTestSupport {
+final class Ref[T <: AnyRef](val v: T) {
+  if (v == null)
+    throw new InternalException("Attempt to instantiate Ref(null)")
 
-  test("should forbid aliased projections collisions, e.g., projecting more than one value to the same id") {
-    val item1 = AliasedReturnItem(StringLiteral("a")_, ident("n"))_
-    val item2 = AliasedReturnItem(StringLiteral("b")_, ident("n"))_
+  override def toString = s"Ref($v)"
 
-    val items = ReturnItems(includeExisting = false, Seq(item1, item2))_
+  override def hashCode = java.lang.System.identityHashCode(v)
 
-    val result = items.semanticCheck(SemanticState.clean)
-
-    result.errors should have size 1
-    result.errors.head.msg should startWith("Multiple result columns with the same name are not supported")
+  override def equals(that: Any) = that match {
+    case other: Ref[_] => v eq other.v
+    case _             => false
   }
 }

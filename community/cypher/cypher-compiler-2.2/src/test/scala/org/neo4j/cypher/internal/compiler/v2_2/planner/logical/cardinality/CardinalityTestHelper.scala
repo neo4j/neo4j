@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.MapSupport._
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.SemanticTableHelper
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Cardinality.NumericCardinality
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, QueryGraphProducer, Selectivity}
@@ -35,6 +36,8 @@ import scala.collection.mutable
 trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMatchers {
 
   self: CypherFunSuite with LogicalPlanningTestSupport =>
+
+  import SemanticTableHelper._
 
   def combiner: SelectivityCombiner = IndependenceCombiner
 
@@ -197,9 +200,9 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
       }
     }
 
-    def createQueryGraph(): QueryGraph = {
-      produceQueryGraphForPattern(query)
-        .withArgumentIds(queryGraphArgumentIds)
+    def createQueryGraph(semanticTable: SemanticTable): (QueryGraph, SemanticTable) = {
+      val (queryGraph, rewrittenTable) = produceQueryGraphForPattern(query)
+      (queryGraph.withArgumentIds(queryGraphArgumentIds), semanticTable.transplantResolutionOnto(rewrittenTable))
     }
   }
 }

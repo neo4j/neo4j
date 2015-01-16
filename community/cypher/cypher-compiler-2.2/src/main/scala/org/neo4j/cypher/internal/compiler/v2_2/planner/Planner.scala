@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.namespaceIdentifiers.IdentifierNames
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{PipeBuilder, PipeInfo}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.execution.{PipeExecutionBuilderContext, PipeExecutionPlanBuilder}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityInput
@@ -86,16 +85,17 @@ object Planner {
   import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStep._
 
   def rewriteStatement(statement: Statement, scopeTree: Scope, semanticTable: SemanticTable): (Statement, SemanticTable) = {
-    val namespacer = namespaceIdentifiers(scopeTree)
+    val namespacer = Namespacer(statement, semanticTable, scopeTree)
+
     val newStatement = rewriteStatement(namespacer, statement)
-    val newSemanticTable = rewriteSemanticTable(namespacer.identifierNames, semanticTable)
+    val newSemanticTable = namespacer.tableRewriter(semanticTable)
 
     (newStatement, newSemanticTable)
   }
 
-  def rewriteStatement(namespacer: namespaceIdentifiers, statement: Statement): Statement = {
+  def rewriteStatement(namespacer: Namespacer, statement: Statement): Statement = {
     val rewriter = RewriterStepSequencer.newDefault("Planner")(
-      ApplyRewriter("namespaceIdentifiers", namespacer),
+      ApplyRewriter("namespaceIdentifiers", namespacer.astRewriter),
 
       rewriteEqualityToInCollection,
       splitInCollectionsToIsolateConstants,
@@ -108,15 +108,6 @@ object Planner {
     )
 
     statement.endoRewrite(rewriter)
-  }
-
-  def rewriteSemanticTable(identifierNames: IdentifierNames, semanticTable: SemanticTable): SemanticTable = {
-    val replacements = identifierNames.toSeq.collect {
-      case ((oldName, oldPos), newName) => Identifier(oldName)(oldPos) -> Identifier(newName)(oldPos)
-    }
-
-    val newSemanticTable = semanticTable.replaceKeys(replacements: _*)
-    newSemanticTable
   }
 }
 

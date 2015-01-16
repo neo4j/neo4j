@@ -202,7 +202,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
         |_PRAGMA WITHOUT `  FRESHID31`
         |RETURN prop
       """.stripMargin,
-      "Expression in WITH must be aliased (use AS) (line 2, column 6)"
+      "Expression in WITH must be aliased (use AS) (line 2, column 6 (offset: 13))"
     )
   }
 
@@ -219,7 +219,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
         |_PRAGMA WITHOUT `  FRESHID28`
         |RETURN prop
       """.stripMargin,
-      "Expression in WITH must be aliased (use AS) (line 2, column 6)"
+      "Expression in WITH must be aliased (use AS) (line 2, column 6 (offset: 13))"
     )
   }
 
@@ -234,7 +234,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
         |WITH n.prop AS prop ORDER BY max(n.foo)
         |RETURN prop
       """.stripMargin,
-      "n not defined (line 2, column 34)"
+      "n not defined (line 2, column 34 (offset: 41))"
     )
   }
 
@@ -249,7 +249,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
         |WITH n.prop AS prop WHERE max(n.foo)
         |RETURN prop
       """.stripMargin,
-      "Invalid use of aggregating function max(...) in this context (line 2, column 27)"
+      "Invalid use of aggregating function max(...) in this context (line 2, column 27 (offset: 34))"
     )
   }
 
@@ -382,7 +382,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
         |_PRAGMA WITHOUT `  FRESHID48`
         |RETURN prop
       """.stripMargin,
-      "n not defined (line 2, column 39)")
+      "n not defined (line 2, column 39 (offset: 46))")
 
     assertRewriteAndSemanticErrors(
       """MATCH n
@@ -395,7 +395,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
         |_PRAGMA WITHOUT `  FRESHID63`
         |RETURN prop, foos
       """.stripMargin,
-      "n not defined (line 2, column 54)")
+      "n not defined (line 2, column 54 (offset: 61))")
   }
 
   test("aggregating: does not change grouping set when introducing aliases for WHERE with non-grouping expression") {
@@ -411,7 +411,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
         |_PRAGMA WITHOUT `  FRESHID45`
         |RETURN prop
       """.stripMargin,
-      "n not defined (line 2, column 36)")
+      "n not defined (line 2, column 36 (offset: 43))")
 
 
     assertRewriteAndSemanticErrors(
@@ -425,7 +425,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
         |_PRAGMA WITHOUT `  FRESHID60`
         |RETURN prop, foos
       """.stripMargin,
-      "n not defined (line 2, column 51)")
+      "n not defined (line 2, column 51 (offset: 58))")
   }
 
 

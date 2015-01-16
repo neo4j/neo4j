@@ -37,6 +37,6 @@ class ContainsNoMatchingNodesTest extends CypherFunSuite with AstConstructionTes
   test("Fails when finding ReturnItems(includeExisting = true, ...)") {
     val ast: ASTNode = Return(false, ReturnItems(includeExisting = true, Seq(UnaliasedReturnItem(Identifier("foo")_, "foo")_))_, None, None, None)_
 
-    condition(ast) should equal(Seq("Expected none but found ReturnItems(includeExisting = true, ...) at position line 1, column 0"))
+    condition(ast) should equal(Seq("Expected none but found ReturnItems(includeExisting = true, ...) at position line 1, column 0 (offset: 0)"))
   }
 }

@@ -17,19 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
+package org.neo4j.cypher.internal.compiler.v2_2.helpers
 
-import org.neo4j.cypher.internal.compiler.v2_2.Rewriter
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{ShortestPaths, NamedPatternPart}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.ShortestPathPattern
+import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
 
-object namedPatternPartRemover extends Rewriter {
-  val instance = Rewriter.lift {
-    case namedPart @ NamedPatternPart(_, part) => part match {
-      case _: ShortestPaths => namedPart
-      case _                => part
-    }
+object SemanticTableHelper {
+  implicit class RichSemanticTable(table: SemanticTable) {
+    def transplantResolutionOnto(target: SemanticTable) =
+      target.copy(
+        resolvedLabelIds = table.resolvedLabelIds,
+        resolvedPropertyKeyNames = table.resolvedPropertyKeyNames,
+        resolvedRelTypeNames = table.resolvedRelTypeNames
+      )
   }
-
-  def apply(v: AnyRef): AnyRef = instance.apply(v)
 }

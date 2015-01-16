@@ -50,7 +50,8 @@ trait RewriterTaskProcessor extends (RewriterTask => Rewriter) {
       for (problem <- failure.problems)
         builder ++= s"Condition '$name' violated. $problem"
     }
-    builder.toString()
+    val result = builder.toString()
+    result
   }
 }
 

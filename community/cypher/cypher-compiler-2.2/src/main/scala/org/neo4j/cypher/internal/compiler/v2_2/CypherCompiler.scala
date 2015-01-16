@@ -131,7 +131,7 @@ case class CypherCompiler(parser: CypherParser,
     val (rewrittenStatement, extractedParams) = astRewriter.rewrite(queryText, cleanedStatement, originalSemanticState)
     val postRewriteSemanticState = semanticChecker.check(queryText, rewrittenStatement)
 
-    val table = SemanticTable(types = postRewriteSemanticState.typeTable)
+    val table = SemanticTable(types = postRewriteSemanticState.typeTable, recordedScopes = postRewriteSemanticState.recordedScopes)
     PreparedQuery(rewrittenStatement, queryText, extractedParams)(table, postRewriteSemanticState.scopeTree)
   }
 
