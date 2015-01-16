@@ -230,11 +230,11 @@ public class StoreCopyClient
             private int totalFiles;
 
             @Override
-            public int write( String path, ReadableByteChannel data, ByteBuffer temporaryBuffer,
+            public long write( String path, ReadableByteChannel data, ByteBuffer temporaryBuffer,
                               boolean hasData ) throws IOException
             {
                 console.log( "Copying " + path );
-                int written = actual.write( path, data, temporaryBuffer, hasData );
+                long written = actual.write( path, data, temporaryBuffer, hasData );
                 console.log( "Copied  " + path + " " + bytes( written ) );
                 totalFiles++;
                 return written;

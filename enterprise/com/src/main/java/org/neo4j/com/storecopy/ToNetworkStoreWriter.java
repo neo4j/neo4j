@@ -42,7 +42,7 @@ public class ToNetworkStoreWriter implements StoreWriter
     }
 
     @Override
-    public int write( String path, ReadableByteChannel data, ByteBuffer temporaryBuffer,
+    public long write( String path, ReadableByteChannel data, ByteBuffer temporaryBuffer,
             boolean hasData ) throws IOException
     {
         char[] chars = path.toCharArray();
@@ -51,7 +51,7 @@ public class ToNetworkStoreWriter implements StoreWriter
         targetBuffer.writeByte( hasData ? 1 : 0 );
         // TODO Make use of temporaryBuffer?
         BlockLogBuffer buffer = new BlockLogBuffer( targetBuffer, bufferMonitor );
-        int totalWritten = 2 + chars.length*2 + 1;
+        long totalWritten = 2 + chars.length*2 + 1;
         if ( hasData )
         {
             totalWritten += buffer.write( data );
