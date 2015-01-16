@@ -34,7 +34,7 @@ import java.net.URL
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 
 class CypherParserTest extends CypherFunSuite {
-  
+
   import ParserFixture._
 
   test("shouldParseEasiestPossibleQuery") {
@@ -1230,6 +1230,16 @@ class CypherParserTest extends CypherFunSuite {
         start(NodeById("a", 0), NodeById("b", 1)).
         returns(ReturnItem(ShortestPathExpression(
         ShortestPath("  UNNAMED34", SingleNode("a"), SingleNode("b"), Seq("KNOWS"), Direction.OUTGOING, true, Some(3), single = true, relIterator = None)),
+        "path", true)))
+  }
+
+  test("shortest path with 0 as min length and no max length") {
+    expectQuery(
+      """start a=node(0), b=node(1) return shortestPath(a-[:KNOWS*0..]->b) AS path""",
+      Query.
+        start(NodeById("a", 0), NodeById("b", 1)).
+        returns(ReturnItem(ShortestPathExpression(
+        ShortestPath("  UNNAMED34", SingleNode("a"), SingleNode("b"), Seq("KNOWS"), Direction.OUTGOING, true, None, single = true, relIterator = None)),
         "path", true)))
   }
 

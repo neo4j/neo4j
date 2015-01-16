@@ -428,6 +428,20 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result should equal(Set(List(nodeA), List(nodeA, nodeB)))
   }
 
+  test("if asked for also return paths of length 0, even when no max length is speficied") {
+    /*
+       a-b-c
+     */
+    val nodeA = createLabeledNode("A")
+    val nodeB = createLabeledNode("B")
+    val nodeC = createLabeledNode("C")
+    relate(nodeA, nodeB)
+    relate(nodeB, nodeC)
+
+    val result = execute("match p = shortestpath((a:A)-[r*0..]->(n)) return nodes(p) as nodes").columnAs[List[Node]]("nodes").toSet
+    result should equal(Set(List(nodeA), List(nodeA, nodeB), List(nodeA, nodeB, nodeC)))
+  }
+
   test("we can ask explicitly for paths of minimal length 1") {
     /*
        a-b-c
@@ -1180,6 +1194,4 @@ RETURN x0.name""")
 
     result.columnAs[List[Relationship]]("r").toList.head should equal(List(r1, r2))
   }
-
-
 }
