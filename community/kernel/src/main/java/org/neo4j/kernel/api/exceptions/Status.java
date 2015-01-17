@@ -249,7 +249,8 @@ public interface Status
         // client
         AuthenticationFailed( ClientError, "The client provided an incorrect username and/or password." ),
         AuthorizationFailed( ClientError, "The client provided an invalid authorization token, or does not have privileges to perform the operation requested." ),
-        AuthenticationRateLimit( ClientError, "The client has provided incorrect authentication details too many times in a row. You will be allowed to try again in a few seconds." );
+        AuthenticationRateLimit( ClientError, "The client has provided incorrect authentication details too many times in a row. You will be allowed to try again in a few seconds." ),
+        ModifiedConcurrently( TransientError, "The user was modified concurrently to this request." );
 
         private final Code code;
 
