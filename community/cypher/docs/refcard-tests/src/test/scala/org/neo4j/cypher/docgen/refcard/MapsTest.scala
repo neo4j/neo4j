@@ -27,6 +27,7 @@ class MapsTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("A KNOWS B")
   val title = "Maps"
   val css = "general c2-2 c3-3 c4-3 c5-2 c6-5"
+  override val linkId = "syntax-collections"
 
   override def assert(name: String, result: InternalExecutionResult) {
     name match {

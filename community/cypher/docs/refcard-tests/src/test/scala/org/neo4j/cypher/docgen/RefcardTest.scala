@@ -53,6 +53,7 @@ abstract class RefcardTest extends Assertions with DocumentationHelper with Grap
   var allQueriesWriter: Writer = null
 
   def title: String
+  def linkId: String = null
   def css: String
   def section: String = "refcard"
   def assert(name: String, result: InternalExecutionResult)
@@ -71,7 +72,7 @@ abstract class RefcardTest extends Assertions with DocumentationHelper with Grap
     val testQuery = filePaths.foldLeft(query)((acc, entry) => acc.replace(entry._1, entry._2))
     val docQuery = urls.foldLeft(query)((acc, entry) => acc.replace(entry._1, entry._2))
 
-    val fullQuerySnippet = AsciidocHelper.createCypherSnippetFromPreformattedQuery(Prettifier(docQuery))
+    val fullQuerySnippet = AsciidocHelper.createCypherSnippetFromPreformattedQuery(Prettifier(docQuery), true)
     allQueriesWriter.append(fullQuerySnippet).append("\n\n")
 
     val result = engine.execute(testQuery, params)
@@ -143,7 +144,11 @@ abstract class RefcardTest extends Assertions with DocumentationHelper with Grap
     writer.println()
     writer.println("[options=\"header\"]")
     writer.println("|====")
-    writer.println("|" + title)
+    if (linkId != null) {
+      writer.println("| link:../" + linkId + ".html[" + title + "]")
+    } else {
+      writer.println("|" + title)
+    }
     for (i <- 0 until queryLines.length by 2) {
       writer.println("a|[\"source\",\"cypher\"]")
       writer.println("----")

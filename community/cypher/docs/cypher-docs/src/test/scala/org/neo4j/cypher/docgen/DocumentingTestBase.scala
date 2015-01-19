@@ -74,7 +74,7 @@ trait DocumentationHelper extends GraphIcing {
 
   def createCypherSnippet(query: String) = {
     val prettifiedQuery = Prettifier(query.trim())
-    AsciidocHelper.createCypherSnippetFromPreformattedQuery(prettifiedQuery)
+    AsciidocHelper.createCypherSnippetFromPreformattedQuery(prettifiedQuery, true)
   }
 
   def prepareFormatting(query: String): String = {
@@ -103,7 +103,7 @@ trait DocumentationHelper extends GraphIcing {
       ""
     } else {
       val queryStrings = queries.map(prepareFormatting)
-      val output = AsciidocHelper.createCypherSnippetFromPreformattedQuery(queryStrings.mkString("\n"))
+      val output = AsciidocHelper.createCypherSnippetFromPreformattedQuery(queryStrings.mkString("\n"), true)
       AsciiDocGenerator.dumpToSeparateFile(dir, testid, output);
     }
   }

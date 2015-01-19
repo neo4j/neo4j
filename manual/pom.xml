@@ -18,22 +18,25 @@
 
   <properties>
     <short-name>manual</short-name>
-    <docs.sources>${project.build.directory}/docs</docs.sources>
+    <docs.contents>${project.build.directory}/contents</docs.contents>
+    <docs.sources>${docs.contents}/docs</docs.sources>
     <docs.javadocs>${project.build.directory}/javadoc</docs.javadocs>
     <docs.refcard>${project.build.directory}/refcard</docs.refcard>
-    <docs.sourcecode>${project.build.directory}/sources</docs.sourcecode>
-    <docs.test-sources>${project.build.directory}/test-sources</docs.test-sources>
+    <docs.sourcecode>${docs.contents}/sources</docs.sourcecode>
+    <docs.test-sources>${docs.contents}/test-sources</docs.test-sources>
     <docs.images>${project.build.outputDirectory}/images</docs.images>
     <docs.tools>${project.build.directory}/tools</docs.tools>
     <docs.resources>${docs.tools}/main/resources</docs.resources>
     <neo4j.version>${project.version}</neo4j.version>
-    <doctools.version>26</doctools.version>
+    <doctools.version>28</doctools.version>
     <attach-docs-phase>none</attach-docs-phase>
+    <licensing.phase>none</licensing.phase>
   </properties>
 
   <modules>
     <module>javadocs</module>
     <module>refcard</module>
+    <module>contents</module>
   </modules>
 
   <scm>
@@ -51,8 +54,8 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j</artifactId>
+      <groupId>org.neo4j.doc</groupId>
+      <artifactId>neo4j-manual-contents</artifactId>
       <version>${neo4j.version}</version>
       <classifier>docs</classifier>
       <scope>provided</scope>
@@ -62,174 +65,6 @@
       <artifactId>neo4j-javadocs</artifactId>
       <version>${neo4j.version}</version>
       <classifier>javadoc</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-kernel</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>docs</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-kernel</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>test-sources</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-management</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>docs</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-lucene-index</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>docs</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-lucene-index</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>test-sources</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-graph-algo</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>docs</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-ha</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>docs</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-backup</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>docs</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-consistency-check</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>docs</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cluster</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>docs</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-backup</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>test-sources</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-shell</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>docs</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j.doc</groupId>
-      <artifactId>neo4j-cypher-docs</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>test-sources</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j.doc</groupId>
-      <artifactId>neo4j-cypher-docs</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>docs</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-udc</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>docs</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j.examples</groupId>
-      <artifactId>neo4j-examples</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>docs</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j.examples</groupId>
-      <artifactId>neo4j-examples</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>sources</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j.examples</groupId>
-      <artifactId>neo4j-examples</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>test-sources</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j.app</groupId>
-      <artifactId>neo4j-server</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>docs</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j.app</groupId>
-      <artifactId>neo4j-server</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>test-sources</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j.test</groupId>
-      <artifactId>neo4j-harness</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>test-sources</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j.examples</groupId>
-      <artifactId>neo4j-server-examples</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>docs</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j.examples</groupId>
-      <artifactId>neo4j-server-examples</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>sources</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-import-tool</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>docs</classifier>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -245,44 +80,8 @@
       <scope>provided</scope>
     </dependency>
   </dependencies>
-
+  
   <build>
-    <resources>
-      <resource>
-        <directory>src</directory>
-        <filtering>true</filtering>
-        <includes>
-          <include>version</include>
-        </includes>
-      </resource>
-      <resource>
-        <directory>src</directory>
-        <filtering>false</filtering>
-        <excludes>
-          <exclude>version</exclude>
-        </excludes>
-      </resource>
-      <resource>
-        <directory>js</directory>
-        <targetPath>js</targetPath>
-        <filtering>true</filtering>
-        <includes>
-          <include>version.js</include>
-        </includes>
-      </resource>
-      <resource>
-        <directory>js</directory>
-        <targetPath>js</targetPath>
-        <filtering>false</filtering>
-        <excludes>
-          <exclude>version.js</exclude>
-        </excludes>
-      </resource>
-      <resource>
-        <directory>css</directory>
-        <targetPath>css</targetPath>
-      </resource>
-    </resources>
     <plugins>
       <plugin>
         <artifactId>maven-resources-plugin</artifactId>
@@ -340,7 +139,7 @@
             </configuration>
           </execution>
           <execution>
-            <id>unpack-asciidoc-sources</id>
+            <id>unpack-sources</id>
             <phase>generate-sources</phase>
             <goals>
               <goal>unpack-dependencies</goal>
@@ -349,11 +148,11 @@
               <classifier>docs</classifier>
               <includeClassifiers>docs</includeClassifiers>
               <excludeTransitive>true</excludeTransitive>
-              <useSubDirectoryPerArtifact>true</useSubDirectoryPerArtifact>
+              <useSubDirectoryPerArtifact>false</useSubDirectoryPerArtifact>
               <stripVersion>true</stripVersion>
               <excludes>META-INF,META-INF/**</excludes>
               <type>jar</type>
-              <outputDirectory>${docs.sources}</outputDirectory>
+              <outputDirectory>${docs.contents}</outputDirectory>
             </configuration>
           </execution>
           <execution>
@@ -389,63 +188,12 @@
               <outputDirectory>${docs.refcard}</outputDirectory>
             </configuration>
           </execution>
-          <execution>
-            <id>unpack-test-sources</id>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>unpack-dependencies</goal>
-            </goals>
-            <configuration>
-              <classifier>test-sources</classifier>
-              <includeClassifiers>test-sources</includeClassifiers>
-              <excludeTransitive>true</excludeTransitive>
-              <useSubDirectoryPerArtifact>true</useSubDirectoryPerArtifact>
-              <stripVersion>true</stripVersion>
-              <excludes>META-INF,META-INF/**,org/neo4j/kernel/impl/storemigration/legacystore/**</excludes>
-              <type>jar</type>
-              <outputDirectory>${docs.test-sources}</outputDirectory>
-              <includeArtifactIds>neo4j-cypher-docs,neo4j-examples,neo4j-harness,neo4j-server,neo4j-lucene-index,neo4j-backup,neo4j-kernel</includeArtifactIds>
-            </configuration>
-          </execution>
-          <execution>
-            <id>unpack-sources</id>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>unpack-dependencies</goal>
-            </goals>
-            <configuration>
-              <classifier>sources</classifier>
-              <includeClassifiers>sources</includeClassifiers>
-              <excludeTransitive>true</excludeTransitive>
-              <useSubDirectoryPerArtifact>true</useSubDirectoryPerArtifact>
-              <stripVersion>true</stripVersion>
-              <excludes>META-INF,META-INF/**</excludes>
-              <type>jar</type>
-              <outputDirectory>${docs.sourcecode}</outputDirectory>
-              <includeArtifactIds>neo4j-examples,neo4j-server-examples</includeArtifactIds>
-            </configuration>
-          </execution>
         </executions>
       </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
         <executions>
-          <execution>
-            <id>parse-cypherdoc</id>
-            <phase>compile</phase>
-            <goals><goal>java</goal></goals>
-            <configuration>
-              <mainClass>org.neo4j.doc.cypherdoc.Main</mainClass>
-              <includePluginDependencies>true</includePluginDependencies>
-              <includeProjectDependencies>false</includeProjectDependencies>
-              <arguments>
-                <argument>${docs.sources}/cypherdoc</argument>
-                <argument>http://neo4j.com/docs/${project.version}/csv</argument>
-                <argument>${project.build.directory}/../src/tutorials/gists</argument>
-              </arguments>
-            </configuration>
-          </execution>
           <execution>
             <id>execute-asciidoc</id>
             <phase>compile</phase>
@@ -471,7 +219,7 @@
                 <argument>--backend=docbook</argument>
                 <argument>--attribute=neo4j-version=${project.version}</argument>
                 <argument>--out-file=${project.build.directory}/upgrade/upgrades.xml</argument>
-                <argument>${project.build.directory}/docs/neo4j-docs-jar/ops/upgrades.asciidoc</argument>
+                <argument>${docs.sources}/neo4j-docs-jar/ops/upgrades.asciidoc</argument>
               </arguments>
             </configuration>
           </execution>
@@ -492,14 +240,24 @@
         </executions>
         <dependencies>
           <dependency>
-            <groupId>org.neo4j.doc</groupId>
-            <artifactId>neo4j-graphgist</artifactId>
-            <version>${neo4j.version}</version>
-          </dependency>
-          <dependency>
             <groupId>org.neo4j.build.plugins</groupId>
             <artifactId>neo4j-doctools</artifactId>
             <version>${doctools.version}</version>
+            <exclusions>
+              <exclusion>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-jdk14</artifactId>
+              </exclusion>
+            </exclusions>
+          </dependency>
+          <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-jdk14</artifactId>
+            <version>1.7.7</version>
           </dependency>
         </dependencies>
       </plugin>
@@ -543,12 +301,34 @@
               </source>
             </configuration>
           </execution>
+          <execution>
+            <id>setup-logging</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>execute</goal>
+            </goals>
+            <configuration>
+              <source>
+                import java.util.logging.*
+                import java.nio.charset.*
+                
+                String config = "handlers= java.util.logging.ConsoleHandler"
+                InputStream stream = new ByteArrayInputStream(config.getBytes(StandardCharsets.UTF_8));
+                LogManager.getLogManager().readConfiguration(stream)
+              </source>
+            </configuration>
+          </execution>
         </executions>
         <dependencies>
           <dependency>
             <groupId>it.unimi.di.law</groupId>
             <artifactId>jericho-html-dev</artifactId>
             <version>20131217</version>
+          </dependency>
+          <dependency>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+            <version>1.1.3</version>
           </dependency>
         </dependencies>
       </plugin>
@@ -619,7 +399,7 @@
                   <fileset dir="${docs.resources}/images"/>
                 </copy>
                 <copy todir="${project.build.directory}/docbkx/webhelp/images" overwrite="true">
-                  <fileset dir="${project.build.directory}/src/images"/>
+                  <fileset dir="${docs.contents}/src/images"/>
                 </copy>
                 <copy todir="${project.build.directory}/docbkx/webhelp/css" overwrite="true">
                   <fileset dir="${docs.resources}/css"/>
@@ -628,7 +408,10 @@
                   <fileset dir="${docs.resources}/common"/>
                 </copy>
                 <copy todir="${project.build.directory}/docbkx/webhelp/js" overwrite="true">
-                  <fileset dir="${project.build.directory}/src/js"/>
+                  <fileset dir="${docs.resources}/js"/>
+                </copy>
+                <copy todir="${project.build.directory}/docbkx/webhelp/js" overwrite="true">
+                  <fileset dir="${docs.contents}/js"/>
                 </copy>
                 <copy todir="${project.build.directory}/docbkx/webhelp/javadocs" overwrite="true">
                   <fileset dir="${docs.javadocs}"/>
@@ -685,16 +468,15 @@
               </generateToc>
               <preProcess>
                 <copy todir="${project.build.directory}/images" overwrite="true">
-                  <fileset dir="${docs.resources}/images" />
+                  <fileset dir="${docs.resources}/images"/>
                 </copy>
                 <copy todir="${project.build.directory}/images" overwrite="true">
-                  <fileset dir="${project.build.directory}/src/images" />
+                  <fileset dir="${docs.contents}/src/images"/>
                 </copy>
                 <replace file="${project.build.directory}/neo4j-manual-shortinfo.xml" encoding="UTF-8" token="url=&quot;javadocs" value="url=&quot;http://neo4j.com/docs/${project.version}/javadocs" />
                 <replace file="${project.build.directory}/neo4j-manual-shortinfo.xml" encoding="UTF-8" token="url=&quot;cypher-refcard" value="url=&quot;http://neo4j.com/docs/${project.version}/cypher-refcard" />
               </preProcess>
-              <imgSrcPath>${project.build.directory}/images</imgSrcPath>
-              <admonGraphicsPath>${project.build.directory}/images/icons/admon/</admonGraphicsPath>
+              <admonGraphicsPath>${docs.resources}/images/icons/admon/</admonGraphicsPath>
             </configuration>
           </execution>
         </executions>
@@ -803,21 +585,6 @@
             <configuration>
               <descriptors>
                 <descriptor>assemblies/upgrade.xml</descriptor>
-              </descriptors>
-              <finalName>${project.artifactId}-${project.version}</finalName>
-              <appendAssemblyId>true</appendAssemblyId>
-              <attach>true</attach>
-            </configuration>
-          </execution>
-          <execution>
-            <id>contents</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <descriptors>
-                <descriptor>assemblies/contents.xml</descriptor>
               </descriptors>
               <finalName>${project.artifactId}-${project.version}</finalName>
               <appendAssemblyId>true</appendAssemblyId>

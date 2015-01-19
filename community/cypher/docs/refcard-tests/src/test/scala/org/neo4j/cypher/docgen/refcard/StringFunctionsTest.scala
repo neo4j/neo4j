@@ -27,6 +27,7 @@ class StringFunctionsTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT KNOWS A", "A KNOWS B", "B KNOWS C", "C KNOWS ROOT")
   val title = "String Functions"
   val css = "general c2-2 c3-2 c4-1 c5-3 c6-5"
+  override val linkId = "query-functions-string"
 
   override def assert(name: String, result: InternalExecutionResult) {
     name match {

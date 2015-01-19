@@ -18,6 +18,7 @@ Being explicit about what types and labels you expect relationships and nodes to
 This means that when you know that a relationship can only be of a certain type, you should add that to the query.
 The same goes for labels, where declaring labels on both the start and end nodes of a relationship helps Neo4j find the best way to execute the statement.
 
-:leveloffset: 1
+:leveloffset: 2
 
 include::../parsed-graphgists/query-tuning/query-tuning-example.asciidoc[]
+

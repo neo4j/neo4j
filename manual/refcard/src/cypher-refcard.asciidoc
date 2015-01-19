@@ -86,7 +86,7 @@ include::{sources}/import.asciidoc[]
 
 [options="header", cols=",m"]
 |===
-2+| Operators
+2+| link:../query-operators.html[Operators]
 | Mathematical       | `+`, `-`, `*`, `/`, `%`, `^`
 | Comparison         | `=`, `<>`, `<`, `>`, `<=`, `>=`
 | Boolean            | `AND`, `OR`, `XOR`, `NOT`
@@ -105,7 +105,7 @@ include::{sources}/import.asciidoc[]
 
 [options="header", cols="a"]
 |===
-| NULL
+| link:../cypher-working-with-null.html[NULL]
 |
 * +NULL+ is used to represent missing/undefined values.
 * +NULL+ is not equal to +NULL+.
@@ -160,7 +160,7 @@ include::{sources}/create-unique.asciidoc[]
 
 [options="header", cols="a"]
 |===
-|Performance
+| link:../query-tuning.html[Performance]
 |
 * Use parameters instead of literals when possible.
   This allows Cypher to re-use your queries instead of having to parse and build new execution plans.

@@ -27,6 +27,7 @@ class CreateTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT LINK A", "A LINK B", "B LINK C", "C LINK ROOT")
   val title = "CREATE"
   val css = "write c4-4 c5-5 c6-3"
+  override val linkId = "query-create"
 
   override def assert(name: String, result: InternalExecutionResult) {
     name match {
