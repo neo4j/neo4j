@@ -171,11 +171,17 @@ this check fails, then the server will not startup and wil report the failure an
 Neo4j server now has *experimental* support for logging full request and response bodies. It is enabled by setting
 the following property in _neo4j-server.properties_:
 
- org.neo4j.server.http.unsafe.content_log.enabled=true
+[source,properties]
+----
+org.neo4j.server.http.unsafe.content_log.enabled=true
+----
 
 The following logging pattern must also be specified in _neo4j-http-logging.xml_:
 
- <pattern>%fullRequest\n\n%fullResponse</pattern>
+[source,xml]
+----
+<pattern>%fullRequest\n\n%fullResponse</pattern>
+----
 
 This functionality fully duplicates HTTP requests and responses, logging them out to disk. As such it is
 *strongly advised* to not run this in a production setting because of the potential to constrain performance.
