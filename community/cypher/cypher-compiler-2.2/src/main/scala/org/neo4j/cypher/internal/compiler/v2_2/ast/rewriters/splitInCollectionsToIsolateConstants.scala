@@ -42,7 +42,7 @@ case object splitInCollectionsToIsolateConstants extends Rewriter {
     else {
       Or(
         In(expr, Collection(constExpr)(collection.position))(original.position),
-        In(expr, Collection(otherExpr)(collection.position))(original.position)
+        In(expr.endoRewrite(copyIdentifiers), Collection(otherExpr)(collection.position))(original.position)
       )(original.position)
     }
   }

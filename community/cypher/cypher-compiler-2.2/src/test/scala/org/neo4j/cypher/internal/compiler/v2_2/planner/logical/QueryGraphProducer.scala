@@ -38,9 +38,9 @@ trait QueryGraphProducer extends MockitoSugar {
     val cleanedStatement: Statement = ast.endoRewrite(inSequence(normalizeReturnClauses, normalizeWithClauses))
     val semanticState = semanticChecker.check(query, cleanedStatement)
 
-    val firstRewriteStep = astRewriter.rewrite(query, cleanedStatement, semanticState)._1
+    val (firstRewriteStep, _, postConditions) = astRewriter.rewrite(query, cleanedStatement, semanticState)
     val semanticTable = SemanticTable(types = semanticState.typeTable, recordedScopes = semanticState.recordedScopes)
-    val (rewrittenAst, rewrittenTable) = Planner.rewriteStatement(firstRewriteStep, semanticState.scopeTree, semanticTable)
+    val (rewrittenAst, rewrittenTable) = Planner.rewriteStatement(firstRewriteStep, semanticState.scopeTree, semanticTable, postConditions)
     (rewrittenAst.asInstanceOf[Query].asUnionQuery.queries.head, rewrittenTable)
   }
 

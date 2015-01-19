@@ -94,7 +94,7 @@ case object inlineProjections extends Rewriter {
             Seq(item)
           } else {
             dependencies.map { id =>
-              AliasedReturnItem(id.copy()(id.position), id.copy()(id.position))(item.position)
+              AliasedReturnItem(id.copyId, id.copyId)(item.position)
             }.toSeq
           }
         case item: AliasedReturnItem => Seq(

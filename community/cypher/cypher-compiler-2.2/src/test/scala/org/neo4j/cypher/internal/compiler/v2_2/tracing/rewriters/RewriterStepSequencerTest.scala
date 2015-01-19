@@ -28,7 +28,21 @@ class RewriterStepSequencerTest extends CypherFunSuite {
     val dummyRewriter1 = Rewriter.noop
     val dummyRewriter2 = Rewriter.lift { case x: AnyRef => x }
 
-    RewriterStepSequencer.newValidating("test")(List.empty) should equal(Seq())
-    RewriterStepSequencer.newValidating("test")(List(ApplyRewriter("1", dummyRewriter1), ApplyRewriter("2", dummyRewriter2))) should equal(Seq(dummyRewriter1, dummyRewriter2))
+    RewriterStepSequencer.newValidating("test")() should equal(RewriterContract(Seq(), Set()))
+    RewriterStepSequencer.newValidating("test")(ApplyRewriter("1", dummyRewriter1), ApplyRewriter("2", dummyRewriter2)) should equal(RewriterContract(Seq(dummyRewriter1, dummyRewriter2), Set()))
+  }
+
+  test("if conditions are used, post conditions are collected") {
+    val dummyCond1 = RewriterCondition("a", (x: Any) => Seq("1"))
+    val dummyCond2 = RewriterCondition("b", (x: Any) => Seq("2"))
+    val dummyRewriter1 = Rewriter.noop
+    val dummyRewriter2 = Rewriter.lift { case x: AnyRef => x }
+
+    RewriterStepSequencer.newValidating("test")(
+      ApplyRewriter("1", dummyRewriter1),
+      EnableRewriterCondition(dummyCond1),
+      ApplyRewriter("2", dummyRewriter2),
+      EnableRewriterCondition(dummyCond2)
+    ).postConditions should equal(Set(dummyCond1, dummyCond2))
   }
 }

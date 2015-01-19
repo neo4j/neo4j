@@ -43,7 +43,7 @@ case object projectFreshSortExpressions extends Rewriter {
 
     case clause @ With(_, ri, _, _, _, _) =>
       val duplicateProjection = ri.items.map(item =>
-        item.alias.fold(item)(alias => AliasedReturnItem(alias, alias)(item.position))
+        item.alias.fold(item)(alias => AliasedReturnItem(alias.copyId, alias.copyId)(item.position))
       )
       Seq(
         clause.copy(orderBy = None, skip = None, limit = None, where = None)(clause.position),

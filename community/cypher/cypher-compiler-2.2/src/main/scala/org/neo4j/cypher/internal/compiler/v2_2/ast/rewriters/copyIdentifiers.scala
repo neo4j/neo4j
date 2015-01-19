@@ -17,19 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter
+package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_2.{Rewriter, repeat}
-import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSequencer
+import org.neo4j.cypher.internal.compiler.v2_2.{bottomUp, Rewriter}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.Identifier
 
-case object LogicalPlanRewriter extends Rewriter {
-  val instance: Rewriter = repeat(RewriterStepSequencer.newDefault("LogicalPlanRewriter")(
-    fuseSelections,
-    unnestApply,
-    simplifyEquality,
-    unnestOptional,
-    predicateRemovalThroughJoins
-  ).rewriter)
+case object copyIdentifiers extends Rewriter {
+  private val instance = Rewriter.lift { case identifier: Identifier => identifier.copyId }
 
-  def apply(that: AnyRef) = instance(that)
+  def apply(that: AnyRef): AnyRef = bottomUp(instance).apply(that)
 }
