@@ -26,6 +26,10 @@ class SemanticChecker(semanticCheckMonitor: SemanticCheckMonitor) {
     semanticCheckMonitor.startSemanticCheck(queryText)
     val SemanticCheckResult(semanticState, semanticErrors) = statement.semanticCheck(SemanticState.clean)
 
+    val scopeTreeIssues = ScopeTreeVerifier.verify(semanticState.scopeTree)
+    if (scopeTreeIssues.nonEmpty)
+      throw new InternalException(scopeTreeIssues.mkString(s"\n"))
+
     if (semanticErrors.nonEmpty) {
       semanticCheckMonitor.finishSemanticCheckError(queryText, semanticErrors)
     } else {

@@ -47,9 +47,9 @@ case object isolateAggregation extends Rewriter {
     case q@SingleQuery(clauses) =>
 
       val newClauses = clauses.flatMap {
-        case c if !clauseNeedingWork(c) => Some(c)
-        case c =>
-          val originalExpressions = getExpressions(c)
+        case clause if !clauseNeedingWork(clause) => Some(clause)
+        case clause =>
+          val originalExpressions = getExpressions(clause)
 
           val expressionsToGoToWith: Seq[Expression] = iterateUntilConverged {
             (expressions: Seq[Expression]) => expressions.flatMap {
@@ -76,17 +76,10 @@ case object isolateAggregation extends Rewriter {
             case id: Identifier => AliasedReturnItem(id.copyId, id.copyId)(id.position)
             case e              => AliasedReturnItem(e, Identifier(AggregationNameGenerator.name(e.position))(e.position))(e.position)
           }
-          val pos = c.position
+          val pos = clause.position
           val withClause = With(distinct = false, ReturnItems(includeExisting = false, withReturnItems)(pos), None, None, None, None)(pos)
 
-          val resultClause = c.endoRewrite(bottomUp(Rewriter.lift {
-            case unalteredItem@UnaliasedReturnItem(id:Identifier, _) if originalExpressions.contains(id) =>
-              unalteredItem
-
-            case ri: UnaliasedReturnItem =>
-
-              AliasedReturnItem(ri.expression, Identifier(ri.inputText)(ri.position))(ri.position)
-
+          val resultClause = clause.endoRewrite(bottomUp(Rewriter.lift {
             case e: Expression =>
               withReturnItems.collectFirst {
                 case AliasedReturnItem(expression, identifier) if e == expression => identifier.copyId
