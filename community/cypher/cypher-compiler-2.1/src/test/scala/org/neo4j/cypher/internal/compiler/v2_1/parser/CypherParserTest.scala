@@ -1244,6 +1244,16 @@ class CypherParserTest extends CypherFunSuite {
         ShortestPath("  UNNAMED34", SingleNode("a"), SingleNode("b"), Seq("KNOWS"), Direction.OUTGOING, true, Some(3), single = true, relIterator = None)), "path")))
   }
 
+  test("shortest path with 0 as min length and no max length") {
+    expectQuery(
+      """start a=node(0), b=node(1) return shortestPath(a-[:KNOWS*0..]->b) AS path""",
+      Query.
+        start(NodeById("a", 0), NodeById("b", 1)).
+        returns(ReturnItem(ShortestPathExpression(
+        ShortestPath("  UNNAMED34", SingleNode("a"), SingleNode("b"), Seq("KNOWS"), Direction.OUTGOING, true, None, single = true, relIterator = None)),
+        "path")))
+  }
+
   test("testForNull") {
     expectQuery(
       """start a=node(0) where a is null return a""",

@@ -127,9 +127,9 @@ object PatternConverters {
       val reltypes = rel.types.map(_.name)
       val relIteratorName = rel.identifier.map(_.name)
       val (allowZeroLength, maxDepth) = rel.length match {
-        case Some(Some(ast.Range(lower, Some(i)))) => (lower.exists(_.value == 0L), Some(i.value.toInt))
-        case None                                 => (false, Some(1))//non-varlength case
-        case _                                    => (false, None)
+        case Some(Some(ast.Range(lower, max))) => (lower.exists(_.value == 0L),  max.map(_.value.toInt))
+        case None                              => (false, Some(1))//non-varlength case
+        case _                                 => (false, None)
       }
       Seq(commands.ShortestPath(pathName, leftName, rightName, reltypes, rel.direction, allowZeroLength, maxDepth, part.single, relIteratorName))
     }
