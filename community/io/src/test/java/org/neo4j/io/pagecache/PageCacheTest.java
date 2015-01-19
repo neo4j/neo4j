@@ -384,7 +384,7 @@ public abstract class PageCacheTest<T extends PageCache>
             }
         }
 
-        pagedFile.flush();
+        pagedFile.flushAndForce();
 
         verifyRecordsInFile( file, recordCount );
         pagedFile.close();
@@ -442,7 +442,7 @@ public abstract class PageCacheTest<T extends PageCache>
                 // running concurrently right now.
                 // Therefor, a flush right now would have a high chance of racing
                 // with eviction.
-                pagedFile.flush();
+                pagedFile.flushAndForce();
 
                 // Race or not, a flush should still put all changes in storage,
                 // so we should be able to verify the contents of the file.
@@ -511,7 +511,7 @@ public abstract class PageCacheTest<T extends PageCache>
             }
         }
 
-        // Then check that none of those writes ended up in adjecent pages
+        // Then check that none of those writes ended up in adjacent pages
         InputStream inputStream = fs.openAsInputStream( file );
         for ( int i = 1; i <= 100; i++ )
         {
@@ -521,6 +521,92 @@ public abstract class PageCacheTest<T extends PageCache>
             }
         }
         inputStream.close();
+    }
+
+    @Test
+    public void channelMustBeForcedAfterPagedFileFlushAndForce() throws Exception
+    {
+        final AtomicInteger writeCounter = new AtomicInteger();
+        final AtomicInteger forceCounter = new AtomicInteger();
+        FileSystemAbstraction fs = writeAndForceCountingFs( writeCounter, forceCounter );
+
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+
+        try ( PagedFile pagedFile = pageCache.map( file, filePageSize ) )
+        {
+            try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.putInt( 1 );
+                assertTrue( cursor.next() );
+                cursor.putInt( 1 );
+            }
+
+            pagedFile.flushAndForce();
+
+            assertThat( writeCounter.get(), is( 2 ) );
+            assertThat( forceCounter.get(), is( 1 ) );
+        }
+    }
+
+    @Test
+    public void channelsMustBeForcedAfterPageCacheFlushAndForce() throws Exception
+    {
+        final AtomicInteger writeCounter = new AtomicInteger();
+        final AtomicInteger forceCounter = new AtomicInteger();
+        FileSystemAbstraction fs = writeAndForceCountingFs( writeCounter, forceCounter );
+
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+
+        try ( PagedFile pagedFileA = pageCache.map( new File( "a" ), filePageSize );
+              PagedFile pagedFileB = pageCache.map( new File( "b" ), filePageSize ) )
+        {
+            try ( PageCursor cursor = pagedFileA.io( 0, PF_EXCLUSIVE_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.putInt( 1 );
+                assertTrue( cursor.next() );
+                cursor.putInt( 1 );
+            }
+            try ( PageCursor cursor = pagedFileB.io( 0, PF_EXCLUSIVE_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.putInt( 1 );
+            }
+
+            pageCache.flushAndForce();
+
+            assertThat( writeCounter.get(), is( 3 ) );
+            assertThat( forceCounter.get(), is( 2 ) );
+        }
+    }
+
+    private DelegatingFileSystemAbstraction writeAndForceCountingFs( final AtomicInteger writeCounter,
+                                                                     final AtomicInteger forceCounter )
+    {
+        return new DelegatingFileSystemAbstraction( fs )
+        {
+            @Override
+            public StoreChannel open( File fileName, String mode ) throws IOException
+            {
+                return new DelegatingStoreChannel( super.open( fileName, mode ) )
+                {
+                    @Override
+                    public void writeAll( ByteBuffer src, long position ) throws IOException
+                    {
+                        writeCounter.getAndIncrement();
+                        super.writeAll( src, position );
+                    }
+
+                    @Override
+                    public void force( boolean metaData ) throws IOException
+                    {
+                        forceCounter.getAndIncrement();
+                        super.force( metaData );
+                    }
+                };
+            }
+        };
     }
 
     @Test( timeout = 1000 )
@@ -712,7 +798,7 @@ public abstract class PageCacheTest<T extends PageCache>
     {
         PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
         cache.close();
-        cache.flush();
+        cache.flushAndForce();
     }
 
     @Test( timeout = 1000, expected = IllegalArgumentException.class )
@@ -1547,7 +1633,7 @@ public abstract class PageCacheTest<T extends PageCache>
                 assertTrue( "failed to initialise file page " + i, cursor.next() );
             }
         }
-        pageCache.flush();
+        pageCache.flushAndForce();
 
         class Result
         {
@@ -3060,7 +3146,7 @@ public abstract class PageCacheTest<T extends PageCache>
         assertTrue( task.get() );
 
         shouldThrow.set( false );
-        pageCache.flush();
+        pageCache.flushAndForce();
         pagedFile.close();
     }
 
@@ -3372,7 +3458,7 @@ public abstract class PageCacheTest<T extends PageCache>
                         readyLatch.countDown();
                         readyLatch.await();
 
-                        pagedFile.flush();
+                        pagedFile.flushAndForce();
 
                         return null;
                     }
@@ -3576,12 +3662,11 @@ public abstract class PageCacheTest<T extends PageCache>
         // Unmapping will cause pages to be flushed.
         // We don't want that to fail, since it will upset the test tear-down.
         adversary.setProbabilityFactor( 0.0 );
-
         try
         {
             // Flushing all pages, if successful, should clear any internal
             // exception.
-            pageCache.flush();
+            pageCache.flushAndForce();
 
             // Do some post-chaos verification of what has been written.
             verifyAdversarialPagedContent( pfA );

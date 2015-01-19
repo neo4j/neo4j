@@ -162,7 +162,7 @@ final class MuninnPagedFile implements PagedFile
     }
 
     @Override
-    public void flush() throws IOException
+    public void flushAndForce() throws IOException
     {
         try ( MajorFlushEvent flushEvent = tracer.beginFileFlush( swapper ) )
         {

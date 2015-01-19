@@ -184,11 +184,11 @@ public class BatchingPageCache implements PageCache
     }
 
     @Override
-    public void flush() throws IOException
+    public void flushAndForce() throws IOException
     {   // no need to do anything here
         for ( PagedFile file : pagedFiles.values() )
         {
-            file.flush();
+            file.flushAndForce();
         }
     }
 
@@ -268,12 +268,12 @@ public class BatchingPageCache implements PageCache
 
         public void closeFile() throws IOException
         {
-            flush();
+            flushAndForce();
             channel.close();
         }
 
         @Override
-        public void flush() throws IOException
+        public void flushAndForce() throws IOException
         {
             cursors[PF_SHARED_LOCK].flush();
             cursors[PF_EXCLUSIVE_LOCK].flush();

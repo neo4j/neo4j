@@ -201,7 +201,7 @@ public class BatchingNeoStore implements AutoCloseable
 
     public void flush() throws IOException
     {
-        pageCache.flush();
+        pageCache.flushAndForce();
     }
 
     public long getLastCommittedTransactionId()

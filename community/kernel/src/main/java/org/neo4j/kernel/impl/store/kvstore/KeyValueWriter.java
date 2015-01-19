@@ -390,7 +390,7 @@ class KeyValueWriter implements Closeable
             cursor = null;
             if ( opened )
             {
-                file.flush();
+                file.flushAndForce();
             }
             else
             {

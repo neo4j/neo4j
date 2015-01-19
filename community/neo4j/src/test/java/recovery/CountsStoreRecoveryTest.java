@@ -86,7 +86,7 @@ public class CountsStoreRecoveryTest
     {
         NeoStore neoStore = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( NeoStore.class );
         PagedFile storeFile = ReflectionUtil.getPrivateField( neoStore, "storeFile", PagedFile.class );
-        storeFile.flush();
+        storeFile.flushAndForce();
     }
 
     private CountsTracker counts()

@@ -315,7 +315,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
             {
                 counts.rotate( getLastCommittedTransactionId() );
             }
-            pageCache.flush();
+            pageCache.flushAndForce();
         }
         catch ( IOException e )
         {
@@ -516,7 +516,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
             {
                 // make sure the new version value is persisted
                 // TODO this can be improved by flushing only the page containing that value rather than all pages
-                storeFile.flush();
+                storeFile.flushAndForce();
             }
             catch ( IOException e )
             {

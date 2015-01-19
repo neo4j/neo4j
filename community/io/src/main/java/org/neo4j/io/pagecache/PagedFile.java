@@ -144,7 +144,7 @@ public interface PagedFile extends AutoCloseable
      * Note: Flushing has to take locks on pages, so you cannot call flush
      * while you have pages pinned.
      */
-    void flush() throws IOException;
+    void flushAndForce() throws IOException;
 
     /**
      * Force all changes to this file handle down to disk. Does not flush dirty pages.
