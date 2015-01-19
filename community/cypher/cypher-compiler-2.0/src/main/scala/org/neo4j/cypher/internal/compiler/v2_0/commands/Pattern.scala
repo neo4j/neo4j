@@ -217,9 +217,11 @@ case class ShortestPath(pathName: String,
 
   private def relInfo: String = {
     var info = "["
-    if (relTypes.nonEmpty) info = info + ":" + relTypes.mkString("|")
-    info = info + "*"
-    if (maxDepth.nonEmpty) info = info + ".." + maxDepth.get
+    if (relTypes.nonEmpty) info += ":" + relTypes.mkString("|")
+    info += "*"
+    if (allowZeroLength) info += "0"
+    if (allowZeroLength || maxDepth.nonEmpty) info += ".."
+    if (maxDepth.nonEmpty) info += maxDepth.get
     info + "]"
   }
 
