@@ -62,7 +62,7 @@ case object normalizeWithClauses extends Rewriter {
     case clause @ With(distinct, ri, orderBy, skip, limit, where) =>
       val (unaliasedReturnItems, aliasedReturnItems) = partitionReturnItems(ri.items)
       val initialReturnItems = unaliasedReturnItems ++ aliasedReturnItems
-      val (introducedReturnItems, updatedOrderBy, updatedWhere) = aliasOrderByAndWhere(aliasedReturnItems.map(i => i.expression -> i.alias.get).toMap, orderBy, where)
+      val (introducedReturnItems, updatedOrderBy, updatedWhere) = aliasOrderByAndWhere(aliasedReturnItems.map(i => i.expression -> i.alias.get.copyId).toMap, orderBy, where)
 
       if (orderBy == updatedOrderBy && where == updatedWhere) {
         Seq(clause.copy(returnItems = ri.copy(items = initialReturnItems)(ri.position))(clause.position))
@@ -73,7 +73,7 @@ case object normalizeWithClauses extends Rewriter {
           introducedReturnItems
         } else {
           initialReturnItems.map(item =>
-            item.alias.fold(item)(alias => AliasedReturnItem(alias, alias)(item.position))
+            item.alias.fold(item)(alias => AliasedReturnItem(alias.copyId, alias.copyId)(item.position))
           ) ++ introducedReturnItems
         }
 
@@ -81,10 +81,10 @@ case object normalizeWithClauses extends Rewriter {
           initialReturnItems
         } else {
           val requiredIdentifiers = introducedReturnItems.map(_.expression.dependencies).flatten.toSet diff initialReturnItems.flatMap(_.alias).toSet
-          requiredIdentifiers.toVector.map(i => AliasedReturnItem(i, i)(i.position)) ++ initialReturnItems
+          requiredIdentifiers.toVector.map(i => AliasedReturnItem(i.copyId, i.copyId)(i.position)) ++ initialReturnItems
         }
 
-        val introducedIdentifiers = introducedReturnItems.map(_.identifier)
+        val introducedIdentifiers = introducedReturnItems.map(_.identifier.copyId)
 
         Seq(
           With(distinct = distinct, returnItems = ri.copy(items = firstProjection)(ri.position), orderBy = None, skip = None, limit = None, where = None)(clause.position),
@@ -104,7 +104,7 @@ case object normalizeWithClauses extends Rewriter {
           (unaliasedItems, aliasedItems :+ i)
 
         case i if i.alias.isDefined =>
-          (unaliasedItems, aliasedItems :+ AliasedReturnItem(item.expression, item.alias.get)(item.position))
+          (unaliasedItems, aliasedItems :+ AliasedReturnItem(item.expression, item.alias.get.copyId)(item.position))
 
         case _ =>
           // Unaliased return items in WITH will be preserved so that semantic check can report them as an error
@@ -161,7 +161,7 @@ case object normalizeWithClauses extends Rewriter {
 
     val newSortItem = sortItem.endoRewrite(topDown(Rewriter.lift {
       case e: Expression if e == expression =>
-        replacementIdentifier
+        replacementIdentifier.copyId
     }))
     (maybeReturnItem, newSortItem)
   }
@@ -183,16 +183,16 @@ case object normalizeWithClauses extends Rewriter {
   private def aliasExpression(existingAliases: Map[Expression, Identifier], expression: Expression): (Option[AliasedReturnItem], Identifier) = {
     existingAliases.get(expression) match {
       case Some(alias) =>
-        (None, alias)
+        (None, alias.copyId)
 
       case None =>
         val newIdentifier = Identifier(FreshIdNameGenerator.name(expression.position))(expression.position)
         val newExpression = expression.endoRewrite(topDown(Rewriter.lift {
           case e: Expression =>
-            existingAliases.getOrElse(e, e)
+            existingAliases.get(e).map(_.copyId).getOrElse(e)
         }))
         val newReturnItem = AliasedReturnItem(newExpression, newIdentifier)(expression.position)
-        (Some(newReturnItem), newIdentifier)
+        (Some(newReturnItem), newIdentifier.copyId)
     }
   }
 

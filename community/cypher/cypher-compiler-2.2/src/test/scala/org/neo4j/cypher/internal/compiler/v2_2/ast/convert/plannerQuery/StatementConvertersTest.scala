@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.StatementConverters._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{namePatternPredicatePatternElements, nameAllPatternElements, normalizeReturnClauses, normalizeWithClauses}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{namePatternPredicatePatternElements, normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport, _}
 import org.neo4j.graphdb.Direction
@@ -212,7 +212,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength),
       PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.OUTGOING, Seq.empty, SimplePatternLength)))
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
-    val predicate: Predicate = Predicate(Set(IdName("r"), IdName("r2")), NotEquals(Identifier("r")_, Identifier("r2")_)_)
+    val predicate: Predicate = Predicate(Set(IdName("r"), IdName("r2")), Not(Equals(Identifier("r")_, Identifier("r2")_)_)_)
     query.graph.selections.predicates should equal(Set(predicate))
     query.horizon should equal(RegularQueryProjection(Map(
       "a" -> Identifier("a")_,
@@ -227,7 +227,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength),
       PatternRelationship(IdName("r2"), (IdName("b"), IdName("a")), Direction.OUTGOING, Seq.empty, SimplePatternLength)))
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("b")))
-    val predicate: Predicate = Predicate(Set(IdName("r"), IdName("r2")), NotEquals(Identifier("r")_, Identifier("r2")_)_)
+    val predicate: Predicate = Predicate(Set(IdName("r"), IdName("r2")), Not(Equals(Identifier("r")_, Identifier("r2")_)_)_)
     query.graph.selections.predicates should equal(Set(predicate))
     query.horizon should equal(RegularQueryProjection(Map(
       "a" -> Identifier("a")_,
@@ -241,7 +241,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.INCOMING, Seq.empty, SimplePatternLength),
       PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.BOTH, Seq.empty, SimplePatternLength)))
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
-    val predicate: Predicate = Predicate(Set(IdName("r"), IdName("r2")), NotEquals(Identifier("r")_, Identifier("r2")_)_)
+    val predicate: Predicate = Predicate(Set(IdName("r"), IdName("r2")), Not(Equals(Identifier("r")_, Identifier("r2")_)_)_)
     query.graph.selections.predicates should equal(Set(predicate))
     query.horizon should equal(RegularQueryProjection(Map(
       "a" -> Identifier("a")_,
@@ -255,7 +255,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.INCOMING, Seq.empty, SimplePatternLength),
       PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.BOTH, Seq.empty, SimplePatternLength)))
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
-    val predicate: Predicate = Predicate(Set(IdName("r"), IdName("r2")), NotEquals(Identifier("r")_, Identifier("r2")_)_)
+    val predicate: Predicate = Predicate(Set(IdName("r"), IdName("r2")), Not(Equals(Identifier("r")_, Identifier("r2")_)_)_)
     query.graph.selections.predicates should equal(Set(predicate))
     query.horizon should equal(RegularQueryProjection(Map(
       "a" -> Identifier("a")_,
@@ -885,7 +885,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val result = query.toString
 
     val expectation =
-      """PlannerQuery(QueryGraph(Set(PatternRelationship(IdName(r1),(IdName(  origin@7),IdName(c)),BOTH,List(RelTypeName(KNOWS), RelTypeName(WORKS_AT)),SimplePatternLength), PatternRelationship(IdName(r2),(IdName(c),IdName(  candidate@60)),BOTH,List(RelTypeName(KNOWS), RelTypeName(WORKS_AT)),SimplePatternLength)),Set(IdName(  origin@7), IdName(c), IdName(  candidate@60)),Set(),Selections(Set(Predicate(Set(IdName(r1), IdName(r2)),NotEquals(Identifier(r1),Identifier(r2))), Predicate(Set(IdName(  origin@7), IdName(  candidate@60)),Not(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(Identifier(  origin@7)),List(),None,false),RelationshipPattern(Some(Identifier(  UNNAMED143)),false,List(RelTypeName(KNOWS)),None,None,BOTH),NodePattern(Some(Identifier(  candidate@60)),List(),None,false)))))), Predicate(Set(IdName(r1), IdName(r2)),Equals(FunctionInvocation(FunctionName(type),false,Vector(Identifier(r1))),FunctionInvocation(FunctionName(type),false,Vector(Identifier(r2))))), Predicate(Set(IdName(  origin@7)),In(Property(Identifier(  origin@7),PropertyKeyName(name)),Collection(List(StringLiteral(Clark Kent))))))),List(),Set(),Set()),AggregatingQueryProjection(Map(  FRESHID178 -> Property(Identifier(  origin@7),PropertyKeyName(name)),   FRESHID204 -> Property(Identifier(  candidate@60),PropertyKeyName(name))),Map(  FRESHID223 -> FunctionInvocation(FunctionName(SUM),false,Vector(FunctionInvocation(FunctionName(ROUND),false,Vector(Add(Property(Identifier(r2),PropertyKeyName(weight)),Multiply(FunctionInvocation(FunctionName(COALESCE),false,Vector(Property(Identifier(r2),PropertyKeyName(activity)), SignedDecimalIntegerLiteral(0))),SignedDecimalIntegerLiteral(2)))))))),QueryShuffle(List(),None,None)),Some(PlannerQuery(QueryGraph(Set(),Set(),Set(IdName(  FRESHID204), IdName(  FRESHID223), IdName(  FRESHID178)),Selections(Set()),List(),Set(),Set()),RegularQueryProjection(Map(  FRESHID178 -> Identifier(  FRESHID178),   FRESHID204 -> Identifier(  FRESHID204),   FRESHID223 -> Identifier(  FRESHID223)),QueryShuffle(List(DescSortItem(Identifier(  FRESHID223))),None,Some(UnsignedDecimalIntegerLiteral(10)))),Some(PlannerQuery(QueryGraph(Set(),Set(),Set(IdName(  FRESHID178), IdName(  FRESHID204), IdName(  FRESHID223)),Selections(Set()),List(),Set(),Set()),RegularQueryProjection(Map(origin -> Identifier(  FRESHID178), candidate -> Identifier(  FRESHID204), boost -> Identifier(  FRESHID223)),QueryShuffle(List(),None,None)),None)))))""".stripMargin
+      """PlannerQuery(QueryGraph(Set(PatternRelationship(IdName(r1),(IdName(  origin@7),IdName(c)),BOTH,List(RelTypeName(KNOWS), RelTypeName(WORKS_AT)),SimplePatternLength), PatternRelationship(IdName(r2),(IdName(c),IdName(  candidate@60)),BOTH,List(RelTypeName(KNOWS), RelTypeName(WORKS_AT)),SimplePatternLength)),Set(IdName(  origin@7), IdName(c), IdName(  candidate@60)),Set(),Selections(Set(Predicate(Set(IdName(r1), IdName(r2)),Not(Equals(Identifier(r1),Identifier(r2)))), Predicate(Set(IdName(  origin@7), IdName(  candidate@60)),Not(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(Identifier(  origin@7)),List(),None,false),RelationshipPattern(Some(Identifier(  UNNAMED143)),false,List(RelTypeName(KNOWS)),None,None,BOTH),NodePattern(Some(Identifier(  candidate@60)),List(),None,false)))))), Predicate(Set(IdName(r1), IdName(r2)),Equals(FunctionInvocation(FunctionName(type),false,Vector(Identifier(r1))),FunctionInvocation(FunctionName(type),false,Vector(Identifier(r2))))), Predicate(Set(IdName(  origin@7)),In(Property(Identifier(  origin@7),PropertyKeyName(name)),Collection(List(StringLiteral(Clark Kent))))))),List(),Set(),Set()),AggregatingQueryProjection(Map(  FRESHID178 -> Property(Identifier(  origin@7),PropertyKeyName(name)),   FRESHID204 -> Property(Identifier(  candidate@60),PropertyKeyName(name))),Map(  FRESHID223 -> FunctionInvocation(FunctionName(SUM),false,Vector(FunctionInvocation(FunctionName(ROUND),false,Vector(Add(Property(Identifier(r2),PropertyKeyName(weight)),Multiply(FunctionInvocation(FunctionName(COALESCE),false,Vector(Property(Identifier(r2),PropertyKeyName(activity)), SignedDecimalIntegerLiteral(0))),SignedDecimalIntegerLiteral(2)))))))),QueryShuffle(List(),None,None)),Some(PlannerQuery(QueryGraph(Set(),Set(),Set(IdName(  FRESHID204), IdName(  FRESHID223), IdName(  FRESHID178)),Selections(Set()),List(),Set(),Set()),RegularQueryProjection(Map(  FRESHID178 -> Identifier(  FRESHID178),   FRESHID204 -> Identifier(  FRESHID204),   FRESHID223 -> Identifier(  FRESHID223)),QueryShuffle(List(DescSortItem(Identifier(  FRESHID223))),None,Some(UnsignedDecimalIntegerLiteral(10)))),Some(PlannerQuery(QueryGraph(Set(),Set(),Set(IdName(  FRESHID178), IdName(  FRESHID204), IdName(  FRESHID223)),Selections(Set()),List(),Set(),Set()),RegularQueryProjection(Map(origin -> Identifier(  FRESHID178), candidate -> Identifier(  FRESHID204), boost -> Identifier(  FRESHID223)),QueryShuffle(List(),None,None)),None)))))""".stripMargin
 
     result should equal(expectation)
   }

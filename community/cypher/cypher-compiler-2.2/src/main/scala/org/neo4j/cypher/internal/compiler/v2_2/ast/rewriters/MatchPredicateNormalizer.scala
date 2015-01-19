@@ -60,10 +60,11 @@ object PropertyPredicateNormalizer extends MatchPredicateNormalizer {
   private def propertyPredicates(id: Identifier, props: Expression): Vector[Expression] = props match {
     case mapProps: MapExpression =>
       mapProps.items.map {
-        case (propId, expression) => Equals(Property(id, propId)(mapProps.position), expression)(mapProps.position)
+        // MATCH (a {a: 1, b: 2}) => MATCH (a) WHERE a.a = 1 AND a.b = 2
+        case (propId, expression) => Equals(Property(id.copyId, propId)(mapProps.position), expression)(mapProps.position)
       }.toVector
     case expr: Expression =>
-      Vector(Equals(id, expr)(expr.position))
+      Vector(Equals(id.copyId, expr)(expr.position))
     case _ =>
       Vector.empty
   }
@@ -73,7 +74,7 @@ object PropertyPredicateNormalizer extends MatchPredicateNormalizer {
     val newId = Identifier(idName)(id.position)
     val expressions = propertyPredicates(newId, props)
     val conjunction = conjunct(expressions)
-    AllIterablePredicate(newId, id, Some(conjunction))(props.position)
+    AllIterablePredicate(newId, id.copyId, Some(conjunction))(props.position)
   }
 
   private def conjunct(exprs: Seq[Expression]): Expression = exprs match {
@@ -85,11 +86,11 @@ object PropertyPredicateNormalizer extends MatchPredicateNormalizer {
 
 object LabelPredicateNormalizer extends MatchPredicateNormalizer {
   override val extract: PartialFunction[AnyRef, Vector[Expression]] = {
-    case p@NodePattern(Some(id), labels, _, false) if !labels.isEmpty => Vector(HasLabels(id, labels)(p.position))
+    case p@NodePattern(Some(id), labels, _, false) if labels.nonEmpty => Vector(HasLabels(id.copyId, labels)(p.position))
   }
 
   override val replace: PartialFunction[AnyRef, AnyRef] = {
-    case p@NodePattern(Some(id), labels, _, false) if !labels.isEmpty => p.copy(labels = Seq.empty)(p.position)
+    case p@NodePattern(Some(id), labels, _, false) if labels.nonEmpty => p.copy(identifier = Some(id.copyId), labels = Seq.empty)(p.position)
   }
 }
 

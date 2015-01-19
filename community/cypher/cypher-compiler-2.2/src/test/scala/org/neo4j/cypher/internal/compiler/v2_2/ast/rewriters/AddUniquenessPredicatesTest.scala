@@ -34,15 +34,15 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest {
   test("uniqueness check is done between relationships") {
     assertRewrite(
       "MATCH (a)-[r1]->(b)-[r2]->(c) RETURN *",
-      "MATCH (a)-[r1]->(b)-[r2]->(c) WHERE r1 <> r2 RETURN *")
+      "MATCH (a)-[r1]->(b)-[r2]->(c) WHERE not(r1 = r2) RETURN *")
 
     assertRewrite(
       "MATCH (a)-[r1]->(b)-[r2]->(c)-[r3]->(d) RETURN *",
-      "MATCH (a)-[r1]->(b)-[r2]->(c)-[r3]->(d) WHERE r2 <> r3 AND r1 <> r3 AND r1 <> r2 RETURN *")
+      "MATCH (a)-[r1]->(b)-[r2]->(c)-[r3]->(d) WHERE not(r2 = r3) AND not(r1 = r3) AND not(r1 = r2) RETURN *")
 
     assertRewrite(
       "MATCH (a)-[r1]->(b), (b)-[r2]->(c), (c)-[r3]->(d) RETURN *",
-      "MATCH (a)-[r1]->(b), (b)-[r2]->(c), (c)-[r3]->(d) WHERE r1 <> r2 AND r1 <> r3 AND r2 <> r3 RETURN *")
+      "MATCH (a)-[r1]->(b), (b)-[r2]->(c), (c)-[r3]->(d) WHERE not(r1 = r2) AND not(r1 = r3) AND not(r2 = r3) RETURN *")
   }
 
   test("no uniqueness check between relationships of different type") {
@@ -52,15 +52,15 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest {
 
     assertRewrite(
       "MATCH (a)-[r1:X]->(b)-[r2:X|Y]->(c) RETURN *",
-      "MATCH (a)-[r1:X]->(b)-[r2:X|Y]->(c) WHERE r1 <> r2 RETURN *")
+      "MATCH (a)-[r1:X]->(b)-[r2:X|Y]->(c) WHERE not(r1 = r2) RETURN *")
 
     assertRewrite(
       "MATCH (a)-[r1]->(b)-[r2:X]->(c) RETURN *",
-      "MATCH (a)-[r1]->(b)-[r2:X]->(c) WHERE r1 <> r2 RETURN *")
+      "MATCH (a)-[r1]->(b)-[r2:X]->(c) WHERE not(r1 = r2) RETURN *")
 
     assertRewrite(
       "MATCH (a)-[r1]->(b)-[r2]->(c) RETURN *",
-      "MATCH (a)-[r1]->(b)-[r2]->(c) WHERE r1 <> r2 RETURN *")
+      "MATCH (a)-[r1]->(b)-[r2]->(c) WHERE not(r1 = r2) RETURN *")
   }
 
   test("ignores shortestPath relationships for uniqueness") {
@@ -70,7 +70,7 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest {
 
     assertRewrite(
       "MATCH (a)-[r1]->(b)-[r2]->c, shortestPath((a)-[r]->(b)) RETURN *",
-      "MATCH (a)-[r1]->(b)-[r2]->c, shortestPath((a)-[r]->(b)) WHERE r1 <> r2 RETURN *")
+      "MATCH (a)-[r1]->(b)-[r2]->c, shortestPath((a)-[r]->(b)) WHERE not(r1 = r2) RETURN *")
   }
 
   test("ignores allShortestPaths relationships for uniqueness") {
@@ -80,7 +80,7 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest {
 
     assertRewrite(
       "MATCH (a)-[r1]->(b)-[r2]->c, allShortestPaths((a)-[r]->(b)) RETURN *",
-      "MATCH (a)-[r1]->(b)-[r2]->c, allShortestPaths((a)-[r]->(b)) WHERE r1 <> r2 RETURN *")
+      "MATCH (a)-[r1]->(b)-[r2]->c, allShortestPaths((a)-[r]->(b)) WHERE not(r1 = r2) RETURN *")
   }
 
   val rewriterUnderTest: Rewriter = addUniquenessPredicates

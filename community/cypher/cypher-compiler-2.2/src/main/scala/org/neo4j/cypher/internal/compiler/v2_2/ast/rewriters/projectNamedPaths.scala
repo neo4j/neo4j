@@ -32,8 +32,8 @@ case object projectNamedPaths extends Rewriter {
     Rewriter.lift {
       case NamedPatternPart(identifier, part) if paths.contains(identifier) =>
         part
-      case identifier: Identifier if !blacklist.contains(identifier) =>
-        paths.getOrElse(identifier, identifier)
+      case identifier: Identifier if !blacklist.contains(identifier) && paths.contains(identifier) =>
+        paths(identifier).endoRewrite(Rewriter.lift { case identifier: Identifier => identifier.copyId })
     }
 
   private def collectNamedPaths(input: AnyRef): Map[Identifier, PathExpression] = {

@@ -55,4 +55,27 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
       )(PlannerQuery.empty)
     )
   }
+
+  test("should build plans containing multiple path projections and path selections") {
+    val pathExpr = PathExpression(NodePathStep(Identifier("a")_,SingleRelationshipPathStep(Identifier("r")_, Direction.OUTGOING, NilPathStep)))_
+
+    planFor("MATCH p = (a:X)-[r]->(b) WHERE head(nodes(p)) = a AND length(p) > 10 RETURN b").plan should equal(
+      Projection(
+        Selection(
+          Seq(
+            GreaterThan(
+              FunctionInvocation(FunctionName("length")_, pathExpr)_,
+              SignedDecimalIntegerLiteral("10")_
+            )_,
+            Equals(
+              FunctionInvocation(FunctionName("head")_, FunctionInvocation(FunctionName("nodes")_, pathExpr)_)_,
+              Identifier("a")_
+            )_
+          ),
+          Expand( NodeByLabelScan("a",  LazyLabel("X"), Set.empty)(PlannerQuery.empty), "a", Direction.OUTGOING,  Seq.empty, "b", "r")(PlannerQuery.empty)
+        )(PlannerQuery.empty),
+        expressions = Map("b" -> Identifier("b") _)
+      )(PlannerQuery.empty)
+    )
+  }
 }

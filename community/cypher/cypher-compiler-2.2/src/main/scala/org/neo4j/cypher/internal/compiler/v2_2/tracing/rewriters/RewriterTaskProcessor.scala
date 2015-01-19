@@ -44,11 +44,12 @@ trait RewriterTaskProcessor extends (RewriterTask => Rewriter) {
   private def buildMessage(sequenceName: String, optName: Option[String], failures: Seq[RewriterConditionFailure]) = {
     val name = optName.map(name => s"step '$name'").getOrElse("start of rewriting")
     val builder = new StringBuilder
-    builder ++= s"Error during '$sequenceName' rewriting after $name. The following conditions where violated: "
+    builder ++= s"Error during '$sequenceName' rewriting after $name. The following conditions where violated: \n"
     for (failure <- failures) {
       val name = failure.name
       for (problem <- failure.problems)
-        builder ++= s"Condition '$name' violated. $problem"
+        builder ++= s"Condition '$name' violated. $problem\n"
+
     }
     builder.toString()
   }

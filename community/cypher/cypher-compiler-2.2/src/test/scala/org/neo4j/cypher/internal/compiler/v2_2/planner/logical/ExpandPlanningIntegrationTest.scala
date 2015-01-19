@@ -88,7 +88,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
 
     } planFor "MATCH (a)-[r1]->(b)<-[r2]-(a) RETURN r1, r2").plan should equal(
     Projection(
-      Selection(Seq(NotEquals(Identifier("r1")_,Identifier("r2")_) _),
+      Selection(Seq(Not(Equals(Identifier("r1")_,Identifier("r2")_)_)_),
         Expand(
           Expand(
             AllNodesScan(IdName("b"),Set.empty)(PlannerQuery.empty),

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner
 
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.conditions.containsNamedPathOnlyForShortestPath
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{PipeBuilder, PipeInfo}
@@ -96,13 +97,13 @@ object Planner {
   def rewriteStatement(namespacer: Namespacer, statement: Statement): Statement = {
     val rewriter = RewriterStepSequencer.newDefault("Planner")(
       ApplyRewriter("namespaceIdentifiers", namespacer.astRewriter),
-
       rewriteEqualityToInCollection,
       splitInCollectionsToIsolateConstants,
       CNFNormalizer,
       collapseInCollectionsContainingConstants,
-      nameUpdatingClauses,
+      nameUpdatingClauses /* this is actually needed as a precondition for projectedNamedPaths even though we do not handle updates in Ronja */,
       projectNamedPaths,
+      enableCondition(containsNamedPathOnlyForShortestPath),
       projectFreshSortExpressions,
       inlineProjections
     )

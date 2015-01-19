@@ -56,7 +56,7 @@ case object normalizeReturnClauses extends Rewriter {
       )
 
     case clause @ Return(distinct, ri, orderBy, skip, limit) =>
-      var rewrites = Map[Expression, Expression]()
+      var rewrites = Map[Expression, Identifier]()
 
       val (aliasProjection, finalProjection) = ri.items.map {
         i =>
@@ -72,11 +72,11 @@ case object normalizeReturnClauses extends Rewriter {
           rewrites = rewrites + (returnColumn -> newIdentifier)
           rewrites = rewrites + (i.expression -> newIdentifier)
 
-          (AliasedReturnItem(i.expression, newIdentifier)(i.position), AliasedReturnItem(newIdentifier, returnColumn)(i.position))
+          (AliasedReturnItem(i.expression, newIdentifier)(i.position), AliasedReturnItem(newIdentifier.copyId, returnColumn)(i.position))
       }.unzip
 
       val newOrderBy = orderBy.endoRewrite(bottomUp(Rewriter.lift {
-        case exp: Expression if rewrites.contains(exp) => rewrites(exp)
+        case exp: Expression if rewrites.contains(exp) => rewrites(exp).copyId
       }))
 
       Seq(

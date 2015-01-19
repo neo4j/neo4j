@@ -19,15 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.ast.conditions
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.ASTNode
+import org.neo4j.cypher.internal.compiler.v2_2.Ref
+import org.neo4j.cypher.internal.compiler.v2_2.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.Condition
 
-import scala.reflect.ClassTag
-
-case class containsNoNodesOfType[T <: ASTNode](implicit tag: ClassTag[T]) extends Condition {
-  def apply(that: Any): Seq[String] = collectNodesOfType[T].apply(that).map {
-    node => s"Expected none but found ${node.getClass.getSimpleName} at position ${node.position}"
+case object noReferenceEqualityAmongIdentifiers extends Condition {
+  def apply(that: Any): Seq[String] = {
+    val ids = collectNodesOfType[Identifier].apply(that).map(Ref[Identifier])
+    ids.groupBy(x => x).collect {
+      case (id, others) if others.size > 1 => s"The instance ${id.value} is used ${others.size} times"
+    }.toSeq
   }
 
-  override def name() = s"$productPrefix[${tag.runtimeClass.getSimpleName}]"
+  override def name: String = productPrefix
 }
+
