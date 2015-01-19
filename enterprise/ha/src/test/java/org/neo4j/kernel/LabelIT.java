@@ -19,27 +19,32 @@
  */
 package org.neo4j.kernel;
 
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.cluster.InstanceId;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.test.AbstractClusterTest;
+import org.neo4j.test.ha.ClusterManager;
+import org.neo4j.test.ha.ClusterRule;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 
-public class LabelIT extends AbstractClusterTest
+import static org.neo4j.graphdb.DynamicLabel.label;
+
+public class LabelIT
 {
-    public LabelIT()
+    @Rule
+    public final ClusterRule clusterRule = new ClusterRule(getClass());
+
+    protected ClusterManager.ManagedCluster cluster;
+
+    @Before
+    public void setup() throws Exception
     {
-        super( clusterOfSize( 3 ) );
+        cluster = clusterRule.startCluster( );
     }
 
     @Test
@@ -60,13 +65,6 @@ public class LabelIT extends AbstractClusterTest
 
         // THEN
         assertEquals( getLabelId( slave1, label ), getLabelId( slave2, label ) );
-    }
-
-    @Override
-    protected void configureClusterMember( GraphDatabaseBuilder builder, String clusterName, InstanceId serverId )
-    {
-        builder.setConfig( ClusterSettings.default_timeout, "1s" );
-        builder.setConfig( HaSettings.tx_push_factor, "0" );
     }
 
     private static long getLabelId( HighlyAvailableGraphDatabase db, Label label )

@@ -19,21 +19,6 @@
  */
 package org.neo4j.kernel.api;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
-import static org.neo4j.io.fs.FileUtils.deleteRecursively;
-import static org.neo4j.register.Register.DoubleLong;
-import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
-import static org.neo4j.test.ha.ClusterManager.masterAvailable;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -80,8 +65,26 @@ import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 import org.neo4j.test.ha.ClusterRule;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
+import static org.neo4j.io.fs.FileUtils.deleteRecursively;
+import static org.neo4j.register.Register.DoubleLong;
+import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
+import static org.neo4j.test.ha.ClusterManager.masterAvailable;
+
 public class SchemaIndexHaIT
 {
+    @Rule
+    public ClusterRule clusterRule = new ClusterRule( getClass() );
+
     @Test
     public void creatingIndexOnMasterShouldHaveSlavesBuildItAsWell() throws Throwable
     {
@@ -122,7 +125,7 @@ public class SchemaIndexHaIT
     {
         // GIVEN a cluster of 3
         ControlledGraphDatabaseFactory dbFactory = new ControlledGraphDatabaseFactory();
-        ManagedCluster cluster = clusterRule.startCluster( dbFactory );
+        ManagedCluster cluster = clusterRule.factory( dbFactory ).startCluster(  );
         HighlyAvailableGraphDatabase firstMaster = cluster.getMaster();
 
         // where the master gets some data created as well as an index
@@ -174,7 +177,7 @@ public class SchemaIndexHaIT
         // GIVEN
         ControlledGraphDatabaseFactory dbFactory = new ControlledGraphDatabaseFactory( IS_MASTER );
 
-        ManagedCluster cluster = clusterRule.startCluster( dbFactory );
+        ManagedCluster cluster = clusterRule.factory( dbFactory ).startCluster( );
 
         try
         {
@@ -238,7 +241,7 @@ public class SchemaIndexHaIT
         // GIVEN
         ControlledGraphDatabaseFactory dbFactory = new ControlledGraphDatabaseFactory();
 
-        ManagedCluster cluster = clusterRule.startCluster( dbFactory );
+        ManagedCluster cluster = clusterRule.factory( dbFactory ).startCluster(  );
         cluster.await( allSeesAllAsAvailable(), 120 );
 
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
@@ -313,9 +316,6 @@ public class SchemaIndexHaIT
             return item instanceof HighlyAvailableGraphDatabase && ((HighlyAvailableGraphDatabase) item).isMaster();
         }
     };
-
-    @Rule
-    public ClusterRule clusterRule = new ClusterRule( getClass() );
 
     private final String key = "key";
     private final Label label = label( "label" );

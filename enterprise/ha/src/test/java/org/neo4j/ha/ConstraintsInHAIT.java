@@ -35,6 +35,9 @@ import static org.junit.Assert.fail;
 
 public class ConstraintsInHAIT
 {
+    @Rule
+    public ClusterRule clusterRule = new ClusterRule( getClass() );
+
     @Test
     public void creatingConstraintOnSlaveIsNotAllowed() throws Exception
     {
@@ -58,7 +61,4 @@ public class ConstraintsInHAIT
                     "this server is a slave. Please issue schema modification commands directly to the master."));
         }
     }
-
-    @Rule
-    public ClusterRule clusterRule = new ClusterRule( getClass() );
 }
