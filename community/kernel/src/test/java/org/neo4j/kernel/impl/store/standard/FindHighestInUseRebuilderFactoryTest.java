@@ -60,7 +60,7 @@ public class FindHighestInUseRebuilderFactoryTest
         store.write( new TestRecord(2001, 0) ); // 0 here marks this record as not in use
 
         // Make sure file is flushed to disk
-        cache.flush();
+        cache.flushAndForce();
 
         StoreIdGenerator idGenerator = mock(StoreIdGenerator.class);
         StoreToolkit toolkit = mock(StoreToolkit.class);
@@ -92,7 +92,7 @@ public class FindHighestInUseRebuilderFactoryTest
         store.write( new TestRecord(2001, 1) ); // This is the record we expect this strategy to find
 
         // Make sure file is flushed to disk
-        cache.flush();
+        cache.flushAndForce();
 
         StoreIdGenerator idGenerator = mock(StoreIdGenerator.class);
         StoreToolkit toolkit = mock(StoreToolkit.class);
@@ -123,7 +123,7 @@ public class FindHighestInUseRebuilderFactoryTest
         store.write( new TestRecord(2, 1) ); // Add a record at id 2, to emulate a header that happens to have a byte that aligns with the in_use byte
 
         // Make sure file is flushed to disk
-        cache.flush();
+        cache.flushAndForce();
 
         StoreIdGenerator idGenerator = mock(StoreIdGenerator.class);
 

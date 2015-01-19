@@ -42,7 +42,7 @@ public interface PageCache extends AutoCloseable
     PagedFile map( File file, int pageSize ) throws IOException;
 
     /** Flush all dirty pages */
-    void flush() throws IOException;
+    void flushAndForce() throws IOException;
 
     /** Flush all dirty pages and close the page cache. */
     void close() throws IOException;

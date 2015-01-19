@@ -35,9 +35,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.DatabaseAvailability;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.log.LogRotationControl;
@@ -47,7 +44,6 @@ import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.OtherThreadRule;
 
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.Exceptions.contains;
 
 public class ShutdownAndCommitRaceTest
@@ -179,7 +175,7 @@ public class ShutdownAndCommitRaceTest
     }
 
     /**
-     * {@link PageCache} that will coordinate with a {@link Barrier} in {@link #flush()} if the call comes
+     * {@link PageCache} that will coordinate with a {@link Barrier} in {@link #flushAndForce()} if the call comes
      * from {@link NeoStoreDataSource#stop()}.
      */
     private class ShutdownControlledPageCache implements PageCache
@@ -200,14 +196,14 @@ public class ShutdownAndCommitRaceTest
         }
 
         @Override
-        public void flush() throws IOException
+        public void flushAndForce() throws IOException
         {
             if ( enabled.get() )
             {
                 System.out.println( "flushing" );
                 beginBarrier.release();
             }
-            delegate.flush();
+            delegate.flushAndForce();
             if ( enabled.get() )
             {
                 System.out.println( "flushed" );

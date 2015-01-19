@@ -63,7 +63,7 @@ public class FullDefragmentationRebuilderFactoryTest
         store.write( new TestRecord(1001, 0) ); // 0 here marks this record as not in use
 
         // Make sure file is flushed to disk
-        cache.flush();
+        cache.flushAndForce();
 
         StoreIdGenerator idGenerator = spy( new TestStoreIdGenerator() );
         StoreToolkit toolkit = mock(StoreToolkit.class);
@@ -101,7 +101,7 @@ public class FullDefragmentationRebuilderFactoryTest
 
 
         // Make sure file is flushed to disk
-        cache.flush();
+        cache.flushAndForce();
 
         StoreIdGenerator idGenerator = spy( new TestStoreIdGenerator() );
         StoreToolkit toolkit = mock(StoreToolkit.class);
@@ -137,7 +137,7 @@ public class FullDefragmentationRebuilderFactoryTest
         store.write( new TestRecord(2, 1) ); // Add a record at id 2, to emulate a header that happens to have a byte that aligns with the in_use byte
 
         // Make sure file is flushed to disk
-        cache.flush();
+        cache.flushAndForce();
 
         StoreIdGenerator idGenerator = spy( new TestStoreIdGenerator() );
 

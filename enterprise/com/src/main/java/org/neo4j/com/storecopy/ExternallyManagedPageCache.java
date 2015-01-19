@@ -58,9 +58,9 @@ public class ExternallyManagedPageCache implements PageCache
     }
 
     @Override
-    public void flush() throws IOException
+    public void flushAndForce() throws IOException
     {
-        delegate.flush();
+        delegate.flushAndForce();
     }
 
     @Override
