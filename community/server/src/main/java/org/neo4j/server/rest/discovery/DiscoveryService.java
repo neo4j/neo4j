@@ -38,7 +38,7 @@ import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.security.auth.SecurityCentral;
 import org.neo4j.server.web.ServerInternalSettings;
 
-import static org.neo4j.server.rest.dbms.AuthenticateHeaders.extractToken;
+import static org.neo4j.server.rest.dbms.AuthorizationHeaders.extractToken;
 
 /**
  * Used to discover the rest of the server URIs through a HTTP GET request to

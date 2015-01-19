@@ -21,6 +21,7 @@ package org.neo4j.server.security.auth;
 
 import java.io.IOException;
 
+import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 import org.neo4j.server.security.auth.exception.IllegalTokenException;
 import org.neo4j.server.security.auth.exception.IllegalUsernameException;
 
@@ -33,8 +34,20 @@ public interface UserRepository
 
     public User findByToken( String token );
 
-    /** Saves a user, given that the users token is unique. */
-    public void save( User user ) throws IllegalTokenException, IOException, IllegalUsernameException;
+    /** Create a user, given that the users token is unique.
+     * @param user the new user object
+     * @throws IllegalUsernameException if the username is not valid
+     * @throws IllegalTokenException if the users token is invalid or already in use
+     */
+    public void create( User user ) throws IllegalUsernameException, IllegalTokenException, IOException;
+
+    /** Update a user, given that the users token is unique.
+     * @param existingUser the existing user object, which must match the current state in this repository
+     * @param updatedUser the updated user object
+     * @throws IllegalTokenException if the user token is invalid or already in use
+     * @throws ConcurrentModificationException if the existingUser does not match the current state in the repository
+     */
+    public void update( User existingUser, User updatedUser ) throws IllegalTokenException, ConcurrentModificationException, IOException;
 
     int numberOfUsers();
 

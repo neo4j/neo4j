@@ -82,7 +82,7 @@ public class SecurityCentralTest
             fail("Should not have been allowed.");
         } catch(IllegalTokenException e)
         {
-            assertThat(e.getMessage(), equalTo("Unable to set token, because the chosen token is already in use."));
+            assertThat( e.getMessage(), equalTo( "The specified token is already in use" ) );
         }
     }
 }

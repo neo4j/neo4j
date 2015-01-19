@@ -125,7 +125,7 @@ public class AuthenticationService
             return output.unauthorized( new ExceptionRepresentation ( new Neo4jError( AuthorizationFailed, "No authorization token supplied." ) ), "None" );
         }
 
-        String token = AuthenticateHeaders.extractToken( authHeader );
+        String token = AuthorizationHeaders.extractToken( authHeader );
 
         if(token.length() == 0)
         {

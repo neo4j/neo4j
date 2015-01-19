@@ -21,19 +21,19 @@ package org.neo4j.server.rest.dbms;
 
 import com.sun.jersey.core.util.Base64;
 
-public class AuthenticateHeaders
+public class AuthorizationHeaders
 {
     /**
-     * Extract the encoded authorization token from a HTTP Authenticate header value.
+     * Extract the encoded authorization token from a HTTP Authorization header value.
      */
-    public static String extractToken(String authenticateHeader)
+    public static String extractToken(String authorizationHeader)
     {
-        if(authenticateHeader == null)
+        if(authorizationHeader == null)
         {
             return "";
         }
 
-        String[] parts = authenticateHeader.trim().split( " " );
+        String[] parts = authorizationHeader.trim().split( " " );
         String tokenSegment = parts[parts.length-1];
 
         if(tokenSegment.trim().length() == 0)

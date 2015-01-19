@@ -24,6 +24,8 @@ import org.junit.Test;
 
 import java.io.File;
 
+import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
+import org.neo4j.server.security.auth.exception.IllegalTokenException;
 import org.neo4j.test.EphemeralFileSystemRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -31,6 +33,7 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class FileUserRepositoryTest
 {
@@ -42,7 +45,7 @@ public class FileUserRepositoryTest
         // Given
         FileUserRepository users = new FileUserRepository( fsRule.get(), new File( "dbms/auth.db" ) );
         User user = new User( "jake", "af123", Privileges.ADMIN, Credentials.INACCESSIBLE, true );
-        users.save( user );
+        users.create( user );
 
         // When
         User result = users.findByName( user.name() );
@@ -57,7 +60,7 @@ public class FileUserRepositoryTest
         // Given
         FileUserRepository users = new FileUserRepository( fsRule.get(), new File( "dbms/auth.db" ) );
         User user = new User( "jake", "af123", Privileges.ADMIN, Credentials.INACCESSIBLE, true );
-        users.save( user );
+        users.create( user );
 
         // When
         User result = users.findByToken( user.token() );
@@ -72,7 +75,7 @@ public class FileUserRepositoryTest
         // Given
         FileUserRepository users = new FileUserRepository( fsRule.get(), new File( "dbms/auth.db" ) );
         User user = new User( "jake", "af123", Privileges.ADMIN, Credentials.INACCESSIBLE, true );
-        users.save( user );
+        users.create( user );
 
         users = new FileUserRepository( fsRule.get(), new File( "dbms/auth.db" ) );
         users.start();
@@ -92,11 +95,11 @@ public class FileUserRepositoryTest
         // Given
         FileUserRepository users = new FileUserRepository( fsRule.get(), new File( "dbms/auth.db" ) );
         User user = new User( "jake", "af123", Privileges.ADMIN, Credentials.INACCESSIBLE, true );
-        users.save( user );
+        users.create( user );
 
         // When
         User updatedUser = new User( "jake", "321fa", Privileges.ADMIN, Credentials.INACCESSIBLE, true );
-        users.save( updatedUser );
+        users.update( user, updatedUser );
 
         // Then
         assertThat( users.findByToken( updatedUser.token() ), equalTo( updatedUser ) );
@@ -127,7 +130,7 @@ public class FileUserRepositoryTest
         File dbFile = new File( "dbms/auth.db" );
         FileUserRepository users = new FileUserRepository( fsRule.get(), dbFile );
         User user = new User( "jake", "af123", Privileges.ADMIN, Credentials.INACCESSIBLE, true );
-        users.save( user );
+        users.create( user );
 
         // And given we emulate having crashed when writing
         File tempFile = new File( dbFile.getAbsolutePath() + ".tmp" );
@@ -141,5 +144,77 @@ public class FileUserRepositoryTest
         assertFalse(fsRule.get().fileExists( tempFile ));
         assertTrue(fsRule.get().fileExists( dbFile ));
         assertThat( users.findByName( user.name() ), equalTo(user));
+    }
+
+    @Test
+    public void shouldThrowIfUpdateChangesName() throws Throwable
+    {
+        // Given
+        FileUserRepository users = new FileUserRepository( fsRule.get(), new File( "dbms/auth.db" ) );
+        User user = new User( "jake", "af123", Privileges.ADMIN, Credentials.INACCESSIBLE, true );
+        users.create( user );
+
+        // When
+        User updatedUser = new User( "john", "af123", Privileges.ADMIN, Credentials.INACCESSIBLE, true );
+        try
+        {
+            users.update( user, updatedUser );
+            fail( "expected exception not thrown" );
+        } catch ( IllegalArgumentException e )
+        {
+            // Then continue
+        }
+
+        assertThat( users.findByToken( user.token() ), equalTo( user ) );
+    }
+
+    @Test
+    public void shouldThrowIfExistingUserDoesNotMatch() throws Throwable
+    {
+        // Given
+        FileUserRepository users = new FileUserRepository( fsRule.get(), new File( "dbms/auth.db" ) );
+        User user = new User( "jake", "af123", Privileges.ADMIN, Credentials.INACCESSIBLE, true );
+        users.create( user );
+        User modifiedUser = new User( "jake", "af123_2", Privileges.ADMIN, Credentials.INACCESSIBLE, true );
+
+        // When
+        User updatedUser = new User( "jake", "123abc", Privileges.ADMIN, Credentials.INACCESSIBLE, true );
+        try
+        {
+            users.update( modifiedUser, updatedUser );
+            fail( "expected exception not thrown" );
+        } catch ( ConcurrentModificationException e )
+        {
+            // Then continue
+        }
+
+        assertThat( users.findByToken( user.token() ), equalTo( user ) );
+        assertThat( users.findByToken( modifiedUser.token() ), nullValue() );
+        assertThat( users.findByToken( updatedUser.token() ), nullValue() );
+    }
+
+    @Test
+    public void shouldThrowIfUpdatedUserHasDuplicateToken() throws Throwable
+    {
+        // Given
+        FileUserRepository users = new FileUserRepository( fsRule.get(), new File( "dbms/auth.db" ) );
+        User user = new User( "jake", "af123", Privileges.ADMIN, Credentials.INACCESSIBLE, true );
+        users.create( user );
+        User otherUser = new User( "john", "abc", Privileges.ADMIN, Credentials.INACCESSIBLE, true );
+        users.create( otherUser );
+
+        // When
+        User updatedUser = new User( "jake", "abc", Privileges.ADMIN, Credentials.INACCESSIBLE, true );
+        try
+        {
+            users.update( user, updatedUser );
+            fail( "expected exception not thrown" );
+        } catch ( IllegalTokenException e )
+        {
+            // Then continue
+        }
+
+        assertThat( users.findByToken( user.token() ), equalTo( user ) );
+        assertThat( users.findByToken( otherUser.token() ), equalTo( otherUser ) );
     }
 }
