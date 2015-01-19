@@ -36,7 +36,7 @@ public class ToFileStoreWriter implements StoreWriter
     }
 
     @Override
-    public int write( String path, ReadableByteChannel data, ByteBuffer temporaryBuffer,
+    public long write( String path, ReadableByteChannel data, ByteBuffer temporaryBuffer,
             boolean hasData ) throws IOException
     {
         try
@@ -47,7 +47,7 @@ public class ToFileStoreWriter implements StoreWriter
             file.getParentFile().mkdirs();
             try ( RandomAccessFile randomAccessFile = new RandomAccessFile( file, "rw" ) )
             {
-                int totalWritten = 0;
+                long totalWritten = 0;
                 if ( hasData )
                 {
                     FileChannel channel = randomAccessFile.getChannel();
