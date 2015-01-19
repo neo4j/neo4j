@@ -34,6 +34,7 @@ case class MergePatternAction(patterns: Seq[Pattern],
                               onMatch: Seq[UpdateAction],
                               maybeUpdateActions: Option[Seq[UpdateAction]] = None,
                               maybeMatchPipe: Option[Pipe] = None) extends UpdateAction {
+
   def children: Seq[AstNode[_]] = patterns ++ actions ++ onMatch
 
   def readyToExecute = maybeMatchPipe.nonEmpty && maybeUpdateActions.nonEmpty
@@ -116,15 +117,19 @@ case class MergePatternAction(patterns: Seq[Pattern],
       case (k, CTRelationship) if !symbols.hasIdentifierNamed(k) => Effects.READS_RELATIONSHIPS
     }.reduced
 
-  def localEffects(symbols: SymbolTable) = {
+  def localEffects(externalSymbols: SymbolTable) = {
     import Effects._
 
-    val actionEffects = actions.effects(symbols)
-    val onMatchEffects = onMatch.effects(symbols)
-    val updateActionsEffects = updateActions.effects(symbols)
-    val effectsFromReading = readEffects(symbols)
+    val allSymbols = updateSymbols(externalSymbols)
+
+    val actionEffects = actions.effects(allSymbols)
+    val onMatchEffects = onMatch.effects(allSymbols)
+    val updateActionsEffects = updateActions.effects(allSymbols)
+    val effectsFromReading = readEffects(allSymbols)
     actionEffects | onMatchEffects | updateActionsEffects | effectsFromReading
   }
+
+  override def updateSymbols(symbol: SymbolTable): SymbolTable = symbol.add(identifiers.toMap)
 }
 
 object MergePatternAction {
