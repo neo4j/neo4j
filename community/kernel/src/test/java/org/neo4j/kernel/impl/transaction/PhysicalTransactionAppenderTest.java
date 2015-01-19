@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -28,9 +31,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.KernelHealth;
@@ -62,7 +62,6 @@ import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.test.CleanupRule;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -79,10 +78,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.Exceptions.contains;
-import static org.neo4j.kernel.impl.transaction.log.BatchingPhysicalTransactionAppender.DEFAULT_WAIT_STRATEGY;
-import static org.neo4j.kernel.impl.util.Counter.ATOMIC_LONG;
 import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
 
 public class PhysicalTransactionAppenderTest
@@ -266,7 +262,7 @@ public class PhysicalTransactionAppenderTest
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( 1L, 2L, 3L, 4L, 5L );
         IdOrderingQueue legacyIndexOrdering = new SynchronizedArrayIdOrderingQueue( 5 );
         TransactionAppender appender = new BatchingPhysicalTransactionAppender( logFile, LogRotation.NO_ROTATION,
-                metadataCache, transactionIdStore, legacyIndexOrdering, ATOMIC_LONG, DEFAULT_WAIT_STRATEGY,
+                metadataCache, transactionIdStore, legacyIndexOrdering,
                 mock( KernelHealth.class ) );
 
         // WHEN appending 5 simultaneous transaction, of which 3 has legacy index changes [1*,2,3*,4,5*]
