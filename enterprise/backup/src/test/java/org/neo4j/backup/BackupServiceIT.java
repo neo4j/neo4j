@@ -337,6 +337,12 @@ public class BackupServiceIT
 
         final GraphDatabaseAPI db = new EmbeddedGraphDatabase( storeDir.getAbsolutePath(), params );
 
+        createAndIndexNode( db, 1 ); // create some data
+        XaDataSourceManager xaDataSourceManager = db.getDependencyResolver().resolveDependency(
+                XaDataSourceManager.class );
+        long expectedTxIdInNeoStore = xaDataSourceManager.getXaDataSource( DEFAULT_DATA_SOURCE_NAME ).getLastCommittedTxId();
+        long expectedTxIdInLuceneStore = xaDataSourceManager.getXaDataSource( DEFAULT_NAME ).getLastCommittedTxId();
+
         Config config = new Config( defaultBackupPortHostParams() );
 
         Monitors monitors = new Monitors();
@@ -479,6 +485,10 @@ public class BackupServiceIT
         // then
         assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
         assertTrue( backupOutcome.isConsistent() );
+
+        // also verify the last committed tx id is correctly set
+        checkPreviousCommittedTxIdFromFirstLog( DEFAULT_DATA_SOURCE_NAME, 2, expectedTxIdInNeoStore );
+        checkPreviousCommittedTxIdFromFirstLog( DEFAULT_NAME, 2, expectedTxIdInLuceneStore );
     }
 
     public static String padRight(String s, int n) {
@@ -549,6 +559,18 @@ public class BackupServiceIT
 
     private void checkPreviousCommittedTxIdFromFirstLog( String dataSourceName ) throws IOException
     {
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( backupDir
+                .getAbsolutePath() );
+        XaDataSourceManager xaDataSourceManager = db.getDependencyResolver().resolveDependency(
+                XaDataSourceManager.class );
+        XaDataSource dataSource = xaDataSourceManager.getXaDataSource( dataSourceName );
+        long expectedTxId = dataSource.getLastCommittedTxId() - 1;
+        db.shutdown();
+        checkPreviousCommittedTxIdFromFirstLog( dataSourceName, 0, expectedTxId );
+    }
+
+    private void checkPreviousCommittedTxIdFromFirstLog( String dataSourceName, int logVersion, long expectedTxId ) throws IOException
+    {
         GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase(
                 backupDir.getAbsolutePath() );
         ReadableByteChannel logicalLog = null;
@@ -557,14 +579,14 @@ public class BackupServiceIT
             XaDataSourceManager xaDataSourceManager = db.getDependencyResolver().resolveDependency(
                     XaDataSourceManager.class );
             XaDataSource dataSource = xaDataSourceManager.getXaDataSource( dataSourceName );
-            logicalLog = dataSource.getLogicalLog( 0 );
+            logicalLog = dataSource.getLogicalLog( logVersion );
 
             ByteBuffer buffer = ByteBuffer.allocate( 64 );
             long[] headerData = LogIoUtils.readLogHeader( buffer, logicalLog, true );
 
             long previousCommittedTxIdFromFirstLog = headerData[1];
 
-            assertEquals( previousCommittedTxIdFromFirstLog, dataSource.getLastCommittedTxId() - 1 );
+            assertEquals( expectedTxId, previousCommittedTxIdFromFirstLog );
         }
         finally
         {
