@@ -23,6 +23,7 @@ import java.io.File;
 
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -36,6 +37,7 @@ import static org.neo4j.test.ha.ClusterManager.clusterWithAdditionalClients;
 import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 import static org.neo4j.test.ha.ClusterManager.masterSeesMembers;
 
+@Ignore
 public class HaLoggingIT
 {
     @Rule
