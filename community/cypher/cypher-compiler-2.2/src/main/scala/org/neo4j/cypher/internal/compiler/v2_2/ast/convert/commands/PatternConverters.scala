@@ -23,6 +23,7 @@ import ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_2._
 import commands.{expressions => commandexpressions, values => commandvalues}
 import commands.expressions.{Expression => CommandExpression}
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.UnNamedNameGenerator
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.graphdb.Direction
 
@@ -114,7 +115,7 @@ object PatternConverters {
 
   implicit class ShortestPathsConverter(val part: ast.ShortestPaths) extends AnyVal {
     def asLegacyPatterns(maybePathName: Option[String]): Seq[commands.ShortestPath] = {
-      val pathName = maybePathName.getOrElse("  UNNAMED" + part.position.offset)
+      val pathName = maybePathName.getOrElse(UnNamedNameGenerator.name(part.position))
       val (leftName, rel, rightName) = part.element match {
         case ast.RelationshipChain(leftNode: ast.NodePattern, relationshipPattern, rightNode) =>
           (leftNode.asLegacyNode, relationshipPattern, rightNode.asLegacyNode)
@@ -206,7 +207,7 @@ object PatternConverters {
           case _    =>
             val (relName, relIterator) = chain.relationship.identifier match {
               case Some(_) =>
-                ("  UNNAMED" + chain.relationship.position.offset, Some(chain.relationship.legacyName))
+                (UnNamedNameGenerator.name(chain.relationship.position), Some(chain.relationship.legacyName))
               case None =>
                 (chain.relationship.legacyName, None)
             }
@@ -237,7 +238,7 @@ object PatternConverters {
 
     def asLegacyNode = commands.SingleNode(node.legacyName, labels.map(x => commandvalues.UnresolvedLabel(x.name)), properties = node.legacyProperties)
 
-    def legacyName = node.identifier.fold("  UNNAMED" + (node.position.offset + 1))(_.name)
+    def legacyName = node.identifier.fold(UnNamedNameGenerator.name(node.position))(_.name)
 
     private def labels = node.labels.map(t => commandvalues.KeyToken.Unresolved(t.name, commandvalues.TokenType.Label))
 
@@ -261,7 +262,7 @@ object PatternConverters {
 
       relationship.length match {
         case Some(maybeRange) =>
-          val pathName = "  UNNAMED" + relationship.position.offset
+          val pathName = UnNamedNameGenerator.name(relationship.position)
           val (min, max) = maybeRange match {
             case Some(range) => (for (i <- range.lower) yield i.value.toInt, for (i <- range.upper) yield i.value.toInt)
             case None        => (None, None)
@@ -288,7 +289,7 @@ object PatternConverters {
       mutation.CreateRelationship(relationship.legacyName, from, to, typeName, legacyProperties)
     }
 
-    def legacyName = relationship.identifier.fold("  UNNAMED" + relationship.position.offset)(_.name)
+    def legacyName = relationship.identifier.fold(UnNamedNameGenerator.name(relationship.position))(_.name)
 
     def legacyProperties: Map[String, CommandExpression] = relationship.properties match {
       case None                       => Map.empty[String, CommandExpression]
