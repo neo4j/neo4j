@@ -19,21 +19,22 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0
 
-import commands._
-import commands.expressions._
-import pipes.NullPipe
-import executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery}
-import parser.CypherParser
-import org.neo4j.cypher.internal.compiler.v2_0.spi.PlanContext
-import org.neo4j.graphdb.Transaction
-import org.junit.{After, Before, Test}
-import org.scalatest.Assertions
 import org.junit.Assert._
-import org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders.{Solved, Unsolved, TraversalMatcherBuilder, BuilderTest}
-import org.neo4j.cypher.internal.spi.v2_0.TransactionBoundPlanContext
+import org.junit.{After, Before, Test}
 import org.neo4j.cypher.GraphDatabaseJUnitSuite
+import org.neo4j.cypher.internal.compiler.v2_0.commands._
+import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions._
+import org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders.{BuilderTest, Solved, TraversalMatcherBuilder, Unsolved}
+import org.neo4j.cypher.internal.compiler.v2_0.executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery}
+import org.neo4j.cypher.internal.compiler.v2_0.parser.CypherParser
+import org.neo4j.cypher.internal.compiler.v2_0.pipes.NullPipe
+import org.neo4j.cypher.internal.compiler.v2_0.spi.PlanContext
+import org.neo4j.cypher.internal.spi.v2_0.TransactionBoundPlanContext
+import org.neo4j.graphdb.Transaction
 
 class TraversalMatcherBuilderTest extends GraphDatabaseJUnitSuite with BuilderTest {
+  import org.neo4j.cypher.internal.compiler.v2_0.symbols._
+
   var builder: TraversalMatcherBuilder = null
   var ctx: PlanContext = null
   var tx: Transaction = null
@@ -100,6 +101,13 @@ class TraversalMatcherBuilderTest extends GraphDatabaseJUnitSuite with BuilderTe
     val newPlan = builder.apply(testPlan, ctx)
 
     assert(!newPlan.query.start.exists(_.unsolved), "Should have solved all start items")
+  }
+
+  @Test def does_not_take_on_paths_overlapping_with_identifiers_already_in_scope() {
+    val q = query("START a = node(*) MATCH a-->b RETURN b")
+
+    val testPlan = plan(NullPipe(new SymbolTable(Map("b" -> CTNode))), q)
+    assertFalse("This query should be rejected", builder.canWorkWith(testPlan, ctx))
   }
 
   private def assertAcceptsQuery(q:PartiallySolvedQuery) {

@@ -1194,4 +1194,27 @@ RETURN x0.name""")
 
     result.columnAs[List[Relationship]]("r").toList.head should equal(List(r1, r2))
   }
+  test("index hints should work in optional match") {
+    //GIVEN
+    val subnet = createLabeledNode("Subnet")
+    createLabeledNode("Subnet")//extra dangling subnet
+    val host = createLabeledNode(Map("name" -> "host"), "Host")
+
+    relate(subnet, host)
+
+    graph.createIndex("Host", "name")
+
+    val query =
+      """MATCH (subnet: Subnet)
+        |OPTIONAL MATCH (subnet)-->(host:Host)
+        |USING INDEX host:Host(name)
+        |WHERE host.name = 'host'
+        |RETURN host""".stripMargin
+
+    //WHEN
+    val result = profile(query)
+
+    //THEN
+    result.toList should equal (List(Map("host" -> host), Map("host" -> null)))
+  }
 }
